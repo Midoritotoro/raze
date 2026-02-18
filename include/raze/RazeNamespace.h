@@ -1,0 +1,90 @@
+#pragma once 
+
+
+#ifndef __RAZE_NAMESPACE_BEGIN
+#define __RAZE_NAMESPACE_BEGIN namespace raze {
+#endif // __RAZE_NAMESPACE_BEGIN
+
+#ifndef __RAZE_NAMESPACE_END
+#define __RAZE_NAMESPACE_END }
+#endif // __RAZE_NAMESPACE_END
+
+
+
+#ifndef __RAZE_ARCH_NAMESPACE_BEGIN
+#define __RAZE_ARCH_NAMESPACE_BEGIN namespace raze { namespace arch {
+#endif // __RAZE_ARCH_NAMESPACE_BEGIN
+
+#ifndef __RAZE_ARCH_NAMESPACE_END
+#define __RAZE_ARCH_NAMESPACE_END }}
+#endif // __RAZE_ARCH_NAMESPACE_END
+
+
+
+#ifndef __RAZE_ALGORITHM_NAMESPACE_BEGIN 
+#define __RAZE_ALGORITHM_NAMESPACE_BEGIN namespace raze { namespace algorithm {
+#endif // __RAZE_ALGORITHM_NAMESPACE_BEGIN
+
+#ifndef __RAZE_ALGORITHM_NAMESPACE_END
+#define __RAZE_ALGORITHM_NAMESPACE_END }}
+#endif // __RAZE_ALGORITHM_NAMESPACE_END
+
+
+
+#ifndef __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN 
+#define __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN namespace raze { namespace type_traits {
+#endif // __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
+
+#ifndef __RAZE_TYPE_TRAITS_NAMESPACE_END
+#define __RAZE_TYPE_TRAITS_NAMESPACE_END }}
+#endif // __RAZE_TYPE_TRAITS_NAMESPACE_END
+
+
+
+#ifndef __RAZE_MATH_NAMESPACE_BEGIN 
+#define __RAZE_MATH_NAMESPACE_BEGIN namespace raze { namespace math {
+#endif // __RAZE_MATH_NAMESPACE_BEGIN
+
+#ifndef __RAZE_MATH_NAMESPACE_END
+#define __RAZE_MATH_NAMESPACE_END }}
+#endif // __RAZE_MATH_NAMESPACE_END
+
+
+
+#ifndef __RAZE_DATAPAR_NAMESPACE_BEGIN 
+#define __RAZE_DATAPAR_NAMESPACE_BEGIN namespace raze { namespace datapar {
+#endif // __RAZE_DATAPAR_NAMESPACE_BEGIN
+
+#ifndef __RAZE_DATAPAR_NAMESPACE_END
+#define __RAZE_DATAPAR_NAMESPACE_END }}
+#endif // __RAZE_DATAPAR_NAMESPACE_END
+
+
+
+#ifndef __RAZE_MEMORY_NAMESPACE_BEGIN 
+#define __RAZE_MEMORY_NAMESPACE_BEGIN namespace raze { namespace memory {
+#endif // __RAZE_MEMORY_NAMESPACE_BEGIN
+
+#ifndef __RAZE_MEMORY_NAMESPACE_END
+#define __RAZE_MEMORY_NAMESPACE_END }}
+#endif // __RAZE_MEMORY_NAMESPACE_END
+
+
+
+#ifndef __RAZE_CONCURRENCY_NAMESPACE_BEGIN 
+#define __RAZE_CONCURRENCY_NAMESPACE_BEGIN namespace raze { namespace concurrency {
+#endif // __RAZE_CONCURRENCY_NAMESPACE_BEGIN
+
+#ifndef __RAZE_CONCURRENCY_NAMESPACE_END
+#define __RAZE_CONCURRENCY_NAMESPACE_END }}
+#endif // __RAZE_CONCURRENCY_NAMESPACE_END
+
+
+
+#ifndef __RAZE_SYSTEM_NAMESPACE_BEGIN 
+#define __RAZE_SYSTEM_NAMESPACE_BEGIN namespace raze { namespace system {
+#endif // __RAZE_SYSTEM_NAMESPACE_BEGIN
+
+#ifndef __RAZE_SYSTEM_NAMESPACE_END
+#define __RAZE_SYSTEM_NAMESPACE_END }}
+#endif // __RAZE_SYSTEM_NAMESPACE_END
