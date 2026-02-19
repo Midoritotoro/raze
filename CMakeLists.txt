@@ -414,12 +414,12 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_compile_options(-g -Ob3) 
-    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(-O2 -Ot -Ob3 -GS- -Oy)
+        add_compile_options(-g) 
+    else()
+        add_compile_options(-O2 -Ot -Ob3 -GS- -Oy /Gy /GL /Gr /fp:fast)
     endif()
-
-    target_link_options(raze PRIVATE "/LTCG;/opt:ref,icf;")
+    
+    target_link_options(raze PRIVATE "/opt:ref,icf;")
 
     target_compile_options(
         raze 

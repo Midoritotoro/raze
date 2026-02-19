@@ -1,14 +1,14 @@
 #pragma once 
 
 #include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SimdDispatcher.h>
+#include <src/raze/datapar/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 
 template <class _Type_> 
-raze_always_inline const _Type_* __search_scalar(
+const _Type_* raze_stdcall __search_scalar(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,
@@ -44,7 +44,7 @@ raze_always_inline const _Type_* __search_scalar(
 			return (__main_current + i);
 	}
 
-	return nullptr;
+	return static_cast<const _Type_*>(__main_first) + __main_length;
 }
 
 
@@ -52,7 +52,9 @@ template <class _Simd_>
 struct __search_vectorized_internal {
 	using _ValueType = typename _Simd_::value_type;
 
-	raze_nodiscard raze_always_inline raze_static_operator const _ValueType* operator()(
+	raze_nodiscard raze_static_operator const _ValueType* raze_stdcall operator()(
+		sizetype	__aligned_size,
+		sizetype	__tail_size,
 		const void* __main_first,
 		sizetype	__main_length,
 		const void* __sub_first,
@@ -61,11 +63,8 @@ struct __search_vectorized_internal {
 		const auto __broadcasted_first_sub = _Simd_(static_cast<const _ValueType*>(__sub_first)[0]);
 		const auto __broadcasted_last_sub = _Simd_(static_cast<const _ValueType*>(__sub_first)[__sub_length - 1]);
 		
-		const auto __main_bytes = sizeof(_ValueType) * __main_length;
 		const auto __sub_bytes = sizeof(_ValueType) * __sub_length;
-
-		const auto __main_aligned_size = __main_bytes & (~(sizeof(_Simd_) - 1));
-		const auto __stop_at = __bytes_pointer_offset(__main_first, __main_aligned_size);
+		const auto __stop_at = __bytes_pointer_offset(__main_first, __aligned_size);
 
 		while (__main_first != __stop_at) {
 			const auto __loaded_first = datapar::load<_Simd_>(__main_first);
@@ -88,8 +87,6 @@ struct __search_vectorized_internal {
 
 			__advance_bytes(__main_first, sizeof(_Simd_));
 		}
-
-		const auto __tail_size = __main_bytes & (sizeof(_Simd_) - sizeof(_ValueType));
 
 		if (__tail_size == 0 || __sub_bytes > __tail_size)
 			return static_cast<const _ValueType*>(__main_first) + __main_length;
@@ -116,6 +113,8 @@ struct __search_vectorized_internal {
 
 				__combined.clear_left_most_set_bit();
 			}
+			
+			return static_cast<const _ValueType*>(__bytes_pointer_offset(__main_first, __tail_size));
 		}
 		else {
 			return __search_scalar<_ValueType>(__main_first, __tail_size / sizeof(_ValueType), __sub_first, __sub_length);
@@ -124,14 +123,14 @@ struct __search_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline const _Type_* __search_vectorized(
+raze_nodiscard const _Type_* raze_stdcall __search_vectorized(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,
 	sizetype	__sub_length) noexcept
 {
-	return datapar::__simd_dispatcher<__search_vectorized_internal>::__apply<_Type_>(
-		&__search_scalar<_Type_>, __main_first, __main_length, __sub_first, __sub_length);
+	return datapar::__simd_sized_dispatcher<__search_vectorized_internal>::__apply<_Type_>(
+		__main_length * sizeof(_Type_), &__search_scalar<_Type_>, __main_first, __main_length, __sub_first, __sub_length);
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

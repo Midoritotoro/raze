@@ -9,6 +9,7 @@
 #include <src/raze/type_traits/OperatorWrappers.h>
 
 #include <src/raze/algorithm/vectorized/find/FindVectorized.h>
+#include <src/raze/algorithm/vectorized/find/EqualVectorized.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -18,9 +19,7 @@ template <
     class _SecondUnwrappedForwardIterator_,
     class _DifferenceType_,
     class _Predicate_>
-__simd_nodiscard_inline_constexpr
-_FirstUnwrappedForwardIterator_
-__search_unchecked_random(
+__simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __search_unchecked_random(
     _FirstUnwrappedForwardIterator_     __first1_unwrapped,
     _FirstUnwrappedForwardIterator_     __last1_unwrapped,
     _SecondUnwrappedForwardIterator_    __first2_unwrapped,
@@ -123,9 +122,6 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __search_unche
 		auto __first_range_length			= __iterators_difference(__first1_unwrapped, __last1_unwrapped);
 		const auto __second_range_length	= __iterators_difference(__first2_unwrapped, __last2_unwrapped);
 
-		if (__first_range_length < __second_range_length || __first_range_length <= 0 || __second_range_length <= 0)
-			return __last1_unwrapped;
-	
 		if constexpr (type_traits::__is_vectorized_search_algorithm_safe_v<
 			_FirstUnwrappedForwardIterator_, _SecondUnwrappedForwardIterator_, _Predicate_>)
 		{
@@ -135,15 +131,22 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __search_unche
 			{
 				const auto __first1_address = std::to_address(__first1_unwrapped);
 
-				if (__second_range_length == 1)
+				if (__first_range_length < __second_range_length)
+					return __last1_unwrapped;
+
+				else if (raze_unlikely(__second_range_length == 0))
+					return __first1_unwrapped;
+
+				else if (__second_range_length == 1)
 					return __find_vectorized(__first1_address, __first1_address + __first_range_length, *__first2_unwrapped);
+
+				else if (__second_range_length == __first_range_length)
+					return (__equal_vectorized<_ValueType>(__first1_address, std::to_address(__first2_unwrapped), __first_range_length) == false) ? __last1_unwrapped : __first1_unwrapped;
 
 				const auto __position = __search_vectorized<_ValueType>(__first1_address, 
 					__first_range_length, std::to_address(__first2_unwrapped), __second_range_length);
 
-				return (__position == nullptr)
-					? __last1_unwrapped
-					: __first1_unwrapped + (reinterpret_cast<const _ValueType*>(__position) - __first1_address);
+				return __first1_unwrapped + (reinterpret_cast<const _ValueType*>(__position) - __first1_address);
 			}
 		}
 		

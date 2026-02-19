@@ -64,53 +64,53 @@ using simd512_avx512bwdq	= simd<arch::ISA::AVX512BWDQ, _Type_, 512>;
 
 
 template <typename _Type_>
-//#if defined(RAZE_HAS_AVX512VBMI2_SUPPORT) 
-//  using simd_native = simd<arch::CpuFeature::AVX512VBMI2, _Type_, 512>;
-//
-//#elif defined(RAZE_HAS_AVX512VBMI_SUPPORT)
-//  using simd_native = simd<arch::CpuFeature::AVX512VBMI, _Type_, 512>;
+#if defined(RAZE_HAS_AVX512VBMI2_SUPPORT) 
+  using simd_native = simd<arch::ISA::AVX512VBMI2, _Type_, 512>;
 
-#if defined(RAZE_HAS_AVX512DQ_SUPPORT) && defined(RAZE_HAS_AVX512BW_SUPPORT)
+#elif defined(RAZE_HAS_AVX512VBMI_SUPPORT)
+  using simd_native = simd<arch::ISA::AVX512VBMI, _Type_, 512>;
+
+#elif defined(RAZE_HAS_AVX512DQ_SUPPORT) && defined(RAZE_HAS_AVX512BW_SUPPORT)
   using simd_native = simd<arch::ISA::AVX512BWDQ, _Type_, 512>;
 
 #elif defined(RAZE_HAS_AVX512VL_SUPPORT) && defined(RAZE_HAS_AVX512BW_SUPPORT) && defined(RAZE_HAS_AVX512DQ_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX512VLBWDQ, _Type_, 256>;
+  using simd_native = simd<arch::ISA::AVX512VLBWDQ, _Type_, 256>;
 
 #elif defined(RAZE_HAS_AVX512VL_SUPPORT) && defined(RAZE_HAS_AVX512BW_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX512VLBW, _Type_, 256>;
+  using simd_native = simd<arch::ISA::AVX512VLBW, _Type_, 256>;
 
 #elif defined(RAZE_HAS_AVX512VL_SUPPORT) && defined(RAZE_HAS_AVX512DQ_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX512VLDQ, _Type_, 256>;
+  using simd_native = simd<arch::ISA::AVX512VLDQ, _Type_, 256>;
 
 #elif defined(RAZE_HAS_AVX512VL_SUPPORT) && defined(RAZE_HAS_AVX512F_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX512VLF, _Type_, 256>;
+  using simd_native = simd<arch::ISA::AVX512VLF, _Type_, 256>;
 
 #elif defined(RAZE_HAS_AVX512BW_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX512BW, _Type_, 512>;
+  using simd_native = simd<arch::ISA::AVX512BW, _Type_, 512>;
 
 #elif defined(RAZE_HAS_AVX512DQ_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX512DQ, _Type_, 512>;
+  using simd_native = simd<arch::ISA::AVX512DQ, _Type_, 512>;
 
 #elif defined(RAZE_HAS_AVX512F_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX512F, _Type_, 512>;
+  using simd_native = simd<arch::ISA::AVX512F, _Type_, 512>;
 
 #elif defined(RAZE_HAS_AVX2_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::AVX2, _Type_, 256>;
+  using simd_native = simd<arch::ISA::AVX2, _Type_, 256>;
 
 #elif defined(RAZE_HAS_SSE42_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::SSE42, _Type_, 128>;
+  using simd_native = simd<arch::ISA::SSE42, _Type_, 128>;
 
 #elif defined(RAZE_HAS_SSE41_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::SSE41, _Type_, 128>;
+  using simd_native = simd<arch::ISA::SSE41, _Type_, 128>;
 
 #elif defined(RAZE_HAS_SSSE3_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::SSSE3, _Type_, 128>;
+  using simd_native = simd<arch::ISA::SSSE3, _Type_, 128>;
   
 #elif defined(RAZE_HAS_SSE3_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::SSE3, _Type_, 128>;
+  using simd_native = simd<arch::ISA::SSE3, _Type_, 128>;
 
 #elif defined(RAZE_HAS_SSE2_SUPPORT)
-  using simd_native = simd<arch::CpuFeature::SSE2, _Type_, 128>;
+  using simd_native = simd<arch::ISA::SSE2, _Type_, 128>;
 
 #else 
   #error "Unsupported architecture" 
@@ -118,67 +118,69 @@ template <typename _Type_>
 #endif
 
 
-//#if defined(RAZE_HAS_AVX512VBMI2_SUPPORT) 
-//  using simd_native = simd<arch::CpuFeature::AVX512VBMI2, _Type_, 512>;
-//
-//#elif defined(RAZE_HAS_AVX512VBMI_SUPPORT)
-//  using simd_native = simd<arch::CpuFeature::AVX512VBMI, _Type_, 512>;
-
-#if defined(RAZE_FORCE_AVX512DQ) && defined(RAZE_FORCE_AVX512BW)
+#if defined(RAZE_HAS_AVX512VBMI2_SUPPORT)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX512BWDQ, _Type_, 512>;
+  using simd_native = simd<arch::ISA::AVX512VBMI2, _Type_, 512>;
+
+#elif defined(RAZE_HAS_AVX512VBMI_SUPPORT)
+  template <typename _Type_>
+  using simd_native = simd<arch::ISA::AVX512VBMI, _Type_, 512>;
+
+#elif defined(RAZE_FORCE_AVX512DQ) && defined(RAZE_FORCE_AVX512BW)
+  template <typename _Type_>
+  using simd_forced = simd<arch::ISA::AVX512BWDQ, _Type_, 512>;
 
 #elif defined(RAZE_FORCE_AVX512VL) && defined(RAZE_FORCE_AVX512BW) && defined(RAZE_FORCE_AVX512DQ)
   template <typename _Type_>\
-  using simd_forced = simd<arch::CpuFeature::AVX512VLBWDQ, _Type_, 256>;
+  using simd_forced = simd<arch::ISA::AVX512VLBWDQ, _Type_, 256>;
 
 #elif defined(RAZE_FORCE_AVX512VL) && defined(RAZE_FORCE_AVX512BW)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX512VLBW, _Type_, 256>;
+  using simd_forced = simd<arch::ISA::AVX512VLBW, _Type_, 256>;
 
 #elif defined(RAZE_FORCE_AVX512VL) && defined(RAZE_FORCE_AVX512DQ)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX512VLDQ, _Type_, 256>;
+  using simd_forced = simd<arch::ISA::AVX512VLDQ, _Type_, 256>;
 
 #elif defined(RAZE_FORCE_AVX512VL) && defined(RAZE_FORCE_AVX512F)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX512VLF, _Type_, 256>;
+  using simd_forced = simd<arch::ISA::AVX512VLF, _Type_, 256>;
 
 #elif defined(RAZE_FORCE_AVX512BW)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX512BW, _Type_, 512>;
+  using simd_forced = simd<arch::ISA::AVX512BW, _Type_, 512>;
 
 #elif defined(RAZE_FORCE_AVX512DQ)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX512DQ, _Type_, 512>;
+  using simd_forced = simd<arch::ISA::AVX512DQ, _Type_, 512>;
 
 #elif defined(RAZE_FORCE_AVX512F)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX512F, _Type_, 512>;
+  using simd_forced = simd<arch::ISA::AVX512F, _Type_, 512>;
 
 #elif defined(RAZE_FORCE_AVX2)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::AVX2, _Type_, 256>;
+  using simd_forced = simd<arch::ISA::AVX2, _Type_, 256>;
 
 #elif defined(RAZE_FORCE_SSE42)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::SSE42, _Type_, 128>;
+  using simd_forced = simd<arch::ISA::SSE42, _Type_, 128>;
 
 #elif defined(RAZE_FORCE_SSE41)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::SSE41, _Type_, 128>;
+  using simd_forced = simd<arch::ISA::SSE41, _Type_, 128>;
 
 #elif defined(RAZE_FORCE_SSSE3)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::SSSE3, _Type_, 128>;
+  using simd_forced = simd<arch::ISA::SSSE3, _Type_, 128>;
   
 #elif defined(RAZE_FORCE_SSE3)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::SSE3, _Type_, 128>;
+  using simd_forced = simd<arch::ISA::SSE3, _Type_, 128>;
 
 #elif defined(RAZE_FORCE_SSE2)
   template <typename _Type_>
-  using simd_forced = simd<arch::CpuFeature::SSE2, _Type_, 128>;
+  using simd_forced = simd<arch::ISA::SSE2, _Type_, 128>;
 
 #endif
 
