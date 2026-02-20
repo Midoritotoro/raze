@@ -162,15 +162,15 @@ public:
 };
 
 
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtBegin);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtBegin);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubAtBegin);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubAtBegin);
-
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubInMiddle);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubInMiddle);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubInMiddle);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubInMiddle);
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtBegin);
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtBegin);
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubAtBegin);
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubAtBegin);
+//
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubInMiddle);
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubInMiddle);
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubInMiddle);
+//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubInMiddle);
 
 RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtEnd);
 RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtEnd);

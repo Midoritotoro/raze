@@ -185,9 +185,16 @@ template <
 	arch::ISA	_ISA_,
 	typename	_Type_,
 	uint32		_SimdWidth_>
-constexpr void simd_mask<_ISA_, _Type_, _SimdWidth_>::clear_left_most_set_bit() noexcept {
+constexpr void simd_mask<_ISA_, _Type_, _SimdWidth_>::clear_right_most_set_bit() noexcept {
 	_mask &= (_mask - 1);
 }
 
+template <
+	arch::ISA	_ISA_,
+	typename	_Type_,
+	uint32		_SimdWidth_>
+constexpr void simd_mask<_ISA_, _Type_, _SimdWidth_>::clear_left_most_set_bit() noexcept {
+	_mask &= (_mask - (mask_type(1) << (bit_width() - 1 - __base::count_leading_zero_bits())));
+}
 
 __RAZE_DATAPAR_NAMESPACE_END

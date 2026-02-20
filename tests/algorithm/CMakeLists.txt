@@ -15,7 +15,7 @@ enable_testing()
 macro(raze_algorithm_add_test filename)
     add_executable(${filename} ${filename}.cpp)
 
-    add_compile_options(/bigobj /arch:AVX512 /GL-)
+    add_compile_options(/bigobj /arch:AVX512)
     
     target_link_libraries(
       ${filename} PRIVATE

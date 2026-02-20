@@ -15,6 +15,8 @@ class simd_mask:
 {
 	static_assert(type_traits::__is_generation_supported_v<_ISA_>);
 	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
+
+	using __base = __simd_element_mask_operations<simd_mask<_ISA_, _Type_, _SimdWidth_>>;
 public:
 	static constexpr auto __isa = _ISA_;
 	static constexpr auto __width = _SimdWidth_;
@@ -57,6 +59,7 @@ public:
 	static constexpr raze_always_inline arch::ISA isa() noexcept;
 	constexpr raze_always_inline mask_type unwrap() const noexcept;
 
+	constexpr raze_always_inline void clear_right_most_set_bit() noexcept;
 	constexpr raze_always_inline void clear_left_most_set_bit() noexcept;
 private:
 	mask_type _mask = 0;

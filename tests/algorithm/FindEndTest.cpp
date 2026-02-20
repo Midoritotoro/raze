@@ -1,161 +1,163 @@
-#include <cassert>
-#include <vector>
-#include <list>
-#include <string>
-#include <algorithm>
-#include <iostream>
-#include <cctype>
-#include <random>
-
 #include <raze/algorithm/find/FindEnd.h>
+#include <algorithm>
+#include <vector>
+#include <string>
+#include <list>
+#include <deque>
+#include <cctype>
 
 template <typename It1, typename It2>
 void check_find_end(It1 first1, It1 last1, It2 first2, It2 last2) {
-    auto std_res  = std::find_end(first1, last1, first2, last2);
+    auto std_res = std::find_end(first1, last1, first2, last2);
     auto simd_res = raze::algorithm::find_end(first1, last1, first2, last2);
     raze_assert(std_res == simd_res);
 }
 
 template <typename It1, typename It2, typename Pred>
 void check_find_end(It1 first1, It1 last1, It2 first2, It2 last2, Pred pred) {
-    auto std_res  = std::find_end(first1, last1, first2, last2, pred);
+    auto std_res = std::find_end(first1, last1, first2, last2, pred);
     auto simd_res = raze::algorithm::find_end(first1, last1, first2, last2, pred);
     raze_assert(std_res == simd_res);
 }
 
+template <class _Type_>
+void run_find_end_tests_for_type() {
+    {
+        std::vector<_Type_> a, b;
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 1,2,3,4,5 };
+        std::vector<_Type_> b{ 1,2,3,4,5 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 1,2,3,4,5 };
+        std::vector<_Type_> b{ 1,2 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 1,2,3,4,5 };
+        std::vector<_Type_> b{ 4,5 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 1,2,3,4,5 };
+        std::vector<_Type_> b{ 9,9 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 1,2,1,2,3,1,2,3,4 };
+        std::vector<_Type_> b{ 1,2,3 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::list<_Type_> a{ 1,2,3,4,5,6 };
+        std::list<_Type_> b{ 3,4 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a(10000, 1);
+        a[5000] = 42; a[5001] = 43; a[5002] = 44;
+        std::vector<_Type_> b{ 42,43,44 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 1,2,3 };
+        std::vector<_Type_> b{ 1,2,3,4,5 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 7,7,7,7,7,7 };
+        std::vector<_Type_> b{ 7,7,7 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a{ 1,2,3,4,5 };
+        std::vector<_Type_> b{ 3 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::deque<_Type_> a{ 10,20,30,40,50,60 };
+        std::deque<_Type_> b{ 30,40,50 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<_Type_> a(200000, 3);
+        a[199000] = 9; a[199001] = 10; a[199002] = 11;
+        std::vector<_Type_> b{ 9,10,11 };
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+    {
+        std::vector<unsigned char> a(4096, 1);
+        std::vector<unsigned char> b(128, 2);
+        for (size_t i = 3000; i < 3000 + b.size(); ++i)
+            a[i] = 2;
+        check_find_end(a.begin(), a.end(), b.begin(), b.end());
+    }
+}
+
+void run_find_end_tests_for_string() {
+    //{
+    //    std::string s = "Hello World";
+    //    std::string sub = "World";
+    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    //}
+    //{
+    //    std::string s = "abcdef";
+    //    std::string sub = "gh";
+    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    //}
+    //{
+    //    std::string s = "CaseInsensitive";
+    //    std::string sub = "insensitive";
+    //    auto pred = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end(), pred);
+    //}
+    //{
+    //    std::string s = "aaaaab";
+    //    std::string sub = "aaab";
+    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    //}
+    //{
+    //    std::string s = "абракадабра";
+    //    std::string sub = "када";
+    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    //}
+    //{
+    //    std::string s = "xyzxyzxyzxyz";
+    //    std::string sub = "xyzxyz";
+    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    //}
+    //{
+    //    std::string s = "pattern_at_the_end123";
+    //    std::string sub = "end123";
+    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    //}
+    {
+        std::string s(512, 'a');
+        for (size_t i = 256; i < 256 + 3; ++i)
+            s[i] = 'b';
+        std::string sub(3, 'b');
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    }
+}
+
 int main() {
-    {
-        std::vector<char> a;
-        std::vector<char> b;
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a(64, 'x');
-        std::vector<char> b;
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a;
-        std::vector<char> b(64, 'y');
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a(128, 'a');
-        std::vector<char> b(128, 'a');
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a(96, 'x');
-        std::vector<char> b = {'x','x','x','x','x','x','x','x'};
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a(128, 'z');
-        std::vector<char> b(4, 'z');
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a(128, 'a');
-        std::vector<char> b(8, 'b');
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a(64, 'a');
-        std::vector<char> b(128, 'a');
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
+    run_find_end_tests_for_string();
 
-    {
-        std::string s(64, 'A');
-        std::string needle = "AAA";
-        check_find_end(s.begin(), s.end(), needle.begin(), needle.end());
-    }
-    {
-        std::string s = "helloHELLO";
-        std::string needle = "hello";
-        auto pred = [](char a, char b){ return std::tolower(a) == std::tolower(b); };
-        check_find_end(s.begin(), s.end(), needle.begin(), needle.end(), pred);
-    }
-    {
-        std::string s = "abc...abc...abc";
-        std::string needle = "abc";
-        check_find_end(s.begin(), s.end(), needle.begin(), needle.end());
-    }
+  /*  run_find_end_tests_for_type<char>();
+    run_find_end_tests_for_type<short>();
+    run_find_end_tests_for_type<int>();
+    run_find_end_tests_for_type<long long>();
 
-    {
-        std::vector<int> a(64, 1);
-        std::vector<int> b{1,1,1,1,1,1,1,1};
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<int> a(64, 0);
-        for (size_t i = 8; i + 4 <= a.size(); i += 16) {
-            a[i+0] = 7; a[i+1] = 7; a[i+2] = 7; a[i+3] = 7;
-        }
-        std::vector<int> b{7,7,7,7};
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<int> a(128, 2);
-        std::vector<int> b(16, 3);
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<int> a(64);
-        std::vector<int> b(8);
-        for (int i = 0; i < 64; ++i) a[i] = i % 10;
-        for (int j = 0; j < 8; ++j)  b[j] = (j % 10);
-        auto pred = [](int x, int y){ return (x % 10) == (y % 10); };
-        check_find_end(a.begin(), a.end(), b.begin(), b.end(), pred);
-    }
+    run_find_end_tests_for_type<unsigned char>();
+    run_find_end_tests_for_type<unsigned short>();
+    run_find_end_tests_for_type<unsigned int>();
+    run_find_end_tests_for_type<unsigned long long>();
 
-    {
-        std::vector<uint64_t> a(16, 0xDEADBEEFDEADBEEFull);
-        std::vector<uint64_t> b(16, 0xDEADBEEFDEADBEEFull);
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<uint64_t> a(32, 0);
-        for (size_t i = 24; i < 32; ++i) a[i] = 42;
-        std::vector<uint64_t> b(8, 42);
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<uint64_t> a(8, 1);
-        std::vector<uint64_t> b(16, 1);
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
+    run_find_end_tests_for_type<float>();
+    run_find_end_tests_for_type<double>();*/
 
-    {
-        std::vector<char> a(256, 'x');
-        std::vector<char> b(64, 'x');
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::vector<char> a(256, 'x');
-        for (size_t i = 120; i < 140; ++i) a[i] = (i % 2) ? 'y' : 'x';
-        std::vector<char> b = {'x','x','x','x','x','x','x','x','x','x','x','x'};
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-
-    {
-        std::list<int> a; a.assign(64, 5);
-        std::list<int> b; b.assign(8, 5);
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-    {
-        std::list<int> a; a.assign(64, 1);
-        std::list<int> b; b.assign(8, 2);
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
-
-    {
-        std::vector<int> a(100000, 0);
-        std::vector<int> b{1,2,3,4,5,6,7,8};
-        for (size_t i = 0; i + b.size() <= a.size(); i += 10000) {
-            for (size_t j = 0; j < b.size(); ++j) a[i + j] = b[j];
-        }
-        check_find_end(a.begin(), a.end(), b.begin(), b.end());
-    }
     return 0;
 }

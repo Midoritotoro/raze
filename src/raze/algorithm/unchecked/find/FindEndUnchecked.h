@@ -9,6 +9,9 @@
 
 #include <src/raze/algorithm/vectorized/find/FindEndVectorized.h>
 
+#include <src/raze/algorithm/vectorized/find/EqualVectorized.h>
+#include <src/raze/algorithm/vectorized/find/FindLastVectorized.h>
+
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -66,27 +69,31 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedRandomAccessIterator_ __find_en
 {
 	using _ValueType = type_traits::iterator_value_type<_FirstUnwrappedRandomAccessIterator_>;
 
-	const auto __first_range_size	= __iterators_difference(__first1_unwrapped, __last1_unwrapped);
-	const auto __second_range_size	= __iterators_difference(__first2_unwrapped, __last2_unwrapped);
+	const auto __first_range_length = __iterators_difference(__first1_unwrapped, __last1_unwrapped);
+	const auto __second_range_length = __iterators_difference(__first2_unwrapped, __last2_unwrapped);
 
-	if (__first_range_size < __second_range_size || __second_range_size == 0)
-		return __last1_unwrapped;
-
-	if constexpr (type_traits::is_vectorized_search_algorithm_safe_v<
+	if constexpr (type_traits::__is_vectorized_search_algorithm_safe_v<
 		_FirstUnwrappedRandomAccessIterator_, _SecondUnwrappedRandomAccessIterator_, _Predicate_>)
 	{
 		const auto __first1_address = std::to_address(__first1_unwrapped);
 		const auto __first2_address = std::to_address(__first2_unwrapped);
 
+		if (__first_range_length < __second_range_length)
+			return __last1_unwrapped;
+
+		else if (raze_unlikely(__second_range_length == 0))
+			return __last1_unwrapped;
+
+		else if (__second_range_length == 1)
+			return __find_last_vectorized(__first1_address, __first1_address + __first_range_length, *__first2_unwrapped);
+
+		else if (__second_range_length == __first_range_length)
+			return (__equal_vectorized<_ValueType>(__first1_address, std::to_address(__first2_unwrapped), __first_range_length) == false) ? __last1_unwrapped : __first1_unwrapped;
+
 		const auto __position = __find_end_vectorized<_ValueType>(
-			__first1_address, __first_range_size, __first2_address, __second_range_size);
+			__first1_address, __first_range_length, __first2_address, __second_range_length);
 
-		if constexpr (std::is_pointer_v<_FirstUnwrappedRandomAccessIterator_>)
-			__seek_possibly_wrapped_iterator(__first1_unwrapped, reinterpret_cast<const _ValueType*>(__position));
-		else
-			__seek_possibly_wrapped_iterator(__first1_unwrapped, __first1_unwrapped + (reinterpret_cast<const _ValueType*>(__position) - __first1_address));
-
-		return __first1_unwrapped;
+		return __first1_unwrapped + (reinterpret_cast<const _ValueType*>(__position) - __first1_address);
 	}
 	else { 
 		return __find_end_unchecked_bidirectional(__first1_unwrapped, __last1_unwrapped,
@@ -163,9 +170,11 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __find_end_unc
 	if constexpr (__is_random_access)
 		return __find_end_unchecked_random_access(__first1_unwrapped, __last1_unwrapped,
 			__first2_unwrapped, __last2_unwrapped, type_traits::__pass_function(__predicate));
+
 	else if constexpr (__is_bidirectional)
 		return __find_end_unchecked_bidirectional(__first1_unwrapped, __last1_unwrapped,
 			__first2_unwrapped, __last2_unwrapped, type_traits::__pass_function(__predicate));
+
 	else
 		return __find_end_unchecked_forward(__first1_unwrapped, __last1_unwrapped,
 			__first2_unwrapped, __last2_unwrapped, type_traits::__pass_function(__predicate));
