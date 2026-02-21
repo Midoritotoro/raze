@@ -98,47 +98,47 @@ void run_find_end_tests_for_type() {
 }
 
 void run_find_end_tests_for_string() {
-    //{
-    //    std::string s = "Hello World";
-    //    std::string sub = "World";
-    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
-    //}
-    //{
-    //    std::string s = "abcdef";
-    //    std::string sub = "gh";
-    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
-    //}
-    //{
-    //    std::string s = "CaseInsensitive";
-    //    std::string sub = "insensitive";
-    //    auto pred = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
-    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end(), pred);
-    //}
-    //{
-    //    std::string s = "aaaaab";
-    //    std::string sub = "aaab";
-    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
-    //}
-    //{
-    //    std::string s = "абракадабра";
-    //    std::string sub = "када";
-    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
-    //}
-    //{
-    //    std::string s = "xyzxyzxyzxyz";
-    //    std::string sub = "xyzxyz";
-    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
-    //}
-    //{
-    //    std::string s = "pattern_at_the_end123";
-    //    std::string sub = "end123";
-    //    check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
-    //}
+    {
+        std::string s = "Hello World";
+        std::string sub = "World";
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    }
+    {
+        std::string s = "abcdef";
+        std::string sub = "gh";
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    }
+    {
+        std::string s = "CaseInsensitive";
+        std::string sub = "insensitive";
+        auto pred = [](char a, char b) { return std::tolower(a) == std::tolower(b); };
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end(), pred);
+    }
+    {
+        std::string s = "aaaaab";
+        std::string sub = "aaab";
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    }
+    {
+        std::string s = "абракадабра";
+        std::string sub = "када";
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    }
+    {
+        std::string s = "xyzxyzxyzxyz";
+        std::string sub = "xyzxyz";
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    }
+    {
+        std::string s = "pattern_at_the_end123";
+        std::string sub = "end123";
+        check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
+    }
     {
         std::string s(512, 'a');
-        for (size_t i = 256; i < 256 + 3; ++i)
+        for (size_t i = 256; i < 256 + 80; ++i)
             s[i] = 'b';
-        std::string sub(3, 'b');
+        std::string sub(80, 'b');
         check_find_end(s.begin(), s.end(), sub.begin(), sub.end());
     }
 }
@@ -146,7 +146,7 @@ void run_find_end_tests_for_string() {
 int main() {
     run_find_end_tests_for_string();
 
-  /*  run_find_end_tests_for_type<char>();
+    run_find_end_tests_for_type<char>();
     run_find_end_tests_for_type<short>();
     run_find_end_tests_for_type<int>();
     run_find_end_tests_for_type<long long>();
@@ -157,7 +157,7 @@ int main() {
     run_find_end_tests_for_type<unsigned long long>();
 
     run_find_end_tests_for_type<float>();
-    run_find_end_tests_for_type<double>();*/
+    run_find_end_tests_for_type<double>();
 
     return 0;
 }

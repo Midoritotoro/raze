@@ -2,14 +2,12 @@ cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
 
 project(razeTestsAlgorithm LANGUAGES CXX)
 
-
 set(raze_DIR "C:/Users/danya/source/repos/Midoritotoro/raze/out/build")
 
 if (PROJECT_IS_TOP_LEVEL)
     find_package(raze REQUIRED COMPONENTS raze)
 endif()
 
-# target_compile_definitions(raze PUBLIC RAZE_FORCE_AVX512BW)
 
 enable_testing()
 macro(raze_algorithm_add_test filename)

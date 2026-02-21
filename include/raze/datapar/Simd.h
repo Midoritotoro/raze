@@ -118,20 +118,20 @@ template <typename _Type_>
 #endif
 
 
-#if defined(RAZE_HAS_AVX512VBMI2_SUPPORT)
+#if defined(RAZE_FORCE_AVX512VBMI2)
   template <typename _Type_>
-  using simd_native = simd<arch::ISA::AVX512VBMI2, _Type_, 512>;
+  using simd_forced = simd<arch::ISA::AVX512VBMI2, _Type_, 512>;
 
-#elif defined(RAZE_HAS_AVX512VBMI_SUPPORT)
+#elif defined(RAZE_FORCE_AVX512VBMI)
   template <typename _Type_>
-  using simd_native = simd<arch::ISA::AVX512VBMI, _Type_, 512>;
+  using simd_forced = simd<arch::ISA::AVX512VBMI, _Type_, 512>;
 
 #elif defined(RAZE_FORCE_AVX512DQ) && defined(RAZE_FORCE_AVX512BW)
   template <typename _Type_>
   using simd_forced = simd<arch::ISA::AVX512BWDQ, _Type_, 512>;
 
 #elif defined(RAZE_FORCE_AVX512VL) && defined(RAZE_FORCE_AVX512BW) && defined(RAZE_FORCE_AVX512DQ)
-  template <typename _Type_>\
+  template <typename _Type_>
   using simd_forced = simd<arch::ISA::AVX512VLBWDQ, _Type_, 256>;
 
 #elif defined(RAZE_FORCE_AVX512VL) && defined(RAZE_FORCE_AVX512BW)

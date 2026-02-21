@@ -173,6 +173,7 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/ToVector.h
     src/raze/datapar/bitwise/ToIndexMask.h
     src/raze/datapar/bitwise/MaskConvert.h
+    src/raze/datapar/bitwise/Testz.h
     src/raze/datapar/bitwise/IndexMaskDivisor.h
 
     src/raze/datapar/arithmetic/Sub.h
@@ -441,6 +442,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
     )
 endif()
 
+
 set(RAZE_FORCE_LIST
     RAZE_FORCE_SSE2
     RAZE_FORCE_SSE3
@@ -507,28 +509,29 @@ if(RAZE_USER_FORCE_ENABLED)
         endif()
 
 
-        if(RAZE_FORCE_AVX512F OR RAZE_FORCE_AVX512BW OR RAZE_FORCE_AVX512CD
-           OR RAZE_FORCE_AVX512DQ OR RAZE_FORCE_AVX512VL
-           OR RAZE_FORCE_AVX512VBMI OR RAZE_FORCE_AVX512VBMI2)
+       if(RAZE_FORCE_AVX512F OR RAZE_FORCE_AVX512BW OR RAZE_FORCE_AVX512CD
+            OR RAZE_FORCE_AVX512DQ OR RAZE_FORCE_AVX512VL
+            OR RAZE_FORCE_AVX512VBMI OR RAZE_FORCE_AVX512VBMI2)
 
-            raze_test_msvc_arch("AVX512" AVX512_OK)
-            if(NOT AVX512_OK)
-                message(FATAL_ERROR "MSVC does not support /arch:AVX512")
-            endif()
-
-            add_compile_options(/arch:AVX512)
-
-            add_compile_definitions(
-                RAZE_FORCE_AVX512F=1
-                RAZE_FORCE_AVX512BW=1
-                RAZE_FORCE_AVX512CD=1
-                RAZE_FORCE_AVX512DQ=1
-                RAZE_FORCE_AVX512VL=1
-                RAZE_FORCE_AVX512VBMI=1
-                RAZE_FORCE_AVX512VBMI2=1
-            )
+        raze_test_msvc_arch("AVX512" AVX512_OK)
+        if(NOT AVX512_OK)
+            message(FATAL_ERROR "MSVC does not support /arch:AVX512")
         endif()
 
+        add_compile_options(/arch:AVX512)
+
+        foreach(flag RAZE_FORCE_AVX512F
+                     RAZE_FORCE_AVX512BW
+                     RAZE_FORCE_AVX512CD
+                     RAZE_FORCE_AVX512DQ
+                     RAZE_FORCE_AVX512VL
+                     RAZE_FORCE_AVX512VBMI
+                     RAZE_FORCE_AVX512VBMI2)
+                if(${flag})
+                    add_compile_definitions(${flag}=1)
+                endif()
+            endforeach()
+        endif()
     else()
         include(CheckCXXCompilerFlag)
 

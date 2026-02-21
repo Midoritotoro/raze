@@ -60,8 +60,8 @@ struct __search_vectorized_internal {
         const void* __sub_first,
         sizetype    __sub_length) raze_const_operator noexcept
     {
-        const auto* __main_begin = static_cast<const _ValueType*>(__main_first);
-        const auto* __sub_begin = static_cast<const _ValueType*>(__sub_first);
+        const auto __main_begin = static_cast<const _ValueType*>(__main_first);
+        const auto __sub_begin = static_cast<const _ValueType*>(__sub_first);
 
         const auto __broadcasted_first_sub = _Simd_(__sub_begin[0]);
         const auto __broadcasted_last_sub = _Simd_(__sub_begin[__sub_length - 1]);
@@ -74,14 +74,23 @@ struct __search_vectorized_internal {
         auto __main_pointer = __main_begin;
 
         while (__processed_bytes < __aligned_size && (__main_bytes - __processed_bytes) >= (__last_offset + sizeof(_Simd_))) {
-            const auto __first_pointer = __main_pointer;
-            const auto __last_pointer = __bytes_pointer_offset(__first_pointer, __last_offset);
-
-            const auto __loaded_first = datapar::load<_Simd_>(__first_pointer);
-            const auto __loaded_last = datapar::load<_Simd_>(__last_pointer);
-
+            const auto __loaded_first = datapar::load<_Simd_>(__main_pointer);
             const auto __equal_first = (__broadcasted_first_sub == __loaded_first) | datapar::as_mask;
+
+            if (datapar::testz(__equal_first)) {
+                __processed_bytes += sizeof(_Simd_);
+                __advance_bytes(__main_pointer, sizeof(_Simd_));
+                continue;
+            }
+
+            const auto __loaded_last = datapar::load<_Simd_>(__bytes_pointer_offset(__main_pointer, __last_offset));
             const auto __equal_last = (__broadcasted_last_sub == __loaded_last) | datapar::as_mask;
+
+            if (datapar::testz(__equal_last)) {
+                __processed_bytes += sizeof(_Simd_);
+                __advance_bytes(__main_pointer, sizeof(_Simd_));
+                continue;
+            }
 
             auto __combined = __equal_first & __equal_last;
 
@@ -89,7 +98,7 @@ struct __search_vectorized_internal {
                 const auto __trailing_zeros = __combined.count_trailing_zero_bits();
 
                 const auto __match_bytes = __trailing_zeros * sizeof(_ValueType) + sizeof(_ValueType);
-                const auto* __main_match = __bytes_pointer_offset(__first_pointer, __match_bytes);
+                const auto __main_match = __bytes_pointer_offset(__main_pointer, __match_bytes);
 
                 if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
                     return __main_match - 1;
@@ -107,7 +116,7 @@ struct __search_vectorized_internal {
         if (__remaining_bytes < __sub_bytes)
             return __bytes_pointer_offset(__remaining_first, __remaining_bytes);
 
-        if constexpr (!_Simd_::template is_native_mask_load_supported_v<>) {
+        if constexpr (_Simd_::template is_native_mask_load_supported_v<> == false) {
             return __search_scalar<_ValueType>(__remaining_first, 
                 __remaining_bytes / sizeof(_ValueType), __sub_first, __sub_length);
         }
@@ -130,9 +139,7 @@ struct __search_vectorized_internal {
 
             while (__combined.any_of()) {
                 const auto __trailing_zeros = __combined.count_trailing_zero_bits();
-
-                const auto* __main_match = __bytes_pointer_offset(__remaining_first,
-                    __trailing_zeros * sizeof(_ValueType) + sizeof(_ValueType));
+                const auto __main_match = __bytes_pointer_offset(__remaining_first, __trailing_zeros * sizeof(_ValueType) + sizeof(_ValueType));
 
                 if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
                     return __main_match - 1;
@@ -147,7 +154,7 @@ struct __search_vectorized_internal {
 
 
 template <class _Type_>
-raze_always_inline raze_nodiscard const _Type_* __search_vectorized(
+__raze_simd_algorithm_inline raze_nodiscard const _Type_* __search_vectorized(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,

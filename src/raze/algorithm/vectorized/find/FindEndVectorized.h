@@ -81,7 +81,7 @@ struct __find_end_vectorized_internal {
 				const auto __leading_zeros = __combined.count_leading_zero_bits();
 
 				const auto __match_bytes = (__leading_zeros * sizeof(_ValueType) - sizeof(_ValueType));
-				const auto __main_match = __bytes_pointer_offset(AAAa, __match_bytes);
+				const auto __main_match = __bytes_pointer_offset(__sequence_end, __match_bytes);
 
 				//const auto __l1 = datapar::load<_Simd_>(__main_match);
 				//const auto __l2 = datapar::load<_Simd_>(__sub_first);

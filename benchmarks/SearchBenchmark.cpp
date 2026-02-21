@@ -13,57 +13,53 @@ template <
 class StdSearchBenchmark {
 public:
     static void SubAtBegin(benchmark::State& state) noexcept {
-        _Char_* mainArr = new _Char_[sizeForBenchmarkMain];
-        _Char_* subArr = new _Char_[sizeForBenchmarkSub];
+        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
+        std::vector<_Char_> subArr(sizeForBenchmarkSub);
 
-        std::memset(mainArr, 1, sizeof(_Char_) * sizeForBenchmarkMain);
-        std::memset(subArr, 2, sizeof(_Char_) * sizeForBenchmarkSub);
+        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
+        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
 
         const size_t copyCount = std::min<size_t>(sizeForBenchmarkMain, sizeForBenchmarkSub);
         for (size_t i = 0; i < copyCount; ++i)
             mainArr[i] = subArr[i];
 
         while (state.KeepRunning()) {
-            auto* result = std::search(mainArr, mainArr + sizeForBenchmarkMain,
-                subArr, subArr + sizeForBenchmarkSub);
+            auto* result = std::search(
+                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
+                subArr.data(), subArr.data() + sizeForBenchmarkSub);
             benchmark::DoNotOptimize(result);
             benchmark::ClobberMemory();
         }
-
-        delete[] mainArr;
-        delete[] subArr;
     }
 
     static void SubInMiddle(benchmark::State& state) noexcept {
-        _Char_* mainArr = new _Char_[sizeForBenchmarkMain];
-        _Char_* subArr = new _Char_[sizeForBenchmarkSub];
+        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
+        std::vector<_Char_> subArr(sizeForBenchmarkSub);
 
-        std::memset(mainArr, 1, sizeof(_Char_) * sizeForBenchmarkMain);
-        std::memset(subArr, 2, sizeof(_Char_) * sizeForBenchmarkSub);
+        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
+        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
 
         if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
-            const size_t pos = sizeForBenchmarkMain / 2;
+            const size_t pos = (sizeForBenchmarkMain - sizeForBenchmarkSub) / 2;
             for (size_t i = 0; i < sizeForBenchmarkSub; ++i)
                 mainArr[pos + i] = subArr[i];
         }
 
         while (state.KeepRunning()) {
-            auto* result = std::search(mainArr, mainArr + sizeForBenchmarkMain,
-                subArr, subArr + sizeForBenchmarkSub);
+            auto* result = std::search(
+                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
+                subArr.data(), subArr.data() + sizeForBenchmarkSub);
             benchmark::DoNotOptimize(result);
             benchmark::ClobberMemory();
         }
-
-        delete[] mainArr;
-        delete[] subArr;
     }
 
     static void SubAtEnd(benchmark::State& state) noexcept {
-        _Char_* mainArr = new _Char_[sizeForBenchmarkMain];
-        _Char_* subArr = new _Char_[sizeForBenchmarkSub];
+        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
+        std::vector<_Char_> subArr(sizeForBenchmarkSub);
 
-        std::memset(mainArr, 1, sizeof(_Char_) * sizeForBenchmarkMain);
-        std::memset(subArr, 2, sizeof(_Char_) * sizeForBenchmarkSub);
+        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
+        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
 
         if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
             const size_t pos = sizeForBenchmarkMain - sizeForBenchmarkSub;
@@ -72,14 +68,12 @@ public:
         }
 
         while (state.KeepRunning()) {
-            auto* result = std::search(mainArr, mainArr + sizeForBenchmarkMain,
-                subArr, subArr + sizeForBenchmarkSub);
+            auto* result = std::search(
+                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
+                subArr.data(), subArr.data() + sizeForBenchmarkSub);
             benchmark::DoNotOptimize(result);
             benchmark::ClobberMemory();
         }
-
-        delete[] mainArr;
-        delete[] subArr;
     }
 };
 
@@ -91,57 +85,53 @@ template <
 class RazeSearchBenchmark {
 public:
     static void SubAtBegin(benchmark::State& state) noexcept {
-        _Char_* mainArr = new _Char_[sizeForBenchmarkMain];
-        _Char_* subArr = new _Char_[sizeForBenchmarkSub];
+        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
+        std::vector<_Char_> subArr(sizeForBenchmarkSub);
 
-        std::memset(mainArr, 1, sizeof(_Char_) * sizeForBenchmarkMain);
-        std::memset(subArr, 2, sizeof(_Char_) * sizeForBenchmarkSub);
+        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
+        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
 
         const size_t copyCount = std::min<size_t>(sizeForBenchmarkMain, sizeForBenchmarkSub);
         for (size_t i = 0; i < copyCount; ++i)
             mainArr[i] = subArr[i];
 
         while (state.KeepRunning()) {
-            auto* result = raze::algorithm::search(mainArr, mainArr + sizeForBenchmarkMain,
-                subArr, subArr + sizeForBenchmarkSub);
+            auto* result = raze::algorithm::search(
+                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
+                subArr.data(), subArr.data() + sizeForBenchmarkSub);
             benchmark::DoNotOptimize(result);
             benchmark::ClobberMemory();
         }
-
-        delete[] mainArr;
-        delete[] subArr;
     }
 
     static void SubInMiddle(benchmark::State& state) noexcept {
-        _Char_* mainArr = new _Char_[sizeForBenchmarkMain];
-        _Char_* subArr = new _Char_[sizeForBenchmarkSub];
+        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
+        std::vector<_Char_> subArr(sizeForBenchmarkSub);
 
-        std::memset(mainArr, 1, sizeof(_Char_) * sizeForBenchmarkMain);
-        std::memset(subArr, 2, sizeof(_Char_) * sizeForBenchmarkSub);
+        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
+        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
 
         if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
-            const size_t pos = sizeForBenchmarkMain / 2;
+            const size_t pos = (sizeForBenchmarkMain - sizeForBenchmarkSub) / 2;
             for (size_t i = 0; i < sizeForBenchmarkSub; ++i)
                 mainArr[pos + i] = subArr[i];
         }
 
         while (state.KeepRunning()) {
-            auto* result = raze::algorithm::search(mainArr, mainArr + sizeForBenchmarkMain,
-                subArr, subArr + sizeForBenchmarkSub);
+            auto* result = raze::algorithm::search(
+                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
+                subArr.data(), subArr.data() + sizeForBenchmarkSub);
             benchmark::DoNotOptimize(result);
             benchmark::ClobberMemory();
         }
-
-        delete[] mainArr;
-        delete[] subArr;
     }
 
     static void SubAtEnd(benchmark::State& state) noexcept {
-        _Char_* mainArr = new _Char_[sizeForBenchmarkMain];
-        _Char_* subArr = new _Char_[sizeForBenchmarkSub];
+        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
+        std::vector<_Char_> subArr(sizeForBenchmarkSub);
 
-        std::memset(mainArr, 1, sizeof(_Char_) * sizeForBenchmarkMain);
-        std::memset(subArr, 2, sizeof(_Char_) * sizeForBenchmarkSub);
+        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
+        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
 
         if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
             const size_t pos = sizeForBenchmarkMain - sizeForBenchmarkSub;
@@ -150,27 +140,25 @@ public:
         }
 
         while (state.KeepRunning()) {
-            auto* result = raze::algorithm::search(mainArr, mainArr + sizeForBenchmarkMain,
-                subArr, subArr + sizeForBenchmarkSub);
+            auto* result = raze::algorithm::search(
+                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
+                subArr.data(), subArr.data() + sizeForBenchmarkSub);
             benchmark::DoNotOptimize(result);
             benchmark::ClobberMemory();
         }
-
-        delete[] mainArr;
-        delete[] subArr;
     }
 };
 
 
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtBegin);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtBegin);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubAtBegin);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubAtBegin);
-//
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubInMiddle);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubInMiddle);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubInMiddle);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubInMiddle);
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtBegin);
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtBegin);
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubAtBegin);
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubAtBegin);
+
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubInMiddle);
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubInMiddle);
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubInMiddle);
+RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubInMiddle);
 
 RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtEnd);
 RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtEnd);

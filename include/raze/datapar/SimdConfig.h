@@ -261,3 +261,11 @@
 #    define RAZE_ISA_FORCE_ENABLED 0
 #  endif // defined(RAZE_FORCE_AVX512F) || defined(RAZE_FORCE_AVX512BW) || ... || defined(RAZE_FORCE_SSE2).
 #endif // defined(RAZE_ISA_FORCE_ENABLED)
+
+#if !defined(__raze_simd_algorithm_inline)
+#  if defined(RAZE_ISA_FORCE_ENABLED)
+#    define __raze_simd_algorithm_inline raze_always_inline
+#  else 
+#    define __raze_simd_algorithm_inline raze_never_inline
+#  endif // defined(RAZE_ISA_FORCE_ENABLED)
+#endif // !defined(__raze_simd_algorithm_inline)

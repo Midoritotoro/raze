@@ -319,12 +319,13 @@ __simd_nodiscard_inline auto reduce_equal(
 	const _DataparType_& __first,
 	const _DataparType_& __second) noexcept
 {
-	using _ValueType	= typename _DataparType_::value_type;
-	using _ReduceType	= typename IntegerForSizeof<_ValueType>::Signed;
-	using _IntDatapar	= __rebind_vector_element_type<_ReduceType, _DataparType_>;
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	using _ValueType = typename _RawDataparType::value_type;
+	using _ReduceType = typename IntegerForSizeof<_ValueType>::Signed;
+	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
 
 	constexpr auto __is_native_compare_return_number = std::is_integral_v<
-		datapar::__simd_native_compare_return_type<_DataparType_, _ValueType>>;
+		datapar::__simd_native_compare_return_type<_RawDataparType, _ValueType>>;
 
 	if constexpr (__is_native_compare_return_number)
 		return reduce((__first == __second) | as_index_mask, type_traits::plus<>{});
@@ -341,17 +342,33 @@ __simd_nodiscard_inline auto reduce_equal(
 	const _DataparType_&	__second,
 	const _MaskType_&		__tail_mask) noexcept
 {
-	using _ValueType	= typename _DataparType_::value_type;
-	using _ReduceType	= typename IntegerForSizeof<_ValueType>::Signed;
-	using _IntDatapar	= __rebind_vector_element_type<_ReduceType, _DataparType_>;
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	using _ValueType = typename _RawDataparType::value_type;
+	using _ReduceType = typename IntegerForSizeof<_ValueType>::Signed;
+	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
 
 	constexpr auto __is_native_compare_return_number = std::is_integral_v<
-		datapar::__simd_native_compare_return_type<_DataparType_, _ValueType>>;
+		datapar::__simd_native_compare_return_type<_RawDataparType, _ValueType>>;
 
 	if constexpr (__is_native_compare_return_number)
 		return reduce(((__first == __second) & __tail_mask) | as_index_mask, type_traits::plus<>{});
 	else
 		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(((__first == __second) & __tail_mask) | as_simd), type_traits::plus<>{});
+}
+
+template <class _DataparType_>
+__simd_nodiscard_inline bool testz(const _DataparType_& __datapar) noexcept 
+	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Simd_testz<_RawDataparType::__isa, _RawDataparType::__width>()(__simd_unwrap(__datapar));
+}
+
+template <class _SimdMask_>
+__simd_nodiscard_inline bool testz(const _SimdMask_& __mask) noexcept
+	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>> || __is_simd_index_mask_v<std::remove_cvref_t<_SimdMask_>>)
+{
+	return __mask.none_of();
 }
 
 __RAZE_DATAPAR_NAMESPACE_END
