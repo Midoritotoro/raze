@@ -11,15 +11,11 @@
 #include <raze/datapar/SimdCast.h>
 
 #include <raze/datapar/BasicSimdElementReference.h>
-
-#include <raze/datapar/SimdCompareResult.h>
-#include <src/raze/datapar/SimdCompareAdapters.h>
-
 #include <src/raze/datapar/Memory.h>
+#include <src/raze/datapar/Bitwise.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
-
 
 using aligned_policy    = __aligned_policy;
 using unaligned_policy  = __unaligned_policy;
@@ -57,6 +53,9 @@ public:
     static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<
         __isa, _Width_, sizeof(_DesiredType_)>;
 
+    using __simd_native_compare_return_type = __native_compare_return_type_helper<simd,
+        type_traits::invoke_result_type<_Simd_equal<_ISA_, _Width_, _Type_>, vector_type, vector_type>>;
+
     simd() noexcept;
     simd(const value_type __value) noexcept;
     ~simd() noexcept;
@@ -88,12 +87,12 @@ public:
     friend simd operator| <>(const simd& __left, const simd& __right) noexcept;
     friend simd operator^ <>(const simd& __left, const simd& __right) noexcept;
 
-    friend simd_compare_result<_ISA_, _Type_, _Width_> operator== <>(const simd& __left, const simd& __right) noexcept;
-    friend simd_compare_result<_ISA_, _Type_, _Width_> operator!= <>(const simd& __left, const simd& __right) noexcept;
-    friend simd_compare_result<_ISA_, _Type_, _Width_> operator< <>(const simd& __left, const simd& __right) noexcept;
-    friend simd_compare_result<_ISA_, _Type_, _Width_> operator<= <>(const simd& __left, const simd& __right) noexcept;
-    friend simd_compare_result<_ISA_, _Type_, _Width_> operator> <>(const simd& __left, const simd& __right) noexcept;
-    friend simd_compare_result<_ISA_, _Type_, _Width_> operator>= <>(const simd& __left, const simd& __right) noexcept;
+    friend __simd_native_compare_return_type operator== <>(const simd& __left, const simd& __right) noexcept;
+    friend __simd_native_compare_return_type operator!= <>(const simd& __left, const simd& __right) noexcept;
+    friend __simd_native_compare_return_type operator< <>(const simd& __left, const simd& __right) noexcept;
+    friend __simd_native_compare_return_type operator<= <>(const simd& __left, const simd& __right) noexcept;
+    friend __simd_native_compare_return_type operator> <>(const simd& __left, const simd& __right) noexcept;
+    friend __simd_native_compare_return_type operator>= <>(const simd& __left, const simd& __right) noexcept;
 
     raze_always_inline simd& operator&=(const simd& __other) noexcept;
     raze_always_inline simd& operator|=(const simd& __other) noexcept;

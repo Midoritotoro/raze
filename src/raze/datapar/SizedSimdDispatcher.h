@@ -103,7 +103,7 @@ public:
             }
         }
         
-        else if (const auto __aligned_size = __size & (~(sizeof(simd256_avx2<_Type_>) - 1)); __aligned_size != 0 && arch::ProcessorFeatures::AVX2()) {
+        if (const auto __aligned_size = __size & (~(sizeof(simd256_avx2<_Type_>) - 1)); __aligned_size != 0 && arch::ProcessorFeatures::AVX2()) {
             return __invoke_simd<_Function_<simd256_avx2<_Type_>>>(__aligned_size, __size & (sizeof(simd256_avx2<_Type_>) -
                 sizeof(typename simd256_avx2<_Type_>::value_type)), std::move(__simd_args));
         }
@@ -173,7 +173,7 @@ public:
             }
         }
         
-        else if (const auto __aligned_size = __size & (~(sizeof(simd256_avx2<_Type_>) - 1)); __aligned_size != 0 && arch::ProcessorFeatures::AVX2()) {
+        if (const auto __aligned_size = __size & (~(sizeof(simd256_avx2<_Type_>) - 1)); __aligned_size != 0 && arch::ProcessorFeatures::AVX2()) {
             return _Function_<simd256_avx2<_Type_>>()(__aligned_size, __size & (sizeof(simd256_avx2<_Type_>) -
                 sizeof(typename simd256_avx2<_Type_>::value_type)), std::forward<_Args_>(__args)...);
         }

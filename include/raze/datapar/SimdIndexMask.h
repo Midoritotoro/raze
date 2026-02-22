@@ -3,6 +3,9 @@
 #include <src/raze/datapar/SimdIndexMaskOperations.h>
 #include <src/raze/datapar/MaskTypeSelector.h>
 
+#include <src/raze/datapar/bitwise/IndexMaskDivisor.h>
+
+
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <
@@ -18,7 +21,7 @@ public:
 
 	using element_type	= _Type_;
 
-	static constexpr uint8 __divisor = __simd_index_mask_divisor<__isa, __width, element_type>;
+	static constexpr uint8 __divisor = __simd_index_mask_divisor_v<__isa, __width, element_type>;
 	static constexpr uint8 __used_bits = (__width / 8) / sizeof(element_type) * __divisor;
 
 	using mask_type = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;

@@ -228,7 +228,7 @@ bool ProcessorFeatures::isSupported() noexcept {
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512DQ))
         return _processorFeaturesInternal._avx512dq;
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512BWDQ))
-        return _processorFeaturesInternal._avx512dq + _processorFeaturesInternal._avx512bw;
+        return _processorFeaturesInternal._avx512dq && _processorFeaturesInternal._avx512bw;
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VLF))
         return _processorFeaturesInternal._avx512vl && _processorFeaturesInternal._avx512f;
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VLBW))
@@ -241,6 +241,18 @@ bool ProcessorFeatures::isSupported() noexcept {
         return _processorFeaturesInternal._avx512vbmi;
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VBMI2))
         return _processorFeaturesInternal._avx512vbmi2;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VBMIDQ))
+        return _processorFeaturesInternal._avx512vbmi && _processorFeaturesInternal._avx512dq;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VBMI2DQ))
+        return _processorFeaturesInternal._avx512vbmi2 && _processorFeaturesInternal._avx512dq;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VBMIVL))
+        return _processorFeaturesInternal._avx512vbmi && _processorFeaturesInternal._avx512vl;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VBMI2VL))
+        return _processorFeaturesInternal._avx512vbmi2 && _processorFeaturesInternal._avx512vl;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VBMIVLDQ))
+        return _processorFeaturesInternal._avx512vbmi && _processorFeaturesInternal._avx512vl && _processorFeaturesInternal._avx512dq;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512VBMI2VLDQ))
+        return _processorFeaturesInternal._avx512vbmi2 && _processorFeaturesInternal._avx512vl && _processorFeaturesInternal._avx512dq;
 }
 
 __RAZE_ARCH_NAMESPACE_END

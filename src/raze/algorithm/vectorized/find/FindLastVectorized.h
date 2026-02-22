@@ -46,7 +46,7 @@ struct __find_last_vectorized_internal {
             const auto __loaded  = datapar::load<_Simd_>(__last);
             const auto __mask    = (__comparand == __loaded) | datapar::as_index_mask;
 
-            if (__mask.any_of())
+            if (datapar::any_of(__mask))
                 return static_cast<const _ValueType*>(__last) + (__mask.bit_width() - __mask.count_leading_zero_bits() - 1);
         } while (__first != __stop_at);
 
@@ -61,7 +61,7 @@ struct __find_last_vectorized_internal {
 
             const auto __mask = ((__comparand == __loaded) & __tail_mask) | datapar::as_index_mask;
 
-            if (__mask.any_of())
+            if (datapar::any_of(__mask))
                 return static_cast<const _ValueType*>(__last) + (__mask.bit_width() - __mask.count_leading_zero_bits() - 1);
 
             return static_cast<const _ValueType*>(__cached_last);
@@ -73,7 +73,7 @@ struct __find_last_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline _Type_* __find_last_vectorized(
+__raze_simd_algorithm_inline _Type_* __find_last_vectorized(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept

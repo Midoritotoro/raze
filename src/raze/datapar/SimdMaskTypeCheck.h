@@ -1,9 +1,19 @@
 #pragma once 
 
-#include <src/raze/type_traits/TypeTraits.h>
+#include <src/raze/type_traits/TypeCheck.h>
+#include <src/raze/type_traits/IsVirtualBaseOf.h>
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
+template <arch::ISA _ISA_>
+constexpr auto __default_width =
+arch::__is_xmm_v<_ISA_> ? 128 :
+    arch::__is_ymm_v<_ISA_> ? 256 :
+    arch::__is_zmm_v<_ISA_> ? 512 : -1;
+
+
+template <arch::ISA _ISA_>
+constexpr auto __vector_default_size = __default_width<_ISA_>;
 
 template <
     arch::ISA	_ISA_,

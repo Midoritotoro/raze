@@ -39,10 +39,10 @@ struct __find_vectorized_internal {
 
         do {
             const auto __loaded = datapar::load<_Simd_>(__first);
-            const auto __mask   = (__comparand == __loaded) | datapar::as_index_mask;
+            const auto __mask   = __comparand == __loaded;
 
-            if (__mask.any_of())
-                return static_cast<const _ValueType*>(__first) + __mask.count_trailing_zero_bits();
+            if (datapar::any_of(__mask))
+                return static_cast<const _ValueType*>(__first) + datapar::to_index_mask(__mask).count_trailing_zero_bits();
 
             __advance_bytes(__first, sizeof(_Simd_));
         } while (__first != __stop_at);
@@ -54,10 +54,10 @@ struct __find_vectorized_internal {
             const auto __tail_mask  = datapar::make_tail_mask<_Simd_>(__tail_size);
             const auto __loaded     = datapar::maskz_load<_Simd_>(__first, __tail_mask);
 
-            const auto __mask = ((__comparand == __loaded) & __tail_mask) | datapar::as_index_mask;
+            const auto __mask = (__comparand == __loaded) & __tail_mask;
 
-            if (__mask.any_of())
-                return static_cast<const _ValueType*>(__first) + __mask.count_trailing_zero_bits();
+            if (datapar::any_of(__mask))
+                return static_cast<const _ValueType*>(__first) + datapar::to_index_mask(__mask).count_trailing_zero_bits();
         }
         else {
             __last = __find_scalar(__first, __last, __value);
@@ -68,7 +68,7 @@ struct __find_vectorized_internal {
 };
 
 template <class _Type_>
-raze_nodiscard raze_always_inline _Type_* __find_vectorized(
+__raze_simd_algorithm_inline raze_nodiscard _Type_* __find_vectorized(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept

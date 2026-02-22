@@ -389,78 +389,66 @@ template <
     arch::ISA	_ISA_,
     class	    _Type_,
     uint32      _Width_>
-simd_compare_result<_ISA_, _Type_, _Width_> operator==(
+typename simd<_ISA_, _Type_, _Width_>::__simd_native_compare_return_type operator==(
     const simd<_ISA_, _Type_, _Width_>& __left,
     const simd<_ISA_, _Type_, _Width_>& __right) noexcept
 {
-    return simd_compare_result<_ISA_, _Type_, _Width_> {
-        _Simd_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector) 
-    };
+    return _Simd_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
 }
 
 template <
     arch::ISA	_ISA_,
     class	    _Type_,
     uint32      _Width_>
-simd_compare_result<_ISA_, _Type_, _Width_> operator!=(
+typename simd<_ISA_, _Type_, _Width_>::__simd_native_compare_return_type operator!=(
     const simd<_ISA_, _Type_, _Width_>& __left, 
     const simd<_ISA_, _Type_, _Width_>& __right) noexcept
 {
-    return simd_compare_result<_ISA_, _Type_, _Width_> {
-        _Simd_not_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector) 
-    };
+    return _Simd_not_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
 }
 
 template <
     arch::ISA	_ISA_,
     class	    _Type_,
     uint32      _Width_>
-simd_compare_result<_ISA_, _Type_, _Width_> operator<(
+typename simd<_ISA_, _Type_, _Width_>::__simd_native_compare_return_type operator<(
     const simd<_ISA_, _Type_, _Width_>& __left,
     const simd<_ISA_, _Type_, _Width_>& __right) noexcept
 {
-    return simd_compare_result<_ISA_, _Type_, _Width_> {
-        _Simd_less<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector)
-    };
+    return _Simd_less<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
 }
 
 template <
     arch::ISA	_ISA_,
     class	    _Type_,
     uint32      _Width_>
-simd_compare_result<_ISA_, _Type_, _Width_> operator<=(
+typename simd<_ISA_, _Type_, _Width_>::__simd_native_compare_return_type operator<=(
     const simd<_ISA_, _Type_, _Width_>& __left,
     const simd<_ISA_, _Type_, _Width_>& __right) noexcept
 {
-    return simd_compare_result<_ISA_, _Type_, _Width_> {
-        _Simd_less_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector)
-    };
+    return _Simd_less_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
 }
 
 template <
     arch::ISA	_ISA_,
     class	    _Type_,
     uint32      _Width_>
-simd_compare_result<_ISA_, _Type_, _Width_> operator>(
+typename simd<_ISA_, _Type_, _Width_>::__simd_native_compare_return_type operator>(
     const simd<_ISA_, _Type_, _Width_>& __left, 
     const simd<_ISA_, _Type_, _Width_>& __right) noexcept
 {
-    return simd_compare_result<_ISA_, _Type_, _Width_> {
-        _Simd_greater<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector)
-    };
+    return _Simd_greater<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
 }
 
 template <
     arch::ISA	_ISA_,
     class	    _Type_,
     uint32      _Width_>
-simd_compare_result<_ISA_, _Type_, _Width_> operator>=(
+typename simd<_ISA_, _Type_, _Width_>::__simd_native_compare_return_type operator>=(
     const simd<_ISA_, _Type_, _Width_>& __left,
     const simd<_ISA_, _Type_, _Width_>& __right) noexcept
 {
-    return simd_compare_result<_ISA_, _Type_, _Width_> {
-        _Simd_greater_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector) 
-    };
+    return _Simd_greater_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
 }
 
 template <

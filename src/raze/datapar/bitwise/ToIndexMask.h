@@ -54,11 +54,8 @@ struct _Simd_to_index_mask<arch::ISA::AVX512F, 512, _DesiredType_> {
 		if constexpr (std::is_integral_v<_IntrinType_>) {
 			return __vector;
 		}
-		else if constexpr (sizeof(_DesiredType_) == 8) {
-			return _mm512_cmp_epi64_mask(__intrin_bitcast<__m512i>(__vector), _mm512_setzero_si512(), _MM_CMPINT_LT);
-		}
-		else if constexpr (sizeof(_DesiredType_) == 4) {
-			return _mm512_cmp_epi32_mask(__intrin_bitcast<__m512i>(__vector), _mm512_setzero_si512(), _MM_CMPINT_LT);
+		else if constexpr (sizeof(_DesiredType_) == 8 || sizeof(_DesiredType_) == 4) {
+			return _Simd_to_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector);
 		}
 		else {
 			constexpr auto __ymm_bits = (sizeof(_IntrinType_) / sizeof(_DesiredType_)) >> 1;

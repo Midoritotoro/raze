@@ -60,7 +60,7 @@ struct __count_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline sizetype __count_vectorized(
+__raze_simd_algorithm_inline sizetype __count_vectorized(
     const void*     __first,
     const sizetype  __bytes,
     _Type_          __value) noexcept

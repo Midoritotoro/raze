@@ -129,7 +129,7 @@ struct __find_end_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline raze_nodiscard const _Type_* __find_end_vectorized(
+__raze_simd_algorithm_inline raze_nodiscard const _Type_* __find_end_vectorized(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,

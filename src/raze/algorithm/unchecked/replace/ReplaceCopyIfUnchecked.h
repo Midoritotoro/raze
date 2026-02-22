@@ -15,7 +15,7 @@ template <
     class _UnwrappedOutputIterator_,
     class _UnaryPredicate_,
     class _Type_ = type_traits::iterator_value_type<_UnwrappedInputIterator_>>
-__simd_inline_constexpr raze_always_inline void __replace_copy_if_unchecked(
+__simd_inline_constexpr void __replace_copy_if_unchecked(
     _UnwrappedInputIterator_                            __first_unwrapped,
     _UnwrappedInputIterator_                            __last_unwrapped,
     _UnwrappedOutputIterator_                           __destination_unwrapped,

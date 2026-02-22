@@ -18,13 +18,13 @@ template <>
 struct _Simd_testz<arch::ISA::SSE2, 128> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
-		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept
+		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
 	{
 		const auto __zeros = _Simd_broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()();
 		const auto __compared = _Simd_equal<arch::ISA::SSE2, 128, int32>()(__vector, __zeros);
 
-		const auto __index_mask = _Simd_to_index_mask<arch::ISA::SSE2, 128, int8>()(__compared);
-		return __index_mask == math::__maximum_integral_limit<decltype(__index_mask)>();
+		const auto __index_mask = _Simd_to_index_mask<arch::ISA::SSE2, 128, int32>()(__compared);
+		return __index_mask == 0xF;
 	}
 };
 
@@ -37,7 +37,7 @@ struct _Simd_testz<arch::ISA::SSE41, 128>:
 {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
-		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept
+		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
 	{
 		return _mm_testz_si128(__intrin_bitcast<__m128i>(__vector), __intrin_bitcast<__m128i>(__vector));
 	}
@@ -48,7 +48,7 @@ template <>
 struct _Simd_testz<arch::ISA::AVX2, 256> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
-		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept
+		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
 	{
 		return _mm256_testz_si256(__intrin_bitcast<__m256i>(__vector), __intrin_bitcast<__m256i>(__vector));
 	}
@@ -58,9 +58,9 @@ template <>
 struct _Simd_testz<arch::ISA::AVX512F, 512> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
-		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept
+		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
 	{
-		const auto __k = _mm512_test_epi64_mask(__intrin_bitcast<__m512i>(__vector), __intrin_bitcast<__m512i>(__vector));
+		const auto __k = _mm512_test_epi32_mask(__intrin_bitcast<__m512i>(__vector), __intrin_bitcast<__m512i>(__vector));
 		return _kortestz_mask16_u8(__k, __k);
 	}
 };

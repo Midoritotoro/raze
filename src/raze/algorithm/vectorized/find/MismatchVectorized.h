@@ -78,7 +78,7 @@ struct __mismatch_vectorized_internal {
 
 
 template <typename _Type_>
-raze_always_inline sizetype __mismatch_vectorized(
+__raze_simd_algorithm_inline sizetype __mismatch_vectorized(
     const void*     __first,
     const void*     __second,
     const sizetype  __length) noexcept

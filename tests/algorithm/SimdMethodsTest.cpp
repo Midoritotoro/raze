@@ -28,6 +28,11 @@ void testMethods() {
     using Simd = raze::datapar::simd<Arch, T, _Width_>;
     constexpr size_t N = Simd::size();
 
+    if (Simd::is_supported() == false) {
+        std::cout << "Not supported" << '\n';
+        return;
+    }
+
      {
         Simd v1;
         Simd v2(5);

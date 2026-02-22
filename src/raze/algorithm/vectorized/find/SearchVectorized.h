@@ -86,11 +86,11 @@ struct __search_vectorized_internal {
             const auto __loaded_last = datapar::load<_Simd_>(__bytes_pointer_offset(__main_pointer, __last_offset));
             const auto __equal_last = (__broadcasted_last_sub == __loaded_last) | datapar::as_mask;
 
-            if (datapar::testz(__equal_last)) {
-                __processed_bytes += sizeof(_Simd_);
-                __advance_bytes(__main_pointer, sizeof(_Simd_));
-                continue;
-            }
+            //if (datapar::testz(__equal_last)) {
+            //    __processed_bytes += sizeof(_Simd_);
+            //    __advance_bytes(__main_pointer, sizeof(_Simd_));
+            //    continue;
+            //}
 
             auto __combined = __equal_first & __equal_last;
 
@@ -154,7 +154,7 @@ struct __search_vectorized_internal {
 
 
 template <class _Type_>
-__raze_simd_algorithm_inline raze_nodiscard const _Type_* __search_vectorized(
+__raze_simd_algorithm_inline const _Type_* __search_vectorized(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,

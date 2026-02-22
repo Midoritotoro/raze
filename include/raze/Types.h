@@ -7,7 +7,7 @@
 
 #include <functional>
 #include <numeric>
-#include <stdfloat>
+
 
 __RAZE_NAMESPACE_BEGIN
 

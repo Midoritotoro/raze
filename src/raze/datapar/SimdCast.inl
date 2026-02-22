@@ -77,9 +77,11 @@ __simd_nodiscard_inline __unwrapped_vector_type<_VectorType_> __simd_unwrap(_Vec
         return __vector;
 }
 
-template <class _MaskType_, std::enable_if_t<__is_valid_simd_v<_MaskType_> || __is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_> || __is_simd_mask_v<_MaskType_>, int>>
+template <class _MaskType_, std::enable_if_t<__is_valid_simd_v<_MaskType_> ||
+    __is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_> || 
+    __is_simd_mask_v<_MaskType_> || __is_simd_index_mask_v<_MaskType_>, int>>
 __simd_nodiscard_inline auto __simd_unwrap_mask(_MaskType_ __mask) noexcept {
-    if constexpr (__is_simd_mask_v<_MaskType_>)
+    if constexpr (__is_simd_mask_v<_MaskType_> || __is_simd_index_mask_v<_MaskType_>)
         return __mask.unwrap();
     else if constexpr (std::is_integral_v<_MaskType_>)
         return __mask;

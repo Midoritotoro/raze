@@ -8,6 +8,7 @@ project ("raze"
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_GENERATOR_TOOLSET "v143")
 
 set(CMAKE_LINK_ $<IF:$<CONFIG:Debug>, /NODEFAULTLIB:LIBCMT, /DEBUG;/OPT:REF> /INCREMENTAL:NO)
 
@@ -27,6 +28,9 @@ set(RAZE_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/raze")
 set(PRIVATE_SOURCES  
     "src/raze/algorithm/vectorized/find/FindVectorized.cpp"
 )
+
+
+message(${CMAKE_CXX_COMPILER})
 
 set(PRIVATE_HEADERS 
     "src/raze/algorithm/vectorized/find/FindVectorized.h"
@@ -136,9 +140,6 @@ set(PRIVATE_HEADERS
     src/raze/datapar/SimdIntegralTypesCheck.h
 
     src/raze/datapar/SimdIndexMask.inl
-    src/raze/datapar/SimdCompareResult.inl
-    src/raze/datapar/SimdCompareAdapters.h
-    src/raze/datapar/SimdCompareAdapters.inl
     src/raze/datapar/SimdMaskCommonOperations.h
     src/raze/datapar/SimdMaskCommonOperations.inl
     src/raze/datapar/SimdElementMaskOperations.h
@@ -174,7 +175,9 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/ToIndexMask.h
     src/raze/datapar/bitwise/MaskConvert.h
     src/raze/datapar/bitwise/Testz.h
+    src/raze/datapar/bitwise/TestAllOnes.h
     src/raze/datapar/bitwise/IndexMaskDivisor.h
+    src/raze/datapar/bitwise/IndexMaskToVector.h
 
     src/raze/datapar/arithmetic/Sub.h
     src/raze/datapar/arithmetic/Add.h
@@ -339,7 +342,6 @@ set(PUBLIC_HEADERS
     include/raze/datapar/BasicSimdShuffleMask.h
     include/raze/datapar/SimdCast.h
     include/raze/datapar/SimdIndexMask.h
-    include/raze/datapar/SimdCompareResult.h
     include/raze/datapar/SimdDataparAlgorithms.h
     include/raze/datapar/SimdConfig.h
 )
@@ -513,54 +515,53 @@ if(RAZE_USER_FORCE_ENABLED)
             OR RAZE_FORCE_AVX512DQ OR RAZE_FORCE_AVX512VL
             OR RAZE_FORCE_AVX512VBMI OR RAZE_FORCE_AVX512VBMI2)
 
-        raze_test_msvc_arch("AVX512" AVX512_OK)
-        if(NOT AVX512_OK)
-            message(FATAL_ERROR "MSVC does not support /arch:AVX512")
-        endif()
+            raze_test_msvc_arch("AVX512" AVX512_OK)
+            if(NOT AVX512_OK)
+                message(FATAL_ERROR "MSVC does not support /arch:AVX512")
+            endif()
 
-        add_compile_options(/arch:AVX512)
+            add_compile_options(/arch:AVX512)
 
-        foreach(flag RAZE_FORCE_AVX512F
-                     RAZE_FORCE_AVX512BW
-                     RAZE_FORCE_AVX512CD
-                     RAZE_FORCE_AVX512DQ
-                     RAZE_FORCE_AVX512VL
-                     RAZE_FORCE_AVX512VBMI
-                     RAZE_FORCE_AVX512VBMI2)
+            foreach(flag RAZE_FORCE_AVX512F
+                         RAZE_FORCE_AVX512BW
+                         RAZE_FORCE_AVX512CD
+                         RAZE_FORCE_AVX512DQ
+                         RAZE_FORCE_AVX512VL
+                         RAZE_FORCE_AVX512VBMI
+                         RAZE_FORCE_AVX512VBMI2)
+                    if(${flag})
+                        add_compile_definitions(${flag}=1)
+                    endif()
+                endforeach()
+            endif()
+        else()
+            include(CheckCXXCompilerFlag)
+
+            macro(raze_require flag compileflag)
                 if(${flag})
+                    check_cxx_compiler_flag(${compileflag} ${flag}_SUPPORTED)
+                    if(NOT ${flag}_SUPPORTED)
+                        message(FATAL_ERROR "${flag}=1 requires ${compileflag}, but compiler does not support it")
+                    endif()
+                    add_compile_options(${compileflag})
                     add_compile_definitions(${flag}=1)
                 endif()
-            endforeach()
-        endif()
-    else()
-        include(CheckCXXCompilerFlag)
+            endmacro()
 
-        macro(raze_require flag compileflag)
-            if(${flag})
-                check_cxx_compiler_flag(${compileflag} ${flag}_SUPPORTED)
-                if(NOT ${flag}_SUPPORTED)
-                    message(FATAL_ERROR "${flag}=1 requires ${compileflag}, but compiler does not support it")
-                endif()
-                add_compile_options(${compileflag})
-                add_compile_definitions(${flag}=1)
-            endif()
-        endmacro()
-
-        raze_require(RAZE_FORCE_SSE2        "-msse2")
-        raze_require(RAZE_FORCE_SSE3        "-msse3")
-        raze_require(RAZE_FORCE_SSSE3       "-mssse3")
-        raze_require(RAZE_FORCE_SSE41       "-msse4.1")
-        raze_require(RAZE_FORCE_SSE42       "-msse4.2")
-        raze_require(RAZE_FORCE_AVX         "-mavx")
-        raze_require(RAZE_FORCE_AVX2        "-mavx2")
-        raze_require(RAZE_FORCE_AVX512F     "-mavx512f")
-        raze_require(RAZE_FORCE_AVX512BW    "-mavx512bw")
-        raze_require(RAZE_FORCE_AVX512CD    "-mavx512cd")
-        raze_require(RAZE_FORCE_AVX512DQ    "-mavx512dq")
-        raze_require(RAZE_FORCE_AVX512VL    "-mavx512vl")
-        raze_require(RAZE_FORCE_AVX512VBMI  "-mavx512vbmi")
-        raze_require(RAZE_FORCE_AVX512VBMI2 "-mavx512vbmi2")
-
+            raze_require(RAZE_FORCE_SSE2        "-msse2")
+            raze_require(RAZE_FORCE_SSE3        "-msse3")
+            raze_require(RAZE_FORCE_SSSE3       "-mssse3")
+            raze_require(RAZE_FORCE_SSE41       "-msse4.1")
+            raze_require(RAZE_FORCE_SSE42       "-msse4.2")
+            raze_require(RAZE_FORCE_AVX         "-mavx")
+            raze_require(RAZE_FORCE_AVX2        "-mavx2")
+            raze_require(RAZE_FORCE_AVX512F     "-mavx512f")
+            raze_require(RAZE_FORCE_AVX512BW    "-mavx512bw")
+            raze_require(RAZE_FORCE_AVX512CD    "-mavx512cd")
+            raze_require(RAZE_FORCE_AVX512DQ    "-mavx512dq")
+            raze_require(RAZE_FORCE_AVX512VL    "-mavx512vl")
+            raze_require(RAZE_FORCE_AVX512VBMI  "-mavx512vbmi")
+            raze_require(RAZE_FORCE_AVX512VBMI2 "-mavx512vbmi2")
     endif()
 
     add_compile_definitions(RAZE_ISA_FORCE_ENABLED=1)

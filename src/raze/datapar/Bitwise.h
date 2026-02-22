@@ -10,3 +10,5 @@
 #include <src/raze/datapar/bitwise/ToVector.h>
 #include <src/raze/datapar/bitwise/IndexMaskDivisor.h>
 #include <src/raze/datapar/bitwise/Testz.h>
+#include <src/raze/datapar/bitwise/TestAllOnes.h>
+#include <src/raze/datapar/bitwise/IndexMaskToVector.h>

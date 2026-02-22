@@ -283,7 +283,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLDQ, 256, _IntrinType_, _DesiredType_>:
             return __intrin_bitcast<_IntrinType_>(_mm256_movm_epi64(__mask));
 
         else
-            return _Simd_to_vector<arch::ISA::AVX2, 256, _DesiredType_>()(__mask);
+            return _Simd_to_vector<arch::ISA::AVX2, 256, _IntrinType_, _DesiredType_>()(__mask);
     }
 };
 
@@ -307,7 +307,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLBW, 128, _IntrinType_, _DesiredType_> 
             return __intrin_bitcast<_IntrinType_>(_mm_movm_epi16(__mask));
 
         else
-            return _Simd_to_vector<arch::ISA::SSE42, 128, _DesiredType_>()(__mask);
+            return _Simd_to_vector<arch::ISA::SSE42, 128, _IntrinType_, _DesiredType_>()(__mask);
     }
 };
 
@@ -331,7 +331,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLDQ, 128, _IntrinType_, _DesiredType_>:
             return __intrin_bitcast<_IntrinType_>(_mm_movm_epi64(__mask));
 
         else
-            return _Simd_to_vector<arch::ISA::SSE42, 128, _DesiredType_>()(__mask);
+            return _Simd_to_vector<arch::ISA::SSE42, 128, _IntrinType_, _DesiredType_>()(__mask);
     }
 };
 
@@ -349,10 +349,10 @@ struct _Simd_to_vector<arch::ISA::AVX512VLBWDQ, 128, _IntrinType_, _DesiredType_
             return __intrin_bitcast<_IntrinType_>(__mask);
 
         else if constexpr (sizeof(_DesiredType_) <= 2)
-            return _Simd_to_vector<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__mask);
+            return _Simd_to_vector<arch::ISA::AVX512VLBW, 128, _IntrinType_, _DesiredType_>()(__mask);
         
         else
-            return _Simd_to_vector<arch::ISA::AVX512VLDQ, 128, _DesiredType_>()(__mask);
+            return _Simd_to_vector<arch::ISA::AVX512VLDQ, 128, _IntrinType_, _DesiredType_>()(__mask);
     }
 };
 
@@ -370,10 +370,10 @@ struct _Simd_to_vector<arch::ISA::AVX512VLBWDQ, 256, _IntrinType_, _DesiredType_
             return __intrin_bitcast<_IntrinType_>(__mask);
 
         else if constexpr (sizeof(_DesiredType_) <= 2)
-            return _Simd_to_vector<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__mask);
+            return _Simd_to_vector<arch::ISA::AVX512VLBW, 256, _IntrinType_, _DesiredType_>()(__mask);
         
         else
-            return _Simd_to_vector<arch::ISA::AVX512VLDQ, 256, _DesiredType_>()(__mask);
+            return _Simd_to_vector<arch::ISA::AVX512VLDQ, 256, _IntrinType_, _DesiredType_>()(__mask);
     }
 };
 

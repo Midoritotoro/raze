@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
+ cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
 
 project(razeTestsAlgorithm LANGUAGES CXX)
 
@@ -13,7 +13,7 @@ enable_testing()
 macro(raze_algorithm_add_test filename)
     add_executable(${filename} ${filename}.cpp)
 
-    add_compile_options(/bigobj /arch:AVX512)
+    add_compile_options(/bigobj)
     
     target_link_libraries(
       ${filename} PRIVATE

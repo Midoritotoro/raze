@@ -43,7 +43,7 @@ struct __contains_vectorized_internal {
         do {
             const auto __loaded = datapar::load<_Simd_>(__first);
 
-            if (static_cast<bool>(__loaded == __comparand))
+            if (datapar::any_of(__loaded == __comparand))
                 return true;
 
             __advance_bytes(__first, sizeof(_Simd_));
@@ -56,7 +56,7 @@ struct __contains_vectorized_internal {
             const auto __tail_mask  = datapar::make_tail_mask<_Simd_>(__tail_size);
             const auto __loaded     = datapar::maskz_load<_Simd_>(__first, __tail_mask);
 
-            return static_cast<bool>((__comparand == __loaded) & __tail_mask);
+            return datapar::any_of((__comparand == __loaded) & __tail_mask);
         }
         else {
             return __contains_scalar(__first, __last, __value);
@@ -65,7 +65,7 @@ struct __contains_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline bool __contains_vectorized(
+__raze_simd_algorithm_inline bool __contains_vectorized(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept

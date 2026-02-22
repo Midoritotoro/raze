@@ -14,15 +14,18 @@ set(CMAKE_MODULE_PATH
     ${CMAKE_MODULE_PATH}
     ${CMAKE_CURRENT_SOURCE_DIR}/benchmarks
 )
+ 
+set(BENCHMARK_ENABLE_DOXYGEN OFF)
+set(BENCHMARK_ENABLE_INSTALL OFF)
+set(BENCHMARK_ENABLE_TESTING OFF)
 
-set(benchmark_DIR "C:/Users/danya/source/repos/Midoritotoro/Libraries/win64/benchmark/build")
-find_package(benchmark REQUIRED)
+add_subdirectory(benchmark EXCLUDE_FROM_ALL)
 
 macro(razeBenchmarks_add_benchmark filename)
     add_executable(${filename} ${filename}.cpp ${CMAKE_CURRENT_SOURCE_DIR}/tools/BenchmarkHelper.h)
     target_include_directories(${filename} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 
-    add_compile_options(-O2 /Gm- /Oy /arch:AVX512)
+    add_compile_options(-O2)
 
     target_link_libraries(
       ${filename} PUBLIC

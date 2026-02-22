@@ -5,6 +5,7 @@
 #include <src/raze/type_traits/TypeCheck.h>
 #include <src/raze/type_traits/IsVirtualBaseOf.h>
 #include <src/raze/type_traits/FunctionInformation.h>
+#include <src/raze/datapar/SimdMaskTypeCheck.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -21,16 +22,6 @@ template <
     typename	_Element_,
     uint32		_Width_>
 class simd;
-
-template <arch::ISA _ISA_>
-constexpr auto __default_width =
-    arch::__is_xmm_v<_ISA_> ? 128 :
-    arch::__is_ymm_v<_ISA_> ? 256 :
-    arch::__is_zmm_v<_ISA_> ? 512 : -1;
-
-
-template <arch::ISA _ISA_>
-constexpr auto __vector_default_size = __default_width<_ISA_>;
 
 template <
 	arch::ISA	_ISA_, 
@@ -164,10 +155,10 @@ using __unwrapped_vector_type = typename __unwrapped_vector_t<_VectorType_>::typ
 
 template <
 	class		_Simd_,
-	typename	_ReturnType_,
-	typename	_DesiredType_>
+	typename	_ReturnType_>
 using __native_compare_return_type_helper = std::conditional_t<__is_intrin_type_v<_ReturnType_>,
-	simd<_Simd_::__isa, _DesiredType_, _Simd_::__width>, _ReturnType_>;
+	simd<_Simd_::__isa, typename _Simd_::value_type, _Simd_::__width>,
+    simd_mask<_Simd_::__isa, typename _Simd_::value_type, _Simd_::__width>>;
 
 template <
     class _RebindType_,

@@ -19,7 +19,7 @@
 #else
 
 #  if !defined(raze_static_operator)
-#    define raze_static_operator static
+#    define raze_static_operator // static
 #  endif // !defined(raze_static_operator)
 
 #  if !defined(raze_const_operator)

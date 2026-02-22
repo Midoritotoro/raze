@@ -19,7 +19,7 @@ __simd_inline_constexpr _OutputUnwrappedIterator_ __move_unchecked(
     _InputUnwrappedIterator_     __last_unwrapped,
     _OutputUnwrappedIterator_    __destination_unwrapped) noexcept
 {
-    const auto __difference = __iterators_difference(__first_unwrapped, _LastUnwrapped);
+    const auto __difference = __iterators_difference(__first_unwrapped, __last_unwrapped);
 
     if constexpr (type_traits::__copy_iterator_category<_InputUnwrappedIterator_, _OutputUnwrappedIterator_>::BitcopyAssignable) {
 #if raze_has_cxx20

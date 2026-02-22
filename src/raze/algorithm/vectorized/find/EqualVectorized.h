@@ -44,7 +44,7 @@ struct __equal_vectorized_internal {
             const auto __loaded_first   = datapar::load<_Simd_>(__first);
             const auto __loaded_second  = datapar::load<_Simd_>(__second);
 
-            if (const auto __mask = (__loaded_first == __loaded_second) | datapar::as_index_mask; __mask.all_of() == false)
+            if (datapar::some_of(__loaded_first == __loaded_second))
                 return false;
 
             __advance_bytes(__first, sizeof(_Simd_));
@@ -74,7 +74,7 @@ struct __equal_vectorized_internal {
 };
 
 template <typename _Type_>
-raze_always_inline bool __equal_vectorized(
+__raze_simd_algorithm_inline bool __equal_vectorized(
     const void*     __first,
     const void*     __second,
     const sizetype  __size) noexcept
