@@ -5,6 +5,8 @@
 #include <list>
 #include <deque>
 #include <cctype>
+#include <random>
+
 
 template <typename It1, typename It2>
 void check_search(It1 first1, It1 last1, It2 first2, It2 last2) {
@@ -114,6 +116,30 @@ void run_tests_for_type() {
         a[70] = 1; a[71] = 2; a[72] = 3; a[73] = 4;
         std::vector<_Type_> b{ 1,2,3,4 };
         check_search(a.begin(), a.end(), b.begin(), b.end());
+    }
+
+    {
+        std::mt19937 rng(123456);
+        std::uniform_int_distribution<int> len_dist(0, 2000);
+        std::uniform_int_distribution<int> val_dist(-1000000, 1000000);
+
+        const size_t iterations = 1'000'000;
+
+        for (size_t i = 0; i < iterations; ++i) {
+            size_t main_len = len_dist(rng);
+            size_t sub_len = len_dist(rng);
+
+            std::vector<_Type_> a(main_len);
+            std::vector<_Type_> b(sub_len);
+
+            for (auto& x : a) x = static_cast<_Type_>(val_dist(rng));
+            for (auto& x : b) x = static_cast<_Type_>(val_dist(rng));
+
+            auto std_res = std::search(a.begin(), a.end(), b.begin(), b.end());
+            auto simd_res = raze::algorithm::search(a.begin(), a.end(), b.begin(), b.end());
+
+            raze_assert(std_res == simd_res);
+        }
     }
 }
 

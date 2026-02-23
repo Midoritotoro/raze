@@ -25,7 +25,7 @@ macro(razeBenchmarks_add_benchmark filename)
     add_executable(${filename} ${filename}.cpp ${CMAKE_CURRENT_SOURCE_DIR}/tools/BenchmarkHelper.h)
     target_include_directories(${filename} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/tools)
 
-    add_compile_options(-O2)
+    add_compile_options(-O2 /bigobj)
 
     target_link_libraries(
       ${filename} PUBLIC

@@ -13,14 +13,12 @@ static void fill_random(std::vector<T>& v, int seed = 12345) {
     for (auto& x : v) x = static_cast<T>(dist(rng));
 }
 
-
 template <
     typename _Char_,
     SizeForBenchmark sizeForBenchmarkMain,
     SizeForBenchmark sizeForBenchmarkSub>
 class StdFindEndBenchmark {
 public:
-
     static void SubAtBegin(benchmark::State& state) noexcept {
         std::vector<_Char_> mainArr(sizeForBenchmarkMain);
         std::vector<_Char_> subArr(sizeForBenchmarkSub);

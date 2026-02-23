@@ -15,11 +15,16 @@ raze_always_inline const _Type_* __find_last_scalar(
     _Type_      __value) noexcept
 {
     auto __current = static_cast<const _Type_*>(__last);
+    auto __cached = __current;
 
-    while (__current != __first && *__current != __value)
+    while (__current != __first) {
+        if (*__current == __value)
+            return __current;
+
         --__current;
+    }
 
-    return __current;
+    return __cached;
 }
 
 template <class _Simd_>
@@ -73,7 +78,12 @@ struct __find_last_vectorized_internal {
             return static_cast<const _ValueType*>(__cached_last);
         }
         else {
-            return __find_last_scalar(__first, __last, __value);
+            const auto __scalar_result = __find_last_scalar(__first, __last, __value);
+
+            if (__scalar_result == __last)
+                return static_cast<const _ValueType*>(__cached_last);
+
+            return __scalar_result;
         }
     }
 };

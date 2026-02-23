@@ -57,6 +57,8 @@ struct __search_vectorized_internal {
         const void* __sub_first,
         sizetype    __sub_length) raze_const_operator noexcept
     {
+        const auto __guard = datapar::make_guard<_Simd_>();
+
         const auto __main_begin = static_cast<const _ValueType*>(__main_first);
         const auto __sub_begin = static_cast<const _ValueType*>(__sub_first);
 
@@ -100,7 +102,7 @@ struct __search_vectorized_internal {
                     __combined_mask.clear_right_most_set_bit();
                 } while (datapar::any_of(__combined_mask));
             }
-     
+
             __processed_bytes += sizeof(_Simd_);
             __advance_bytes(__main_pointer, sizeof(_Simd_));
         }
@@ -111,50 +113,8 @@ struct __search_vectorized_internal {
         if (__remaining_bytes < __sub_bytes)
             return __bytes_pointer_offset(__remaining_first, __remaining_bytes);
 
-        if constexpr (_Simd_::template is_native_mask_load_supported_v<> == false) {
-            return __search_scalar<_ValueType>(__remaining_first, 
-                __remaining_bytes / sizeof(_ValueType), __sub_first, __sub_length);
-        }
-        else {
-            if (__remaining_bytes < __last_offset + sizeof(_Simd_)) {
-                return __search_scalar<_ValueType>(__remaining_first,
-                    __remaining_bytes / sizeof(_ValueType), __sub_first, __sub_length);
-            }
-
-            const auto __tail_first_mask = datapar::make_tail_mask<_Simd_>(__remaining_bytes);
-            const auto __loaded_first = datapar::maskz_load<_Simd_>(__remaining_first, __tail_first_mask);
-            const auto __equal_first = (__broadcasted_first_sub == __loaded_first);
-
-            if (datapar::none_of(__equal_first)) {
-                __processed_bytes += sizeof(_Simd_);
-                __advance_bytes(__main_pointer, sizeof(_Simd_));
-                return static_cast<const _ValueType*>(__bytes_pointer_offset(__main_begin, __main_bytes));
-            }
-
-            const auto __tail_last_mask = datapar::make_tail_mask<_Simd_>(__remaining_bytes - __last_offset);
-            const auto __loaded_last = datapar::maskz_load<_Simd_>(__bytes_pointer_offset(__remaining_first, __last_offset), __tail_last_mask);
-            const auto __equal_last = (__broadcasted_last_sub == __loaded_last);
-
-            auto __combined = __equal_first & __equal_last;
-
-            if (datapar::any_of(__combined)) {
-                auto __combined_mask = datapar::to_mask(__combined);
-
-                do {
-                    const auto __trailing_zeros = __combined_mask.count_trailing_zero_bits();
-
-                    const auto __match_bytes = __trailing_zeros * sizeof(_ValueType) + sizeof(_ValueType);
-                    const auto __main_match = __bytes_pointer_offset(__main_pointer, __match_bytes);
-
-                    if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
-                        return __main_match - 1;
-
-                    __combined_mask.clear_right_most_set_bit();
-                } while (datapar::any_of(__combined_mask));
-            }
-
-            return __bytes_pointer_offset(__remaining_first, __remaining_bytes);
-        }
+        return __search_scalar<_ValueType>(__remaining_first,
+            __remaining_bytes / sizeof(_ValueType), __sub_first, __sub_length);
     }
 };
 

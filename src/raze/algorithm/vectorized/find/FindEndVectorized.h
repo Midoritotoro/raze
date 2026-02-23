@@ -8,45 +8,40 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 
 template <class _Type_>
-raze_nodiscard __raze_simd_algorithm_inline const _Type_* __find_end_scalar(
+raze_nodiscard raze_declare_const_function __raze_simd_algorithm_inline const _Type_* __find_end_scalar(
 	const void* __main_first,
 	sizetype    __main_length,
 	const void* __sub_first,
 	sizetype    __sub_length) noexcept
 {
-	const auto* __main_current = static_cast<const _Type_*>(__main_first);
-	const auto* __sub_current = static_cast<const _Type_*>(__sub_first);
+	const auto* main = static_cast<const _Type_*>(__main_first);
+	const auto* sub = static_cast<const _Type_*>(__sub_first);
 
-	const auto __main_current_last = __main_current + __main_length;
-	const auto __sub_current_last = __sub_current + __sub_length;
+	const auto* main_end = main + __main_length;
+	const auto* sub_end = sub + __sub_length;
 
-	for (auto __candidate = __main_current_last;; --__candidate) {
-		auto __next1 = __candidate;
-		auto __next2 = __sub_current_last;
+	for (const _Type_* cand = main_end - __sub_length; cand >= main; --cand) {
+		const _Type_* p1 = cand;
+		const _Type_* p2 = sub;
 
-		for (;;) {
-			if (__sub_current == __next2) {
-				__main_current = __next1;
-				return __main_current;
-			}
-
-			if (__main_current == __next1)
-				return __main_current_last;
-
-			--__next1;
-			--__next2;
-
-			if (*__next1 != *__next2)
-				break;
+		while (p2 != sub_end && *p1 == *p2) {
+			++p1;
+			++p2;
 		}
+
+		if (p2 == sub_end)
+			return cand;
 	}
+
+	return main_end;
 }
+
 
 template <class _Simd_>
 struct __find_end_vectorized_internal {
 	using _ValueType = typename _Simd_::value_type;
 
-	raze_nodiscard __raze_simd_algorithm_inline raze_static_operator const _ValueType* operator()(
+	raze_nodiscard raze_declare_const_function __raze_simd_algorithm_inline raze_static_operator const _ValueType* operator()(
 		sizetype	__aligned_size,
 		sizetype	__tail_size,
 		const void* __main_first,
@@ -54,6 +49,8 @@ struct __find_end_vectorized_internal {
 		const void* __sub_first,
 		sizetype	__sub_length) raze_const_operator noexcept
 	{
+		const auto __guard = datapar::make_guard<_Simd_>();
+
 		const auto __broadcasted_first_sub = _Simd_(static_cast<const _ValueType*>(__sub_first)[0]);
 		const auto __broadcasted_last_sub = _Simd_(static_cast<const _ValueType*>(__sub_first)[__sub_length - 1]);
 
@@ -102,18 +99,27 @@ struct __find_end_vectorized_internal {
 			}
 		}
 
-		const auto __remaining_bytes = __main_bytes - __processed_bytes;
-		const auto __remaining_last = __main_last;
-
+		const auto __remaining_bytes = __main_bytes - __processed_bytes; 
+		
 		if (__remaining_bytes < __sub_bytes)
 			return static_cast<const _ValueType*>(__cached_last);
+		
+		const auto __remaining_length = __remaining_bytes / sizeof(_ValueType); 
 
-		return __find_end_scalar<_ValueType>(__main_first, (__remaining_bytes / sizeof(_ValueType)), __sub_first, __sub_length);
+		const auto __main_begin = static_cast<const _ValueType*>(__main_first); 
+		const auto __main_global_end = static_cast<const _ValueType*>(__cached_last); 
+
+		const auto __scalar_result = __find_end_scalar<_ValueType>(__main_first, __remaining_length, __sub_first, __sub_length); 
+		
+		if (__scalar_result == __main_begin + __remaining_length) 
+			return __main_global_end; 
+		
+		return __scalar_result;
 	}
 };
 
 template <class _Type_>
-raze_nodiscard __raze_simd_algorithm_inline const _Type_* __find_end_vectorized(
+raze_nodiscard raze_declare_const_function __raze_simd_algorithm_inline const _Type_* __find_end_vectorized(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,
