@@ -17,9 +17,6 @@ raze_always_inline const _Type_* __search_scalar(
 	const auto* __main_current	= static_cast<const _Type_*>(__main_first);
 	const auto* __sub_current	= static_cast<const _Type_*>(__sub_first);
 
-	if (__main_length == __sub_length)
-		return (memcmp(__main_current, __sub_current, __main_length) == 0) ? __main_current : nullptr;
-
 	const auto& __first = __sub_current[0];
 	const auto __max_position = sizetype(__main_length) - sizetype(__sub_length) + 1;
 

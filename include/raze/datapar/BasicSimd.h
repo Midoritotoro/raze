@@ -66,14 +66,11 @@ public:
     simd(_VectorType_ __other) noexcept;
 
     static raze_always_inline simd zero() noexcept;
-
     raze_always_inline simd& fill(value_type __value) noexcept;
+
     raze_always_inline value_type extract(size_type __index) const noexcept;
     raze_always_inline simd_element_reference<simd> extract_wrapped(size_type __index) noexcept;
-
-    raze_always_inline void insert(
-        size_type   __index,
-        value_type  __value) noexcept;
+    raze_always_inline void insert(size_type __index, value_type __value) noexcept;
 
     friend simd operator+ <>(const simd& __left, const value_type __right) noexcept;
     friend simd operator- <>(const simd& __left, const value_type __right) noexcept;
@@ -109,16 +106,10 @@ public:
     raze_always_inline simd& operator++()    noexcept;
     raze_always_inline simd  operator--(int) noexcept;
     raze_always_inline simd& operator--()    noexcept;
-    raze_always_inline simd operator~() const noexcept;
+    raze_always_inline simd  operator~() const noexcept;
 
     raze_always_inline _Type_ operator[](const size_type __index) const noexcept;
     raze_always_inline simd_element_reference<simd> operator[](const size_type __index) noexcept;
-
-    template <typename _DesiredType_ = value_type>
-    raze_always_inline simd_mask<_ISA_, _DesiredType_, _Width_> to_mask() const noexcept;
-
-    template <typename _DesiredType_ = value_type>
-    raze_always_inline auto to_index_mask() const noexcept;
 
     static raze_always_inline constexpr int width() noexcept;
     static raze_always_inline constexpr int size() noexcept;

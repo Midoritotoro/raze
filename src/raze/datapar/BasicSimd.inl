@@ -455,26 +455,6 @@ template <
     arch::ISA	_ISA_,
     class	    _Type_,
     uint32      _Width_>
-template <typename _DesiredType_>
-raze_always_inline simd_mask<_ISA_, _DesiredType_, _Width_>
-    simd<_ISA_, _Type_, _Width_>::to_mask() const noexcept
-{
-    return _Simd_to_mask<_ISA_, _Width_, _DesiredType_>()(_vector);
-}
-
-template <
-    arch::ISA	_ISA_,
-    class	    _Type_,
-    uint32      _Width_>
-template <typename _DesiredType_>
-raze_always_inline auto simd<_ISA_, _Type_, _Width_>::to_index_mask() const noexcept {
-    return _Simd_to_index_mask<_ISA_, _Width_, _DesiredType_>()(_vector);
-}
-
-template <
-    arch::ISA	_ISA_,
-    class	    _Type_,
-    uint32      _Width_>
 constexpr int simd<_ISA_, _Type_, _Width_>::width() noexcept {
     return _Width_;
 }

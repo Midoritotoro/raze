@@ -36,6 +36,10 @@
 #endif // RAZE_BENCHMARK_UNIT_OF_MEASUREMENT
 
 enum SizeForBenchmark : raze::uint32 {
+    Four        = 4,
+    Five        = 5,
+    Six         = 6,
+    Seven       = 7,
     Tiny        = 16,       
     VerySmall   = 32,   
     Small       = 64,    
@@ -229,26 +233,50 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
 
 #if !defined(RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE)
 #define RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(nameFirst, nameSecond, Type, funcN) \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Tiny, SizeForBenchmark::Tiny>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VerySmall, SizeForBenchmark::VerySmall>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Small, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Small, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Small, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Small, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Small, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Small, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Small, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Small, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Small, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Small, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Small, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Small, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Small, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Small, SizeForBenchmark::Small>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::Small>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::MediumSmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumSmall, SizeForBenchmark::MediumSmall>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::Small>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::MediumSmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::MediumSmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Medium, SizeForBenchmark::Medium>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Medium, SizeForBenchmark::Medium>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Small>::funcN)); \
@@ -256,6 +284,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Medium>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::Medium>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::MediumLarge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MediumLarge, SizeForBenchmark::MediumLarge>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::Small>::funcN)); \
@@ -264,6 +296,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::MediumLarge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::MediumLarge>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Large, SizeForBenchmark::Large>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Large, SizeForBenchmark::Large>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Small>::funcN)); \
@@ -273,6 +309,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Large>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::Large>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::VeryLarge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::VeryLarge, SizeForBenchmark::VeryLarge>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::Small>::funcN)); \
@@ -283,6 +323,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::VeryLarge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::VeryLarge>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::Huge, SizeForBenchmark::Huge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::Huge, SizeForBenchmark::Huge>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Small>::funcN)); \
@@ -294,6 +338,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Huge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::Huge>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::ExtraHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::ExtraHuge, SizeForBenchmark::ExtraHuge>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::Small>::funcN)); \
@@ -306,6 +354,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::ExtraHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::ExtraHuge>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::MegaHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::MegaHuge, SizeForBenchmark::MegaHuge>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::Small>::funcN)); \
@@ -319,6 +371,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::MegaHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::MegaHuge>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::GigaHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::GigaHuge, SizeForBenchmark::GigaHuge>::funcN)); \
     \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Four>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Four>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Five>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Five>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Six>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Six>::funcN)); \
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Seven>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Seven>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Tiny>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Tiny>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::VerySmall>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::VerySmall>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Small>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::Small>::funcN)); \
@@ -331,7 +387,7 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::ExtraHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::ExtraHuge>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::MegaHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::MegaHuge>::funcN)); \
     RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::GigaHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::GigaHuge>::funcN)); \
-    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::TeraHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::GigaHuge>::funcN));
+    RAZE_ADD_BENCHMARK(RAZE_ECHO(nameFirst<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::TeraHuge>::funcN), RAZE_ECHO(nameSecond<Type, SizeForBenchmark::TeraHuge, SizeForBenchmark::TeraHuge>::funcN));
 #endif
 
 

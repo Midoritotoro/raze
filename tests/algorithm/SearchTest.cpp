@@ -47,7 +47,7 @@ void run_tests_for_type() {
         check_search(a.begin(), a.end(), b.begin(), b.end());
     }
     {
-        std::vector<_Type_> a{ 1,2,1,2,3,1,2,3,4 };
+        std::vector<_Type_> a{ 1,2,1,2,2,3,1,1,3,1,3 };
         std::vector<_Type_> b{ 1,2,3 };
         check_search(a.begin(), a.end(), b.begin(), b.end());
     }
@@ -103,7 +103,7 @@ void run_tests_for_type() {
     }
 
     {
-        std::vector<_Type_> a(65, 0);
+        std::vector<_Type_> a(69, 0);
         a[60] = 1; a[61] = 2; a[62] = 3; a[63] = 4; a[64] = 5;
         std::vector<_Type_> b{ 1,2,3,4,5 };
         check_search(a.begin(), a.end(), b.begin(), b.end());
@@ -174,6 +174,13 @@ void run_tests_for_string() {
         std::string s(79, 'q');
         s.replace(72, 5, "abcde");
         std::string sub = "abcde";
+        check_search(s.begin(), s.end(), sub.begin(), sub.end());
+    }
+
+    {
+        std::string s = "aaaaaaaaaaaaaaaa"
+            "bbbbbbbbbbbbbbbb";
+        std::string sub = "bbbb";
         check_search(s.begin(), s.end(), sub.begin(), sub.end());
     }
 }

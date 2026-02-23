@@ -8,7 +8,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 
 template <class _Type_>
-raze_always_inline const _Type_* __find_end_scalar(
+raze_nodiscard __raze_simd_algorithm_inline const _Type_* __find_end_scalar(
 	const void* __main_first,
 	sizetype    __main_length,
 	const void* __sub_first,
@@ -46,7 +46,7 @@ template <class _Simd_>
 struct __find_end_vectorized_internal {
 	using _ValueType = typename _Simd_::value_type;
 
-	raze_always_inline raze_nodiscard raze_static_operator const _ValueType* operator()(
+	raze_nodiscard __raze_simd_algorithm_inline raze_static_operator const _ValueType* operator()(
 		sizetype	__aligned_size,
 		sizetype	__tail_size,
 		const void* __main_first,
@@ -108,14 +108,12 @@ struct __find_end_vectorized_internal {
 		if (__remaining_bytes < __sub_bytes)
 			return static_cast<const _ValueType*>(__cached_last);
 
-		{
-			return __find_end_scalar<_ValueType>(__main_first, (__remaining_bytes / sizeof(_ValueType)), __sub_first, __sub_length);
-		}
+		return __find_end_scalar<_ValueType>(__main_first, (__remaining_bytes / sizeof(_ValueType)), __sub_first, __sub_length);
 	}
 };
 
 template <class _Type_>
-__raze_simd_algorithm_inline raze_nodiscard const _Type_* __find_end_vectorized(
+raze_nodiscard __raze_simd_algorithm_inline const _Type_* __find_end_vectorized(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,
