@@ -44,7 +44,7 @@ struct __replace_vectorized_internal {
 
         do {
             const auto __loaded = datapar::load<_Simd_>(__first);
-            const auto __mask = (__loaded == __comparand) | datapar::as_native;
+            const auto __mask = (__loaded == __comparand);
 
             datapar::mask_store(__first, __replacement, __mask);
             __advance_bytes(__first, sizeof(_Simd_));
@@ -57,7 +57,7 @@ struct __replace_vectorized_internal {
             const auto __tail_mask  = datapar::make_tail_mask<_Simd_>(__tail_size);
             const auto __loaded     = datapar::maskz_load<_Simd_>(__first, __tail_mask);
 
-            const auto __mask = ((__loaded == __comparand) & __tail_mask) | datapar::as_native;
+            const auto __mask = ((__loaded == __comparand) & __tail_mask);
             datapar::mask_store(__first, __replacement, __mask);
         }
         else {

@@ -60,7 +60,7 @@ struct __equal_vectorized_internal {
             const auto __loaded_first   = datapar::maskz_load<_Simd_>(__first, __tail_mask);
             const auto __loaded_second  = datapar::maskz_load<_Simd_>(__second, __tail_mask);
 
-            const auto __combined_mask = ((__loaded_first == __loaded_second) & __tail_mask) | datapar::as_index_mask;
+            const auto __combined_mask = datapar::to_index_mask((__loaded_first == __loaded_second) & __tail_mask);
 
             const auto __tail_length = __tail_size / sizeof(_ValueType);
             const auto __all_equal_mask = (typename _Simd_::mask_type::mask_type(1) << __tail_length) - 1;

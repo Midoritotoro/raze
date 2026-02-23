@@ -58,72 +58,58 @@ struct __find_end_vectorized_internal {
 		const auto __broadcasted_last_sub = _Simd_(static_cast<const _ValueType*>(__sub_first)[__sub_length - 1]);
 
 		const auto __sub_bytes = sizeof(_ValueType) * __sub_length;
-		auto __main_last = __bytes_pointer_offset(__main_first, __aligned_size + __tail_size);
+		const auto __main_bytes = __aligned_size + __tail_size;
+		const auto __last_offset = int64(__sub_bytes);
 
-		const auto __stop_at = __bytes_pointer_offset(__main_last, -__aligned_size);
+		auto __main_last = __bytes_pointer_offset(__main_first, __aligned_size + __tail_size);
 		const auto __cached_last = __main_last;
 
-		while (__main_last != __stop_at) {
+		const auto __stop_at = __bytes_pointer_offset(__main_last, -__aligned_size);
+
+		auto __processed_bytes = sizetype(0);
+
+		while (__processed_bytes < __aligned_size && (__main_bytes - __processed_bytes) >= (__last_offset + sizeof(_Simd_))) {
 			__rewind_bytes(__main_last, sizeof(_Simd_));
+			__processed_bytes += sizeof(_Simd_);
 
-			const auto __sequence_start = __bytes_pointer_offset(__main_last, -(__sub_bytes - sizeof(_ValueType)));
-			const auto __sequence_end	= __main_last;
+			const auto __loaded_last = datapar::load<_Simd_>(__main_last);
+			const auto __equal_last = (__loaded_last == __broadcasted_last_sub);
 
-			const auto __start_loaded	= datapar::load<_Simd_>(__sequence_start);
-			const auto __end_loaded		= datapar::load<_Simd_>(__sequence_end);
+			if (datapar::none_of(__equal_last))
+				continue;
 
-			const auto __equal_first = (__broadcasted_first_sub == __start_loaded) | datapar::as_mask;
-			const auto __equal_last = (__broadcasted_last_sub == __end_loaded) | datapar::as_mask;
+			const auto __sequence_start = __bytes_pointer_offset(__main_last, -(__last_offset - sizeof(_ValueType)));
 
-			auto __combined = (__equal_first & __equal_last);
+			const auto __loaded_first = datapar::load<_Simd_>(__sequence_start);
+			const auto __equal_first = (__loaded_first == __broadcasted_first_sub);
 
-			while (__combined.any_of()) {
-				const auto __leading_zeros = __combined.count_leading_zero_bits();
+			const auto __combined = __equal_first & __equal_last;
 
-				const auto __match_bytes = (__leading_zeros * sizeof(_ValueType) - sizeof(_ValueType));
-				const auto __main_match = __bytes_pointer_offset(__sequence_end, __match_bytes);
+			if (datapar::any_of(__combined)) {
+				auto __mask = datapar::to_mask(__combined);
 
-				//const auto __l1 = datapar::load<_Simd_>(__main_match);
-				//const auto __l2 = datapar::load<_Simd_>(__sub_first);
+				do {
+					const auto __offset_count = (__mask.bit_width() - __mask.count_leading_zero_bits());
+					const auto __offset_bytes = __offset_count * sizeof(_ValueType);
 
-				if (memcmp(__main_match, __sub_first, __match_bytes) == 0)
-					return static_cast<const _ValueType*>(__main_match);
+					const auto __main_match = __bytes_pointer_offset(__sequence_start, __offset_bytes);
 
-				__combined.clear_left_most_set_bit();
+					if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
+						return static_cast<const _ValueType*>(__main_match) - 1;
+
+					__mask.clear_left_most_set_bit();
+				} while (datapar::any_of(__mask));
 			}
 		}
 
-		if (__tail_size == 0 || __sub_bytes > __tail_size)
+		const auto __remaining_bytes = __main_bytes - __processed_bytes;
+		const auto __remaining_last = __main_last;
+
+		if (__remaining_bytes < __sub_bytes)
 			return static_cast<const _ValueType*>(__cached_last);
 
-		/*if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
-			__rewind_bytes(__main_last, __tail_size);
-
-			const auto __tail_first_mask = datapar::make_tail_mask<_Simd_>(__tail_size);
-			const auto __tail_last_mask = datapar::make_tail_mask<_Simd_>(__tail_size - __sub_bytes + sizeof(_ValueType));
-
-			const auto __last_loaded = datapar::maskz_load<_Simd_>(__main_last, __tail_last_mask);
-			const auto __first_loaded = datapar::maskz_load<_Simd_>(__bytes_pointer_offset(__main_last, __sub_bytes + sizeof(_ValueType)), __tail_first_mask);
-
-			const auto __equal_first = (__broadcasted_first_sub == __first_loaded) | datapar::as_mask;
-			const auto __equal_last = (__broadcasted_last_sub == __last_loaded) | datapar::as_mask;
-
-			auto __combined = (__equal_first & __equal_last);
-
-			while (__combined.any_of()) {
-				const auto __leading_zeros = __combined.count_leading_zero_bits();
-				const auto __main_match = __bytes_pointer_offset(__main_last, -(__leading_zeros * sizeof(_ValueType) + sizeof(_ValueType)));
-
-				if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - (2 * sizeof(_ValueType))) == 0)
-					return static_cast<const _ValueType*>(__main_match) - 1;
-
-				__combined.clear_left_most_set_bit();
-			}
-
-			return static_cast<const _ValueType*>(__cached_last);
-		}
-		else */{
-			return __find_end_scalar<_ValueType>(__main_first, (__tail_size / sizeof(_ValueType)), __sub_first, __sub_length);
+		{
+			return __find_end_scalar<_ValueType>(__main_first, (__remaining_bytes / sizeof(_ValueType)), __sub_first, __sub_length);
 		}
 	}
 };

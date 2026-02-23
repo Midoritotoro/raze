@@ -45,7 +45,7 @@ struct __remove_copy_vectorized_internal {
 
         do {
             const auto __loaded = datapar::load<_Simd_>(__first);
-            const auto __mask = (__loaded == __comparand) | datapar::as_mask;
+            const auto __mask = (__loaded == __comparand);
             
             __destination = datapar::compress_store(__destination, __loaded, __mask);
             __advance_bytes(__first, sizeof(_Simd_));

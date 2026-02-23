@@ -44,8 +44,12 @@ struct __mismatch_vectorized_internal {
             const auto __loaded_first   = datapar::load<_Simd_>(__first);
             const auto __loaded_second  = datapar::load<_Simd_>(__second);
 
-            if (const auto __mask = (__loaded_first == __loaded_second) | datapar::as_index_mask; __mask.all_of() == false)
-                return (static_cast<const _ValueType*>(__first) - __cached_first) + __mask.count_trailing_one_bits();
+            const auto __compared = (__loaded_first == __loaded_second);
+
+            if (datapar::some_of(__compared)) {
+                const auto __index_mask = datapar::to_index_mask(__compared);
+                return (static_cast<const _ValueType*>(__first) - __cached_first) + __index_mask.count_trailing_one_bits();
+            }
 
             __advance_bytes(__first, sizeof(_Simd_));
             __advance_bytes(__second, sizeof(_Simd_));
@@ -60,7 +64,7 @@ struct __mismatch_vectorized_internal {
             const auto __loaded_first   = datapar::maskz_load<_Simd_>(__first, __tail_mask);
             const auto __loaded_second  = datapar::maskz_load<_Simd_>(__second, __tail_mask);
 
-            const auto __combined_mask = ((__loaded_first == __loaded_second) & __tail_mask) | datapar::as_mask;
+            const auto __combined_mask = datapar::to_mask((__loaded_first == __loaded_second) & __tail_mask);
 
             const auto __tail_length    = (__tail_size / sizeof(_ValueType));
             const auto __all_equal_mask = (typename _Simd_::mask_type::mask_type(1) << __tail_length) - 1;

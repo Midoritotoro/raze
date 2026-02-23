@@ -48,6 +48,7 @@ public:
 	constexpr raze_always_inline mask_type unwrap() const noexcept;
 	static constexpr raze_always_inline arch::ISA isa() noexcept;
 	static constexpr raze_always_inline uint8 bit_width() noexcept;
+	static constexpr raze_always_inline uint8 elements() noexcept;
 	static constexpr raze_always_inline uint8 divisor() noexcept;
 private:
 	mask_type _mask = 0;

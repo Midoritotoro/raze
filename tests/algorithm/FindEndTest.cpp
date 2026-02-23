@@ -26,6 +26,7 @@ void run_find_end_tests_for_type() {
         std::vector<_Type_> a, b;
         check_find_end(a.begin(), a.end(), b.begin(), b.end());
     }
+
     {
         std::vector<_Type_> a{ 1,2,3,4,5 };
         std::vector<_Type_> b{ 1,2,3,4,5 };

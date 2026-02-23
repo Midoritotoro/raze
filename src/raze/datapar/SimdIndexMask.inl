@@ -59,6 +59,14 @@ template <
 	arch::ISA	_ISA_,
 	typename	_Type_,
 	uint32		_SimdWidth_>
+constexpr uint8 simd_index_mask<_ISA_, _Type_, _SimdWidth_>::elements() noexcept {
+	return __used_bits / __divisor;
+}
+
+template <
+	arch::ISA	_ISA_,
+	typename	_Type_,
+	uint32		_SimdWidth_>
 constexpr uint8 simd_index_mask<_ISA_, _Type_, _SimdWidth_>::divisor() noexcept {
 	return __divisor;
 }
