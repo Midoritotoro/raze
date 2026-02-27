@@ -9,7 +9,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_always_inline sizetype __count_scalar(
+raze_declare_const_function __raze_simd_algorithm_inline sizetype __count_scalar(
     const void*     __first,
     const sizetype  __bytes,
     _Type_          __value) noexcept
@@ -28,11 +28,12 @@ raze_always_inline sizetype __count_scalar(
 
 template <class _Simd_>
 struct __count_vectorized_internal {
-    raze_always_inline sizetype operator()(
-        sizetype                    __aligned_size,
-        sizetype                    __tail_size,
-        const void*                 __first,
-        typename _Simd_::value_type __value) noexcept
+    raze_declare_const_function raze_static_operator __raze_simd_algorithm_inline sizetype operator()(
+        sizetype                                __aligned_size,
+        sizetype                                __tail_size,
+        const void*                             __first,
+        raze_maybe_unused_attribute sizetype    __bytes,
+        typename _Simd_::value_type             __value) raze_const_operator noexcept
     {
         const auto __guard  = datapar::make_guard<_Simd_>();
         auto __count        = sizetype(0);
@@ -40,7 +41,11 @@ struct __count_vectorized_internal {
         const auto __comparand  = _Simd_(__value);
         const auto __stop_at    = __bytes_pointer_offset(__first, __aligned_size);
 
+        auto __count_vector = _Simd_::zero();
+
         do {
+            const auto __loaded = datapar::load<_Simd_>(__first);
+
             __count += datapar::reduce_equal(__comparand, datapar::load<_Simd_>(__first));
             __advance_bytes(__first, sizeof(_Simd_));
         } while (__first != __stop_at);
@@ -60,16 +65,13 @@ struct __count_vectorized_internal {
 };
 
 template <class _Type_>
-__raze_simd_algorithm_inline sizetype __count_vectorized(
+raze_declare_const_function __raze_simd_algorithm_inline sizetype __count_vectorized(
     const void*     __first,
     const sizetype  __bytes,
     _Type_          __value) noexcept
 {
-    const auto __fallback_args  = std::forward_as_tuple(__first, __bytes, __value);
-    const auto __simd_args      = std::forward_as_tuple(__first, __value);
-
-    return datapar::__simd_sized_dispatcher<__count_vectorized_internal>::__apply<_Type_>(
-        __bytes, &__count_scalar<_Type_>, std::move(__simd_args), std::move(__fallback_args));
+    return datapar::__simd_sized_dispatcher<__count_vectorized_internal, _Type_>()(
+        __bytes, &__count_scalar<_Type_>, __first, __bytes, __value);
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

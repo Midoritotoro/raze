@@ -11,7 +11,7 @@ __RAZE_CONCURRENCY_NAMESPACE_BEGIN
 
 class _ThreadPoolExecutor {
 #if defined(raze_os_windows)
-	using implementation = WindowsThreadPool;
+	using implementation = __windows_thread_pool;
 #endif // defined(raze_os_windows)
 public:
 	~_ThreadPoolExecutor() noexcept;
@@ -27,7 +27,7 @@ public:
 
 	void join() noexcept;
 private:
-	_ThreadPoolWork* _work = nullptr;
+	__thread_pool_work* _work = nullptr;
 };
 
 template <class _Task_>
@@ -36,25 +36,25 @@ _ThreadPoolExecutor::_ThreadPoolExecutor(_Task_& task) noexcept {
 }
 
 template <class _Task_>
-void _ThreadPoolExecutor::createTask(_Task_& task) noexcept {
-	_work = implementation::createWork(task);
+void _ThreadPoolExecutor::createTask(_Task_& __task) noexcept {
+	_work = implementation::__create_work(__task);
 }
 
 void _ThreadPoolExecutor::submit() noexcept {
-	implementation::submit(_work);
+	implementation::__submit(_work);
 }
 
-void _ThreadPoolExecutor::submitForChunks(uint32 submissions) noexcept {
-	for (uint32 current = 0; current < submissions; ++current)
-		implementation::submit(_work);
+void _ThreadPoolExecutor::submitForChunks(uint32 __submissions) noexcept {
+	for (auto __current = uint32(0); __current < __submissions; ++__current)
+		implementation::__submit(_work);
 }
 
 _ThreadPoolExecutor::~_ThreadPoolExecutor() noexcept {
-	implementation::closeWork(_work);
+	implementation::__close_work(_work);
 }
 
 void _ThreadPoolExecutor::join() noexcept {
-	implementation::waitFor(_work);
+	implementation::__wait_for(_work);
 }
 
 __RAZE_CONCURRENCY_NAMESPACE_END

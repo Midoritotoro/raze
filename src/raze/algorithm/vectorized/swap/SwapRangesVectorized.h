@@ -7,7 +7,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_always_inline void __swap_ranges_scalar(
+__raze_simd_algorithm_inline void __swap_ranges_scalar(
 	void*		__first,
 	void*		__second,
 	sizetype	__count) noexcept
@@ -27,11 +27,12 @@ template <class _Simd_>
 struct __swap_ranges_vectorized_internal {
 	using _ValueType = typename _Simd_::value_type;
 
-	raze_always_inline void operator()(
-		sizetype	__aligned_size,
-		sizetype	__tail_size,
-		void*		__first,
-		void*		__second) noexcept
+	raze_static_operator __raze_simd_algorithm_inline void operator()(
+		sizetype								__aligned_size,
+		sizetype								__tail_size,
+		void*									__first,
+		void*									__second,
+		raze_maybe_unused_attribute sizetype	__count) raze_const_operator noexcept
 	{	
 		const auto __guard = datapar::make_guard<_Simd_>();
 		const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
@@ -53,16 +54,15 @@ struct __swap_ranges_vectorized_internal {
 
 
 template <typename _Type_>
-raze_always_inline void __swap_ranges_vectorized(
+__raze_simd_algorithm_inline void __swap_ranges_vectorized(
 	void*		__first,
 	void*		__second,
 	sizetype	__count) noexcept
 {
 	using _IntegerType = typename IntegerForSizeof<_Type_>::Unsigned;
 
-	datapar::__simd_sized_dispatcher<__swap_ranges_vectorized_internal>::__apply<_IntegerType>(
-		__count * sizeof(_IntegerType), &__swap_ranges_scalar<_IntegerType>, std::make_tuple(__first, __second),
-		std::make_tuple(__first, __second, __count));
+	datapar::__simd_sized_dispatcher<__swap_ranges_vectorized_internal, _IntegerType>()(
+		__count * sizeof(_IntegerType), &__swap_ranges_scalar<_IntegerType>, __first, __second, __count);
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -7,7 +7,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <typename _Type_>
-raze_always_inline void __replace_copy_scalar(
+__raze_simd_algorithm_inline void __replace_copy_scalar(
     const void*     __first,
     const void*     __last,
     void*           __destination,
@@ -26,14 +26,14 @@ template <class _Simd_>
 struct __replace_copy_vectorized_internal {
     using _ValueType = typename _Simd_::value_type;
 
-    raze_always_inline void operator()(
+    raze_static_operator __raze_simd_algorithm_inline void operator()(
         sizetype    __aligned_size,
         sizetype    __tail_size,
         const void* __first,
         const void* __last,
         void*       __destination,
         _ValueType  __old_value,
-        _ValueType  __new_value) noexcept
+        _ValueType  __new_value) raze_const_operator noexcept
     {
         const auto __guard = datapar::make_guard<_Simd_>();
 
@@ -69,14 +69,14 @@ struct __replace_copy_vectorized_internal {
 };
 
 template <typename _Type_>
-raze_always_inline void __replace_copy_vectorized(
+__raze_simd_algorithm_inline void __replace_copy_vectorized(
     const void*     __first,
     const void*     __last,
     void*           __destination,
     const _Type_    __old_value,
     const _Type_    __new_value) noexcept
 {
-    datapar::__simd_sized_dispatcher<__replace_copy_vectorized_internal>::__apply<_Type_>(
+    datapar::__simd_sized_dispatcher<__replace_copy_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__replace_copy_scalar<_Type_>,
         __first, __last, __destination, __old_value, __new_value);
 }

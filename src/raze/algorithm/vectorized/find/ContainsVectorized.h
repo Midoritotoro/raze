@@ -9,7 +9,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_always_inline bool __contains_scalar(
+raze_declare_const_function __raze_simd_algorithm_inline bool __contains_scalar(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept
@@ -28,12 +28,12 @@ raze_always_inline bool __contains_scalar(
 
 template <class _Simd_>
 struct __contains_vectorized_internal {
-    raze_always_inline bool operator()(
+    raze_declare_const_function raze_static_operator __raze_simd_algorithm_inline bool operator()(
         sizetype                    __aligned_size,
         sizetype                    __tail_size,
         const void*                 __first,
         const void*                 __last,
-        typename _Simd_::value_type __value) const noexcept
+        typename _Simd_::value_type __value) raze_const_operator noexcept
     {
         const auto __guard      = datapar::make_guard<_Simd_>();
         const auto __comparand  = _Simd_(__value);
@@ -65,12 +65,12 @@ struct __contains_vectorized_internal {
 };
 
 template <class _Type_>
-__raze_simd_algorithm_inline bool __contains_vectorized(
+raze_declare_const_function __raze_simd_algorithm_inline bool __contains_vectorized(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__contains_vectorized_internal>::__apply<_Type_>(
+    return datapar::__simd_sized_dispatcher<__contains_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__contains_scalar<_Type_>, __first, __last, __value);
 }
 

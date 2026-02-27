@@ -48,8 +48,8 @@ public:
     }
 };
 
-RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS(SimdStlClzBenchmark::Clz, BsrInstructionForClzBenchmark::Clz, 1000000);
-RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS(SimdStlClzBenchmark::Clz, LzcntInstructionForClzBenchmark::Clz, 1000000);
-RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS(SimdStlClzBenchmark::Clz, StdClzBenchmark::Clz, 1000000);
+RAZE_ADD_BENCHMARK(SimdStlClzBenchmark::Clz, BsrInstructionForClzBenchmark::Clz);
+RAZE_ADD_BENCHMARK(SimdStlClzBenchmark::Clz, LzcntInstructionForClzBenchmark::Clz);
+RAZE_ADD_BENCHMARK(SimdStlClzBenchmark::Clz, StdClzBenchmark::Clz);
 
 RAZE_BENCHMARK_MAIN();

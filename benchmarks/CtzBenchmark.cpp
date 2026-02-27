@@ -34,7 +34,7 @@ public:
         static constexpr unsigned int value = 0b10000000000000000000000000000000;
 
         while (state.KeepRunning()) {
-            benchmark::DoNotOptimize(raze::math::CountTrailingZeroBits(value));
+            benchmark::DoNotOptimize(raze::math::count_trailing_zero_bits(value));
         }
     }
 };
@@ -50,8 +50,8 @@ public:
     }
 };
 
-//RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS(SimdStlCtzBenchmark::Ctz, BsfInstructionForCtzBenchmark::Ctz, 1000000);
-//RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS(SimdStlCtzBenchmark::Ctz, TzcntInstructionForCtzBenchmark::Ctz, 1000000);
-RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS(SimdStlCtzBenchmark::Ctz, StdCtzBenchmark::Ctz, 1000000);
+RAZE_ADD_BENCHMARK(SimdStlCtzBenchmark::Ctz, BsfInstructionForCtzBenchmark::Ctz);
+RAZE_ADD_BENCHMARK(SimdStlCtzBenchmark::Ctz, TzcntInstructionForCtzBenchmark::Ctz);
+RAZE_ADD_BENCHMARK(SimdStlCtzBenchmark::Ctz, StdCtzBenchmark::Ctz);
 
 RAZE_BENCHMARK_MAIN();

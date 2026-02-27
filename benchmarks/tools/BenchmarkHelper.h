@@ -157,23 +157,6 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint16);
 RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint32);
 RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
 
-
-#if !defined(RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS)
-#  define RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS(benchFirst, benchSecond, repititions)                   \
-     BENCHMARK(benchFirst)->Unit(RAZE_BENCHMARK_UNIT_OF_MEASUREMENT)    \
-        ->Iterations(RAZE_BENCHMARK_ITERATIONS)                         \
-        ->Repetitions(repititions)                       \
-        ->ReportAggregatesOnly(false)                                    \
-        ->DisplayAggregatesOnly(true);                                  \
-    BENCHMARK(benchSecond)->Unit(RAZE_BENCHMARK_UNIT_OF_MEASUREMENT)    \
-        ->Iterations(RAZE_BENCHMARK_ITERATIONS)                         \
-        ->Repetitions(repititions)                       \
-        ->ReportAggregatesOnly(false)                                    \
-        ->DisplayAggregatesOnly(true);                                   
-#endif // RAZE_ADD_BENCHMARK_WITH_CUSTOM_REPITITIONS
-
-
-
 #if !defined(RAZE_ADD_BENCHMARK)
 #  define RAZE_ADD_BENCHMARK(benchFirst, benchSecond)                   \
      BENCHMARK(benchFirst)->Unit(RAZE_BENCHMARK_UNIT_OF_MEASUREMENT);   \

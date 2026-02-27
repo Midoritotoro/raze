@@ -8,7 +8,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_nodiscard raze_always_inline const _Type_* __find_scalar(
+raze_always_inline const _Type_* __find_scalar(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept
@@ -23,7 +23,7 @@ raze_nodiscard raze_always_inline const _Type_* __find_scalar(
 
 template <class _Simd_>
 struct __find_vectorized_internal {
-    raze_nodiscard raze_always_inline raze_static_operator const typename _Simd_::value_type* operator()(
+    raze_always_inline raze_static_operator const typename _Simd_::value_type* operator()(
         sizetype                    __aligned_size,
         sizetype                    __tail_size,
         const void*                 __first,
@@ -68,12 +68,12 @@ struct __find_vectorized_internal {
 };
 
 template <class _Type_>
-__raze_simd_algorithm_inline raze_nodiscard _Type_* __find_vectorized(
+__raze_simd_algorithm_inline _Type_* __find_vectorized(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept
 {
-    return const_cast<_Type_*>(datapar::__simd_sized_dispatcher<__find_vectorized_internal>::__apply<_Type_>(
+    return const_cast<_Type_*>(datapar::__simd_sized_dispatcher<__find_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__find_scalar<_Type_>, __first, __last, __value));
 }
 

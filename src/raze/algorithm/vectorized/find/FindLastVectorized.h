@@ -9,7 +9,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_always_inline const _Type_* __find_last_scalar(
+__raze_simd_algorithm_inline const _Type_* __find_last_scalar(
     const void* __first,
     const void* __last,
     _Type_      __value) noexcept
@@ -31,12 +31,12 @@ template <class _Simd_>
 struct __find_last_vectorized_internal {
     using _ValueType = typename _Simd_::value_type;
 
-    raze_always_inline const _ValueType* operator()(
+    raze_static_operator __raze_simd_algorithm_inline const _ValueType* operator()(
         sizetype    __aligned_size,
         sizetype    __tail_size,
         const void* __first,
         const void* __last,
-        _ValueType  __value) const noexcept
+        _ValueType  __value) raze_const_operator noexcept
     {
         const auto __guard = datapar::make_guard<_Simd_>();
 
@@ -94,7 +94,7 @@ __raze_simd_algorithm_inline _Type_* __find_last_vectorized(
     const void* __last,
     _Type_      __value) noexcept
 {
-    return const_cast<_Type_*>(datapar::__simd_sized_dispatcher<__find_last_vectorized_internal>::__apply<_Type_>(
+    return const_cast<_Type_*>(datapar::__simd_sized_dispatcher<__find_last_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__find_last_scalar<_Type_>, __first, __last, __value));
 }
 __RAZE_ALGORITHM_NAMESPACE_END

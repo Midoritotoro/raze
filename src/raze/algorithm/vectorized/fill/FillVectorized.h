@@ -110,7 +110,7 @@ raze_always_inline void* __memset_vectorized(
     _Type_      __value,
     sizetype    __count) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__memset_vectorized_internal>::__apply<_Type_>(
+    return datapar::__simd_sized_dispatcher<__memset_vectorized_internal, _Type_>()(
         __count * sizeof(_Type_), &__memset_scalar<_Type_>, __destination, __value, __count);
 }
 

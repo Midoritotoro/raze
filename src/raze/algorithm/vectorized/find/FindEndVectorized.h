@@ -8,40 +8,39 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 
 template <class _Type_>
-raze_nodiscard raze_declare_const_function __raze_simd_algorithm_inline const _Type_* __find_end_scalar(
+__raze_simd_algorithm_inline const _Type_* __find_end_scalar(
 	const void* __main_first,
 	sizetype    __main_length,
 	const void* __sub_first,
 	sizetype    __sub_length) noexcept
 {
-	const auto* main = static_cast<const _Type_*>(__main_first);
-	const auto* sub = static_cast<const _Type_*>(__sub_first);
+	const auto* __main_current = static_cast<const _Type_*>(__main_first);
+	const auto* __sub_current = static_cast<const _Type_*>(__sub_first);
 
-	const auto* main_end = main + __main_length;
-	const auto* sub_end = sub + __sub_length;
+	const auto* __main_end = __main_current + __main_length;
+	const auto* __sub_end = __sub_current + __sub_length;
 
-	for (const _Type_* cand = main_end - __sub_length; cand >= main; --cand) {
-		const _Type_* p1 = cand;
-		const _Type_* p2 = sub;
+	for (const _Type_* __candidate = __main_end - __sub_length; __candidate >= __main_current; --__candidate) {
+		const auto* __first = __candidate;
+		const auto* __second = __sub_current;
 
-		while (p2 != sub_end && *p1 == *p2) {
-			++p1;
-			++p2;
+		while (__second != __sub_end && *__first == *__second) {
+			++__first;
+			++__second;
 		}
 
-		if (p2 == sub_end)
-			return cand;
+		if (__second == __sub_end)
+			return __candidate;
 	}
 
-	return main_end;
+	return __main_end;
 }
-
 
 template <class _Simd_>
 struct __find_end_vectorized_internal {
 	using _ValueType = typename _Simd_::value_type;
 
-	raze_nodiscard raze_declare_const_function __raze_simd_algorithm_inline raze_static_operator const _ValueType* operator()(
+	__raze_simd_algorithm_inline raze_static_operator const _ValueType* operator()(
 		sizetype	__aligned_size,
 		sizetype	__tail_size,
 		const void* __main_first,
@@ -119,13 +118,13 @@ struct __find_end_vectorized_internal {
 };
 
 template <class _Type_>
-raze_nodiscard raze_declare_const_function __raze_simd_algorithm_inline const _Type_* __find_end_vectorized(
+__raze_simd_algorithm_inline const _Type_* __find_end_vectorized(
 	const void* __main_first,
 	sizetype	__main_length,
 	const void* __sub_first,
 	sizetype	__sub_length) noexcept
 {
-	return datapar::__simd_sized_dispatcher<__find_end_vectorized_internal>::__apply<_Type_>(
+	return datapar::__simd_sized_dispatcher<__find_end_vectorized_internal, _Type_>()(
 		__main_length * sizeof(_Type_), &__find_end_scalar<_Type_>, __main_first, __main_length, __sub_first, __sub_length);
 }
 

@@ -86,7 +86,7 @@ ProcessorFeatures::ProcessorFeaturesInternal::ProcessorFeaturesInternal() noexce
  
     if (leafCount >= 1) {
         std::memset(registers.data(), 0, registers.size() * sizeof(uint32));
-        cpuidex(registers.data(), 1, 0); // 0 - eax, 1 - ebx, 2 - ecx, 3 - edx
+        cpuidex(registers.data(), 1, 0);
 
         const auto leaf1Ecx = registers[2];
         
@@ -111,7 +111,7 @@ ProcessorFeatures::ProcessorFeaturesInternal::ProcessorFeaturesInternal() noexce
 
     if (leafCount >= 7) {
         std::memset(registers.data(), 0, registers.size() * sizeof(uint32));
-        cpuidex(registers.data(), 7, 0); // 0 - eax, 1 - ebx, 2 - ecx, 3 - edx
+        cpuidex(registers.data(), 7, 0);
 
         const auto leaf7Ebx = registers[1];
         const auto leaf7Ecx = registers[2];

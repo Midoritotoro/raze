@@ -9,9 +9,9 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_declare_const_function raze_always_inline _Type_* __remove_scalar(
+__raze_simd_algorithm_inline _Type_* __remove_scalar(
     void*       __first,
-    const void* __current,
+    void*       __current,
     const void* __last,
     _Type_      __value) noexcept
 {
@@ -28,23 +28,22 @@ raze_declare_const_function raze_always_inline _Type_* __remove_scalar(
     return __first_pointer;
 }
 
-
 template <class _Simd_>
 struct __remove_vectorized_internal {
     using _ValueType = typename _Simd_::value_type;
 
-    raze_always_inline _ValueType* operator()(
+    raze_static_operator __raze_simd_algorithm_inline _ValueType* operator()(
         sizetype    __aligned_size,
         sizetype    __tail_size,
         void*       __first,
+        void*       __current,
         const void* __last,
-        _ValueType  __value) const noexcept
+        _ValueType  __value) raze_const_operator noexcept
     {
         const auto __guard = datapar::make_guard<_Simd_>();
         const auto __comparand = _Simd_(__value);
 
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
-        auto* __current = __first;
 
         do {
             const auto __loaded = datapar::load<_Simd_>(__current);
@@ -61,15 +60,13 @@ struct __remove_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline _Type_* __remove_vectorized(
+__raze_simd_algorithm_inline _Type_* __remove_vectorized(
     void*       __first,
     const void* __last,
     _Type_      __value) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__remove_vectorized_internal>::__apply<_Type_>(
-        __byte_length(__first, __last), &__remove_scalar<_Type_>,
-        std::make_tuple(__first, __last, __value), std::make_tuple(__first, __first, __last, __value));
+    return datapar::__simd_sized_dispatcher<__remove_vectorized_internal, _Type_>()(
+        __byte_length(__first, __last), &__remove_scalar<_Type_>, __first, __first, __last, __value);
 }
-
 
 __RAZE_ALGORITHM_NAMESPACE_END

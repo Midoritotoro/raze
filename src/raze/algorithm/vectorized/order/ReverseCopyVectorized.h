@@ -7,7 +7,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_always_inline void __reverse_copy_scalar(
+__raze_simd_algorithm_inline void __reverse_copy_scalar(
     const void* __first,
     const void* __last,
     void*       __destination) noexcept
@@ -23,12 +23,12 @@ raze_always_inline void __reverse_copy_scalar(
 
 template <class _Simd_>
 struct __reverse_copy_vectorized_internal {
-    raze_always_inline void operator()(
+    raze_static_operator __raze_simd_algorithm_inline void operator()(
         sizetype    __aligned_size,
         sizetype    __tail_size,
         const void* __first,
         const void* __last,
-        void*       __destination) noexcept
+        void*       __destination) raze_const_operator noexcept
     {
         const auto __guard = datapar::make_guard<_Simd_>();
         const auto __stop_at = __bytes_pointer_offset(__last, -__aligned_size);
@@ -47,12 +47,12 @@ struct __reverse_copy_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline void __reverse_copy_vectorized(
+__raze_simd_algorithm_inline void __reverse_copy_vectorized(
     const void* __first,
     const void* __last,
     void*       __destination) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__reverse_copy_vectorized_internal>::__apply<_Type_>(
+    return datapar::__simd_sized_dispatcher<__reverse_copy_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__reverse_copy_scalar<_Type_>, __first, __last, __destination);
 }
 

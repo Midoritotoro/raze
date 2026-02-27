@@ -9,7 +9,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <typename _Type_> 
-raze_always_inline sizetype __mismatch_scalar(
+raze_declare_const_function __raze_simd_algorithm_inline sizetype __mismatch_scalar(
     const void* __first,
     const void* __second,
     sizetype    __length) noexcept
@@ -26,12 +26,12 @@ raze_always_inline sizetype __mismatch_scalar(
 
 template <class _Simd_>
 struct __mismatch_vectorized_internal {
-    raze_always_inline sizetype operator()(
+    raze_static_operator raze_declare_const_function __raze_simd_algorithm_inline sizetype operator()(
         sizetype            __aligned_size,
         sizetype            __tail_size,
         const void*         __first,
         const void*         __second,
-        const sizetype      __length) noexcept
+        const sizetype      __length) raze_const_operator noexcept
     {
         using _ValueType = typename _Simd_::value_type;
 
@@ -80,14 +80,13 @@ struct __mismatch_vectorized_internal {
     }
 };
 
-
 template <typename _Type_>
-__raze_simd_algorithm_inline sizetype __mismatch_vectorized(
+raze_declare_const_function __raze_simd_algorithm_inline sizetype __mismatch_vectorized(
     const void*     __first,
     const void*     __second,
     const sizetype  __length) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__mismatch_vectorized_internal>::__apply<_Type_>(
+    return datapar::__simd_sized_dispatcher<__mismatch_vectorized_internal, _Type_>()(
         __length * sizeof(_Type_), &__mismatch_scalar<_Type_>, __first, __second, __length);
 }
 

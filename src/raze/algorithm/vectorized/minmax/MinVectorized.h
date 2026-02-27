@@ -7,7 +7,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Type_>
-raze_always_inline _Type_ __min_scalar(
+raze_declare_const_function __raze_simd_algorithm_inline _Type_ __min_scalar(
     const void* __first,
     const void* __last) noexcept
 {
@@ -28,11 +28,11 @@ template <class _Simd_>
 struct __min_vectorized_internal {
     using _ValueType = typename _Simd_::value_type;
 
-    raze_always_inline _ValueType operator ()(
+    raze_static_operator raze_declare_const_function __raze_simd_algorithm_inline _ValueType operator ()(
         sizetype    __aligned_size,
         sizetype    __tail_size,
         const void* __first,
-        const void* __last) const noexcept
+        const void* __last) raze_const_operator noexcept
     {
         const auto __guard = datapar::make_guard<_Simd_>();
         auto __minimum_values = _Simd_::zero();
@@ -65,11 +65,11 @@ struct __min_vectorized_internal {
 };
 
 template <class _Type_>
-raze_always_inline _Type_ __min_vectorized(
+raze_declare_const_function __raze_simd_algorithm_inline _Type_ __min_vectorized(
     const void* __first,
     const void* __last) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__min_vectorized_internal>::__apply<_Type_>(
+    return datapar::__simd_sized_dispatcher<__min_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__min_scalar<_Type_>, __first, __last);
 }
 

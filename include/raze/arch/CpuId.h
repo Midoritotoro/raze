@@ -5,8 +5,8 @@
 #include <raze/compatibility/CompilerDetection.h>
 #include <raze/compatibility/CallingConventions.h>
 
-#include <raze/RazeNamespace.h>
-#include <raze/compatibility/SimdCompatibility.h>
+#include <raze/compatibility/Compatibility.h>
+
 
 #if (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 #  include <cpuid.h>
@@ -15,32 +15,32 @@
 
 __RAZE_ARCH_NAMESPACE_BEGIN
 
-void cpuid(
-	uint32 regs[4],
-	uint32 leaf) noexcept
+raze_always_inline void cpuid(
+	uint32 __regs[4],
+	uint32 __leaf) noexcept
 {
 #if (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
-	__get_cpuid(leaf, regs, regs + 1, regs + 2, regs + 3);
+	__get_cpuid(__leaf, __regs, __regs + 1, __regs + 2, __regs + 3);
 #else
-	__cpuid((int*)regs, leaf);
+	__cpuid(reinterpret_cast<int*>(__regs), __leaf);
 #endif // (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 }
 
-void cpuidex(
-    uint32 regs[4],
-    uint32 leaf, 
-    uint32 subleaf) noexcept
+raze_always_inline void cpuidex(
+    uint32 __regs[4],
+    uint32 __leaf,
+    uint32 __subleaf) noexcept
 {
 #if defined(raze_cpp_msvc) || \
     (defined(raze_cpp_clang) && raze_cpp_clang >= 1810) || \
     (defined(raze_cpp_gnu) && raze_cpp_gnu >= 1100)
-    __cpuidex((int*)regs, leaf, subleaf);
+    __cpuidex(reinterpret_cast<int*>(__regs), __leaf, __subleaf);
 #else
-    uint32* eax = &regs[0], *ebx = &regs[1], *ecx = &regs[2], *edx = &regs[3];
+    uint32* __eax = &__regs[0], *__ebx = &__regs[1], *__ecx = &__regs[2], *__edx = &__regs[3];
     __asm__ __volatile__(
         "cpuid"
-        : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
-        : "a"(leaf), "c"(subleaf)
+        : "=a"(*__eax), "=b"(*__ebx), "=c"(*__ecx), "=d"(*__edx)
+        : "a"(__leaf), "c"(__subleaf)
     );
 #endif
 }

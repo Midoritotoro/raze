@@ -100,11 +100,11 @@ __simd_nodiscard_inline auto to_simd(const _MaskType_& __mask) noexcept
 	requires(__is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
 {
 	using _RawType = std::remove_cvref_t<_MaskType_>;
-	using _VectorType = typename simd<_RawType::__isa, typename _RawType::value_type, _RawType::__width>::vector_type;
+	using _VectorType = typename simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>::vector_type;
 	using _SimdType = simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>;
 
-	return _RawType(_Simd_to_vector<_RawType::__isa, _RawType::__width,
-		_VectorType, typename _RawType::value_type>()(__simd_unwrap_mask(__mask)));
+	return _SimdType(_Simd_to_vector<_RawType::__isa, _RawType::__width,
+		_VectorType, typename _RawType::element_type>()(__simd_unwrap_mask(__mask)));
 }
 
 template <
@@ -251,6 +251,7 @@ raze_always_inline __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>
 	return __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>::__isa>();
 }
 
+// Lane-wise select: result[i] = mask[i] ? first[i] : second[i].
 template <
 	class _DataparType_,
 	class _MaskType_>
@@ -258,13 +259,14 @@ __simd_nodiscard_inline _DataparType_ blend(
 	const _DataparType_&	__first,
 	const _DataparType_&	__second,
 	const _MaskType_&		__mask) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> &&
-			(__is_valid_simd_v<std::remove_cvref_t<_MaskType_>> || __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
+		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> 
+			&& (__is_valid_simd_v<std::remove_cvref_t<_MaskType_>> || __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_blend<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__simd_unwrap(__first), __simd_unwrap(__second), __simd_unwrap_mask(__mask));
 }
+
 
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ reverse(const _DataparType_& __datapar) noexcept
