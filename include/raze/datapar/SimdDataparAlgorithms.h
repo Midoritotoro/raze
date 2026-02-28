@@ -8,6 +8,23 @@
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
+/**
+ *  @brief  Converts a SIMD vector or mask into an index mask.
+ *  @ingroup simd_conversions
+ *
+ *  @param __datapar  A SIMD vector or SIMD fixed-size mask.
+ *
+ *  @return  A simd_index_mask where each lane contains either 0 or 1,
+ *           indicating whether the corresponding lane of @p __datapar
+ *           is logically true.
+ *
+ *  Index masks provide an implementation-defined per-lane representation
+ *  of truth values and are used by algorithms that require counting or
+ *  selecting lanes.  Converting directly from a SIMD vector into an index
+ *  mask avoids the need to normalize the mask into a fixed-size boolean
+ *  form, which can reduce overhead in equality checks and
+ *  other mask-driven operations.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline auto to_index_mask(const _DataparType_& __datapar) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -42,6 +59,20 @@ __simd_nodiscard_inline auto to_index_mask(const _IndexMaskType_& __index_mask) 
 	return __index_mask;
 }
 
+/**
+ *  @brief  Converts a SIMD vector or index mask into a fixed-size SIMD mask.
+ *
+ *  @param __datapar  A SIMD vector or index mask.
+ *
+ *  @return  A SIMD mask with one boolean element per lane, where each lane
+ *           is true if the corresponding lane of @p __datapar is logically true.
+ *
+ *  The resulting mask is a fixed-size mask type with one logical element
+ *  per lane, independent of the underlying ISA representation.  For AVX-512
+ *  this typically wraps a k-register. For SSE/AVX2
+ *  this is a integer mask value representing all lanes (one bit per lane).
+ * 
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline auto to_mask(const _DataparType_& __datapar) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -54,6 +85,7 @@ __simd_nodiscard_inline auto to_mask(const _DataparType_& __datapar) noexcept
 		_Simd_to_mask<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar)));
 }
+
 
 template <class _MaskType_>
 __simd_nodiscard_inline auto to_mask(const _MaskType_& __mask) noexcept
@@ -75,6 +107,7 @@ __simd_nodiscard_inline auto to_mask(const _IndexMaskType_& __index_mask) noexce
 
 	return _MaskType(_Simd_to_mask<_RawType::__isa, _RawType::__width, typename _RawType::value_type>()(__vector));
 }
+
 
 template <class _DataparType_>
 __simd_nodiscard_inline auto to_simd(const _DataparType_& __datapar) noexcept
@@ -175,6 +208,14 @@ __simd_nodiscard_inline __make_tail_mask_return_type<_DataparType_> make_tail_ma
 	return _Simd_make_tail_mask<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(__bytes);
 }
 
+/**
+ *  @brief  Per‑lane absolute value.
+ *
+ *  @param __datapar  SIMD vector whose lanes are transformed.
+ *
+ *  @return  A SIMD vector where each lane contains the absolute value of the
+ *           corresponding lane of @p __datapar.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -185,6 +226,16 @@ __simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexce
 }
 
 
+/**
+ *  @brief  Computes the horizontal minimum of all lanes.
+ *
+ *  @param __datapar  A SIMD vector.
+ *
+ *  @return  The minimum value among all lanes of @p __datapar.
+ *
+ *  The reduction order is unspecified. Equivalent to applying @c min()
+ *  across all elements of the vector.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline typename _DataparType_::value_type horizontal_min(const _DataparType_& __datapar) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
@@ -194,6 +245,16 @@ __simd_nodiscard_inline typename _DataparType_::value_type horizontal_min(const 
 		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
 }
 
+/**
+ *  @brief  Computes the horizontal maximum of all lanes.
+ *
+ *  @param __datapar  A SIMD vector.
+ *
+ *  @return  The maximum value among all lanes of @p __datapar.
+ *
+ *  The reduction order is unspecified. Equivalent to applying @c max()
+ *  across all elements of the vector.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline typename _DataparType_::value_type horizontal_max(const _DataparType_& __datapar) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
@@ -203,6 +264,15 @@ __simd_nodiscard_inline typename _DataparType_::value_type horizontal_max(const 
 		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
 }
 
+/**
+ *  @brief  Per‑lane minimum of two SIMD vectors.
+ *
+ *  @param __first   First SIMD vector.
+ *  @param __second  Second SIMD vector.
+ *
+ *  @return  A SIMD vector whose lanes contain the element‑wise minimum of
+ *           @p __first and @p __second.
+ */ 
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ vertical_min(
 	const _DataparType_& __first, 
@@ -214,6 +284,15 @@ __simd_nodiscard_inline _DataparType_ vertical_min(
 		typename _RawDataparType::value_type>()(__simd_unwrap(__first), __simd_unwrap(__second));
 }
 
+/**
+ *  @brief  Per‑lane maximum of two SIMD vectors.
+ *
+ *  @param __first   First SIMD vector.
+ *  @param __second  Second SIMD vector.
+ *
+ *  @return  A SIMD vector whose lanes contain the element‑wise maximum of
+ *           @p __first and @p __second.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ vertical_max(
 	const _DataparType_& __first,
@@ -244,6 +323,18 @@ raze_always_inline __zero_upper_at_exit_guard<_ISA_> make_guard() noexcept {
 	return __zero_upper_at_exit_guard<_ISA_>();
 }
 
+/**
+ *  @brief  RAII‑guard for zeroing upper YMM state on exit.
+ *
+ *  Creates a scope guard that invokes @c _mm256_zeroupper() on destruction
+ *  when the target ISA requires clearing upper register state after using
+ *  wide SIMD instructions. This helps avoid transition penalties between
+ *  legacy SSE code and AVX/AVX2/AVX‑512 code paths.
+ *
+ *  The guard is non‑copyable and non‑movable.  Constructing it marks the
+ *  current scope as requiring a zero‑upper on exit; leaving the scope
+ *  automatically performs the cleanup when mandated by the ISA.
+ */
 template <class _DataparType_>
 raze_always_inline __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>::__isa> make_guard() noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
@@ -251,7 +342,21 @@ raze_always_inline __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>
 	return __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>::__isa>();
 }
 
-// Lane-wise select: result[i] = mask[i] ? first[i] : second[i].
+/**
+ *  @brief  Lane-wise conditional selection.
+ *
+ *  @param __first   Value chosen when the mask lane is true.
+ *  @param __second  Value chosen when the mask lane is false.
+ *  @param __mask    SIMD mask or vector convertible to mask.
+ *
+ *  @return  A SIMD vector where each lane is selected from @p __first or
+ *           @p __second according to the corresponding lane of @p __mask.
+ *
+ *  Semantics:
+ *    result[i] = __mask[i] ? __first[i] : __second[i].
+ *
+ *  The mask may be a SIMD vector or a SIMD mask;
+ */
 template <
 	class _DataparType_,
 	class _MaskType_>
@@ -267,6 +372,13 @@ __simd_nodiscard_inline _DataparType_ blend(
 		typename _RawDataparType::value_type>()(__simd_unwrap(__first), __simd_unwrap(__second), __simd_unwrap_mask(__mask));
 }
 
+/**
+ *  @brief  Reverses the order of lanes in a SIMD vector.
+
+ *  @param __datapar  SIMD vector to be reversed.
+ *
+ *  @return A SIMD vector with lane order reversed.
+ */
 
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ reverse(const _DataparType_& __datapar) noexcept
@@ -277,6 +389,12 @@ __simd_nodiscard_inline _DataparType_ reverse(const _DataparType_& __datapar) no
 		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
 }
 
+/**
+ *  @brief  Issues a streaming store fence.
+ *
+ *  Ensures that all preceding non‑temporal (streaming) stores are completed
+ *  before any subsequent memory operations.
+ */
 template <class _DataparType_>
 raze_always_inline void streaming_fence() noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -289,6 +407,18 @@ raze_always_inline void streaming_fence() noexcept {
 	return _Simd_streaming_fence<_ISA_>()();
 }
 
+/**
+ *  @brief  Compresses lanes according to a mask.
+ *
+ *  @param __datapar  Input SIMD vector.
+ *  @param __mask     SIMD mask selecting which lanes are kept.
+ *
+ *  @return  A pair {count, vector}, where @c count is the number of bytes
+ *           corresponding to the selected lanes, and @c vector contains 
+ *			 those lanes packed nto the lowest positions.
+ *
+ *  The order of surviving lanes is preserved.
+ */
 template <
 	class _DataparType_,
 	class _MaskType_>
@@ -303,6 +433,18 @@ __simd_nodiscard_inline std::pair<uint32, _DataparType_> compress(
 		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar), __simd_unwrap_mask(__mask));
 }
 
+/**
+ *  @brief  Compressed store of selected lanes.
+ *
+ *  @param __address  Destination address.
+ *  @param __datapar  SIMD vector providing source values.
+ *  @param __mask     Mask selecting which lanes to store.
+ *
+ *  @return Pointer to the element immediately after the last stored value.
+ *
+ *  Stores only the lanes where @p __mask is true, packing them contiguously
+ *  starting at @p __address while preserving their original order.
+ */
 template <
 	class _DataparType_,
     class _MaskType_,
@@ -321,6 +463,17 @@ raze_always_inline typename _DataparType_::value_type* compress_store(
 		__simd_unwrap_mask(__mask), __simd_unwrap(__datapar), __policy);
 }
 
+/**
+ *  @brief  Non‑temporal load.
+ *
+ *  @param __address  Pointer to the source memory.
+ *
+ *  @return  A SIMD vector loaded from @p __address using non‑temporal semantics.
+ *
+ *  Performs a full‑width load that hints to the processor that the data is
+ *  not expected to be reused soon and therefore should bypass or minimize
+ *  pollution of the cache hierarchy.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ non_temporal_load(const void* __address) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -329,6 +482,16 @@ __simd_nodiscard_inline _DataparType_ non_temporal_load(const void* __address) n
 	return _Simd_non_temporal_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::vector_type>()(__address);
 }
 
+/**
+ *  @brief  Non‑temporal store.
+ *
+ *  @param __address  Pointer to the destination memory.
+ *  @param __datapar  SIMD vector whose lanes are written.
+ *
+ *  Stores all lanes of @p __datapar to @p __address using non‑temporal semantics, 
+ *  providing a hint that the stored data is not expected to be read again soon
+ *  and should avoid polluting the cache hierarchy.
+ */
 template <class _DataparType_>
 raze_always_inline void non_temporal_store(
 	void*					__address,
@@ -339,6 +502,16 @@ raze_always_inline void non_temporal_store(
 	_Simd_non_temporal_store<_RawDataparType::__isa, _RawDataparType::__width>()(__address, __simd_unwrap(__datapar));
 }
 
+/**
+ *  @brief  Loads a SIMD vector from memory.
+ *
+ *  @param __address  Pointer to the source memory.
+ *
+ *  @return  A SIMD vector containing all lanes loaded from @p __address,
+ *           using the specified alignment policy.
+ *
+ *  Performs an unconditional load of the entire vector.
+ */
 template <
 	class _DataparType_, 
 	class _AlignmentPolicy_ = unaligned_policy>
@@ -351,6 +524,14 @@ raze_always_inline _DataparType_ load(
 	return _Simd_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::vector_type>()(__address, __policy);
 }
 
+/**
+ *  @brief  Stores a SIMD vector to memory.
+ *
+ *  @param __address  Pointer to the destination memory.
+ *  @param __datapar  SIMD vector whose lanes are written to memory.
+ *
+ *  Stores all lanes of @p __datapar to @p __address using the specified alignment policy.
+ */
 template <
 	class _DataparType_, 
 	class _AlignmentPolicy_ = unaligned_policy>
@@ -364,6 +545,20 @@ raze_always_inline void store(
 	return _Simd_store<_RawDataparType::__isa, _RawDataparType::__width>()(__address, __simd_unwrap(__datapar), __policy);
 }
 
+/**
+ *  @brief  Masked load with zeroing.
+ *
+ *  @param __address  Pointer to memory to load from.
+ *  @param __mask     SIMD mask controlling which lanes are loaded.
+ *
+ *  @return  A SIMD vector where each lane is loaded from @p __address when
+ *           the corresponding mask lane is true, and zero otherwise.
+ *
+ *  This operation may be used for tail handling only when
+ *  @c _DataparType_::is_native_mask_load_supported is true, ensuring that
+ *  masked-off lanes do not perform memory accesses. This form can be faster 
+ *	than @c mask_load because masked-off lanes require no fallback value.
+ */
 template <
 	class _DataparType_,
 	class _MaskType_,
@@ -381,6 +576,21 @@ __simd_nodiscard_inline _DataparType_ maskz_load(
 			const typename _RawDataparType::value_type*>(__address), __simd_unwrap_mask(__mask), __policy);
 }
 
+/**
+ *  @brief  Masked load with fallback.
+ *
+ *  @param __address           Pointer to memory to load from.
+ *  @param __mask              SIMD mask controlling which lanes are loaded.
+ *  @param __additional_source Value used for lanes where @p __mask is false.
+ *
+ *  @return  A SIMD vector where each lane is loaded from @p __address when
+ *           the corresponding mask lane is true, or taken from
+ *           @p __additional_source otherwise.
+ *
+ *  This operation may be used for tail handling only when
+ *  @c _DataparType_::is_native_mask_load_supported is true, ensuring that
+ *  masked-off lanes do not perform memory accesses.
+ */
 template <
 	class _DataparType_,
 	class _MaskType_,
@@ -399,6 +609,19 @@ __simd_nodiscard_inline _DataparType_ mask_load(
 		__simd_unwrap_mask(__mask), __simd_unwrap(__additional_source), __policy);
 }
 
+/**
+ *  @brief  Masked store.
+ *
+ *  @param __address  Pointer to memory where elements are stored.
+ *  @param __datapar  SIMD vector providing values to store.
+ *  @param __mask     SIMD mask selecting which lanes are written.
+ *
+ *  Stores each lane of @p __datapar to @p __address when the corresponding
+ *  lane of @p __mask is true; masked‑off lanes are not written. This
+ *  operation may be used for tail handling only when
+ *  @c _DataparType_::is_native_mask_store_supported is true, ensuring that
+ *  masked‑off lanes do not perform memory accesses.
+ */
 template <
 	class _DataparType_,	
 	class _MaskType_,
@@ -459,6 +682,13 @@ __simd_nodiscard_inline auto reduce_equal(
 		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(to_simd((__first == __second) & __tail_mask)), type_traits::plus<>{});
 }
 
+/**
+ *  @brief  Tests whether all lanes are zero.
+ *
+ *  @param __datapar  A SIMD vector or mask.
+ *
+ *  @return  @c true if every lane of @p __datapar is zero; otherwise @c false.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline bool none_of(const _DataparType_& __datapar) noexcept 
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -474,6 +704,13 @@ __simd_nodiscard_inline bool none_of(const _SimdMask_& __mask) noexcept
 	return __mask.none_of();
 }
 
+/**
+ *  @brief  Tests whether all lanes are non-zero.
+ *
+ *  @param __datapar  A SIMD vector or mask.
+ *
+ *  @return  @c true if every lane of @p __datapar is non-zero; otherwise @c false.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline bool all_of(const _DataparType_& __datapar) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -489,6 +726,13 @@ __simd_nodiscard_inline bool all_of(const _SimdMask_& __mask) noexcept
 	return __mask.all_of();
 }
 
+/**
+ *  @brief  Tests whether at least one lane is non-zero.
+ *
+ *  @param __datapar  A SIMD vector or mask.
+ *
+ *  @return  @c true if any lane of @p __datapar is non-zero; otherwise @c false.
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline bool any_of(const _DataparType_& __datapar) noexcept requires(
 	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>
@@ -497,6 +741,13 @@ __simd_nodiscard_inline bool any_of(const _DataparType_& __datapar) noexcept req
 	return !none_of(__datapar);
 }
 
+/**
+ *  @brief  Tests whether not all lanes are true.
+ *
+ *  @param __datapar  A SIMD vector or mask.
+ *
+ *  @return  @c true for any value except the case where all lanes are true;
+ */
 template <class _DataparType_>
 __simd_nodiscard_inline bool some_of(const _DataparType_& __datapar) noexcept requires(
 	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>

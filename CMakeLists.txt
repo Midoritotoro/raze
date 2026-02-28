@@ -8,7 +8,7 @@ project ("raze"
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_EXTENSIONS OFF)
-set(CMAKE_GENERATOR_TOOLSET "v143")
+
 
 set(CMAKE_LINK_ $<IF:$<CONFIG:Debug>, /NODEFAULTLIB:LIBCMT, /DEBUG;/OPT:REF> /INCREMENTAL:NO)
 
@@ -580,8 +580,8 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
-    enable_testing()
-    add_subdirectory(benchmarks)
+    # enable_testing()
+    # add_subdirectory(benchmarks)
 endif()
 
 if(RAZE_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)

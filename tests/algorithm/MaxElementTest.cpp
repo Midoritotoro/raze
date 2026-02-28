@@ -23,43 +23,48 @@ void check_max_element(It first, It last, Pred pred) {
 
 template <class T>
 void run_tests_for_type() {
-    //{
-    //    std::vector<T> a;
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::vector<T> a{ 1 };
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::vector<T> a{ 1,2,3,4,5 };
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::vector<T> a{ 5,4,3,2,1 };
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::vector<T> a{ 1,1,1,1,1 };
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::vector<T> a{ T(-5), T(-2),T(-9),T(-1),T(-3)};
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::list<T> a{ 3,1,4,1,5,9 };
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::deque<T> a{ 10,20,30,40,50 };
-    //    check_max_element(a.begin(), a.end());
-    //}
-    //{
-    //    std::vector<T> a(10000, 1);
-    //    a[5000] = 999;
-    //    check_max_element(a.begin(), a.end());
-    //}
+    {
+        std::vector<T> a;
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::vector<T> a{ 1 };
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::vector<T> a{ 1,2,3,4,5 };
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::vector<T> a{ 5,4,3,2,1 };
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::vector<T> a{ 1,1,1,1,1 };
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::vector<T> a{ T(-5), T(-2),T(-9),T(-1),T(-3)};
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::list<T> a{ 3,1,4,1,5,9 };
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::deque<T> a{ 10,20,30,40,50 };
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::vector<T> a(100, 1);
+        a[50] = 999;
+        check_max_element(a.begin(), a.end());
+    }
+    {
+        std::vector<T> a(10000, 1);
+        a[5000] = 999;
+        check_max_element(a.begin(), a.end());
+    }
     {
         std::vector<T> a(200000, 3);
         a[199999] = 777;
@@ -71,7 +76,7 @@ void run_tests_for_type() {
         check_max_element(a.begin(), a.end(), pred);
     }
 
-  /*  {
+    {
         std::mt19937 rng(123456);
         std::uniform_int_distribution<int> len_dist(0, 2000);
         std::uniform_int_distribution<int> val_dist(-1000000, 1000000);
@@ -90,11 +95,11 @@ void run_tests_for_type() {
 
             raze_assert(std_res == simd_res);
         }
-    }*/
+    }
 }
 
 void run_tests_for_string() {
-  /*  {
+    {
         std::string s = "Hello";
         check_max_element(s.begin(), s.end());
     }
@@ -106,7 +111,7 @@ void run_tests_for_string() {
         std::string s = "CaseInsensitive";
         auto pred = [](char a, char b) { return std::tolower(a) < std::tolower(b); };
         check_max_element(s.begin(), s.end(), pred);
-    }*/
+    }
     {
         std::string s(64, 'a');
         s[32] = 'f';
@@ -124,7 +129,7 @@ void run_tests_for_string() {
 }
 
 int main() {
-   // run_tests_for_string();
+    run_tests_for_string();
 
     run_tests_for_type<char>();
     run_tests_for_type<short>();

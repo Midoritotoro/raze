@@ -60,7 +60,6 @@ struct __max_element_vectorized_internal {
         auto __stop_at = __bytes_pointer_offset(__first, __aligned_portion_size);
         __aligned_size -= __aligned_portion_size;
 
-         
         while (true) {
             __advance_bytes(__first, sizeof(_Simd_));
             ++__current_indices;
@@ -84,31 +83,34 @@ struct __max_element_vectorized_internal {
                 const auto __horizontal_position = __final_mask.count_trailing_zero_bits();
                 const auto __vertical_position = sizetype(__current_indices_max.extract(__horizontal_position));
                 
-                __max_element = __bytes_pointer_offset(__portion_begin, __vertical_position * sizeof(_Simd_) + __horizontal_position);
-            }
+                const auto __maybe_max_element = __bytes_pointer_offset(__portion_begin, 
+                    __vertical_position * sizeof(_Simd_) + __horizontal_position * sizeof(_ValueType));
+                if (*__maybe_max_element > *__max_element)
+                    __max_element = __maybe_max_element;
 
-            if constexpr (__has_portion_max_value) {
-                __aligned_portion_size = raze::algorithm::min(__max_portion_size, __aligned_size);
+                if constexpr (__has_portion_max_value) {
+                    __aligned_portion_size = raze::algorithm::min(__max_portion_size, __aligned_size);
 
-                if (__aligned_portion_size == 0)
+                    if (__aligned_portion_size == 0)
+                        break;
+
+                    __aligned_size -= __aligned_portion_size;
+                    __advance_bytes(__stop_at, __aligned_portion_size);
+                    __portion_begin = static_cast<const _ValueType*>(__first);
+
+                    __current_values = datapar::load<_Simd_>(__first);
+                    __current_values_max = __current_values;
+                    __current_indices_max = _IndexSimdType::zero();
+                }
+                else {
                     break;
-
-                __aligned_size -= __aligned_portion_size;
-                __advance_bytes(__stop_at, __aligned_portion_size);
-                __portion_begin = static_cast<const _ValueType*>(__first);
-
-                __current_values = datapar::load<_Simd_>(__first);
-                __current_values_max = __current_values;
-                __current_indices_max = _IndexSimdType::zero();
-            }
-            else {
-                break;
+                }
             }
         }
 
         auto __first_current = static_cast<const _ValueType*>(__first);
 
-        for (; ++__first_current != __last; )
+        for (; __first_current != __last; ++__first_current )
             if (*__first_current > *__max_element)
                 __max_element = __first_current;
 
