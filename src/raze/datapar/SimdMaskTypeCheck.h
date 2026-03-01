@@ -51,7 +51,7 @@ struct __is_simd_index_mask<
 {};
 
 template <class _SimdMask_>
-constexpr bool __is_simd_index_mask_v = __is_simd_index_mask<_SimdMask_>::value;
+constexpr bool __is_simd_index_mask_v = __is_simd_index_mask<std::remove_cvref_t<_SimdMask_>>::value;
 
 template <
 	arch::ISA	_ISA_,
@@ -86,6 +86,6 @@ struct __is_simd_mask<
 {};
 
 template <class _SimdMask_>
-constexpr bool __is_simd_mask_v = __is_simd_mask<_SimdMask_>::value;
+constexpr bool __is_simd_mask_v = __is_simd_mask<std::remove_cvref_t<_SimdMask_>>::value;
 
 __RAZE_DATAPAR_NAMESPACE_END

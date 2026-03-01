@@ -2,9 +2,16 @@
 
 #include <src/raze/datapar/SimdElementMaskOperations.h>
 #include <src/raze/type_traits/TypeTraits.h>
+#include <src/raze/datapar/Compare.h>
+#include <src/raze/datapar/MaskTypeSelector.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
+
+template <class _Simd_>
+constexpr inline auto __is_native_compare_returns_number_v = std::is_integral_v<
+	type_traits::invoke_result_type<_Simd_equal<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>,
+	typename _Simd_::vector_type, typename _Simd_::vector_type>>;
 
 template <
 	arch::ISA	_ISA_,
@@ -17,23 +24,23 @@ class simd_mask:
 	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
 
 	using __base = __simd_element_mask_operations<simd_mask<_ISA_, _Type_, _SimdWidth_>>;
+	static constexpr auto __number_mask = __is_native_compare_returns_number_v<simd<_ISA_, _Type_, _SimdWidth_>>;
 public:
 	static constexpr auto __isa = _ISA_;
 	static constexpr auto __width = _SimdWidth_;
+	static constexpr auto __is_k_register = __has_avx512f_support_v<__isa>;
+	static constexpr auto __used_bits = __number_mask ? (_SimdWidth_ / 8) / sizeof(_Type_) : _SimdWidth_;
 
 	using element_type	= _Type_;
-	using mask_type		= type_traits::__deduce_simd_mask_type<_ISA_, element_type, _SimdWidth_>;
-
-	static constexpr uint8 __used_bits = (_SimdWidth_ / 8) / sizeof(_Type_);
+	using mask_type = std::conditional_t<__number_mask,
+		__mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>,
+		typename simd<_ISA_, typename IntegerForSizeof<_Type_>::Unsigned, __used_bits>::vector_type>;
 
 	simd_mask() noexcept;
 
 	simd_mask(const mask_type __mask) noexcept;
 	simd_mask(const simd_mask& __mask) noexcept;
 	
-	template <class _VectorMask_, std::enable_if_t<__is_valid_simd_v<_VectorMask_> || __is_intrin_type_v<_VectorMask_>, int> = 0>
-	simd_mask(const _VectorMask_& __vector_mask) noexcept;
-
 	constexpr raze_always_inline bool operator[](int32 __index) const noexcept;
 
 	constexpr raze_always_inline simd_mask operator++(int) noexcept;

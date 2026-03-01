@@ -154,13 +154,6 @@ template <class _VectorType_>
 using __unwrapped_vector_type = typename __unwrapped_vector_t<_VectorType_>::type;
 
 template <
-	class		_Simd_,
-	typename	_ReturnType_>
-using __native_compare_return_type_helper = std::conditional_t<__is_intrin_type_v<_ReturnType_>,
-	simd<_Simd_::__isa, typename _Simd_::value_type, _Simd_::__width>,
-    simd_mask<_Simd_::__isa, typename _Simd_::value_type, _Simd_::__width>>;
-
-template <
     class _RebindType_,
     class _VectorType_,
     bool _IsSimd_	= __is_valid_simd_v<_VectorType_>,

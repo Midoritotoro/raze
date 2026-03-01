@@ -49,11 +49,11 @@ struct __min_element_vectorized_internal {
         auto __current_values = datapar::load<_Simd_>(__first);
         auto __current_values_min = __current_values;
 
-        constexpr auto __integer_min = math::__minimum_integral_limit<_UnsignedValueType>();
-        constexpr auto __max_portion_size = raze::algorithm::max(static_cast<uint64>(__integer_min)
-            + 1, static_cast<uint64>(__integer_min)) * sizeof(_Simd_);
+        constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
+        constexpr auto __max_portion_size = raze::algorithm::max(static_cast<uint64>(__integer_max)
+            + 1, static_cast<uint64>(__integer_max)) * sizeof(_Simd_);
 
-        constexpr auto __has_portion_min_value = (math::__minimum_integral_limit<uint64>() != __max_portion_size);
+        constexpr auto __has_portion_max_value = (math::__maximum_integral_limit<uint64>() != __max_portion_size);
         auto __aligned_portion_size = raze::algorithm::min(__max_portion_size, __aligned_size);
 
         auto __portion_begin = __min_element;
@@ -85,10 +85,11 @@ struct __min_element_vectorized_internal {
 
                 const auto __maybe_min_element = __bytes_pointer_offset(__portion_begin,
                     __vertical_position * sizeof(_Simd_) + __horizontal_position * sizeof(_ValueType));
+
                 if (*__maybe_min_element < *__min_element)
                     __min_element = __maybe_min_element;
 
-                if constexpr (__has_portion_min_value) {
+                if constexpr (__has_portion_max_value) {
                     __aligned_portion_size = raze::algorithm::min(__max_portion_size, __aligned_size);
 
                     if (__aligned_portion_size == 0)

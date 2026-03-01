@@ -52,7 +52,7 @@ __simd_nodiscard_inline_constexpr _UnwrappedForwardIterator_ __min_element_unche
 		type_traits::iterator_value_type<_UnwrappedForwardIterator_>,
 		type_traits::iterator_value_type<_UnwrappedForwardIterator_>>)
 {
-	return __min_element_unchecked(__first_unwrapped, __last_unwrapped, type_traits::less<>{});
+	return raze::algorithm::__min_element_unchecked(__first_unwrapped, __last_unwrapped, type_traits::less<>{});
 }
 
 

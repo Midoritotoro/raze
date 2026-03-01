@@ -43,7 +43,7 @@ __simd_nodiscard_inline_constexpr type_traits::iterator_value_type<_UnwrappedInp
 		}
 	}
 
-	return __min_unchecked(__first_unwrapped, __last_unwrapped, type_traits::less<>{});
+	return raze::algorithm::__min_unchecked(__first_unwrapped, __last_unwrapped, type_traits::less<>{});
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

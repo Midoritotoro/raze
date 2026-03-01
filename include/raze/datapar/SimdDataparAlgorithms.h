@@ -99,13 +99,13 @@ __simd_nodiscard_inline auto to_mask(const _IndexMaskType_& __index_mask) noexce
 	requires(__is_simd_index_mask_v<std::remove_cvref_t<_IndexMaskType_>>)
 {
 	using _RawType = std::remove_cvref_t<_IndexMaskType_>;
-	using _VectorType = typename simd<_RawType::__isa, typename _RawType::value_type, _RawType::__width>::vector_type;
-	using _MaskType = simd_mask<_RawType::__isa, typename _RawType::value_type, _RawType::__width>;
+	using _VectorType = typename simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>::vector_type;
+	using _MaskType = simd_mask<_RawType::__isa, typename _RawType::element_type, _RawType::__width>;
 
 	const auto __vector = _Simd_index_mask_to_vector<_RawType::__isa,
-		_RawType::__width, _VectorType, typename _RawType::value_type>()(__simd_unwrap_mask(__index_mask));
+		_RawType::__width, _VectorType, typename _RawType::element_type>()(__simd_unwrap_mask(__index_mask));
 
-	return _MaskType(_Simd_to_mask<_RawType::__isa, _RawType::__width, typename _RawType::value_type>()(__vector));
+	return _MaskType(_Simd_to_mask<_RawType::__isa, _RawType::__width, typename _RawType::element_type>()(__vector));
 }
 
 
@@ -650,10 +650,7 @@ __simd_nodiscard_inline auto reduce_equal(
 	using _ReduceType = typename IntegerForSizeof<_ValueType>::Signed;
 	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
 
-	constexpr auto __is_native_compare_return_number = __is_simd_mask_v<
-		typename _RawDataparType::__simd_native_compare_return_type>;
-
-	if constexpr (__is_native_compare_return_number)
+	if constexpr (__is_native_compare_returns_number_v<_RawDataparType>)
 		return reduce(to_index_mask(__first == __second), type_traits::plus<>{});
 	else
 		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(to_simd(__first == __second)), type_traits::plus<>{});
@@ -673,10 +670,7 @@ __simd_nodiscard_inline auto reduce_equal(
 	using _ReduceType = typename IntegerForSizeof<_ValueType>::Signed;
 	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
 
-	constexpr auto __is_native_compare_return_number = __is_simd_mask_v<
-		typename _RawDataparType::__simd_native_compare_return_type>;
-
-	if constexpr (__is_native_compare_return_number)
+	if constexpr (__is_native_compare_returns_number_v<_RawDataparType>)
 		return reduce(to_index_mask((__first == __second) & __tail_mask), type_traits::plus<>{});
 	else
 		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(to_simd((__first == __second) & __tail_mask)), type_traits::plus<>{});

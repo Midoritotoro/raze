@@ -153,7 +153,6 @@ set(PRIVATE_HEADERS
 
     src/raze/datapar/BasicSimd.inl
     src/raze/datapar/SimdCast.inl
-    src/raze/datapar/BasicSimdElementReference.inl
     src/raze/datapar/IsComparable.h
     src/raze/datapar/SimdDispatcher.h
     src/raze/datapar/SizedSimdDispatcher.h
@@ -337,7 +336,6 @@ set(PUBLIC_HEADERS
 
     include/raze/datapar/Simd.h
     include/raze/datapar/BasicSimd.h
-    include/raze/datapar/BasicSimdElementReference.h
     include/raze/datapar/BasicSimdMask.h
     include/raze/datapar/BasicSimdShuffleMask.h
     include/raze/datapar/SimdCast.h

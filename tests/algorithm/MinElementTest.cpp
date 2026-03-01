@@ -90,7 +90,7 @@ void run_tests_for_type() {
 
             for (auto& x : a)
                 x = static_cast<T>(val_dist(rng));
-
+            
             auto std_res = std::min_element(a.begin(), a.end());
             auto simd_res = raze::algorithm::min_element(a.begin(), a.end());
 

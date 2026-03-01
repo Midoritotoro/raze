@@ -51,7 +51,7 @@ __simd_nodiscard_inline_constexpr __minmax_return_type<_UnwrappedInputIterator_>
 		}
 	}
 
-	return __minmax_unchecked(__first_unwrapped, __last_unwrapped, type_traits::greater<>{});
+	return raze::algorithm::__minmax_unchecked(__first_unwrapped, __last_unwrapped, type_traits::greater<>{});
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

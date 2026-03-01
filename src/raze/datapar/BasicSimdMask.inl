@@ -13,18 +13,6 @@ template <
 	arch::ISA	_ISA_,
 	typename	_Type_,
 	uint32		_SimdWidth_>
-template <class _VectorMask_, std::enable_if_t<__is_valid_simd_v<_VectorMask_> || __is_intrin_type_v<_VectorMask_>, int>>
-simd_mask<_ISA_, _Type_, _SimdWidth_>::simd_mask(const _VectorMask_& __vector_mask) noexcept {
-	if constexpr (__is_valid_simd_v<_VectorMask_>)
-		_mask = __vector_mask.to_mask().unwrap();
-	else
-		_mask = _Simd_to_mask<_ISA_, _SimdWidth_, _Type_>()(__vector_mask);
-}
-
-template <
-	arch::ISA	_ISA_,
-	typename	_Type_,
-	uint32		_SimdWidth_>
 simd_mask<_ISA_, _Type_, _SimdWidth_>::simd_mask(const mask_type __mask) noexcept :
 	_mask(__mask)
 {}
