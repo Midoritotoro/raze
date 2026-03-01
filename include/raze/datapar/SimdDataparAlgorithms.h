@@ -8,138 +8,6 @@
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
-/**
- *  @brief  Converts a SIMD vector or mask into an index mask.
- *  @ingroup simd_conversions
- *
- *  @param __datapar  A SIMD vector or SIMD fixed-size mask.
- *
- *  @return  A simd_index_mask where each lane contains either 0 or 1,
- *           indicating whether the corresponding lane of @p __datapar
- *           is logically true.
- *
- *  Index masks provide an implementation-defined per-lane representation
- *  of truth values and are used by algorithms that require counting or
- *  selecting lanes.  Converting directly from a SIMD vector into an index
- *  mask avoids the need to normalize the mask into a fixed-size boolean
- *  form, which can reduce overhead in equality checks and
- *  other mask-driven operations.
- */
-template <class _DataparType_>
-__simd_nodiscard_inline auto to_index_mask(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	using _IndexMaskType = simd_index_mask<_RawDataparType::__isa, 
-		typename _RawDataparType::value_type, _RawDataparType::__width>;
-
-	return _IndexMaskType(
-		_Simd_to_index_mask<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar)));
-}
-
-template <class _MaskType_>
-__simd_nodiscard_inline auto to_index_mask(const _MaskType_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
-{
-	using _RawType = std::remove_cvref_t<_MaskType_>;
-	using _IndexMaskType = simd_index_mask<_RawType::__isa, typename _RawType::element_type, _RawType::__width>;
-	using _VectorType = typename simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>::vector_type;
-
-	const auto __vector = _Simd_to_vector<_RawType::__isa,
-		_RawType::__width, _VectorType, typename _RawType::element_type>()(__simd_unwrap_mask(__mask));
-
-	return _IndexMaskType(_Simd_to_index_mask<_RawType::__isa, _RawType::__width, typename _RawType::element_type>()(__vector));
-}
-
-template <class _IndexMaskType_>
-__simd_nodiscard_inline auto to_index_mask(const _IndexMaskType_& __index_mask) noexcept
-	requires(__is_simd_index_mask_v<std::remove_cvref_t<_IndexMaskType_>>)
-{
-	return __index_mask;
-}
-
-/**
- *  @brief  Converts a SIMD vector or index mask into a fixed-size SIMD mask.
- *
- *  @param __datapar  A SIMD vector or index mask.
- *
- *  @return  A SIMD mask with one boolean element per lane, where each lane
- *           is true if the corresponding lane of @p __datapar is logically true.
- *
- *  The resulting mask is a fixed-size mask type with one logical element
- *  per lane, independent of the underlying ISA representation.  For AVX-512
- *  this typically wraps a k-register. For SSE/AVX2
- *  this is a integer mask value representing all lanes (one bit per lane).
- * 
- */
-template <class _DataparType_>
-__simd_nodiscard_inline auto to_mask(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	using _MaskType = simd_mask<_RawDataparType::__isa,
-		typename _RawDataparType::value_type, _RawDataparType::__width>;
-
-	return _MaskType(
-		_Simd_to_mask<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar)));
-}
-
-
-template <class _MaskType_>
-__simd_nodiscard_inline auto to_mask(const _MaskType_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
-{
-	return __mask;
-}
-
-template <class _IndexMaskType_>
-__simd_nodiscard_inline auto to_mask(const _IndexMaskType_& __index_mask) noexcept
-	requires(__is_simd_index_mask_v<std::remove_cvref_t<_IndexMaskType_>>)
-{
-	using _RawType = std::remove_cvref_t<_IndexMaskType_>;
-	using _VectorType = typename simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>::vector_type;
-	using _MaskType = simd_mask<_RawType::__isa, typename _RawType::element_type, _RawType::__width>;
-
-	const auto __vector = _Simd_index_mask_to_vector<_RawType::__isa,
-		_RawType::__width, _VectorType, typename _RawType::element_type>()(__simd_unwrap_mask(__index_mask));
-
-	return _MaskType(_Simd_to_mask<_RawType::__isa, _RawType::__width, typename _RawType::element_type>()(__vector));
-}
-
-
-template <class _DataparType_>
-__simd_nodiscard_inline auto to_simd(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
-{
-	return __datapar;
-}
-
-template <class _IndexMaskType_>
-__simd_nodiscard_inline auto to_simd(const _IndexMaskType_& __index_mask) noexcept
-	requires(__is_simd_index_mask_v<std::remove_cvref_t<_IndexMaskType_>>)
-{
-	using _RawType = std::remove_cvref_t<_IndexMaskType_>;
-	using _VectorType = typename simd<_RawType::__isa, typename _RawType::value_type, _RawType::__width>::vector_type;
-	using _SimdType = simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>;
-
-	return _SimdType(_Simd_index_mask_to_vector<_RawType::__isa, _RawType::__width,
-		_VectorType, typename _RawType::value_type>()(__simd_unwrap_mask(__index_mask)));
-}
-
-template <class _MaskType_>
-__simd_nodiscard_inline auto to_simd(const _MaskType_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
-{
-	using _RawType = std::remove_cvref_t<_MaskType_>;
-	using _VectorType = typename simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>::vector_type;
-	using _SimdType = simd<_RawType::__isa, typename _RawType::element_type, _RawType::__width>;
-
-	return _SimdType(_Simd_to_vector<_RawType::__isa, _RawType::__width,
-		_VectorType, typename _RawType::element_type>()(__simd_unwrap_mask(__mask)));
-}
-
 template <
 	class _DataparType_,
 	class _ReduceBinaryFunction_ = type_traits::plus<>>
@@ -168,10 +36,8 @@ template <
 	class _ReduceBinaryFunction_ = type_traits::plus<>>
 __simd_nodiscard_inline auto reduce(
 	const _DataparType_& __datapar,
-	_ReduceBinaryFunction_&& __unused = _ReduceBinaryFunction_{}) noexcept requires (
-		__is_simd_mask_v<std::remove_cvref_t<_DataparType_>> ||
-		__is_simd_index_mask_v<std::remove_cvref_t<_DataparType_>>
-	)
+	_ReduceBinaryFunction_&& __unused = _ReduceBinaryFunction_{}) noexcept
+		requires (__is_simd_mask_v<std::remove_cvref_t<_DataparType_>>)
 {
 	return __datapar.count_set();
 }
@@ -651,9 +517,9 @@ __simd_nodiscard_inline auto reduce_equal(
 	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
 
 	if constexpr (__is_native_compare_returns_number_v<_RawDataparType>)
-		return reduce(to_index_mask(__first == __second), type_traits::plus<>{});
+		return reduce((__first == __second), type_traits::plus<>{});
 	else
-		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(to_simd(__first == __second)), type_traits::plus<>{});
+		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>((__first == __second)), type_traits::plus<>{});
 
 }
 
@@ -671,9 +537,9 @@ __simd_nodiscard_inline auto reduce_equal(
 	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
 
 	if constexpr (__is_native_compare_returns_number_v<_RawDataparType>)
-		return reduce(to_index_mask((__first == __second) & __tail_mask), type_traits::plus<>{});
+		return reduce(((__first == __second) & __tail_mask), type_traits::plus<>{});
 	else
-		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(to_simd((__first == __second) & __tail_mask)), type_traits::plus<>{});
+		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(((__first == __second) & __tail_mask)), type_traits::plus<>{});
 }
 
 /**
@@ -693,9 +559,9 @@ __simd_nodiscard_inline bool none_of(const _DataparType_& __datapar) noexcept
 
 template <class _SimdMask_>
 __simd_nodiscard_inline bool none_of(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>> || __is_simd_index_mask_v<std::remove_cvref_t<_SimdMask_>>)
+	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
 {
-	return __mask.none_of();
+	return __mask.__none_of();
 }
 
 /**
@@ -715,9 +581,9 @@ __simd_nodiscard_inline bool all_of(const _DataparType_& __datapar) noexcept
 
 template <class _SimdMask_>
 __simd_nodiscard_inline bool all_of(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>> || __is_simd_index_mask_v<std::remove_cvref_t<_SimdMask_>>)
+	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
 {
-	return __mask.all_of();
+	return __mask.__all_of();
 }
 
 /**
@@ -729,8 +595,7 @@ __simd_nodiscard_inline bool all_of(const _SimdMask_& __mask) noexcept
  */
 template <class _DataparType_>
 __simd_nodiscard_inline bool any_of(const _DataparType_& __datapar) noexcept requires(
-	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>
-		|| __is_simd_index_mask_v<std::remove_cvref_t<_DataparType_>>)
+	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>)
 {
 	return !none_of(__datapar);
 }
@@ -744,8 +609,7 @@ __simd_nodiscard_inline bool any_of(const _DataparType_& __datapar) noexcept req
  */
 template <class _DataparType_>
 __simd_nodiscard_inline bool some_of(const _DataparType_& __datapar) noexcept requires(
-	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>
-		|| __is_simd_index_mask_v<std::remove_cvref_t<_DataparType_>>)
+	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>)
 {
 	return !all_of(__datapar);
 }

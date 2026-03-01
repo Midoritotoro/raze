@@ -68,6 +68,10 @@ public:
         return _Simd_broadcast_zeros<_ISA_, _Width_, vector_type>()();
     }
 
+    static raze_always_inline simd broadcast(value_type __value) noexcept {
+        return _Simd_broadcast<_ISA_, _Width_, vector_type>()(__value);
+    }
+
     raze_always_inline simd& fill(value_type __value) noexcept {
         _vector = _Simd_broadcast<_ISA_, _Width_, vector_type>()(__value);
         return *this;

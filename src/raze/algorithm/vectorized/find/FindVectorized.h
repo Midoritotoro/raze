@@ -42,7 +42,7 @@ struct __find_vectorized_internal {
             const auto __mask   = __comparand == __loaded;
 
             if (datapar::any_of(__mask))
-                return static_cast<const _ValueType*>(__first) + datapar::to_index_mask(__mask).count_trailing_zero_bits();
+                return static_cast<const _ValueType*>(__first) + __mask.count_trailing_zero_bits();
 
             __advance_bytes(__first, sizeof(_Simd_));
         } while (__first != __stop_at);
@@ -57,7 +57,7 @@ struct __find_vectorized_internal {
             const auto __mask = (__comparand == __loaded) & __tail_mask;
 
             if (datapar::any_of(__mask))
-                return static_cast<const _ValueType*>(__first) + datapar::to_index_mask(__mask).count_trailing_zero_bits();
+                return static_cast<const _ValueType*>(__first) + __mask.count_trailing_zero_bits();
         }
         else {
             __last = __find_scalar(__first, __last, __value);

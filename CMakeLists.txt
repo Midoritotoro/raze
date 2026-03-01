@@ -138,20 +138,11 @@ set(PRIVATE_HEADERS
 
     src/raze/datapar/IntrinBitcast.h
     src/raze/datapar/SimdIntegralTypesCheck.h
-
-    src/raze/datapar/SimdIndexMask.inl
-    src/raze/datapar/SimdMaskCommonOperations.h
-    src/raze/datapar/SimdMaskCommonOperations.inl
-    src/raze/datapar/SimdElementMaskOperations.h
-    src/raze/datapar/SimdIndexMaskOperations.h
-    src/raze/datapar/SimdElementMaskOperations.inl
-    src/raze/datapar/SimdIndexMaskOperations.inl
     src/raze/datapar/MaskTypeSelector.h
     src/raze/datapar/SimdMaskTypeCheck.h
 
     src/raze/datapar/CachePrefetcher.h
 
-    src/raze/datapar/BasicSimd.inl
     src/raze/datapar/SimdCast.inl
     src/raze/datapar/IsComparable.h
     src/raze/datapar/SimdDispatcher.h
@@ -177,6 +168,10 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/TestAllOnes.h
     src/raze/datapar/bitwise/IndexMaskDivisor.h
     src/raze/datapar/bitwise/IndexMaskToVector.h
+    src/raze/datapar/bitwise/MaskImplementation.h
+    src/raze/datapar/bitwise/BitReference.h
+    src/raze/datapar/bitwise/MaskElementReference.h
+    src/raze/datapar/bitwise/SimdElementReference.h
 
     src/raze/datapar/arithmetic/Sub.h
     src/raze/datapar/arithmetic/Add.h
@@ -325,8 +320,6 @@ set(PUBLIC_HEADERS
     include/raze/algorithm/minmax/MaxElement.h
     include/raze/algorithm/minmax/MinElement.h
     include/raze/algorithm/minmax/MinmaxElement.h
-
-
 
     include/raze/system/Handle.h
 

@@ -93,9 +93,9 @@ void testMethods() {
         for (size_t i = 0; i < N; ++i) dst[i] = static_cast<T>(100 + i);
 
         typename Simd::mask_type mask = 0;
-        for (size_t i = 0; i < N; ++i)
-            if (i % 2 == 0)
-                mask |= (typename Simd::mask_type(1) << i);
+        //for (size_t i = 0; i < N; ++i)
+        //    if (i % 2 == 0)
+        //        mask |= (typename Simd::mask_type(1) << i);
 
         Simd loaded_unaligned = raze::datapar::maskz_load<Simd>(src, mask);
         for (size_t i = 0; i < N; ++i) {
@@ -164,27 +164,23 @@ void testMethods() {
         }
 
         {
-            for (mask = 0; mask != N; ++mask) {
-                alignas(64) T dst[N] = {};
-                raze::datapar::compress_store(dst, v, mask);
+            alignas(64) T dst[N] = {};
+            raze::datapar::compress_store(dst, v, mask);
                 
-                alignas(64) T expected[N];
-                mask_compress_any<Simd>(src, src, expected, mask);
+            alignas(64) T expected[N];
+            mask_compress_any<Simd>(src, src, expected, mask);
 
-                raze_assert(std::equal(expected, expected + N, dst));
-            }
+            raze_assert(std::equal(expected, expected + N, dst));
         }
 
         {
-            for (mask = 0; mask != N; ++mask) {
-                alignas(64) T dst[N] = {};
-                raze::datapar::compress_store(dst, v, mask, raze::datapar::aligned_policy{});
+            alignas(64) T dst[N] = {};
+            raze::datapar::compress_store(dst, v, mask, raze::datapar::aligned_policy{});
 
-                alignas(64) T expected[N];
-                mask_compress_any<Simd>(src, src, expected, mask);
+            alignas(64) T expected[N];
+            mask_compress_any<Simd>(src, src, expected, mask);
 
-                raze_assert(std::equal(expected, expected + N, dst));
-            }
+            raze_assert(std::equal(expected, expected + N, dst));
         }
     }
 
@@ -203,25 +199,25 @@ void testMethods() {
         raze_assert(raze::datapar::all_of(a == b));
         raze_assert(raze::datapar::any_of(a != c));
 
-        auto mEq = raze::datapar::to_mask(a == b);
+        auto mEq = (a == b);
         for (size_t i = 0; i < N; ++i) {
             raze_assert(mEq[i] == true);
         }
 
-        auto mNeq = raze::datapar::to_mask(a != c);
+        auto mNeq = (a != c);
         for (size_t i = 0; i < N; ++i) {
             raze_assert(mNeq[i] == true);
         }
 
-        auto mGt = raze::datapar::to_mask(c > a);
-        auto mLt = raze::datapar::to_mask(a < c);
+        auto mGt = (c > a);
+        auto mLt = (a < c);
         for (size_t i = 0; i < N; ++i) {
             raze_assert(mGt[i] == true);
             raze_assert(mLt[i] == true);
         }
 
-        auto mGe = raze::datapar::to_mask(a >= b);
-        auto mLe = raze::datapar::to_mask(a <= b);
+        auto mGe = (a >= b);
+        auto mLe = (a <= b);
         for (size_t i = 0; i < N; ++i) {
             raze_assert(mGe[i] == true);
             raze_assert(mLe[i] == true);
@@ -240,17 +236,17 @@ void testMethods() {
 
         raze_assert(raze::datapar::any_of(v0 != vmax));
 
-        auto mEq = raze::datapar::to_mask(v0 == v0);
-        auto mNeq = raze::datapar::to_mask(v0 != vmax);
+        auto mEq = (v0 == v0);
+        auto mNeq = (v0 != vmax);
         for (size_t i = 0; i < N; ++i) {
             raze_assert(mEq[i] == true);
             raze_assert(mNeq[i] == true);
         }
 
-        auto mLt = raze::datapar::to_mask(v0 < vmax);
-        auto mGt = raze::datapar::to_mask(vmax > v0);
-        auto mLe = raze::datapar::to_mask(v0 <= v0);
-        auto mGe = raze::datapar::to_mask(vmax >= vmax);
+        auto mLt = (v0 < vmax);
+        auto mGt = (vmax > v0);
+        auto mLe = (v0 <= v0);
+        auto mGe = (vmax >= vmax);
 
         for (size_t i = 0; i < N; ++i) {
             raze_assert(mLt[i] == true);
@@ -270,12 +266,12 @@ void testMethods() {
             Simd vA = raze::datapar::load<Simd>(arrA);
             Simd vB = raze::datapar::load<Simd>(arrB);
 
-            auto mEq = raze::datapar::to_mask(vA == vA);
-            auto mNeq = raze::datapar::to_mask(vA != vB);
-            auto mLt = raze::datapar::to_mask(vA < vB);
-            auto mGt = raze::datapar::to_mask(vB > vA);
-            auto mLe = raze::datapar::to_mask(vA <= vA);
-            auto mGe = raze::datapar::to_mask(vB >= vB);
+            auto mEq = (vA == vA);
+            auto mNeq = (vA != vB);
+            auto mLt = (vA < vB);
+            auto mGt = (vB > vA);
+            auto mLe = (vA <= vA);
+            auto mGe = (vB >= vB);
 
             for (size_t i = 0; i < N; ++i) {
                 raze_assert(mEq[i] == true);
@@ -370,7 +366,7 @@ void testMethods() {
         v1.insert(i, 42);
         v2.insert(i, 42);
 
-        auto mask = raze::datapar::to_mask(v1 == v2);
+        auto mask = (v1 == v2);
 
         raze_assert(raze::datapar::any_of(mask));
         raze_assert(raze::datapar::all_of(mask));

@@ -7,8 +7,9 @@ __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <sizetype _Size_>
 struct __mmask_for_size {
-	static_assert(_Size_ <= 8);
-	using type = void;
+	/*static_assert(_Size_ <= 8);
+	using type = void;*/
+	using type = __mmask64;
 };
 
 template <>
