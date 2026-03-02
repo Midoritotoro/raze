@@ -87,11 +87,11 @@ public:
 	}
 
 	raze_nodiscard raze_always_inline static constexpr bool __some_of(mask_type __mask) noexcept {
-		return !__all_of();
+		return !__all_of(__mask);
 	}
 
 	raze_nodiscard raze_always_inline static constexpr bool __any_of(mask_type __mask) noexcept {
-		return !__none_of();
+		return !__none_of(__mask);
 	}
 
 	raze_nodiscard raze_always_inline static constexpr 
@@ -248,7 +248,7 @@ public:
 			return math::__popcnt_n_bits<__bit_width()>(__to_int(__mask));
 		}
 		else {
-			return math::__popcnt_n_bits<__bit_width()>(
+			return math::__popcnt_n_bits<(__bit_width() / 8) / sizeof(_Type_)>(
 				_Simd_to_mask<__isa, __bit_width(), _Type_>()(__simd_unwrap(__mask)));
 		}
 	}

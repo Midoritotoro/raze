@@ -16,9 +16,10 @@ class simd_mask
 	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
 
 	using _Impl = _Mask_implementation<_ISA_, _Type_, _SimdWidth_>;
-	using mask_type = typename _Impl::mask_type;
 public:
+	using mask_type = typename _Impl::mask_type;
 	using element_type = _Type_;
+
 	static constexpr auto __width = _SimdWidth_;
 	static constexpr auto __isa = _ISA_;
 

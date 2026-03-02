@@ -10,11 +10,10 @@ __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <
     class _ToVector_,
-    class _FromVector_,
-    std::enable_if_t<
-        __is_intrin_type_v<std::remove_cvref_t<_FromVector_>> &&
-        __is_intrin_type_v<std::remove_cvref_t<_ToVector_>>, int> = 0>
-raze_nodiscard raze_always_inline _ToVector_ __intrin_bitcast(_FromVector_ __from) noexcept {
+    class _FromVector_>
+raze_nodiscard raze_always_inline _ToVector_ __intrin_bitcast(_FromVector_ __from) noexcept 
+    requires (__is_intrin_type_v<_FromVector_> && __is_intrin_type_v<_ToVector_>)
+{
     using _RawFrom_ = std::remove_cvref_t<_FromVector_>;
     using _RawTo_   = std::remove_cvref_t<_ToVector_>;
 

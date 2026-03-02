@@ -234,7 +234,7 @@ public:
         return size();
     }
 
-    raze_always_inline vector_type unwrap() const noexcept {
+    raze_always_inline operator vector_type() const noexcept {
         return _vector;
     }
 private:

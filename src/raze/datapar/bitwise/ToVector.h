@@ -23,6 +23,7 @@ struct _Simd_to_vector<arch::ISA::SSE2, 128, _IntrinType_, _DesiredType_> {
 	template <class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>) {
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -71,7 +72,8 @@ struct _Simd_to_vector<arch::ISA::SSSE3, 128, _IntrinType_, _DesiredType_>:
 {
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline 
-        _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept 
+        _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>) {
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -96,6 +98,7 @@ struct _Simd_to_vector<arch::ISA::AVX2, 256, _IntrinType_, _DesiredType_> {
 	template <class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>) {
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -138,6 +141,7 @@ struct _Simd_to_vector<arch::ISA::AVX512F, 512, _IntrinType_, _DesiredType_> {
 	template <class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>) {
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -170,6 +174,7 @@ struct _Simd_to_vector<arch::ISA::AVX512BW, 512, _IntrinType_, _DesiredType_>:
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline 
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -197,6 +202,7 @@ struct _Simd_to_vector<arch::ISA::AVX512BWDQ, 512, _IntrinType_, _DesiredType_>:
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline 
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -224,6 +230,7 @@ struct _Simd_to_vector<arch::ISA::AVX512DQ, 512, _IntrinType_, _DesiredType_>:
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline 
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -248,6 +255,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLBW, 256, _IntrinType_, _DesiredType_>:
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -272,6 +280,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLDQ, 256, _IntrinType_, _DesiredType_>:
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -296,6 +305,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLBW, 128, _IntrinType_, _DesiredType_> 
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -320,6 +330,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLDQ, 128, _IntrinType_, _DesiredType_>:
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -344,6 +355,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLBWDQ, 128, _IntrinType_, _DesiredType_
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);
@@ -365,6 +377,7 @@ struct _Simd_to_vector<arch::ISA::AVX512VLBWDQ, 256, _IntrinType_, _DesiredType_
     template <class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline
         _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
     {
         if constexpr (__is_intrin_type_v<_MaskType_>)
             return __intrin_bitcast<_IntrinType_>(__mask);

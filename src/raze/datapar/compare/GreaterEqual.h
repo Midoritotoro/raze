@@ -61,10 +61,10 @@ struct _Simd_greater_equal<arch::ISA::AVX512F, 512, _DesiredType_> {
             return _mm512_cmpge_epu32_mask(__intrin_bitcast<__m512i>(__left), __intrin_bitcast<__m512i>(__right));
         }
         else if constexpr (__is_pd_v<_DesiredType_>) {
-            return _mm512_cmp_pd_mask(__intrin_bitcast<__m512d>(__left), __intrin_bitcast<__m512d>(__right), _CMP_GE_OS);
+            return _mm512_cmp_pd_mask(__intrin_bitcast<__m512d>(__left), __intrin_bitcast<__m512d>(__right), _CMP_GE_OQ);
         }
         else if constexpr (__is_ps_v<_DesiredType_>) {
-            return _mm512_cmp_ps_mask(__intrin_bitcast<__m512>(__left), __intrin_bitcast<__m512>(__right), _CMP_GE_OS);
+            return _mm512_cmp_ps_mask(__intrin_bitcast<__m512>(__left), __intrin_bitcast<__m512>(__right), _CMP_GE_OQ);
         }
         else {
             const auto __compared_low128 = _Simd_greater_equal<arch::ISA::SSE42, 128, _DesiredType_>()(
@@ -137,10 +137,10 @@ struct _Simd_greater_equal<arch::ISA::AVX512VLF, 256, _DesiredType_>:
             return _mm256_cmpge_epu32_mask(__intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right));
         }
         else if constexpr (__is_pd_v<_DesiredType_>) {
-            return _mm256_cmp_pd_mask(__intrin_bitcast<__m256d>(__left), __intrin_bitcast<__m256d>(__right), _CMP_GE_OS);
+            return _mm256_cmp_pd_mask(__intrin_bitcast<__m256d>(__left), __intrin_bitcast<__m256d>(__right), _CMP_GE_OQ);
         }
         else if constexpr (__is_ps_v<_DesiredType_>) {
-            return _mm256_cmp_ps_mask(__intrin_bitcast<__m256>(__left), __intrin_bitcast<__m256>(__right), _CMP_GE_OS);
+            return _mm256_cmp_ps_mask(__intrin_bitcast<__m256>(__left), __intrin_bitcast<__m256>(__right), _CMP_GE_OQ);
         }
         else {
             return _Simd_greater_equal<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __right);
@@ -196,10 +196,10 @@ struct _Simd_greater_equal<arch::ISA::AVX512VLF, 128, _DesiredType_> :
             return _mm_cmpge_epu32_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
         }
         else if constexpr (__is_pd_v<_DesiredType_>) {
-            return _mm_cmp_pd_mask(__intrin_bitcast<__m128d>(__left), __intrin_bitcast<__m128d>(__right), _CMP_GE_OS);
+            return _mm_cmp_pd_mask(__intrin_bitcast<__m128d>(__left), __intrin_bitcast<__m128d>(__right), _CMP_GE_OQ);
         }
         else if constexpr (__is_ps_v<_DesiredType_>) {
-            return _mm_cmp_ps_mask(__intrin_bitcast<__m128>(__left), __intrin_bitcast<__m128>(__right), _CMP_GE_OS);
+            return _mm_cmp_ps_mask(__intrin_bitcast<__m128>(__left), __intrin_bitcast<__m128>(__right), _CMP_GE_OQ);
         }
         else {
             return _Simd_greater_equal<arch::ISA::AVX2, 128, _DesiredType_>()(__left, __right);

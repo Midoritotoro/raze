@@ -24,6 +24,7 @@ struct _Simd_compress_store<arch::ISA::SSE2, 128, _DesiredType_> {
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::SSE2, 128>()(__address, __compressed.second, __alignment_policy);
@@ -49,6 +50,7 @@ struct _Simd_compress_store<arch::ISA::SSSE3, 128, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::SSSE3, 128>()(__address, __compressed.second, __alignment_policy);
@@ -69,6 +71,7 @@ struct _Simd_compress_store<arch::ISA::SSE41, 128, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::SSE41, 128>()(__address, __compressed.second, __alignment_policy);
@@ -87,6 +90,7 @@ struct _Simd_compress_store<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::AVX2, 256>()(__address, __compressed.second, __alignment_policy);
@@ -105,6 +109,7 @@ struct _Simd_compress_store<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::AVX512F, 512>()(__address, __compressed.second, __alignment_policy);
@@ -125,6 +130,7 @@ struct _Simd_compress_store<arch::ISA::AVX512BW, 512, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::AVX512BW, 512, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::AVX512BW, 512>()(__address, __compressed.second, __alignment_policy);
@@ -145,6 +151,7 @@ struct _Simd_compress_store<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::AVX512VLF, 256>()(__address, __compressed.second, __alignment_policy);
@@ -165,6 +172,7 @@ struct _Simd_compress_store<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::AVX512VLF, 128>()(__address, __compressed.second, __alignment_policy);
@@ -185,6 +193,7 @@ struct _Simd_compress_store<arch::ISA::AVX512VLBW, 128, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::AVX512VLBW, 128>()(__address, __compressed.second, __alignment_policy);
@@ -205,6 +214,7 @@ struct _Simd_compress_store<arch::ISA::AVX512VLBW, 256, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		const auto __compressed = _Simd_compress<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__vector, __mask);
 		_Simd_store<arch::ISA::AVX512VLBW, 256>()(__address, __compressed.second, __alignment_policy);

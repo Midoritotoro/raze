@@ -27,6 +27,7 @@ struct _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_ __vector,
 		_IntrinType_ __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
 	{
 		return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
 	}
@@ -37,6 +38,7 @@ struct _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_> || __is_pd_v<_DesiredType_>) {
             switch ((__mask & 0x3)) {
@@ -152,6 +154,7 @@ struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_ __vector,
         _IntrinType_ __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
     {
         return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
     }
@@ -162,6 +165,7 @@ struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
         _MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
     {
         if constexpr (sizeof(_DesiredType_) == 1) {
             const auto __mask_segment_lower = __mask & 0xFF;
@@ -217,6 +221,7 @@ struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_ __vector,
 		_IntrinType_ __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
 	{
         return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
 	}
@@ -226,7 +231,8 @@ struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
 		class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) raze_const_operator noexcept\
+            requires(std::is_integral_v<_MaskType_>)
 	{
         if constexpr (sizeof(_DesiredType_) == 1) {
             const auto __mask_segment_lower = __mask & 0xFF;
@@ -280,6 +286,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_ __vector,
 		_IntrinType_ __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
 	{
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX2, 256, _DesiredType_>()(__mask));
 	}
@@ -290,6 +297,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
 	{
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
@@ -404,6 +412,7 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_ __vector,
 		_IntrinType_ __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
 	{
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask));
 	}
@@ -414,6 +423,7 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
 	{
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
@@ -599,6 +609,7 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_ __vector,
         _IntrinType_ __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
     {
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__mask));
     }
@@ -609,6 +620,7 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_	__vector,
         _MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
     {
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
@@ -640,6 +652,7 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_ __vector,
         _IntrinType_ __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
     {
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__mask));
     }
@@ -650,6 +663,7 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_	__vector,
         _MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
     {
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 

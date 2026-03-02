@@ -25,6 +25,7 @@ struct _Simd_mask_store<arch::ISA::SSE2, 128, _DesiredType_> {
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&&	__alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		_Simd_store<arch::ISA::SSE2, 128>()(__address, _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_>()(
 			__vector, _Simd_load<arch::ISA::SSE2, 128, _IntrinType_>()(__address, __alignment_policy),
@@ -45,6 +46,7 @@ struct _Simd_mask_store<arch::ISA::SSE41, 128, _DesiredType_>:
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		_Simd_store<arch::ISA::SSE41, 128>()(__address, _Simd_blend<arch::ISA::SSE41, 128, _DesiredType_>()(
 			__vector, _Simd_load<arch::ISA::SSE41, 128, _IntrinType_>()(__address, __alignment_policy),
@@ -65,6 +67,7 @@ struct _Simd_mask_store<arch::ISA::AVX2, 128, _DesiredType_>:
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
 			_mm_maskstore_epi64(reinterpret_cast<long long*>(__address),
@@ -104,6 +107,7 @@ struct _Simd_mask_store<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
 			_mm256_maskstore_epi64(reinterpret_cast<long long*>(__address),
@@ -142,6 +146,7 @@ struct _Simd_mask_store<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {
 			if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
@@ -189,6 +194,7 @@ struct _Simd_mask_store<arch::ISA::AVX512BW, 512, _DesiredType_>:
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>)
 			return _mm512_mask_storeu_epi16(__address, __mask_convert<arch::ISA::AVX512BW, 512, _DesiredType_, uint32>(__mask), __intrin_bitcast<__m512i>(__vector));
@@ -214,6 +220,7 @@ struct _Simd_mask_store<arch::ISA::AVX512VLF, 256, _DesiredType_>:
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_>) {
 			return _Simd_mask_store<arch::ISA::AVX2, 256, _DesiredType_>()(__address, __mask, __vector, __alignment_policy);
@@ -266,6 +273,7 @@ struct _Simd_mask_store<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_>) {
 			return _Simd_mask_store<arch::ISA::AVX2, 256, _DesiredType_>()(__address, __mask, __vector, __alignment_policy);
@@ -318,6 +326,7 @@ struct _Simd_mask_store<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) >= 4)
 			return _Simd_mask_store<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__address, __mask, __vector, __alignment_policy);
@@ -343,6 +352,7 @@ struct _Simd_mask_store<arch::ISA::AVX512VLBW, 256, _DesiredType_> :
 		_MaskType_			__mask,
 		_IntrinType_		__vector,
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) >= 4)
 			return _Simd_mask_store<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__address, __mask, __vector, __alignment_policy);

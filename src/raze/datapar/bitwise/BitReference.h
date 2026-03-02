@@ -127,7 +127,7 @@ public:
 		__left = std::move(__temp);
 	}
 private:
-	raze_always_inline value_type __read() const && noexcept {
+	raze_always_inline value_type __read() const noexcept {
 		return (_reference >> _index) & 1;
 	}
 

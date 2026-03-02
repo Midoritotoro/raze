@@ -143,7 +143,6 @@ set(PRIVATE_HEADERS
 
     src/raze/datapar/CachePrefetcher.h
 
-    src/raze/datapar/SimdCast.inl
     src/raze/datapar/IsComparable.h
     src/raze/datapar/SimdDispatcher.h
     src/raze/datapar/SizedSimdDispatcher.h
@@ -172,6 +171,7 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/BitReference.h
     src/raze/datapar/bitwise/MaskElementReference.h
     src/raze/datapar/bitwise/SimdElementReference.h
+    src/raze/datapar/bitwise/SimdBoolReference.h
 
     src/raze/datapar/arithmetic/Sub.h
     src/raze/datapar/arithmetic/Add.h

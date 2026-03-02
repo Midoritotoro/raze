@@ -19,6 +19,7 @@ struct _Simd_less<arch::ISA::SSE2, 128, _DesiredType_> {
     raze_nodiscard raze_static_operator raze_always_inline auto operator()(
         _IntrinType_ __left,
         _IntrinType_ __right) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_IntrinType_>)
     {
         if constexpr (__is_epi64_v<_DesiredType_>) {
             const auto __difference64 = _mm_sub_epi64(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
@@ -331,7 +332,63 @@ struct _Simd_less<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 };
 
 
+template <class _DesiredType_>
+struct _Simd_less<arch::ISA::AVX512VLF, 128, _DesiredType_> :
+    _Simd_less<arch::ISA::AVX2, 128, _DesiredType_>
+{
+    template <class _IntrinType_>
+    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+        _IntrinType_ __left,
+        _IntrinType_ __right) raze_const_operator noexcept
+    {
+        if constexpr (__is_epi64_v<_DesiredType_>)
+            return _mm_cmplt_epi64_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
 
+        else if constexpr (__is_epu64_v<_DesiredType_>)
+            return _mm_cmplt_epu64_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+        else if constexpr (__is_epi32_v<_DesiredType_>)
+            return _mm_cmplt_epi32_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+        else if constexpr (__is_epu32_v<_DesiredType_>)
+            return _mm_cmplt_epu32_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+        else if constexpr (__is_ps_v<_DesiredType_>)
+            return _mm_cmp_ps_mask(__intrin_bitcast<__m128>(__left), __intrin_bitcast<__m128>(__right), _CMP_LT_OQ);
+
+        else if constexpr (__is_pd_v<_DesiredType_>)
+            return _mm_cmp_pd_mask(__intrin_bitcast<__m128d>(__left), __intrin_bitcast<__m128d>(__right), _CMP_LT_OQ);
+
+        else
+            return _Simd_less<arch::ISA::AVX2, 128, _DesiredType_>()(__left, __right);
+    }
+};
+
+template <class _DesiredType_>
+struct _Simd_less<arch::ISA::AVX512VLBW, 128, _DesiredType_> :
+    _Simd_less<arch::ISA::AVX512VLF, 128, _DesiredType_>
+{
+    template <class _IntrinType_>
+    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+        _IntrinType_ __left,
+        _IntrinType_ __right) raze_const_operator noexcept
+    {
+        if constexpr (__is_epi16_v<_DesiredType_>)
+            return _mm_cmplt_epi16_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+        else if constexpr (__is_epu16_v<_DesiredType_>)
+            return _mm_cmplt_epu16_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+        else if constexpr (__is_epi8_v<_DesiredType_>)
+            return _mm_cmplt_epi8_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+        else if constexpr (__is_epu8_v<_DesiredType_>)
+            return _mm_cmplt_epu8_mask(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+        else
+            return _Simd_less<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right);
+    }
+};
 
 template <class _DesiredType_> struct _Simd_less<arch::ISA::SSE3, 128, _DesiredType_> : _Simd_less<arch::ISA::SSE2, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Simd_less<arch::ISA::SSSE3, 128, _DesiredType_> : _Simd_less<arch::ISA::SSE3, 128, _DesiredType_> {};
@@ -352,8 +409,6 @@ template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VBMI2VL, 256, 
 template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Simd_less<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Simd_less<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VLF, 128, _DesiredType_> : _Simd_less<arch::ISA::AVX2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VLBW, 128, _DesiredType_> : _Simd_less<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Simd_less<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Simd_less<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Simd_less<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Simd_less<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};

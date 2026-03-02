@@ -25,10 +25,10 @@ __simd_nodiscard_inline auto reduce(
 
 	if constexpr (type_traits::is_any_of_v<_RawReductionType, std::plus<>, type_traits::plus<>>)
 		return _Simd_reduce_add<_RawDataparType::__isa, _RawDataparType::__width,
-			typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
+			typename _RawDataparType::value_type>()(__datapar);
 	else
 		return _Simd_fold<_RawDataparType::__isa, _RawDataparType::__width,
-			typename _RawDataparType::value_type>()(__simd_unwrap(__datapar), type_traits::__pass_function(__reduce));
+			typename _RawDataparType::value_type>()(__datapar, type_traits::__pass_function(__reduce));
 }
 
 template <
@@ -88,7 +88,7 @@ __simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexce
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_abs<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
+		typename _RawDataparType::value_type>()(__datapar);
 }
 
 
@@ -108,7 +108,7 @@ __simd_nodiscard_inline typename _DataparType_::value_type horizontal_min(const 
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_horizontal_min<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
+		typename _RawDataparType::value_type>()(__datapar);
 }
 
 /**
@@ -127,7 +127,7 @@ __simd_nodiscard_inline typename _DataparType_::value_type horizontal_max(const 
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_horizontal_max<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
+		typename _RawDataparType::value_type>()(__datapar);
 }
 
 /**
@@ -147,7 +147,7 @@ __simd_nodiscard_inline _DataparType_ vertical_min(
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_vertical_min<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__first), __simd_unwrap(__second));
+		typename _RawDataparType::value_type>()(__first, __second);
 }
 
 /**
@@ -167,7 +167,7 @@ __simd_nodiscard_inline _DataparType_ vertical_max(
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_vertical_max<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__first), __simd_unwrap(__second));
+		typename _RawDataparType::value_type>()(__first, __second);
 }
 
 template <arch::ISA _ISA_>
@@ -235,7 +235,7 @@ __simd_nodiscard_inline _DataparType_ blend(
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_blend<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__first), __simd_unwrap(__second), __simd_unwrap_mask(__mask));
+		typename _RawDataparType::value_type>()(__first, __second, __mask);
 }
 
 /**
@@ -252,7 +252,7 @@ __simd_nodiscard_inline _DataparType_ reverse(const _DataparType_& __datapar) no
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_reverse<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar));
+		typename _RawDataparType::value_type>()(__datapar);
 }
 
 /**
@@ -296,7 +296,7 @@ __simd_nodiscard_inline std::pair<uint32, _DataparType_> compress(
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_compress<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__simd_unwrap(__datapar), __simd_unwrap_mask(__mask));
+		typename _RawDataparType::value_type>()(__datapar, __mask);
 }
 
 /**
@@ -325,8 +325,7 @@ raze_always_inline typename _DataparType_::value_type* compress_store(
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_compress_store<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
-		reinterpret_cast<typename _RawDataparType::value_type*>(__address),
-		__simd_unwrap_mask(__mask), __simd_unwrap(__datapar), __policy);
+		reinterpret_cast<typename _RawDataparType::value_type*>(__address), __mask, __datapar, __policy);
 }
 
 /**
@@ -345,7 +344,8 @@ __simd_nodiscard_inline _DataparType_ non_temporal_load(const void* __address) n
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Simd_non_temporal_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::vector_type>()(__address);
+	return _Simd_non_temporal_load<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::vector_type>()(__address);
 }
 
 /**
@@ -365,7 +365,7 @@ raze_always_inline void non_temporal_store(
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	_Simd_non_temporal_store<_RawDataparType::__isa, _RawDataparType::__width>()(__address, __simd_unwrap(__datapar));
+	_Simd_non_temporal_store<_RawDataparType::__isa, _RawDataparType::__width>()(__address, __datapar);
 }
 
 /**
@@ -387,7 +387,8 @@ raze_always_inline _DataparType_ load(
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Simd_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::vector_type>()(__address, __policy);
+	return _Simd_load<_RawDataparType::__isa, _RawDataparType::__width, 
+		typename _RawDataparType::vector_type>()(__address, __policy);
 }
 
 /**
@@ -408,7 +409,7 @@ raze_always_inline void store(
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Simd_store<_RawDataparType::__isa, _RawDataparType::__width>()(__address, __simd_unwrap(__datapar), __policy);
+	return _Simd_store<_RawDataparType::__isa, _RawDataparType::__width>()(__address, __datapar, __policy);
 }
 
 /**
@@ -436,9 +437,19 @@ __simd_nodiscard_inline _DataparType_ maskz_load(
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && (__is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Simd_maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type, typename _RawDataparType::vector_type>()(reinterpret_cast<
-			const typename _RawDataparType::value_type*>(__address), __simd_unwrap_mask(__mask), __policy);
+
+	if constexpr (__is_valid_simd_v<typename _MaskType_::mask_type>) {
+		return _Simd_maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
+			typename _RawDataparType::value_type, typename _RawDataparType::vector_type>()(reinterpret_cast<
+				const typename _RawDataparType::value_type*>(__address),
+				static_cast<typename _MaskType_::mask_type::vector_type>(static_cast<typename _MaskType_::mask_type>(__mask)), __policy);
+	}
+	else {
+		return _Simd_maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
+			typename _RawDataparType::value_type, typename _RawDataparType::vector_type>()(reinterpret_cast<
+				const typename _RawDataparType::value_type*>(__address), 
+				static_cast<typename _MaskType_::mask_type>(__mask), __policy);
+	}
 }
 
 /**
@@ -470,7 +481,7 @@ __simd_nodiscard_inline _DataparType_ mask_load(
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_mask_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
 		reinterpret_cast<const typename _RawDataparType::value_type*>(__address),
-		__simd_unwrap_mask(__mask), __simd_unwrap(__additional_source), __policy);
+		__mask, __additional_source, __policy);
 }
 
 /**
@@ -499,8 +510,7 @@ raze_always_inline void mask_store(
 { 
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	_Simd_mask_store<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
-		reinterpret_cast<typename _RawDataparType::value_type*>(__address),
-		__simd_unwrap_mask(__mask), __simd_unwrap(__datapar), __policy);
+		reinterpret_cast<typename _RawDataparType::value_type*>(__address), __mask, __datapar, __policy);
 }
 
 template <class _DataparType_>

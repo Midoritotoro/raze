@@ -18,6 +18,7 @@ struct _Simd_vertical_min<arch::ISA::SSE2, 128, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_ __left,
 		_IntrinType_ __right) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_IntrinType_>)
 	{
 		if constexpr (__is_epi16_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm_min_epi16(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right)));
