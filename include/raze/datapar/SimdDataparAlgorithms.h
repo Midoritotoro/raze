@@ -39,7 +39,7 @@ __simd_nodiscard_inline auto reduce(
 	_ReduceBinaryFunction_&& __unused = _ReduceBinaryFunction_{}) noexcept
 		requires (__is_simd_mask_v<std::remove_cvref_t<_DataparType_>>)
 {
-	return __datapar.count_set();
+	return __datapar.__count_set();
 }
 
 template <
@@ -433,8 +433,7 @@ __simd_nodiscard_inline _DataparType_ maskz_load(
 	const void*				__address,
 	const _MaskType_&		__mask,
 	_AlignmentPolicy_&&		__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> &&
-			(__is_valid_simd_v<std::remove_cvref_t<_MaskType_>> || __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
+		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && (__is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
@@ -466,8 +465,7 @@ __simd_nodiscard_inline _DataparType_ mask_load(
 	const _MaskType_&			__mask,
 	const _DataparType_&		__additional_source,
 	_AlignmentPolicy_&&			__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> &&
-			(__is_valid_simd_v<std::remove_cvref_t<_MaskType_>> || __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
+		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Simd_mask_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
@@ -497,8 +495,7 @@ raze_always_inline void mask_store(
 	const _DataparType_&	__datapar,
 	const _MaskType_&		__mask,
 	_AlignmentPolicy_&&		__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> &&
-			(__is_valid_simd_v<std::remove_cvref_t<_MaskType_>> || __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
+		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
 { 
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	_Simd_mask_store<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
@@ -542,41 +539,11 @@ __simd_nodiscard_inline auto reduce_equal(
 		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(((__first == __second) & __tail_mask)), type_traits::plus<>{});
 }
 
-/**
- *  @brief  Tests whether all lanes are zero.
- *
- *  @param __datapar  A SIMD vector or mask.
- *
- *  @return  @c true if every lane of @p __datapar is zero; otherwise @c false.
- */
-template <class _DataparType_>
-__simd_nodiscard_inline bool none_of(const _DataparType_& __datapar) noexcept 
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Simd_testz<_RawDataparType::__isa, _RawDataparType::__width>()(__simd_unwrap(__datapar));
-}
-
 template <class _SimdMask_>
 __simd_nodiscard_inline bool none_of(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
 {
 	return __mask.__none_of();
-}
-
-/**
- *  @brief  Tests whether all lanes are non-zero.
- *
- *  @param __datapar  A SIMD vector or mask.
- *
- *  @return  @c true if every lane of @p __datapar is non-zero; otherwise @c false.
- */
-template <class _DataparType_>
-__simd_nodiscard_inline bool all_of(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Simd_test_all_ones<_RawDataparType::__isa, _RawDataparType::__width>()(__simd_unwrap(__datapar));
 }
 
 template <class _SimdMask_>
@@ -586,32 +553,18 @@ __simd_nodiscard_inline bool all_of(const _SimdMask_& __mask) noexcept
 	return __mask.__all_of();
 }
 
-/**
- *  @brief  Tests whether at least one lane is non-zero.
- *
- *  @param __datapar  A SIMD vector or mask.
- *
- *  @return  @c true if any lane of @p __datapar is non-zero; otherwise @c false.
- */
-template <class _DataparType_>
-__simd_nodiscard_inline bool any_of(const _DataparType_& __datapar) noexcept requires(
-	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>)
+template <class _SimdMask_>
+__simd_nodiscard_inline bool any_of(const _SimdMask_& __mask) noexcept
+	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
 {
-	return !none_of(__datapar);
+	return __mask.__any_of();
 }
 
-/**
- *  @brief  Tests whether not all lanes are true.
- *
- *  @param __datapar  A SIMD vector or mask.
- *
- *  @return  @c true for any value except the case where all lanes are true;
- */
-template <class _DataparType_>
-__simd_nodiscard_inline bool some_of(const _DataparType_& __datapar) noexcept requires(
-	__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> || __is_simd_mask_v<std::remove_cvref_t<_DataparType_>>)
+template <class _SimdMask_>
+__simd_nodiscard_inline bool some_of(const _SimdMask_& __mask) noexcept
+	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
 {
-	return !all_of(__datapar);
+	return __mask.__some_of();
 }
 
 __RAZE_DATAPAR_NAMESPACE_END

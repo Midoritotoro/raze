@@ -4,6 +4,8 @@
 #include <src/raze/datapar/bitwise/Testz.h>
 #include <src/raze/datapar/bitwise/TestAllOnes.h>
 #include <src/raze/datapar/MaskTypeSelector.h>
+#include <src/raze/datapar/bitwise/ToMask.h>
+#include <raze/math/BitMath.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -236,6 +238,18 @@ public:
 
 			else
 				return __mask;
+		}
+	}
+
+	raze_nodiscard raze_always_inline static constexpr 
+		int __count_set(mask_type __mask) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			return math::__popcnt_n_bits<__bit_width()>(__to_int(__mask));
+		}
+		else {
+			return math::__popcnt_n_bits<__bit_width()>(
+				_Simd_to_mask<__isa, __bit_width(), _Type_>()(__simd_unwrap(__mask)));
 		}
 	}
 };

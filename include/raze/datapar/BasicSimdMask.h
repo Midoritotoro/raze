@@ -1,6 +1,7 @@
 ﻿#pragma once 
 
 #include <src/raze/datapar/bitwise/MaskImplementation.h>
+#include <src/raze/datapar/bitwise/MaskElementReference.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -17,6 +18,10 @@ class simd_mask
 	using _Impl = _Mask_implementation<_ISA_, _Type_, _SimdWidth_>;
 	using mask_type = typename _Impl::mask_type;
 public:
+	using element_type = _Type_;
+	static constexpr auto __width = _SimdWidth_;
+	static constexpr auto __isa = _ISA_;
+
 	simd_mask() = default;
 	simd_mask(const simd_mask& __mask) = default;
 	simd_mask(simd_mask&& __mask) = default;
@@ -28,6 +33,19 @@ public:
 
 	simd_mask(mask_type __mask) noexcept {
 		_mask = __mask;
+	}
+
+	template <class _Simd_> requires (std::is_convertible_v<_Simd_, mask_type>)
+	simd_mask(_Simd_ __mask) noexcept { 
+		_mask = static_cast<mask_type>(__mask);
+	}
+
+	constexpr raze_always_inline bool operator[](int32 __index) const noexcept {
+		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
+	}
+
+	constexpr raze_always_inline __mask_element_reference<_ISA_, _Type_, _SimdWidth_> operator[](int32 __index) noexcept {
+		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
 	}
 
 	friend constexpr raze_always_inline simd_mask operator&(
@@ -103,6 +121,10 @@ public:
 
 	raze_always_inline constexpr operator mask_type() const noexcept {
 		return _mask;
+	}
+
+	raze_nodiscard raze_always_inline constexpr int32 __count_set() const noexcept {
+		return _Impl::__count_set(_mask);
 	}
 private:
 	mask_type _mask = 0;
