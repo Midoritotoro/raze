@@ -36,8 +36,12 @@ public:
 	}
 
 	constexpr raze_always_inline int32 __count_trailing_zero_bits() const noexcept {
-		if constexpr (__has_avx2_support_v<__isa>)
-			return math::__tzcnt_ctz_unsafe(__to_gpr<__isa>(_mask)) / __divisor;
+		if constexpr (__used_bits < 8)
+			return math::__ctz_n_bits<__used_bits>(__to_gpr<__isa>(_mask)) / __divisor;
+
+		else if constexpr (__has_avx2_support_v<__isa>)
+			return math::__tzcnt_ctz(__to_gpr<__isa>(_mask)) / __divisor;
+
 		else
 			return math::__bsf_ctz_unsafe(__to_gpr<__isa>(_mask)) / __divisor;
 	}

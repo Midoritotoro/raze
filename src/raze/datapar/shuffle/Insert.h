@@ -81,11 +81,10 @@ struct _Simd_insert<arch::ISA::SSE2, 128> {
                 : _mm_shuffle_pd(__intrin_bitcast<__m128d>(__vector), __broadcasted, 0);
         }
         else {
-            const auto __mask = __simd_make_insert_mask<_IntrinType_, _DesiredType_>();
+            const auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
 
             const auto __broadcasted = _Simd_broadcast<arch::ISA::SSE2, 128, _IntrinType_>()(memory::pointer_to_integral(__value));
-            const auto __insert_mask = _Simd_load<arch::ISA::SSE2, 128, _IntrinType_>()(
-                (__mask.__array + __mask.__offset - (__index & (__mask.__offset - 1))));
+            const auto __insert_mask = _Simd_load<arch::ISA::SSE2, 128, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
             __vector = _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
@@ -249,13 +248,10 @@ struct _Simd_insert<arch::ISA::AVX2, 256> {
             }
         }
         else {
-            constexpr auto __mask = __simd_make_insert_mask<_IntrinType_, _DesiredType_>();
-
-            const auto __validated_position = __index & (__mask.__offset - 1);
+            constexpr auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
 
             const auto __broadcasted = _Simd_broadcast<arch::ISA::AVX2, 256, _IntrinType_>()(__value);
-            const auto __insert_mask = _Simd_load<arch::ISA::AVX2, 256, _IntrinType_>()(
-                (__mask.__array + __mask.__offset - __validated_position));
+            const auto __insert_mask = _Simd_load<arch::ISA::AVX2, 256, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
             __vector = _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
@@ -289,11 +285,10 @@ struct _Simd_insert<arch::ISA::AVX512F, 512> {
                 __intrin_bitcast<__m512d>(__vector), static_cast<uint8>(uint8(1) << __index), _mm_set_sd(__value)));
         }
         else {
-            const auto __mask = __simd_make_insert_mask<_IntrinType_, _DesiredType_>();
+            const auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
 
             const auto __broadcasted = _Simd_broadcast<arch::ISA::AVX512F, 512, _IntrinType_>()(__value);
-            const auto __insert_mask = _Simd_load<arch::ISA::AVX512F, 512, _IntrinType_>()(
-                (__mask.__array + __mask.__offset - (__index & (__mask.__offset - 1))));
+            const auto __insert_mask = _Simd_load<arch::ISA::AVX512F, 512, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
             __vector = _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }

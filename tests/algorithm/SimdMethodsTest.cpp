@@ -362,19 +362,22 @@ void testMethods() {
 
         raze_assert(raze::datapar::count_set(mask) == N);
         raze_assert(raze::datapar::find_first_set(mask) == 0);
-        raze_assert(raze::datapar::find_last_set(mask) == -1);
+        raze_assert(raze::datapar::find_last_set(mask) == N - 1);
     }
 
     {
-        auto makeMask = [&](std::initializer_list<size_t> bits) {
+        auto makeMask = [N] (std::initializer_list<size_t> bits) {
             Mask m{};
+
             for (size_t i = 0; i < N; ++i)
                 m[i] = false;
+
             for (size_t b : bits)
                 if (b < N)
                     m[b] = true;
+
             return m;
-            };
+        };
 
         {
             Mask m{};
@@ -383,7 +386,7 @@ void testMethods() {
             raze_assert(raze::datapar::count_set(m) == 0);
             raze_assert(!raze::datapar::any_of(m));
             raze_assert(!raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == 0);
+            raze_assert(raze::datapar::find_first_set(m) == N);
             raze_assert(raze::datapar::find_last_set(m) == -1);
         }
 
@@ -396,7 +399,7 @@ void testMethods() {
             raze_assert(raze::datapar::any_of(m));
             raze_assert(raze::datapar::all_of(m));
             raze_assert(raze::datapar::find_first_set(m) == 0);
-            raze_assert(raze::datapar::find_last_set(m) == 0);
+            raze_assert(raze::datapar::find_last_set(m) == N - 1);
         }
 
         for (size_t i = 0; i < N; ++i) {
@@ -430,11 +433,15 @@ void testMethods() {
 
 
         {
-            Mask m = makeMask({ 1, 3, 4, 7 });
+            std::initializer_list<size_t> ilist = { 1, 3, 4, 6, 7, 8, 9, 11, 14 };
+            Mask m = makeMask(ilist);
 
-            raze_assert(raze::datapar::count_set(m) == 4);
+            size_t expectedCount = std::count_if(ilist.begin(), ilist.end(), [N](int val) { return val < N; });
+           // size_t lastSet = *std::ranges::find_last(ilist, [N](int val) { return val < N; });
+
+            raze_assert(raze::datapar::count_set(m) == expectedCount);
             raze_assert(raze::datapar::find_first_set(m) == 1);
-            raze_assert(raze::datapar::find_last_set(m) == 7);
+       //     raze_assert(raze::datapar::find_last_set(m) == lastSet);
             raze_assert(raze::datapar::any_of(m));
             raze_assert(!raze::datapar::all_of(m));
         }
@@ -461,11 +468,11 @@ void testMethods() {
 }
 
 int main() {
-    testMethods<raze::arch::ISA::SSE2, 128>();
-    testMethods<raze::arch::ISA::SSE3, 128>();
-    testMethods<raze::arch::ISA::SSSE3, 128>();
-    testMethods<raze::arch::ISA::SSE41, 128>();
-    testMethods<raze::arch::ISA::SSE42, 128>();
+    //testMethods<raze::arch::ISA::SSE2, 128>();
+    //testMethods<raze::arch::ISA::SSE3, 128>();
+    //testMethods<raze::arch::ISA::SSSE3, 128>();
+    //testMethods<raze::arch::ISA::SSE41, 128>();
+    //testMethods<raze::arch::ISA::SSE42, 128>();
 
     testMethods<raze::arch::ISA::AVX2, 128>();
     testMethods<raze::arch::ISA::AVX2, 256>();

@@ -14,12 +14,14 @@ struct _Simd_blend;
 
 template <class _DesiredType_>
 struct _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_> {
-	template <class _IntrinType_>
+	template <
+		class _IntrinType_,
+		class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __first,
-		_IntrinType_ __second,
-		_IntrinType_ __mask) raze_const_operator noexcept
-			requires(__is_intrin_type_v<_IntrinType_>)
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
 	{
 		return __intrin_bitcast<_IntrinType_>(_mm_or_si128(
 			_mm_and_si128(__intrin_bitcast<__m128i>(__mask), __intrin_bitcast<__m128i>(__first)),
@@ -46,12 +48,14 @@ template <class _DesiredType_>
 struct _Simd_blend<arch::ISA::SSE41, 128, _DesiredType_>:
 	_Simd_blend<arch::ISA::SSSE3, 128, _DesiredType_>
 {
-	template <class _IntrinType_>
+	template <
+		class _IntrinType_,
+		class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __first,
-		_IntrinType_ __second,
-		_IntrinType_ __mask) raze_const_operator noexcept
-			requires(__is_intrin_type_v<_IntrinType_>)
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
 	{
 		return __intrin_bitcast<_IntrinType_>(_mm_blendv_epi8(__intrin_bitcast<__m128i>(__second),
 			__intrin_bitcast<__m128i>(__first), __intrin_bitcast<__m128i>(__mask)));
@@ -72,12 +76,14 @@ struct _Simd_blend<arch::ISA::SSE41, 128, _DesiredType_>:
 
 template <class _DesiredType_>
 struct _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_> {
-	template <class _IntrinType_>
+	template <
+		class _IntrinType_,
+		class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __first,
-		_IntrinType_ __second,
-		_IntrinType_ __mask) raze_const_operator noexcept\
-			requires(__is_intrin_type_v<_IntrinType_>)
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
 	{
 		return __intrin_bitcast<_IntrinType_>(_mm256_blendv_epi8(__intrin_bitcast<__m256i>(__second),
 			__intrin_bitcast<__m256i>(__first), __intrin_bitcast<__m256i>(__mask)));
@@ -98,12 +104,14 @@ struct _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_> {
 
 template <class _DesiredType_>
 struct _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_> {
-	template <class _IntrinType_>
+	template <
+		class _IntrinType_,
+		class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __first,
-		_IntrinType_ __second,
-		_IntrinType_ __mask) raze_const_operator noexcept
-			requires(__is_intrin_type_v<_IntrinType_>)
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
 	{
 		return __intrin_bitcast<_IntrinType_>(_mm512_ternarylogic_epi32(__intrin_bitcast<__m512i>(__mask),
 			__intrin_bitcast<__m512i>(__first), __intrin_bitcast<__m512i>(__second), 0xCA));
@@ -126,12 +134,14 @@ template <class _DesiredType_>
 struct _Simd_blend<arch::ISA::AVX512BW, 512, _DesiredType_>: 
 	_Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_> 
 {
-	template <class _IntrinType_>
+	template <
+		class _IntrinType_,
+		class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __first,
-		_IntrinType_ __second,
-		_IntrinType_ __mask) raze_const_operator noexcept
-			requires(__is_intrin_type_v<_IntrinType_>)
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) == 2)
 			return __intrin_bitcast<_IntrinType_>(_mm512_ternarylogic_epi32(

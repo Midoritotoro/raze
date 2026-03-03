@@ -116,7 +116,6 @@ constexpr raze_always_inline int __bit_hacks_ctz(_IntegralType_ __value) noexcep
 }
 
 
-
 #if defined (raze_processor_x86)
 
 template <typename _IntegralType_>
@@ -126,14 +125,18 @@ raze_always_inline int __bsf_ctz(_IntegralType_ __value) noexcept {
 
     auto __index = ulong(0);
 
-    if      constexpr (__digits == 64)
-        _BitScanForward64(&__index, __value);
-    else if constexpr (__digits == 32)
-        _BitScanForward(&__index, __value);
-    else if constexpr (__digits < 32)
-        _BitScanForward(&__index, __value | ~__max);
-
-    return __index;
+    if constexpr (__digits == 64) {
+        if (!_BitScanForward64(&__index, __value))
+            return __digits;
+    }
+    else if constexpr (__digits == 32) {
+        if (!_BitScanForward(&__index, __value))
+            return __digits;
+    }
+    else if constexpr (__digits < 32) {
+        if (!_BitScanForward(&__index, static_cast<uint32>(__value | ~__max)))
+            return __digits;
+    }
 }
 
 template <typename _IntegralType_>
@@ -146,35 +149,7 @@ raze_always_inline int __tzcnt_ctz(_IntegralType_ __value) noexcept {
     else if constexpr (__digits == 32)
         return static_cast<int>(__raze_tzcnt_u32(__value));
     else if constexpr (__digits < 32)
-        return static_cast<int>(__raze_tzcnt_u32(__value | ~__max));
-}
-
-template <typename _IntegralType_>
-raze_always_inline int __tzcnt_ctz_unsafe(_IntegralType_ __value) noexcept {
-    constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
-
-    if      constexpr (__digits == 64)
-        return static_cast<int>(__raze_tzcnt_u64(__value));
-    else if constexpr (__digits == 32)
-        return static_cast<int>(__raze_tzcnt_u32(__value));
-    else if constexpr (__digits < 32)
-        return static_cast<int>(__raze_tzcnt_u32(static_cast<unsigned int>(__value)));
-}
-
-template <typename _IntegralType_>
-raze_always_inline int __bsf_ctz_unsafe(_IntegralType_ __value) noexcept {
-    constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
-
-    auto __index = ulong(0);
-
-    if      constexpr (__digits == 64)
-        _BitScanForward64(&__index, __value);
-    else if constexpr (__digits == 32)
-        _BitScanForward(&__index, __value);
-    else if constexpr (__digits < 32)
-        _BitScanForward(&__index, static_cast<unsigned long>(__value));
-
-    return __index;
+        return static_cast<int>(__raze_tzcnt_u32(static_cast<uint32>(__value | ~__max)));
 }
 
 #endif // defined(raze_processor_x86)
@@ -205,7 +180,6 @@ struct __ctz_n_bits_implementation {
         constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
 
         using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
-
         return __count_trailing_zero_bits(static_cast<_UintForBits>(__value & __max_for_n_bits));
     }
 };
