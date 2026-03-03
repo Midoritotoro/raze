@@ -12,3 +12,9 @@
 #include <src/raze/datapar/bitwise/Testz.h>
 #include <src/raze/datapar/bitwise/TestAllOnes.h>
 #include <src/raze/datapar/bitwise/IndexMaskToVector.h>
+#include <src/raze/datapar/bitwise/SimdBoolReference.h>
+#include <src/raze/datapar/bitwise/BitReference.h>
+#include <src/raze/datapar/bitwise/SimdElementReference.h>
+#include <src/raze/datapar/bitwise/MaskElementReference.h>
+#include <src/raze/datapar/bitwise/ToGPR.h>
+#include <src/raze/datapar/bitwise/ToK.h>

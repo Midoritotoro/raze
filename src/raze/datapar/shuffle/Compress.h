@@ -23,11 +23,13 @@ struct _Simd_compress;
 
 template <class _DesiredType_>
 struct _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_> {
-	template <class _IntrinType_>
+    template <
+        class _IntrinType_,
+        class _MaskType_>
 	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
-		_IntrinType_ __vector,
-		_IntrinType_ __mask) raze_const_operator noexcept
-            requires(__is_intrin_type_v<_IntrinType_>)
+		_IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_MaskType_>)
 	{
 		return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
 	}
@@ -150,11 +152,13 @@ template <class _DesiredType_>
 struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
     _Simd_compress<arch::ISA::SSE3, 128, _DesiredType_>
 {
-    template <class _IntrinType_>
+    template <
+        class _IntrinType_,
+        class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
-        _IntrinType_ __vector,
-        _IntrinType_ __mask) raze_const_operator noexcept
-            requires(__is_intrin_type_v<_IntrinType_>)
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+        requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
     }
@@ -217,11 +221,13 @@ template <class _DesiredType_>
 struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
 	_Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>
 {
-	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
-		_IntrinType_ __vector,
-		_IntrinType_ __mask) raze_const_operator noexcept
-            requires(__is_intrin_type_v<_IntrinType_>)
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+        requires(__is_intrin_type_v<_MaskType_>)
 	{
         return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
 	}
@@ -282,11 +288,13 @@ struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
 
 template <class _DesiredType_>
 struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
-		_IntrinType_ __vector,
-		_IntrinType_ __mask) raze_const_operator noexcept
-            requires(__is_intrin_type_v<_IntrinType_>)
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+        requires(__is_intrin_type_v<_MaskType_>)
 	{
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX2, 256, _DesiredType_>()(__mask));
 	}
@@ -408,11 +416,13 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
 
 template <class _DesiredType_>
 struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
-		_IntrinType_ __vector,
-		_IntrinType_ __mask) raze_const_operator noexcept
-            requires(__is_intrin_type_v<_IntrinType_>)
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+        requires(__is_intrin_type_v<_MaskType_>)
 	{
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask));
 	}
@@ -605,11 +615,13 @@ template <class _DesiredType_>
 struct _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
     _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> 
 {
-    template <class _IntrinType_>
+    template <
+        class _IntrinType_,
+        class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
-        _IntrinType_ __vector,
-        _IntrinType_ __mask) raze_const_operator noexcept
-            requires(__is_intrin_type_v<_IntrinType_>)
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+        requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__mask));
     }
@@ -648,11 +660,13 @@ template <class _DesiredType_>
 struct _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
     _Simd_compress<arch::ISA::AVX2, 128, _DesiredType_>
 {
-    template <class _IntrinType_>
+    template <
+        class _IntrinType_,
+        class _MaskType_>
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
-        _IntrinType_ __vector,
-        _IntrinType_ __mask) raze_const_operator noexcept
-            requires(__is_intrin_type_v<_IntrinType_>)
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+        requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__mask));
     }

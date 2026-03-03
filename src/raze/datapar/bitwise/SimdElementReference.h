@@ -13,7 +13,9 @@ public:
 	_Simd_element_reference(_Simd_& __simd, int32 __i) noexcept:
 		_reference(__simd),
 		_index(__i)
-	{}
+	{
+		raze_debug_assert(__i >= 0 && __i < _Simd_::size());
+	}
 
 	raze_always_inline operator value_type() const noexcept {
 		return __read();
@@ -126,11 +128,11 @@ public:
 	}
 private:
 	raze_always_inline value_type __read() const noexcept {
-		return _reference[_index];
+		return _reference.__extract(_index);
 	}
 	
-	raze_always_inline void __write(value_type __value) && noexcept {
-		_reference.insert(_index, __value);
+	raze_always_inline void __write(value_type __value) noexcept {
+		_reference.__insert(_index, __value);
 	}
 
 	_Simd_& _reference;

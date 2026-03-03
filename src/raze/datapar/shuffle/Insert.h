@@ -87,7 +87,7 @@ struct _Simd_insert<arch::ISA::SSE2, 128> {
             const auto __insert_mask = _Simd_load<arch::ISA::SSE2, 128, _IntrinType_>()(
                 (__mask.__array + __mask.__offset - (__index & (__mask.__offset - 1))));
 
-            __vector = _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_>()(__vector, __broadcasted, __insert_mask);
+            __vector = _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };
@@ -257,7 +257,7 @@ struct _Simd_insert<arch::ISA::AVX2, 256> {
             const auto __insert_mask = _Simd_load<arch::ISA::AVX2, 256, _IntrinType_>()(
                 (__mask.__array + __mask.__offset - __validated_position));
 
-            __vector = _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_>()(__vector, __broadcasted, __insert_mask);
+            __vector = _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };
@@ -295,7 +295,7 @@ struct _Simd_insert<arch::ISA::AVX512F, 512> {
             const auto __insert_mask = _Simd_load<arch::ISA::AVX512F, 512, _IntrinType_>()(
                 (__mask.__array + __mask.__offset - (__index & (__mask.__offset - 1))));
 
-            __vector = _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector, __broadcasted, __insert_mask);
+            __vector = _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };

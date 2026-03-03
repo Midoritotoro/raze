@@ -24,7 +24,7 @@ constexpr auto __simd_make_insert_mask() noexcept {
         __mask.__array[__index] = 0;
 
     __mask.__offset = __length >> 1;
-    __mask.__array[(__mask.__offset + 1)] = -1;
+    __mask.__array[__mask.__offset] = -1;
 
     return __mask;
 }

@@ -131,7 +131,7 @@ private:
 		return (_reference >> _index) & 1;
 	}
 
-	raze_always_inline void __write(value_type __value) && noexcept {
+	raze_always_inline void __write(value_type __value) noexcept {
 		if (__value)
 			_reference |= (_Type_(1) << _index);
 		else

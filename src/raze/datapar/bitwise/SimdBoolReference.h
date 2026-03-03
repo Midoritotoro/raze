@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
+#include <src/raze/utility/Assert.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -14,7 +15,9 @@ public:
 	_Simd_bool_reference(_Simd_& __simd, int32 __i) noexcept :
 		_reference(__simd),
 		_index(__i)
-	{}
+	{
+		raze_debug_assert(__i >= 0 && __i < _Simd_::size());
+	}
 
 	raze_always_inline operator value_type() const noexcept {
 		return __read();
@@ -127,11 +130,11 @@ public:
 	}
 private:
 	raze_always_inline value_type __read() const noexcept {
-		return static_cast<bool>(-_reference[_index]);
+		return static_cast<bool>(-_reference.__extract(_index));
 	}
 
-	raze_always_inline void __write(value_type __value) && noexcept {
-		_reference.insert(_index, static_cast<__element_type>(-__value));
+	raze_always_inline void __write(value_type __value) noexcept {
+		_reference.__insert(_index, -static_cast<__element_type>(__value));
 	}
 
 	_Simd_& _reference;

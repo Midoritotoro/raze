@@ -276,7 +276,7 @@ struct _Simd_mask_store<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_>) {
-			return _Simd_mask_store<arch::ISA::AVX2, 256, _DesiredType_>()(__address, __mask, __vector, __alignment_policy);
+			return _Simd_mask_store<arch::ISA::AVX2, 128, _DesiredType_>()(__address, __mask, __vector, __alignment_policy);
 		}
 		else {
 			if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {

@@ -6,6 +6,7 @@
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
+
 template <
 	arch::ISA	_ISA_,
 	typename	_Type_,
@@ -100,8 +101,12 @@ public:
 		return !(__left != __right);
 	}
 
-	static constexpr raze_always_inline uint8 bit_width() noexcept {
-		return _Impl::__used_bits;
+	static constexpr raze_always_inline int32 bit_width() noexcept {
+		return _Impl::__bit_width();
+	}
+
+	static constexpr raze_always_inline int32 elements() noexcept {
+		return _Impl::__elements();
 	}
 
 	raze_nodiscard raze_always_inline constexpr bool __all_of() const noexcept {
@@ -126,6 +131,14 @@ public:
 
 	raze_nodiscard raze_always_inline constexpr int32 __count_set() const noexcept {
 		return _Impl::__count_set(_mask);
+	}
+
+	raze_nodiscard raze_always_inline constexpr int32 __count_trailing_zero_bits() const noexcept {
+		return _Impl::__count_trailing_zero_bits(_mask);
+	}
+
+	raze_nodiscard raze_always_inline constexpr int32 __count_leading_zero_bits() const noexcept {
+		return _Impl::__count_leading_zero_bits(_mask);
 	}
 private:
 	mask_type _mask = 0;

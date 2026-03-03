@@ -61,7 +61,7 @@ struct _Simd_test_all_ones<arch::ISA::AVX512F, 512> {
 		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
 	{
 		const auto __k = _mm512_testn_epi32_mask(__intrin_bitcast<__m512i>(__vector), __intrin_bitcast<__m512i>(__vector));
-		return _kortestc_mask16_u8(__k, __k);
+		return !_kortestc_mask16_u8(__k, __k);
 	}
 };
 

@@ -240,7 +240,7 @@ struct _Simd_mask_load<arch::ISA::AVX512VLBW, 256, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) >= 4)
-			return __simd_mask_load<arch::ISA::AVX512VLF, 256, _DesiredType_>(__address, __mask, __additional_source, __alignment_policy);
+			return _Simd_mask_load<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__address, __mask, __additional_source, __alignment_policy);
 
 		else if constexpr (sizeof(_DesiredType_) == 2)
 			return __intrin_bitcast<_IntrinType_>(_mm256_mask_loadu_epi16(__intrin_bitcast<__m256i>(__additional_source),
@@ -268,7 +268,7 @@ struct _Simd_mask_load<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_>) {
-			return __simd_mask_load<arch::ISA::AVX2, 128, _DesiredType_>(__address, __mask, __additional_source, __alignment_policy);
+			return _Simd_mask_load<arch::ISA::AVX2, 128, _DesiredType_>()(__address, __mask, __additional_source, __alignment_policy);
 		}
 		else {
 			if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {
@@ -321,7 +321,7 @@ struct _Simd_mask_load<arch::ISA::AVX512VLBW, 128, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) >= 4)
-			return __simd_mask_load<arch::ISA::AVX512VLF, 128, _DesiredType_>(__address, __mask, __additional_source, __alignment_policy);
+			return _Simd_mask_load<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__address, __mask, __additional_source, __alignment_policy);
 
 		else if constexpr (sizeof(_DesiredType_) == 2)
 			return __intrin_bitcast<_IntrinType_>(_mm_mask_loadu_epi16(__intrin_bitcast<__m128i>(__additional_source),

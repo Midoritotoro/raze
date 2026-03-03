@@ -172,6 +172,8 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/MaskElementReference.h
     src/raze/datapar/bitwise/SimdElementReference.h
     src/raze/datapar/bitwise/SimdBoolReference.h
+    src/raze/datapar/bitwise/ToK.h
+    src/raze/datapar/bitwise/ToGPR.h
 
     src/raze/datapar/arithmetic/Sub.h
     src/raze/datapar/arithmetic/Add.h

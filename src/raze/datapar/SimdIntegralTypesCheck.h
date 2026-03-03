@@ -107,7 +107,7 @@ struct __is_valid_simd<
 {};
 
 template <class _BasicSimd_>
-constexpr bool __is_valid_simd_v = __is_valid_simd<_BasicSimd_>::value;
+constexpr bool __is_valid_simd_v = __is_valid_simd<std::remove_cvref_t<_BasicSimd_>>::value;
 
 template <
     class	_VectorType_,
