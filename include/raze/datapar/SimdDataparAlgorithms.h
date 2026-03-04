@@ -45,23 +45,16 @@ __simd_nodiscard_inline auto reduce(
 			typename _RawDataparType::value_type>()(__data(__datapar), type_traits::__pass_function(__reduce));
 }
 
-template <
-	class		_Simd_,
-	typename	_ReturnType_>
-using __make_tail_mask_return_type_helper = std::conditional_t<__is_intrin_type_v<_ReturnType_>,
-	simd<_Simd_::__isa, typename _Simd_::value_type, _Simd_::__width>,
-	simd_mask<_Simd_::__isa, typename _Simd_::value_type, _Simd_::__width>>;
-
-template <class _Simd_>
-using __make_tail_mask_return_type = __make_tail_mask_return_type_helper<_Simd_,
-	type_traits::invoke_result_type<_Simd_make_tail_mask<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>, uint32>>;
+template <class _DataparType_>
+using __tail_mask_type = simd_mask<_DataparType_::__isa, typename _DataparType_::value_type, _DataparType_::__width>;
 
 template <class _DataparType_> 
-__simd_nodiscard_inline __make_tail_mask_return_type<_DataparType_> make_tail_mask(uint32 __bytes) noexcept
+__simd_nodiscard_inline __tail_mask_type<_DataparType_> make_tail_mask(uint32 __bytes) noexcept
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Simd_make_tail_mask<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(__bytes);
+	return __tail_mask_type<_DataparType_>(
+		_Simd_make_tail_mask<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(__bytes));
 }
 
 /**
@@ -577,6 +570,20 @@ __simd_nodiscard_inline int32 find_last_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_>)
 {
 	return __mask.__count_leading_zero_bits();
+}
+
+template <class _SimdMask_>
+__simd_nodiscard_inline int32 find_first_not_set(const _SimdMask_& __mask) noexcept
+	requires(__is_simd_mask_v<_SimdMask_>)
+{
+	return __mask.__count_trailing_one_bits();
+}
+
+template <class _SimdMask_>
+__simd_nodiscard_inline int32 find_last_not_set(const _SimdMask_& __mask) noexcept
+	requires(__is_simd_mask_v<_SimdMask_>)
+{
+	return __mask.__count_leading_one_bits();
 }
 
 template <class _SimdMaskType_>

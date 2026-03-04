@@ -11,7 +11,7 @@ void mask_compress_any(
     typename _Simd_::value_type* dst,
     typename _Simd_::mask_type mask)
 {
-    constexpr auto N = _Simd_::template size();
+    constexpr auto N = _Simd_::size();
 
     int m = 0;
 
@@ -365,7 +365,6 @@ void testMethods() {
         raze_assert(raze::datapar::find_last_set(mask) == 0);
     }
 
-    {
         auto makeMask = [N] (std::initializer_list<size_t> bits) {
             Mask m{};
 
@@ -379,6 +378,7 @@ void testMethods() {
             return m;
         };
 
+    {
         {
             Mask m{};
             for (size_t i = 0; i < N; ++i) m[i] = false;
@@ -445,6 +445,61 @@ void testMethods() {
             raze_assert(!raze::datapar::all_of(m));
         }
     }
+
+
+    {
+        {
+            Mask m{};
+            for (size_t i = 0; i < N; ++i) m[i] = false;
+
+            raze_assert(raze::datapar::find_first_not_set(m) == 0);
+            raze_assert(raze::datapar::find_last_not_set(m) == 0);
+        }
+
+        {
+            Mask m{};
+            for (size_t i = 0; i < N; ++i) m[i] = true;
+
+            raze_assert(raze::datapar::find_first_not_set(m) == N);
+            raze_assert(raze::datapar::find_last_not_set(m) == N);
+        }
+
+        for (size_t i = 0; i < N; ++i) {
+            Mask m{};
+            for (size_t j = 0; j < N; ++j) m[j] = true;
+            m[i] = false;
+
+            raze_assert(raze::datapar::find_first_not_set(m) == i);
+            raze_assert(raze::datapar::find_last_not_set(m) == (N - i - 1));
+        }
+
+        {
+            Mask m{};
+            for (size_t i = 0; i < N; ++i)
+                m[i] = (i % 2 == 0);
+
+            size_t expectedFirst = (N > 1 ? 1 : N);
+            
+            raze_assert(raze::datapar::find_first_not_set(m) == expectedFirst);
+            raze_assert(raze::datapar::find_last_not_set(m) == 0);
+        }
+
+        {
+            std::initializer_list<size_t> ilist = { 1,3,4,6,7,8,9,11,14 };
+            Mask m = makeMask(ilist);
+
+            size_t expectedFirst = 0;
+            while (expectedFirst < N && m[expectedFirst]) ++expectedFirst;
+
+            size_t expectedLast = N;
+            for (size_t i = 0; i < N; ++i)
+                if (!m[i]) expectedLast = N - i - 1;
+
+            raze_assert(raze::datapar::find_first_not_set(m) == expectedFirst);
+            raze_assert(raze::datapar::find_last_not_set(m) == expectedLast);
+        }
+    }
+
 
 }
 

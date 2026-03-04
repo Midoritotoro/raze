@@ -140,6 +140,14 @@ public:
 	raze_nodiscard raze_always_inline constexpr int32 __count_leading_zero_bits() const noexcept {
 		return _Impl::__count_leading_zero_bits(_mask);
 	}
+
+	raze_nodiscard raze_always_inline constexpr int32 __count_trailing_one_bits() const noexcept {
+		return _Impl::__count_trailing_one_bits(_mask);
+	}
+
+	raze_nodiscard raze_always_inline constexpr int32 __count_leading_one_bits() const noexcept {
+		return _Impl::__count_leading_one_bits(_mask);
+	}
 private:
 	mask_type _mask = 0;
 };

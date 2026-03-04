@@ -262,6 +262,46 @@ public:
 			return __index_mask.__count_leading_zero_bits();
 		}
 	}
+
+	raze_nodiscard raze_always_inline static constexpr
+		int32 __count_trailing_one_bits(mask_type __mask) noexcept
+	{
+		if constexpr (__used_bits >= 8) {
+			return __count_trailing_zero_bits(~__mask);
+		}
+		else {
+			auto __count = 0;
+			
+			for (auto __i = 0; __i < __used_bits; ++__i) { 
+				if (!((__mask >> __i) & 1))
+					break;
+
+				++__count; 
+			}
+
+			return __count;
+		}
+	}
+
+	raze_nodiscard raze_always_inline static constexpr
+		int32 __count_leading_one_bits(mask_type __mask) noexcept
+	{
+		if constexpr (__used_bits >= 8) {
+			return __count_leading_zero_bits(~__mask) + (raze_sizeof_in_bits(mask_type) - __bit_width());
+		}
+		else {
+			auto __count = 0;
+
+			for (auto __i = __used_bits - 1; __i >= 0; --__i) {
+				if (!((__mask >> __i) & 1))
+					break;
+
+				++__count;
+			}
+
+			return __count;
+		}
+	}
 };
 
 __RAZE_DATAPAR_NAMESPACE_END

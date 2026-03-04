@@ -51,11 +51,8 @@ struct __find_last_vectorized_internal {
             const auto __loaded  = datapar::load<_Simd_>(__last);
             const auto __mask    = (__comparand == __loaded);
 
-            if (datapar::any_of(__mask)) {
-                const auto __index_mask = datapar::to_index_mask(__mask);
-                const auto __offset = (__index_mask.elements() - __index_mask.count_leading_zero_bits() - 1);
-                return static_cast<const _ValueType*>(__last) + __offset;
-            }
+            if (datapar::any_of(__mask))
+                return static_cast<const _ValueType*>(__last) + _Simd_::size() - datapar::find_last_set(__mask) - 1;
         } while (__last != __stop_at);
 
         if (__tail_size == 0)
@@ -69,11 +66,8 @@ struct __find_last_vectorized_internal {
 
             const auto __mask = (__comparand == __loaded) & __tail_mask;
 
-            if (datapar::any_of(__mask)) {
-                const auto __index_mask = datapar::to_index_mask(__mask);
-                const auto __offset = (__index_mask.elements() - __index_mask.count_leading_zero_bits() - 1);
-                return static_cast<const _ValueType*>(__last) + __offset;
-            }
+            if (datapar::any_of(__mask))
+                return static_cast<const _ValueType*>(__last) + _Simd_::size() - datapar::find_last_set(__mask) - 1;
 
             return static_cast<const _ValueType*>(__cached_last);
         }

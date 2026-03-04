@@ -23,6 +23,8 @@ raze_always_inline const _Type_* __find_scalar(
 
 template <class _Simd_>
 struct __find_vectorized_internal {
+    using _ValueType = typename _Simd_::value_type;
+
     raze_always_inline raze_static_operator const typename _Simd_::value_type* operator()(
         sizetype                    __aligned_size,
         sizetype                    __tail_size,
@@ -30,8 +32,6 @@ struct __find_vectorized_internal {
         const void*                 __last,
         typename _Simd_::value_type __value) raze_const_operator noexcept
     {
-        using _ValueType = typename _Simd_::value_type;
-
         const auto __guard      = datapar::make_guard<_Simd_>();
         const auto __comparand  = _Simd_(__value);
 
@@ -42,7 +42,7 @@ struct __find_vectorized_internal {
             const auto __mask   = __comparand == __loaded;
 
             if (datapar::any_of(__mask))
-                return static_cast<const _ValueType*>(__first) + __mask.count_trailing_zero_bits();
+                return static_cast<const _ValueType*>(__first) + datapar::find_first_set(__mask);
 
             __advance_bytes(__first, sizeof(_Simd_));
         } while (__first != __stop_at);
@@ -57,7 +57,7 @@ struct __find_vectorized_internal {
             const auto __mask = (__comparand == __loaded) & __tail_mask;
 
             if (datapar::any_of(__mask))
-                return static_cast<const _ValueType*>(__first) + __mask.count_trailing_zero_bits();
+                return static_cast<const _ValueType*>(__first) + datapar::find_first_set(__mask);
         }
         else {
             __last = __find_scalar(__first, __last, __value);
