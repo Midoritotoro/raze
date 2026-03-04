@@ -36,6 +36,9 @@ template <class _DesiredType_>
 inline constexpr sizetype __simd_index_mask_divisor_v<arch::ISA::AVX512F, 512, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
 
 template <class _DesiredType_>
+inline constexpr sizetype __simd_index_mask_divisor_v<arch::ISA::AVX512DQ, 512, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
+
+template <class _DesiredType_>
 inline constexpr sizetype __simd_index_mask_divisor_v<arch::ISA::AVX512BW, 512, _DesiredType_> = 1;
 
 template <class _DesiredType_>

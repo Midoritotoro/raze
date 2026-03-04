@@ -86,12 +86,14 @@ raze_always_inline int __bsr_clz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
     auto __index = ulong(0);
 
-    if constexpr (__digits == 64)
-        _BitScanReverse64(&__index, __value);
-    else if constexpr (__digits == 32)
-        _BitScanReverse(&__index, __value);
-    else
-        return __bit_hacks_clz(__value);
+    if constexpr (__digits == 64) {
+        if (!_BitScanReverse64(&__index, __value))
+            return __digits;
+    }
+    else if constexpr (__digits <= 32) {
+        if (!_BitScanReverse(&__index, __value))
+            return __digits;
+    }
 
     return static_cast<int>(__digits - 1 - __index);
 }
@@ -111,7 +113,7 @@ raze_always_inline int __lzcnt_clz(_IntegralType_ __value) noexcept {
     else if constexpr (__digits == 16)
         return static_cast<int>(__raze_lzcnt_u16(static_cast<uint16>(__value)));
     else
-        return __bit_hacks_clz(__value);
+        return static_cast<int>(__raze_lzcnt_u16(static_cast<uint16>(__value))) - (16 - __digits);
 }
 
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))

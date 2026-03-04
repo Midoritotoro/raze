@@ -137,6 +137,8 @@ raze_always_inline int __bsf_ctz(_IntegralType_ __value) noexcept {
         if (!_BitScanForward(&__index, static_cast<uint32>(__value | ~__max)))
             return __digits;
     }
+
+    return __index;
 }
 
 template <typename _IntegralType_>

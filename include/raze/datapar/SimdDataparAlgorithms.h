@@ -576,7 +576,7 @@ template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_last_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_>)
 {
-	return (__mask.elements() - __mask.__count_leading_zero_bits() - 1);
+	return __mask.__count_leading_zero_bits();
 }
 
 template <class _SimdMaskType_>

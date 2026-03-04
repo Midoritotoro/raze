@@ -21,7 +21,7 @@ struct _Simd_to_index_mask<arch::ISA::SSE2, 128, _DesiredType_> {
 			return __vector;
 
 		else if constexpr (sizeof(_DesiredType_) == 2)
-			return _mm_movemask_epi8(__intrin_bitcast<__m128i>(__vector));
+			return static_cast<uint16>(_mm_movemask_epi8(__intrin_bitcast<__m128i>(__vector)));
 		
 		else
 			return _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__vector);
@@ -38,7 +38,7 @@ struct _Simd_to_index_mask<arch::ISA::AVX2, 256, _DesiredType_> {
 			return __vector;
 
 		else if constexpr (sizeof(_DesiredType_) == 2)
-			return _mm256_movemask_epi8(__intrin_bitcast<__m256i>(__vector));
+			return static_cast<uint32>(_mm256_movemask_epi8(__intrin_bitcast<__m256i>(__vector)));
 		
 		else
 			return _Simd_to_mask<arch::ISA::AVX2, 256, _DesiredType_>()(__vector);
@@ -58,14 +58,10 @@ struct _Simd_to_index_mask<arch::ISA::AVX512F, 512, _DesiredType_> {
 			return _Simd_to_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector);
 		}
 		else {
-			constexpr auto __ymm_bits = (sizeof(_IntrinType_) / sizeof(_DesiredType_)) >> 1;
-
-			const auto __low = _Simd_to_index_mask<arch::ISA::AVX2, 256, _DesiredType_>()(__intrin_bitcast<__m256d>(__vector));
+			const auto __low = _Simd_to_index_mask<arch::ISA::AVX2, 256, _DesiredType_>()(__intrin_bitcast<__m256i>(__vector));
 			const auto __high = _Simd_to_index_mask<arch::ISA::AVX2, 256, _DesiredType_>()(_mm512_extractf64x4_pd(__intrin_bitcast<__m512d>(__vector), 1));
 
-			using _Type = IntegerForSize<sizeof(decltype(__low)) * 2>::Unsigned;
-
-			return (static_cast<_Type>(__high) << __ymm_bits) | static_cast<_Type>(__low);
+			return (static_cast<uint64>(__high) << 32) | static_cast<uint64>(__low);
 		}
 	}
 };

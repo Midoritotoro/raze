@@ -43,7 +43,7 @@ public:
 			return math::__tzcnt_ctz(__to_gpr<__isa>(_mask)) / __divisor;
 
 		else
-			return math::__bsf_ctz_unsafe(__to_gpr<__isa>(_mask)) / __divisor;
+			return math::__bsf_ctz(__to_gpr<__isa>(_mask)) / __divisor;
 	}
 
 	constexpr raze_always_inline int32 __count_leading_zero_bits() const noexcept {

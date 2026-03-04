@@ -56,7 +56,7 @@ struct _Simd_to_mask<arch::ISA::AVX2, 256, _DesiredType_> {
         if constexpr (std::is_integral_v<_IntrinType_>) {
             return __vector;
         }
-        else if      constexpr (sizeof(_DesiredType_) == 8) {
+        else if constexpr (sizeof(_DesiredType_) == 8) {
             return static_cast<_MaskType>(_mm256_movemask_pd(__intrin_bitcast<__m256d>(__vector)));
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {

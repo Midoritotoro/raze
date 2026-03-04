@@ -231,10 +231,12 @@ public:
 		int32 __count_trailing_zero_bits(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (__has_avx2_support_v<__isa>)
-				return math::__tzcnt_ctz_unsafe(__to_gpr<__isa>(__mask));
+			if constexpr (__used_bits <= 8)
+				return math::__ctz_n_bits<__used_bits>(__to_gpr<__isa>(__mask));
+			else if constexpr (__has_avx2_support_v<__isa>)
+				return math::__tzcnt_ctz(__to_gpr<__isa>(__mask));
 			else
-				return math::__bsf_ctz_unsafe(__to_gpr<__isa>(__mask));
+				return math::__bsf_ctz(__to_gpr<__isa>(__mask));
 		}
 		else {
 			using _IndexMaskType = simd_index_mask<_ISA_, _Type_, _SimdWidth_>;
