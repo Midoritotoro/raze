@@ -2,6 +2,9 @@
 
 #include <src/raze/datapar/bitwise/MaskImplementation.h>
 #include <src/raze/datapar/bitwise/MaskElementReference.h>
+#include <src/raze/algorithm/MsvcIteratorUnwrap.h>
+#include <bitset>
+
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -27,26 +30,60 @@ public:
 	simd_mask() = default;
 	simd_mask(const simd_mask& __mask) = default;
 	simd_mask(simd_mask&& __mask) = default;
-
+	~simd_mask() = default;
 
 	simd_mask(bool __value) noexcept {
 		_mask = _Impl::__broadcast(__value);
 	}
 
-	simd_mask(mask_type __mask) noexcept {
-		_mask = __mask;
+	template <class _Simd_> requires(std::is_convertible_v<_Simd_, mask_type>)
+	simd_mask(_Simd_ __mask) noexcept:
+		_mask(static_cast<mask_type>(__mask))
+	{}
+
+	template <uint64 _Bits_>
+	simd_mask(const std::bitset<_Bits_>& __bitset) noexcept:
+		_mask(__from_bitset(__bitset)) 
+	{}
+	
+	template <
+		class _ForwardIterator_,
+		class _AlignmentPolicy_ = __unaligned_policy>
+	simd_mask(
+		const _ForwardIterator_	__first,
+		_AlignmentPolicy_&&		__alignment_policy = {}) noexcept
+	{
+		copy_from(__first, __alignment_policy);
 	}
 
-	template <class _Simd_> requires (std::is_convertible_v<_Simd_, mask_type>)
-	simd_mask(_Simd_ __mask) noexcept { 
-		_mask = static_cast<mask_type>(__mask);
+	template <
+		class _ForwardIterator_, 
+		class _AlignmentPolicy_ = __unaligned_policy>
+	raze_always_inline void copy_from(
+		const _ForwardIterator_ __first,
+		_AlignmentPolicy_&&		__alignment_policy = {}) noexcept
+			requires(std::convertible_to<type_traits::iterator_value_type<_ForwardIterator_>, bool>)
+	{
+		__copy_from_unchecked(algorithm::__unwrap_iterator(__first), __alignment_policy);
+	}
+
+	template <
+		class _OutputIterator_,
+		class _AlignmentPolicy_ = __unaligned_policy>
+	raze_always_inline void copy_to(
+		_OutputIterator_	__first,
+		_AlignmentPolicy_&& __alignment_policy = {}) noexcept
+	{
+		__copy_to_unchecked(algorithm::__unwrap_iterator(__first), __alignment_policy);
 	}
 
 	constexpr raze_always_inline bool operator[](int32 __index) const noexcept {
 		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
 	}
 
-	constexpr raze_always_inline __mask_element_reference<_ISA_, _Type_, _SimdWidth_> operator[](int32 __index) noexcept {
+	constexpr raze_always_inline __mask_element_reference<_ISA_, 
+		_Type_, _SimdWidth_> operator[](int32 __index) noexcept 
+	{
 		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
 	}
 
@@ -71,15 +108,21 @@ public:
 		return _Impl::__bit_xor(__left, __right);
 	}
 
-	constexpr raze_always_inline simd_mask& operator&=(const simd_mask& __other) noexcept {
+	constexpr raze_always_inline simd_mask& 
+		operator&=(const simd_mask& __other) noexcept 
+	{
 		return *this & __other;
 	}
 
-	constexpr raze_always_inline simd_mask& operator|=(const simd_mask& __other) noexcept {
+	constexpr raze_always_inline simd_mask&
+		operator|=(const simd_mask& __other) noexcept
+	{
 		return *this | __other;
 	}
 
-	constexpr raze_always_inline simd_mask& operator^=(const simd_mask& __other) noexcept {
+	constexpr raze_always_inline simd_mask& 
+		operator^=(const simd_mask& __other) noexcept 
+	{
 		return *this ^ __other;
 	}
 
@@ -98,7 +141,7 @@ public:
 		const simd_mask& __left,
 		const simd_mask& __right) noexcept
 	{
-		return !(__left != __right);
+		return __left & __right;
 	}
 
 	static constexpr raze_always_inline int32 bit_width() noexcept {
@@ -133,20 +176,57 @@ public:
 		return _Impl::__count_set(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 __count_trailing_zero_bits() const noexcept {
+	raze_nodiscard raze_always_inline constexpr int32 
+		__count_trailing_zero_bits() const noexcept
+	{
 		return _Impl::__count_trailing_zero_bits(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 __count_leading_zero_bits() const noexcept {
+	raze_nodiscard raze_always_inline constexpr int32
+		__count_leading_zero_bits() const noexcept
+	{
 		return _Impl::__count_leading_zero_bits(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 __count_trailing_one_bits() const noexcept {
+	raze_nodiscard raze_always_inline constexpr int32 
+		__count_trailing_one_bits() const noexcept 
+	{
 		return _Impl::__count_trailing_one_bits(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 __count_leading_one_bits() const noexcept {
+	raze_nodiscard raze_always_inline constexpr int32 
+		__count_leading_one_bits() const noexcept 
+	{
 		return _Impl::__count_leading_one_bits(_mask);
+	}
+
+	template <sizetype _Bits_>
+	raze_nodiscard raze_always_inline static constexpr mask_type
+		__from_bitset(const std::bitset<_Bits_>& __bitset) noexcept 
+	{
+		return _Impl::__from_bitset(__bitset);
+	}
+
+	template <
+		class _UnwrappedForwardIterator_, 
+		class _AlignmentPolicy_>
+	raze_nodiscard raze_always_inline constexpr void 
+		__copy_from_unchecked(
+			const _UnwrappedForwardIterator_	__first,
+			_AlignmentPolicy_&&					__alignment_policy) noexcept 
+	{
+		_mask = _Impl::__copy_from_unchecked(__first, __alignment_policy);
+	}
+
+	template <
+		class _UnwrappedOutputIterator_, 
+		class _AlignmentPolicy_>
+	raze_nodiscard raze_always_inline constexpr void 
+		__copy_to_unchecked(
+			_UnwrappedOutputIterator_	__first,
+			_AlignmentPolicy_&&			__alignment_policy) noexcept
+	{
+		_Impl::__copy_to_unchecked(__first, __alignment_policy);
 	}
 private:
 	mask_type _mask = 0;
