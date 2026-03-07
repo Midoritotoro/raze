@@ -2,7 +2,7 @@
 
 
 #include <src/raze/datapar/MaskTypeSelector.h>
-#include <src/raze/datapar/bitwise/IndexMaskDivisor.h>
+#include <src/raze/datapar/bitwise/BitmaskBitsPerElement.h>
 #include <src/raze/datapar/bitwise/ToK.h>
 #include <src/raze/datapar/bitwise/ToGPR.h>
 #include <raze/math/BitMath.h>
@@ -14,7 +14,7 @@ template <
 	arch::ISA	_ISA_,
 	typename	_Type_,
 	uint32		_SimdWidth_>
-class simd_index_mask {
+class _Simd_bitmask {
 public:
 	static constexpr auto __isa = _ISA_;
 	static constexpr auto __width = _SimdWidth_;
@@ -23,15 +23,15 @@ public:
 
 	using element_type = _Type_;
 
-	static constexpr uint8 __divisor = __simd_index_mask_divisor_v<__isa, __width, element_type>;
+	static constexpr uint8 __divisor = __bitmask_bits_per_element_v<__isa, __width, element_type>;
 	static constexpr uint8 __used_bits = (__width / 8) / sizeof(element_type) * __divisor;
 
 	using mask_type = __mmask_for_elements_t<__used_bits>;
 
-	simd_index_mask() noexcept
+	_Simd_bitmask() noexcept
 	{}
 
-	simd_index_mask(mask_type __mask) noexcept {
+	_Simd_bitmask(mask_type __mask) noexcept {
 		_mask = __mask;
 	}
 

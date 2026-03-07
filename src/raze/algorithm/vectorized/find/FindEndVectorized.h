@@ -79,22 +79,18 @@ struct __find_end_vectorized_internal {
 			const auto __loaded_first = datapar::load<_Simd_>(__sequence_start);
 			const auto __equal_first = (__loaded_first == __broadcasted_first_sub);
 
-			const auto __combined = __equal_first & __equal_last;
+			auto __combined = __equal_first & __equal_last;
 
 			if (datapar::any_of(__combined)) {
-				auto __mask = datapar::to_mask(__combined);
-
 				do {
-					const auto __offset_count = (__mask.bit_width() - __mask.count_leading_zero_bits());
-					const auto __offset_bytes = __offset_count * sizeof(_ValueType);
-
+					const auto __offset_bytes = (__combined.elements() - datapar::find_last_set(__combined)) * sizeof(_ValueType);
 					const auto __main_match = __bytes_pointer_offset(__sequence_start, __offset_bytes);
 
 					if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
 						return static_cast<const _ValueType*>(__main_match) - 1;
 
-					__mask.clear_left_most_set_bit();
-				} while (datapar::any_of(__mask));
+					__combined.clear_left();
+				} while (datapar::any_of(__combined));
 			}
 		}
 

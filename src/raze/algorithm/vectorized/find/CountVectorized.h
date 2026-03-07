@@ -28,12 +28,14 @@ raze_declare_const_function __raze_simd_algorithm_inline sizetype __count_scalar
 
 template <class _Simd_>
 struct __count_vectorized_internal {
+    using _ValueType = typename _Simd_::value_type;
+
     raze_declare_const_function raze_static_operator __raze_simd_algorithm_inline sizetype operator()(
         sizetype                                __aligned_size,
         sizetype                                __tail_size,
         const void*                             __first,
         raze_maybe_unused_attribute sizetype    __bytes,
-        typename _Simd_::value_type             __value) raze_const_operator noexcept
+        _ValueType                              __value) raze_const_operator noexcept
     {
         const auto __guard  = datapar::make_guard<_Simd_>();
         auto __count        = sizetype(0);
@@ -52,7 +54,7 @@ struct __count_vectorized_internal {
 
         if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
             if (__tail_size != 0) {
-                const auto __tail_mask  = datapar::make_tail_mask<_Simd_>(__tail_size);
+                const auto __tail_mask  = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
                 __count += datapar::reduce_equal(datapar::maskz_load<_Simd_>(__first, __tail_mask), __comparand, __tail_mask);
             }
 

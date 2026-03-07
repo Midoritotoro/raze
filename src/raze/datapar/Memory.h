@@ -3,7 +3,6 @@
 #include <src/raze/datapar/memory/AlignmentPolicy.h>
 #include <src/raze/datapar/memory/CompressStore.h>
 #include <src/raze/datapar/memory/Load.h>
-#include <src/raze/datapar/memory/MakeTailMask.h>
 #include <src/raze/datapar/memory/MaskLoad.h>
 #include <src/raze/datapar/memory/MaskzLoad.h>
 #include <src/raze/datapar/memory/MaskStore.h>

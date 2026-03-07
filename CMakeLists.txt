@@ -161,17 +161,17 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/BitNot.h
     src/raze/datapar/bitwise/ToMask.h
     src/raze/datapar/bitwise/ToVector.h
-    src/raze/datapar/bitwise/ToIndexMask.h
+    src/raze/datapar/bitwise/ToBitmask.h
     src/raze/datapar/bitwise/MaskConvert.h
     src/raze/datapar/bitwise/Testz.h
     src/raze/datapar/bitwise/TestAllOnes.h
-    src/raze/datapar/bitwise/IndexMaskDivisor.h
-    src/raze/datapar/bitwise/IndexMaskToVector.h
+    src/raze/datapar/bitwise/BitmaskBitsPerElement.h
     src/raze/datapar/bitwise/MaskImplementation.h
     src/raze/datapar/bitwise/BitReference.h
     src/raze/datapar/bitwise/MaskElementReference.h
     src/raze/datapar/bitwise/SimdElementReference.h
     src/raze/datapar/bitwise/SimdBoolReference.h
+    src/raze/datapar/bitwise/FirstNBytes.h
     src/raze/datapar/bitwise/ToK.h
     src/raze/datapar/bitwise/ToGPR.h
 
@@ -201,7 +201,6 @@ set(PRIVATE_HEADERS
     src/raze/datapar/memory/NonTemporalStore.h
     src/raze/datapar/memory/StreamingFence.h
     src/raze/datapar/memory/AlignmentPolicy.h
-    src/raze/datapar/memory/MakeTailMask.h
     src/raze/datapar/memory/MaskLoadSupport.h
     src/raze/datapar/memory/MaskStoreSupport.h
 
@@ -210,7 +209,6 @@ set(PRIVATE_HEADERS
     src/raze/datapar/reduce/Fold.h
     src/raze/datapar/reduce/HorizontalMax.h
     src/raze/datapar/reduce/HorizontalMin.h
-    src/raze/datapar/reduce/HorizontalMinmax.h
 
     src/raze/datapar/shuffle/ShuffleTables.h
     src/raze/datapar/shuffle/MaskExpand.h
@@ -337,7 +335,7 @@ set(PUBLIC_HEADERS
     include/raze/datapar/BasicSimdMask.h
     include/raze/datapar/BasicSimdShuffleMask.h
     include/raze/datapar/SimdCast.h
-    include/raze/datapar/SimdIndexMask.h
+    include/raze/datapar/SimdBitmask.h
     include/raze/datapar/SimdDataparAlgorithms.h
     include/raze/datapar/SimdConfig.h
 )
@@ -576,8 +574,8 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
-    # enable_testing()
-    # add_subdirectory(benchmarks)
+    enable_testing()
+    add_subdirectory(benchmarks)
 endif()
 
 if(RAZE_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)

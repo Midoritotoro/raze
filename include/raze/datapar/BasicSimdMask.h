@@ -79,6 +79,11 @@ public:
 		__copy_to_unchecked(algorithm::__unwrap_iterator(__first), __alignment_policy);
 	}
 
+
+	raze_always_inline constexpr void clear_left() noexcept {
+		_mask = _Impl::__clear_left(_mask);
+	}
+
 	constexpr raze_always_inline bool operator[](int32 __index) const noexcept {
 		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
 	}
@@ -143,7 +148,7 @@ public:
 		const simd_mask& __left,
 		const simd_mask& __right) noexcept
 	{
-		return __left & __right;
+		return !(__left != __right);
 	}
 
 	static constexpr raze_always_inline int32 bit_width() noexcept {

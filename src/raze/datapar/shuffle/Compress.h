@@ -19,10 +19,10 @@ template <
 	arch::ISA	_ISA_,
 	uint32		_Width_,
 	class		_DesiredType_>
-struct _Simd_compress;
+struct _Compress;
 
 template <class _DesiredType_>
-struct _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_> {
+struct _Compress<arch::ISA::SSE2, 128, _DesiredType_> {
     template <
         class _IntrinType_,
         class _MaskType_>
@@ -31,7 +31,7 @@ struct _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_> {
         _MaskType_      __mask) raze_const_operator noexcept
             requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
+		return (*this)(__vector, _To_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
 	}
 
 	template <
@@ -146,11 +146,11 @@ struct _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_> {
 	}
 };
 
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::SSE3, 128, _DesiredType_> : _Simd_compress<arch::ISA::SSE2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::SSE3, 128, _DesiredType_> : _Compress<arch::ISA::SSE2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> 
-struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
-    _Simd_compress<arch::ISA::SSE3, 128, _DesiredType_>
+struct _Compress<arch::ISA::SSSE3, 128, _DesiredType_>:
+    _Compress<arch::ISA::SSE3, 128, _DesiredType_>
 {
     template <
         class _IntrinType_,
@@ -160,7 +160,7 @@ struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
         _MaskType_      __mask) raze_const_operator noexcept
         requires(__is_intrin_type_v<_MaskType_>)
     {
-        return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
+        return (*this)(__vector, _To_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
     }
 
     template <
@@ -203,7 +203,7 @@ struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __intrin_bitcast<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm_load_si128(reinterpret_cast<const __m128i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Simd_blend<arch::ISA::SSSE3, 128, _DesiredType_>()(__intrin_bitcast<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Blend<arch::ISA::SSSE3, 128, _DesiredType_>()(__intrin_bitcast<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __intrin_bitcast<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -218,8 +218,8 @@ struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
 };
 
 template <class _DesiredType_>
-struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
-	_Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>
+struct _Compress<arch::ISA::SSE41, 128, _DesiredType_> :
+	_Compress<arch::ISA::SSSE3, 128, _DesiredType_>
 {
     template <
         class _IntrinType_,
@@ -229,7 +229,7 @@ struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
         _MaskType_      __mask) raze_const_operator noexcept
         requires(__is_intrin_type_v<_MaskType_>)
 	{
-        return (*this)(__vector, _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
+        return (*this)(__vector, _To_mask<arch::ISA::SSE2, 128, _DesiredType_>()(__mask));
 	}
 
 	template <
@@ -272,7 +272,7 @@ struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __intrin_bitcast<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm_load_si128(reinterpret_cast<const __m128i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Simd_blend<arch::ISA::SSE41, 128, _DesiredType_>()(__intrin_bitcast<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Blend<arch::ISA::SSE41, 128, _DesiredType_>()(__intrin_bitcast<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __intrin_bitcast<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -287,7 +287,7 @@ struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
 };
 
 template <class _DesiredType_>
-struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
+struct _Compress<arch::ISA::AVX2, 256, _DesiredType_> {
     template <
         class _IntrinType_,
         class _MaskType_>
@@ -296,7 +296,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
         _MaskType_      __mask) raze_const_operator noexcept
         requires(__is_intrin_type_v<_MaskType_>)
 	{
-        return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX2, 256, _DesiredType_>()(__mask));
+        return (*this)(__vector, _To_mask<arch::ISA::AVX2, 256, _DesiredType_>()(__mask));
 	}
 
 	template <
@@ -349,7 +349,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
             _mm_store_si128(reinterpret_cast<__m128i*>(__destination_write_pointer), __intrin_bitcast<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_>()(__intrin_bitcast<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(__intrin_bitcast<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __intrin_bitcast<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -407,7 +407,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __intrin_bitcast<__m128i>(__packed_data_fourth_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_>()(__intrin_bitcast<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(__intrin_bitcast<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __intrin_bitcast<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -415,7 +415,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
 };
 
 template <class _DesiredType_>
-struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
+struct _Compress<arch::ISA::AVX512F, 512, _DesiredType_> {
     template <
         class _IntrinType_,
         class _MaskType_>
@@ -424,7 +424,7 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
         _MaskType_      __mask) raze_const_operator noexcept
         requires(__is_intrin_type_v<_MaskType_>)
 	{
-        return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask));
+        return (*this)(__vector, _To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask));
 	}
 
 	template <
@@ -499,7 +499,7 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
             _mm_store_si128(reinterpret_cast<__m128i*>(__destination_write_pointer), __intrin_bitcast<__m128i>(__packed_data_fourth_segment));
 
             const auto __final_packed_vector = _mm512_load_si512(__temporary_stack_buffer);
-            const auto __final_blended_result_vector = _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
+            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
                 __intrin_bitcast<__m512i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __intrin_bitcast<_IntrinType_>(__final_blended_result_vector) };
@@ -604,7 +604,7 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __intrin_bitcast<__m128i>(__packed_data_eighth_segment));
 
             const auto __final_packed_vector = _mm512_load_si512(__temporary_stack_buffer);
-            const auto __final_blended_result_vector = _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__intrin_bitcast<__m512i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__intrin_bitcast<__m512i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __intrin_bitcast<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -612,8 +612,8 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
 };
 
 template <class _DesiredType_> 
-struct _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
-    _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> 
+struct _Compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
+    _Compress<arch::ISA::AVX2, 256, _DesiredType_> 
 {
     template <
         class _IntrinType_,
@@ -623,7 +623,7 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
         _MaskType_      __mask) raze_const_operator noexcept
         requires(__is_intrin_type_v<_MaskType_>)
     {
-        return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__mask));
+        return (*this)(__vector, _To_mask<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__mask));
     }
 
     template <
@@ -651,14 +651,14 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
                 __intrin_bitcast<__m256i>(__vector), __not, __intrin_bitcast<__m256i>(__vector))) };
         }
         else {
-            return _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_>()(__vector, __mask);
+            return _Compress<arch::ISA::AVX2, 256, _DesiredType_>()(__vector, __mask);
         }
     }
 };
 
 template <class _DesiredType_>
-struct _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
-    _Simd_compress<arch::ISA::AVX2, 128, _DesiredType_>
+struct _Compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
+    _Compress<arch::ISA::AVX2, 128, _DesiredType_>
 {
     template <
         class _IntrinType_,
@@ -668,7 +668,7 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
         _MaskType_      __mask) raze_const_operator noexcept
         requires(__is_intrin_type_v<_MaskType_>)
     {
-        return (*this)(__vector, _Simd_to_mask<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__mask));
+        return (*this)(__vector, _To_mask<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__mask));
     }
 
     template <
@@ -696,36 +696,36 @@ struct _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
                 __intrin_bitcast<__m128i>(__vector), __not, __intrin_bitcast<__m128i>(__vector))) };
         }
         else {
-            return _Simd_compress<arch::ISA::SSE42, 128, _DesiredType_>()(__vector, __mask);
+            return _Compress<arch::ISA::SSE42, 128, _DesiredType_>()(__vector, __mask);
         }
     }
 };
 
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::SSE42, 128, _DesiredType_> : _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX2, 128, _DesiredType_> : _Simd_compress<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::SSE42, 128, _DesiredType_> : _Compress<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX2, 128, _DesiredType_> : _Compress<arch::ISA::SSE42, 128, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512BW, 512, _DesiredType_> : _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Simd_compress<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Simd_compress<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Simd_compress<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512BW, 512, _DesiredType_> : _Compress<arch::ISA::AVX512F, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512F, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Compress<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _Compress<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_compress<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_> : _Simd_compress<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
 
 __RAZE_DATAPAR_NAMESPACE_END

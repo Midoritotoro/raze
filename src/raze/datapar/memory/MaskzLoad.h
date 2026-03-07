@@ -11,12 +11,12 @@ template <
 	uint32		_Width_,
 	class		_DesiredType_,
 	class		_IntrinType_>
-struct _Simd_maskz_load;
+struct _Maskz_load;
 
 template <	
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Simd_maskz_load<arch::ISA::SSE2, 128, _DesiredType_, _IntrinType_> {
+struct _Maskz_load<arch::ISA::SSE2, 128, _DesiredType_, _IntrinType_> {
 	template <
 		class _MaskType_,
 		class _AlignmentPolicy_ = __unaligned_policy>
@@ -26,16 +26,16 @@ struct _Simd_maskz_load<arch::ISA::SSE2, 128, _DesiredType_, _IntrinType_> {
 		_AlignmentPolicy_&&	__alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Simd_mask_load<arch::ISA::SSE2, 128, _DesiredType_>()(__address, __mask,
-			_Simd_broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __alignment_policy);
+		return _Mask_load<arch::ISA::SSE2, 128, _DesiredType_>()(__address, __mask,
+			_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Simd_maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_>:
-	_Simd_maskz_load<arch::ISA::SSE2, 128, _DesiredType_, _IntrinType_>
+struct _Maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::SSE2, 128, _DesiredType_, _IntrinType_>
 {
 	template <
 		class _MaskType_,
@@ -46,16 +46,16 @@ struct _Simd_maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Simd_mask_load<arch::ISA::SSE3, 128, _DesiredType_>()(__address, __mask,
-			_Simd_broadcast_zeros<arch::ISA::SSE3, 128, _IntrinType_>()(), __alignment_policy);
+		return _Mask_load<arch::ISA::SSE3, 128, _DesiredType_>()(__address, __mask,
+			_Broadcast_zeros<arch::ISA::SSE3, 128, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_> 
-struct _Simd_maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_>:
-	_Simd_maskz_load<arch::ISA::SSSE3, 128, _DesiredType_, _IntrinType_>
+struct _Maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::SSSE3, 128, _DesiredType_, _IntrinType_>
 {
 	template <
 		class _MaskType_,
@@ -66,8 +66,8 @@ struct _Simd_maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Simd_mask_load<arch::ISA::SSE41, 128, _DesiredType_>()(__address, __mask,
-			_Simd_broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_>()(), __alignment_policy);
+		return _Mask_load<arch::ISA::SSE41, 128, _DesiredType_>()(__address, __mask,
+			_Broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
@@ -75,8 +75,8 @@ struct _Simd_maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_>:
 template <
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Simd_maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>:
-	_Simd_maskz_load<arch::ISA::SSE42, 128, _DesiredType_, _IntrinType_>
+struct _Maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::SSE42, 128, _DesiredType_, _IntrinType_>
 {
 	template <
 		class _MaskType_,
@@ -104,15 +104,15 @@ struct _Simd_maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>:
 				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask)));
 
 		else
-			return _Simd_mask_load<arch::ISA::AVX2, 128, _DesiredType_>()(__address, __mask,
-				_Simd_broadcast_zeros<arch::ISA::AVX2, 128, _IntrinType_>()(), __alignment_policy);
+			return _Mask_load<arch::ISA::AVX2, 128, _DesiredType_>()(__address, __mask,
+				_Broadcast_zeros<arch::ISA::AVX2, 128, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Simd_maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>
+struct _Maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>
 {
 	template <
 		class _MaskType_,
@@ -140,15 +140,15 @@ struct _Simd_maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>
 				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask)));
 
 		else
-			return _Simd_mask_load<arch::ISA::AVX2, 256, _DesiredType_>()(__address, __mask,
-				_Simd_broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __alignment_policy);
+			return _Mask_load<arch::ISA::AVX2, 256, _DesiredType_>()(__address, __mask,
+				_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Simd_maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> {
+struct _Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> {
 	template <
 		class _MaskType_,
 		class _AlignmentPolicy_ = __unaligned_policy>
@@ -193,16 +193,16 @@ struct _Simd_maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> {
 					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint16>(__mask), __address));
 		}
 
-		return _Simd_mask_load<arch::ISA::AVX512F, 512, _DesiredType_>()(__address, __mask, 
-			_Simd_broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __alignment_policy);
+		return _Mask_load<arch::ISA::AVX512F, 512, _DesiredType_>()(__address, __mask, 
+			_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_> 
-struct _Simd_maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_>:
-	_Simd_maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> 
+struct _Maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> 
 {
 	template <
 		class _MaskType_,
@@ -220,15 +220,15 @@ struct _Simd_maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_>:
 			return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_epi8(__mask_convert<arch::ISA::AVX512BW, 512, _DesiredType_, uint64>(__mask), __address));
 
 		else
-			return _Simd_maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
+			return _Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Simd_maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>:
-	_Simd_maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_> 
+struct _Maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_> 
 {
 	template <
 		class _MaskType_,
@@ -240,7 +240,7 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>:
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_>) {
-			return _Simd_maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
+			return _Maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
 		}
 		else {
 			if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {
@@ -271,16 +271,16 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>:
 			}
 		}
 
-		return _Simd_mask_load<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__address, __mask,
-			_Simd_broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __alignment_policy);
+		return _Mask_load<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__address, __mask,
+			_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_> 
-struct _Simd_maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_>: 
-	_Simd_maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_> 
+struct _Maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_>: 
+	_Maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_> 
 {
 	template <
 		class _MaskType_,
@@ -292,7 +292,7 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_>
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) >= 4)
-			return _Simd_maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
+			return _Maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
 
 		else if constexpr (sizeof(_DesiredType_) == 2)
 			return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi16(__mask_convert<arch::ISA::AVX512VLBW, 256, _DesiredType_, uint16>(__mask), __address));
@@ -305,8 +305,8 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_>
 template <
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Simd_maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>:
-	_Simd_maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>
+struct _Maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>
 {
 	template <
 		class _MaskType_,
@@ -318,7 +318,7 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>:
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_>) {
-			return _Simd_maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
+			return _Maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
 		}
 		else {
 			if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {
@@ -349,16 +349,16 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>:
 			}
 		}
 
-		return _Simd_mask_load<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__address, __mask,
-			_Simd_broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __alignment_policy);
+		return _Mask_load<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__address, __mask,
+			_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __alignment_policy);
 	}
 };
 
 template <
 	class _DesiredType_,
 	class _IntrinType_> 
-struct _Simd_maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_>: 
-	_Simd_maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>
+struct _Maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_>: 
+	_Maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>
 {
 	template <
 		class _MaskType_,
@@ -370,7 +370,7 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_>
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) >= 4)
-			return _Simd_maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
+			return _Maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
 
 		else if constexpr (sizeof(_DesiredType_) == 2)
 			return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi16(__mask_convert<arch::ISA::AVX512VLBW, 128, _DesiredType_, uint16>(__mask), __address));
@@ -380,29 +380,29 @@ struct _Simd_maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_>
 	}
 };
 
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::SSSE3, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::SSE42, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::SSSE3, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::SSE42, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_> {};
 
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512DQ, 512, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512BWDQ, 512, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMI, 512, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMI2, 512, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VBMI, 512, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512BWDQ, 512, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512DQ, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512BWDQ, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMI, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMI2, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VBMI, 512, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512BWDQ, 512, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_, _IntrinType_> {};
 
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VLDQ, 256, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMIVL, 256, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VBMIVL, 256, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VLDQ, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMIVL, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VBMIVL, 256, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_, _IntrinType_> {};
 
 
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VLDQ, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMIVL, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VBMIVL, 128, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Simd_maskz_load<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_, _IntrinType_> : _Simd_maskz_load<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VLDQ, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMIVL, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VBMIVL, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_, _IntrinType_> {};
 
 __RAZE_DATAPAR_NAMESPACE_END

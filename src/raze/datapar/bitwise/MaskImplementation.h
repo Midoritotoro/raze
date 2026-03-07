@@ -4,11 +4,12 @@
 #include <src/raze/datapar/bitwise/Testz.h>
 #include <src/raze/datapar/bitwise/TestAllOnes.h>
 #include <src/raze/datapar/MaskTypeSelector.h>
-#include <raze/datapar/SimdIndexMask.h>
+#include <raze/datapar/SimdBitmask.h>
 #include <raze/math/BitMath.h>
+#include <src/raze/datapar/bitwise/ToMask.h>
 #include <src/raze/datapar/bitwise/ToVector.h>
 #include <src/raze/datapar/memory/MaskzLoad.h>
-#include <src/raze/datapar/memory/MakeTailMask.h>
+#include <src/raze/datapar/bitwise/FirstNBytes.h>
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
 #include <raze/algorithm/minmax/Max.h>
 
@@ -57,7 +58,7 @@ public:
 	raze_nodiscard raze_always_inline static constexpr int32 
 		__elements() noexcept 
 	{
-		return __elements;
+		return __elements_count;
 	}
 
 	raze_nodiscard raze_always_inline static constexpr bool 
@@ -84,7 +85,7 @@ public:
 				return (__mask == __max_for_bits);
 		}
 		else {
-			return _Simd_test_all_ones<__isa, __bit_width()>()(__data(__mask));
+			return _Test_all_ones<__isa, __bit_width()>()(__data(__mask));
 		}
 	}
 
@@ -108,7 +109,7 @@ public:
 				return (__mask == 0);
 		}
 		else {
-			return _Simd_testz<__isa, __bit_width()>()(__data(__mask));
+			return _Testz<__isa, __bit_width()>()(__data(__mask));
 		}
 	}
 
@@ -197,7 +198,7 @@ public:
 	}
 
 	raze_nodiscard raze_always_inline static constexpr mask_type
-		_bit_xor(
+		__bit_xor(
 			mask_type __left,
 			mask_type __right) noexcept
 	{
@@ -241,7 +242,7 @@ public:
 		}
 		else {
 			return math::__popcnt_n_bits<(__bit_width() / 8) / sizeof(_Type_)>(
-				_Simd_to_mask<__isa, __bit_width(), _Type_>()(__data(__mask)));
+				_To_mask<__isa, __bit_width(), _Type_>()(__data(__mask)));
 		}
 	}
 
@@ -259,7 +260,7 @@ public:
 				return math::__bsf_ctz(__to_gpr<__isa>(__mask));
 		}
 		else {
-			using _IndexMaskType = simd_index_mask<_ISA_, _Type_, _SimdWidth_>;
+			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, _SimdWidth_>;
 			const auto __index_mask = _IndexMaskType(
 				_To_bitmask<__isa, __width, _Type_>()(__data(__mask)));
 			return __index_mask.__count_trailing_zero_bits();
@@ -270,15 +271,17 @@ public:
 		int32 __count_leading_zero_bits(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
-			constexpr auto __unused_bits = raze_sizeof_in_bits(mask_type) - __bit_width();
+			if constexpr (__bit_width() <= 8)
+				return math::__clz_n_bits<__bit_width()>(__mask);
 
-			if constexpr (__has_avx2_support_v<__isa>)
-				return math::__lzcnt_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask) >> __unused_bits));
+			else if constexpr (__has_avx2_support_v<__isa>)
+				return math::__lzcnt_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask)));
+
 			else
-				return math::__bsr_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask) >> __unused_bits));
+				return math::__bsr_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask)));
 		}
 		else {
-			using _IndexMaskType = simd_index_mask<_ISA_, _Type_, _SimdWidth_>;
+			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, _SimdWidth_>;
 			const auto __index_mask = _IndexMaskType(
 				_To_bitmask<__isa, __width, _Type_>()(__data(__mask)));
 			return __index_mask.__count_leading_zero_bits();
@@ -335,7 +338,7 @@ public:
 		if constexpr (std::is_integral_v<mask_type>)
 			return __bits;
 		else
-			return _Simd_to_vector<__isa, __width, typename mask_type::vector_type, _Type_>()(__bits);
+			return _To_vector<__isa, __width, typename mask_type::vector_type, _Type_>()(__bits);
 	}
 
 	template <
@@ -354,6 +357,18 @@ public:
 			return __copy_from_vectorized(__first, __alignment_policy);
 		else
 			return __copy_from_scalar(__first, __alignment_policy);
+	}
+	
+	raze_nodiscard raze_always_inline static constexpr mask_type
+		__clear_left(mask_type __mask) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			return (__mask & (__mask - 1));
+		}
+		else {
+			const auto __converted_mask = _To_mask<__isa, __width, _Type_>()(__data(__mask));
+			return _To_vector<__isa, __width, typename mask_type::vector_type, _Type_>()((__converted_mask & (__converted_mask - 1)));
+		}
 	}
 private:
 	template <
@@ -381,7 +396,7 @@ private:
 			const auto __loaded = _Simd_load<__isa, __width, _IntrinType>()(
 				__first_address, __alignment_policy);
 
-			__mask = _Simd_to_mask<__isa, __width, _Type_>()(__loaded);
+			__mask = _To_mask<__isa, __width, _Type_>()(__loaded);
 
 			if constexpr (!__has_tail)
 				return __mask;
@@ -391,10 +406,10 @@ private:
 					__mask[__i] = __first_address[__i];
 			}
 			else {
-				const auto __tail_mask = _Simd_make_tail_mask<__isa, __width, _Type_>()(
+				const auto __tail_mask = _First_n_bytes<__isa, __width, _Type_>()(
 					__tail_elements * sizeof(_ValueType));
 
-				const auto __tail = _Simd_maskz_load<__isa, __width, _Type_, _IntrinType>()(
+				const auto __tail = _Maskz_load<__isa, __width, _Type_, _IntrinType>()(
 					__first_address + __main_part_elements, __alignment_policy);
 			}
 

@@ -55,17 +55,14 @@ struct __equal_vectorized_internal {
             return true;
 
         if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
-            const auto __tail_mask = datapar::make_tail_mask<_Simd_>(__tail_size);
+            const auto __tail_length = __tail_size / sizeof(_ValueType);
+            const auto __tail_mask = datapar::first_n<_Simd_>(__tail_length);
 
             const auto __loaded_first   = datapar::maskz_load<_Simd_>(__first, __tail_mask);
             const auto __loaded_second  = datapar::maskz_load<_Simd_>(__second, __tail_mask);
 
             const auto __combined_mask = (__loaded_first == __loaded_second) & __tail_mask;
-
-            const auto __tail_length = __tail_size / sizeof(_ValueType);
-            const auto __all_equal_mask = (typename _Simd_::mask_type::mask_type(1) << __tail_length) - 1;
-
-            return (__combined_mask == __all_equal_mask);
+            return datapar::all_of(__combined_mask == __tail_mask);
         }
         else {
             return __equal_scalar<_ValueType>(__first, __second, __tail_size);

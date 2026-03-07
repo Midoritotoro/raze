@@ -16,10 +16,10 @@ template <
     arch::ISA	_ISA_,
     uint32		_Width_,
     class       _DesiredType_>
-struct _Simd_extract;
+struct _Extract;
 
 template <class _DesiredType_>
-struct _Simd_extract<arch::ISA::SSE2, 128, _DesiredType_> {
+struct _Extract<arch::ISA::SSE2, 128, _DesiredType_> {
     template <class _IntrinType_>
     raze_nodiscard raze_static_operator raze_always_inline _DesiredType_ operator()(
         _IntrinType_&   __vector,
@@ -100,8 +100,8 @@ struct _Simd_extract<arch::ISA::SSE2, 128, _DesiredType_> {
 };
 
 template <class _DesiredType_>
-struct _Simd_extract<arch::ISA::SSE41, 128, _DesiredType_> :
-    _Simd_extract<arch::ISA::SSSE3, 128, _DesiredType_>
+struct _Extract<arch::ISA::SSE41, 128, _DesiredType_> :
+    _Extract<arch::ISA::SSSE3, 128, _DesiredType_>
 {
     template <class _IntrinType_>
     raze_nodiscard raze_static_operator raze_always_inline _DesiredType_ operator()(
@@ -160,14 +160,14 @@ struct _Simd_extract<arch::ISA::SSE41, 128, _DesiredType_> :
             }
         }
         else {
-            return _Simd_extract<arch::ISA::SSE2, 128, _DesiredType_>()(__vector, __index);
+            return _Extract<arch::ISA::SSE2, 128, _DesiredType_>()(__vector, __index);
         }
     }
 };
 
 
 template <class _DesiredType_>
-struct _Simd_extract<arch::ISA::AVX2, 256, _DesiredType_> {
+struct _Extract<arch::ISA::AVX2, 256, _DesiredType_> {
     template <class _IntrinType_>
     raze_nodiscard raze_static_operator raze_always_inline _DesiredType_ operator()(
         _IntrinType_& __vector,
@@ -226,7 +226,7 @@ struct _Simd_extract<arch::ISA::AVX2, 256, _DesiredType_> {
 };
 
 template <class _DesiredType_>
-struct _Simd_extract<arch::ISA::AVX512F, 512, _DesiredType_> {
+struct _Extract<arch::ISA::AVX512F, 512, _DesiredType_> {
     template <class _IntrinType_>
     raze_nodiscard raze_static_operator raze_always_inline _DesiredType_ operator()(
         _IntrinType_&   __vector,
@@ -258,35 +258,35 @@ struct _Simd_extract<arch::ISA::AVX512F, 512, _DesiredType_> {
     }
 };
 
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::SSE3, 128, _DesiredType_> : _Simd_extract<arch::ISA::SSE2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::SSSE3, 128, _DesiredType_> : _Simd_extract<arch::ISA::SSE3, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::SSE42, 128, _DesiredType_> : _Simd_extract<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX2, 128, _DesiredType_> : _Simd_extract<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::SSE3, 128, _DesiredType_> : _Extract<arch::ISA::SSE2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::SSSE3, 128, _DesiredType_> : _Extract<arch::ISA::SSE3, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::SSE42, 128, _DesiredType_> : _Extract<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX2, 128, _DesiredType_> : _Extract<arch::ISA::SSE42, 128, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512BW, 512, _DesiredType_> : _Simd_extract<arch::ISA::AVX512F, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Simd_extract<arch::ISA::AVX512F, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Simd_extract<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Simd_extract<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Simd_extract<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512BW, 512, _DesiredType_> : _Extract<arch::ISA::AVX512F, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Extract<arch::ISA::AVX512F, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Extract<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Extract<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _Extract<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Extract<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Extract<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLF, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX2, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLF, 256, _DesiredType_> : _Extract<arch::ISA::AVX2, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Extract<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Extract<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Extract<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Extract<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _Extract<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Extract<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Extract<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLF, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLBW, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_extract<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_> : _Simd_extract<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLF, 128, _DesiredType_> : _Extract<arch::ISA::AVX2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLBW, 128, _DesiredType_> : _Extract<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Extract<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Extract<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Extract<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_> : _Extract<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> : _Extract<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Extract<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_> : _Extract<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
 
 __RAZE_DATAPAR_NAMESPACE_END

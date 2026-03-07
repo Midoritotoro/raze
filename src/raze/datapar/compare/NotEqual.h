@@ -10,19 +10,19 @@ template <
     arch::ISA	_ISA_,
     uint32		_Width_,
     class		_DesiredType_>
-struct _Simd_not_equal {
+struct _Not_equal {
     template <class _IntrinType_>
     raze_nodiscard raze_static_operator raze_always_inline auto operator()(
         _IntrinType_ __left,
         _IntrinType_ __right) raze_const_operator noexcept
     {
-        const auto __compared = _Simd_equal<_ISA_, _Width_, _DesiredType_>()(__left, __right);
+        const auto __compared = _Equal<_ISA_, _Width_, _DesiredType_>()(__left, __right);
         using _ComparedType = decltype(__compared);
 
         if constexpr (std::is_integral_v<_ComparedType>)
             return ~__compared;
         else
-            return _Simd_bit_not<_ISA_, _Width_>()(__compared);
+            return _Not<_ISA_, _Width_>()(__compared);
     }
 };
 

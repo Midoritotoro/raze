@@ -12,10 +12,10 @@ template <
 	arch::ISA	_ISA_,
 	uint32		_Width_,
 	class		_DesiredType_>
-struct _Simd_abs;
+struct _Abs;
 
 template <class _DesiredType_>
-struct _Simd_abs<arch::ISA::SSE2, 128, _DesiredType_> {
+struct _Abs<arch::ISA::SSE2, 128, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
 		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept 
@@ -56,7 +56,7 @@ struct _Simd_abs<arch::ISA::SSE2, 128, _DesiredType_> {
 };
 
 template <class _DesiredType_>
-struct _Simd_abs<arch::ISA::AVX2, 256, _DesiredType_> {
+struct _Abs<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
 		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept 
@@ -94,7 +94,7 @@ struct _Simd_abs<arch::ISA::AVX2, 256, _DesiredType_> {
 };
 
 template <class _DesiredType_>
-struct _Simd_abs<arch::ISA::AVX512F, 512, _DesiredType_> {
+struct _Abs<arch::ISA::AVX512F, 512, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
 		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept
@@ -118,9 +118,9 @@ struct _Simd_abs<arch::ISA::AVX512F, 512, _DesiredType_> {
 			const auto __low = __intrin_bitcast<__m256i>(__vector);
 			const auto __high = _mm512_extractf64x4_pd(__intrin_bitcast<__m512d>(__vector), 1);
 
-			auto __result = __intrin_bitcast<__m512i>(_Simd_abs<arch::ISA::AVX2, 256, _DesiredType_>()(__low));
+			auto __result = __intrin_bitcast<__m512i>(_Abs<arch::ISA::AVX2, 256, _DesiredType_>()(__low));
 			__result = __intrin_bitcast<__m512i>(_mm512_insertf64x4(__intrin_bitcast<__m512d>(__result),
-				__intrin_bitcast<__m256d>(_Simd_abs<arch::ISA::AVX2, 256, _DesiredType_>()(__high)), 1));
+				__intrin_bitcast<__m256d>(_Abs<arch::ISA::AVX2, 256, _DesiredType_>()(__high)), 1));
 
 			return __intrin_bitcast<_IntrinType_>(__result);
 		}
@@ -128,8 +128,8 @@ struct _Simd_abs<arch::ISA::AVX512F, 512, _DesiredType_> {
 };
 
 template <class _DesiredType_>
-struct _Simd_abs<arch::ISA::AVX512BW, 512, _DesiredType_>:
-	_Simd_abs<arch::ISA::AVX512F, 512, _DesiredType_> 
+struct _Abs<arch::ISA::AVX512BW, 512, _DesiredType_>:
+	_Abs<arch::ISA::AVX512F, 512, _DesiredType_> 
 {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
@@ -142,13 +142,13 @@ struct _Simd_abs<arch::ISA::AVX512BW, 512, _DesiredType_>:
 			return __intrin_bitcast<_IntrinType_>(_mm512_abs_epi8(__intrin_bitcast<__m512i>(__vector)));
 
 		else
-			return _Simd_abs<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector);
+			return _Abs<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector);
 	}
 };
 
 template <class _DesiredType_> 
-struct _Simd_abs<arch::ISA::AVX512VLF, 256, _DesiredType_>:
-	_Simd_abs<arch::ISA::AVX2, 256, _DesiredType_> 
+struct _Abs<arch::ISA::AVX512VLF, 256, _DesiredType_>:
+	_Abs<arch::ISA::AVX2, 256, _DesiredType_> 
 {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
@@ -157,13 +157,13 @@ struct _Simd_abs<arch::ISA::AVX512VLF, 256, _DesiredType_>:
 		if constexpr (__is_epi64_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm256_abs_epi64(__intrin_bitcast<__m256i>(__vector)));
 		else
-			return _Simd_abs<arch::ISA::AVX2, 256, _DesiredType_>()(__vector);
+			return _Abs<arch::ISA::AVX2, 256, _DesiredType_>()(__vector);
 	}
 };
 
 template <class _DesiredType_>
-struct _Simd_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> :
-	_Simd_abs<arch::ISA::AVX2, 128, _DesiredType_>
+struct _Abs<arch::ISA::AVX512VLF, 128, _DesiredType_> :
+	_Abs<arch::ISA::AVX2, 128, _DesiredType_>
 {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline
@@ -172,37 +172,37 @@ struct _Simd_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 		if constexpr (__is_epi64_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm_abs_epi64(__intrin_bitcast<__m128i>(__vector)));
 		else
-			return _Simd_abs<arch::ISA::SSE42, 128, _DesiredType_>()(__vector);
+			return _Abs<arch::ISA::SSE42, 128, _DesiredType_>()(__vector);
 	}
 };
 
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::SSE3, 128, _DesiredType_>: _Simd_abs<arch::ISA::SSE2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::SSSE3, 128, _DesiredType_>: _Simd_abs<arch::ISA::SSE3, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::SSE41, 128, _DesiredType_>: _Simd_abs<arch::ISA::SSSE3, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::SSE42, 128, _DesiredType_>: _Simd_abs<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX2, 128, _DesiredType_>: _Simd_abs<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::SSE3, 128, _DesiredType_>: _Abs<arch::ISA::SSE2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::SSSE3, 128, _DesiredType_>: _Abs<arch::ISA::SSE3, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::SSE41, 128, _DesiredType_>: _Abs<arch::ISA::SSSE3, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::SSE42, 128, _DesiredType_>: _Abs<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX2, 128, _DesiredType_>: _Abs<arch::ISA::SSE42, 128, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Simd_abs<arch::ISA::AVX512F, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512BWDQ, 512, _DesiredType_>: _Simd_abs<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMI, 512, _DesiredType_>: _Simd_abs<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMI2, 512, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_>: _Simd_abs<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Abs<arch::ISA::AVX512F, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512BWDQ, 512, _DesiredType_>: _Abs<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMI, 512, _DesiredType_>: _Abs<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMI2, 512, _DesiredType_>: _Abs<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_>: _Abs<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_>: _Abs<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VLDQ, 256, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMIVL, 256, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>: _Abs<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VLDQ, 256, _DesiredType_>: _Abs<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_>: _Abs<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMIVL, 256, _DesiredType_>: _Abs<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_>: _Abs<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_>: _Abs<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_>: _Abs<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VLBW, 128, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VLDQ, 128, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMIVL, 128, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_abs<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_>: _Simd_abs<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VLBW, 128, _DesiredType_>: _Abs<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VLDQ, 128, _DesiredType_>: _Abs<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_>: _Abs<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMIVL, 128, _DesiredType_>: _Abs<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_>: _Abs<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_>: _Abs<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Abs<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_>: _Abs<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
 
 __RAZE_DATAPAR_NAMESPACE_END

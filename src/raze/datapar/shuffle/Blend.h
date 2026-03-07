@@ -10,10 +10,10 @@ template <
 	arch::ISA	_ISA_,
 	uint32		_Width_,
 	class		_DesiredType_>
-struct _Simd_blend;
+struct _Blend;
 
 template <class _DesiredType_>
-struct _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_> {
+struct _Blend<arch::ISA::SSE2, 128, _DesiredType_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
@@ -37,16 +37,16 @@ struct _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Simd_blend()(__first, __second, _Simd_to_vector<arch::ISA::SSE2, 128, _IntrinType_, _DesiredType_>()(__mask));
+		return _Blend()(__first, __second, _To_vector<arch::ISA::SSE2, 128, _IntrinType_, _DesiredType_>()(__mask));
 	}
 };
 
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::SSE3, 128, _DesiredType_>: _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::SSSE3, 128, _DesiredType_>: _Simd_blend<arch::ISA::SSE3, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::SSE3, 128, _DesiredType_>: _Blend<arch::ISA::SSE2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::SSSE3, 128, _DesiredType_>: _Blend<arch::ISA::SSE3, 128, _DesiredType_> {};
 
 template <class _DesiredType_> 
-struct _Simd_blend<arch::ISA::SSE41, 128, _DesiredType_>:
-	_Simd_blend<arch::ISA::SSSE3, 128, _DesiredType_>
+struct _Blend<arch::ISA::SSE41, 128, _DesiredType_>:
+	_Blend<arch::ISA::SSSE3, 128, _DesiredType_>
 {
 	template <
 		class _IntrinType_,
@@ -70,12 +70,12 @@ struct _Simd_blend<arch::ISA::SSE41, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Simd_blend()(__first, __second, _Simd_to_vector<arch::ISA::SSE41, 128, _IntrinType_, _DesiredType_>()(__mask));
+		return _Blend()(__first, __second, _To_vector<arch::ISA::SSE41, 128, _IntrinType_, _DesiredType_>()(__mask));
 	}
 };
 
 template <class _DesiredType_>
-struct _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_> {
+struct _Blend<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
@@ -98,12 +98,12 @@ struct _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Simd_blend()(__first, __second, _Simd_to_vector<arch::ISA::AVX2, 256, _IntrinType_, _DesiredType_>()(__mask));
+		return _Blend()(__first, __second, _To_vector<arch::ISA::AVX2, 256, _IntrinType_, _DesiredType_>()(__mask));
 	}
 };
 
 template <class _DesiredType_>
-struct _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_> {
+struct _Blend<arch::ISA::AVX512F, 512, _DesiredType_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
@@ -126,13 +126,13 @@ struct _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Simd_blend()(__first, __second, _Simd_to_vector<arch::ISA::AVX512F, 512, _IntrinType_, _DesiredType_>()(__mask));
+		return _Blend()(__first, __second, _To_vector<arch::ISA::AVX512F, 512, _IntrinType_, _DesiredType_>()(__mask));
 	}
 };
 
 template <class _DesiredType_>
-struct _Simd_blend<arch::ISA::AVX512BW, 512, _DesiredType_>: 
-	_Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_> 
+struct _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>: 
+	_Blend<arch::ISA::AVX512F, 512, _DesiredType_> 
 {
 	template <
 		class _IntrinType_,
@@ -148,7 +148,7 @@ struct _Simd_blend<arch::ISA::AVX512BW, 512, _DesiredType_>:
 				__intrin_bitcast<__m512i>(__mask), __intrin_bitcast<__m512i>(__first), __intrin_bitcast<__m512i>(__second), 0xCA));
 
 		else
-			return _Simd_blend()(__first, __second, _Simd_to_mask<arch::ISA::AVX512BW, 512, _DesiredType_>()(__mask));
+			return _Blend()(__first, __second, _Simd_to_mask<arch::ISA::AVX512BW, 512, _DesiredType_>()(__mask));
 	}
 
 	template <
@@ -161,7 +161,7 @@ struct _Simd_blend<arch::ISA::AVX512BW, 512, _DesiredType_>:
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (sizeof(_DesiredType_) == 2)
-			return _Simd_blend()(__first, __second, _Simd_to_vector<arch::ISA::AVX512BW, 512, _IntrinType_, _DesiredType_>()(__mask));
+			return _Blend()(__first, __second, _To_vector<arch::ISA::AVX512BW, 512, _IntrinType_, _DesiredType_>()(__mask));
 
 		else
 			return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi8(
@@ -170,32 +170,32 @@ struct _Simd_blend<arch::ISA::AVX512BW, 512, _DesiredType_>:
 	}
 };
 
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::SSE42, 128, _DesiredType_>: _Simd_blend<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX2, 128, _DesiredType_>: _Simd_blend<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::SSE42, 128, _DesiredType_>: _Blend<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX2, 128, _DesiredType_>: _Blend<arch::ISA::SSE42, 128, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512BWDQ, 512, _DesiredType_>: _Simd_blend<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMI, 512, _DesiredType_>: _Simd_blend<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMI2, 512, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_>: _Simd_blend<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512F, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512BWDQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI, 512, _DesiredType_>: _Blend<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2, 512, _DesiredType_>: _Blend<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLF, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLDQ, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMIVL, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>: _Blend<arch::ISA::AVX2, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIVL, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLF, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLDQ, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMIVL, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Simd_blend<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_>: _Simd_blend<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>: _Blend<arch::ISA::AVX2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLDQ, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIVL, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
 
 __RAZE_DATAPAR_NAMESPACE_END

@@ -201,15 +201,35 @@ template <arch::ISA _ISA_>
 constexpr inline bool __has_avx512f_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX512F);
 
 template <arch::ISA _ISA_>
+constexpr inline bool __has_avx512vbmi_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVL);
+
+template <arch::ISA _ISA_>
+constexpr inline bool __has_avx512vbmi2_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
+
+template <arch::ISA _ISA_>
 constexpr inline bool __has_avx512bw_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512BW)
 	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512BWDQ)
 	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBW);
+	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBW)
+    || __has_avx512vbmi_support_v<_ISA_> || __has_avx512vbmi2_support_v<_ISA_>;
 
 template <arch::ISA _ISA_>
 constexpr inline bool __has_avx512dq_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512DQ)
 	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512BWDQ)
 	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLDQ);
+	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ);
+
+
+
 
 __RAZE_DATAPAR_NAMESPACE_END

@@ -524,19 +524,19 @@ void testMethods() {
 }
 
 int main() {
-    //testMethods<raze::arch::ISA::SSE2, 128>();
-    //testMethods<raze::arch::ISA::SSE3, 128>();
-    //testMethods<raze::arch::ISA::SSSE3, 128>();
-    //testMethods<raze::arch::ISA::SSE41, 128>();
-    //testMethods<raze::arch::ISA::SSE42, 128>();
+    testMethods<raze::arch::ISA::SSE2, 128>();
+    testMethods<raze::arch::ISA::SSE3, 128>();
+    testMethods<raze::arch::ISA::SSSE3, 128>();
+    testMethods<raze::arch::ISA::SSE41, 128>();
+    testMethods<raze::arch::ISA::SSE42, 128>();
 
-    //testMethods<raze::arch::ISA::AVX2, 128>();
-    //testMethods<raze::arch::ISA::AVX2, 256>();
+    testMethods<raze::arch::ISA::AVX2, 128>();
+    testMethods<raze::arch::ISA::AVX2, 256>();
 
-    //testMethods<raze::arch::ISA::AVX512F, 512>();
-    //testMethods<raze::arch::ISA::AVX512BW, 512>();
-    //testMethods<raze::arch::ISA::AVX512DQ, 512>();
-    //testMethods<raze::arch::ISA::AVX512BWDQ, 512>();
+    testMethods<raze::arch::ISA::AVX512F, 512>();
+    testMethods<raze::arch::ISA::AVX512BW, 512>();
+    testMethods<raze::arch::ISA::AVX512DQ, 512>();
+    testMethods<raze::arch::ISA::AVX512BWDQ, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI2, 512>();
     testMethods<raze::arch::ISA::AVX512VBMIDQ, 512>();

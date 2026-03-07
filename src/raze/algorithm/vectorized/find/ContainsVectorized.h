@@ -28,12 +28,14 @@ raze_declare_const_function __raze_simd_algorithm_inline bool __contains_scalar(
 
 template <class _Simd_>
 struct __contains_vectorized_internal {
+    using _ValueType = typename _Simd_::value_type;
+
     raze_declare_const_function raze_static_operator __raze_simd_algorithm_inline bool operator()(
-        sizetype                    __aligned_size,
-        sizetype                    __tail_size,
-        const void*                 __first,
-        const void*                 __last,
-        typename _Simd_::value_type __value) raze_const_operator noexcept
+        sizetype    __aligned_size,
+        sizetype    __tail_size,
+        const void* __first,
+        const void* __last,
+        _ValueType  __value) raze_const_operator noexcept
     {
         const auto __guard      = datapar::make_guard<_Simd_>();
         const auto __comparand  = _Simd_(__value);
@@ -51,7 +53,7 @@ struct __contains_vectorized_internal {
             return false;
         
         if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
-            const auto __tail_mask  = datapar::make_tail_mask<_Simd_>(__tail_size);
+            const auto __tail_mask  = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
             return datapar::any_of((__comparand == datapar::maskz_load<_Simd_>(__first, __tail_mask)) & __tail_mask);
         }
         else {

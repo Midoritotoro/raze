@@ -65,11 +65,11 @@ public:
     }
 
     raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
-        return _Simd_broadcast<_ISA_, _Width_, vector_type>()(__value);
+        return _Broadcast<_ISA_, _Width_, vector_type>()(__value);
     }
 
     raze_always_inline simd& fill(value_type __value) noexcept {
-        _vector = _Simd_broadcast<_ISA_, _Width_, vector_type>()(__value);
+        _vector = _Broadcast<_ISA_, _Width_, vector_type>()(__value);
         return *this;
     }
 
@@ -84,7 +84,7 @@ public:
         const simd&         __left,
         const value_type    __right) noexcept
     {
-        return _Simd_sub<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Sub<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
     raze_nodiscard raze_always_inline friend simd operator*(
@@ -112,7 +112,7 @@ public:
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Simd_sub<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Sub<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend simd operator*(
@@ -133,63 +133,63 @@ public:
         const simd& __left,
         const simd& __right) noexcept
     {
-        return _Simd_bit_and<_ISA_, _Width_>()(__left._vector, __right._vector);
+        return _And<_ISA_, _Width_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend simd operator|(
         const simd& __left, 
         const simd& __right) noexcept
     {
-        return _Simd_bit_or<_ISA_, _Width_>()(__left._vector, __right._vector);
+        return _Or<_ISA_, _Width_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend simd operator^(
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Simd_bit_xor<_ISA_, _Width_>()(__left._vector, __right._vector);
+        return _Xor<_ISA_, _Width_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator==(
         const simd& __left,
         const simd& __right) noexcept 
     {
-        return _Simd_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator!=(
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Simd_not_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Not_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator<(
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Simd_less<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Less<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator<=(
         const simd& __left,
         const simd& __right) noexcept
     {
-        return _Simd_less_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Less_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator>(
         const simd& __left,
         const simd& __right) noexcept 
     {
-        return _Simd_greater<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Greater<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator>=(
         const simd& __left, 
         const simd& __right) noexcept
     {
-        return _Simd_greater_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Greater_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_always_inline simd& operator&=(const simd& __other) noexcept {
@@ -230,7 +230,7 @@ public:
     }
 
     raze_nodiscard raze_always_inline simd operator-() const noexcept {
-        return __simd_negate<_ISA_, _Width_, _Type_>(_vector);
+        return _Negate<_ISA_, _Width_, _Type_>(_vector);
     }
 
     raze_nodiscard raze_always_inline simd operator++(int) noexcept {
@@ -254,7 +254,7 @@ public:
     }
 
     raze_nodiscard raze_always_inline simd operator~() const noexcept {
-        return _Simd_bit_not<_ISA_, _Width_>()(_vector);
+        return _Not<_ISA_, _Width_>()(_vector);
     }
 
     raze_nodiscard raze_always_inline _Type_ operator[](int32 __i) const noexcept {
@@ -285,12 +285,12 @@ private:
         int32       __position,
         value_type  __value) noexcept
     {
-        _Simd_insert<_ISA_, _Width_>()(_vector, __position, __value);
+        _Insert<_ISA_, _Width_>()(_vector, __position, __value);
     }
 
     raze_nodiscard raze_always_inline _Type_ __extract(int32 __i) const noexcept {
         raze_debug_assert(__i >= 0 && __i < size());
-        return _Simd_extract<_ISA_, _Width_, _Type_>()(_vector, __i);
+        return _Extract<_ISA_, _Width_, _Type_>()(_vector, __i);
     }
 
     friend _Simd_element_reference;

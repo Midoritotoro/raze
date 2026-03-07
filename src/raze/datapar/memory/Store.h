@@ -9,10 +9,10 @@ __RAZE_DATAPAR_NAMESPACE_BEGIN
 template <
 	arch::ISA	_ISA_,
 	uint32		_Width_>
-struct _Simd_store;
+struct _Store;
 
 template <>
-struct _Simd_store<arch::ISA::SSE2, 128> {
+struct _Store<arch::ISA::SSE2, 128> {
 	template <
 		class _IntrinType_,
 		class _AlignmentPolicy_ = __unaligned_policy>
@@ -45,7 +45,7 @@ struct _Simd_store<arch::ISA::SSE2, 128> {
 };
 
 template <>
-struct _Simd_store<arch::ISA::AVX2, 256> {
+struct _Store<arch::ISA::AVX2, 256> {
 	template <
 		class _IntrinType_,
 		class _AlignmentPolicy_ = __unaligned_policy>
@@ -78,7 +78,7 @@ struct _Simd_store<arch::ISA::AVX2, 256> {
 };
 
 template <>
-struct _Simd_store<arch::ISA::AVX512F, 512> {
+struct _Store<arch::ISA::AVX512F, 512> {
 	template <
 		class _IntrinType_,
 		class _AlignmentPolicy_ = __unaligned_policy>
@@ -110,36 +110,36 @@ struct _Simd_store<arch::ISA::AVX512F, 512> {
 	}
 };
 
-template <> struct _Simd_store<arch::ISA::SSE3, 128> : _Simd_store<arch::ISA::SSE2, 128> {};
-template <> struct _Simd_store<arch::ISA::SSSE3, 128> : _Simd_store<arch::ISA::SSE3, 128> {};
-template <> struct _Simd_store<arch::ISA::SSE41, 128> : _Simd_store<arch::ISA::SSSE3, 128> {};
-template <> struct _Simd_store<arch::ISA::SSE42, 128> : _Simd_store<arch::ISA::SSE41, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX2, 128> : _Simd_store<arch::ISA::SSE42, 128> {};
+template <> struct _Store<arch::ISA::SSE3, 128> : _Store<arch::ISA::SSE2, 128> {};
+template <> struct _Store<arch::ISA::SSSE3, 128> : _Store<arch::ISA::SSE3, 128> {};
+template <> struct _Store<arch::ISA::SSE41, 128> : _Store<arch::ISA::SSSE3, 128> {};
+template <> struct _Store<arch::ISA::SSE42, 128> : _Store<arch::ISA::SSE41, 128> {};
+template <> struct _Store<arch::ISA::AVX2, 128> : _Store<arch::ISA::SSE42, 128> {};
 
-template <> struct _Simd_store<arch::ISA::AVX512BW, 512> : _Simd_store<arch::ISA::AVX512F, 512> {};
-template <> struct _Simd_store<arch::ISA::AVX512DQ, 512> : _Simd_store<arch::ISA::AVX512F, 512> {};
-template <> struct _Simd_store<arch::ISA::AVX512BWDQ, 512> : _Simd_store<arch::ISA::AVX512BW, 512> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMI, 512> : _Simd_store<arch::ISA::AVX512BW, 512> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMI2, 512> : _Simd_store<arch::ISA::AVX512VBMI, 512> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMIDQ, 512> : _Simd_store<arch::ISA::AVX512BWDQ, 512> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMI2DQ, 512> : _Simd_store<arch::ISA::AVX512VBMIDQ, 512> {};
+template <> struct _Store<arch::ISA::AVX512BW, 512> : _Store<arch::ISA::AVX512F, 512> {};
+template <> struct _Store<arch::ISA::AVX512DQ, 512> : _Store<arch::ISA::AVX512F, 512> {};
+template <> struct _Store<arch::ISA::AVX512BWDQ, 512> : _Store<arch::ISA::AVX512BW, 512> {};
+template <> struct _Store<arch::ISA::AVX512VBMI, 512> : _Store<arch::ISA::AVX512BW, 512> {};
+template <> struct _Store<arch::ISA::AVX512VBMI2, 512> : _Store<arch::ISA::AVX512VBMI, 512> {};
+template <> struct _Store<arch::ISA::AVX512VBMIDQ, 512> : _Store<arch::ISA::AVX512BWDQ, 512> {};
+template <> struct _Store<arch::ISA::AVX512VBMI2DQ, 512> : _Store<arch::ISA::AVX512VBMIDQ, 512> {};
 
-template <> struct _Simd_store<arch::ISA::AVX512VLF, 256> : _Simd_store<arch::ISA::AVX2, 256> {};
-template <> struct _Simd_store<arch::ISA::AVX512VLBW, 256> : _Simd_store<arch::ISA::AVX512VLF, 256> {};
-template <> struct _Simd_store<arch::ISA::AVX512VLDQ, 256> : _Simd_store<arch::ISA::AVX512VLF, 256> {};
-template <> struct _Simd_store<arch::ISA::AVX512VLBWDQ, 256> : _Simd_store<arch::ISA::AVX512VLBW, 256> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMIVL, 256> : _Simd_store<arch::ISA::AVX512VLBW, 256> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMI2VL, 256> : _Simd_store<arch::ISA::AVX512VBMIVL, 256> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMIVLDQ, 256> : _Simd_store<arch::ISA::AVX512VLBWDQ, 256> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMI2VLDQ, 256> : _Simd_store<arch::ISA::AVX512VBMIVLDQ, 256> {};
+template <> struct _Store<arch::ISA::AVX512VLF, 256> : _Store<arch::ISA::AVX2, 256> {};
+template <> struct _Store<arch::ISA::AVX512VLBW, 256> : _Store<arch::ISA::AVX512VLF, 256> {};
+template <> struct _Store<arch::ISA::AVX512VLDQ, 256> : _Store<arch::ISA::AVX512VLF, 256> {};
+template <> struct _Store<arch::ISA::AVX512VLBWDQ, 256> : _Store<arch::ISA::AVX512VLBW, 256> {};
+template <> struct _Store<arch::ISA::AVX512VBMIVL, 256> : _Store<arch::ISA::AVX512VLBW, 256> {};
+template <> struct _Store<arch::ISA::AVX512VBMI2VL, 256> : _Store<arch::ISA::AVX512VBMIVL, 256> {};
+template <> struct _Store<arch::ISA::AVX512VBMIVLDQ, 256> : _Store<arch::ISA::AVX512VLBWDQ, 256> {};
+template <> struct _Store<arch::ISA::AVX512VBMI2VLDQ, 256> : _Store<arch::ISA::AVX512VBMIVLDQ, 256> {};
 
-template <> struct _Simd_store<arch::ISA::AVX512VLF, 128> : _Simd_store<arch::ISA::AVX2, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX512VLBW, 128> : _Simd_store<arch::ISA::AVX512VLF, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX512VLDQ, 128> : _Simd_store<arch::ISA::AVX512VLF, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX512VLBWDQ, 128> : _Simd_store<arch::ISA::AVX512VLBW, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMIVL, 128> : _Simd_store<arch::ISA::AVX512VLBW, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMI2VL, 128> : _Simd_store<arch::ISA::AVX512VBMIVL, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMIVLDQ, 128> : _Simd_store<arch::ISA::AVX512VLBWDQ, 128> {};
-template <> struct _Simd_store<arch::ISA::AVX512VBMI2VLDQ, 128> : _Simd_store<arch::ISA::AVX512VBMIVLDQ, 128> {};
+template <> struct _Store<arch::ISA::AVX512VLF, 128> : _Store<arch::ISA::AVX2, 128> {};
+template <> struct _Store<arch::ISA::AVX512VLBW, 128> : _Store<arch::ISA::AVX512VLF, 128> {};
+template <> struct _Store<arch::ISA::AVX512VLDQ, 128> : _Store<arch::ISA::AVX512VLF, 128> {};
+template <> struct _Store<arch::ISA::AVX512VLBWDQ, 128> : _Store<arch::ISA::AVX512VLBW, 128> {};
+template <> struct _Store<arch::ISA::AVX512VBMIVL, 128> : _Store<arch::ISA::AVX512VLBW, 128> {};
+template <> struct _Store<arch::ISA::AVX512VBMI2VL, 128> : _Store<arch::ISA::AVX512VBMIVL, 128> {};
+template <> struct _Store<arch::ISA::AVX512VBMIVLDQ, 128> : _Store<arch::ISA::AVX512VLBWDQ, 128> {};
+template <> struct _Store<arch::ISA::AVX512VBMI2VLDQ, 128> : _Store<arch::ISA::AVX512VBMIVLDQ, 128> {};
 
 __RAZE_DATAPAR_NAMESPACE_END

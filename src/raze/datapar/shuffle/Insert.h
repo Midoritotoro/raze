@@ -15,10 +15,10 @@ __RAZE_DATAPAR_NAMESPACE_BEGIN
 template <
 	arch::ISA	_ISA_,
 	uint32		_Width_>
-struct _Simd_insert;
+struct _Insert;
 
 template <>
-struct _Simd_insert<arch::ISA::SSE2, 128> {
+struct _Insert<arch::ISA::SSE2, 128> {
 	template <
 		class _IntrinType_,
 		class _DesiredType_>
@@ -83,20 +83,20 @@ struct _Simd_insert<arch::ISA::SSE2, 128> {
         else {
             const auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
 
-            const auto __broadcasted = _Simd_broadcast<arch::ISA::SSE2, 128, _IntrinType_>()(memory::pointer_to_integral(__value));
-            const auto __insert_mask = _Simd_load<arch::ISA::SSE2, 128, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
+            const auto __broadcasted = _Broadcast<arch::ISA::SSE2, 128, _IntrinType_>()(memory::pointer_to_integral(__value));
+            const auto __insert_mask = _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
-            __vector = _Simd_blend<arch::ISA::SSE2, 128, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Blend<arch::ISA::SSE2, 128, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };
 
-template <> struct _Simd_insert<arch::ISA::SSE3, 128> : _Simd_insert<arch::ISA::SSE2, 128> {};
-template <> struct _Simd_insert<arch::ISA::SSSE3, 128> : _Simd_insert<arch::ISA::SSE3, 128> {};
+template <> struct _Insert<arch::ISA::SSE3, 128> : _Insert<arch::ISA::SSE2, 128> {};
+template <> struct _Insert<arch::ISA::SSSE3, 128> : _Insert<arch::ISA::SSE3, 128> {};
 
 template <> 
-struct _Simd_insert<arch::ISA::SSE41, 128>: 
-    _Simd_insert<arch::ISA::SSSE3, 128> 
+struct _Insert<arch::ISA::SSE41, 128>: 
+    _Insert<arch::ISA::SSSE3, 128> 
 {
     template <
         class _IntrinType_,
@@ -165,14 +165,14 @@ struct _Simd_insert<arch::ISA::SSE41, 128>:
             }
         }
         else {
-            return _Simd_insert<arch::ISA::SSE2, 128>()(__vector, __index, __value);
+            return _Insert<arch::ISA::SSE2, 128>()(__vector, __index, __value);
         }
     }
 };
 
 
 template <>
-struct _Simd_insert<arch::ISA::AVX2, 256> {
+struct _Insert<arch::ISA::AVX2, 256> {
     template <
         class _IntrinType_,
         class _DesiredType_>
@@ -230,7 +230,7 @@ struct _Simd_insert<arch::ISA::AVX2, 256> {
             }
         }
         else if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>) {
-            const auto __broadcasted = _Simd_broadcast<arch::ISA::AVX2, 256, __m256i>()(__value);
+            const auto __broadcasted = _Broadcast<arch::ISA::AVX2, 256, __m256i>()(__value);
 
             switch (__index) {
                 case 0:
@@ -250,16 +250,16 @@ struct _Simd_insert<arch::ISA::AVX2, 256> {
         else {
             constexpr auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
 
-            const auto __broadcasted = _Simd_broadcast<arch::ISA::AVX2, 256, _IntrinType_>()(__value);
-            const auto __insert_mask = _Simd_load<arch::ISA::AVX2, 256, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
+            const auto __broadcasted = _Broadcast<arch::ISA::AVX2, 256, _IntrinType_>()(__value);
+            const auto __insert_mask = _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
-            __vector = _Simd_blend<arch::ISA::AVX2, 256, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };
 
 template <>
-struct _Simd_insert<arch::ISA::AVX512F, 512> {
+struct _Insert<arch::ISA::AVX512F, 512> {
     template <
         class _IntrinType_,
         class _DesiredType_>
@@ -287,41 +287,41 @@ struct _Simd_insert<arch::ISA::AVX512F, 512> {
         else {
             const auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
 
-            const auto __broadcasted = _Simd_broadcast<arch::ISA::AVX512F, 512, _IntrinType_>()(__value);
-            const auto __insert_mask = _Simd_load<arch::ISA::AVX512F, 512, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
+            const auto __broadcasted = _Broadcast<arch::ISA::AVX512F, 512, _IntrinType_>()(__value);
+            const auto __insert_mask = _Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
-            __vector = _Simd_blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };
 
-template <> struct _Simd_insert<arch::ISA::SSE42, 128>: _Simd_insert<arch::ISA::SSE41, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX2, 128>: _Simd_insert<arch::ISA::SSE42, 128> {};
+template <> struct _Insert<arch::ISA::SSE42, 128>: _Insert<arch::ISA::SSE41, 128> {};
+template <> struct _Insert<arch::ISA::AVX2, 128>: _Insert<arch::ISA::SSE42, 128> {};
 
-template <> struct _Simd_insert<arch::ISA::AVX512BW, 512>: _Simd_insert<arch::ISA::AVX512F, 512> {};
-template <> struct _Simd_insert<arch::ISA::AVX512DQ, 512>: _Simd_insert<arch::ISA::AVX512F, 512> {};
-template <> struct _Simd_insert<arch::ISA::AVX512BWDQ, 512>: _Simd_insert<arch::ISA::AVX512BW, 512> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMI, 512>: _Simd_insert<arch::ISA::AVX512BW, 512> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMI2, 512>: _Simd_insert<arch::ISA::AVX512VBMI, 512> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMIDQ, 512>: _Simd_insert<arch::ISA::AVX512BWDQ, 512> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMI2DQ, 512>: _Simd_insert<arch::ISA::AVX512VBMIDQ, 512> {};
+template <> struct _Insert<arch::ISA::AVX512BW, 512>: _Insert<arch::ISA::AVX512F, 512> {};
+template <> struct _Insert<arch::ISA::AVX512DQ, 512>: _Insert<arch::ISA::AVX512F, 512> {};
+template <> struct _Insert<arch::ISA::AVX512BWDQ, 512>: _Insert<arch::ISA::AVX512BW, 512> {};
+template <> struct _Insert<arch::ISA::AVX512VBMI, 512>: _Insert<arch::ISA::AVX512BW, 512> {};
+template <> struct _Insert<arch::ISA::AVX512VBMI2, 512>: _Insert<arch::ISA::AVX512VBMI, 512> {};
+template <> struct _Insert<arch::ISA::AVX512VBMIDQ, 512>: _Insert<arch::ISA::AVX512BWDQ, 512> {};
+template <> struct _Insert<arch::ISA::AVX512VBMI2DQ, 512>: _Insert<arch::ISA::AVX512VBMIDQ, 512> {};
 
-template <> struct _Simd_insert<arch::ISA::AVX512VLF, 256>: _Simd_insert<arch::ISA::AVX2, 256> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VLBW, 256>: _Simd_insert<arch::ISA::AVX512VLF, 256> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VLDQ, 256>: _Simd_insert<arch::ISA::AVX512VLF, 256> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VLBWDQ, 256>: _Simd_insert<arch::ISA::AVX512VLBW, 256> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMIVL, 256>: _Simd_insert<arch::ISA::AVX512VLBW, 256> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMI2VL, 256>: _Simd_insert<arch::ISA::AVX512VBMIVL, 256> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMIVLDQ, 256>: _Simd_insert<arch::ISA::AVX512VLBWDQ, 256> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMI2VLDQ, 256>: _Simd_insert<arch::ISA::AVX512VBMIVLDQ, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VLF, 256>: _Insert<arch::ISA::AVX2, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VLBW, 256>: _Insert<arch::ISA::AVX512VLF, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VLDQ, 256>: _Insert<arch::ISA::AVX512VLF, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VLBWDQ, 256>: _Insert<arch::ISA::AVX512VLBW, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VBMIVL, 256>: _Insert<arch::ISA::AVX512VLBW, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VBMI2VL, 256>: _Insert<arch::ISA::AVX512VBMIVL, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VBMIVLDQ, 256>: _Insert<arch::ISA::AVX512VLBWDQ, 256> {};
+template <> struct _Insert<arch::ISA::AVX512VBMI2VLDQ, 256>: _Insert<arch::ISA::AVX512VBMIVLDQ, 256> {};
 
-template <> struct _Simd_insert<arch::ISA::AVX512VLF, 128>: _Simd_insert<arch::ISA::AVX2, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VLBW, 128>: _Simd_insert<arch::ISA::AVX512VLF, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VLDQ, 128>: _Simd_insert<arch::ISA::AVX512VLF, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VLBWDQ, 128>: _Simd_insert<arch::ISA::AVX512VLBW, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMIVL, 128>: _Simd_insert<arch::ISA::AVX512VLBW, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMI2VL, 128>: _Simd_insert<arch::ISA::AVX512VBMIVL, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMIVLDQ, 128>: _Simd_insert<arch::ISA::AVX512VLBWDQ, 128> {};
-template <> struct _Simd_insert<arch::ISA::AVX512VBMI2VLDQ, 128>: _Simd_insert<arch::ISA::AVX512VBMIVLDQ, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VLF, 128>: _Insert<arch::ISA::AVX2, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VLBW, 128>: _Insert<arch::ISA::AVX512VLF, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VLDQ, 128>: _Insert<arch::ISA::AVX512VLF, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VLBWDQ, 128>: _Insert<arch::ISA::AVX512VLBW, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VBMIVL, 128>: _Insert<arch::ISA::AVX512VLBW, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VBMI2VL, 128>: _Insert<arch::ISA::AVX512VBMIVL, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VBMIVLDQ, 128>: _Insert<arch::ISA::AVX512VLBWDQ, 128> {};
+template <> struct _Insert<arch::ISA::AVX512VBMI2VLDQ, 128>: _Insert<arch::ISA::AVX512VBMIVLDQ, 128> {};
 
 __RAZE_DATAPAR_NAMESPACE_END
