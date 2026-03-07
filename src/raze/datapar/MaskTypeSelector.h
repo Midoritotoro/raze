@@ -5,35 +5,13 @@
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
-template <sizetype _Size_>
-struct __mmask_for_size {
-	/*static_assert(_Size_ <= 8);
-	using type = void;*/
-	using type = __mmask64;
-};
+template <sizetype _Elements_>
+using __mmask_for_elements_helper = std::conditional_t<_Elements_ <= 8, __mmask8,
+	std::conditional_t<_Elements_ <= 16, __mmask16,
+		std::conditional_t<_Elements_ <= 32, __mmask32,
+			std::conditional_t<_Elements_ <= 64, __mmask64, void>>>>;
 
-template <>
-struct __mmask_for_size<1> {
-	using type = __mmask8;
-};
-
-template <>
-struct __mmask_for_size<2> {
-	using type = __mmask16;
-};
-
-template <>
-struct __mmask_for_size<4> {
-	using type = __mmask32;
-};
-
-template <>
-struct __mmask_for_size<8> {
-	using type = __mmask64;
-};
-
-template <sizetype _Size_>
-using __mmask_for_size_t = typename __mmask_for_size<_Size_>::type;
-
+template <sizetype _Elements_>
+using __mmask_for_elements_t = __mmask_for_elements_helper<_Elements_>;
 
 __RAZE_DATAPAR_NAMESPACE_END

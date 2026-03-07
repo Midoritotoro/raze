@@ -6,10 +6,10 @@
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <
-	arch::ISA	_ISA_,
-	class		_MaskType_>
+	arch::ISA				_ISA_,
+	std::unsigned_integral	_MaskType_>
 raze_nodiscard raze_static_operator raze_always_inline
-	auto __to_gpr(_MaskType_ __mask) noexcept requires(std::is_integral_v<_MaskType_>)
+	__mmask_for_elements_t<sizeof(_MaskType_) * 8> __to_gpr(_MaskType_ __mask) noexcept
 {
 	if constexpr (sizeof(_MaskType_) == 1 && __has_avx512dq_support_v<_ISA_>)
 		return _cvtu32_mask8(__mask);

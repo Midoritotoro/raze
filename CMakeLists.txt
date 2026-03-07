@@ -318,6 +318,9 @@ set(PUBLIC_HEADERS
 
     include/raze/algorithm/minmax/Min.h
     include/raze/algorithm/minmax/Max.h
+    include/raze/algorithm/minmax/MinRange.h
+    include/raze/algorithm/minmax/MaxRange.h
+    include/raze/algorithm/minmax/MinmaxRange.h
     include/raze/algorithm/minmax/Minmax.h
     include/raze/algorithm/minmax/MaxElement.h
     include/raze/algorithm/minmax/MinElement.h

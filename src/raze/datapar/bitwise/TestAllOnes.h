@@ -21,7 +21,7 @@ struct _Simd_test_all_ones<arch::ISA::SSE2, 128> {
 		const auto __all_ones = _Simd_equal<arch::ISA::SSE2, 128, int32>()(__vector, __vector);
 		const auto __compared = _Simd_equal<arch::ISA::SSE2, 128, int32>()(__vector, __all_ones);
 
-		const auto __index_mask = _Simd_to_index_mask<arch::ISA::SSE2, 128, int32>()(__compared);
+		const auto __index_mask = _To_bitmask<arch::ISA::SSE2, 128, int32>()(__compared);
 		return __index_mask == 0xF;
 	}
 };

@@ -9,14 +9,16 @@
 #include <src/raze/datapar/bitwise/ToVector.h>
 #include <src/raze/datapar/memory/MaskzLoad.h>
 #include <src/raze/datapar/memory/MakeTailMask.h>
+#include <src/raze/datapar/SimdIntegralTypesCheck.h>
+#include <raze/algorithm/minmax/Max.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <class _Simd_>
-constexpr inline auto __is_native_compare_returns_number_v = std::is_integral_v<
-	type_traits::invoke_result_type<_Simd_equal<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>,
-	typename _Simd_::vector_type, typename _Simd_::vector_type>>;
+constexpr inline auto __is_native_compare_returns_number_v = 
+	(__has_avx512f_support_v<_Simd_::__isa> && sizeof(typename _Simd_::value_type) >= 4) ||
+	(__has_avx512bw_support_v<_Simd_::__isa>);
 
 
 template <class _DataparType_>
@@ -33,18 +35,18 @@ template <
 	uint32		_SimdWidth_>
 class _Mask_implementation {
 public:
-	static constexpr auto __number_mask = __is_native_compare_returns_number_v<
-		simd<_ISA_, _Type_, _SimdWidth_>>;
+	static constexpr auto __number_mask = __is_native_compare_returns_number_v<simd<_ISA_, _Type_, _SimdWidth_>>;
 public:
 	static constexpr auto __isa = _ISA_;
 	static constexpr auto __width = _SimdWidth_;
+	static constexpr auto __elements_count = simd<_ISA_, _Type_, _SimdWidth_>::size();
 	static constexpr auto __is_k_register = __has_avx512f_support_v<__isa>;
-	static constexpr auto __used_bits = __number_mask ? (_SimdWidth_ / 8) / sizeof(_Type_) : _SimdWidth_;
+	static constexpr auto __used_bits = __number_mask ? __elements_count : _SimdWidth_;
 
 	using element_type = _Type_;
 	using mask_type = std::conditional_t<__number_mask,
-		__mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>,
-		simd<_ISA_, typename IntegerForSizeof<_Type_>::Unsigned, __used_bits>>;
+		__mmask_for_elements_t<__elements_count>,
+		simd<_ISA_, typename IntegerForSizeof<_Type_>::Unsigned, _SimdWidth_>>;
 
 	raze_nodiscard raze_always_inline static constexpr int32
 		__bit_width() noexcept
@@ -55,10 +57,7 @@ public:
 	raze_nodiscard raze_always_inline static constexpr int32 
 		__elements() noexcept 
 	{
-		if constexpr (std::is_integral_v<mask_type>)
-			return __bit_width();
-		else
-			return (__bit_width() / 8) / sizeof(_Type_);
+		return __elements;
 	}
 
 	raze_nodiscard raze_always_inline static constexpr bool 
@@ -197,7 +196,7 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr mask_type _
+	raze_nodiscard raze_always_inline static constexpr mask_type
 		_bit_xor(
 			mask_type __left,
 			mask_type __right) noexcept
@@ -262,7 +261,7 @@ public:
 		else {
 			using _IndexMaskType = simd_index_mask<_ISA_, _Type_, _SimdWidth_>;
 			const auto __index_mask = _IndexMaskType(
-				_Simd_to_index_mask<__isa, __width, _Type_>()(__data(__mask)));
+				_To_bitmask<__isa, __width, _Type_>()(__data(__mask)));
 			return __index_mask.__count_trailing_zero_bits();
 		}
 	}
@@ -274,14 +273,14 @@ public:
 			constexpr auto __unused_bits = raze_sizeof_in_bits(mask_type) - __bit_width();
 
 			if constexpr (__has_avx2_support_v<__isa>)
-				return math::__lzcnt_clz(__to_gpr<__isa>(__mask)) - __bit_width();
+				return math::__lzcnt_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask) >> __unused_bits));
 			else
-				return math::__bsr_clz(__to_gpr<__isa>(__mask)) - __bit_width();
+				return math::__bsr_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask) >> __unused_bits));
 		}
 		else {
 			using _IndexMaskType = simd_index_mask<_ISA_, _Type_, _SimdWidth_>;
 			const auto __index_mask = _IndexMaskType(
-				_Simd_to_index_mask<__isa, __width, _Type_>()(__data(__mask)));
+				_To_bitmask<__isa, __width, _Type_>()(__data(__mask)));
 			return __index_mask.__count_leading_zero_bits();
 		}
 	}
@@ -310,7 +309,7 @@ public:
 		int32 __count_leading_one_bits(mask_type __mask) noexcept
 	{
 		if constexpr (__bit_width() >= 8) {
-			return __count_leading_zero_bits(~__mask) + (raze_sizeof_in_bits(mask_type) - __bit_width());
+			return __count_leading_zero_bits(~__mask);
 		}
 		else {
 			auto __count = 0;
@@ -333,7 +332,7 @@ public:
 		static_assert(_Bits_ <= 64, "Not supported");
 		const auto __bits = __bitset.to_ullong();
 
-		if constexpr (std::is_integral<mask_type>)
+		if constexpr (std::is_integral_v<mask_type>)
 			return __bits;
 		else
 			return _Simd_to_vector<__isa, __width, typename mask_type::vector_type, _Type_>()(__bits);
@@ -349,7 +348,7 @@ public:
 	{
 		using _ValueType = type_traits::iterator_value_type<_UnwrappedForwardIterator_>;
 		constexpr auto __use_vectorized_load = (sizeof(_ValueType) == 1) &&
-			((__bit_width() == _SimdWidth_) || (__bit_width() > (_SimdWidth_ / 8)));
+			(__bit_width() == _SimdWidth_);
 
 		if constexpr (__use_vectorized_load)
 			return __copy_from_vectorized(__first, __alignment_policy);
@@ -365,6 +364,8 @@ private:
 			const _UnwrappedForwardIterator_	__first,
 			_AlignmentPolicy_&&					__alignment_policy) noexcept
 	{
+		using _ValueType = type_traits::iterator_value_type<_UnwrappedForwardIterator_>;
+
 		const auto __first_address = static_cast<const _ValueType*>(std::to_address(__first));
 		auto __mask = mask_type();
 
@@ -387,7 +388,7 @@ private:
 
 			if constexpr (__tail_elements <= 8) {
 				for (auto __i = __bit_width() - __tail_elements; __i < __bit_width(); ++__i)
-					__mask[i] = __first_address[i];
+					__mask[__i] = __first_address[__i];
 			}
 			else {
 				const auto __tail_mask = _Simd_make_tail_mask<__isa, __width, _Type_>()(
@@ -415,12 +416,12 @@ private:
 		auto __mask = mask_type();
 
 		if constexpr (std::is_integral_v<mask_type>) {
-			for (auto __i == 0; i < __bit_width(); ++__i)
+			for (auto __i = 0; __i < __bit_width(); ++__i)
 				__mask |= static_cast<mask_type>(*__first++) << __i;
 		}
 		else {
-			for (auto __i = 0; i < __bit_width(); ++__i)
-				__mask[i] = ((*__first++) == 1) ? -1 : 0;
+			for (auto __i = 0; __i < __bit_width(); ++__i)
+				__mask[__i] = ((*__first++) == 1) ? -1 : 0;
 		}
 
 		return __mask;

@@ -1,4 +1,5 @@
 #include <raze/algorithm/minmax/Max.h>
+#include <raze/algorithm/minmax/MaxRange.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
 #include <ranges>

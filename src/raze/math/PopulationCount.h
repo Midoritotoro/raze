@@ -42,7 +42,7 @@ __RAZE_MATH_NAMESPACE_BEGIN
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
 
 
-template <typename _IntegralType_>
+template <std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline int __bit_hacks_population_count(_IntegralType_ __value) noexcept {
     if      constexpr (sizeof(_IntegralType_) == 8) {
         return (((__value) & 0xfff) * static_cast<uint64>(0x1001001001001)
@@ -80,7 +80,7 @@ constexpr raze_always_inline int __bit_hacks_population_count(_IntegralType_ __v
 
 #if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
 
-template <typename _IntegralType_>
+template <std::unsigned_integral _IntegralType_>
 raze_always_inline int __popcnt_population_count(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
 
@@ -98,7 +98,7 @@ raze_always_inline int __popcnt_population_count(_IntegralType_ __value) noexcep
 
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
 
-template <typename _IntegralType_>
+template <std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline int __population_count(_IntegralType_ __value) noexcept {
     static_assert(std::is_unsigned_v<_IntegralType_>);
 
@@ -116,7 +116,7 @@ constexpr raze_always_inline int __population_count(_IntegralType_ __value) noex
 
 template <
     sizetype _Bits_,
-    typename _IntegralType_>
+    std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline int __popcnt_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(_Bits_ <= (sizeof(_IntegralType_) * 8));

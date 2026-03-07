@@ -23,8 +23,7 @@ struct _Simd_to_mask<arch::ISA::SSE2, 128, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline 
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m128i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x10 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
@@ -50,8 +49,7 @@ struct _Simd_to_mask<arch::ISA::AVX2, 256, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline 
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m256i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>) {
             return __vector;
@@ -80,8 +78,7 @@ struct _Simd_to_mask<arch::ISA::AVX512F, 512, _DesiredType_> {
 	raze_nodiscard raze_static_operator raze_always_inline 
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept 
     {
-        static constexpr auto __used_bits = sizeof(__m512i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>) {
             return __vector;
@@ -113,8 +110,7 @@ struct _Simd_to_mask<arch::ISA::AVX512BW, 512, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline 
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept 
     {
-        static constexpr auto __used_bits = sizeof(__m512i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
@@ -138,8 +134,7 @@ struct _Simd_to_mask<arch::ISA::AVX512BWDQ, 512, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m512i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
@@ -166,8 +161,7 @@ struct _Simd_to_mask<arch::ISA::AVX512DQ, 512, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m512i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
@@ -191,8 +185,7 @@ struct _Simd_to_mask<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m256i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
@@ -216,8 +209,7 @@ struct _Simd_to_mask<arch::ISA::AVX512VLDQ, 256, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m256i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
@@ -241,8 +233,7 @@ struct _Simd_to_mask<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m128i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x10 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
@@ -266,8 +257,7 @@ struct _Simd_to_mask<arch::ISA::AVX512VLDQ, 128, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline
         auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
     {
-        static constexpr auto __used_bits = sizeof(__m128i) / sizeof(_DesiredType_);
-        using _MaskType = __mmask_for_size_t<((__used_bits <= 8) ? 1 : (__used_bits / 8))>;
+        using _MaskType = __mmask_for_elements_t<0x10 / sizeof(_DesiredType_)>;
 
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;

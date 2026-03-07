@@ -153,7 +153,7 @@ struct _Simd_to_vector<arch::ISA::AVX512F, 512, _IntrinType_, _DesiredType_> {
             return __intrin_bitcast<_IntrinType_>(_mm512_maskz_mov_epi32(__mask, _mm512_set1_epi32(-1)));
         }
         else {
-            using _MaskType = type_traits::__deduce_simd_mask_type<arch::ISA::AVX512F, _DesiredType_, 512>;
+            using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_DesiredType_)>;
             using _HalfType = IntegerForSize<__constexpr_max<(sizeof(_MaskType) >> 1), 1>()>::Unsigned;
 
             constexpr auto __maximum    = math::__maximum_integral_limit<_HalfType>();

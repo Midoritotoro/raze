@@ -23,7 +23,7 @@ struct _Simd_testz<arch::ISA::SSE2, 128> {
 		const auto __zeros = _Simd_broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()();
 		const auto __compared = _Simd_equal<arch::ISA::SSE2, 128, int32>()(__vector, __zeros);
 
-		const auto __index_mask = _Simd_to_index_mask<arch::ISA::SSE2, 128, int32>()(__compared);
+		const auto __index_mask = _To_bitmask<arch::ISA::SSE2, 128, int32>()(__compared);
 		return __index_mask == 0xF;
 	}
 };

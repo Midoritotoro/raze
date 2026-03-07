@@ -6,7 +6,9 @@
 #include <limits>
 #include <type_traits>
 #include <utility>
-#include <raze/algorithm/minmax/MinMax.h>
+#include <raze/algorithm/minmax/Minmax.h>
+#include <raze/algorithm/minmax/MinmaxRange.h>
+
 
 template <class T>
 std::pair<T, T> ref_minmax_scalar(T a, T b) {

@@ -6,6 +6,8 @@
 #include <limits>
 #include <type_traits>
 #include <raze/algorithm/minmax/Min.h>
+#include <raze/algorithm/minmax/MinRange.h>
+
 
 template <class T>
 T ref_min_scalar(T a, T b) { return (a < b) ? a : b; }

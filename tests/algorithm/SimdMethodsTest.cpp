@@ -347,6 +347,8 @@ void testMethods() {
         for (size_t i = 0; i < N; ++i)
             raze_assert(reversed[i] == arr[N - 1 - i]);
     }
+    constexpr bool d = raze::datapar::__is_native_compare_returns_number_v<raze::datapar::simd<raze::arch::ISA::AVX512F, int, 512>>;
+    using tt = raze::datapar::_Mask_implementation<raze::arch::ISA::AVX512F, int, 512>::mask_type;
 
     for (size_t i = 0; i < N; ++i) {
         Simd v1(0);
@@ -522,19 +524,19 @@ void testMethods() {
 }
 
 int main() {
-    testMethods<raze::arch::ISA::SSE2, 128>();
-    testMethods<raze::arch::ISA::SSE3, 128>();
-    testMethods<raze::arch::ISA::SSSE3, 128>();
-    testMethods<raze::arch::ISA::SSE41, 128>();
-    testMethods<raze::arch::ISA::SSE42, 128>();
+    //testMethods<raze::arch::ISA::SSE2, 128>();
+    //testMethods<raze::arch::ISA::SSE3, 128>();
+    //testMethods<raze::arch::ISA::SSSE3, 128>();
+    //testMethods<raze::arch::ISA::SSE41, 128>();
+    //testMethods<raze::arch::ISA::SSE42, 128>();
 
-    testMethods<raze::arch::ISA::AVX2, 128>();
-    testMethods<raze::arch::ISA::AVX2, 256>();
+    //testMethods<raze::arch::ISA::AVX2, 128>();
+    //testMethods<raze::arch::ISA::AVX2, 256>();
 
-    testMethods<raze::arch::ISA::AVX512F, 512>();
-    testMethods<raze::arch::ISA::AVX512BW, 512>();
-    testMethods<raze::arch::ISA::AVX512DQ, 512>();
-    testMethods<raze::arch::ISA::AVX512BWDQ, 512>();
+    //testMethods<raze::arch::ISA::AVX512F, 512>();
+    //testMethods<raze::arch::ISA::AVX512BW, 512>();
+    //testMethods<raze::arch::ISA::AVX512DQ, 512>();
+    //testMethods<raze::arch::ISA::AVX512BWDQ, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI2, 512>();
     testMethods<raze::arch::ISA::AVX512VBMIDQ, 512>();

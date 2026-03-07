@@ -6,6 +6,8 @@
 #include <limits>
 #include <type_traits>
 #include <raze/algorithm/minmax/Max.h>
+#include <raze/algorithm/minmax/MaxRange.h>
+
 
 template <class T>
 T ref_max_scalar(T a, T b) { return (a < b) ? b : a; }

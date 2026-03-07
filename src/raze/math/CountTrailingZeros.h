@@ -63,7 +63,7 @@ constexpr raze_always_inline int __bit_hacks_ctz_u32(uint32 __value) noexcept {
     return __result;
 }
 
-template <typename _IntegralType_>
+template <std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline int __bit_hacks_ctz(_IntegralType_ __value) noexcept {
     if constexpr (sizeof(_IntegralType_) == 8) {
         const auto __low = static_cast<uint32>(__value);
@@ -118,7 +118,7 @@ constexpr raze_always_inline int __bit_hacks_ctz(_IntegralType_ __value) noexcep
 
 #if defined (raze_processor_x86)
 
-template <typename _IntegralType_>
+template <std::unsigned_integral _IntegralType_>
 raze_always_inline int __bsf_ctz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
     constexpr auto __max    = std::numeric_limits<_IntegralType_>::max();
@@ -141,7 +141,7 @@ raze_always_inline int __bsf_ctz(_IntegralType_ __value) noexcept {
     return __index;
 }
 
-template <typename _IntegralType_>
+template <std::unsigned_integral _IntegralType_>
 raze_always_inline int __tzcnt_ctz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
     constexpr auto __max    = std::numeric_limits<_IntegralType_>::max();
@@ -156,7 +156,7 @@ raze_always_inline int __tzcnt_ctz(_IntegralType_ __value) noexcept {
 
 #endif // defined(raze_processor_x86)
 
-template <typename _IntegralType_>
+template <std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline int __count_trailing_zero_bits(_IntegralType_ __value) noexcept {
     static_assert(std::is_unsigned_v<_IntegralType_>);
 
@@ -176,7 +176,7 @@ constexpr raze_always_inline int __count_trailing_zero_bits(_IntegralType_ __val
 
 template <sizetype _Bits_> 
 struct __ctz_n_bits_implementation {
-    template <typename _IntegralType_>
+    template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline int operator()(_IntegralType_ __value) const noexcept {
         constexpr auto __max_for_n_bits = _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
         constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
@@ -189,7 +189,7 @@ struct __ctz_n_bits_implementation {
 
 template <>
 struct __ctz_n_bits_implementation<2> {
-    template <typename _IntegralType_>
+    template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline int operator()(_IntegralType_ __value) const noexcept {
         auto __result   = uint32(2);
         __value         &= uint8(-signed(__value));
@@ -207,7 +207,7 @@ struct __ctz_n_bits_implementation<2> {
 
 template <> 
 struct __ctz_n_bits_implementation<4> {
-    template <typename _IntegralType_>
+    template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline int operator()(_IntegralType_ __value) const noexcept {
         auto __result   = uint32(4);
         __value         &= uint8(-signed(__value));
@@ -227,7 +227,7 @@ struct __ctz_n_bits_implementation<4> {
 
 template <
     sizetype _Bits_, 
-    typename _IntegralType_>
+    std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline int __ctz_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);

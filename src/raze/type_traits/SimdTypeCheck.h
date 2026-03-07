@@ -85,19 +85,6 @@ using __deduce_simd_shuffle_mask_type_helper = std::conditional_t<size <= 2, uin
 			std::conditional_t<size <= 8, uint32,
 				std::conditional_t<size <= 16, uint64, void>>>>;
 
-
-template <sizetype _Size_>
-using __deduce_simd_mask_type_helper = std::conditional_t<_Size_ <= 8, uint8,
-		std::conditional_t<_Size_ <= 16, uint16,
-			std::conditional_t<_Size_ <= 32, uint32,
-				std::conditional_t<_Size_ <= 64, uint64, void>>>>;
-
-template <
-	arch::ISA	_ISA_,
-	typename	_Element_,
-    uint32      _Width_>
-using __deduce_simd_mask_type = __deduce_simd_mask_type_helper<((_Width_ / 8) / sizeof(_Element_))>;
-
 template <
 	arch::ISA	_ISA_,
 	typename	_Element_,

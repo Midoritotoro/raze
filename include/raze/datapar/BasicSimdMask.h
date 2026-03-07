@@ -36,8 +36,8 @@ public:
 		_mask = _Impl::__broadcast(__value);
 	}
 
-	template <class _Simd_> requires(std::is_convertible_v<_Simd_, mask_type>)
-	simd_mask(_Simd_ __mask) noexcept:
+	template <class _Simd_>
+	simd_mask(_Simd_ __mask) noexcept requires(std::is_convertible_v<_Simd_, mask_type>):
 		_mask(static_cast<mask_type>(__mask))
 	{}
 
@@ -52,6 +52,8 @@ public:
 	simd_mask(
 		const _ForwardIterator_	__first,
 		_AlignmentPolicy_&&		__alignment_policy = {}) noexcept
+			requires(type_traits::is_iterator_v<_ForwardIterator_>
+				&& type_traits::is_iterator_forward_ranges_v<_ForwardIterator_>)
 	{
 		copy_from(__first, __alignment_policy);
 	}

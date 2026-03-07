@@ -26,14 +26,11 @@ template <
 class simd {
     static_assert(type_traits::__is_generation_supported_v<_ISA_>);
     static_assert(type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>);
-
-    template <typename _DesiredType_>
-    using __mask_type = type_traits::__deduce_simd_mask_type<_ISA_, _Type_, _Width_>;
 public:
     static constexpr auto __isa = _ISA_;
     static constexpr auto __width = _Width_;
     
-    using vector_type = type_traits::__deduce_simd_vector_type<_ISA_, _Type_, _Width_>;
+    using vector_type   = type_traits::__deduce_simd_vector_type<_ISA_, _Type_, _Width_>;
     using reference     = _Simd_element_reference<simd>;
     using value_type    = _Type_;
     using mask_type     = simd_mask<_ISA_, _Type_, _Width_>;

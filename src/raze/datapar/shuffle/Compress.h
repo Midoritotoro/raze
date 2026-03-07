@@ -184,7 +184,7 @@ struct _Simd_compress<arch::ISA::SSSE3, 128, _DesiredType_>:
             const auto __processed_byte_count_higher_segment = __tables_sse<sizeof(_DesiredType_)>.__size[__mask_segment_higher];
 
             const auto __total_processed_byte_count_combined = __processed_byte_count_lower_segment + __processed_byte_count_higher_segment;
-            const auto __unprocessed_tail_blending_mask = (type_traits::__deduce_simd_mask_type<arch::ISA::SSSE3, _DesiredType_, 128>(
+            const auto __unprocessed_tail_blending_mask = (__mmask_for_elements_t<0x10 / sizeof(_DesiredType_)>(
                 1u << (sizeof(_IntrinType_) - __total_processed_byte_count_combined)) - 1) << __total_processed_byte_count_combined;
 
             const auto __shuffle_control_mask_lower_segment = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_DesiredType_)>.__shuffle[__mask_segment_lower]));
@@ -253,7 +253,7 @@ struct _Simd_compress<arch::ISA::SSE41, 128, _DesiredType_> :
             const auto __processed_byte_count_higher_segment = __tables_sse<sizeof(_DesiredType_)>.__size[__mask_segment_higher];
 
             const auto __total_processed_byte_count_combined = __processed_byte_count_lower_segment + __processed_byte_count_higher_segment;
-            const auto __unprocessed_tail_blending_mask = (type_traits::__deduce_simd_mask_type<arch::ISA::SSE41, _DesiredType_, 128>(
+            const auto __unprocessed_tail_blending_mask = (__mmask_for_elements_t<0x10 / sizeof(_DesiredType_)>(
                 1u << (sizeof(_IntrinType_) - __total_processed_byte_count_combined)) - 1) << __total_processed_byte_count_combined;
 
             const auto __shuffle_control_mask_lower_segment = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_DesiredType_)>.__shuffle[__mask_segment_lower]));
@@ -334,7 +334,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
             const auto __total_processed_byte_count_combined = __processed_byte_count_lower_segment + __processed_byte_count_higher_segment;
             const auto __total_processed_element_count_combined = __total_processed_byte_count_combined / sizeof(_DesiredType_);
 
-            const auto __unprocessed_tail_blending_mask = (type_traits::__deduce_simd_mask_type<arch::ISA::AVX2, _DesiredType_, 256>(
+            const auto __unprocessed_tail_blending_mask = (__mmask_for_elements_t<0x20 / sizeof(_DesiredType_)>(
                 1u << (__length - __total_processed_element_count_combined)) - 1) << __total_processed_element_count_combined;
 
             const auto __shuffle_control_mask_lower_segment = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_DesiredType_)>.__shuffle[__mask_segment_lower]));
@@ -382,7 +382,7 @@ struct _Simd_compress<arch::ISA::AVX2, 256, _DesiredType_> {
             const auto __total_processed_byte_count_higher_lane = __processed_byte_count_third_segment + __processed_byte_count_fourth_segment;
 
             const auto __total_processed_byte_count_combined = __total_processed_byte_count_lower_lane + __total_processed_byte_count_higher_lane;
-            const auto __unprocessed_tail_blending_mask = (type_traits::__deduce_simd_mask_type<arch::ISA::AVX2, _DesiredType_, 256>(
+            const auto __unprocessed_tail_blending_mask = (__mmask_for_elements_t<0x20 / sizeof(_DesiredType_)>(
                 1u << (sizeof(_IntrinType_) - __total_processed_byte_count_combined)) - 1) << __total_processed_byte_count_combined;
 
             const auto __shuffle_control_mask_first_segment = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_DesiredType_)>.__shuffle[__mask_segment_first]));
@@ -474,7 +474,7 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
                 + __processed_byte_count_third_segment + __processed_byte_count_fourth_segment;
             const auto __total_processed_element_count_combined = __total_processed_byte_count_combined / sizeof(_DesiredType_);
 
-            const auto __unprocessed_tail_blending_mask = (type_traits::__deduce_simd_mask_type<arch::ISA::AVX512F, _DesiredType_, 512>(
+            const auto __unprocessed_tail_blending_mask = (__mmask_for_elements_t<0x40 / sizeof(_DesiredType_)>(
                 1u << (__length - __total_processed_element_count_combined)) - 1) << __total_processed_element_count_combined;
 
             const auto __shuffle_control_mask_first_segment = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_DesiredType_)>.__shuffle[__mask_segment_first]));
@@ -559,7 +559,7 @@ struct _Simd_compress<arch::ISA::AVX512F, 512, _DesiredType_> {
             const auto __total_processed_byte_count_combined = __total_processed_byte_count_xmm_lane1 + __total_processed_byte_count_xmm_lane2
                 + __total_processed_byte_count_xmm_lane3 + __total_processed_byte_count_xmm_lane4;
 
-            const auto __unprocessed_tail_blending_mask = (type_traits::__deduce_simd_mask_type<arch::ISA::AVX512F, _DesiredType_, 512>(
+            const auto __unprocessed_tail_blending_mask = (__mmask_for_elements_t<0x40 / sizeof(_DesiredType_)>(
                 uint64(1) << (__length - __total_processed_byte_count_combined)) - 1) << __total_processed_byte_count_combined;
 
             const auto __shuffle_control_mask_first_segment = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_DesiredType_)>.__shuffle[__mask_segment_first]));

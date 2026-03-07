@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/datapar/bitwise/MaskConvert.h>
+#include <src/raze/datapar/MaskTypeSelector.h>
 #include <array>
 
 
@@ -64,7 +65,7 @@ struct _Simd_make_tail_mask<arch::ISA::AVX512VLF, 256, _DesiredType_>:
 	raze_nodiscard raze_static_operator raze_always_inline
 		auto operator()(uint32 __bytes) raze_const_operator noexcept
 	{
-		using _MaskType = type_traits::__deduce_simd_mask_type<arch::ISA::AVX512VLF, _DesiredType_, 256>;
+		using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_DesiredType_)>;
 		return (__bytes == 0) ? 0 : (static_cast<_MaskType>((_MaskType(1) << (__bytes / sizeof(_DesiredType_))) - 1));
 	}
 };
@@ -76,7 +77,7 @@ struct _Simd_make_tail_mask<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 	raze_nodiscard raze_static_operator raze_always_inline
 		auto operator()(uint32 __bytes) raze_const_operator noexcept
 	{
-		using _MaskType = type_traits::__deduce_simd_mask_type<arch::ISA::AVX512VLF, _DesiredType_, 128>;
+		using _MaskType = __mmask_for_elements_t<0x10 / sizeof(_DesiredType_)>;
 		return (__bytes == 0) ? 0 : (static_cast<_MaskType>((_MaskType(1) << (__bytes / sizeof(_DesiredType_))) - 1));
 	}
 };
