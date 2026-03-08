@@ -53,7 +53,8 @@ struct __max_element_vectorized_internal {
         constexpr auto __max_portion_size = raze::algorithm::max(static_cast<uint64>(__integer_max) 
             + 1, static_cast<uint64>(__integer_max)) * sizeof(_Simd_);
 
-        constexpr auto __has_portion_max_value = (math::__maximum_integral_limit<uint64>() != __max_portion_size);
+        constexpr auto __has_portion_max_value = 
+            (math::__maximum_integral_limit<uint64>() != __max_portion_size);
         auto __aligned_portion_size = raze::algorithm::min(__max_portion_size, __aligned_size);
 
         auto __portion_begin = __max_element;
@@ -68,23 +69,25 @@ struct __max_element_vectorized_internal {
                 __current_values = datapar::load<_Simd_>(__first);
                 const auto __greater_mask = (__current_values > __current_values_max);
 
-                __current_indices_max   = datapar::blend(__current_indices, __current_indices_max, __greater_mask);
-                __current_values_max    = datapar::blend(__current_values, __current_values_max, __greater_mask);
+                __current_indices_max   = datapar::blend(__current_indices,
+                    __current_indices_max, __greater_mask);
+                __current_values_max    = datapar::blend(__current_values,
+                    __current_values_max, __greater_mask);
             }
             else {
                 const auto __all_max = _Simd_(datapar::horizontal_max(__current_values_max));
-                const auto __native_mask = (__current_values_max == __all_max);
-     
-                const auto __max_values_indices = datapar::blend(__current_indices_max, _IndexSimdType(_UnsignedValueType(-1)), __native_mask);
-                const auto __all_max_indices = _IndexSimdType(datapar::horizontal_min(datapar::simd_cast<_UnsignedValueType>(__max_values_indices)));
-                
-                const auto __final_mask = datapar::to_mask(__all_max_indices == __max_values_indices);
 
-                const auto __horizontal_position = __final_mask.count_trailing_zero_bits();
-                const auto __vertical_position = sizetype(__current_indices_max.extract(__horizontal_position));
+                const auto __max_values_indices = datapar::blend(__current_indices_max, 
+                    _IndexSimdType(_UnsignedValueType(-1)), __current_values_max == __all_max);
+                const auto __all_max_indices = _IndexSimdType(datapar::horizontal_min(
+                    datapar::simd_cast<_UnsignedValueType>(__max_values_indices)));
+
+                const auto __horizontal_position = datapar::find_first_set(__all_max_indices == __max_values_indices);
+                const auto __vertical_position = sizetype(__current_indices_max[__horizontal_position]);
                 
                 const auto __maybe_max_element = __bytes_pointer_offset(__portion_begin, 
                     __vertical_position * sizeof(_Simd_) + __horizontal_position * sizeof(_ValueType));
+
                 if (*__maybe_max_element > *__max_element)
                     __max_element = __maybe_max_element;
 

@@ -10,6 +10,15 @@
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 
+
+template <
+	class _FirstMaskType_,
+	class _SecondMaskType_>
+concept __compatible_mask =
+	(sizeof(typename _FirstMaskType_::element_type) == sizeof(typename _SecondMaskType_::element_type)) &&
+	(_FirstMaskType_::__isa == _SecondMaskType_::__isa) &&
+	(_FirstMaskType_::__width == _SecondMaskType_::__width);
+
 template <
 	arch::ISA	_ISA_,
 	typename	_Type_,
@@ -79,9 +88,12 @@ public:
 		__copy_to_unchecked(algorithm::__unwrap_iterator(__first), __alignment_policy);
 	}
 
-
 	raze_always_inline constexpr void clear_left() noexcept {
 		_mask = _Impl::__clear_left(_mask);
+	}
+
+	raze_always_inline constexpr void clear_right() noexcept {
+		_mask = _Impl::__clear_right(_mask);
 	}
 
 	constexpr raze_always_inline bool operator[](int32 __index) const noexcept {
@@ -93,44 +105,50 @@ public:
 	{
 		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
 	}
-
+	
+	template <class _OtherMask_>
 	friend constexpr raze_always_inline simd_mask operator&(
-		const simd_mask& __left,
-		const simd_mask& __right) noexcept
+		const simd_mask&	__left,
+		const _OtherMask_&	__right) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
 		return _Impl::__bit_and(__left, __right);
 	}
 
+	template <class _OtherMask_>
 	friend constexpr raze_always_inline simd_mask operator|(
-		const simd_mask& __left,
-		const simd_mask& __right) noexcept
+		const simd_mask&	__left,
+		const _OtherMask_&	__right) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
 		return _Impl::__bit_or(__left, __right);
 	}
 
+	template <class _OtherMask_>
 	friend constexpr raze_always_inline simd_mask operator^(
-		const simd_mask& __left,
-		const simd_mask& __right) noexcept
+		const simd_mask&	__left,
+		const _OtherMask_&	__right) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
 		return _Impl::__bit_xor(__left, __right);
 	}
 
+	template <class _OtherMask_>
 	constexpr raze_always_inline simd_mask& 
-		operator&=(const simd_mask& __other) noexcept 
+		operator&=(const _OtherMask_& __other) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
-		return *this & __other;
+		return *this = (*this & __other);
 	}
 
+	template <class _OtherMask_>
 	constexpr raze_always_inline simd_mask&
-		operator|=(const simd_mask& __other) noexcept
+		operator|=(const _OtherMask_& __other) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
-		return *this | __other;
+		return *this = (*this | __other);
 	}
 
+	template <class _OtherMask_>
 	constexpr raze_always_inline simd_mask& 
-		operator^=(const simd_mask& __other) noexcept 
+		operator^=(const _OtherMask_& __other) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
-		return *this ^ __other;
+		return *this = (*this ^ __other);
 	}
 
 	constexpr raze_always_inline simd_mask operator!() const noexcept {

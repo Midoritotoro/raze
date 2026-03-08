@@ -89,7 +89,7 @@ struct __find_end_vectorized_internal {
 					if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
 						return static_cast<const _ValueType*>(__main_match) - 1;
 
-					__combined.clear_left();
+					__combined.clear_right();
 				} while (datapar::any_of(__combined));
 			}
 		}

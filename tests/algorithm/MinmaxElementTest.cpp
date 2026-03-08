@@ -1,4 +1,4 @@
-#define _USE_STD_VECTOR_ALGORITHMS 1
+#define _USE_STD_VECTOR_ALGORITHMS 0
 #include <raze/algorithm/minmax/MinmaxElement.h>
 #include <algorithm>
 #include <vector>
@@ -64,6 +64,11 @@ void run_tests_for_type() {
         check_minmax_element(a.begin(), a.end());
     }
     {
+        std::vector<T> a(200, 5);
+        a[100] = -999;
+        check_minmax_element(a.begin(), a.end());
+    }
+    {
         std::vector<T> a(10000, 5);
         a[5000] = -999;
         check_minmax_element(a.begin(), a.end());
@@ -96,6 +101,7 @@ void run_tests_for_type() {
             auto std_res = std::minmax_element(a.begin(), a.end());
             auto simd_res = raze::algorithm::minmax_element(a.begin(), a.end());
 
+
             raze_assert(std_res.first == simd_res.first);
             raze_assert(std_res.second == simd_res.second);
         }
@@ -115,6 +121,11 @@ void run_tests_for_string() {
         std::string s = "CaseInsensitive";
         auto pred = [](char a, char b) { return std::tolower(a) < std::tolower(b); };
         check_minmax_element(s.begin(), s.end(), pred);
+    }
+    {
+        std::string s(32, 'z');
+        s[16] = 'a';
+        check_minmax_element(s.begin(), s.end());
     }
     {
         std::string s(64, 'z');

@@ -12,6 +12,7 @@
 #include <src/raze/datapar/bitwise/FirstNBytes.h>
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
 #include <raze/algorithm/minmax/Max.h>
+#include <src/raze/math/BitTestAndReset.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -55,14 +56,14 @@ public:
 		return __used_bits;
 	}
 
-	raze_nodiscard raze_always_inline static constexpr int32 
-		__elements() noexcept 
+	raze_nodiscard raze_always_inline static constexpr int32
+		__elements() noexcept
 	{
 		return __elements_count;
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool 
-		__all_of(mask_type __mask) noexcept 
+	raze_nodiscard raze_always_inline static constexpr bool
+		__all_of(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
 			constexpr auto __max_for_bits = ((sizeof(mask_type) * 8) == __bit_width())
@@ -89,7 +90,7 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool 
+	raze_nodiscard raze_always_inline static constexpr bool
 		__none_of(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -113,8 +114,8 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool 
-		__some_of(mask_type __mask) noexcept 
+	raze_nodiscard raze_always_inline static constexpr bool
+		__some_of(mask_type __mask) noexcept
 	{
 		return !__all_of(__mask);
 	}
@@ -125,7 +126,7 @@ public:
 		return !__none_of(__mask);
 	}
 
-	raze_nodiscard raze_always_inline static constexpr 
+	raze_nodiscard raze_always_inline static constexpr
 		mask_type __bit_and(mask_type __left, mask_type __right) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -173,7 +174,7 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr mask_type 
+	raze_nodiscard raze_always_inline static constexpr mask_type
 		__bit_not(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -234,7 +235,7 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr 
+	raze_nodiscard raze_always_inline static constexpr
 		int __count_set(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -270,22 +271,7 @@ public:
 	raze_nodiscard raze_always_inline static constexpr
 		int32 __count_leading_zero_bits(mask_type __mask) noexcept
 	{
-		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (__bit_width() <= 8)
-				return math::__clz_n_bits<__bit_width()>(__mask);
-
-			else if constexpr (__has_avx2_support_v<__isa>)
-				return math::__lzcnt_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask)));
-
-			else
-				return math::__bsr_clz(static_cast<mask_type>(__to_gpr<__isa>(__mask)));
-		}
-		else {
-			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, _SimdWidth_>;
-			const auto __index_mask = _IndexMaskType(
-				_To_bitmask<__isa, __width, _Type_>()(__data(__mask)));
-			return __index_mask.__count_leading_zero_bits();
-		}
+		return __count_leading_zero_bits_any(__mask);
 	}
 
 	raze_nodiscard raze_always_inline static constexpr
@@ -296,12 +282,12 @@ public:
 		}
 		else {
 			auto __count = 0;
-			
+
 			for (auto __i = 0; __i < __bit_width(); ++__i) {
 				if (!((__mask >> __i) & 1))
 					break;
 
-				++__count; 
+				++__count;
 			}
 
 			return __count;
@@ -347,7 +333,7 @@ public:
 	raze_nodiscard raze_always_inline static constexpr mask_type
 		__copy_from_unchecked(
 			const _UnwrappedForwardIterator_	__first,
-			_AlignmentPolicy_&&					__alignment_policy) noexcept
+			_AlignmentPolicy_&& __alignment_policy) noexcept
 	{
 		using _ValueType = type_traits::iterator_value_type<_UnwrappedForwardIterator_>;
 		constexpr auto __use_vectorized_load = (sizeof(_ValueType) == 1) &&
@@ -358,9 +344,9 @@ public:
 		else
 			return __copy_from_scalar(__first, __alignment_policy);
 	}
-	
+
 	raze_nodiscard raze_always_inline static constexpr mask_type
-		__clear_left(mask_type __mask) noexcept
+		__clear_right(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
 			return (__mask & (__mask - 1));
@@ -370,6 +356,20 @@ public:
 			return _To_vector<__isa, __width, typename mask_type::vector_type, _Type_>()((__converted_mask & (__converted_mask - 1)));
 		}
 	}
+
+	raze_nodiscard raze_always_inline static constexpr mask_type
+		__clear_left(mask_type __mask) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			math::__bit_test_and_reset(__mask, __elements() - __count_leading_zero_bits_any(__mask) - 1);
+			return __mask;
+		}
+		else {
+			auto __converted_mask = _To_mask<__isa, __width, _Type_>()(__data(__mask));
+			math::__bit_test_and_reset(__converted_mask, __elements() - __count_leading_zero_bits_any(__converted_mask) - 1);
+			return _To_vector<__isa, __width, typename mask_type::vector_type, _Type_>()(__converted_mask);
+		}
+	}
 private:
 	template <
 		class _UnwrappedForwardIterator_,
@@ -377,7 +377,7 @@ private:
 	raze_nodiscard raze_always_inline static constexpr mask_type
 		__copy_from_vectorized(
 			const _UnwrappedForwardIterator_	__first,
-			_AlignmentPolicy_&&					__alignment_policy) noexcept
+			_AlignmentPolicy_&& __alignment_policy) noexcept
 	{
 		using _ValueType = type_traits::iterator_value_type<_UnwrappedForwardIterator_>;
 
@@ -426,7 +426,7 @@ private:
 	raze_nodiscard raze_always_inline static constexpr mask_type
 		__copy_from_scalar(
 			const _UnwrappedForwardIterator_	__first,
-			_AlignmentPolicy_&&					__alignment_policy) noexcept
+			_AlignmentPolicy_&& __alignment_policy) noexcept
 	{
 		auto __mask = mask_type();
 
@@ -440,6 +440,28 @@ private:
 		}
 
 		return __mask;
+	}
+
+	template <class _AnyMaskType_>
+	raze_nodiscard raze_always_inline static constexpr
+		int32 __count_leading_zero_bits_any(_AnyMaskType_ __mask) noexcept
+	{
+		if constexpr (std::is_integral_v<_AnyMaskType_>) {
+			if constexpr (__bit_width() <= 8)
+				return math::__clz_n_bits<__bit_width()>(__mask);
+
+			else if constexpr (__has_avx2_support_v<__isa>)
+				return math::__lzcnt_clz(static_cast<_AnyMaskType_>(__to_gpr<__isa>(__mask)));
+
+			else
+				return math::__bsr_clz(static_cast<_AnyMaskType_>(__to_gpr<__isa>(__mask)));
+		}
+		else {
+			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, _SimdWidth_>;
+			const auto __index_mask = _IndexMaskType(
+				_To_bitmask<__isa, __width, _Type_>()(__data(__mask)));
+			return __index_mask.__count_leading_zero_bits();
+		}
 	}
 };
 

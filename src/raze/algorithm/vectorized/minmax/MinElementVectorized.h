@@ -53,7 +53,8 @@ struct __min_element_vectorized_internal {
         constexpr auto __max_portion_size = raze::algorithm::max(static_cast<uint64>(__integer_max)
             + 1, static_cast<uint64>(__integer_max)) * sizeof(_Simd_);
 
-        constexpr auto __has_portion_max_value = (math::__maximum_integral_limit<uint64>() != __max_portion_size);
+        constexpr auto __has_portion_max_value = 
+            (math::__maximum_integral_limit<uint64>() != __max_portion_size);
         auto __aligned_portion_size = raze::algorithm::min(__max_portion_size, __aligned_size);
 
         auto __portion_begin = __min_element;
@@ -68,20 +69,21 @@ struct __min_element_vectorized_internal {
                 __current_values = datapar::load<_Simd_>(__first);
                 const auto __less_mask = (__current_values < __current_values_min);
 
-                __current_indices_min = datapar::blend(__current_indices, __current_indices_min, __less_mask);
-                __current_values_min = datapar::blend(__current_values, __current_values_min, __less_mask);
+                __current_indices_min = datapar::blend(__current_indices,
+                    __current_indices_min, __less_mask);
+                __current_values_min = datapar::blend(__current_values, 
+                    __current_values_min, __less_mask);
             }
             else {
                 const auto __all_min = _Simd_(datapar::horizontal_min(__current_values_min));
-                const auto __native_mask = (__current_values_min == __all_min);
 
-                const auto __min_values_indices = datapar::blend(__current_indices_min, _IndexSimdType(_UnsignedValueType(-1)), __native_mask);
-                const auto __all_min_indices = _IndexSimdType(datapar::horizontal_min(datapar::simd_cast<_UnsignedValueType>(__min_values_indices)));
+                const auto __min_values_indices = datapar::blend(__current_indices_min,
+                    _IndexSimdType(_UnsignedValueType(-1)), __current_values_min == __all_min);
+                const auto __all_min_indices = _IndexSimdType(datapar::horizontal_min(
+                    datapar::simd_cast<_UnsignedValueType>(__min_values_indices)));
 
-                const auto __final_mask = datapar::to_mask(__all_min_indices == __min_values_indices);
-
-                const auto __horizontal_position = __final_mask.count_trailing_zero_bits();
-                const auto __vertical_position = sizetype(__current_indices_min.extract(__horizontal_position));
+                const auto __horizontal_position = datapar::find_first_set(__all_min_indices == __min_values_indices);
+                const auto __vertical_position = sizetype(__current_indices_min[__horizontal_position]);
 
                 const auto __maybe_min_element = __bytes_pointer_offset(__portion_begin,
                     __vertical_position * sizeof(_Simd_) + __horizontal_position * sizeof(_ValueType));

@@ -111,7 +111,7 @@ set(PRIVATE_HEADERS
     src/raze/math/CountTrailingZeros.h
     src/raze/math/CountLeadingZeros.h
     src/raze/math/PopulationCount.h
-
+    src/raze/math/BitTestAndReset.h
 
     "src/raze/type_traits/CanMemcmpElements.h"
     "src/raze/type_traits/ContainerComparison.h"

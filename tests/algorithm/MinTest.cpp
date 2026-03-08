@@ -1,3 +1,4 @@
+#define _USE_STD_VECTOR_ALGORITHMS 0
 #include <cassert>
 #include <cstdint>
 #include <vector>

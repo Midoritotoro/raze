@@ -8,46 +8,6 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <sizetype _Step_>
-struct _Memset_step_type {
-    using type = void;
-};
-
-template <>
-struct _Memset_step_type<1> {
-    using type = uint8;
-};
-
-template <>
-struct _Memset_step_type<2> {
-    using type = uint16;
-};
-
-template <>
-struct _Memset_step_type<4> {
-    using type = uint32;
-};
-
-template <>
-struct _Memset_step_type<8> {
-    using type = uint64;
-};
-
-template <>
-struct _Memset_step_type<16> {
-    using type = __m128i;
-};
-
-template <>
-struct _Memset_step_type<32> {
-    using type = __m256i;
-};
-
-template <>
-struct _Memset_step_type<64> {
-    using type = __m512i;
-};
-
 template <class _Type_>
 raze_always_inline void* __memset_scalar(
     void*       __destination,
@@ -95,7 +55,7 @@ struct __memset_vectorized_internal {
             return __destination;
 
         if constexpr (_Simd_::template is_native_mask_store_supported_v<>)
-            datapar::mask_store(__destination, __broadcasted, datapar::make_tail_mask<_Simd_>(__tail_size));
+            datapar::mask_store(__destination, __broadcasted, datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType)));
         else
             return __memset_scalar(__destination, __value, (__tail_size / sizeof(_ValueType)));
 

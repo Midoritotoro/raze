@@ -61,7 +61,7 @@ public:
     }
 
     raze_nodiscard static raze_always_inline simd zero() noexcept {
-        return _Simd_broadcast_zeros<_ISA_, _Width_, vector_type>()();
+        return _Broadcast_zeros<_ISA_, _Width_, vector_type>()();
     }
 
     raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
@@ -77,7 +77,7 @@ public:
         const simd&      __left,
         const value_type __right) noexcept 
     {
-        return _Simd_add<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Add<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
     raze_nodiscard raze_always_inline friend simd operator-(
@@ -105,7 +105,7 @@ public:
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Simd_add<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Add<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend simd operator-(

@@ -24,7 +24,7 @@ __raze_simd_algorithm_inline std::pair<const _Type_ *, const _Type_*> __minmax_e
     for (; ++__first_current != __last; ) {
         if (*__first_current < *__minmax.first)
             __minmax.first = __first_current;
-        if (*__first_current > *__minmax.second)
+        if (*__first_current >= *__minmax.second)
             __minmax.second = __first_current;
     }
     
@@ -88,23 +88,23 @@ struct __minmax_element_vectorized_internal {
                 const auto __all_max = _Simd_(datapar::horizontal_max(__current_values_max));
                 const auto __all_min = _Simd_(datapar::horizontal_min(__current_values_min));
 
-                const auto __native_mask_max = (__current_values_max == __all_max);
-                const auto __native_mask_min = (__current_values_min == __all_min);
+                const auto __mask_max = (__current_values_max == __all_max);
+                const auto __mask_min = (__current_values_min == __all_min);
 
-                const auto __max_values_indices = datapar::blend(__current_indices_max, _IndexSimdType::zero(), __native_mask_max);
-                const auto __min_values_indices = datapar::blend(__current_indices_min, _IndexSimdType(_UnsignedValueType(-1)), __native_mask_min);
+                const auto __max_values_indices = datapar::blend(__current_indices_max, _IndexSimdType::zero(), __mask_max);
+                const auto __min_values_indices = datapar::blend(__current_indices_min, _IndexSimdType(_UnsignedValueType(-1)), __mask_min);
 
                 const auto __all_max_indices = _IndexSimdType(datapar::horizontal_max(datapar::simd_cast<_UnsignedValueType>(__max_values_indices)));
                 const auto __all_min_indices = _IndexSimdType(datapar::horizontal_min(datapar::simd_cast<_UnsignedValueType>(__min_values_indices)));
 
-                const auto __final_max_mask = datapar::to_mask(_Simd_(__all_max_indices == __max_values_indices) & __native_mask_max);
-                const auto __final_min_mask = datapar::to_mask(__all_min_indices == __min_values_indices);
+                const auto __final_max_mask = (__all_max_indices == __max_values_indices) & __mask_max;
+                const auto __final_min_mask = __all_min_indices == __min_values_indices;
 
-                const auto __horizontal_max_position = (__final_max_mask.count_leading_zero_bits() - (sizeof(_ValueType) - 1));
-                const auto __horizontal_min_position = __final_min_mask.count_trailing_zero_bits();
+                const auto __horizontal_max_position = (_Simd_::size() - 1 - datapar::find_last_set(__final_max_mask));
+                const auto __horizontal_min_position = datapar::find_first_set(__final_min_mask);
 
-                const auto __vertical_max_position = sizetype(__current_indices_max.extract(__horizontal_max_position));
-                const auto __vertical_min_position = sizetype(__current_indices_min.extract(__horizontal_min_position));
+                const auto __vertical_max_position = sizetype(__current_indices_max[__horizontal_max_position]);
+                const auto __vertical_min_position = sizetype(__current_indices_min[__horizontal_min_position]);
 
                 const auto __maybe_max_element = __bytes_pointer_offset(__portion_begin,
                     __vertical_max_position * sizeof(_Simd_) + __horizontal_max_position * sizeof(_ValueType));
@@ -112,7 +112,7 @@ struct __minmax_element_vectorized_internal {
                 const auto __maybe_min_element = __bytes_pointer_offset(__portion_begin,
                     __vertical_min_position * sizeof(_Simd_) + __horizontal_min_position * sizeof(_ValueType));
 
-                if (*__maybe_max_element > *__minmax.second)
+                if (*__maybe_max_element >= *__minmax.second)
                     __minmax.second = __maybe_max_element;
                 if (*__maybe_min_element < *__minmax.first)
                     __minmax.first = __maybe_min_element;
@@ -146,7 +146,7 @@ struct __minmax_element_vectorized_internal {
         for (; __first_current != __last; ++__first_current ) {
             if (*__first_current < *__minmax.first)
                 __minmax.first = __first_current;
-            if (*__first_current > *__minmax.second)
+            if (*__first_current >= *__minmax.second)
                 __minmax.second = __first_current;
         }
 

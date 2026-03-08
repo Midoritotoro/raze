@@ -57,7 +57,7 @@ struct __minmax_vectorized_internal {
 
         if (__tail_size != 0) {
             if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
-                const auto __loaded = datapar::maskz_load<_Simd_>(__first, datapar::make_tail_mask<_Simd_>(__tail_size));
+                const auto __loaded = datapar::maskz_load<_Simd_>(__first, datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType)));
 
                 __maximum_values = datapar::vertical_max(__maximum_values, __loaded);
                 __minimum_values = datapar::vertical_min(__minimum_values, __loaded);

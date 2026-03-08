@@ -23,7 +23,7 @@ public:
             __size & (~(sizeof(simd_forced<_Type_>) - 1)), __size & (sizeof(simd_forced<_Type_>) -
             sizeof(typename simd_forced<_Type_>::value_type)), std::forward<_Args_>(__args)...);
 #else
-        if (const auto __aligned_size = __size & (~(sizeof(simd512_avx512bw<_Type_>) - 1)); __aligned_size != 0) {
+       /* if (const auto __aligned_size = __size & (~(sizeof(simd512_avx512bw<_Type_>) - 1)); __aligned_size != 0) {
             if (arch::ProcessorFeatures::AVX512BW()) {
                 if (arch::ProcessorFeatures::AVX512DQ())
                     return _Function_<simd512_avx512bwdq<_Type_>>()(
@@ -48,7 +48,7 @@ public:
                     sizeof(typename simd512_avx512f<_Type_>::value_type)), 
                     std::forward<_Args_>(__args)...);
             }
-        }
+        }*/
 
         if (const auto __aligned_size = __size & (~(sizeof(simd256_avx2<_Type_>) - 1)); 
             __aligned_size != 0 && arch::ProcessorFeatures::AVX2()) 
