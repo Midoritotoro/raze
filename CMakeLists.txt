@@ -108,10 +108,15 @@ set(PRIVATE_HEADERS
     src/raze/algorithm/unchecked/minmax/MaxUnchecked.h
     src/raze/algorithm/unchecked/minmax/MinmaxUnchecked.h
 
+
+
     src/raze/math/CountTrailingZeros.h
     src/raze/math/CountLeadingZeros.h
     src/raze/math/PopulationCount.h
     src/raze/math/BitTestAndReset.h
+    src/raze/math/BitTestAndSet.h
+    src/raze/math/BitTestAndComplement.h
+    src/raze/math/BitTest.h
 
     "src/raze/type_traits/CanMemcmpElements.h"
     "src/raze/type_traits/ContainerComparison.h"
@@ -154,7 +159,8 @@ set(PRIVATE_HEADERS
     "src/raze/algorithm/vectorized/find/SearchVectorized.h"
     src/raze/algorithm/FixedMemcmp.h
     src/raze/algorithm/MsvcIteratorUnwrap.h
-
+    src/raze/algorithm/SimdTransformable.h
+    
     src/raze/datapar/bitwise/BitAnd.h
     src/raze/datapar/bitwise/BitOr.h
     src/raze/datapar/bitwise/BitXor.h

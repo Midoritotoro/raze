@@ -36,7 +36,7 @@ int main() {
         Obj o;
 
         int r = raze::type_traits::invoke(&Obj::method, o, 8);
-        assert(r == 50); // 42 + 8
+        assert(r == 50);
     }
 
     {
