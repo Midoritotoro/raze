@@ -189,6 +189,7 @@ set(PRIVATE_HEADERS
     src/raze/datapar/arithmetic/VerticalMax.h
     src/raze/datapar/arithmetic/VerticalMin.h
     src/raze/datapar/arithmetic/Abs.h
+    src/raze/datapar/arithmetic/Divisor.h
 
     src/raze/datapar/compare/Less.h
     src/raze/datapar/compare/LessEqual.h

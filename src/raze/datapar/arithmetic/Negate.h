@@ -15,7 +15,9 @@ struct _Negate;
 template <class _DesiredType_>
 struct _Negate<arch::ISA::SSE2, 128, _DesiredType_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept {
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_
+		operator()(_IntrinType_ __vector) raze_const_operator noexcept 
+	{
 		if      constexpr (__is_ps_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm_xor_ps(__vector, _mm_set1_ps(-0.0f)));
 
@@ -23,14 +25,16 @@ struct _Negate<arch::ISA::SSE2, 128, _DesiredType_> {
 			return __intrin_bitcast<_IntrinType_>(_mm_xor_pd(__vector, __intrin_bitcast<__m128d>(_mm_setr_epi32(0, 0x80000000, 0, 0x80000000))));
 
 		else
-			return _Sub<arch::ISA::SSE2, 128, _DesiredType_>()(_Simd_broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __vector);
+			return _Sub<arch::ISA::SSE2, 128, _DesiredType_>()(_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __vector);
 	}
 };
 
 template <class _DesiredType_>
 struct _Negate<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept {
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_
+		operator()(_IntrinType_ __vector) raze_const_operator noexcept 
+	{
 		if      constexpr (__is_ps_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm256_xor_ps(__intrin_bitcast<__m256>(__vector), _mm256_set1_ps(-0.0f)));
 
@@ -39,14 +43,16 @@ struct _Negate<arch::ISA::AVX2, 256, _DesiredType_> {
 				__intrin_bitcast<__m256d>(_mm256_setr_epi32(0, 0x80000000, 0, 0x80000000, 0, 0x80000000, 0, 0x80000000))));
 
 		else
-			return _Sub<arch::ISA::AVX2, 256, _DesiredType_>()(_Simd_broadcast_zeros<arch::ISA::AVX2, 256, _DesiredType_>()(), __vector);
+			return _Sub<arch::ISA::AVX2, 256, _DesiredType_>()(_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __vector);
 	}
 };
 
 template <class _DesiredType_>
 struct _Negate<arch::ISA::AVX512F, 512, _DesiredType_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept {
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ 
+		operator()(_IntrinType_ __vector) raze_const_operator noexcept 
+	{
 		if      constexpr (__is_ps_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm512_xor_ps(__vector, _mm512_set1_ps(-0.0f)));
 
@@ -56,7 +62,7 @@ struct _Negate<arch::ISA::AVX512F, 512, _DesiredType_> {
 					0, 0x80000000, 0, 0x80000000, 0, 0x80000000, 0, 0x80000000, 0, 0x80000000))));
 
 		else
-			return _Sub<arch::ISA::AVX512F, 512, _DesiredType_>()(_Simd_broadcast_zeros<arch::ISA::AVX512F, 512, _DesiredType_>()(), __vector);
+			return _Sub<arch::ISA::AVX512F, 512, _DesiredType_>()(_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __vector);
 	}
 };
 

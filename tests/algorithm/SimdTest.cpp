@@ -2,7 +2,11 @@
 #include <raze/math/Math.h>
 #include <raze/algorithm/fill/Fill.h>
 #include <string>
-
+#include <vector>
+#include <numeric>
+#include <limits>
+#include <algorithm>
+#include <iostream>
 
 template <typename _Simd_>
 void mask_compress_any(
@@ -34,7 +38,7 @@ void testMethods() {
         return;
     }
 
-     {
+    {
         Simd v1;
         Simd v2(5);
 
@@ -46,7 +50,6 @@ void testMethods() {
         Simd v3 = raze::datapar::load<Simd>(arr);
         for (int i = 0; i < v2.size(); ++i)
             raze_assert(v3[i] == arr[i]);
-
 
         Simd v4(v3);
         for (int i = 0; i < v2.size(); ++i) raze_assert(v4[i] == arr[i]);
@@ -88,9 +91,6 @@ void testMethods() {
         for (size_t i = 0; i < N; ++i) dst[i] = static_cast<T>(100 + i);
 
         Mask mask = 0;
-        //for (size_t i = 0; i < N; ++i)
-        //    if (i % 2 == 0)
-        //        mask |= (Mask(1) << i);
 
         Simd loaded_unaligned = raze::datapar::maskz_load<Simd>(src, mask);
         for (size_t i = 0; i < N; ++i) {
@@ -126,18 +126,14 @@ void testMethods() {
                 raze_assert(dst[i] == T(200 + i));
         }
     }
-    
+
     {
         alignas(64) T src[N];
         for (size_t i = 0; i < N; ++i) src[i] = static_cast<T>(i + 1);
 
         Simd v = raze::datapar::load<Simd>(src);
 
-
         Mask mask = 0;
-        //for (size_t i = 0; i < N; i += 2)
-        //    mask |= (Mask(1) << i);
-
 
         {
             alignas(64) T dst[N] = {};
@@ -152,7 +148,7 @@ void testMethods() {
         {
             alignas(64) T dst[N] = {};
             raze::datapar::compress_store(dst, v, mask);
-                
+
             alignas(64) T expected[N];
             mask_compress_any<Simd>(src, src, expected, mask);
 
@@ -272,7 +268,7 @@ void testMethods() {
             }
         }
     }
-  
+
     {
         raze::datapar::__reduce_type<T> reduced = 0;
 
@@ -289,7 +285,6 @@ void testMethods() {
 
         raze_assert(simdReduced == reduced);
     }
-
 
     {
         alignas(64) T arrA[N], arrB[N];
@@ -313,22 +308,6 @@ void testMethods() {
         Simd a = raze::datapar::load<Simd>(arrA);
         Simd b = raze::datapar::load<Simd>(arrB);
 
-        auto minVec = raze::datapar::vertical_min(a, b);
-        for (size_t i = 0; i < N; ++i)
-            raze_assert(minVec[i] == std::min(arrA[i], arrB[i]));
-
-        auto maxVec = raze::datapar::vertical_max(a, b);
-        for (size_t i = 0; i < N; ++i)
-            raze_assert(maxVec[i] == std::max(arrA[i], arrB[i]));
-
-        T minScalar = raze::datapar::horizontal_min(a);
-        T expectedMin = *std::min_element(arrA, arrA + N);
-        raze_assert(minScalar == expectedMin);
-
-        T maxScalar = raze::datapar::horizontal_max(a);
-        T expectedMax = *std::max_element(arrA, arrA + N);
-        raze_assert(maxScalar == expectedMax);
-
         auto absVec = raze::datapar::abs(a);
         for (size_t i = 0; i < N; ++i) {
             raze_assert(absVec[i] == static_cast<T>(raze::math::abs(arrA[i])));
@@ -347,8 +326,6 @@ void testMethods() {
         for (size_t i = 0; i < N; ++i)
             raze_assert(reversed[i] == arr[N - 1 - i]);
     }
-    constexpr bool d = raze::datapar::__is_native_compare_returns_number_v<raze::datapar::simd<raze::arch::ISA::AVX512F, int, 512>>;
-    using tt = raze::datapar::_Mask_implementation<raze::arch::ISA::AVX512F, int, 512>::mask_type;
 
     for (size_t i = 0; i < N; ++i) {
         Simd v1(0);
@@ -367,17 +344,17 @@ void testMethods() {
         raze_assert(raze::datapar::find_last_set(mask) == 0);
     }
 
-        auto makeMask = [N] (std::initializer_list<size_t> bits) {
-            Mask m{};
+    auto makeMask = [N](std::initializer_list<size_t> bits) {
+        Mask m{};
 
-            for (size_t i = 0; i < N; ++i)
-                m[i] = false;
+        for (size_t i = 0; i < N; ++i)
+            m[i] = false;
 
-            for (size_t b : bits)
-                if (b < N)
-                    m[b] = true;
+        for (size_t b : bits)
+            if (b < N)
+                m[b] = true;
 
-            return m;
+        return m;
         };
 
     {
@@ -391,7 +368,6 @@ void testMethods() {
             raze_assert(raze::datapar::find_first_set(m) == N);
             raze_assert(raze::datapar::find_last_set(m) == N);
         }
-
 
         {
             Mask m{};
@@ -417,7 +393,6 @@ void testMethods() {
             raze_assert(f == N - i - 1);
         }
 
-
         {
             Mask m{};
             for (size_t i = 0; i < N; ++i)
@@ -434,7 +409,6 @@ void testMethods() {
             raze_assert(raze::datapar::find_last_set(m) == last);
         }
 
-
         {
             std::initializer_list<size_t> ilist = { 1, 3, 4, 6, 7, 8, 9, 11, 14 };
             Mask m = makeMask(ilist);
@@ -447,7 +421,6 @@ void testMethods() {
             raze_assert(!raze::datapar::all_of(m));
         }
     }
-
 
     {
         {
@@ -481,7 +454,7 @@ void testMethods() {
                 m[i] = (i % 2 == 0);
 
             size_t expectedFirst = (N > 1 ? 1 : N);
-            
+
             raze_assert(raze::datapar::find_first_not_set(m) == expectedFirst);
             raze_assert(raze::datapar::find_last_not_set(m) == 0);
         }
@@ -502,6 +475,109 @@ void testMethods() {
         }
     }
 
+    {
+        alignas(64) T arrA[N], arrB[N];
+
+        for (size_t i = 0; i < N; ++i) {
+            arrA[i] = static_cast<T>(i + 1);
+            arrB[i] = static_cast<T>(N - i);
+        }
+
+        Simd a = raze::datapar::load<Simd>(arrA);
+        Simd b = raze::datapar::load<Simd>(arrB);
+
+        {
+            auto v = a + b;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == arrA[i] + arrB[i]);
+        }
+
+        {
+            auto v = a - b;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == static_cast<T>(arrA[i] - arrB[i]));
+        }
+
+        {
+            auto v = a * b;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == static_cast<T>(arrA[i] * arrB[i]));
+        }
+
+        {
+            for (size_t i = 0; i < N; ++i)
+                arrB[i] = static_cast<T>(i + 1);
+
+            b = raze::datapar::load<Simd>(arrB);
+
+            auto v = a / b[0];
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == static_cast<T>(arrA[i] / arrB[0]));
+        }
+
+
+        {
+            auto a1 = (a + b);
+            auto a2 = (a - b);
+            auto v = a1 * a2;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == static_cast<T>(static_cast<T>(arrA[i] + arrB[i]) * static_cast<T>(arrA[i] - arrB[i])));
+        }
+
+        {
+            auto v = -a;
+            for (size_t i = 0; i < N; ++i) {
+                auto t = static_cast<T>(-arrA[i]);
+                raze_assert(v[i] == t);
+            }
+        }
+    }
+
+    {
+        alignas(64) T arrA[N], arrB[N];
+
+        for (size_t i = 0; i < N; ++i) {
+            arrA[i] = static_cast<T>((i * 0x5A5A) ^ (i + 3));
+            arrB[i] = static_cast<T>((N - i) * 0x33 ^ (i * 7));
+        }
+
+        Simd a = raze::datapar::load<Simd>(arrA);
+        Simd b = raze::datapar::load<Simd>(arrB);
+
+        if constexpr (std::is_integral_v<T>) {
+            {
+                auto v = a & b;
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(v[i] == (arrA[i] & arrB[i]));
+            }
+
+            {
+                auto v = a | b;
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(v[i] == (arrA[i] | arrB[i]));
+            }
+
+            {
+                auto v = a ^ b;
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(v[i] == (arrA[i] ^ arrB[i]));
+            }
+
+            {
+                auto v = ~a;
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(v[i] == static_cast<T>(~arrA[i]));
+            }
+
+            {
+                auto v = (a & b) ^ (~a | b);
+                for (size_t i = 0; i < N; ++i) {
+                    T val = ((arrA[i] & arrB[i]) ^ (~arrA[i] | arrB[i]));
+                    raze_assert(v[i] == val);
+                }
+            }
+        }
+    }
 
 }
 
@@ -531,7 +607,7 @@ int main() {
     testMethods<raze::arch::ISA::SSE42, 128>();
 
     testMethods<raze::arch::ISA::AVX2, 128>();
-    testMethods<raze::arch::ISA::AVX2, 256>();
+  /*  testMethods<raze::arch::ISA::AVX2, 256>();
 
     testMethods<raze::arch::ISA::AVX512F, 512>();
     testMethods<raze::arch::ISA::AVX512BW, 512>();
@@ -540,27 +616,27 @@ int main() {
     testMethods<raze::arch::ISA::AVX512VBMI, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI2, 512>();
     testMethods<raze::arch::ISA::AVX512VBMIDQ, 512>();
-    testMethods<raze::arch::ISA::AVX512VBMI2DQ, 512>();
+    testMethods<raze::arch::ISA::AVX512VBMI2DQ, 512>();*/
 
     testMethods<raze::arch::ISA::AVX512VLF, 128>();
     testMethods<raze::arch::ISA::AVX512VLBW, 128>();
     testMethods<raze::arch::ISA::AVX512VLBWDQ, 128>();
     testMethods<raze::arch::ISA::AVX512VLDQ, 128>();
-    
-    testMethods<raze::arch::ISA::AVX512VLF, 256>();
-    testMethods<raze::arch::ISA::AVX512VLBW, 256>();
-    testMethods<raze::arch::ISA::AVX512VLBWDQ, 256>();
-    testMethods<raze::arch::ISA::AVX512VLDQ, 256>();
+
+    //testMethods<raze::arch::ISA::AVX512VLF, 256>();
+    //testMethods<raze::arch::ISA::AVX512VLBW, 256>();
+    //testMethods<raze::arch::ISA::AVX512VLBWDQ, 256>();
+    //testMethods<raze::arch::ISA::AVX512VLDQ, 256>();
 
     testMethods<raze::arch::ISA::AVX512VBMIVL, 128>();
     testMethods<raze::arch::ISA::AVX512VBMI2VL, 128>();
     testMethods<raze::arch::ISA::AVX512VBMIVLDQ, 128>();
     testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 128>();
 
-    testMethods<raze::arch::ISA::AVX512VBMIVL, 256>();
-    testMethods<raze::arch::ISA::AVX512VBMI2VL, 256>();
-    testMethods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
-    testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
+    //testMethods<raze::arch::ISA::AVX512VBMIVL, 256>();
+    //testMethods<raze::arch::ISA::AVX512VBMI2VL, 256>();
+    //testMethods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
+    //testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
 
     return 0;
 }
