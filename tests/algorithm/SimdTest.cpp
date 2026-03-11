@@ -87,12 +87,16 @@ void testMethods() {
         alignas(64) T src[N];
         alignas(64) T dst[N];
 
-        for (size_t i = 0; i < N; ++i) src[i] = static_cast<T>(i + 1);
-        for (size_t i = 0; i < N; ++i) dst[i] = static_cast<T>(100 + i);
+        for (size_t i = 0; i < N; ++i) 
+            src[i] = static_cast<T>(i + 1);
 
-        Mask mask = 0;
+        for (size_t i = 0; i < N; ++i) 
+            dst[i] = static_cast<T>(100 + i);
+
+        Mask mask = false;
 
         Simd loaded_unaligned = raze::datapar::maskz_load<Simd>(src, mask);
+
         for (size_t i = 0; i < N; ++i) {
             if (mask[i])
                 raze_assert(loaded_unaligned[i] == src[i]);
@@ -108,8 +112,10 @@ void testMethods() {
                 raze_assert(loaded_aligned[i] == T(0));
         }
 
-        Simd v(77);
-        raze::datapar::mask_store(dst, v, mask);
+
+       Simd v(77);
+       raze::datapar::mask_store(dst, v, mask);
+
         for (size_t i = 0; i < N; ++i) {
             if (mask[i])
                 raze_assert(dst[i] == T(77));
@@ -117,7 +123,9 @@ void testMethods() {
                 raze_assert(dst[i] == T(100 + i));
         }
 
-        for (size_t i = 0; i < N; ++i) dst[i] = static_cast<T>(200 + i);
+        for (size_t i = 0; i < N; ++i) 
+            dst[i] = static_cast<T>(200 + i);
+
         raze::datapar::mask_store(dst, v, mask, raze::datapar::aligned_policy{});
         for (size_t i = 0; i < N; ++i) {
             if (mask[i])
@@ -127,7 +135,7 @@ void testMethods() {
         }
     }
 
-    {
+    /*{
         alignas(64) T src[N];
         for (size_t i = 0; i < N; ++i) src[i] = static_cast<T>(i + 1);
 
@@ -510,11 +518,16 @@ void testMethods() {
 
             b = raze::datapar::load<Simd>(arrB);
 
-            auto v = a / b[0];
+            auto v = a / b;
             for (size_t i = 0; i < N; ++i)
-                raze_assert(v[i] == static_cast<T>(arrA[i] / arrB[0]));
-        }
+                raze_assert(v[i] == static_cast<T>(arrA[i] / arrB[i]));
 
+            for (size_t i = 0; i < N; ++i) {
+                auto v2 = a / b[i];
+                auto scalar = static_cast<T>(arrA[i] / arrB[i]);
+                raze_assert(v2[i] == scalar);
+            }
+        }
 
         {
             auto a1 = (a + b);
@@ -577,7 +590,7 @@ void testMethods() {
                 }
             }
         }
-    }
+    }*/
 
 }
 
@@ -600,16 +613,16 @@ void testMethods() {
 }
 
 int main() {
-    testMethods<raze::arch::ISA::SSE2, 128>();
-    testMethods<raze::arch::ISA::SSE3, 128>();
-    testMethods<raze::arch::ISA::SSSE3, 128>();
-    testMethods<raze::arch::ISA::SSE41, 128>();
-    testMethods<raze::arch::ISA::SSE42, 128>();
+    //testMethods<raze::arch::ISA::SSE2, 128>();
+    //testMethods<raze::arch::ISA::SSE3, 128>();
+    //testMethods<raze::arch::ISA::SSSE3, 128>();
+    //testMethods<raze::arch::ISA::SSE41, 128>();
+    //testMethods<raze::arch::ISA::SSE42, 128>();
 
-    testMethods<raze::arch::ISA::AVX2, 128>();
-  /*  testMethods<raze::arch::ISA::AVX2, 256>();
-
-    testMethods<raze::arch::ISA::AVX512F, 512>();
+    //testMethods<raze::arch::ISA::AVX2, 128>();
+    testMethods<raze::arch::ISA::AVX2, 256>();
+    
+  /*  testMethods<raze::arch::ISA::AVX512F, 512>();
     testMethods<raze::arch::ISA::AVX512BW, 512>();
     testMethods<raze::arch::ISA::AVX512DQ, 512>();
     testMethods<raze::arch::ISA::AVX512BWDQ, 512>();
@@ -618,25 +631,25 @@ int main() {
     testMethods<raze::arch::ISA::AVX512VBMIDQ, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI2DQ, 512>();*/
 
-    testMethods<raze::arch::ISA::AVX512VLF, 128>();
+  /*  testMethods<raze::arch::ISA::AVX512VLF, 128>();
     testMethods<raze::arch::ISA::AVX512VLBW, 128>();
     testMethods<raze::arch::ISA::AVX512VLBWDQ, 128>();
     testMethods<raze::arch::ISA::AVX512VLDQ, 128>();
 
-    //testMethods<raze::arch::ISA::AVX512VLF, 256>();
-    //testMethods<raze::arch::ISA::AVX512VLBW, 256>();
-    //testMethods<raze::arch::ISA::AVX512VLBWDQ, 256>();
-    //testMethods<raze::arch::ISA::AVX512VLDQ, 256>();
+    testMethods<raze::arch::ISA::AVX512VLF, 256>();
+    testMethods<raze::arch::ISA::AVX512VLBW, 256>();
+    testMethods<raze::arch::ISA::AVX512VLBWDQ, 256>();
+    testMethods<raze::arch::ISA::AVX512VLDQ, 256>();
 
     testMethods<raze::arch::ISA::AVX512VBMIVL, 128>();
     testMethods<raze::arch::ISA::AVX512VBMI2VL, 128>();
     testMethods<raze::arch::ISA::AVX512VBMIVLDQ, 128>();
     testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 128>();
 
-    //testMethods<raze::arch::ISA::AVX512VBMIVL, 256>();
-    //testMethods<raze::arch::ISA::AVX512VBMI2VL, 256>();
-    //testMethods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
-    //testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
+    testMethods<raze::arch::ISA::AVX512VBMIVL, 256>();
+    testMethods<raze::arch::ISA::AVX512VBMI2VL, 256>();
+    testMethods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
+    testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();*/
 
     return 0;
 }

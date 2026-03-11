@@ -251,7 +251,7 @@ public:
 			_UnwrappedOutputIterator_	__first,
 			_AlignmentPolicy_&&			__alignment_policy) noexcept
 	{
-		_Impl::__copy_to_unchecked(__first, __alignment_policy);
+		_Impl::__copy_to_unchecked(__first, _mask, __alignment_policy);
 	}
 private:
 	mask_type _mask = 0;

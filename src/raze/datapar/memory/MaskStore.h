@@ -91,7 +91,8 @@ struct _Mask_store<arch::ISA::AVX2, 128, _DesiredType_>:
 
 		else
 			_Store<arch::ISA::AVX2, 128>()(__address, _Blend<arch::ISA::AVX2, 128, _DesiredType_>()(
-				__vector, _Load<arch::ISA::AVX2, 128, _IntrinType_>()(__address, __alignment_policy), __mask), __alignment_policy);
+				__vector, _Load<arch::ISA::AVX2, 128, _IntrinType_>()(__address, __alignment_policy), 
+				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>(__mask)), __alignment_policy);
 	}
 };
 
@@ -131,7 +132,8 @@ struct _Mask_store<arch::ISA::AVX2, 256, _DesiredType_> {
 
 		else
 			_Store<arch::ISA::AVX2, 256>()(__address, _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(
-				__vector, _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__address, __alignment_policy), __mask), __alignment_policy);
+				__vector, _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__address, __alignment_policy), 
+				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>(__mask)), __alignment_policy);
 	}
 };
 

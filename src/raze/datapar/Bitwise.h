@@ -16,5 +16,5 @@
 #include <src/raze/datapar/bitwise/SimdElementReference.h>
 #include <src/raze/datapar/bitwise/MaskElementReference.h>
 #include <src/raze/datapar/bitwise/ToGPR.h>
-#include <src/raze/datapar/bitwise/FirstNBytes.h>
+#include <src/raze/datapar/bitwise/FirstN.h>
 #include <src/raze/datapar/bitwise/ToK.h>

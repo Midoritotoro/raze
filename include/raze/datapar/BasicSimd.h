@@ -104,7 +104,21 @@ public:
     raze_nodiscard raze_always_inline friend simd operator/(
         const simd&         __left,
         const _RightType_&  __right) noexcept requires(
-            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+            std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)
+    {
+        auto __temp = simd();
+
+        for (auto __i = 0; __i < size(); ++__i)
+            __temp[__i] = __left[__i] / __right[__i];
+
+        return __temp;
+    }
+
+    template <class _RightType_>
+    raze_nodiscard raze_always_inline friend simd operator/(
+        const simd&         __left,
+        const _RightType_&  __right) noexcept requires(
+            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
         return _Div<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
     }

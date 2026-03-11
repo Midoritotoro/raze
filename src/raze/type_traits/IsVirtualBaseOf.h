@@ -63,7 +63,7 @@ template <
 	typename To>
 using __is_virtual_base_conversion_test = decltype((To*)std::declval<From*>());
 
-raze_warning_push
+raze_warning_pop
 
 template <
 	typename Base,

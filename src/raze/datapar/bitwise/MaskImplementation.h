@@ -9,10 +9,11 @@
 #include <src/raze/datapar/bitwise/ToMask.h>
 #include <src/raze/datapar/bitwise/ToVector.h>
 #include <src/raze/datapar/memory/MaskzLoad.h>
-#include <src/raze/datapar/bitwise/FirstNBytes.h>
+#include <src/raze/datapar/bitwise/FirstN.h>
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
 #include <raze/algorithm/minmax/Max.h>
 #include <src/raze/math/BitTestAndReset.h>
+#include <src/raze/math/BitTest.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -228,7 +229,7 @@ public:
 		__broadcast(bool __value) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
-			return __value ? mask_type(-1) : mask_type(0);
+			return _First_n<__isa, __width, _Type_>()(__elements() * __value);
 		}
 		else {
 			return __value ? mask_type::broadcast(-1) : mask_type::zero();
@@ -332,17 +333,23 @@ public:
 		class _AlignmentPolicy_>
 	raze_nodiscard raze_always_inline static constexpr mask_type
 		__copy_from_unchecked(
-			const _UnwrappedForwardIterator_	__first,
-			_AlignmentPolicy_&& __alignment_policy) noexcept
+			_UnwrappedForwardIterator_	__first,
+			_AlignmentPolicy_&&			__alignment_policy) noexcept
 	{
 		using _ValueType = type_traits::iterator_value_type<_UnwrappedForwardIterator_>;
-		constexpr auto __use_vectorized_load = (sizeof(_ValueType) == 1) &&
-			(__bit_width() == _SimdWidth_);
+		return __copy_from_scalar(__first, __alignment_policy);
+	}
 
-		if constexpr (__use_vectorized_load)
-			return __copy_from_vectorized(__first, __alignment_policy);
-		else
-			return __copy_from_scalar(__first, __alignment_policy);
+	template <
+		class _UnwrappedOutputIterator_,
+		class _AlignmentPolicy_>
+	raze_always_inline static constexpr void
+		__copy_to_unchecked(
+			_UnwrappedOutputIterator_	__first,
+			mask_type					__mask,
+			_AlignmentPolicy_&&			__alignment_policy) noexcept
+	{
+		__copy_to_scalar(__first, __mask, __alignment_policy);
 	}
 
 	raze_nodiscard raze_always_inline static constexpr mask_type
@@ -375,71 +382,41 @@ private:
 		class _UnwrappedForwardIterator_,
 		class _AlignmentPolicy_>
 	raze_nodiscard raze_always_inline static constexpr mask_type
-		__copy_from_vectorized(
-			const _UnwrappedForwardIterator_	__first,
-			_AlignmentPolicy_&& __alignment_policy) noexcept
-	{
-		using _ValueType = type_traits::iterator_value_type<_UnwrappedForwardIterator_>;
-
-		const auto __first_address = static_cast<const _ValueType*>(std::to_address(__first));
-		auto __mask = mask_type();
-
-		constexpr auto __tail_elements = (__bit_width() > (_SimdWidth_ / 8))
-			? (__bit_width() - (_SimdWidth_ / 8)) : 0;
-
-		constexpr auto __main_part_elements = __elements() - __tail_elements;
-		constexpr auto __has_tail = __tail_elements > 0;
-
-		if constexpr (std::is_integral_v<mask_type>) {
-			using _IntrinType = type_traits::__deduce_simd_vector_type<__isa, _Type_, __width>;
-
-			const auto __loaded = _Simd_load<__isa, __width, _IntrinType>()(
-				__first_address, __alignment_policy);
-
-			__mask = _To_mask<__isa, __width, _Type_>()(__loaded);
-
-			if constexpr (!__has_tail)
-				return __mask;
-
-			if constexpr (__tail_elements <= 8) {
-				for (auto __i = __bit_width() - __tail_elements; __i < __bit_width(); ++__i)
-					__mask[__i] = __first_address[__i];
-			}
-			else {
-				const auto __tail_mask = _First_n_bytes<__isa, __width, _Type_>()(
-					__tail_elements * sizeof(_ValueType));
-
-				const auto __tail = _Maskz_load<__isa, __width, _Type_, _IntrinType>()(
-					__first_address + __main_part_elements, __alignment_policy);
-			}
-
-			return __mask;
-		}
-		else {
-
-		}
-	}
-
-	template <
-		class _UnwrappedForwardIterator_,
-		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline static constexpr mask_type
 		__copy_from_scalar(
-			const _UnwrappedForwardIterator_	__first,
-			_AlignmentPolicy_&& __alignment_policy) noexcept
+			_UnwrappedForwardIterator_	__first,
+			_AlignmentPolicy_&&			__alignment_policy) noexcept
 	{
 		auto __mask = mask_type();
 
 		if constexpr (std::is_integral_v<mask_type>) {
-			for (auto __i = 0; __i < __bit_width(); ++__i)
+			for (auto __i = 0; __i < __elements(); ++__i)
 				__mask |= static_cast<mask_type>(*__first++) << __i;
 		}
 		else {
-			for (auto __i = 0; __i < __bit_width(); ++__i)
+			for (auto __i = 0; __i < __elements(); ++__i)
 				__mask[__i] = ((*__first++) == 1) ? -1 : 0;
 		}
 
 		return __mask;
+	}
+
+	template <
+		class _UnwrappedOutputIterator_,
+		class _AlignmentPolicy_>
+	raze_always_inline static constexpr void
+		__copy_to_scalar(
+			_UnwrappedOutputIterator_	__first,
+			mask_type					__mask,
+			_AlignmentPolicy_&&			__alignment_policy) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			for (auto __i = 0; __i < __elements(); ++__i)
+				*__first++ = static_cast<bool>(math::__bit_test(__mask, __i));
+		}
+		else {
+			for (auto __i = 0; __i < __elements(); ++__i)
+				*__first++ = static_cast<bool>(__mask[__i]);
+		}
 	}
 
 	template <class _AnyMaskType_>
@@ -447,8 +424,8 @@ private:
 		int32 __count_leading_zero_bits_any(_AnyMaskType_ __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<_AnyMaskType_>) {
-			if constexpr (__bit_width() <= 8)
-				return math::__clz_n_bits<__bit_width()>(__mask);
+			if constexpr (__elements() <= 8)
+				return math::__clz_n_bits<__elements()>(__mask);
 
 			else if constexpr (__has_avx2_support_v<__isa>)
 				return math::__lzcnt_clz(static_cast<_AnyMaskType_>(__to_gpr<__isa>(__mask)));

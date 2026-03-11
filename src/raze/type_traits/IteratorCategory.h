@@ -125,7 +125,7 @@ template <
     class _Sentinel_,
     class _OutIterator_>
 using __copy_sentinel_category = std::conditional_t<
-#if base_has_cxx20
+#if raze_has_cxx20
     std::is_same_v<
         _Sentinel_, _InputIterator_>
     || std::sized_sentinel_for<

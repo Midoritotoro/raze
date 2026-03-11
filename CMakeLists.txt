@@ -177,7 +177,7 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/MaskElementReference.h
     src/raze/datapar/bitwise/SimdElementReference.h
     src/raze/datapar/bitwise/SimdBoolReference.h
-    src/raze/datapar/bitwise/FirstNBytes.h
+    src/raze/datapar/bitwise/FirstN.h
     src/raze/datapar/bitwise/ToK.h
     src/raze/datapar/bitwise/ToGPR.h
 
@@ -416,8 +416,12 @@ if((CMAKE_SYSTEM_PROCESSOR STREQUAL "i686") OR (CMAKE_SYSTEM_PROCESSOR STREQUAL 
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-   
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if(CMAKE_BUILD_TYPE MATCHES "Debug")
+        set(_OPT_FLAG /Od)
+    else()
+        set(_OPT_FLAG /O2)
+    endif()
+
     target_compile_options(
         raze 
         PRIVATE
@@ -425,6 +429,21 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             /W4
             /utf-8
             /MP
+            /EHsc
+            /Zi
+            # ${_OPT_FLAG}
+            /Zc:__cplusplus
+    )
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    
+    target_compile_options(
+        raze 
+        PRIVATE
+            /permissive-
+            /W4
+            /utf-8
+            /MP
+            /O3
             /EHsc
             /Zi
             /Zc:__cplusplus

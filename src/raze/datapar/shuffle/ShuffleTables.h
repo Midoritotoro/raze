@@ -9,8 +9,8 @@ template <
     sizetype _HorizontalSize_,
     sizetype _Alignment_>
 struct _Shuffle_tables {
-    alignas(_Alignment_) uint8 __shuffle[_VerticalSize_][_HorizontalSize_];
     alignas(_Alignment_) uint8 __size[_VerticalSize_];
+    alignas(_Alignment_) uint8 __shuffle[_VerticalSize_][_HorizontalSize_];
 };
 
 template <

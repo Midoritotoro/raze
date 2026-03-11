@@ -16,7 +16,7 @@ public:
 		_reference(__simd),
 		_index(__i)
 	{
-		raze_debug_assert(__i >= 0 && __i < _Simd_::size());
+		raze_assert(__i >= 0 && __i < _Simd_::size());
 	}
 
 	raze_always_inline operator value_type() const noexcept {

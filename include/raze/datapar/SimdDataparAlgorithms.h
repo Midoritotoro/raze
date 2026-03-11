@@ -418,20 +418,12 @@ __simd_nodiscard_inline _DataparType_ maskz_load(
 	const void*				__address,
 	const _MaskType_&		__mask,
 	_AlignmentPolicy_&&		__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && (__is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
+		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 
-	if constexpr (__is_valid_simd_v<typename _MaskType_::mask_type>) {
-		return _Maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
-			typename _RawDataparType::value_type, typename _RawDataparType::vector_type>()(reinterpret_cast<
-				const typename _RawDataparType::value_type*>(__address), __data(__mask), __policy);
-	}
-	else {
-		return _Maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
-			typename _RawDataparType::value_type, typename _RawDataparType::vector_type>()(reinterpret_cast<
-				const typename _RawDataparType::value_type*>(__address), __data(__mask), __policy);
-	}
+	return _Maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type, typename _RawDataparType::vector_type>()(__address, __data(__mask), __policy);
 }
 
 /**

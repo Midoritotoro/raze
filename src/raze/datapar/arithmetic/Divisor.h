@@ -7,13 +7,11 @@
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
-template <
-	arch::ISA	_ISA_,
-	class		_Type_>
+template <class	_Type_>
 class _Divisor;
 
 template <>
-class _Divisor<arch::ISA::SSE2, int32> {
+class _Divisor<int32> {
 public:
 	_Divisor() noexcept = default;
 
@@ -50,7 +48,10 @@ private:
 			__shift = 30;
 		}
 		else if (__absolute_divisor > 1) {
-			__shift = 31 - math::count_leading_zero_bits(static_cast<uint32>(__absolute_divisor - 1));
+			ulong32 __leading_zeros;
+			_BitScanReverse(&__leading_zeros, static_cast<uint32>(__absolute_divisor - 1));
+
+			__shift = __leading_zeros;
 			__multiplier = int32((int64(1) << (32 + __shift)) / __absolute_divisor - ((int64(1) << 32) - 1));
 		}
 		else {
@@ -80,7 +81,7 @@ private:
 };
 
 template <>
-class _Divisor<arch::ISA::SSE2, uint32> {
+class _Divisor<uint32> {
 public:
 	_Divisor() noexcept = default;
 
@@ -128,7 +129,9 @@ private:
 				break;
 			default:
 				{
-					const auto __leading_zeros = 32 - math::count_leading_zero_bits(__divisor - 1u);
+					ulong32 __leading_zeros;
+					_BitScanReverse(&__leading_zeros, static_cast<uint32>(__divisor - 1u));
+					++__leading_zeros;
 
 					__multiplier = 1 + uint32((uint64(uint32(
 						__leading_zeros < 32 ? 1 << __leading_zeros : 0) - __divisor) << 32) / __divisor);
@@ -146,7 +149,7 @@ private:
 		int32 __shift1,
 		int32 __shift2) noexcept
 	{
-		_multiplier = _mm_set1_epi32(__multiplier);
+		_multiplier = _mm_set1_epi32(static_cast<int32>(__multiplier));
 		_shift1		= _mm_set_epi32(0, 0, 0, __shift1);
 		_shift2		= _mm_set_epi32(0, 0, 0, __shift2);
 	}
@@ -157,7 +160,7 @@ private:
 };
 
 template <>
-class _Divisor<arch::ISA::SSE2, int16> {
+class _Divisor<int16> {
 public:
 	_Divisor() noexcept = default;
 
@@ -194,7 +197,10 @@ private:
 			__shift = 14;
 		}
 		else if (__absolute_divisor > 1) {
-			__shift = 15 - math::count_leading_zero_bits(uint32(__absolute_divisor - 1));
+			ulong32 __leading_zeros;
+			_BitScanReverse(&__leading_zeros, static_cast<uint16>(__absolute_divisor - 1));
+
+			__shift = __leading_zeros;
 			__multiplier = int32((int32(1) << (16 + __shift)) / __absolute_divisor - ((int64(1) << 16) - 1));
 		}
 		else {
@@ -209,13 +215,13 @@ private:
 	}
 
 	raze_always_inline void __init(
-		int32 __multiplier,
-		int32 __shift,
-		int32 __sign) noexcept
+		int16 __multiplier,
+		int16 __shift,
+		int16 __sign) noexcept
 	{
-		_multiplier = _mm_set1_epi32(__multiplier);
-		_sign = _mm_set1_epi32(__sign);
-		_shift = _mm_cvtsi32_si128(__shift);
+		_multiplier = _mm_set1_epi16(__multiplier);
+		_sign		= _mm_set1_epi32(__sign);
+		_shift		= _mm_cvtsi32_si128(__shift);
 	}
 
 	__m128i _sign;
@@ -224,7 +230,7 @@ private:
 };
 
 template <>
-class _Divisor<arch::ISA::SSE2, uint16> {
+class _Divisor<uint16> {
 public:
 	_Divisor() noexcept = default;
 
@@ -234,8 +240,8 @@ public:
 
 	_Divisor(
 		uint16 __multiplier,
-		int16  __shift1,
-		int16  __shift2) noexcept
+		int32  __shift1,
+		int32  __shift2) noexcept
 	{
 		__init(__multiplier, __shift1, __shift2);
 	}
@@ -263,19 +269,20 @@ private:
 				break;
 			case 1:
 				__multiplier = 1;
-				__shift1 = __shift2 = 0;
 				break;
 			case 2:
 				__multiplier = 1;
 				__shift1 = 1;
-				__shift2 = 0;
 				break;
 			default:
 				{
-					const auto __leading_zeros = 16 - math::count_leading_zero_bits(static_cast<uint16>(__divisor - 1));
+					ulong32 __leading_zeros;
+					_BitScanReverse(&__leading_zeros, static_cast<uint16>(__divisor - 1u));
+					++__leading_zeros;
 
-					__multiplier = 1u + uint16((uint32((1u << __leading_zeros) - __divisor) << 16) / __divisor);
+					const auto __power = uint16(1 << __leading_zeros);
 
+					__multiplier = 1u + uint16((uint32(__power - __divisor) << 16) / __divisor);
 					__shift1 = 1; 
 					__shift2 = __leading_zeros - 1;
 				}
@@ -289,13 +296,13 @@ private:
 		int32 __shift1,
 		int32 __shift2) noexcept
 	{
-		_multiplier = _mm_set1_epi32(__multiplier);
-		_shift1		= _mm_set_epi32(0, 0, 0, __shift1);
-		_shift2		= _mm_set_epi32(0, 0, 0, __shift2);
+		_multiplier = _mm_set1_epi16(static_cast<int16>(__multiplier));
+		_shift1		= _mm_setr_epi32(__shift1, 0, 0, 0);
+		_shift2		= _mm_setr_epi32(__shift2, 0, 0, 0);
 	}
 
-	__m128i _shift2;
 	__m128i _shift1;
+	__m128i _shift2;
 	__m128i _multiplier;
 };
 
