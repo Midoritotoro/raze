@@ -17,10 +17,8 @@ inline constexpr bool __is_native_mask_store_supported_v<arch::ISA::AVX512VLF, 1
 template <sizetype _TypeSize_>
 inline constexpr bool __is_native_mask_store_supported_v<arch::ISA::AVX512VLBW, 128, _TypeSize_> = true;
 
-#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 template <sizetype _TypeSize_>
 inline constexpr bool __is_native_mask_store_supported_v<arch::ISA::AVX2, 256, _TypeSize_> = (_TypeSize_ == 4) || (_TypeSize_ == 8);
-#endif
 
 template <sizetype _TypeSize_>
 inline constexpr bool __is_native_mask_store_supported_v<arch::ISA::AVX512VLF, 256, _TypeSize_> = (_TypeSize_ == 4) || (_TypeSize_ == 8);

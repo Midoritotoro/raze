@@ -177,6 +177,7 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/MaskElementReference.h
     src/raze/datapar/bitwise/SimdElementReference.h
     src/raze/datapar/bitwise/SimdBoolReference.h
+    src/raze/datapar/bitwise/MaskIntrin.h
     src/raze/datapar/bitwise/FirstN.h
     src/raze/datapar/bitwise/ToK.h
     src/raze/datapar/bitwise/ToGPR.h
@@ -198,6 +199,7 @@ set(PRIVATE_HEADERS
     src/raze/datapar/compare/Equal.h
     src/raze/datapar/compare/NotEqual.h
 
+    src/raze/datapar/memory/MaskStoreIntrin.h
     src/raze/datapar/memory/CompressStore.h
     src/raze/datapar/memory/Load.h
     src/raze/datapar/memory/Store.h
@@ -267,6 +269,7 @@ set(PUBLIC_HEADERS
     include/raze/algorithm/batch/ForEach.h
     include/raze/algorithm/batch/ForEachN.h
 
+    include/raze/compatibility/MsvcIntrinWorkaround.h
     include/raze/compatibility/AlignmentMacros.h
     include/raze/compatibility/BranchPrediction.h
     include/raze/compatibility/CallingConventions.h
@@ -416,24 +419,50 @@ if((CMAKE_SYSTEM_PROCESSOR STREQUAL "i686") OR (CMAKE_SYSTEM_PROCESSOR STREQUAL 
 endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    if(CMAKE_BUILD_TYPE MATCHES "Debug")
-        set(_OPT_FLAG /Od)
-    else()
-        set(_OPT_FLAG /O2)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(-g -Ob3) 
+    elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O2 -Ot -Ob3 -GS- -Oy)
     endif()
+
+    # target_link_options(raze PRIVATE "/LTCG;/opt:ref,icf;")
 
     target_compile_options(
         raze 
         PRIVATE
+            /bigobj
             /permissive-
             /W4
+            
             /utf-8
+
             /MP
             /EHsc
+
+            /guard:cf
+
+            /w15038 
+            /w14265 
+            /wd4018
+            /wd4100
+            /wd4242
+            /wd4244
+            /wd4245
+            /wd4267
+            /wd4305
+            /wd4324
+            /wd4389
+            /wd4456
+            /wd4457
+            /wd4458
+            /wd4459
+            /wd4611
+            /wd4702
+            /wd4828
+
             /Zi
-            ${_OPT_FLAG}
             /Zc:__cplusplus
-    )
+    )   
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
     
     target_compile_options(

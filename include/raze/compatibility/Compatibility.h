@@ -35,6 +35,8 @@
 #include <raze/compatibility/Warnings.h>
 
 #include <raze/compatibility/StaticOperators.h>
+#include <raze/compatibility/MsvcIntrinWorkaround.h>
+
 #include <cstddef>
 
 raze_disable_warning_msvc(4067)

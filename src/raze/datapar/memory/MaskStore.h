@@ -4,6 +4,7 @@
 #include <src/raze/datapar/memory/Store.h>
 #include <src/raze/datapar/shuffle/Blend.h>
 #include <src/raze/datapar/bitwise/MaskConvert.h>
+#include <src/raze/datapar/memory/MaskStoreIntrin.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -69,26 +70,23 @@ struct _Mask_store<arch::ISA::AVX2, 128, _DesiredType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-#if defined(raze_cpp_msvc)
-		_ReadWriteBarrier();
-#endif
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-			_mm_maskstore_epi64(reinterpret_cast<long long*>(__address),
+			__vpmaskmovq(reinterpret_cast<long long*>(__address),
 				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask),
 				__intrin_bitcast<__m128i>(__vector));
 
 		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-			_mm_maskstore_epi32(reinterpret_cast<int*>(__address),
+			__vpmaskmovd(reinterpret_cast<int*>(__address),
 				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask),
 				__intrin_bitcast<__m128i>(__vector));
 
 		else if constexpr (__is_pd_v<_DesiredType_>)
-			_mm_maskstore_pd(reinterpret_cast<double*>(__address),
+			__vmaskmovpd(reinterpret_cast<double*>(__address),
 				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask),
 				__intrin_bitcast<__m128d>(__vector));
 
 		else if constexpr (__is_ps_v<_DesiredType_>)
-			_mm_maskstore_ps(reinterpret_cast<float*>(__address),
+			__vmaskmovps(reinterpret_cast<float*>(__address),
 				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask),
 				__intrin_bitcast<__m128>(__vector));
 
@@ -96,9 +94,6 @@ struct _Mask_store<arch::ISA::AVX2, 128, _DesiredType_>:
 			_Store<arch::ISA::AVX2, 128>()(__address, _Blend<arch::ISA::AVX2, 128, _DesiredType_>()(
 				__vector, _Load<arch::ISA::AVX2, 128, _IntrinType_>()(__address, __alignment_policy), 
 				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>(__mask)), __alignment_policy);
-#if defined(raze_cpp_msvc)
-		_ReadWriteBarrier();
-#endif
 	}
 };
 
@@ -116,36 +111,29 @@ struct _Mask_store<arch::ISA::AVX2, 256, _DesiredType_> {
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-#if defined(raze_cpp_msvc)
-		_ReadWriteBarrier();
-#endif
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-			_mm256_maskstore_epi64(reinterpret_cast<long long*>(__address),
+			__vpmaskmovq(reinterpret_cast<long long*>(__address),
 				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask),
 				__intrin_bitcast<__m256i>(__vector));
 
 		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-			_mm256_maskstore_epi32(reinterpret_cast<int*>(__address),
+			__vpmaskmovd(reinterpret_cast<int*>(__address),
 				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask),
 				__intrin_bitcast<__m256i>(__vector));
 
 		else if constexpr (__is_pd_v<_DesiredType_>)
-			_mm256_maskstore_pd(reinterpret_cast<double*>(__address),
+			__vmaskmovpd(reinterpret_cast<double*>(__address),
 				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask),
 				__intrin_bitcast<__m256d>(__vector));
 
 		else if constexpr (__is_ps_v<_DesiredType_>)
-			_mm256_maskstore_ps(reinterpret_cast<float*>(__address),
+			__vmaskmovps(reinterpret_cast<float*>(__address),
 				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask),
 				__intrin_bitcast<__m256>(__vector));
-
 		else
 			_Store<arch::ISA::AVX2, 256>()(__address, _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(
 				__vector, _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__address, __alignment_policy),
 				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>(__mask)), __alignment_policy);
-#if defined(raze_cpp_msvc)
-		_ReadWriteBarrier();
-#endif
 	}
 };
 

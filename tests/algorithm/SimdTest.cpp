@@ -84,7 +84,7 @@ void testMethods() {
     }
 
     {
-        const auto tests_for_mask = [](bool value) {
+        const auto tests_for_mask = [](Mask mask) {
             alignas(64) T src[N];
             alignas(64) T dst[N];
 
@@ -94,7 +94,6 @@ void testMethods() {
             for (size_t i = 0; i < N; ++i)
                 dst[i] = static_cast<T>(100 + i);
 
-            Mask mask = false;
             Simd loaded_unaligned = raze::datapar::maskz_load<Simd>(src, mask);
 
             for (size_t i = 0; i < N; ++i) {
@@ -134,8 +133,14 @@ void testMethods() {
             }
         };
 
+        bool maskArray[N];
+
+        for (int i = 0; i < N; ++i)
+            maskArray[i] = ((i % 2) == 0);
+
         tests_for_mask(true);
         tests_for_mask(false);
+        tests_for_mask(maskArray);
     }
 
     {

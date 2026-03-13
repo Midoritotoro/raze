@@ -10,5 +10,6 @@
 #include <src/raze/datapar/memory/NonTemporalStore.h>
 #include <src/raze/datapar/memory/Store.h>
 #include <src/raze/datapar/memory/StreamingFence.h>
+#include <src/raze/datapar/memory/MaskStoreIntrin.h>
 #include <src/raze/datapar/memory/MaskLoadSupport.h>
 #include <src/raze/datapar/memory/MaskStoreSupport.h>

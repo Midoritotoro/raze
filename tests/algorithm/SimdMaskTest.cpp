@@ -238,11 +238,10 @@ void testSimdMaskMethods() {
     {
         using M1 = Mask;
         using M2 = typename raze::datapar::simd<Arch, T, _Width_>::mask_type;
-        using M3 = typename raze::datapar::simd<Arch, float, _Width_>::mask_type;
-        using M4 = typename raze::datapar::simd<raze::arch::ISA::SSE2, T, 128>::mask_type;
+        using M3 = typename raze::datapar::simd<Arch, typename raze::IntegerForSizeof<T>::Unsigned, _Width_>::mask_type;
         static_assert(raze::datapar::__compatible_mask<M1, M2>);
-       // static_assert((raze::datapar::__compatible_mask<M1, M3>);
-       // static_assert(!raze::datapar::__compatible_mask<M1, M4>);
+        static_assert(raze::datapar::__compatible_mask<M1, M3>);
+        static_assert(raze::datapar::__compatible_mask<M2, M3>);
     }
 }
 
