@@ -454,8 +454,7 @@ __simd_nodiscard_inline _DataparType_ mask_load(
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Mask_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
-		reinterpret_cast<const typename _RawDataparType::value_type*>(__address),
-		__data(__mask), __data(__additional_source), __policy);
+		__address, __data(__mask), __data(__additional_source), __policy);
 }
 
 /**
@@ -484,7 +483,7 @@ raze_always_inline void mask_store(
 { 
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	_Mask_store<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
-		reinterpret_cast<typename _RawDataparType::value_type*>(__address), __data(__mask), __data(__datapar), __policy);
+		__address, __data(__mask), __data(__datapar), __policy);
 }
 
 template <class _DataparType_>

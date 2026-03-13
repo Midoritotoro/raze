@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/type_traits/TypeTraits.h>
+
 #include <src/raze/datapar/bitwise/Testz.h>
 #include <src/raze/datapar/bitwise/TestAllOnes.h>
 #include <src/raze/datapar/MaskTypeSelector.h>
@@ -63,18 +63,19 @@ public:
 		return __elements_count;
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool
+	raze_nodiscard raze_always_inline static bool
 		__all_of(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
-			constexpr auto __max_for_bits = ((sizeof(mask_type) * 8) == __bit_width())
+			constexpr auto __max_for_bits = ((sizeof(mask_type) * 8) == __elements())
 				? math::__maximum_integral_limit<mask_type>()
-				: mask_type(((mask_type(1) << __bit_width()) - 1));
+				: mask_type(((mask_type(1) << __elements()) - 1));
 
+#if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
 				return _ktestc_mask8_u8(__mask, __max_for_bits);
 
-			else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
+			else if constexpr (sizeof(mask_type) == 2 && __has_avx512dq_support_v<__isa>)
 				return _ktestc_mask16_u8(__mask, __max_for_bits);
 
 			else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
@@ -85,16 +86,20 @@ public:
 
 			else
 				return (__mask == __max_for_bits);
+#elif defined(raze_cpp_msvc)
+			return (__mask == __max_for_bits);
+#endif
 		}
 		else {
 			return _Test_all_ones<__isa, __bit_width()>()(__data(__mask));
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool
+	raze_nodiscard raze_always_inline static bool
 		__none_of(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 			if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
 				return _kortestz_mask16_u8(__mask, __mask);
 
@@ -109,28 +114,32 @@ public:
 
 			else
 				return (__mask == 0);
+#elif defined(raze_cpp_msvc)
+			return (__mask == 0);
+#endif
 		}
 		else {
 			return _Testz<__isa, __bit_width()>()(__data(__mask));
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool
+	raze_nodiscard raze_always_inline static bool
 		__some_of(mask_type __mask) noexcept
 	{
 		return !__all_of(__mask);
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool
+	raze_nodiscard raze_always_inline static bool
 		__any_of(mask_type __mask) noexcept
 	{
 		return !__none_of(__mask);
 	}
 
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		mask_type __bit_and(mask_type __left, mask_type __right) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
+#if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
 				return _kand_mask8(__left, __right);
 
@@ -145,16 +154,20 @@ public:
 
 			else
 				return __left & __right;
+#elif defined(raze_cpp_msvc)
+			return __left & __right;
+#endif
 		}
 		else {
 			return __left & __right;
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		mask_type __bit_or(mask_type __left, mask_type __right) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
+#if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
 				return _kor_mask8(__left, __right);
 
@@ -169,16 +182,20 @@ public:
 
 			else
 				return __left | __right;
+#elif defined(raze_cpp_msvc)
+			return __left | __right;
+#endif
 		}
 		else {
 			return __left | __right;
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__bit_not(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
+#if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
 				return _knot_mask8(__mask);
 
@@ -193,18 +210,22 @@ public:
 
 			else
 				return ~__mask;
+#elif defined(raze_cpp_msvc)
+			return ~__mask;
+#endif
 		}
 		else {
 			return ~__mask;
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__bit_xor(
 			mask_type __left,
 			mask_type __right) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
+#if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
 				return _kxor_mask8(__left, __right);
 
@@ -219,24 +240,27 @@ public:
 
 			else
 				return __left ^ __right;
+#elif defined(raze_cpp_msvc)
+			return __left ^ __right;
+#endif
 		}
 		else {
 			return __left ^ __right;
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__broadcast(bool __value) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
-			return _First_n<__isa, __width, _Type_>()(__elements() * __value);
+			return _First_n<__isa, __width, _Type_>()(__elements() * int32(__value));
 		}
 		else {
 			return __value ? mask_type::broadcast(-1) : mask_type::zero();
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		int __count_set(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -248,7 +272,7 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		int32 __count_trailing_zero_bits(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -269,13 +293,13 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		int32 __count_leading_zero_bits(mask_type __mask) noexcept
 	{
 		return __count_leading_zero_bits_any(__mask);
 	}
 
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		int32 __count_trailing_one_bits(mask_type __mask) noexcept
 	{
 		if constexpr (__used_bits >= 8) {
@@ -295,7 +319,7 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		int32 __count_leading_one_bits(mask_type __mask) noexcept
 	{
 		if constexpr (__bit_width() >= 8) {
@@ -316,7 +340,7 @@ public:
 	}
 
 	template <sizetype _Bits_>
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__from_bitset(const std::bitset<_Bits_>& __bitset) noexcept
 	{
 		static_assert(_Bits_ <= 64, "Not supported");
@@ -331,7 +355,7 @@ public:
 	template <
 		class _UnwrappedForwardIterator_,
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__copy_from_unchecked(
 			_UnwrappedForwardIterator_	__first,
 			_AlignmentPolicy_&&			__alignment_policy) noexcept
@@ -343,7 +367,7 @@ public:
 	template <
 		class _UnwrappedOutputIterator_,
 		class _AlignmentPolicy_>
-	raze_always_inline static constexpr void
+	raze_always_inline static void
 		__copy_to_unchecked(
 			_UnwrappedOutputIterator_	__first,
 			mask_type					__mask,
@@ -352,7 +376,7 @@ public:
 		__copy_to_scalar(__first, __mask, __alignment_policy);
 	}
 
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__clear_right(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -364,7 +388,7 @@ public:
 		}
 	}
 
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__clear_left(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
@@ -381,7 +405,7 @@ private:
 	template <
 		class _UnwrappedForwardIterator_,
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__copy_from_scalar(
 			_UnwrappedForwardIterator_	__first,
 			_AlignmentPolicy_&&			__alignment_policy) noexcept
@@ -403,7 +427,7 @@ private:
 	template <
 		class _UnwrappedOutputIterator_,
 		class _AlignmentPolicy_>
-	raze_always_inline static constexpr void
+	raze_always_inline static void
 		__copy_to_scalar(
 			_UnwrappedOutputIterator_	__first,
 			mask_type					__mask,
@@ -420,7 +444,7 @@ private:
 	}
 
 	template <class _AnyMaskType_>
-	raze_nodiscard raze_always_inline static constexpr
+	raze_nodiscard raze_always_inline static
 		int32 __count_leading_zero_bits_any(_AnyMaskType_ __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<_AnyMaskType_>) {

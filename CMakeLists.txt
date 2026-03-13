@@ -431,7 +431,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             /MP
             /EHsc
             /Zi
-            # ${_OPT_FLAG}
+            ${_OPT_FLAG}
             /Zc:__cplusplus
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")

@@ -131,8 +131,7 @@ struct _First_n<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 
         if constexpr (sizeof(_DesiredType_) >= 4) {
             using _MaskType = __mmask_for_elements_t<__length>;
-
-            return (__elements >= __length) ? __length : _MaskType((_MaskType(1) << __elements) - 1);
+            return (__elements == 0) ? 0 : _MaskType((_MaskType(1) << __elements) - 1);
         } else {
             const auto __bytes = __elements * sizeof(_DesiredType_);
 

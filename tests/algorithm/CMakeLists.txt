@@ -8,7 +8,6 @@ if (PROJECT_IS_TOP_LEVEL)
     find_package(raze REQUIRED COMPONENTS raze)
 endif()
 
-
 enable_testing()
 macro(raze_algorithm_add_test filename)
     add_executable(${filename} ${filename}.cpp)

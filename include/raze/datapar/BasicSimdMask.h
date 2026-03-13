@@ -88,26 +88,26 @@ public:
 		__copy_to_unchecked(algorithm::__unwrap_iterator(__first), __alignment_policy);
 	}
 
-	raze_always_inline constexpr void clear_left() noexcept {
+	raze_always_inline void clear_left() noexcept {
 		_mask = _Impl::__clear_left(_mask);
 	}
 
-	raze_always_inline constexpr void clear_right() noexcept {
+	raze_always_inline void clear_right() noexcept {
 		_mask = _Impl::__clear_right(_mask);
 	}
 
-	constexpr raze_always_inline bool operator[](int32 __index) const noexcept {
+	raze_always_inline bool operator[](int32 __index) const noexcept {
 		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
 	}
 
-	constexpr raze_always_inline __mask_element_reference<_ISA_, 
+	raze_always_inline __mask_element_reference<_ISA_, 
 		_Type_, _SimdWidth_> operator[](int32 __index) noexcept 
 	{
 		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
 	}
 	
 	template <class _OtherMask_>
-	friend constexpr raze_always_inline simd_mask operator&(
+	friend raze_always_inline simd_mask operator&(
 		const simd_mask&	__left,
 		const _OtherMask_&	__right) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
@@ -115,7 +115,7 @@ public:
 	}
 
 	template <class _OtherMask_>
-	friend constexpr raze_always_inline simd_mask operator|(
+	friend raze_always_inline simd_mask operator|(
 		const simd_mask&	__left,
 		const _OtherMask_&	__right) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
@@ -123,7 +123,7 @@ public:
 	}
 
 	template <class _OtherMask_>
-	friend constexpr raze_always_inline simd_mask operator^(
+	friend raze_always_inline simd_mask operator^(
 		const simd_mask&	__left,
 		const _OtherMask_&	__right) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
@@ -131,102 +131,102 @@ public:
 	}
 
 	template <class _OtherMask_>
-	constexpr raze_always_inline simd_mask& 
-		operator&=(const _OtherMask_& __other) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
+	raze_always_inline simd_mask& operator&=(const _OtherMask_& __other) noexcept 
+		requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
 		return *this = (*this & __other);
 	}
 
 	template <class _OtherMask_>
-	constexpr raze_always_inline simd_mask&
-		operator|=(const _OtherMask_& __other) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
+	raze_always_inline simd_mask& operator|=(const _OtherMask_& __other) noexcept 
+		requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
 		return *this = (*this | __other);
 	}
 
 	template <class _OtherMask_>
-	constexpr raze_always_inline simd_mask& 
-		operator^=(const _OtherMask_& __other) noexcept requires(__compatible_mask<simd_mask, _OtherMask_>)
+	raze_always_inline simd_mask& operator^=(const _OtherMask_& __other) noexcept 
+		requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
 		return *this = (*this ^ __other);
 	}
 
-	constexpr raze_always_inline simd_mask operator!() const noexcept {
+	raze_always_inline simd_mask operator!() const noexcept {
 		return _Impl::__bit_not(_mask);
 	}
 
-	friend constexpr raze_always_inline simd_mask operator!=(
+	friend raze_always_inline simd_mask operator!=(
 		const simd_mask& __left,
 		const simd_mask& __right) noexcept
 	{
 		return _Impl::__bit_xor(__left, __right);
 	}
 
-	friend constexpr raze_always_inline simd_mask operator==(
+	friend raze_always_inline simd_mask operator==(
 		const simd_mask& __left,
 		const simd_mask& __right) noexcept
 	{
 		return !(__left != __right);
 	}
 
-	static constexpr raze_always_inline int32 bit_width() noexcept {
+	raze_nodiscard static constexpr raze_always_inline int32 bit_width() noexcept {
 		return _Impl::__bit_width();
 	}
 
-	static constexpr raze_always_inline int32 elements() noexcept {
+	raze_nodiscard static constexpr raze_always_inline int32 elements() noexcept {
 		return _Impl::__elements();
 	}
 
-	raze_nodiscard raze_always_inline constexpr bool __all_of() const noexcept {
+	raze_nodiscard raze_always_inline bool __all_of() const noexcept {
 		return _Impl::__all_of(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr bool __any_of() const noexcept {
+	raze_nodiscard raze_always_inline bool __any_of() const noexcept {
 		return _Impl::__any_of(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr bool __none_of() const noexcept {
+	raze_nodiscard raze_always_inline bool __none_of() const noexcept {
 		return _Impl::__none_of(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr bool __some_of() const noexcept {
+	raze_nodiscard raze_always_inline bool __some_of() const noexcept {
 		return _Impl::__some_of(_mask);
 	}
 
-	raze_always_inline constexpr operator mask_type() const noexcept {
+	raze_always_inline operator mask_type() const noexcept {
 		return _mask;
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 __count_set() const noexcept {
+	raze_nodiscard raze_always_inline int32 __count_set() const noexcept {
 		return _Impl::__count_set(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 
+	raze_nodiscard raze_always_inline int32 
 		__count_trailing_zero_bits() const noexcept
 	{
 		return _Impl::__count_trailing_zero_bits(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32
+	raze_nodiscard raze_always_inline int32
 		__count_leading_zero_bits() const noexcept
 	{
 		return _Impl::__count_leading_zero_bits(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 
+	raze_nodiscard raze_always_inline int32 
 		__count_trailing_one_bits() const noexcept 
 	{
 		return _Impl::__count_trailing_one_bits(_mask);
 	}
 
-	raze_nodiscard raze_always_inline constexpr int32 
+	raze_nodiscard raze_always_inline int32 
 		__count_leading_one_bits() const noexcept 
 	{
 		return _Impl::__count_leading_one_bits(_mask);
 	}
 
 	template <sizetype _Bits_>
-	raze_nodiscard raze_always_inline static constexpr mask_type
+	raze_nodiscard raze_always_inline static mask_type
 		__from_bitset(const std::bitset<_Bits_>& __bitset) noexcept 
 	{
 		return _Impl::__from_bitset(__bitset);
@@ -235,7 +235,7 @@ public:
 	template <
 		class _UnwrappedForwardIterator_, 
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline constexpr void 
+	raze_nodiscard raze_always_inline void 
 		__copy_from_unchecked(
 			const _UnwrappedForwardIterator_	__first,
 			_AlignmentPolicy_&&					__alignment_policy) noexcept 
@@ -246,7 +246,7 @@ public:
 	template <
 		class _UnwrappedOutputIterator_, 
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline constexpr void 
+	raze_nodiscard raze_always_inline void 
 		__copy_to_unchecked(
 			_UnwrappedOutputIterator_	__first,
 			_AlignmentPolicy_&&			__alignment_policy) noexcept

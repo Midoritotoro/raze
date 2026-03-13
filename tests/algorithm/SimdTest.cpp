@@ -84,58 +84,61 @@ void testMethods() {
     }
 
     {
-        alignas(64) T src[N];
-        alignas(64) T dst[N];
+        const auto tests_for_mask = [](bool value) {
+            alignas(64) T src[N];
+            alignas(64) T dst[N];
 
-        for (size_t i = 0; i < N; ++i) 
-            src[i] = static_cast<T>(i + 1);
+            for (size_t i = 0; i < N; ++i)
+                src[i] = static_cast<T>(i + 1);
 
-        for (size_t i = 0; i < N; ++i) 
-            dst[i] = static_cast<T>(100 + i);
+            for (size_t i = 0; i < N; ++i)
+                dst[i] = static_cast<T>(100 + i);
 
-        Mask mask = false;
+            Mask mask = false;
+            Simd loaded_unaligned = raze::datapar::maskz_load<Simd>(src, mask);
 
-        Simd loaded_unaligned = raze::datapar::maskz_load<Simd>(src, mask);
+            for (size_t i = 0; i < N; ++i) {
+                if (mask[i])
+                    raze_assert(loaded_unaligned[i] == src[i]);
+                else
+                    raze_assert(loaded_unaligned[i] == T(0));
+            }
 
-        for (size_t i = 0; i < N; ++i) {
-            if (mask[i])
-                raze_assert(loaded_unaligned[i] == src[i]);
-            else
-                raze_assert(loaded_unaligned[i] == T(0));
-        }
+            Simd loaded_aligned = raze::datapar::maskz_load<Simd>(src, mask, raze::datapar::aligned_policy{});
+            for (size_t i = 0; i < N; ++i) {
+                if (mask[i])
+                    raze_assert(loaded_aligned[i] == src[i]);
+                else
+                    raze_assert(loaded_aligned[i] == T(0));
+            }
 
-        Simd loaded_aligned = raze::datapar::maskz_load<Simd>(src, mask, raze::datapar::aligned_policy{});
-        for (size_t i = 0; i < N; ++i) {
-            if (mask[i])
-                raze_assert(loaded_aligned[i] == src[i]);
-            else
-                raze_assert(loaded_aligned[i] == T(0));
-        }
+            Simd v(77);
+            raze::datapar::mask_store(dst, v, mask);
 
+            for (size_t i = 0; i < N; ++i) {
+                if (mask[i])
+                    raze_assert(dst[i] == T(77));
+                else
+                    raze_assert(dst[i] == T(100 + i));
+            }
 
-       Simd v(77);
-       raze::datapar::mask_store(dst, v, mask);
+            for (size_t i = 0; i < N; ++i)
+                dst[i] = static_cast<T>(200 + i);
 
-        for (size_t i = 0; i < N; ++i) {
-            if (mask[i])
-                raze_assert(dst[i] == T(77));
-            else
-                raze_assert(dst[i] == T(100 + i));
-        }
+            raze::datapar::mask_store(dst, v, mask, raze::datapar::aligned_policy{});
+            for (size_t i = 0; i < N; ++i) {
+                if (mask[i])
+                    raze_assert(dst[i] == T(77));
+                else
+                    raze_assert(dst[i] == T(200 + i));
+            }
+        };
 
-        for (size_t i = 0; i < N; ++i) 
-            dst[i] = static_cast<T>(200 + i);
-
-        raze::datapar::mask_store(dst, v, mask, raze::datapar::aligned_policy{});
-        for (size_t i = 0; i < N; ++i) {
-            if (mask[i])
-                raze_assert(dst[i] == T(77));
-            else
-                raze_assert(dst[i] == T(200 + i));
-        }
+        tests_for_mask(true);
+        tests_for_mask(false);
     }
 
-    /*{
+    {
         alignas(64) T src[N];
         for (size_t i = 0; i < N; ++i) src[i] = static_cast<T>(i + 1);
 
@@ -352,137 +355,6 @@ void testMethods() {
         raze_assert(raze::datapar::find_last_set(mask) == 0);
     }
 
-    auto makeMask = [N](std::initializer_list<size_t> bits) {
-        Mask m{};
-
-        for (size_t i = 0; i < N; ++i)
-            m[i] = false;
-
-        for (size_t b : bits)
-            if (b < N)
-                m[b] = true;
-
-        return m;
-        };
-
-    {
-        {
-            Mask m{};
-            for (size_t i = 0; i < N; ++i) m[i] = false;
-
-            raze_assert(raze::datapar::count_set(m) == 0);
-            raze_assert(!raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == N);
-            raze_assert(raze::datapar::find_last_set(m) == N);
-        }
-
-        {
-            Mask m{};
-            for (size_t i = 0; i < N; ++i) m[i] = true;
-
-            raze_assert(raze::datapar::count_set(m) == N);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == 0);
-            raze_assert(raze::datapar::find_last_set(m) == 0);
-        }
-
-        for (size_t i = 0; i < N; ++i) {
-            Mask m{};
-            for (size_t j = 0; j < N; ++j) m[j] = false;
-            m[i] = true;
-
-            raze_assert(raze::datapar::count_set(m) == 1);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == i);
-            auto f = raze::datapar::find_last_set(m);
-            raze_assert(f == N - i - 1);
-        }
-
-        {
-            Mask m{};
-            for (size_t i = 0; i < N; ++i)
-                m[i] = (i % 2 == 0);
-
-            size_t expectedCount = (N + 1) / 2;
-
-            raze_assert(raze::datapar::count_set(m) == expectedCount);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == 0);
-
-            size_t last = (N % 2 == 0 ? 1 : N - 1);
-            raze_assert(raze::datapar::find_last_set(m) == last);
-        }
-
-        {
-            std::initializer_list<size_t> ilist = { 1, 3, 4, 6, 7, 8, 9, 11, 14 };
-            Mask m = makeMask(ilist);
-
-            size_t expectedCount = std::count_if(ilist.begin(), ilist.end(), [N](int val) { return val < N; });
-
-            raze_assert(raze::datapar::count_set(m) == expectedCount);
-            raze_assert(raze::datapar::find_first_set(m) == 1);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
-        }
-    }
-
-    {
-        {
-            Mask m{};
-            for (size_t i = 0; i < N; ++i) m[i] = false;
-
-            raze_assert(raze::datapar::find_first_not_set(m) == 0);
-            raze_assert(raze::datapar::find_last_not_set(m) == 0);
-        }
-
-        {
-            Mask m{};
-            for (size_t i = 0; i < N; ++i) m[i] = true;
-
-            raze_assert(raze::datapar::find_first_not_set(m) == N);
-            raze_assert(raze::datapar::find_last_not_set(m) == N);
-        }
-
-        for (size_t i = 0; i < N; ++i) {
-            Mask m{};
-            for (size_t j = 0; j < N; ++j) m[j] = true;
-            m[i] = false;
-
-            raze_assert(raze::datapar::find_first_not_set(m) == i);
-            raze_assert(raze::datapar::find_last_not_set(m) == (N - i - 1));
-        }
-
-        {
-            Mask m{};
-            for (size_t i = 0; i < N; ++i)
-                m[i] = (i % 2 == 0);
-
-            size_t expectedFirst = (N > 1 ? 1 : N);
-
-            raze_assert(raze::datapar::find_first_not_set(m) == expectedFirst);
-            raze_assert(raze::datapar::find_last_not_set(m) == 0);
-        }
-
-        {
-            std::initializer_list<size_t> ilist = { 1,3,4,6,7,8,9,11,14 };
-            Mask m = makeMask(ilist);
-
-            size_t expectedFirst = 0;
-            while (expectedFirst < N && m[expectedFirst]) ++expectedFirst;
-
-            size_t expectedLast = N;
-            for (size_t i = 0; i < N; ++i)
-                if (!m[i]) expectedLast = N - i - 1;
-
-            raze_assert(raze::datapar::find_first_not_set(m) == expectedFirst);
-            raze_assert(raze::datapar::find_last_not_set(m) == expectedLast);
-        }
-    }
-
     {
         alignas(64) T arrA[N], arrB[N];
 
@@ -590,7 +462,7 @@ void testMethods() {
                 }
             }
         }
-    }*/
+    }
 
 }
 
@@ -613,25 +485,25 @@ void testMethods() {
 }
 
 int main() {
-    //testMethods<raze::arch::ISA::SSE2, 128>();
-    //testMethods<raze::arch::ISA::SSE3, 128>();
-    //testMethods<raze::arch::ISA::SSSE3, 128>();
-    //testMethods<raze::arch::ISA::SSE41, 128>();
-    //testMethods<raze::arch::ISA::SSE42, 128>();
+    testMethods<raze::arch::ISA::SSE2, 128>();
+    testMethods<raze::arch::ISA::SSE3, 128>();
+    testMethods<raze::arch::ISA::SSSE3, 128>();
+    testMethods<raze::arch::ISA::SSE41, 128>();
+    testMethods<raze::arch::ISA::SSE42, 128>();
 
-    //testMethods<raze::arch::ISA::AVX2, 128>();
+    testMethods<raze::arch::ISA::AVX2, 128>();
     testMethods<raze::arch::ISA::AVX2, 256>();
     
-  /*  testMethods<raze::arch::ISA::AVX512F, 512>();
+    testMethods<raze::arch::ISA::AVX512F, 512>();
     testMethods<raze::arch::ISA::AVX512BW, 512>();
     testMethods<raze::arch::ISA::AVX512DQ, 512>();
     testMethods<raze::arch::ISA::AVX512BWDQ, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI, 512>();
     testMethods<raze::arch::ISA::AVX512VBMI2, 512>();
     testMethods<raze::arch::ISA::AVX512VBMIDQ, 512>();
-    testMethods<raze::arch::ISA::AVX512VBMI2DQ, 512>();*/
+    testMethods<raze::arch::ISA::AVX512VBMI2DQ, 512>();
 
-  /*  testMethods<raze::arch::ISA::AVX512VLF, 128>();
+    testMethods<raze::arch::ISA::AVX512VLF, 128>();
     testMethods<raze::arch::ISA::AVX512VLBW, 128>();
     testMethods<raze::arch::ISA::AVX512VLBWDQ, 128>();
     testMethods<raze::arch::ISA::AVX512VLDQ, 128>();
@@ -649,7 +521,7 @@ int main() {
     testMethods<raze::arch::ISA::AVX512VBMIVL, 256>();
     testMethods<raze::arch::ISA::AVX512VBMI2VL, 256>();
     testMethods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
-    testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();*/
+    testMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
 
     return 0;
 }

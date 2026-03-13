@@ -193,7 +193,7 @@ private:
 		const auto __absolute_divisor = std::abs(__divisor);
 
 		if (static_cast<int16>(__divisor) == 0x8000u) {
-			__multiplier = 0x8001;
+			__multiplier = int16(0x8001);
 			__shift = 14;
 		}
 		else if (__absolute_divisor > 1) {
