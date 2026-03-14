@@ -422,10 +422,10 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-g -Ob3) 
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(-O2 -Ot -Ob3 -GS- -Oy)
+        add_compile_options(-O2 -GL-)
     endif()
 
-    # target_link_options(raze PRIVATE "/LTCG;/opt:ref,icf;")
+    target_link_options(raze PRIVATE "/LTCG;/opt:ref,icf;")
 
     target_compile_options(
         raze 
@@ -629,8 +629,8 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
-    enable_testing()
-    add_subdirectory(benchmarks)
+    #enable_testing()
+    #add_subdirectory(benchmarks)
 endif()
 
 if(RAZE_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)

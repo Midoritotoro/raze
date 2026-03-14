@@ -53,9 +53,8 @@ __simd_nodiscard_inline __tail_mask_type<_DataparType_> first_n(uint32 __element
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return __tail_mask_type<_DataparType_>(
-		_First_n_bytes<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__elements * sizeof(typename _RawDataparType::value_type)));
+	return __tail_mask_type<_DataparType_>(_First_n<_RawDataparType::__isa,
+		_RawDataparType::__width, typename _RawDataparType::value_type>()(__elements));
 }
 
 /**
@@ -74,7 +73,6 @@ __simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexce
 	return _Abs<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__datapar));
 }
-
 
 /**
  *  @brief  Computes the horizontal minimum of all lanes.

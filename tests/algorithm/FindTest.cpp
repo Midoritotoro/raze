@@ -162,9 +162,13 @@ int main() {
     testFind<long long>();
     testFind<char>();
 
+    testFind<unsigned int>();
+    testFind<unsigned short>();
+    testFind<unsigned long long>();
+    testFind<unsigned char>();
+
     testFind<float>();
     testFind<double>();
-
 
     testFindIf();
     testFindIfNot();
