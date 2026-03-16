@@ -484,104 +484,81 @@ raze_always_inline void mask_store(
 		__address, __data(__mask), __data(__datapar), __policy);
 }
 
-template <class _DataparType_>
-__simd_nodiscard_inline auto reduce_equal(
-	const _DataparType_& __first,
-	const _DataparType_& __second) noexcept
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	using _ValueType = typename _RawDataparType::value_type;
-	using _ReduceType = typename IntegerForSizeof<_ValueType>::Signed;
-	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
-
-	if constexpr (__is_native_compare_returns_number_v<_RawDataparType>)
-		return reduce((__first == __second), type_traits::plus<>{});
-	else
-		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>((__first == __second)), type_traits::plus<>{});
-
-}
-
-template <
-	class _DataparType_,
-	class _MaskType_>
-__simd_nodiscard_inline auto reduce_equal(
-	const _DataparType_&	__first,
-	const _DataparType_&	__second,
-	const _MaskType_&		__tail_mask) noexcept
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	using _ValueType = typename _RawDataparType::value_type;
-	using _ReduceType = typename IntegerForSizeof<_ValueType>::Signed;
-	using _IntDatapar = __rebind_vector_element_type<_ReduceType, _RawDataparType>;
-
-	if constexpr (__is_native_compare_returns_number_v<_RawDataparType>)
-		return reduce(((__first == __second) & __tail_mask), type_traits::plus<>{});
-	else
-		return reduce(_IntDatapar::zero() - simd_cast<_ReduceType>(((__first == __second) & __tail_mask)), type_traits::plus<>{});
-}
-
 template <class _SimdMask_>
 __simd_nodiscard_inline bool none_of(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__none_of();
 }
 
 template <class _SimdMask_>
 __simd_nodiscard_inline bool all_of(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__all_of();
 }
 
 template <class _SimdMask_>
 __simd_nodiscard_inline bool any_of(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__any_of();
 }
 
 template <class _SimdMask_>
 __simd_nodiscard_inline bool some_of(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<std::remove_cvref_t<_SimdMask_>>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__some_of();
 }
 
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_first_set(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<_SimdMask_>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__count_trailing_zero_bits();
 }
 
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_last_set(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<_SimdMask_>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__count_leading_zero_bits();
 }
 
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_first_not_set(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<_SimdMask_>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__count_trailing_one_bits();
 }
 
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_last_not_set(const _SimdMask_& __mask) noexcept
-	requires(__is_simd_mask_v<_SimdMask_>)
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__count_leading_one_bits();
 }
 
-template <class _SimdMaskType_>
-__simd_nodiscard_inline auto count_set(const _SimdMaskType_& __mask) noexcept
-	requires(__is_simd_mask_v<_SimdMaskType_>)
+template <class _SimdMask_>
+__simd_nodiscard_inline auto count_set(const _SimdMask_& __mask) noexcept
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__count_set();
 }
 
+template <class _SimdMask_>
+__simd_nodiscard_inline void clear_left(_SimdMask_& __mask) noexcept 
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
+{
+	__mask.__clear_left();
+}
+
+template <class _SimdMask_>
+__simd_nodiscard_inline void clear_right(_SimdMask_& __mask) noexcept
+	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
+{
+	__mask.__clear_right();
+}
 
 __RAZE_DATAPAR_NAMESPACE_END

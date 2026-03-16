@@ -178,6 +178,8 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/SimdElementReference.h
     src/raze/datapar/bitwise/SimdBoolReference.h
     src/raze/datapar/bitwise/MaskIntrin.h
+    src/raze/datapar/bitwise/MaskOperations.h
+    src/raze/datapar/bitwise/MaskBits.h
     src/raze/datapar/bitwise/FirstN.h
     src/raze/datapar/bitwise/ToK.h
     src/raze/datapar/bitwise/ToGPR.h
@@ -629,8 +631,8 @@ if(PROJECT_IS_TOP_LEVEL)
 endif()
 
 if(PROJECT_IS_TOP_LEVEL)
-    #enable_testing()
-    #add_subdirectory(benchmarks)
+    enable_testing()
+    add_subdirectory(benchmarks)
 endif()
 
 if(RAZE_INSTALL AND NOT CMAKE_SKIP_INSTALL_RULES)

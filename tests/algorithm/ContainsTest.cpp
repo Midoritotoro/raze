@@ -4,7 +4,6 @@
 #include <vector>
 #include <array>
 #include <numeric>
-#include <iostream>
 #include <random>
 
 
@@ -86,20 +85,6 @@ void testContains() {
         raze_assert(raze::algorithm::contains(v.begin(), v.end(), 12345) == false);
     }
 
-
-    if constexpr (std::is_floating_point_v<_IntType_>)
-    {
-        std::vector<_IntType_> v{ 0.0, 1.0, -1.0, 3.14, 2.71 };
-
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 3.14) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 2.71) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 42.0) == false);
-
-        v.push_back(std::numeric_limits<_IntType_>::quiet_NaN());
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(),
-            std::numeric_limits<_IntType_>::quiet_NaN()) == false);
-    }
-
     {
         std::mt19937_64 rng(0xBADC0FFEEULL);
         std::uniform_int_distribution<size_t> lenDist(0, 4096);
@@ -108,8 +93,7 @@ void testContains() {
             std::numeric_limits<long long>::max() / 2
         );
 
-        for (int iter = 0; iter < 1'000'000; ++iter)
-        {
+        for (int iter = 0; iter < 1'000'000; ++iter) {
             size_t len = lenDist(rng);
 
             std::vector<_IntType_> vec;

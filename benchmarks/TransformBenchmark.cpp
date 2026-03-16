@@ -25,7 +25,7 @@ _TransformBenchmarkArray<_Type_, _Size_> _GenerateArrayForReplaceBenchmark() noe
     _TransformBenchmarkArray<_Type_, _Size_> result;
 
     for (raze::sizetype i = 0; i < _Size_; ++i)
-        result.array[i] = i;
+        result.array[i] = i + 1;
 
     return result;
 }
@@ -73,7 +73,14 @@ public:
     }
 };
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeTransformBenchmark, StdTransformBenchmark, raze::int32, Transform<raze::type_traits::multiplies<>>);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeTransformBenchmark, StdTransformBenchmark, raze::uint8, Transform<raze::type_traits::multiplies<>>);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeTransformBenchmark, StdTransformBenchmark, raze::uint16, Transform<raze::type_traits::multiplies<>>);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeTransformBenchmark, StdTransformBenchmark, raze::uint32, Transform<raze::type_traits::multiplies<>>);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeTransformBenchmark, StdTransformBenchmark, raze::uint64, Transform<raze::type_traits::multiplies<>>);
+
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeTransformBenchmark, StdTransformBenchmark, float, Transform<raze::type_traits::multiplies<>>);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeTransformBenchmark, StdTransformBenchmark, double, Transform<raze::type_traits::multiplies<>>);
+
 
 
 RAZE_BENCHMARK_MAIN();

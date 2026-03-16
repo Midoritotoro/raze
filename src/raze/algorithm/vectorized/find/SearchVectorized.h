@@ -87,8 +87,10 @@ struct __search_vectorized_internal {
             auto __combined = __equal_first & __equal_last;
 
             if (datapar::any_of(__combined)) {
+                auto __integer_mask = __combined.bits();
+
                 do {
-                    const auto __first_set = datapar::find_first_set(__combined);
+                    const auto __first_set = datapar::find_first_set(__integer_mask);
 
                     const auto __match_bytes = __first_set * sizeof(_ValueType) + sizeof(_ValueType);
                     const auto __main_match = __bytes_pointer_offset(__main_begin, __match_bytes);
@@ -96,8 +98,8 @@ struct __search_vectorized_internal {
                     if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
                         return __main_match - 1;
 
-                    __combined.clear_left();
-                } while (datapar::any_of(__combined));
+                    datapar::clear_left(__integer_mask);
+                } while (datapar::any_of(__integer_mask));
             }
 
             __processed_bytes += sizeof(_Simd_);

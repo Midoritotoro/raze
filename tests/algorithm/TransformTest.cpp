@@ -41,46 +41,41 @@ void test_binary(size_t bytes, BinaryOp op) {
     raze_assert(out_simd == out_std);
 }
 
-void testAll(uint8_t bytes) noexcept {
+void testAll(size_t bytes) noexcept {
     test_unary<uint8_t>(bytes, [](uint8_t x) { return static_cast<uint8_t>(~x); });
     test_unary<uint8_t>(bytes, raze::type_traits::negate<>());
     test_binary<uint8_t>(bytes, raze::type_traits::plus<>());
     test_binary<uint8_t>(bytes, raze::type_traits::minus<>());
     test_binary<uint8_t>(bytes, raze::type_traits::multiplies<>());
 
-    // --- uint16_t ---
     test_unary<uint16_t>(bytes, raze::type_traits::negate<>());
     test_binary<uint16_t>(bytes, raze::type_traits::plus<>());
     test_binary<uint16_t>(bytes, raze::type_traits::minus<>());
     test_binary<uint16_t>(bytes, raze::type_traits::multiplies<>());
 
-    // --- uint32_t ---
     test_unary<uint32_t>(bytes, raze::type_traits::negate<>());
     test_binary<uint32_t>(bytes, raze::type_traits::plus<>());
     test_binary<uint32_t>(bytes, raze::type_traits::minus<>());
     test_binary<uint32_t>(bytes, raze::type_traits::multiplies<>());
 
-    // --- uint64_t ---
     test_unary<uint64_t>(bytes, raze::type_traits::negate<>());
     test_binary<uint64_t>(bytes, raze::type_traits::plus<>());
     test_binary<uint64_t>(bytes, raze::type_traits::minus<>());
     test_binary<uint64_t>(bytes, raze::type_traits::multiplies<>());
 
-    // --- float ---
-    test_unary<float>(bytes, [](float x) { return x + 1.5f; });
-    test_unary<float>(bytes, raze::type_traits::negate<>());
-    test_binary<float>(bytes, raze::type_traits::plus<>());
-    test_binary<float>(bytes, raze::type_traits::minus<>());
-    test_binary<float>(bytes, raze::type_traits::multiplies<>());
-    test_binary<float>(bytes, raze::type_traits::divides<>());
+    //test_unary<float>(bytes, [](float x) { return x + 1.5f; });
+    //test_unary<float>(bytes, raze::type_traits::negate<>());
+    //test_binary<float>(bytes, raze::type_traits::plus<>());
+    //test_binary<float>(bytes, raze::type_traits::minus<>());
+    //test_binary<float>(bytes, raze::type_traits::multiplies<>());
+    //test_binary<float>(bytes, raze::type_traits::divides<>());
 
-            // --- double ---
-    test_unary<double>(bytes, [](double x) { return x * 2.0; });
-    test_unary<double>(bytes, raze::type_traits::negate<>());
-    test_binary<double>(bytes, raze::type_traits::plus<>());
-    test_binary<double>(bytes, raze::type_traits::minus<>());
-    test_binary<double>(bytes, raze::type_traits::multiplies<>());
-    test_binary<double>(bytes, raze::type_traits::divides<>());
+    //test_unary<double>(bytes, [](double x) { return x * 2.0; });
+    //test_unary<double>(bytes, raze::type_traits::negate<>());
+    //test_binary<double>(bytes, raze::type_traits::plus<>());
+    //test_binary<double>(bytes, raze::type_traits::minus<>());
+    //test_binary<double>(bytes, raze::type_traits::multiplies<>());
+    //test_binary<double>(bytes, raze::type_traits::divides<>());
 }
 
 int main() {

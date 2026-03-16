@@ -1,15 +1,12 @@
 ﻿#pragma once 
 
-#include <src/raze/datapar/bitwise/MaskImplementation.h>
+#include <src/raze/datapar/bitwise/MaskBits.h>
 #include <src/raze/datapar/bitwise/MaskElementReference.h>
 #include <src/raze/algorithm/MsvcIteratorUnwrap.h>
 #include <bitset>
 
 
-
 __RAZE_DATAPAR_NAMESPACE_BEGIN
-
-
 
 template <
 	class _FirstMaskType_,
@@ -29,9 +26,10 @@ class simd_mask
 	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
 
 	using _Impl = _Mask_implementation<_ISA_, _Type_, _SimdWidth_>;
+	using __bits_type = _Mask_bits<_ISA_, _Type_, _SimdWidth_>;
 public:
-	using mask_type = typename _Impl::mask_type;
-	using element_type = _Type_;
+	using mask_type		= typename _Impl::mask_type;
+	using element_type	= _Type_;
 
 	static constexpr auto __width = _SimdWidth_;
 	static constexpr auto __isa = _ISA_;
@@ -67,6 +65,10 @@ public:
 		copy_from(__first, __alignment_policy);
 	}
 
+	raze_nodiscard raze_always_inline __bits_type bits() const noexcept {
+		return __bits_type(_mask);
+	}
+
 	template <
 		class _ForwardIterator_, 
 		class _AlignmentPolicy_ = __unaligned_policy>
@@ -86,14 +88,6 @@ public:
 		_AlignmentPolicy_&& __alignment_policy = {}) noexcept
 	{
 		__copy_to_unchecked(algorithm::__unwrap_iterator(__first), __alignment_policy);
-	}
-
-	raze_always_inline void clear_left() noexcept {
-		_mask = _Impl::__clear_left(_mask);
-	}
-
-	raze_always_inline void clear_right() noexcept {
-		_mask = _Impl::__clear_right(_mask);
 	}
 
 	raze_always_inline bool operator[](int32 __index) const noexcept {
@@ -235,10 +229,9 @@ public:
 	template <
 		class _UnwrappedForwardIterator_, 
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline void 
-		__copy_from_unchecked(
-			const _UnwrappedForwardIterator_	__first,
-			_AlignmentPolicy_&&					__alignment_policy) noexcept 
+	raze_nodiscard raze_always_inline void __copy_from_unchecked(
+		_UnwrappedForwardIterator_	__first,
+		_AlignmentPolicy_&&			__alignment_policy) noexcept 
 	{
 		_mask = _Impl::__copy_from_unchecked(__first, __alignment_policy);
 	}
@@ -246,12 +239,19 @@ public:
 	template <
 		class _UnwrappedOutputIterator_, 
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline void 
-		__copy_to_unchecked(
-			_UnwrappedOutputIterator_	__first,
-			_AlignmentPolicy_&&			__alignment_policy) noexcept
+	raze_nodiscard raze_always_inline void __copy_to_unchecked(
+		_UnwrappedOutputIterator_	__first,
+		_AlignmentPolicy_&&			__alignment_policy) noexcept
 	{
 		_Impl::__copy_to_unchecked(__first, _mask, __alignment_policy);
+	}
+
+	raze_always_inline void __clear_left() noexcept {
+		_mask = _Impl::__clear_left(_mask);
+	}
+
+	raze_always_inline void __clear_right() noexcept {
+		_mask = _Impl::__clear_right(_mask);
 	}
 private:
 	mask_type _mask = 0;

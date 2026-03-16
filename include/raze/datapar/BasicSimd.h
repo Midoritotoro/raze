@@ -43,18 +43,18 @@ public:
     static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<
         __isa, _Width_, sizeof(_DesiredType_)>;
 
-    raze_always_inline simd() noexcept
+    simd() noexcept
     {}
 
-    raze_always_inline simd(const value_type __value) noexcept {
+    simd(const value_type __value) noexcept {
         fill(__value);
     }
 
-    raze_always_inline ~simd() noexcept
+    ~simd() noexcept
     {}
 
     template <class _VectorType_>
-    raze_always_inline simd(_VectorType_ __other) noexcept
+    simd(_VectorType_ __other) noexcept
         requires (__is_intrin_type_v<_VectorType_> || __is_valid_simd_v<_VectorType_>) 
     {
         _vector = simd_cast<vector_type>(__other);

@@ -10,10 +10,10 @@
 #include <src/raze/datapar/memory/MaskzLoad.h>
 #include <src/raze/datapar/bitwise/FirstN.h>
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
-#include <src/raze/datapar/bitwise/MaskIntrin.h>
 #include <raze/algorithm/minmax/Max.h>
 #include <src/raze/math/BitTestAndReset.h>
 #include <src/raze/math/BitTest.h>
+#include <src/raze/datapar/bitwise/MaskOperations.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -45,6 +45,8 @@ public:
 		__mmask_for_elements_t<simd<_ISA_, _Type_, _SimdWidth_>::size()>,
 		simd<_ISA_, typename IntegerForSizeof<_Type_>::Unsigned, _SimdWidth_>>;
 
+	using __operations = _Mask_operations<_ISA_, _Type_, _SimdWidth_>;
+
 	raze_nodiscard raze_always_inline static constexpr int32 __bit_width() noexcept {
 		constexpr auto __count = __number_mask ? simd<_ISA_, _Type_, _SimdWidth_>::size() : _SimdWidth_;
 		return __count;
@@ -55,54 +57,17 @@ public:
 	}
 	
 	raze_nodiscard raze_always_inline static bool __all_of(mask_type __mask) noexcept {
-		if constexpr (std::is_integral_v<mask_type>) {
-			raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(mask_type) * 8) == __elements())
-				? math::__maximum_integral_limit<mask_type>()
-				: mask_type(((mask_type(1) << __elements()) - 1));
-			
-			if constexpr (__elements() < 8 && __has_avx512dq_support_v<__isa>)
-				return __ktestcb(__mask, _cvtu32_mask8(__max_for_bits));
-
-			else if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
-				return __kortestcb(__mask, __mask);
-
-			else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
-				return __kortestcw(__mask, __mask);
-
-			else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
-				return __kortestcd(__mask, __mask);
-
-			else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>)
-				return __kortestcq(__mask, __mask);
-
-			else
-				return (__mask == __max_for_bits);
-		}
-		else {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__all_of(__mask);
+		else
 			return _Test_all_ones<__isa, __bit_width()>()(__data(__mask));
-		}
 	}
 
 	raze_nodiscard raze_always_inline static bool __none_of(mask_type __mask) noexcept {
-		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
-				return __kortestzw(__mask, __mask);
-
-			else if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
-				return __kortestzb(__mask, __mask);
-
-			else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
-				return __kortestzd(__mask, __mask);
-
-			else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>)
-				return __kortestzq(__mask, __mask);
-
-			else
-				return (__mask == 0);
-		}
-		else {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__none_of(__mask);
+		else
 			return _Testz<__isa, __bit_width()>()(__data(__mask));
-		}
 	}
 
 	raze_nodiscard raze_always_inline static bool __some_of(mask_type __mask) noexcept {
@@ -117,97 +82,37 @@ public:
 		mask_type __left, 
 		mask_type __right) noexcept
 	{
-		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
-				return _kand_mask8(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
-				return _kand_mask16(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
-				return _kand_mask32(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>)
-				return _kand_mask64(__left, __right);
-
-			else
-				return __left & __right;
-		}
-		else {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__bit_and(__left, __right);
+		else
 			return __left & __right;
-		}
 	}
 
 	raze_nodiscard raze_always_inline static mask_type __bit_or(
 		mask_type __left,
 		mask_type __right) noexcept
 	{
-		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
-				return _kor_mask8(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
-				return _kor_mask16(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
-				return _kor_mask32(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>)
-				return _kor_mask64(__left, __right);
-
-			else
-				return __left | __right;
-		}
-		else {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__bit_or(__left, __right);
+		else
 			return __left | __right;
-		}
 	}
 
 	raze_nodiscard raze_always_inline static mask_type __bit_not(mask_type __mask) noexcept {
-		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
-				return _knot_mask8(__mask);
-
-			else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
-				return _knot_mask16(__mask);
-
-			else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
-				return _knot_mask32(__mask);
-
-			else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>)
-				return _knot_mask64(__mask);
-
-			else
-				return ~__mask;
-		}
-		else {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__bit_not(__mask);
+		else
 			return ~__mask;
-		}
 	}
 
 	raze_nodiscard raze_always_inline static mask_type __bit_xor(
 		mask_type __left,
 		mask_type __right) noexcept
 	{
-		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
-				return _kxor_mask8(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
-				return _kxor_mask16(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
-				return _kxor_mask32(__left, __right);
-
-			else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>)
-				return _kxor_mask64(__left, __right);
-
-			else
-				return __left ^ __right;
-		}
-		else {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__bit_xor(__left, __right);
+		else
 			return __left ^ __right;
-		}
 	}
 
 	raze_nodiscard raze_always_inline static mask_type __broadcast(bool __value) noexcept {
@@ -219,7 +124,7 @@ public:
 
 	raze_nodiscard raze_always_inline static int32 __count_set(mask_type __mask) noexcept {
 		if constexpr (std::is_integral_v<mask_type>)
-			return math::__popcnt_n_bits<__bit_width()>(__to_gpr<__isa>(__mask));
+			return __operations::__count_set(__mask);
 		else
 			return math::__popcnt_n_bits<(__bit_width() / 8) / sizeof(_Type_)>(
 				_To_mask<__isa, __width, _Type_>()(__data(__mask)));
@@ -229,14 +134,7 @@ public:
 		__count_trailing_zero_bits(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
-			if constexpr (__bit_width() <= 8)
-				return math::__ctz_n_bits<__bit_width()>(__to_gpr<__isa>(__mask));
-
-			else if constexpr (__has_avx2_support_v<__isa>)
-				return math::__tzcnt_ctz(__to_gpr<__isa>(__mask));
-
-			else
-				return math::__bsf_ctz(__to_gpr<__isa>(__mask));
+			return __operations::__count_trailing_zero_bits(__mask);
 		}
 		else {
 			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, __width>;
@@ -254,41 +152,19 @@ public:
 	raze_nodiscard raze_always_inline static int32
 		__count_trailing_one_bits(mask_type __mask) noexcept
 	{
-		if constexpr (__bit_width() >= 8) {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__count_trailing_one_bits(__mask);
+		else
 			return __count_trailing_zero_bits(~__mask);
-		}
-		else {
-			auto __count = 0;
-
-			for (auto __i = 0; __i < __elements(); ++__i) {
-				if (!((__mask >> __i) & 1))
-					break;
-
-				++__count;
-			}
-
-			return __count;
-		}
 	}
 
 	raze_nodiscard raze_always_inline static int32 
 		__count_leading_one_bits(mask_type __mask) noexcept
 	{
-		if constexpr (__bit_width() >= 8) {
+		if constexpr (std::is_integral_v<mask_type>)
+			return __operations::__count_leading_one_bits(__mask);
+		else
 			return __count_leading_zero_bits(~__mask);
-		}
-		else {
-			auto __count = 0;
-
-			for (auto __i = __elements() - 1; __i >= 0; --__i) {
-				if (!((__mask >> __i) & 1))
-					break;
-
-				++__count;
-			}
-
-			return __count;
-		}
 	}
 
 	template <sizetype _Bits_>
@@ -330,7 +206,7 @@ public:
 		__clear_right(mask_type __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<mask_type>) {
-			return (__mask & (__mask - 1));
+			return __operations::__clear_right(__mask);
 		}
 		else {
 			const auto __converted_mask = _To_mask<__isa, __width, _Type_>()(__data(__mask));
@@ -342,16 +218,13 @@ public:
 	raze_nodiscard raze_always_inline static mask_type
 		__clear_left(mask_type __mask) noexcept
 	{
-		auto __converted_mask = _To_mask<__isa, __width, _Type_>()(__data(__mask));
-		const auto __last_set = __elements() - __count_leading_zero_bits_any(__converted_mask) - 1;
-
 		if constexpr (std::is_integral_v<mask_type>) {
-			math::__bit_test_and_reset(__converted_mask);
-			return __converted_mask;
+			return __operations::__clear_left(__mask);
 		}
 		else {
-			math::__bit_test_and_reset(__converted_mask, __last_set);
-			return _To_vector<__isa, __width, typename mask_type::vector_type, _Type_>()(__converted_mask);
+			auto __converted_mask = _To_mask<__isa, __width, _Type_>()(__data(__mask));
+			return _To_vector<__isa, __width, typename mask_type::vector_type, _Type_>()(
+				__operations::__clear_left(__converted_mask));
 		}
 	}
 private:
@@ -399,14 +272,7 @@ private:
 		__count_leading_zero_bits_any(_AnyMaskType_ __mask) noexcept
 	{
 		if constexpr (std::is_integral_v<_AnyMaskType_>) {
-			if constexpr (__bit_width() <= 8)
-				return math::__clz_n_bits<__bit_width()>(__mask);
-
-			else if constexpr (__has_avx2_support_v<__isa>)
-				return math::__lzcnt_clz(static_cast<_AnyMaskType_>(__to_gpr<__isa>(__mask)));
-
-			else
-				return math::__bsr_clz(static_cast<_AnyMaskType_>(__to_gpr<__isa>(__mask)));
+			return __operations::__count_leading_zero_bits(__mask);
 		}
 		else {
 			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, __width>;
