@@ -621,7 +621,7 @@ struct _Compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
         _MaskType_      __mask) raze_const_operator noexcept
-        requires(__is_intrin_type_v<_MaskType_>)
+            requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _To_mask<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__mask));
     }
@@ -666,7 +666,7 @@ struct _Compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
     raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
         _MaskType_      __mask) raze_const_operator noexcept
-        requires(__is_intrin_type_v<_MaskType_>)
+            requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _To_mask<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__mask));
     }
@@ -701,6 +701,169 @@ struct _Compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
     }
 };
 
+template <class _DesiredType_> 
+struct _Compress<arch::ISA::AVX512VBMI2, 512, _DesiredType_>:
+    _Compress<arch::ISA::AVX512VBMI, 512, _DesiredType_> 
+{
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_MaskType_>)
+    {
+        return (*this)(__vector, _To_mask<arch::ISA::AVX512VBMI2, 512, _DesiredType_>()(__mask));
+    }
+
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_	__vector,
+        _MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
+    {
+        if constexpr (sizeof(_DesiredType_) == 8) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm512_maskz_compress_epi64(__mask, __intrin_bitcast<__m512i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 4) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm512_maskz_compress_epi32(__mask, __intrin_bitcast<__m512i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 2) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm512_maskz_compress_epi16(__mask, __intrin_bitcast<__m512i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 1) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm512_maskz_compress_epi8(__mask, __intrin_bitcast<__m512i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+    }
+};
+
+template <class _DesiredType_> 
+struct _Compress<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_>:
+    _Compress<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> 
+{
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_MaskType_>)
+    {
+        return (*this)(__vector, _To_mask<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_>()(__mask));
+    }
+
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_	__vector,
+        _MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
+    {
+        if constexpr (sizeof(_DesiredType_) == 8) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm256_maskz_compress_epi64(__mask, __intrin_bitcast<__m256i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask & 0xF);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 4) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm256_maskz_compress_epi32(__mask, __intrin_bitcast<__m256i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 2) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm256_maskz_compress_epi16(__mask, __intrin_bitcast<__m256i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 1) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm256_maskz_compress_epi8(__mask, __intrin_bitcast<__m256i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+    }
+};
+
+template <class _DesiredType_> 
+struct _Compress<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_>:
+    _Compress<arch::ISA::AVX512VBMIVL, 128, _DesiredType_>
+{
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) raze_const_operator noexcept
+            requires(__is_intrin_type_v<_MaskType_>)
+    {
+        return (*this)(__vector, _To_mask<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_>()(__mask));
+    }
+
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+        _IntrinType_	__vector,
+        _MaskType_		__mask) raze_const_operator noexcept
+        requires(std::is_integral_v<_MaskType_>)
+    {
+        if constexpr (sizeof(_DesiredType_) == 8) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm_maskz_compress_epi64(__mask, __intrin_bitcast<__m128i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask & 0x03);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 4) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm_maskz_compress_epi32(__mask, __intrin_bitcast<__m128i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask & 0xF);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 2) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm_maskz_compress_epi16(__mask, __intrin_bitcast<__m128i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+        else if constexpr (sizeof(_DesiredType_) == 1) {
+            const auto __compressed = __intrin_bitcast<_IntrinType_>(
+                _mm_maskz_compress_epi8(__mask, __intrin_bitcast<__m128i>(__vector)));
+
+            const auto __set_bits = math::__popcnt_population_count(__mask);
+            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        }
+    }
+};
+
+
 template <class _DesiredType_> struct _Compress<arch::ISA::SSE42, 128, _DesiredType_> : _Compress<arch::ISA::SSE41, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX2, 128, _DesiredType_> : _Compress<arch::ISA::SSE42, 128, _DesiredType_> {};
 
@@ -708,7 +871,6 @@ template <class _DesiredType_> struct _Compress<arch::ISA::AVX512BW, 512, _Desir
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512BW, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Compress<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _Compress<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
@@ -716,7 +878,6 @@ template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBW, 256, _Des
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
@@ -724,7 +885,6 @@ template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBW, 128, _Des
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Compress<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_> : _Compress<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
 

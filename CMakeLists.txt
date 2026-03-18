@@ -59,6 +59,7 @@ set(PRIVATE_HEADERS
     src/raze/algorithm/vectorized/minmax/MinVectorized.h
     src/raze/algorithm/vectorized/minmax/MaxVectorized.h
     src/raze/algorithm/vectorized/minmax/MinmaxVectorized.h
+    src/raze/algorithm/vectorized/find/FindFirstOfVectorized.h
 
     src/raze/algorithm/AlgorithmDebug.h
     src/raze/algorithm/AdvanceBytes.h
@@ -76,6 +77,8 @@ set(PRIVATE_HEADERS
     "src/raze/algorithm/unchecked/find/CountIfUnchecked.h"
     "src/raze/algorithm/unchecked/find/FindLastIfNotUnchecked.h"
     "src/raze/algorithm/unchecked/find/FindLastIfUnchecked.h"
+    src/raze/algorithm/unchecked/find/FindFirstOfUnchecked.h
+
 
     src/raze/algorithm/unchecked/copy/CopyUnchecked.h
     src/raze/algorithm/unchecked/copy/CopyIfUnchecked.h
@@ -117,6 +120,12 @@ set(PRIVATE_HEADERS
     src/raze/math/BitTestAndSet.h
     src/raze/math/BitTestAndComplement.h
     src/raze/math/BitTest.h
+    src/raze/math/CosImplementation.h
+    src/raze/math/SinImplementation.h
+    src/raze/math/TanImplementation.h
+    src/raze/math/CotanImplementation.h
+    src/raze/math/MathConstants.h
+    src/raze/math/SinTables.h
 
     "src/raze/type_traits/CanMemcmpElements.h"
     "src/raze/type_traits/ContainerComparison.h"

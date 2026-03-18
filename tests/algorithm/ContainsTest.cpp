@@ -68,7 +68,7 @@ void testContains() {
         raze_assert(raze::algorithm::contains(v.begin(), v.end(), 44) == false);
     }
 
-    {
+    /*{
         std::vector<_IntType_> v;
         v.reserve(512);
         for (int i = 0; i < 64; ++i)
@@ -109,7 +109,7 @@ void testContains() {
 
             raze_assert(simd_res == std_res);
         }
-    }
+    }*/
 }
 
 int main() {

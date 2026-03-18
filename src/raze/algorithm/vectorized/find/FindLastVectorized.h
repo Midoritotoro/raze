@@ -91,4 +91,5 @@ __raze_simd_algorithm_inline _Type_* __find_last_vectorized(
     return const_cast<_Type_*>(datapar::__simd_sized_dispatcher<__find_last_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__find_last_scalar<_Type_>, __first, __last, __value));
 }
+
 __RAZE_ALGORITHM_NAMESPACE_END

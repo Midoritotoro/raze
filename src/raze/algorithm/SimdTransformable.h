@@ -36,7 +36,7 @@ struct is_simd_unary_transformable<std::bit_not<void>, _Simd_> :
 template <class _Simd_>
 struct is_simd_unary_transformable<type_traits::negate<typename _Simd_::value_type>, _Simd_> :
 	std::false_type
-{};
+{}
 
 template <class _Simd_>
 struct is_simd_unary_transformable<type_traits::bit_not<typename _Simd_::value_type>, _Simd_> :
@@ -98,11 +98,6 @@ struct is_simd_binary_transformable<std::multiplies<typename _Simd_::value_type>
 {};
 
 template <class _Simd_>
-struct is_simd_binary_transformable<std::divides<typename _Simd_::value_type>, _Simd_> :
-	std::true_type
-{};
-
-template <class _Simd_>
 struct is_simd_binary_transformable<std::bit_xor<void>, _Simd_> :
 	std::true_type
 {};
@@ -131,13 +126,6 @@ template <class _Simd_>
 struct is_simd_binary_transformable<std::multiplies<void>, _Simd_> :
 	std::true_type
 {};
-
-template <class _Simd_>
-struct is_simd_binary_transformable<std::divides<void>, _Simd_> :
-	std::true_type
-{};
-
-
 
 template <class _Simd_>
 struct is_simd_binary_transformable<type_traits::bit_xor<typename _Simd_::value_type>, _Simd_> :
@@ -170,11 +158,6 @@ struct is_simd_binary_transformable<type_traits::multiplies<typename _Simd_::val
 {};
 
 template <class _Simd_>
-struct is_simd_binary_transformable<type_traits::divides<typename _Simd_::value_type>, _Simd_>: 
-	std::true_type 
-{};
-
-template <class _Simd_>
 struct is_simd_binary_transformable<type_traits::bit_xor<void>, _Simd_> :
 	std::true_type
 {};
@@ -201,11 +184,6 @@ struct is_simd_binary_transformable<type_traits::minus<void>, _Simd_> :
 
 template <class _Simd_>
 struct is_simd_binary_transformable<type_traits::multiplies<void>, _Simd_> :
-	std::true_type
-{};
-
-template <class _Simd_>
-struct is_simd_binary_transformable<type_traits::divides<void>, _Simd_> :
 	std::true_type
 {};
 
