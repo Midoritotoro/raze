@@ -11,14 +11,13 @@
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <
-	arch::ISA	_ISA_,
-	class		_Type_,
-	uint32		_SimdWidth_>
+	class _Type_,
+	class _Abi_>
 class _Mask_operations {
 public:
-	static constexpr auto __width = _SimdWidth_;
-	static constexpr auto __isa = _ISA_;
-	static constexpr auto __elements_count = ((_SimdWidth_ / 8) / sizeof(_Type_));
+	static constexpr auto __width = _Abi_::width;
+	static constexpr auto __isa = _Abi_::isa;
+	static constexpr auto __elements_count = ((__width / 8) / sizeof(_Type_));
 
 	using element_type = _Type_;
 	using mask_type = __mmask_for_elements_t<__elements_count>;

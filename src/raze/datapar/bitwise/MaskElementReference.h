@@ -8,11 +8,10 @@
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <
-	arch::ISA	_ISA_,
-	class		_Type_,
-	uint32		_SimdWidth_>
-using __mask_element_reference = std::conditional_t<std::is_integral_v<typename _Mask_implementation<_ISA_, _Type_, _SimdWidth_>::mask_type>,
-	_Bit_reference<typename _Mask_implementation<_ISA_, _Type_, _SimdWidth_>::mask_type>,
-	_Simd_bool_reference<typename _Mask_implementation<_ISA_, _Type_, _SimdWidth_>::mask_type>>;
+	class _Type_,
+	class _Abi_>
+using __mask_element_reference = std::conditional_t<std::is_integral_v<typename _Mask_implementation<_Type_, _Abi_>::mask_type>,
+	_Bit_reference<typename _Mask_implementation<_Type_, _Abi_>::mask_type>,
+	_Simd_bool_reference<typename _Mask_implementation<_Type_, _Abi_>::mask_type>>;
 
 __RAZE_DATAPAR_NAMESPACE_END

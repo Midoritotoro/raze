@@ -18,9 +18,8 @@ static constexpr int32 __constexpr_max() noexcept {
 }
 
 template <
-    arch::ISA	_ISA_,
-    typename	_Element_,
-    uint32		_Width_>
+    class _Type_,
+    class _Abi_>
 class simd;
 
 template <
@@ -89,20 +88,16 @@ struct __is_valid_simd:
 template <class _BasicSimd_>
 struct __is_valid_simd<
     _BasicSimd_,
-    std::void_t<simd<
-        _BasicSimd_::__isa,
-        typename _BasicSimd_::value_type,
-        _BasicSimd_::__width>>>
+    std::void_t<simd<typename _BasicSimd_::value_type,
+        typename _BasicSimd_::abi_type>>>
     : std::bool_constant<
         type_traits::is_virtual_base_of_v<
-            simd<_BasicSimd_::__isa,
-                       typename _BasicSimd_::value_type,
-                       _BasicSimd_::__width>,
+            simd<typename _BasicSimd_::value_type,
+                    typename _BasicSimd_::abi_type>,
             _BasicSimd_> ||
         std::is_same_v<
-            simd<_BasicSimd_::__isa,
-                       typename _BasicSimd_::value_type,
-                       _BasicSimd_::__width>,
+            simd<typename _BasicSimd_::value_type,
+                    typename _BasicSimd_::abi_type>,
             _BasicSimd_>> 
 {};
 

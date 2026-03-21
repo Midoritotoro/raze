@@ -11,17 +11,17 @@
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <
-	arch::ISA	_ISA_,
-	typename	_Type_,
-	uint32		_SimdWidth_>
+	class _Type_,
+	class _Abi_>
 class _Simd_bitmask {
 public:
-	static constexpr auto __isa = _ISA_;
-	static constexpr auto __width = _SimdWidth_;
+	static constexpr auto __isa = _Abi_::isa;
+	static constexpr auto __width = _Abi_::width;
 
 	static constexpr auto __is_k_register = __has_avx512f_support_v<__isa>;
 
 	using element_type = _Type_;
+	using abi_type = _Abi_;
 
 	static constexpr uint8 __divisor = __bitmask_bits_per_element_v<__isa, __width, element_type>;
 	static constexpr uint8 __used_bits = (__width / 8) / sizeof(element_type) * __divisor;

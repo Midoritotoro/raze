@@ -3,6 +3,7 @@
 #include <src/raze/datapar/IntrinBitcast.h>
 #include <src/raze/type_traits/SimdTypeCheck.h>
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
+#include <raze/datapar/Abi.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -34,7 +35,7 @@ template <
     class _VectorType_>
 struct __rebind_vector_element_t<_RebindType_, _VectorType_, true, false> {
     using type = std::conditional_t<__is_intrin_type_v<_RebindType_> || __is_valid_simd_v<_RebindType_>,
-        _RebindType_, simd<_VectorType_::__isa, _RebindType_, _VectorType_::__width>>;
+        _RebindType_, simd<_RebindType_, x86_abi<_VectorType_::__isa, _VectorType_::__width>>>;
 };
 
 template <
@@ -49,18 +50,18 @@ struct __rebind_vector_generation_t {
 
 template <
     arch::ISA	_ToSimdGeneration_,
-    class               _RebindType_,
-    class               _VectorType_>
+    class       _RebindType_,
+    class       _VectorType_>
 struct __rebind_vector_generation_t<_ToSimdGeneration_, _RebindType_, _VectorType_, false, true> {
     using type = type_traits::__deduce_simd_vector_type<_ToSimdGeneration_, _RebindType_, __default_width<_ToSimdGeneration_>>;
 };
 
 template <
     arch::ISA	_ToSimdGeneration_,
-    class               _RebindType_,
-    class               _VectorType_>
+    class       _RebindType_,
+    class       _VectorType_>
 struct __rebind_vector_generation_t<_ToSimdGeneration_, _RebindType_, _VectorType_, true, false> {
-    using type = simd<_ToSimdGeneration_, _RebindType_, __default_width<_ToSimdGeneration_>>;
+    using type = simd<_RebindType_, x86_abi<_ToSimdGeneration_>>;
 };
 
 template <

@@ -13,6 +13,8 @@
 #include <src/raze/datapar/Memory.h>
 #include <src/raze/datapar/Bitwise.h>
 
+#include <raze/datapar/Abi.h>
+
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
@@ -20,28 +22,22 @@ using aligned_policy    = __aligned_policy;
 using unaligned_policy  = __unaligned_policy;
 
 template <
-    arch::ISA	_ISA_,
-    class	    _Type_,
-    uint32      _Width_ = __default_width<_ISA_>>
+    class _Type_,
+    class _Abi_>
 class simd {
-    static_assert(type_traits::__is_generation_supported_v<_ISA_>);
-    static_assert(type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>);
+    static_assert(type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>, "Unsupported element type. ");
 public:
-    static constexpr auto __isa = _ISA_;
-    static constexpr auto __width = _Width_;
+    static constexpr auto __isa = _Abi_::isa;
+    static constexpr auto __width = _Abi_::width;
     
-    using vector_type   = type_traits::__deduce_simd_vector_type<_ISA_, _Type_, _Width_>;
+    using vector_type   = type_traits::__deduce_simd_vector_type<_Abi_::isa, _Type_, _Abi_::width>;
     using reference     = _Simd_element_reference<simd>;
     using value_type    = _Type_;
-    using mask_type     = simd_mask<_ISA_, _Type_, _Width_>;
+    using mask_type     = simd_mask<_Type_, _Abi_>;
+    using abi_type      = _Abi_;
 
-    template <typename _DesiredType_ = value_type>
-    static constexpr inline bool is_native_mask_load_supported_v = __is_native_mask_load_supported_v<
-        __isa, _Width_, sizeof(_DesiredType_)>;
-
-    template <typename _DesiredType_ = value_type>
-    static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<
-        __isa, _Width_, sizeof(_DesiredType_)>;
+    static constexpr inline bool is_native_mask_load_supported_v = __is_native_mask_load_supported_v<__isa, __width, sizeof(value_type)>;
+    static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<__isa, __width, sizeof(value_type)>;
 
     simd() noexcept
     {}
@@ -61,15 +57,15 @@ public:
     }
 
     raze_nodiscard static raze_always_inline simd zero() noexcept {
-        return _Broadcast_zeros<_ISA_, _Width_, vector_type>()();
+        return _Broadcast_zeros<__isa, __width, vector_type>()();
     }
 
     raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
-        return _Broadcast<_ISA_, _Width_, vector_type>()(__value);
+        return _Broadcast<__isa, __width, vector_type>()(__value);
     }
 
     raze_always_inline simd& fill(value_type __value) noexcept {
-        _vector = _Broadcast<_ISA_, _Width_, vector_type>()(__value);
+        _vector = _Broadcast<__isa, __width, vector_type>()(__value);
         return *this;
     }
 
@@ -79,7 +75,7 @@ public:
         const _RightType_& __right) noexcept requires(
             std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Sub<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Sub<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
     template <class _RightType_>
@@ -88,7 +84,7 @@ public:
         const _RightType_&  __right) noexcept requires(
             std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Add<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Add<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
     template <class _RightType_>
@@ -97,7 +93,7 @@ public:
         const _RightType_& __right) noexcept requires(
             std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Mul<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Mul<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
     template <class _RightType_>
@@ -120,70 +116,70 @@ public:
         const _RightType_&  __right) noexcept requires(
             std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Div<_ISA_, _Width_, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Div<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
     raze_nodiscard raze_always_inline friend simd operator&(
         const simd& __left,
         const simd& __right) noexcept
     {
-        return _And<_ISA_, _Width_>()(__left._vector, __right._vector);
+        return _And<__isa, __width>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend simd operator|(
         const simd& __left, 
         const simd& __right) noexcept
     {
-        return _Or<_ISA_, _Width_>()(__left._vector, __right._vector);
+        return _Or<__isa, __width>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend simd operator^(
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Xor<_ISA_, _Width_>()(__left._vector, __right._vector);
+        return _Xor<__isa, __width>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator==(
         const simd& __left,
         const simd& __right) noexcept 
     {
-        return _Equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator!=(
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Not_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Not_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator<(
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Less<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Less<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator<=(
         const simd& __left,
         const simd& __right) noexcept
     {
-        return _Less_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Less_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator>(
         const simd& __left,
         const simd& __right) noexcept 
     {
-        return _Greater<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Greater<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_nodiscard raze_always_inline friend mask_type operator>=(
         const simd& __left, 
         const simd& __right) noexcept
     {
-        return _Greater_equal<_ISA_, _Width_, _Type_>()(__left._vector, __right._vector);
+        return _Greater_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
     raze_always_inline simd& operator&=(const simd& __other) noexcept {
@@ -224,7 +220,7 @@ public:
     }
 
     raze_nodiscard raze_always_inline simd operator-() const noexcept {
-        return _Negate<_ISA_, _Width_, _Type_>()(_vector);
+        return _Negate<__isa, __width, _Type_>()(_vector);
     }
 
     raze_nodiscard raze_always_inline simd operator++(int) noexcept {
@@ -248,7 +244,7 @@ public:
     }
 
     raze_nodiscard raze_always_inline simd operator~() const noexcept {
-        return _Not<_ISA_, _Width_>()(_vector);
+        return _Not<__isa, __width>()(_vector);
     }
 
     raze_nodiscard raze_always_inline _Type_ operator[](int32 __i) const noexcept {
@@ -260,7 +256,7 @@ public:
     }
 
     raze_nodiscard static raze_always_inline constexpr int width() noexcept {
-        return _Width_;
+        return __width;
     }
 
     raze_nodiscard static raze_always_inline constexpr int size() noexcept {
@@ -279,12 +275,12 @@ private:
         int32       __position,
         value_type  __value) noexcept
     {
-        _Insert<_ISA_, _Width_>()(_vector, __position, __value);
+        _Insert<__isa, __width>()(_vector, __position, __value);
     }
 
     raze_nodiscard raze_always_inline _Type_ __extract(int32 __i) const noexcept {
         raze_debug_assert(__i >= 0 && __i < size());
-        return _Extract<_ISA_, _Width_, _Type_>()(_vector, __i);
+        return _Extract<__isa, __width, _Type_>()(_vector, __i);
     }
 
     friend _Simd_element_reference;

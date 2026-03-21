@@ -46,7 +46,7 @@ __simd_nodiscard_inline auto reduce(
 }
 
 template <class _DataparType_>
-using __tail_mask_type = simd_mask<_DataparType_::__isa, typename _DataparType_::value_type, _DataparType_::__width>;
+using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_abi<_DataparType_::__isa, _DataparType_::__width>>;
 
 template <class _DataparType_> 
 __simd_nodiscard_inline __tail_mask_type<_DataparType_> first_n(uint32 __elements) noexcept

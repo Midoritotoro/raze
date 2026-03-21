@@ -17,22 +17,22 @@ concept __compatible_mask =
 	(_FirstMaskType_::__width == _SecondMaskType_::__width);
 
 template <
-	arch::ISA	_ISA_,
-	typename	_Type_,
-	uint32		_SimdWidth_>
+	class _Type_,
+	class _Abi_>
 class simd_mask
 {
-	static_assert(type_traits::__is_generation_supported_v<_ISA_>);
+	static_assert(type_traits::__is_generation_supported_v<_Abi_::isa>);
 	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
 
-	using _Impl = _Mask_implementation<_ISA_, _Type_, _SimdWidth_>;
-	using __bits_type = _Mask_bits<_ISA_, _Type_, _SimdWidth_>;
+	using _Impl = _Mask_implementation<_Type_, _Abi_>;
+	using __bits_type = _Mask_bits<_Type_, _Abi_>;
 public:
 	using mask_type		= typename _Impl::mask_type;
 	using element_type	= _Type_;
+	using abi_type		= _Abi_;
 
-	static constexpr auto __width = _SimdWidth_;
-	static constexpr auto __isa = _ISA_;
+	static constexpr auto __width = _Abi_::width;
+	static constexpr auto __isa = _Abi_::isa;
 
 	simd_mask() = default;
 	simd_mask(const simd_mask& __mask) = default;
@@ -91,13 +91,12 @@ public:
 	}
 
 	raze_always_inline bool operator[](int32 __index) const noexcept {
-		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
+		return __mask_element_reference<_Type_, _Abi_>(_mask, __index);
 	}
 
-	raze_always_inline __mask_element_reference<_ISA_, 
-		_Type_, _SimdWidth_> operator[](int32 __index) noexcept 
+	raze_always_inline __mask_element_reference<_Type_, _Abi_> operator[](int32 __index) noexcept
 	{
-		return __mask_element_reference<_ISA_, _Type_, _SimdWidth_>(_mask, __index);
+		return __mask_element_reference<_Type_, _Abi_>(_mask, __index);
 	}
 	
 	template <class _OtherMask_>

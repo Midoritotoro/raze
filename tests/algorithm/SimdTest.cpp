@@ -29,7 +29,7 @@ void mask_compress_any(
 
 template <typename T, raze::arch::ISA Arch, raze::uint32 _Width_>
 void testMethods() {
-    using Simd = raze::datapar::simd<Arch, T, _Width_>;
+    using Simd = raze::datapar::simd<T, raze::datapar::x86_abi<Arch, _Width_>>;
     using Mask = typename Simd::mask_type;
     constexpr size_t N = Simd::size();
 
@@ -78,9 +78,9 @@ void testMethods() {
 
         static_assert(std::is_same_v<decltype(vOther), decltype(vOther2)>);
         static_assert(std::is_same_v<decltype(vOther2), raze::datapar::simd128_sse2<float>>);
-        static_assert(std::is_same_v<decltype(vOther3), raze::datapar::simd<raze::arch::ISA::SSE2, typename Simd::value_type, 128>>);
+        static_assert(std::is_same_v<decltype(vOther3), raze::datapar::simd<typename Simd::value_type, raze::datapar::x86_abi<raze::arch::ISA::SSE2, 128>>>);
         static_assert(std::is_same_v<decltype(vOther4), __m128i>);
-        static_assert(std::is_same_v<decltype(vOther5), raze::datapar::simd<Simd::__isa, int, Simd::__width>>);
+        static_assert(std::is_same_v<decltype(vOther5), raze::datapar::simd<int, typename Simd::abi_type>>);
     }
 
     {
@@ -194,8 +194,8 @@ void testMethods() {
         Simd b = raze::datapar::load<Simd>(vb.data());
         Simd c = raze::datapar::load<Simd>(vc.data());
 
-        raze::datapar::simd<raze::arch::ISA::SSE2, int, 128> v1;
-        raze::datapar::simd<raze::arch::ISA::SSE2, int, 128> v2;
+        raze::datapar::simd<int, raze::datapar::x86_abi<raze::arch::ISA::SSE2, 128>> v1;
+        raze::datapar::simd<int, raze::datapar::x86_abi<raze::arch::ISA::SSE2, 128>> v2;
         auto m = v1 == v2;
         raze_assert(raze::datapar::all_of(m));
         raze_assert(raze::datapar::any_of(m));

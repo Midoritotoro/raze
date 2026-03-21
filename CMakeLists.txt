@@ -359,6 +359,7 @@ set(PUBLIC_HEADERS
     include/raze/datapar/SimdBitmask.h
     include/raze/datapar/SimdDataparAlgorithms.h
     include/raze/datapar/SimdConfig.h
+    include/raze/datapar/Abi.h
 )
 
 include(CMakePackageConfigHelpers)

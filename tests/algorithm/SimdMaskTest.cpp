@@ -10,7 +10,7 @@
 
 template <typename T, raze::arch::ISA Arch, raze::uint32 _Width_>
 void testSimdMaskMethods() {
-    using Simd = raze::datapar::simd<Arch, T, _Width_>;
+    using Simd = raze::datapar::simd<T, raze::datapar::x86_abi<Arch, _Width_>>;
     using Mask = typename Simd::mask_type;
     constexpr size_t N = Simd::size();
 
@@ -237,8 +237,8 @@ void testSimdMaskMethods() {
 
     {
         using M1 = Mask;
-        using M2 = typename raze::datapar::simd<Arch, T, _Width_>::mask_type;
-        using M3 = typename raze::datapar::simd<Arch, typename raze::IntegerForSizeof<T>::Unsigned, _Width_>::mask_type;
+        using M2 = typename raze::datapar::simd<T, raze::datapar::x86_abi<Arch, _Width_>>::mask_type;
+        using M3 = typename raze::datapar::simd<typename raze::IntegerForSizeof<T>::Unsigned, raze::datapar::x86_abi<Arch, _Width_>>::mask_type;
         static_assert(raze::datapar::__compatible_mask<M1, M2>);
         static_assert(raze::datapar::__compatible_mask<M1, M3>);
         static_assert(raze::datapar::__compatible_mask<M2, M3>);

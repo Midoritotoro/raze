@@ -31,29 +31,28 @@ __simd_nodiscard_inline auto __data(const _DataparType_& __datapar) noexcept
 }
 
 template <
-	arch::ISA	_ISA_,
-	typename	_Type_,
-	uint32		_SimdWidth_>
+	class _Type_,
+	class _Abi_>
 class _Mask_implementation {
 public:
-	static constexpr auto __number_mask = __is_native_compare_returns_number_v<simd<_ISA_, _Type_, _SimdWidth_>>;
-	static constexpr auto __width = _SimdWidth_;
-	static constexpr auto __isa = _ISA_;
+	static constexpr auto __number_mask = __is_native_compare_returns_number_v<simd<_Type_, _Abi_>>;
+	static constexpr auto __width = _Abi_::width;
+	static constexpr auto __isa = _Abi_::isa;
 
 	using element_type = _Type_;
 	using mask_type = std::conditional_t<__number_mask,
-		__mmask_for_elements_t<simd<_ISA_, _Type_, _SimdWidth_>::size()>,
-		simd<_ISA_, typename IntegerForSizeof<_Type_>::Unsigned, _SimdWidth_>>;
+		__mmask_for_elements_t<simd<_Type_, _Abi_>::size()>,
+		simd<typename IntegerForSizeof<_Type_>::Unsigned, _Abi_>>;
 
-	using __operations = _Mask_operations<_ISA_, _Type_, _SimdWidth_>;
+	using __operations = _Mask_operations<_Type_, _Abi_>;
 
 	raze_nodiscard raze_always_inline static constexpr int32 __bit_width() noexcept {
-		constexpr auto __count = __number_mask ? simd<_ISA_, _Type_, _SimdWidth_>::size() : _SimdWidth_;
+		constexpr auto __count = __number_mask ? simd<_Type_, _Abi_>::size() : __width;
 		return __count;
 	}
 
 	raze_nodiscard raze_always_inline static constexpr int32 __elements() noexcept {
-		return simd<_ISA_, _Type_, _SimdWidth_>::size();
+		return simd<_Type_, _Abi_>::size();
 	}
 	
 	raze_nodiscard raze_always_inline static bool __all_of(mask_type __mask) noexcept {
@@ -137,7 +136,7 @@ public:
 			return __operations::__count_trailing_zero_bits(__mask);
 		}
 		else {
-			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, __width>;
+			using _IndexMaskType = _Simd_bitmask<_Type_, _Abi_>;
 			const auto __index_mask = _To_bitmask<__isa, __width, _Type_>()(__data(__mask));
 			return _IndexMaskType(__index_mask).__count_trailing_zero_bits();
 		}
@@ -275,7 +274,7 @@ private:
 			return __operations::__count_leading_zero_bits(__mask);
 		}
 		else {
-			using _IndexMaskType = _Simd_bitmask<_ISA_, _Type_, __width>;
+			using _IndexMaskType = _Simd_bitmask<_Type_, _Abi_>;
 			const auto __index_mask = _To_bitmask<__isa, __width, _Type_>()(__data(__mask));
 			return _IndexMaskType(__index_mask).__count_leading_zero_bits();
 		}

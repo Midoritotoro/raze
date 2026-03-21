@@ -6,27 +6,27 @@
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <
-	arch::ISA	_ISA_,
-	class		_Type_,
-	uint32		_SimdWidth_>
+	class _Type_,
+	class _Abi_>
 class _Mask_bits {
-	static_assert(type_traits::__is_generation_supported_v<_ISA_>);
+	static_assert(type_traits::__is_generation_supported_v<_Abi_::isa>);
 	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
 public:
-	static constexpr auto __isa = _ISA_;
-	static constexpr auto __width = _SimdWidth_;
-	static constexpr auto __elements = simd<_ISA_, _Type_, _SimdWidth_>::size();
+	static constexpr auto __isa = _Abi_::isa;
+	static constexpr auto __width = _Abi_::width;
+	static constexpr auto __elements = simd<_Type_, _Abi_>::size();
 
 	using element_type = _Type_;
+	using abi_type = _Abi_;
 	using __mask_type = __mmask_for_elements_t<__elements>;
-	using __operations = _Mask_operations<_ISA_, _Type_, _SimdWidth_>;
+	using __operations = _Mask_operations<_Type_, _Abi_>;
 
 
 	template <class _Simd_>
 	_Mask_bits(const _Simd_& __simd) noexcept
 		requires(__is_valid_simd_v<_Simd_>)
 	{
-		_bits = _To_mask<_ISA_, _SimdWidth_, _Type_>()(__data(__simd));
+		_bits = _To_mask<__isa, __width, _Type_>()(__data(__simd));
 	}
 
 	template <std::unsigned_integral _Mask_>
@@ -111,19 +111,16 @@ struct __is_simd_mask_bits:
 template <class _SimdMaskBits_>
 struct __is_simd_mask_bits<
 	_SimdMaskBits_,
-    std::void_t<_Mask_bits<_SimdMaskBits_::__isa,
-                typename _SimdMaskBits_::element_type,
-                _SimdMaskBits_::__width>>>
+    std::void_t<_Mask_bits<typename _SimdMaskBits_::element_type,
+                typename _SimdMaskBits_::abi_type>>>
     : std::bool_constant<
         type_traits::is_virtual_base_of_v<
-            _Mask_bits<_SimdMaskBits_::__isa,
-                typename _SimdMaskBits_::element_type,
-                _SimdMaskBits_::__width>,
+            _Mask_bits<typename _SimdMaskBits_::element_type,
+                typename _SimdMaskBits_::abi_type>,
             _SimdMaskBits_> ||
         std::is_same_v<
-            _Mask_bits<_SimdMaskBits_::__isa,
-				typename _SimdMaskBits_::element_type,
-				_SimdMaskBits_::__width>,
+            _Mask_bits<typename _SimdMaskBits_::element_type,
+				typename _SimdMaskBits_::abi_type>,
             _SimdMaskBits_>> 
 {};
 
