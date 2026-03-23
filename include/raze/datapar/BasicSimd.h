@@ -267,6 +267,10 @@ public:
         return size();
     }
 
+    raze_nodiscard static raze_always_inline constexpr int registers_count() noexcept {
+        return _Abi_::registers_count;
+    }
+
     raze_always_inline operator vector_type() const noexcept {
         return _vector;
     }

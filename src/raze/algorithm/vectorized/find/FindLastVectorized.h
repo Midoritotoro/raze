@@ -58,7 +58,7 @@ struct __find_last_vectorized_internal {
         if (__tail_size == 0)
             return static_cast<const _ValueType*>(__cached_last);
 
-        if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
+        if constexpr (_Simd_::is_native_mask_load_supported_v) {
             __rewind_bytes(__last, __tail_size);
 
             const auto __tail_mask  = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));

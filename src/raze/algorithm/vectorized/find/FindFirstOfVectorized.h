@@ -27,8 +27,96 @@ raze_nodiscard __raze_simd_algorithm_inline const _Type_* __find_first_of_scalar
 
 template <class _Simd_>
 struct __find_first_of_vectorized_internal {
+private:
 	using _ValueType = typename _Simd_::value_type;
 
+	raze_nodiscard static __raze_simd_algorithm_inline const _ValueType* __find_first_of_any_size(
+		sizetype	__aligned_size,
+		sizetype	__tail_size,
+		sizetype	__values_count,
+		const void* __first1,
+		const void* __last1,
+		const void* __first2,
+		const void* __last2) noexcept
+	{
+		const auto __stop_at = __bytes_pointer_offset(__first1, __aligned_size);
+
+		do {
+			const auto __loaded_main = datapar::load<_Simd_>(__first1);
+
+			auto __values_begin = static_cast<const _ValueType*>(__first2);
+			auto __found_address = static_cast<const _ValueType*>(__last1);
+
+			for (auto __i = 0; __i < __values_count; ++__i) {
+				const auto __comparand = _Simd_(*__values_begin++);
+				const auto __mask = __comparand == __loaded_main;
+
+				if (datapar::any_of(__mask))
+					__found_address = raze::algorithm::min(__found_address,
+						static_cast<const _ValueType*>(__first1) + datapar::find_first_set(__mask));
+			}
+
+			if (__found_address != __last1)
+				return __found_address;
+
+			__advance_bytes(__first1, sizeof(_Simd_));
+		} while (__first1 != __stop_at);
+
+		return __find_first_of_scalar<_ValueType>(__first1, __last1, __first2, __last2);
+	}
+
+	template <uint64 ... _Indices_>
+	raze_nodiscard static __raze_simd_algorithm_inline const _ValueType* __find_first_of_small_size(
+		sizetype	__aligned_size,
+		sizetype	__tail_size,
+		const void* __first1,
+		const void* __last1,
+		const void* __first2,
+		const void* __last2,
+		std::index_sequence<_Indices_...>) noexcept
+	{
+		auto __found = static_cast<const _ValueType*>(__last1);
+		auto __values_begin = static_cast<const _ValueType*>(__first2);
+
+		const auto __main_loaded = datapar::load<_Simd_>(__first1);
+
+		const _Simd_ __values[sizeof...(_Indices_)] = {
+			 ([=, &__found]() noexcept {
+				const auto __comparand = _Simd_(__values_begin[_Indices_]);
+				const auto __compared = __main_loaded == __comparand;
+
+				if (datapar::any_of(__compared))
+					__found = raze::algorithm::min(__found, static_cast<const _ValueType*>(__first1) + datapar::find_first_set(__compared));
+
+				return __comparand;
+			} ())...
+		};
+
+		if (__found != __last1)
+			return __found;
+
+		auto __stop_at = __bytes_pointer_offset(__first1, __aligned_size);
+		__advance_bytes(__first1, sizeof(_Simd_));
+
+		while (__first1 != __stop_at) {
+			const auto __current_loaded = datapar::load<_Simd_>(__first1);
+
+			([=, &__found]() noexcept {
+				const auto __compared = __current_loaded == __values[_Indices_];
+
+				if (datapar::any_of(__compared))
+					__found = std::min(__found, static_cast<const _ValueType*>(__first1) + datapar::find_first_set(__compared));
+			} (), ...);
+
+			if (__found != __last1)
+				return __found;
+
+			__advance_bytes(__first1, sizeof(_Simd_));
+		}
+
+		return __find_first_of_scalar<_ValueType>(__first1, __last1, __first2, __last2);
+	}
+public:
 	raze_nodiscard raze_static_operator __raze_simd_algorithm_inline const _ValueType* operator()(
 		sizetype	__aligned_size,
 		sizetype	__tail_size,
@@ -38,13 +126,29 @@ struct __find_first_of_vectorized_internal {
 		const void* __last2) raze_const_operator noexcept
 	{
 		const auto __guard = datapar::make_guard<_Simd_>();
+		const auto __values_count = __byte_length(__first2, __last2) / sizeof(_ValueType);
 
-		const auto __stop_at = __bytes_pointer_offset(__first1, __aligned_size);
+		switch (__values_count) {
+			case 1:
+				return __find_first_of_small_size(__aligned_size, __tail_size,
+					__first1, __last1, __first2, __last2, std::make_index_sequence<1>());
 
-		do {
+			case 2:
+				return __find_first_of_small_size(__aligned_size, __tail_size,
+					__first1, __last1, __first2, __last2, std::make_index_sequence<2>());
 
-			__advance_bytes(__first1, sizeof(_Simd_));
-		} while (__first1 != __stop_at);
+			case 3:
+				return __find_first_of_small_size(__aligned_size, __tail_size,                 
+					__first1, __last1, __first2, __last2, std::make_index_sequence<3>()); 
+
+			case 4:
+				return __find_first_of_small_size(__aligned_size, __tail_size,
+					__first1, __last1, __first2, __last2, std::make_index_sequence<4>()); 
+
+			default:
+				return __find_first_of_any_size(__aligned_size, __tail_size,
+					__values_count, __first1, __last1, __first2, __last2);
+		}
 	}
 };
 

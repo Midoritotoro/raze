@@ -30,11 +30,13 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline _UnwrappedFirstForwardIte
 		if (type_traits::is_constant_evaluated() == false)
 #endif // raze_has_cxx20
 		{
+			const auto __first1_address = std::to_address(__first1_unwrapped);
+
 			const auto __result = __find_first_of_vectorized<_ValueType>(
-				std::to_address(__first1_unwrapped), std::to_address(__last1_unwrapped), 
+				__first1_address, std::to_address(__last1_unwrapped),
 				std::to_address(__first2_unwrapped), std::to_address(__last2_unwrapped));
 
-			return __first1_unwrapped + (__last1_unwrapped - reinterpret_cast<_ValueType*>(__result));
+			return __first1_unwrapped + (reinterpret_cast<const _ValueType*>(__result) - __first1_address);
 		}
 	}
 

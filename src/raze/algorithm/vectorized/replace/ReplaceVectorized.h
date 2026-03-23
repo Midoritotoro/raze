@@ -32,8 +32,8 @@ struct __replace_vectorized_internal {
         _ValueType  __old_value,
         _ValueType  __new_value) raze_const_operator noexcept
     {
-        constexpr auto __is_masked_memory_access_supported = _Simd_::template is_native_mask_store_supported_v<> &&
-            _Simd_::template is_native_mask_load_supported_v<>;
+        constexpr auto __is_masked_memory_access_supported = _Simd_::is_native_mask_store_supported_v &&
+            _Simd_::is_native_mask_load_supported_v;
 
         const auto __guard = datapar::make_guard<_Simd_>();
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);

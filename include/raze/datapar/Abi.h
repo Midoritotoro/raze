@@ -11,10 +11,21 @@ template <
 	arch::ISA	_ISA_,
 	sizetype	_Width_ = __default_width<_ISA_>>
 struct x86_abi {
+private:
+	static constexpr auto __calculate_registers_count() noexcept {
+		if constexpr (arch::__is_xmm_v<_ISA_>)
+			return 16;
+		else if constexpr (arch::__is_ymm_v<_ISA_>)
+			return 16;
+		else if constexpr (arch::__is_zmm_v<_ISA_>)
+			return 32;
+	}
+public:
 	static_assert(type_traits::__is_generation_supported_v<_ISA_>);
 
 	static constexpr auto width = _Width_;
 	static constexpr auto isa = _ISA_;
+	static constexpr auto registers_count = __calculate_registers_count();
 };
 
 template <sizetype _Width_>

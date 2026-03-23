@@ -71,7 +71,7 @@ struct __transform_vectorized_internal {
 				__advance_bytes(__destination, sizeof(_Simd_));
 			} while (__first != __stop_at);
 
-			if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
+			if constexpr (_Simd_::is_native_mask_load_supported_v) {
 				const auto __tail_mask = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
 				datapar::mask_store(__destination, __function(datapar::maskz_load<_Simd_>(__first, __tail_mask)), __tail_mask);
 
@@ -110,7 +110,7 @@ struct __transform_vectorized_internal {
 				__advance_bytes(__destination, sizeof(_Simd_));
 			} while (__first1 != __stop_at);
 
-			if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
+			if constexpr (_Simd_::is_native_mask_load_supported_v) {
 				const auto __tail_mask = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
 				datapar::mask_store(__destination, __function(
 					datapar::maskz_load<_Simd_>(__first1, __tail_mask),

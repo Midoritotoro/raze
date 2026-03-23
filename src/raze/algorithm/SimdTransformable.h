@@ -36,7 +36,7 @@ struct is_simd_unary_transformable<std::bit_not<void>, _Simd_> :
 template <class _Simd_>
 struct is_simd_unary_transformable<type_traits::negate<typename _Simd_::value_type>, _Simd_> :
 	std::false_type
-{}
+{};
 
 template <class _Simd_>
 struct is_simd_unary_transformable<type_traits::bit_not<typename _Simd_::value_type>, _Simd_> :

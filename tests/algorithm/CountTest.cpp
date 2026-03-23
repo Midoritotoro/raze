@@ -1,78 +1,100 @@
-﻿#include <vector>
-#include <array>
+﻿#include <cassert>
+#include <vector>
 #include <algorithm>
-#include <cassert>
+#include <iostream>
 #include <random>
+#include <cstdint>
+#include <type_traits>
 #include <raze/algorithm/find/Count.h>
 
-template <typename T>
-void test_basic() {
+
+template <class T>
+std::size_t raze_count(const T* data, std::size_t n, T value) {
+    return raze::algorithm::count(data, data + n, value);
+}
+
+template <class T>
+void check_single_case(const std::vector<T>& v, T value)
+{
+    std::size_t simd_res = raze_count(v.data(), v.size(), value);
+    std::size_t std_res = std::count(v.begin(), v.end(), value);
+
+    raze_assert(simd_res == std_res);
+}
+
+template <class T>
+void run_tests_for_type()
+{
     {
-        std::vector<T> v;
-        raze_assert(raze::algorithm::count(v.begin(), v.end(), T{}) == std::count(v.begin(), v.end(), T{}));
+        std::vector<T> v = { 1,2,3,2,2,5,2,7 };
+        check_single_case(v, T(2));
+        check_single_case(v, T(5));
+        check_single_case(v, T(42));
+    }
+
+    for (std::size_t n = 1; n < 200; ++n) {
+        std::vector<T> v(n);
+        for (std::size_t i = 0; i < n; ++i)
+            v[i] = T(i % 7);
+
+        for (int val = 0; val < 7; ++val)
+            check_single_case(v, T(val));
     }
 
     {
-        std::vector<T> v1 = { T(42) };
-        std::vector<T> v2 = { T(13) };
-        raze_assert(raze::algorithm::count(v1.begin(), v1.end(), T(42)) == std::count(v1.begin(), v1.end(), T(42)));
-        raze_assert(raze::algorithm::count(v2.begin(), v2.end(), T(42)) == std::count(v2.begin(), v2.end(), T(42)));
+        const std::size_t N = 1'000'000;
+        std::vector<T> v(N);
+        for (std::size_t i = 0; i < N; ++i)
+            v[i] = T(i % 13);
+
+        for (int val = 0; val < 13; ++val)
+            check_single_case(v, T(val));
     }
 
     {
-        std::vector<T> v = { T(1), T(2), T(3), T(2), T(4), T(2) };
-        for (T val : { T(2), T(4), T(5) }) {
-            auto first = raze::algorithm::count(v.begin(), v.end(), val);
-            auto second = std::count(v.begin(), v.end(), val);
-            raze_assert(first == second);
-        }
-    }
+        std::mt19937_64 rng(123456);
+        std::uniform_int_distribution<uint64_t> dist_int;
+        std::uniform_real_distribution<double> dist_fp(-1000.0, 1000.0);
 
-    {
-        std::array<T, 5> arr = { T(7), T(8), T(7), T(9), T(7) };
-        for (T val : { T(7), T(8), T(10) }) {
-            raze_assert(raze::algorithm::count(arr.begin(), arr.end(), val) == std::count(arr.begin(), arr.end(), val));
+        const std::size_t N = 4096;
+        std::vector<T> v(N);
+
+        for (int iter = 0; iter < 1'000'000; ++iter) {
+            if constexpr (std::is_floating_point_v<T>) {
+                for (std::size_t i = 0; i < N; ++i)
+                    v[i] = T(dist_fp(rng));
+            }
+            else {
+                for (std::size_t i = 0; i < N; ++i)
+                    v[i] = T(dist_int(rng));
+            }
+
+            T pattern;
+            if constexpr (std::is_floating_point_v<T>)
+                pattern = T(dist_fp(rng));
+            else
+                pattern = T(dist_int(rng));
+
+            std::size_t simd_res = raze_count(v.data(), N, pattern);
+            std::size_t std_res = std::count(v.begin(), v.end(), pattern);
+
+            raze_assert(simd_res == std_res);
         }
     }
 }
 
-template <typename T>
-void test_large(size_t bytes) {
-    size_t n = bytes / sizeof(T);
-    std::vector<T> v(n);
-
-    std::mt19937 rng(123);
-    if constexpr (std::is_integral_v<T>) {
-        std::uniform_int_distribution<int> dist(0, 100);
-        for (auto& x : v) x = static_cast<T>(dist(rng));
-    }
-    else {
-        std::uniform_real_distribution<double> dist(0.0, 10.0);
-        for (auto& x : v) x = static_cast<T>(dist(rng));
-    }
-
-    for (int i = 0; i < 5; ++i) {
-        T val = v[i];
-        auto first = raze::algorithm::count(v.begin(), v.end(), val);
-        auto second = std::count(v.begin(), v.end(), val);
-        raze_assert(first == second);
-    }
-}
-
-int main() {
-    test_basic<char>();
-    test_basic<short>();
-    test_basic<int>();
-    test_basic<long long>();
-    test_basic<float>();
-    test_basic<double>();
-
-    test_large<char>(4000);
-    test_large<short>(4000);
-    test_large<int>(4000);
-    test_large<long long>(4000);
-    test_large<float>(4000);
-    test_large<double>(4000);
+int main()
+{
+    run_tests_for_type<int8_t>();
+    run_tests_for_type<uint8_t>();
+    run_tests_for_type<int16_t>();
+    run_tests_for_type<uint16_t>();
+    run_tests_for_type<int32_t>();
+    run_tests_for_type<uint32_t>();
+    run_tests_for_type<int64_t>();
+    run_tests_for_type<uint64_t>();
+    run_tests_for_type<float>();
+    run_tests_for_type<double>();
 
     return 0;
 }

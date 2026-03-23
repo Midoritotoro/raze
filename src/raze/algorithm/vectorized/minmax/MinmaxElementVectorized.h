@@ -43,7 +43,7 @@ struct __minmax_element_vectorized_internal {
         const void* __last) raze_const_operator noexcept
     {
         using _UnsignedValueType = IntegerForSizeof<_ValueType>::Unsigned;
-        using _IndexSimdType = datapar::simd<_Simd_::__isa, _UnsignedValueType, _Simd_::__width>;
+        using _IndexSimdType = datapar::simd<_UnsignedValueType, typename _Simd_::abi_type>;
 
         const auto __guard = datapar::make_guard<_Simd_>();
 

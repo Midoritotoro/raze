@@ -561,4 +561,54 @@ __simd_nodiscard_inline void clear_right(_SimdMask_& __mask) noexcept
 	__mask.__clear_right();
 }
 
+template <class _Simd_>
+class simd_counter {
+	using __accumulator_type = std::conditional_t<
+		__is_native_compare_returns_number_v<_Simd_>,
+		uint64, simd<typename IntegerForSizeof<typename _Simd_::value_type>::Signed, typename _Simd_::abi_type>>;
+public:
+	using mask_type = typename _Simd_::mask_type;
+	
+	simd_counter() noexcept 
+	{}
+
+	raze_always_inline void add(mask_type __mask) noexcept {
+		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
+			_accumulator += datapar::count_set(__mask);
+		else
+			_accumulator -= static_cast<__accumulator_type>(__data(__mask));
+	}
+
+	raze_always_inline void add(
+		mask_type __mask, 
+		mask_type __tail_mask) noexcept 
+	{
+		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
+			_accumulator += datapar::count_set(__mask & __tail_mask);
+		else
+			_accumulator -= static_cast<__accumulator_type>(__data(__mask & __tail_mask));
+	}
+
+	raze_nodiscard raze_always_inline uint64 finalize() noexcept {
+		auto __result = uint64(0);
+
+		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
+			__result = _accumulator;
+		else
+			__result = datapar::reduce(_accumulator);
+
+		_accumulator = 0;
+		return __result;
+	}
+	
+	raze_nodiscard raze_always_inline static constexpr uint64 portion_size() noexcept {
+		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
+			return math::__maximum_integral_limit<__accumulator_type>() * sizeof(_Simd_);
+		else
+			return math::__maximum_integral_limit<typename IntegerForSizeof<typename _Simd_::value_type>::Signed>() * sizeof(_Simd_);
+	}
+private:
+	__accumulator_type _accumulator = 0;
+};
+
 __RAZE_DATAPAR_NAMESPACE_END

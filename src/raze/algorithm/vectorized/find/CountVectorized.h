@@ -37,31 +37,41 @@ struct __count_vectorized_internal {
         raze_maybe_unused_attribute sizetype    __bytes,
         _ValueType                              __value) raze_const_operator noexcept
     {
-        const auto __guard  = datapar::make_guard<_Simd_>();
-        auto __count        = sizetype(0);
+        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __comparand = _Simd_(__value);
 
-        const auto __comparand  = _Simd_(__value);
-        const auto __stop_at    = __bytes_pointer_offset(__first, __aligned_size);
+        auto __result = uint64(0);
+        auto __counter = datapar::simd_counter<_Simd_>();
 
-        auto __count_vector = _Simd_::zero();
+        constexpr auto __max_portion_size = datapar::simd_counter<_Simd_>::portion_size();
 
-        do {
-            const auto __loaded = datapar::load<_Simd_>(__first);
+        while (true) {
+            const auto __current_portion_size = raze::algorithm::min(__aligned_size, __max_portion_size);
+            const auto __stop_at = __bytes_pointer_offset(__first, __current_portion_size);
 
-            __count += datapar::reduce_equal(__comparand, datapar::load<_Simd_>(__first));
-            __advance_bytes(__first, sizeof(_Simd_));
-        } while (__first != __stop_at);
+            __aligned_size -= __current_portion_size;
 
-        if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
+            do {
+                __counter.add(datapar::load<_Simd_>(__first) == __comparand);
+                __advance_bytes(__first, sizeof(_Simd_));
+            } while (__first != __stop_at);
+
+            __result += __counter.finalize();
+
+            if (__aligned_size == 0)
+                break;
+        }
+
+        if constexpr (_Simd_::is_native_mask_load_supported_v) {
             if (__tail_size != 0) {
-                const auto __tail_mask  = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
-                __count += datapar::reduce_equal(datapar::maskz_load<_Simd_>(__first, __tail_mask), __comparand, __tail_mask);
+                const auto __tail_mask = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
+                __counter.add(datapar::maskz_load<_Simd_>(__first, __tail_mask) == __comparand, __tail_mask);
             }
 
-            return __count;
+            return __result + __counter.finalize();
         } 
         else {
-            return __count + __count_scalar(__first, __tail_size, __value);
+            return __result + __count_scalar(__first, __tail_size, __value);
         }
     }
 };

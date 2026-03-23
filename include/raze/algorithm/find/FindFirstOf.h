@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/algorithm/unchecked/find/FindFirstOfUnchecked.h>
+#include <raze/concurrency/Execution.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -36,7 +37,7 @@ template <
 raze_nodiscard raze_constexpr_cxx20 raze_always_inline _FirstForwardIterator_ find_first_of(
 	_FirstForwardIterator_	__first1,
 	_FirstForwardIterator_	__last1,
-	_SecondForwardIterator_	__first2
+	_SecondForwardIterator_	__first2,
 	_SecondForwardIterator_	__last2) noexcept(
 		type_traits::is_nothrow_invocable_v<
 			type_traits::equal_to<>,

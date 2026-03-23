@@ -48,7 +48,7 @@ struct __min_vectorized_internal {
         }
 
         if (__tail_size != 0) {
-            if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
+            if constexpr (_Simd_::is_native_mask_load_supported_v) {
                 __minimum_values = datapar::vertical_min(__minimum_values, 
                     datapar::maskz_load<_Simd_>(__first, datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType))));
             }

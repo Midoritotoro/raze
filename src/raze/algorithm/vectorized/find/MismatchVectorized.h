@@ -57,7 +57,7 @@ struct __mismatch_vectorized_internal {
         if (__tail_size == 0)
             return __length;
 
-        if constexpr (_Simd_::template is_native_mask_load_supported_v<>) {
+        if constexpr (_Simd_::is_native_mask_load_supported_v) {
             const auto __tail_mask = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
 
             const auto __loaded_first   = datapar::maskz_load<_Simd_>(__first, __tail_mask);

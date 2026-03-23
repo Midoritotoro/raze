@@ -115,13 +115,15 @@ constexpr raze_always_inline int __population_count(_IntegralType_ __value) noex
 }
 
 template <
-    sizetype _Bits_,
-    std::unsigned_integral _IntegralType_>
-constexpr raze_always_inline int __popcnt_n_bits(_IntegralType_ __value) noexcept {
+    sizetype                _Bits_,
+    std::unsigned_integral  _IntegralType_>
+constexpr raze_always_inline int32 __popcnt_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(_Bits_ <= (sizeof(_IntegralType_) * 8));
 
-    constexpr auto __max_for_n_bits = _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
+    constexpr auto __max_for_n_bits = (_Bits_ == (sizeof(_IntegralType_) * 8))
+        ? math::__maximum_integral_limit<_IntegralType_>()
+        : _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
     constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
 
     using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
