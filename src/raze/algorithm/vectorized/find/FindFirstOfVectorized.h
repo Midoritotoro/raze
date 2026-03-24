@@ -145,6 +145,22 @@ public:
 				return __find_first_of_small_size(__aligned_size, __tail_size,
 					__first1, __last1, __first2, __last2, std::make_index_sequence<4>()); 
 
+			case 5:
+				return __find_first_of_small_size(__aligned_size, __tail_size,
+					__first1, __last1, __first2, __last2, std::make_index_sequence<5>());
+
+			case 6:
+				return __find_first_of_small_size(__aligned_size, __tail_size,
+					__first1, __last1, __first2, __last2, std::make_index_sequence<6>());
+
+			case 7:
+				return __find_first_of_small_size(__aligned_size, __tail_size,
+					__first1, __last1, __first2, __last2, std::make_index_sequence<7>());
+
+			case 8:
+				return __find_first_of_small_size(__aligned_size, __tail_size,
+					__first1, __last1, __first2, __last2, std::make_index_sequence<8>());
+
 			default:
 				return __find_first_of_any_size(__aligned_size, __tail_size,
 					__values_count, __first1, __last1, __first2, __last2);
