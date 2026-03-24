@@ -19,8 +19,6 @@ __simd_nodiscard_inline_constexpr _UnwrappedIterator_ __find_unchecked(
 	_UnwrappedIterator_									__last_unwrapped,
 	const typename std::type_identity<_Type_>::type&	__value) noexcept
 {
-	using _DifferenceType = type_traits::iterator_difference_type<_UnwrappedIterator_>;
-
 	if constexpr (type_traits::__is_vectorized_find_algorithm_safe_v<_UnwrappedIterator_, _Type_>) {
 #if raze_has_cxx20
 		if (type_traits::is_constant_evaluated() == false)

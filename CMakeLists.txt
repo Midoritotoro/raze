@@ -61,6 +61,7 @@ set(PRIVATE_HEADERS
     src/raze/algorithm/vectorized/minmax/MinmaxVectorized.h
     src/raze/algorithm/vectorized/find/FindFirstOfVectorized.h
     src/raze/algorithm/vectorized/find/ContainsSubrangeVectorized.h
+    src/raze/algorithm/vectorized/find/AdjacentFindVectorized.h
 
     src/raze/algorithm/AlgorithmDebug.h
     src/raze/algorithm/AdvanceBytes.h
@@ -80,6 +81,7 @@ set(PRIVATE_HEADERS
     "src/raze/algorithm/unchecked/find/FindLastIfUnchecked.h"
     src/raze/algorithm/unchecked/find/FindFirstOfUnchecked.h
     src/raze/algorithm/unchecked/find/ContainsSubrangeUnchecked.h
+    src/raze/algorithm/unchecked/find/AdjacentFindUnchecked.h
 
 
     src/raze/algorithm/unchecked/copy/CopyUnchecked.h
@@ -317,6 +319,7 @@ set(PUBLIC_HEADERS
     include/raze/algorithm/find/FindEnd.h
     include/raze/algorithm/find/FindLast.h
     include/raze/algorithm/find/ContainsSubrange.h
+    include/raze/algorithm/find/AdjacentFind.h
 
     include/raze/algorithm/copy/Copy.h
     include/raze/algorithm/copy/CopyN.h
