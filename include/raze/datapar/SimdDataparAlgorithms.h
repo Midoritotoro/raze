@@ -561,6 +561,16 @@ __simd_nodiscard_inline void clear_right(_SimdMask_& __mask) noexcept
 	__mask.__clear_right();
 }
 
+template <class _SimdMask_>
+__simd_nodiscard_inline bool is_contiguous(
+	const _SimdMask_&	__mask,
+	uint32				__n,
+	uint32				__k) noexcept
+		requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
+{
+	return __mask.__is_contiguous(__n, __k);
+}
+
 template <class _Simd_>
 class simd_counter {
 	using __accumulator_type = std::conditional_t<

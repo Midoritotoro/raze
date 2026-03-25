@@ -19,5 +19,7 @@
 #include <src/raze/datapar/bitwise/ToGPR.h>
 #include <src/raze/datapar/bitwise/MaskBits.h>
 #include <src/raze/datapar/bitwise/MaskOperations.h>
+#include <src/raze/datapar/bitwise/RightShift.h>
+#include <src/raze/datapar/bitwise/LeftShift.h>
 #include <src/raze/datapar/bitwise/FirstN.h>
 #include <src/raze/datapar/bitwise/ToK.h>

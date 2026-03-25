@@ -18,7 +18,7 @@ public:
 
 	using element_type = _Type_;
 	using abi_type = _Abi_;
-	using __mask_type = __mmask_for_elements_t<__elements>;
+	using mask_type = __mmask_for_elements_t<__elements>;
 	using __operations = _Mask_operations<_Type_, _Abi_>;
 
 
@@ -31,10 +31,10 @@ public:
 
 	template <std::unsigned_integral _Mask_>
 	_Mask_bits(const _Mask_& __integral) noexcept {
-		_bits = static_cast<__mask_type>(__integral);
+		_bits = static_cast<mask_type>(__integral);
 	}
 
-	raze_always_inline operator __mask_type() const noexcept {
+	raze_always_inline operator mask_type() const noexcept {
 		return _bits;
 	}
 
@@ -97,8 +97,12 @@ public:
 	raze_always_inline void __clear_right() noexcept {
 		_bits = __operations::__clear_right(_bits);
 	}
+
+	raze_nodiscard raze_always_inline bool __is_contiguous(uint32 __n, uint32 __k) const noexcept {
+		return __operations::__is_contiguous(_bits, __n, __k);
+	}
 private:
-	__mask_type _bits = 0;
+	mask_type _bits = 0;
 };
 
 template <

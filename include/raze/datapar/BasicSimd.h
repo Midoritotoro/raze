@@ -69,6 +69,20 @@ public:
         return *this;
     }
 
+    raze_nodiscard raze_always_inline friend simd operator<<(
+        const simd& __left,
+        uint32      __shift) noexcept
+    {
+        return _Left_shift<__isa, __width, _Type_>()(__left._vector, __shift);
+    }
+
+    raze_nodiscard raze_always_inline friend simd operator>>(
+        const simd& __left,
+        uint32      __shift) noexcept
+    {
+        return _Right_shift<__isa, __width, _Type_>()(__left._vector, __shift);
+    }
+
     template <class _RightType_>
     raze_nodiscard raze_always_inline friend simd operator-(
         const simd& __left,

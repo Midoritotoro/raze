@@ -166,6 +166,20 @@ public:
 			return __count_leading_zero_bits(~__mask);
 	}
 
+	raze_nodiscard raze_always_inline static bool __is_contiguous(
+		mask_type	__mask,
+		uint32		__n, 
+		uint32		__k) noexcept 
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			return __operations::__is_contiguous(__mask, __n, __k);
+		}
+		else {
+			const auto __bits = _To_mask<__isa, __width, _Type_>()(__data(__mask));
+			return __operations::__is_contiguous(__bits, __n, __k);
+		}
+	}
+
 	template <sizetype _Bits_>
 	raze_nodiscard raze_always_inline static mask_type
 		__from_bitset(const std::bitset<_Bits_>& __bitset) noexcept

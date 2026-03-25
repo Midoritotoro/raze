@@ -2,6 +2,7 @@
 #include <raze/math/Math.h>
 #include <raze/algorithm/fill/Fill.h>
 #include <string>
+#include <random>
 #include <vector>
 #include <numeric>
 #include <limits>
@@ -243,6 +244,71 @@ void testSimdMaskMethods() {
         static_assert(raze::datapar::__compatible_mask<M1, M3>);
         static_assert(raze::datapar::__compatible_mask<M2, M3>);
     }
+
+    {
+        {
+            Mask m(false);
+            for (size_t n = 0; n < N; ++n)
+                for (size_t k = n; k < N; ++k)
+                    raze_assert(!raze::datapar::is_contiguous(m, n, k));
+        }
+
+        {
+            Mask m(true);
+            for (size_t n = 0; n < N; ++n)
+                for (size_t k = n; k < N; ++k)
+                    raze_assert(raze::datapar::is_contiguous(m, n, k));
+        }
+
+        for (size_t pos = 0; pos < N; ++pos) {
+            Mask m(false);
+            m[pos] = true;
+
+            for (size_t n = 0; n < N; ++n) {
+                for (size_t k = n; k < N; ++k) {
+                    bool expected = (n == pos && k == pos);
+                    raze_assert(raze::datapar::is_contiguous(m, n, k) == expected);
+                }
+            }
+        }
+
+        {
+            Mask m(false);
+            for (size_t i = 0; i < N; ++i)
+                m[i] = (i % 2 == 0);
+
+            for (size_t n = 0; n < N; ++n) {
+                for (size_t k = n; k < N; ++k) {
+                    bool expected = true;
+                    for (size_t i = n; i <= k; ++i)
+                        if (!m[i]) expected = false;
+
+                    raze_assert(raze::datapar::is_contiguous(m, n, k) == expected);
+                }
+            }
+        }
+
+        {
+            std::mt19937 rng(123456);
+            for (int iter = 0; iter < 1000; ++iter) {
+                Mask m(false);
+                for (size_t i = 0; i < N; ++i)
+                    m[i] = (rng() & 1);
+
+                for (size_t n = 0; n < N; ++n) {
+                    for (size_t k = n; k < N; ++k) {
+                        bool expected = true;
+                        for (size_t i = n; i <= k; ++i)
+                            if (!m[i]) expected = false;
+
+                   
+                        raze_assert(raze::datapar::is_contiguous(m, n, k) == expected);
+                    }
+                }
+            }
+        }
+    }
+
 }
 
 template <raze::arch::ISA _ISA_, raze::uint32 _Width_>

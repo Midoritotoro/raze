@@ -15,27 +15,21 @@
 
 #include <raze/compatibility/CompilerDetection.h>
 #include <raze/compatibility/AlignmentMacros.h>
-
 #include <raze/compatibility/BranchPrediction.h>
 #include <raze/compatibility/CallingConventions.h>
-
 #include <raze/compatibility/Inline.h>
 #include <raze/compatibility/CxxVersionDetection.h>
-
 #include <raze/compatibility/FunctionAttributes.h>
 #include <raze/compatibility/LanguageFeatures.h>
-
 #include <raze/compatibility/MemoryMacros.h>
 #include <raze/compatibility/Nodiscard.h>
-
 #include <raze/compatibility/SimdCompatibility.h>
 #include <raze/compatibility/SystemDetection.h>
-
 #include <raze/compatibility/UnreachableCode.h>
 #include <raze/compatibility/Warnings.h>
-
 #include <raze/compatibility/StaticOperators.h>
 #include <raze/compatibility/MsvcIntrinWorkaround.h>
+#include <raze/compatibility/AutoVectorization.h>
 
 #include <cstddef>
 

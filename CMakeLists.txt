@@ -23,6 +23,9 @@ if (NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
 endif()
 
 option(RAZE_INSTALL "" ${PROJECT_IS_TOP_LEVEL})
+option(RAZE_ENABLE_OPENMP "Enable OpenMP support in raze" OFF)
+
+
 set(RAZE_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/raze")
 
 set(PRIVATE_SOURCES  
@@ -62,6 +65,7 @@ set(PRIVATE_HEADERS
     src/raze/algorithm/vectorized/find/FindFirstOfVectorized.h
     src/raze/algorithm/vectorized/find/ContainsSubrangeVectorized.h
     src/raze/algorithm/vectorized/find/AdjacentFindVectorized.h
+    src/raze/algorithm/vectorized/find/SearchNVectorized.h
 
     src/raze/algorithm/AlgorithmDebug.h
     src/raze/algorithm/AdvanceBytes.h
@@ -82,6 +86,7 @@ set(PRIVATE_HEADERS
     src/raze/algorithm/unchecked/find/FindFirstOfUnchecked.h
     src/raze/algorithm/unchecked/find/ContainsSubrangeUnchecked.h
     src/raze/algorithm/unchecked/find/AdjacentFindUnchecked.h
+    src/raze/algorithm/unchecked/find/SearchNUnchecked.h
 
 
     src/raze/algorithm/unchecked/copy/CopyUnchecked.h
@@ -196,6 +201,8 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/FirstN.h
     src/raze/datapar/bitwise/ToK.h
     src/raze/datapar/bitwise/ToGPR.h
+    src/raze/datapar/bitwise/LeftShift.h
+    src/raze/datapar/bitwise/RightShift.h
 
     src/raze/datapar/arithmetic/Sub.h
     src/raze/datapar/arithmetic/Add.h
@@ -301,6 +308,7 @@ set(PUBLIC_HEADERS
     include/raze/compatibility/Warnings.h
     include/raze/compatibility/SimdCompatibility.h
     include/raze/compatibility/StaticOperators.h
+    include/raze/compatibility/AutoVectorization.h
 
     include/raze/Types.h
     include/raze/RazeNamespace.h
@@ -320,6 +328,7 @@ set(PUBLIC_HEADERS
     include/raze/algorithm/find/FindLast.h
     include/raze/algorithm/find/ContainsSubrange.h
     include/raze/algorithm/find/AdjacentFind.h
+    include/raze/algorithm/find/SearchN.h
 
     include/raze/algorithm/copy/Copy.h
     include/raze/algorithm/copy/CopyN.h
@@ -640,6 +649,24 @@ else()
 
 endif()
 
+
+if (RAZE_ENABLE_OPENMP)
+    find_package(OpenMP REQUIRED)
+
+    if(OpenMP_CXX_FOUND)
+	    include_directories(${OpenMP_INCLUDE_DIRS})
+        message("OpenMP FOUND dir is ${OpenMP_INCLUDE_DIRS}.")
+
+        if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC") 
+            set(CMAKE_CXX_FLAGS "/openmp")
+        else()
+            set(CMAKE_CXX_FLAGS "-fopenmp")
+        endif()
+
+        add_compile_definitions(RAZE_ENABLE_OPENMP=1)
+        target_link_libraries(${PROJECT_NAME} OpenMP::OpenMP_CXX)
+    endif()
+endif()
 
 if(PROJECT_IS_TOP_LEVEL)
     enable_testing()

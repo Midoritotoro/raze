@@ -228,7 +228,7 @@ public:
 	template <
 		class _UnwrappedForwardIterator_, 
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline void __copy_from_unchecked(
+	raze_always_inline void __copy_from_unchecked(
 		_UnwrappedForwardIterator_	__first,
 		_AlignmentPolicy_&&			__alignment_policy) noexcept 
 	{
@@ -238,7 +238,7 @@ public:
 	template <
 		class _UnwrappedOutputIterator_, 
 		class _AlignmentPolicy_>
-	raze_nodiscard raze_always_inline void __copy_to_unchecked(
+	raze_always_inline void __copy_to_unchecked(
 		_UnwrappedOutputIterator_	__first,
 		_AlignmentPolicy_&&			__alignment_policy) noexcept
 	{
@@ -251,6 +251,10 @@ public:
 
 	raze_always_inline void __clear_right() noexcept {
 		_mask = _Impl::__clear_right(_mask);
+	}
+
+	raze_nodiscard raze_always_inline bool __is_contiguous(uint32 __n, uint32 __k) const noexcept {
+		return _Impl::__is_contiguous(_mask, __n, __k);
 	}
 private:
 	mask_type _mask = 0;
