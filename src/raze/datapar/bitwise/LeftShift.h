@@ -87,7 +87,7 @@ struct _Left_shift<arch::ISA::AVX512F, 512, _DesiredType_> {
 			const auto __low_shifted = _Left_shift<arch::ISA::AVX2, 256, _DesiredType_>()(__low, __shift);
 			const auto __high_shifted = _Left_shift<arch::ISA::AVX2, 256, _DesiredType_>()(__high, __shift);
 
-			return __intrin_bitcast<_IntrinType_>(_mm512_inserti64x4(__intrin_bitcast<__m512i>(__low), __high, 1));
+			return __intrin_bitcast<_IntrinType_>(_mm512_inserti64x4(__intrin_bitcast<__m512i>(__low_shifted), __high_shifted, 1));
 		}
 	}
 };

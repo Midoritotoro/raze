@@ -469,6 +469,50 @@ void testMethods() {
         }
     }
 
+    {
+        if constexpr (std::is_integral_v<T>) {
+            alignas(64) T arrA[N];
+            for (size_t i = 0; i < N; ++i)
+                arrA[i] = static_cast<T>((i + 1) * 3);
+
+            Simd a = raze::datapar::load<Simd>(arrA);
+            std::vector<raze::uint32> shifts = { 0, 1, 2, 3, sizeof(T) * 8 - 1 };
+
+            for (raze::uint32 sh : shifts) {
+                {
+                    auto v = (a << sh);
+
+                    for (size_t i = 0; i < N; ++i) {
+                        T expected = static_cast<T>(arrA[i] << sh);
+                        raze_assert(v[i] == expected);
+                    }
+                }
+
+                {
+                    auto v = (a >> sh);
+
+                    for (size_t i = 0; i < N; ++i) {
+                        T expected = static_cast<T>(arrA[i] >> sh);
+                        raze_assert(v[i] == expected);
+                    }
+                }
+            }
+
+            for (size_t i = 0; i < N; ++i) {
+                raze::uint32 sh = static_cast<raze::uint32>(i % (sizeof(T) * 8));
+
+                auto vL = (a << sh);
+                auto vR = (a >> sh);
+
+                T expectedL = static_cast<T>(arrA[i] << sh);
+                T expectedR = static_cast<T>(arrA[i] >> sh);
+
+                raze_assert(vL[i] == expectedL);
+                raze_assert(vR[i] == expectedR);
+            }
+        }
+    }
+
 }
 
 template <raze::arch::ISA _ISA_, raze::uint32 _Width_>

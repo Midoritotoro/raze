@@ -85,8 +85,8 @@ public:
 
     template <class _RightType_>
     raze_nodiscard raze_always_inline friend simd operator-(
-        const simd& __left,
-        const _RightType_& __right) noexcept requires(
+        const simd&         __left,
+        const _RightType_&  __right) noexcept requires(
             std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
         return _Sub<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
@@ -104,7 +104,7 @@ public:
     template <class _RightType_>
     raze_nodiscard raze_always_inline friend simd operator*(
         const simd&         __left, 
-        const _RightType_& __right) noexcept requires(
+        const _RightType_&  __right) noexcept requires(
             std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
         return _Mul<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));

@@ -9,4 +9,6 @@
 #include <src/raze/datapar/shuffle/InsertMask.h>
 #include <src/raze/datapar/shuffle/MaskExpand.h>
 #include <src/raze/datapar/shuffle/Reverse.h>
+#include <src/raze/datapar/shuffle/SlideLeft.h>
+#include <src/raze/datapar/shuffle/SlideRight.h>
 #include <src/raze/datapar/shuffle/ShuffleTables.h>

@@ -484,6 +484,54 @@ raze_always_inline void mask_store(
 		__address, __data(__mask), __data(__datapar), __policy);
 }
 
+template <class _DataparType_>
+raze_always_inline _DataparType_ slide_left(
+	const _DataparType_&	__datapar,
+	uint32					__elements) noexcept 
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Slide_left<_RawDataparType::__isa, _RawDataparType::__width>()(
+		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+}
+
+template <
+	class	_DataparType_,
+	uint32	_Elements_>
+raze_always_inline _DataparType_ slide_left(
+	const _DataparType_&						__datapar,
+	std::integral_constant<uint32, _Elements_>	__elements) noexcept 
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Slide_left<_RawDataparType::__isa, _RawDataparType::__width>()(
+		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+}
+
+template <class _DataparType_>
+raze_always_inline _DataparType_ slide_right(
+	const _DataparType_&	__datapar,
+	uint32					__elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Slide_right<_RawDataparType::__isa, _RawDataparType::__width>()(
+		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+}
+
+template <
+	class	_DataparType_,
+	uint32	_Elements_>
+raze_always_inline _DataparType_ slide_right(
+	const _DataparType_&						__datapar,
+	std::integral_constant<uint32, _Elements_>	__elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Slide_right<_RawDataparType::__isa, _RawDataparType::__width>()(
+		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+}
+
 template <class _SimdMask_>
 __simd_nodiscard_inline bool none_of(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
