@@ -50,6 +50,8 @@ struct _Slide_left<arch::ISA::SSE2, 128> {
 	}
 };
 
+template <> struct _Slide_left<arch::ISA::SSE3, 128> : _Slide_left<arch::ISA::SSE2, 128> {};
+
 template <> 
 struct _Slide_left<arch::ISA::SSSE3, 128>:
 	_Slide_left<arch::ISA::SSE3, 128> 
@@ -124,9 +126,9 @@ struct _Slide_left<arch::ISA::AVX2, 256> {
 		}
 
 		if constexpr ((__shift % 16) == 0) 
-			return __low_part;
+			return __intrin_bitcast<_IntrinType_>(__low_part);
 
-		return _mm256_alignr_epi8(__low_part, __high_part, 16 - (__shift & 0xF));
+		return __intrin_bitcast<_IntrinType_>(_mm256_alignr_epi8(__low_part, __high_part, 16 - (__shift & 0xF)));
 	}
 };
 
@@ -149,12 +151,15 @@ struct _Slide_left<arch::ISA::AVX512VLF, 256>:
 		_IntrinType_							__left,
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
-		if constexpr ((__shift % 4) == 0) {
+		if constexpr (__shift == 0) {
+			return __left;
+		}
+		else if constexpr ((__shift % 4) == 0) {
 			return __intrin_bitcast<_IntrinType_>(_mm256_alignr_epi32(
 				__intrin_bitcast<__m256i>(__left), _mm256_setzero_si256(), (8 - (__shift >> 2)) & 7));
 		}
 		else {
-			return _Slide_left<arch::ISA::AVX2, 256>()(__left, __shift);
+			return _Slide_left<arch::ISA::AVX2, 256>()(__left, std::integral_constant<uint32, __shift>{});
 		}
 	}
 };
@@ -191,9 +196,6 @@ struct _Slide_left<arch::ISA::AVX512F, 512> {
 		if constexpr (__shift == 0) {
 			return __left;
 		}
-		else if constexpr ((__shift % 4) == 0) {
-			return _mm512_alignr_epi32(__intrin_bitcast<__m512i>(__left), _mm512_setzero_si512(), (16 - (__shift >> 2)) & 15);
-		}
 		else if constexpr (__shift < 16) {
 			__low_part = __intrin_bitcast<__m512i>(__left);
 			__high_part = _mm512_maskz_shuffle_i64x2(0xFC, __intrin_bitcast<__m512i>(__left),
@@ -217,6 +219,11 @@ struct _Slide_left<arch::ISA::AVX512F, 512> {
 		}
 		else {
 			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
+		}
+
+		if constexpr ((__shift % 4) == 0) {
+			return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi32(
+				__intrin_bitcast<__m512i>(__left), _mm512_setzero_si512(), (16 - (__shift >> 2)) & 15));
 		}
 
 		const auto __low256 = _mm256_alignr_epi8(__intrin_bitcast<__m256i>(__low_part),
@@ -262,9 +269,6 @@ struct _Slide_left<arch::ISA::AVX512BW, 512>:
 		if constexpr (__shift == 0) {
 			return __left;
 		}
-		else if constexpr ((__shift % 4) == 0) {
-			return _mm512_alignr_epi32(__intrin_bitcast<__m512i>(__left), _mm512_setzero_si512(), (16 - (__shift >> 2)) & 15);
-		}
 		else if constexpr (__shift < 16) {
 			__low_part = __intrin_bitcast<__m512i>(__left);
 			__high_part = _mm512_maskz_shuffle_i64x2(0xFC, __intrin_bitcast<__m512i>(__left),
@@ -290,12 +294,16 @@ struct _Slide_left<arch::ISA::AVX512BW, 512>:
 			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
 		}
 
+		if constexpr ((__shift % 4) == 0) {
+			return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi32(__intrin_bitcast<__m512i>(__left),
+				_mm512_setzero_si512(), (16 - (__shift >> 2)) & 15));
+		}
+
 		return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift & 0xF)));
 	}
 };
 
 
-template <> struct _Slide_left<arch::ISA::SSE3, 128> : _Slide_left<arch::ISA::SSE2, 128> {};
 template <> struct _Slide_left<arch::ISA::SSE41, 128> : _Slide_left<arch::ISA::SSSE3, 128> {};
 template <> struct _Slide_left<arch::ISA::SSE42, 128> : _Slide_left<arch::ISA::SSE41, 128> {};
 template <> struct _Slide_left<arch::ISA::AVX2, 128> : _Slide_left<arch::ISA::SSE42, 128> {};

@@ -48,6 +48,13 @@ __simd_nodiscard_inline auto reduce(
 template <class _DataparType_>
 using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_abi<_DataparType_::__isa, _DataparType_::__width>>;
 
+/**
+ *  @brief  Constructs a tail mask with the first @p __elements lanes set.
+ *
+ *  @tparam _DataparType_  SIMD vector type for which the mask is created.
+ *
+ *  @param __elements  Number of leading lanes to mark as valid.
+*/
 template <class _DataparType_> 
 __simd_nodiscard_inline __tail_mask_type<_DataparType_> first_n(uint32 __elements) noexcept
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -484,54 +491,117 @@ raze_always_inline void mask_store(
 		__address, __data(__mask), __data(__datapar), __policy);
 }
 
+/**
+ *  @brief  Element-wise logical left shift of a SIMD vector.
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Number of elements to shift left.
+ *
+ *  Performs an element-wise logical left shift of @p __datapar by
+ *  @p __elements positions. Elements shifted out of the vector on the
+ *  left are discarded; vacated positions on the right are filled with
+ *  zero.
+ *
+ *  If @p __elements is greater than or equal to the number of lanes in
+ *  the vector, the result is a zero-filled vector.
+*/
 template <class _DataparType_>
 raze_always_inline _DataparType_ slide_left(
-	const _DataparType_&	__datapar,
-	uint32					__elements) noexcept 
-		requires(__is_valid_simd_v<_DataparType_>)
+    const _DataparType_&    __datapar,
+    uint32                  __elements) noexcept
+        requires(__is_valid_simd_v<_DataparType_>)
 {
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Slide_left<_RawDataparType::__isa, _RawDataparType::__width>()(
-		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+    using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+    return _Slide_left<_RawDataparType::__isa, _RawDataparType::__width>()(
+        __data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
 }
 
+/**
+ *  @brief  Element-wise logical left shift of a SIMD vector (compile-time constant).
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Compile-time constant number of elements to shift left.
+ *
+ *  Compile-time variant of slide_left(). Behaves identically to the
+ *  runtime version, but allows the shift amount to be propagated as a
+ *  compile-time constant to the backend implementation, enabling
+ *  additional optimization opportunities.
+*/
 template <
-	class	_DataparType_,
-	uint32	_Elements_>
+    class   _DataparType_,
+    uint32  _Elements_>
 raze_always_inline _DataparType_ slide_left(
-	const _DataparType_&						__datapar,
-	std::integral_constant<uint32, _Elements_>	__elements) noexcept 
-		requires(__is_valid_simd_v<_DataparType_>)
+    const _DataparType_&                        __datapar,
+    std::integral_constant<uint32, _Elements_>  __elements) noexcept
+        requires(__is_valid_simd_v<_DataparType_>)
 {
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Slide_left<_RawDataparType::__isa, _RawDataparType::__width>()(
-		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+    using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+    return _Slide_left<_RawDataparType::__isa, _RawDataparType::__width>()(
+        __data(__datapar),
+        std::integral_constant<uint32,
+            _Elements_ * sizeof(typename _RawDataparType::value_type)>{});
 }
 
+/**
+ *  @brief  Element-wise logical right shift of a SIMD vector.
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Number of elements to shift right.
+ *
+ *  Performs an element-wise logical right shift of @p __datapar by
+ *  @p __elements positions. Elements shifted out of the vector on the
+ *  right are discarded; vacated positions on the left are filled with
+ *  zero.
+ *
+ *  If @p __elements is greater than or equal to the number of lanes in
+ *  the vector, the result is a zero-filled vector.
+*/
 template <class _DataparType_>
 raze_always_inline _DataparType_ slide_right(
-	const _DataparType_&	__datapar,
-	uint32					__elements) noexcept
-		requires(__is_valid_simd_v<_DataparType_>)
+    const _DataparType_&    __datapar,
+    uint32                  __elements) noexcept
+        requires(__is_valid_simd_v<_DataparType_>)
 {
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Slide_right<_RawDataparType::__isa, _RawDataparType::__width>()(
-		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+    using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+    return _Slide_right<_RawDataparType::__isa, _RawDataparType::__width>()(
+        __data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
 }
 
+/**
+ *  @brief  Element-wise logical right shift of a SIMD vector (compile-time constant).
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Compile-time constant number of elements to shift right.
+ *
+ *  Compile-time variant of slide_right(). Behaves identically to the
+ *  runtime version, but allows the shift amount to be propagated as a
+ *  compile-time constant to the backend implementation, enabling
+ *  additional optimization opportunities.
+*/
 template <
-	class	_DataparType_,
-	uint32	_Elements_>
+    class   _DataparType_,
+    uint32  _Elements_>
 raze_always_inline _DataparType_ slide_right(
-	const _DataparType_&						__datapar,
-	std::integral_constant<uint32, _Elements_>	__elements) noexcept
-		requires(__is_valid_simd_v<_DataparType_>)
+    const _DataparType_&                        __datapar,
+    std::integral_constant<uint32, _Elements_>  __elements) noexcept
+        requires(__is_valid_simd_v<_DataparType_>)
 {
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Slide_right<_RawDataparType::__isa, _RawDataparType::__width>()(
-		__data(__datapar), __elements * sizeof(typename _RawDataparType::value_type));
+    using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+    return _Slide_right<_RawDataparType::__isa, _RawDataparType::__width>()(
+        __data(__datapar),
+        std::integral_constant<uint32,
+            _Elements_ * sizeof(typename _RawDataparType::value_type)>{});
 }
 
+/**
+ *  @brief  Checks whether no lanes in the mask are set.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return @c true if all lanes of @p __mask are false; otherwise @c false.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline bool none_of(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -539,6 +609,15 @@ __simd_nodiscard_inline bool none_of(const _SimdMask_& __mask) noexcept
 	return __mask.__none_of();
 }
 
+/**
+ *  @brief  Checks whether all lanes in the mask are set.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return @c true if every lane of @p __mask is true; otherwise @c false.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline bool all_of(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -546,6 +625,15 @@ __simd_nodiscard_inline bool all_of(const _SimdMask_& __mask) noexcept
 	return __mask.__all_of();
 }
 
+/**
+ *  @brief  Checks whether at least one lane in the mask is set.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return @c true if any lane of @p __mask is true; otherwise @c false.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline bool any_of(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -553,6 +641,21 @@ __simd_nodiscard_inline bool any_of(const _SimdMask_& __mask) noexcept
 	return __mask.__any_of();
 }
 
+/**
+ *  @brief  Checks whether the mask is not fully set.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return @c true if at least one lane of @p __mask is false; otherwise @c false.
+ *
+ *  This function is equivalent to:
+ *  @code
+ *      !all_of(__mask)
+ *  @endcode
+ *
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline bool some_of(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -560,6 +663,16 @@ __simd_nodiscard_inline bool some_of(const _SimdMask_& __mask) noexcept
 	return __mask.__some_of();
 }
 
+/**
+ *  @brief  Returns the index of the first set lane in the mask.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return The index of the lowest (least significant) lane that is set to true,
+ *          or an mask elements count if no lanes are set.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_first_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -567,6 +680,16 @@ __simd_nodiscard_inline int32 find_first_set(const _SimdMask_& __mask) noexcept
 	return __mask.__count_trailing_zero_bits();
 }
 
+/**
+ *  @brief  Returns the index of the last set lane in the mask.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return The index of the highest (most significant) lane that is set to true,
+ *          or an mask elements count if no lanes are set.
+ */
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_last_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -574,6 +697,16 @@ __simd_nodiscard_inline int32 find_last_set(const _SimdMask_& __mask) noexcept
 	return __mask.__count_leading_zero_bits();
 }
 
+/**
+ *  @brief  Returns the index of the first lane that is not set.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return The index of the lowest (least significant) lane that is false,
+ *          or an mask elements count if all lanes are set.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_first_not_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -581,6 +714,16 @@ __simd_nodiscard_inline int32 find_first_not_set(const _SimdMask_& __mask) noexc
 	return __mask.__count_trailing_one_bits();
 }
 
+/**
+ *  @brief  Returns the index of the last lane that is not set.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to inspect.
+ *
+ *  @return The index of the highest (most significant) lane that is false,
+ *          or an mask elements count if all lanes are set.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline int32 find_last_not_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -588,6 +731,15 @@ __simd_nodiscard_inline int32 find_last_not_set(const _SimdMask_& __mask) noexce
 	return __mask.__count_leading_one_bits();
 }
 
+/**
+ *  @brief  Returns the number of lanes set to true in the given SIMD mask.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask whose set bits are to be counted.
+ *
+ *  @return The number of true lanes in @p __mask.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline auto count_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -595,6 +747,16 @@ __simd_nodiscard_inline auto count_set(const _SimdMask_& __mask) noexcept
 	return __mask.__count_set();
 }
 
+/**
+ *  @brief  Clears the highest set lane in the mask.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to modify.
+ *
+ *  Removes (sets to false) the most significant lane that is currently set
+ *  in @p __mask. All other lanes remain unchanged.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline void clear_left(_SimdMask_& __mask) noexcept 
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -602,6 +764,16 @@ __simd_nodiscard_inline void clear_left(_SimdMask_& __mask) noexcept
 	__mask.__clear_left();
 }
 
+/**
+ *  @brief  Clears the lowest set lane in the mask.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to modify.
+ *
+ *  Removes (sets to false) the least significant lane that is currently set
+ *  in @p __mask. All other lanes remain unchanged.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline void clear_right(_SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
@@ -609,16 +781,49 @@ __simd_nodiscard_inline void clear_right(_SimdMask_& __mask) noexcept
 	__mask.__clear_right();
 }
 
+/**
+ *  @brief  Checks whether all mask lanes in the specified index range are set.
+ *
+ *  @tparam _SimdMask_  SIMD mask type or mask-bit type.
+ *
+ *  @param __mask  SIMD mask to be inspected.
+ *  @param __n     Starting lane index (inclusive).
+ *  @param __k     Ending lane index (inclusive).
+ *
+ *  @return @c true if all lanes in the range [@p __n, @p __k] are set to true;
+ *          otherwise @c false.
+ *
+ *  This function verifies that the mask contains a contiguous block of set bits
+ *  between indices @p __n and @p __k, inclusive.
+ *
+ *  @warning The behavior is undefined if:
+ *           - @p __n or @p __k lie outside the valid lane range of @p __mask.
+ *           - @p __n > @p __k.
+ *
+ *  This function does not perform bounds checking; callers must ensure that
+ *  the provided indices are valid for the mask type.
+*/
 template <class _SimdMask_>
 __simd_nodiscard_inline bool is_contiguous(
-	const _SimdMask_&	__mask,
-	uint32				__n,
-	uint32				__k) noexcept
+	const _SimdMask_& __mask,
+	uint32             __n,
+	uint32             __k) noexcept
 		requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__is_contiguous(__n, __k);
 }
 
+/**
+ *  @brief  SIMD-accelerated counter for accumulating the number of true mask lanes.
+ *
+ *  @tparam _Simd_  SIMD vector type whose mask type is used for counting.
+ *
+ *  The @c simd_counter class provides mechanism for accumulating
+ *  the number of true elements in SIMD comparison masks across large data
+ *  ranges. It is designed for use inside vectorized loops where many SIMD
+ *  comparisons are performed sequentially, and the total number of matches
+ *  must be accumulated without overflow or loss of precision.
+*/
 template <class _Simd_>
 class simd_counter {
 	using __accumulator_type = std::conditional_t<
@@ -627,9 +832,17 @@ class simd_counter {
 public:
 	using mask_type = typename _Simd_::mask_type;
 	
+	/**
+     *  @brief  Constructs an empty counter with zero accumulator.
+    */
 	simd_counter() noexcept 
 	{}
-
+	
+	/**
+     *  @brief  Adds the number of true lanes in the given mask.
+     *
+     *  @param __mask  SIMD mask whose true elements are to be counted.
+	*/
 	raze_always_inline void add(mask_type __mask) noexcept {
 		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
 			_accumulator += datapar::count_set(__mask);
@@ -637,6 +850,16 @@ public:
 			_accumulator -= static_cast<__accumulator_type>(__data(__mask));
 	}
 
+	/**
+     *  @brief  Adds the number of true lanes in the masked intersection of two masks.
+     *
+     *  @param __mask       Primary SIMD comparison mask.
+     *  @param __tail_mask  Mask restricting valid lanes (typically for tail handling).
+     *
+     *  Only lanes that are true in both @p __mask and @p __tail_mask are counted.
+     *  This overload is used when processing a partial SIMD block at the end of
+     *  an input range.
+    */
 	raze_always_inline void add(
 		mask_type __mask, 
 		mask_type __tail_mask) noexcept 
@@ -647,6 +870,13 @@ public:
 			_accumulator -= static_cast<__accumulator_type>(__data(__mask & __tail_mask));
 	}
 
+	/**
+     *  @brief  Finalizes accumulation and returns the total count.
+     *
+     *  @return The number of true mask lanes accumulated since the last call.
+     *
+     *  After returning the result, the internal accumulator is reset to zero.
+    */
 	raze_nodiscard raze_always_inline uint64 finalize() noexcept {
 		auto __result = uint64(0);
 
@@ -659,6 +889,16 @@ public:
 		return __result;
 	}
 	
+	/**
+     *  @brief  Maximum safe number of bytes that can be processed in one portion.
+     *
+     *  @return The maximum number of bytes that can be accumulated before the
+     *          internal accumulator may overflow.
+     *
+     *  Vectorized counting algorithms use this value to split the input into
+     *  portions that are guaranteed not to overflow the accumulator, ensuring
+     *  correctness even for very large input ranges.
+    */
 	raze_nodiscard raze_always_inline static constexpr uint64 portion_size() noexcept {
 		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
 			return math::__maximum_integral_limit<__accumulator_type>() * sizeof(_Simd_);
@@ -668,5 +908,115 @@ public:
 private:
 	__accumulator_type _accumulator = 0;
 };
+
+/**
+ *  @brief  Element-wise cyclic left rotation of a SIMD vector.
+ *
+ *  @tparam _DataparType_  SIMD vector type.
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Number of elements to rotate left.
+ *
+ *  @return A SIMD vector where the contents of @p __datapar have been rotated
+ *          left by @p __elements positions. Elements shifted out on the left
+ *          reappear at the right end of the vector.
+ *
+ *  This operation performs a cyclic rotation, unlike @c slide_left(), which
+ *  fills vacated lanes with zero. For example:
+ *
+ *  @code
+ *      [1 2 3 4] rotate_left by 1  →  [2 3 4 1]
+ *  @endcode
+*/
+template <class _DataparType_>
+raze_always_inline _DataparType_ rotate_left(
+	const _DataparType_&	__datapar,
+	uint32                  __elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+
+}
+
+/**
+ *  @brief  Element-wise cyclic left rotation of a SIMD vector (compile-time constant).
+ *
+ *  @tparam _DataparType_  SIMD vector type.
+ *  @tparam _Elements_     Compile-time constant rotation amount.
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Compile-time constant specifying the number of elements
+ *                     to rotate left.
+ *
+ *  @return A SIMD vector rotated left by @p _Elements_ positions.
+ *
+ *  This overload behaves identically to the runtime version but allows the
+ *  rotation amount to be propagated as a compile-time constant, enabling
+ *  additional optimization opportunities in the backend.
+*/
+template <
+	class   _DataparType_,
+	uint32  _Elements_>
+raze_always_inline _DataparType_ rotate_left(
+	const _DataparType_&						__datapar,
+	std::integral_constant<uint32, _Elements_>  __elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+
+}
+
+/**
+ *  @brief  Element-wise cyclic right rotation of a SIMD vector.
+ *
+ *  @tparam _DataparType_  SIMD vector type.
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Number of elements to rotate right.
+ *
+ *  @return A SIMD vector where the contents of @p __datapar have been rotated
+ *          right by @p __elements positions. Elements shifted out on the right
+ *          reappear at the left end of the vector.
+ *
+ *  This operation performs a cyclic rotation, unlike @c slide_right(), which
+ *  fills vacated lanes with zero. For example:
+ *
+ *  @code
+ *      [1 2 3 4] rotate_right by 1  →  [4 1 2 3]
+ *  @endcode
+*/
+template <class _DataparType_>
+raze_always_inline _DataparType_ rotate_right(
+	const _DataparType_&	__datapar,
+	uint32                  __elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+
+}
+
+/**
+ *  @brief  Element-wise cyclic right rotation of a SIMD vector (compile-time constant).
+ *
+ *  @tparam _DataparType_  SIMD vector type.
+ *  @tparam _Elements_     Compile-time constant rotation amount.
+ *
+ *  @param __datapar   Input SIMD vector.
+ *  @param __elements  Compile-time constant specifying the number of elements
+ *                     to rotate right.
+ *
+ *  @return A SIMD vector rotated right by @p _Elements_ positions.
+ *
+ *  This overload behaves identically to the runtime version but allows the
+ *  rotation amount to be propagated as a compile-time constant, enabling
+ *  additional optimization opportunities in the backend.
+*/
+template <
+	class   _DataparType_,
+	uint32  _Elements_>
+raze_always_inline _DataparType_ rotate_right(
+	const _DataparType_&						__datapar,
+	std::integral_constant<uint32, _Elements_>  __elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+
+}
 
 __RAZE_DATAPAR_NAMESPACE_END
