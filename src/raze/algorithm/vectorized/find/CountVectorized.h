@@ -1,8 +1,6 @@
 #pragma once
 
 #include <src/raze/datapar/SizedSimdDispatcher.h>
-#include <src/raze/datapar/CachePrefetcher.h>
-
 #include <raze/datapar/SimdDataparAlgorithms.h>
 
 

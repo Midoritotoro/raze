@@ -164,8 +164,6 @@ set(PRIVATE_HEADERS
     src/raze/datapar/MaskTypeSelector.h
     src/raze/datapar/SimdMaskTypeCheck.h
 
-    src/raze/datapar/CachePrefetcher.h
-
     src/raze/datapar/IsComparable.h
     src/raze/datapar/SimdDispatcher.h
     src/raze/datapar/SizedSimdDispatcher.h
@@ -230,10 +228,13 @@ set(PRIVATE_HEADERS
     src/raze/datapar/memory/MaskStore.h
     src/raze/datapar/memory/NonTemporalLoad.h
     src/raze/datapar/memory/NonTemporalStore.h
-    src/raze/datapar/memory/StreamingFence.h
     src/raze/datapar/memory/AlignmentPolicy.h
     src/raze/datapar/memory/MaskLoadSupport.h
     src/raze/datapar/memory/MaskStoreSupport.h
+    src/raze/datapar/memory/NtSFence.h
+    src/raze/datapar/memory/NtLFence.h
+    src/raze/datapar/memory/NtMFence.h
+    src/raze/datapar/memory/Prefetch.h
 
     src/raze/datapar/reduce/ReduceAdd.h
     src/raze/datapar/reduce/ReduceAddType.h
@@ -253,6 +254,8 @@ set(PRIVATE_HEADERS
     src/raze/datapar/shuffle/Blend.h
     src/raze/datapar/shuffle/SlideLeft.h
     src/raze/datapar/shuffle/SlideRight.h
+    src/raze/datapar/shuffle/RotateLeft.h
+    src/raze/datapar/shuffle/RotateRight.h
 
     src/raze/datapar/Shuffle.h
     src/raze/datapar/Bitwise.h
@@ -371,7 +374,6 @@ set(PUBLIC_HEADERS
     include/raze/datapar/Simd.h
     include/raze/datapar/BasicSimd.h
     include/raze/datapar/BasicSimdMask.h
-    include/raze/datapar/BasicSimdShuffleMask.h
     include/raze/datapar/SimdCast.h
     include/raze/datapar/SimdBitmask.h
     include/raze/datapar/SimdDataparAlgorithms.h

@@ -1,0 +1,203 @@
+#pragma once 
+
+#include <src/raze/datapar/IntrinBitcast.h>
+#include <src/raze/datapar/memory/Store.h>
+#include <src/raze/datapar/memory/MaskStore.h>
+#include <src/raze/datapar/memory/Load.h>
+#include <src/raze/datapar/shuffle/BroadcastZeros.h>
+
+
+__RAZE_DATAPAR_NAMESPACE_BEGIN
+
+template <
+	arch::ISA	_ISA_,
+	uint32		_Width_,
+	class		_DesiredType_>
+struct _Rotate_left;
+
+template <class	_DesiredType_>
+struct _Rotate_left<arch::ISA::SSE2, 128, _DesiredType_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__elements) raze_const_operator noexcept
+	{
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
+		alignas(sizeof(_IntrinType_)) _DesiredType_ __array[__length * 2];
+
+		_Store<arch::ISA::SSE2, 128>()(__array, __left, __aligned_policy{});
+		_Mask_store<arch::ISA::SSE2, 128, _DesiredType_>()(__array + __length, (1u << __elements) - 1, __left, __aligned_policy{});
+
+		return _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__array, __aligned_policy{});
+	}
+
+	template <
+		class	_IntrinType_,
+		uint32	_Shift_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_							__left,
+		std::integral_constant<uint32, _Shift_> __elements) raze_const_operator noexcept
+	{
+		
+	}
+};
+
+template <class	_DesiredType_> struct _Rotate_left<arch::ISA::SSE3, 128, _DesiredType_> : _Rotate_left<arch::ISA::SSE2, 128, _DesiredType_> {};
+
+template <class	_DesiredType_>
+struct _Rotate_left<arch::ISA::SSSE3, 128, _DesiredType_> :
+	_Rotate_left<arch::ISA::SSE3, 128, _DesiredType_>
+{
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) raze_const_operator noexcept
+	{
+		return _Rotate_left<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __shift);
+	}
+
+	template <
+		class	_IntrinType_,
+		uint32	_Shift_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_							__left,
+		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+	{
+
+	}
+};
+
+template <class _DesiredType_>
+struct _Rotate_left<arch::ISA::AVX2, 256, _DesiredType_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) raze_const_operator noexcept
+	{
+		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
+
+		_Store<arch::ISA::AVX2, 256>()(__array, __left, __aligned_policy{});
+		_Mask_store<arch::ISA::AVX2, 256, _DesiredType_>()(__array + sizeof(_IntrinType_), (1u << __shift) - 1, __left, __aligned_policy{});
+
+		return _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__array, __aligned_policy{});
+	}
+
+	template <
+		class	_IntrinType_,
+		uint32	_Shift_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_							__left,
+		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+	{
+
+	}
+};
+
+template <class _DesiredType_>
+struct _Rotate_left<arch::ISA::AVX512VLF, 256, _DesiredType_> :
+	_Rotate_left<arch::ISA::AVX2, 256, _DesiredType_>
+{
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) raze_const_operator noexcept
+	{
+		return _Rotate_left<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __shift);
+	}
+
+	template <
+		class	_IntrinType_,
+		uint32	_Shift_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_							__left,
+		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+	{
+
+	}
+};
+
+
+template <class _DesiredType_>
+struct _Rotate_left<arch::ISA::AVX512F, 512, _DesiredType_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) raze_const_operator noexcept
+	{
+		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
+
+		_Store<arch::ISA::AVX512F, 512>()(__array, __left, __aligned_policy{});
+		_Mask_store<arch::ISA::AVX512F, 512, _DesiredType_>()(__array + sizeof(_IntrinType_), (1u << __shift) - 1, __left, __aligned_policy{});
+
+		return _Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__array, __aligned_policy{});
+	}
+
+	template <
+		class	_IntrinType_,
+		uint32	_Shift_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_							__left,
+		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+	{
+
+	}
+};
+
+template <class _DesiredType_>
+struct _Rotate_left<arch::ISA::AVX512BW, 512, _DesiredType_> :
+	_Rotate_left<arch::ISA::AVX512F, 512, _DesiredType_>
+{
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) raze_const_operator noexcept
+	{
+		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
+
+		_Store<arch::ISA::AVX512BW, 512>()(__array, __left, __aligned_policy{});
+		_Mask_store<arch::ISA::AVX512BW, 512, int8>()(__array + sizeof(_IntrinType_), (1u << __shift) - 1, __left, __aligned_policy{});
+
+		return _Load<arch::ISA::AVX512BW, 512, _IntrinType_>()(__array, __aligned_policy{});
+	}
+
+	template <
+		class	_IntrinType_,
+		uint32	_Shift_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_							__left,
+		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+	{
+
+	}
+};
+
+
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::SSE41, 128, _DesiredType_> : _Rotate_left<arch::ISA::SSSE3, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::SSE42, 128, _DesiredType_> : _Rotate_left<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX2, 128, _DesiredType_> : _Rotate_left<arch::ISA::SSE42, 128, _DesiredType_> {};
+
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Rotate_left<arch::ISA::AVX512F, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Rotate_left<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Rotate_left<arch::ISA::AVX512BW, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Rotate_left<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
+
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
+
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VLF, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VLBW, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_left<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_> : _Rotate_left<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
+
+__RAZE_DATAPAR_NAMESPACE_END

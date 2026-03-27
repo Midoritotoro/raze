@@ -92,9 +92,7 @@ template <
 using __deduce_simd_shuffle_mask_type = __deduce_simd_shuffle_mask_type_helper<(_Width_ / sizeof(_Element_))>;
 
 template <arch::ISA _ISA_> 
-constexpr bool __is_zeroupper_required_v =
-    static_cast<int8>(_ISA_) == static_cast<int8>(arch::ISA::AVX2) ||
-    static_cast<int8>(_ISA_) == static_cast<int8>(arch::ISA::AVX);
+constexpr bool __is_zeroupper_required_v = arch::__is_ymm_v<_ISA_> || arch::__is_zmm_v<_ISA_>;
 
 template <
     arch::ISA _SimdGenerationFirst_,

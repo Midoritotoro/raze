@@ -305,7 +305,7 @@ void test_methods() {
             reduced += (unsigned char)(array[i]);
         }
 
-        auto simdReduced = raze::datapar::reduce(raze::datapar::load<Simd>(array));
+        auto simdReduced = raze::datapar::reduce_add(raze::datapar::load<Simd>(array));
 
         raze_assert(simdReduced == reduced);
     }
@@ -622,6 +622,65 @@ void test_methods() {
                 }()), ...);
         }(std::make_index_sequence<N + 1>{});
     }
+
+    {
+        alignas(64) T arr[N];
+        for (size_t i = 0; i < N; ++i)
+            arr[i] = static_cast<T>(i + 1);
+
+        Simd v = raze::datapar::load<Simd>(arr);
+
+        for (raze::uint32 sh = 0; sh < N; ++sh) {
+            auto rotated = raze::datapar::rotate_left(v, sh);
+
+            alignas(64) T expected[N];
+            for (size_t i = 0; i < N; ++i)
+                expected[i] = arr[(i + sh) % N];
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(rotated[i] == expected[i]);
+        }
+
+        //[&]<std::size_t... I>(std::index_sequence<I...>) {
+        //    (([&] {
+        //        constexpr raze::uint32 sh = I;
+        //        auto rotated = raze::datapar::rotate_left(v, std::integral_constant<raze::uint32, sh>{});
+
+        //        alignas(64) T expected[N];
+        //        for (size_t i = 0; i < N; ++i)
+        //            expected[i] = arr[(i + sh) % N];
+
+        //        for (size_t i = 0; i < N; ++i)
+        //            raze_assert(rotated[i] == expected[i]);
+        //        }()), ...);
+        //}(std::make_index_sequence<N>{});
+
+        //for (raze::uint32 sh = 0; sh < N; ++sh) {
+        //    auto rotated = raze::datapar::rotate_right(v, sh);
+
+        //    alignas(64) T expected[N];
+        //    for (size_t i = 0; i < N; ++i)
+        //        expected[i] = arr[(i + N - sh) % N];
+
+        //    for (size_t i = 0; i < N; ++i)
+        //        raze_assert(rotated[i] == expected[i]);
+        //}
+
+        //[&]<std::size_t... I>(std::index_sequence<I...>) {
+        //    (([&] {
+        //        constexpr raze::uint32 sh = I;
+        //        auto rotated = raze::datapar::rotate_right(v, std::integral_constant<raze::uint32, sh>{});
+
+        //        alignas(64) T expected[N];
+        //        for (size_t i = 0; i < N; ++i)
+        //            expected[i] = arr[(i + N - sh) % N];
+
+        //        for (size_t i = 0; i < N; ++i)
+        //            raze_assert(rotated[i] == expected[i]);
+        //        }()), ...);
+        //}(std::make_index_sequence<N>{});
+}
+
 }
 
 template <raze::arch::ISA _ISA_, raze::uint32 _Width_>

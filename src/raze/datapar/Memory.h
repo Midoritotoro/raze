@@ -9,7 +9,10 @@
 #include <src/raze/datapar/memory/NonTemporalLoad.h>
 #include <src/raze/datapar/memory/NonTemporalStore.h>
 #include <src/raze/datapar/memory/Store.h>
-#include <src/raze/datapar/memory/StreamingFence.h>
+#include <src/raze/datapar/memory/NtSFence.h>
+#include <src/raze/datapar/memory/NtLFence.h>
+#include <src/raze/datapar/memory/NtMFence.h>
 #include <src/raze/datapar/memory/MaskStoreIntrin.h>
 #include <src/raze/datapar/memory/MaskLoadSupport.h>
 #include <src/raze/datapar/memory/MaskStoreSupport.h>
+#include <src/raze/datapar/memory/Prefetch.h>

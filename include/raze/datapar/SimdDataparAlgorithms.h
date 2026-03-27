@@ -23,26 +23,27 @@ __simd_nodiscard_inline auto __data(const _MaskType_& __mask) noexcept
 		return __unwrapped_mask;
 }
 
-template <
-	class _DataparType_,
-	class _ReduceBinaryFunction_ = type_traits::plus<>>
-__simd_nodiscard_inline auto reduce(
-	const _DataparType_&		__datapar,
-	_ReduceBinaryFunction_&&	__reduce = _ReduceBinaryFunction_{}) noexcept requires (
-		(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> ||
-			__is_intrin_type_v<std::remove_cvref_t<_DataparType_>>) &&
-		std::is_invocable_r_v<std::remove_cvref_t<_DataparType_>, _ReduceBinaryFunction_,
-			std::remove_cvref_t<_DataparType_>, std::remove_cvref_t<_DataparType_>>)
+/**
+ *  @brief  Computes the horizontal sum of all lanes in a SIMD vector.
+ *
+ *  @tparam _DataparType_  SIMD vector type.
+ *
+ *  @param __datapar  Input SIMD vector whose lanes are to be summed.
+ *
+ *  @return  The sum of all lanes of @p __datapar. The return type matches
+ *           the underlying scalar element type of the vector.
+ *
+ *  This function performs a horizontal reduction using addition, combining
+ *  all lanes of the SIMD vector into a single scalar value.
+*/
+template <class _DataparType_>
+__simd_nodiscard_inline auto reduce_add(const _DataparType_& __datapar) noexcept 
+	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> ||
+		__is_intrin_type_v<std::remove_cvref_t<_DataparType_>>)
 {
-	using _RawDataparType	= std::remove_cvref_t<_DataparType_>;
-	using _RawReductionType = std::remove_cvref_t<_ReduceBinaryFunction_>;
-
-	if constexpr (type_traits::is_any_of_v<_RawReductionType, std::plus<>, type_traits::plus<>>)
-		return _Reduce_add<_RawDataparType::__isa, _RawDataparType::__width,
-			typename _RawDataparType::value_type>()(__data(__datapar));
-	else
-		return _Fold<_RawDataparType::__isa, _RawDataparType::__width,
-			typename _RawDataparType::value_type>()(__data(__datapar), type_traits::__pass_function(__reduce));
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Reduce_add<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__datapar));
 }
 
 template <class _DataparType_>
@@ -179,17 +180,23 @@ raze_always_inline __zero_upper_at_exit_guard<_ISA_> make_guard() noexcept {
 }
 
 /**
- *  @brief  RAII‑guard for zeroing upper YMM state on exit.
+ *  @brief  RAII‑guard for zeroing the upper YMM register state on exit.
  *
  *  Creates a scope guard that invokes @c _mm256_zeroupper() on destruction
- *  when the target ISA requires clearing upper register state after using
- *  wide SIMD instructions. This helps avoid transition penalties between
- *  legacy SSE code and AVX/AVX2/AVX‑512 code paths.
+ *  when the target ISA requires clearing the upper halves of YMM registers
+ *  after executing wide SIMD instructions. This prevents performance
+ *  penalties associated with transitions between legacy SSE code paths and
+ *  AVX/AVX2/AVX‑512 instructions.
  *
- *  The guard is non‑copyable and non‑movable.  Constructing it marks the
+ *  The guard is non‑copyable and non‑movable. Constructing it marks the
  *  current scope as requiring a zero‑upper on exit; leaving the scope
  *  automatically performs the cleanup when mandated by the ISA.
- */
+ *
+ *  On architectures that do not require or support @c _mm256_zeroupper()
+ *  (including non‑x86 targets and x86 ISAs where the transition penalty
+ *  does not apply), the guard performs no action and compiles down to a
+ *  no‑op.
+*/
 template <class _DataparType_>
 raze_always_inline __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>::__isa> make_guard() noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
@@ -249,17 +256,72 @@ __simd_nodiscard_inline _DataparType_ reverse(const _DataparType_& __datapar) no
  *
  *  Ensures that all preceding non‑temporal (streaming) stores are completed
  *  before any subsequent memory operations.
- */
+ *
+ *  On architectures that do not require or support an explicit store
+ *  memory fence, this function may compile down to a no‑op.
+*/
 template <class _DataparType_>
-raze_always_inline void nt_fence() noexcept
+raze_always_inline void nt_sfence() noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
-	return _Nt_fence<std::remove_cvref_t<_DataparType_>::__isa>()();
+	return _Nt_sfence<std::remove_cvref_t<_DataparType_>::__isa>()();
 }
 
 template <arch::ISA _ISA_>
-raze_always_inline void nt_fence() noexcept {
-	return _Nt_fence<_ISA_>()();
+raze_always_inline void nt_sfence() noexcept {
+	return _Nt_sfence<_ISA_>()();
+}
+
+/**
+ *  @brief  Issues a streaming load fence.
+ *
+ *  Ensures that all preceding non‑temporal (streaming) loads are completed
+ *  before any subsequent memory operations.
+ * 
+ *  On architectures that do not require or support an explicit load
+ *  memory fence, this function may compile down to a no‑op.
+*/
+template <class _DataparType_>
+raze_always_inline void nt_lfence() noexcept
+	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+{
+	return _Nt_lfence<std::remove_cvref_t<_DataparType_>::__isa>()();
+}
+
+template <arch::ISA _ISA_>
+raze_always_inline void nt_lfence() noexcept {
+	return _Nt_lfence<_ISA_>()();
+}
+
+/**
+ *  @brief  Issues a full memory fence.
+ *
+ *  Ensures that all preceding memory operations (loads and stores),
+ *  including non‑temporal (streaming) accesses, become globally visible
+ *  before any subsequent memory operations are allowed to execute.
+ *
+ *  This is a full memory barrier that orders:
+ *    - all prior loads before all subsequent loads and stores,
+ *    - all prior stores before all subsequent loads and stores.
+ *
+ *  Unlike @c nt_sfence(), which orders only non‑temporal stores, and
+ *  @c nt_lfence(), which orders only loads, this fence enforces a
+ *  bidirectional ordering constraint across all types of memory
+ *  operations.
+ *
+ *  On architectures that do not require or support an explicit full
+ *  memory fence, this function may compile down to a no‑op.
+*/
+template <class _DataparType_>
+raze_always_inline void nt_mfence() noexcept
+	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+{
+	return _Nt_mfence<std::remove_cvref_t<_DataparType_>::__isa>()();
+}
+
+template <arch::ISA _ISA_>
+raze_always_inline void nt_mfence() noexcept {
+	return _Nt_mfence<_ISA_>()();
 }
 
 /**
@@ -273,7 +335,7 @@ raze_always_inline void nt_fence() noexcept {
  *			 those lanes packed nto the lowest positions.
  *
  *  The order of surviving lanes is preserved.
- */
+*/
 template <
 	class _DataparType_,
 	class _MaskType_>
@@ -299,7 +361,7 @@ __simd_nodiscard_inline std::pair<uint32, _DataparType_> compress(
  *
  *  Stores only the lanes where @p __mask is true, packing them contiguously
  *  starting at @p __address while preserving their original order.
- */
+*/
 template <
 	class _DataparType_,
     class _MaskType_,
@@ -329,7 +391,7 @@ raze_always_inline typename _DataparType_::value_type* compress_store(
  *  pollution of the cache hierarchy.
  */
 template <class _DataparType_>
-__simd_nodiscard_inline _DataparType_ non_temporal_load(const void* __address) noexcept
+__simd_nodiscard_inline _DataparType_ nt_load(const void* __address) noexcept
 	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
@@ -348,7 +410,7 @@ __simd_nodiscard_inline _DataparType_ non_temporal_load(const void* __address) n
  *  and should avoid polluting the cache hierarchy.
  */
 template <class _DataparType_>
-raze_always_inline void non_temporal_store(
+raze_always_inline void nt_store(
 	void*					__address,
 	const _DataparType_&	__datapar) noexcept
 		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
@@ -537,8 +599,7 @@ raze_always_inline _DataparType_ slide_left(
 {
     using _RawDataparType = std::remove_cvref_t<_DataparType_>;
     return _Slide_left<_RawDataparType::__isa, _RawDataparType::__width>()(
-        __data(__datapar),
-        std::integral_constant<uint32,
+        __data(__datapar), std::integral_constant<uint32,
             _Elements_ * sizeof(typename _RawDataparType::value_type)>{});
 }
 
@@ -883,7 +944,7 @@ public:
 		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
 			__result = _accumulator;
 		else
-			__result = datapar::reduce(_accumulator);
+			__result = datapar::reduce_add(_accumulator);
 
 		_accumulator = 0;
 		return __result;
@@ -934,7 +995,9 @@ raze_always_inline _DataparType_ rotate_left(
 	uint32                  __elements) noexcept
 		requires(__is_valid_simd_v<_DataparType_>)
 {
-
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Rotate_left<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
 }
 
 /**
@@ -961,7 +1024,9 @@ raze_always_inline _DataparType_ rotate_left(
 	std::integral_constant<uint32, _Elements_>  __elements) noexcept
 		requires(__is_valid_simd_v<_DataparType_>)
 {
-
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Rotate_left<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
 }
 
 /**
@@ -983,14 +1048,16 @@ raze_always_inline _DataparType_ rotate_left(
  *      [1 2 3 4] rotate_right by 1  →  [4 1 2 3]
  *  @endcode
 */
-template <class _DataparType_>
-raze_always_inline _DataparType_ rotate_right(
-	const _DataparType_&	__datapar,
-	uint32                  __elements) noexcept
-		requires(__is_valid_simd_v<_DataparType_>)
-{
-
-}
+//template <class _DataparType_>
+//raze_always_inline _DataparType_ rotate_right(
+//	const _DataparType_&	__datapar,
+//	uint32                  __elements) noexcept
+//		requires(__is_valid_simd_v<_DataparType_>)
+//{
+//	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+//	return _Rotate_right<_RawDataparType::__isa, _RawDataparType::__width,
+//		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
+//}
 
 /**
  *  @brief  Element-wise cyclic right rotation of a SIMD vector (compile-time constant).
@@ -1008,15 +1075,50 @@ raze_always_inline _DataparType_ rotate_right(
  *  rotation amount to be propagated as a compile-time constant, enabling
  *  additional optimization opportunities in the backend.
 */
-template <
-	class   _DataparType_,
-	uint32  _Elements_>
-raze_always_inline _DataparType_ rotate_right(
-	const _DataparType_&						__datapar,
-	std::integral_constant<uint32, _Elements_>  __elements) noexcept
-		requires(__is_valid_simd_v<_DataparType_>)
-{
+//template <
+//	class   _DataparType_,
+//	uint32  _Elements_>
+//raze_always_inline _DataparType_ rotate_right(
+//	const _DataparType_&						__datapar,
+//	std::integral_constant<uint32, _Elements_>  __elements) noexcept
+//		requires(__is_valid_simd_v<_DataparType_>)
+//{
+//	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+//	return _Rotate_right<_RawDataparType::__isa, _RawDataparType::__width,
+//		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
+//}
 
+using prefetch_level = __prefetch_level;
+
+/**
+ * @brief Issues a prefetch hint for the specified memory address.
+ *
+ * @param __first  Iterator to the memory location to prefetch.
+ * @param __level  Desired cache level or non-temporal hint.
+ *
+ * Provides a platform-independent interface for issuing hardware
+ * prefetch instructions. The hint may improve performance when the
+ * program will access @p __first in the near future.
+ *
+ * Semantics:
+ *   - prefetch_level::L1  → data needed immediately
+ *   - prefetch_level::L2  → data needed soon
+ *   - prefetch_level::L3  → data needed later
+ *   - prefetch_level::NTA → streaming access, avoid polluting caches
+ *
+ * The function is safe to call with any valid pointer. If the target
+ * architecture does not support prefetching, the call becomes a no-op.
+*/
+template <
+	class			_InputIterator_,
+	prefetch_level	_Level_>
+raze_always_inline void prefetch(
+	_InputIterator_									__first,
+	std::integral_constant<prefetch_level, _Level_>	__level) noexcept
+		requires(type_traits::is_iterator_v<_InputIterator_> && 
+			type_traits::is_iterator_input_ranges_v<_InputIterator_>)
+{
+	_Prefetch<__level>()(__first);
 }
 
 __RAZE_DATAPAR_NAMESPACE_END

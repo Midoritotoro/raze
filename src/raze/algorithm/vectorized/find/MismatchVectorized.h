@@ -1,10 +1,7 @@
 #pragma once
 
 #include <raze/datapar/SimdDataparAlgorithms.h>
-
 #include <src/raze/datapar/SizedSimdDispatcher.h>
-#include <src/raze/datapar/CachePrefetcher.h>
-
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
