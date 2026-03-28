@@ -11,6 +11,8 @@
 #include <src/raze/datapar/bitwise/FirstN.h>
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
 #include <raze/algorithm/minmax/Max.h>
+#include <src/raze/datapar/shuffle/SlideLeft.h>
+#include <src/raze/datapar/shuffle/SlideRight.h>
 #include <src/raze/math/BitTestAndReset.h>
 #include <src/raze/math/BitTest.h>
 #include <src/raze/datapar/bitwise/MaskOperations.h>
@@ -177,6 +179,56 @@ public:
 		else {
 			const auto __bits = _To_mask<__isa, __width, _Type_>()(__data(__mask));
 			return __operations::__is_contiguous(__bits, __n, __k);
+		}
+	}
+
+	raze_nodiscard raze_always_inline static mask_type __slide_right(
+		mask_type	__mask,
+		uint32		__elements) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			return __operations::__bit_rslide(__mask, __elements);
+		}
+		else {
+			return _Slide_right<__isa, __width>()(__data(__mask), __elements * sizeof(_Type_));
+		}
+	}
+
+	template <uint32 _Elements_>
+	raze_nodiscard raze_always_inline static mask_type __slide_right(
+		mask_type									__mask,
+		std::integral_constant<uint32, _Elements_>	__elements) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			return __operations::__bit_rslide(__mask, __elements);
+		}
+		else {
+			return _Slide_right<__isa, __width>()(__data(__mask), std::integral_constant<uint32, __elements * sizeof(_Type_)>{});
+		}
+	}
+
+	raze_nodiscard raze_always_inline static mask_type __slide_left(
+		mask_type	__mask,
+		uint32		__elements) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			return __operations::__bit_lslide(__mask, __elements);
+		}
+		else {
+			return _Slide_left<__isa, __width>()(__data(__mask), __elements * sizeof(_Type_));
+		}
+	}
+
+	template <uint32 _Elements_>
+	raze_nodiscard raze_always_inline static mask_type __slide_left(
+		mask_type									__mask,
+		std::integral_constant<uint32, _Elements_>	__elements) noexcept
+	{
+		if constexpr (std::is_integral_v<mask_type>) {
+			return __operations::__bit_lslide(__mask, __elements);
+		}
+		else {
+			return _Slide_left<__isa, __width>()(__data(__mask), std::integral_constant<uint32, __elements * sizeof(_Type_)>{});
 		}
 	}
 

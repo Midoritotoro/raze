@@ -15,12 +15,32 @@
 
 #include <raze/datapar/Abi.h>
 
+raze_disable_warning_msvc(26495)
+
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 using aligned_policy    = __aligned_policy;
 using unaligned_policy  = __unaligned_policy;
 
+/**
+ * @class simd
+ * @brief A fixed-size SIMD vector abstraction with ISA/ABI‑aware backend dispatch.
+ *
+ * The `simd` class provides a high-level, type-safe interface for performing
+ * vectorized arithmetic, logical, comparison, and shift operations across
+ * multiple hardware instruction sets (SSE2, SSE4.1, AVX2, AVX‑512, etc.).
+ * It wraps architecture-specific intrinsic types and exposes a uniform API
+ * that behaves consistently across all supported ABIs.
+ *
+ * ## Key Characteristics
+ * - Represents a vector of `value_type` elements stored in a native SIMD register.
+ * - All operations are performed element-wise.
+ *
+ * ## Template Parameters
+ * @tparam _Type_  The scalar element type (e.g., int32_t, float, double).
+ * @tparam _Abi_   ABI descriptor specifying ISA and register width.
+*/
 template <
     class _Type_,
     class _Abi_>
@@ -36,82 +56,187 @@ public:
     using mask_type     = simd_mask<_Type_, _Abi_>;
     using abi_type      = _Abi_;
 
+    /**
+     * @brief Indicates whether the current ISA/ABI supports native masked loads.
+     *
+     * This constant evaluates to `true` when the backend provides a hardware
+     * implementation of masked loads for the given ISA, register width, and
+     * element size. A “native” masked load means that the operation can be
+     * performed directly using a dedicated instruction (e.g., AVX‑512
+     * `vmaskload*`, `vpmaskmov*`) without requiring emulation.
+     *
+     * When `false`, masked loads are emulated using a combination of:
+     * 
+     * - an unmasked load, and
+     * 
+     * - a mask‑controlled blend operation.
+     *
+     * Native support is important for performance and for correctly handling
+     * partial vectors (“tail elements”).
+    */
     static constexpr inline bool is_native_mask_load_supported_v = __is_native_mask_load_supported_v<__isa, __width, sizeof(value_type)>;
+
+    /**
+     * @brief Indicates whether the current ISA/ABI supports native masked stores.
+     *
+     * This constant evaluates to `true` when the backend provides a hardware
+     * instruction for masked stores for the given ISA, register width, and
+     * element size. Native masked stores (e.g., AVX‑512 `vmaskstore*`,
+     * `vpmaskmov*`) allow writing only selected lanes to memory without
+     * additional blending or temporary buffers.
+     *
+     * When `false`, masked stores are emulated using:
+     * 
+     * - a load of the destination memory,
+     * 
+     * - a mask‑controlled blend with the source vector,
+     * 
+     * - a full unmasked store.
+     *
+     * Native support enables efficient and safe handling of tail elements,
+     * avoids unnecessary memory traffic, and improves performance in
+     * algorithms that rely on partial‑vector writes.
+    */
     static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<__isa, __width, sizeof(value_type)>;
 
+    /**
+     * @brief Constructs an uninitialized SIMD vector.
+     *
+     * The contents of the vector are unspecified. Use `fill()` or `broadcast()`
+     * to initialize all lanes explicitly.
+    */
     simd() noexcept
     {}
 
-    simd(const value_type __value) noexcept {
+    /**
+     * @brief Constructs a SIMD vector by broadcasting a scalar value.
+     *
+     * @param value  The scalar value to broadcast into all lanes.
+    */
+    simd(value_type __value) noexcept {
         fill(__value);
     }
 
     ~simd() noexcept
     {}
 
+    /**
+     * @brief Constructs a SIMD vector from another SIMD or intrinsic vector.
+     *
+     * @tparam _VectorType_  A valid intrinsic type or another `simd` type.
+    */
     template <class _VectorType_>
-    simd(_VectorType_ __other) noexcept
-        requires (__is_intrin_type_v<_VectorType_> || __is_valid_simd_v<_VectorType_>) 
+    simd(const _VectorType_& __other) noexcept
+        requires(__is_intrin_type_v<_VectorType_> || __is_valid_simd_v<_VectorType_>) 
     {
         _vector = simd_cast<vector_type>(__other);
     }
 
+    /**
+     * @brief Returns a SIMD vector with all lanes set to zero.
+    */
     raze_nodiscard static raze_always_inline simd zero() noexcept {
         return _Broadcast_zeros<__isa, __width, vector_type>()();
     }
 
+    /**
+     * @brief Returns a SIMD vector with all lanes set to `value`.
+    */
     raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
         return _Broadcast<__isa, __width, vector_type>()(__value);
     }
 
+    /**
+     * @brief Fills all lanes with `value`.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& fill(value_type __value) noexcept {
         _vector = _Broadcast<__isa, __width, vector_type>()(__value);
         return *this;
     }
 
-    raze_nodiscard raze_always_inline friend simd operator<<(
+    /**
+     * @brief Element-wise logical left shift.
+     *
+     * @param shift  Number of bits to shift.
+     *
+     * Semantics:
+     * 
+     *  Logical shift for all element types.
+     *  If `shift >= bit_width(value_type)`, the result is zero.
+    */
+    raze_always_inline friend simd operator<<(
         const simd& __left,
         uint32      __shift) noexcept
     {
         return _Left_shift<__isa, __width, _Type_>()(__left._vector, __shift);
     }
 
-    raze_nodiscard raze_always_inline friend simd operator>>(
+    /**
+     * @brief Element-wise right shift.
+     *
+     * @param shift  Number of bits to shift.
+     *
+     * Semantics:
+     * 
+     *  Unsigned types: logical shift.
+     * 
+     *  Signed types: arithmetic (sign-extending) shift.
+     * 
+     *  If `shift >= bit_width(value_type)`, the result is zero or
+     *  sign-extended depending on type.
+    */
+    raze_always_inline friend simd operator>>(
         const simd& __left,
         uint32      __shift) noexcept
     {
         return _Right_shift<__isa, __width, _Type_>()(__left._vector, __shift);
     }
 
+    /**
+     * @brief Element-wise subtraction.
+    */
     template <class _RightType_>
-    raze_nodiscard raze_always_inline friend simd operator-(
+    raze_always_inline friend simd operator-(
         const simd&         __left,
-        const _RightType_&  __right) noexcept requires(
-            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+        const _RightType_&  __right) noexcept 
+            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
+                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
         return _Sub<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
+    /**
+     * @brief Element-wise addition.
+    */
     template <class _RightType_>
-    raze_nodiscard raze_always_inline friend simd operator+(
+    raze_always_inline friend simd operator+(
         const simd&         __left,
-        const _RightType_&  __right) noexcept requires(
-            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+        const _RightType_&  __right) noexcept 
+            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
+                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
         return _Add<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
+    /**
+     * @brief Element-wise multiplication.
+    */
     template <class _RightType_>
-    raze_nodiscard raze_always_inline friend simd operator*(
+    raze_always_inline friend simd operator*(
         const simd&         __left, 
-        const _RightType_&  __right) noexcept requires(
-            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+        const _RightType_&  __right) noexcept 
+            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
+                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
         return _Mul<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
+    /**
+     * @brief Element-wise division of two SIMD vectors.
+    */
     template <class _RightType_>
-    raze_nodiscard raze_always_inline friend simd operator/(
+    raze_always_inline friend simd operator/(
         const simd&         __left,
         const _RightType_&  __right) noexcept requires(
             std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)
@@ -124,8 +249,11 @@ public:
         return __temp;
     }
 
+    /**
+     * @brief Element-wise division by a scalar.
+    */
     template <class _RightType_>
-    raze_nodiscard raze_always_inline friend simd operator/(
+    raze_always_inline friend simd operator/(
         const simd&         __left,
         const _RightType_&  __right) noexcept requires(
             std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
@@ -133,67 +261,99 @@ public:
         return _Div<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
     }
 
-    raze_nodiscard raze_always_inline friend simd operator&(
+    /**
+     * @brief Bitwise AND.
+    */
+    raze_always_inline friend simd operator&(
         const simd& __left,
         const simd& __right) noexcept
     {
         return _And<__isa, __width>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend simd operator|(
+    /**
+     * @brief Bitwise OR.
+    */
+    raze_always_inline friend simd operator|(
         const simd& __left, 
         const simd& __right) noexcept
     {
         return _Or<__isa, __width>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend simd operator^(
+    /**
+     * @brief Bitwise XOR.
+    */
+    raze_always_inline friend simd operator^(
         const simd& __left, 
         const simd& __right) noexcept 
     {
         return _Xor<__isa, __width>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend mask_type operator==(
+    /**
+     * @brief Bitwise NOT.
+    */
+    raze_always_inline simd operator~() const noexcept {
+        return _Not<__isa, __width>()(_vector);
+    }
+
+    /**
+     * @brief Element-wise equality comparison.
+     * @return A SIMD mask with one boolean per lane.
+    */
+    raze_always_inline friend mask_type operator==(
         const simd& __left,
         const simd& __right) noexcept 
     {
         return _Equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend mask_type operator!=(
+    /**
+     * @brief Element-wise inequality comparison.
+     * @return A SIMD mask with one boolean per lane.
+    */
+    raze_always_inline friend mask_type operator!=(
         const simd& __left, 
         const simd& __right) noexcept 
     {
         return _Not_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend mask_type operator<(
+    raze_always_inline friend mask_type operator<(
         const simd& __left, 
         const simd& __right) noexcept 
     {
         return _Less<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend mask_type operator<=(
+    raze_always_inline friend mask_type operator<=(
         const simd& __left,
         const simd& __right) noexcept
     {
         return _Less_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend mask_type operator>(
+    raze_always_inline friend mask_type operator>(
         const simd& __left,
         const simd& __right) noexcept 
     {
         return _Greater<__isa, __width, _Type_>()(__left._vector, __right._vector);
     }
 
-    raze_nodiscard raze_always_inline friend mask_type operator>=(
+    raze_always_inline friend mask_type operator>=(
         const simd& __left, 
         const simd& __right) noexcept
     {
         return _Greater_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
+    }
+
+    raze_always_inline simd& operator>>=(uint32 __shift) noexcept {
+        return *this = (*this >> __shift);
+    }
+
+    raze_always_inline simd& operator<<=(uint32 __shift) noexcept {
+        return *this = (*this << __shift);
     }
 
     raze_always_inline simd& operator&=(const simd& __other) noexcept {
@@ -229,58 +389,92 @@ public:
         return *this;
     }
 
-    raze_nodiscard raze_always_inline simd operator+() const noexcept {
+    /**
+     * @brief Returns the vector unchanged.
+    */
+    raze_always_inline simd operator+() const noexcept {
         return _vector;
     }
 
-    raze_nodiscard raze_always_inline simd operator-() const noexcept {
+    /**
+     * @brief Element-wise negation.
+    */
+    raze_always_inline simd operator-() const noexcept {
         return _Negate<__isa, __width, _Type_>()(_vector);
     }
 
+    /**
+     * @brief Post-increment: returns the old value, increments each lane by 1.
+    */
     raze_nodiscard raze_always_inline simd operator++(int) noexcept {
         simd __self = *this;
         *this += simd(1);
         return __self;
     }
 
+    /**
+     * @brief Pre-increment: increments each lane by 1.
+    */
     raze_always_inline simd& operator++() noexcept {
         return *this += simd(1);
     }
 
-    raze_nodiscard raze_always_inline simd operator--(int) noexcept {
+    /**
+     * @brief Post-decrement: returns the old value, decrements each lane by 1.
+    */
+    raze_always_inline simd operator--(int) noexcept {
         simd __self = *this;
         *this -= simd(1);
         return __self;
     }
 
+    /**
+     * @brief Pre-decrement: decrements each lane by 1.
+    */
     raze_always_inline simd& operator--() noexcept {
         return *this -= simd(1);
     }
 
-    raze_nodiscard raze_always_inline simd operator~() const noexcept {
-        return _Not<__isa, __width>()(_vector);
-    }
-
+    /**
+     * @brief Returns the value of lane `i`.
+     *
+     * @param i  Index in range [0, size()).
+    */
     raze_nodiscard raze_always_inline _Type_ operator[](int32 __i) const noexcept {
         return __extract(__i);
     }
 
+    /**
+     * @brief Returns a proxy reference to lane `i`, allowing modification.
+    */
     raze_nodiscard raze_always_inline reference operator[](int32 __i) noexcept {
         return reference(*this, __i);
     }
 
+    /**
+     * @brief Returns the SIMD register width in bits.
+    */
     raze_nodiscard static raze_always_inline constexpr int width() noexcept {
         return __width;
     }
 
+    /**
+     * @brief Returns the number of lanes in the vector.
+    */
     raze_nodiscard static raze_always_inline constexpr int size() noexcept {
         return (sizeof(vector_type) / sizeof(_Type_));
     }
 
+    /**
+     * @brief Alias for size().
+    */
     raze_nodiscard static raze_always_inline constexpr int length() noexcept {
         return size();
     }
 
+    /**
+     * @brief Returns the number of hardware SIMD registers.
+    */
     raze_nodiscard static raze_always_inline constexpr int registers_count() noexcept {
         return _Abi_::registers_count;
     }

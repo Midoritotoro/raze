@@ -309,6 +309,156 @@ void testSimdMaskMethods() {
         }
     }
 
+    {
+        for (raze::uint32 sh = 0; sh <= N; ++sh) {
+            Mask m{};
+
+            for (size_t i = 0; i < N; ++i)
+                m[i] = (i % 2 == 0);
+
+            Mask slid = (m << sh);
+
+            bool expected[N];
+
+            for (size_t i = 0; i < N; ++i) {
+                if (sh >= N)
+                    expected[i] = false;
+
+                else if (i >= sh)
+                    expected[i] = m[i - sh];
+
+                else
+                    expected[i] = false;
+            }
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(slid[i] == expected[i]);
+        }
+
+        for (raze::uint32 sh = 0; sh <= N; ++sh) {
+            Mask m{};
+            for (size_t i = 0; i < N; ++i)
+                m[i] = (i % 3 == 0);
+
+            Mask m2 = m;
+            m2 <<= sh;
+
+            bool expected[N];
+            for (size_t i = 0; i < N; ++i) {
+                if (sh >= N)
+                    expected[i] = false;
+                else if (i >= sh)
+                    expected[i] = m[i - sh];
+                else
+                    expected[i] = false;
+            }
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m2[i] == expected[i]);
+        }
+
+        [&]<std::size_t... I>(std::index_sequence<I...>) {
+            (([&] {
+                constexpr raze::uint32 sh = I;
+
+                Mask m{};
+                for (size_t i = 0; i < N; ++i)
+                    m[i] = (i % 5 == 0);
+
+                Mask slid = (m << std::integral_constant<raze::uint32, sh>{});
+
+                bool expected[N];
+                if constexpr (sh >= N) {
+                    for (size_t i = 0; i < N; ++i)
+                        expected[i] = false;
+                }
+                else {
+                    for (size_t i = 0; i < N; ++i) {
+                        if (i >= sh)
+                            expected[i] = m[i - sh];
+                        else
+                            expected[i] = false;
+                    }
+                }
+
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(slid[i] == expected[i]);
+                }()), ...);
+        }(std::make_index_sequence<N + 1>{});
+
+        for (raze::uint32 sh = 0; sh <= N; ++sh) {
+            Mask m{};
+            for (size_t i = 0; i < N; ++i)
+                m[i] = (i % 2 == 1);
+
+            Mask slid = (m >> sh);
+
+            bool expected[N];
+            for (size_t i = 0; i < N; ++i) {
+                if (sh >= N)
+                    expected[i] = false;
+                else if (i + sh < N)
+                    expected[i] = m[i + sh];
+                else
+                    expected[i] = false;
+            }
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(slid[i] == expected[i]);
+        }
+
+        for (raze::uint32 sh = 0; sh <= N; ++sh) {
+            Mask m{};
+            for (size_t i = 0; i < N; ++i)
+                m[i] = (i % 4 == 0);
+
+            Mask m2 = m;
+            m2 >>= sh;
+
+            bool expected[N];
+            for (size_t i = 0; i < N; ++i) {
+                if (sh >= N)
+                    expected[i] = false;
+                else if (i + sh < N)
+                    expected[i] = m[i + sh];
+                else
+                    expected[i] = false;
+            }
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m2[i] == expected[i]);
+        }
+
+        [&]<std::size_t... I>(std::index_sequence<I...>) {
+            (([&] {
+                constexpr raze::uint32 sh = I;
+
+                Mask m{};
+                for (size_t i = 0; i < N; ++i)
+                    m[i] = (i % 7 == 0);
+
+                Mask slid = (m >> std::integral_constant<raze::uint32, sh>{});
+
+                bool expected[N];
+                if constexpr (sh >= N) {
+                    for (size_t i = 0; i < N; ++i)
+                        expected[i] = false;
+                }
+                else {
+                    for (size_t i = 0; i < N; ++i) {
+                        if (i + sh < N)
+                            expected[i] = m[i + sh];
+                        else
+                            expected[i] = false;
+                    }
+                }
+
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(slid[i] == expected[i]);
+                }()), ...);
+        }(std::make_index_sequence<N + 1>{});
+    }
+
 }
 
 template <raze::arch::ISA _ISA_, raze::uint32 _Width_>

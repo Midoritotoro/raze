@@ -161,6 +161,9 @@ public:
 		mask_type								__mask,
 		std::integral_constant<uint32, _Shift_>	__shift) noexcept
 	{
+		if constexpr (__shift >= __elements())
+			return 0;
+
 		if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
 			return _kshiftri_mask8(__mask, __shift);
 
@@ -177,40 +180,95 @@ public:
 			return __mask >> __shift;
 	}
 
+	raze_nodiscard raze_always_inline static mask_type __bit_rshift(
+		mask_type	__mask,
+		uint32		__shift) noexcept
+	{
+		return (__shift >= __elements()) ? 0 : __mask >> __shift;
+	}
+
 	template <uint32 _Shift_>
 	raze_nodiscard raze_always_inline static mask_type __bit_lshift(
 		mask_type								__mask,
 		std::integral_constant<uint32, _Shift_>	__shift) noexcept
 	{
-		if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>)
-			return _kshiftli_mask8(__mask, __shift);
+		raze_maybe_unused_attribute constexpr auto __all_mask = ((sizeof(mask_type) * 8) == __elements())
+			? math::__maximum_integral_limit<mask_type>()
+			: mask_type(((mask_type(1) << __elements()) - 1));
 
-		else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
+		if constexpr (sizeof(mask_type) == 1 && __has_avx512dq_support_v<__isa>) {
+			if constexpr (__elements() < 8)
+				return __bit_and(_kshiftli_mask8(__mask, __shift), __to_k<__isa>(__all_mask));
+			else
+				return _kshiftli_mask8(__mask, __shift);
+		}
+		else if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>) {
 			return _kshiftli_mask16(__mask, __shift);
-
-		else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>)
+		}
+		else if constexpr (sizeof(mask_type) == 4 && __has_avx512bw_support_v<__isa>) {
 			return _kshiftli_mask32(__mask, __shift);
-
-		else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>)
+		}
+		else if constexpr (sizeof(mask_type) == 8 && __has_avx512bw_support_v<__isa>) {
 			return _kshiftli_mask64(__mask, __shift);
-
-		else
-			return __mask >> __shift;
-	}
-
-	raze_nodiscard raze_always_inline static mask_type __bit_rshift(
-		mask_type	__mask,
-		uint32		__shift) noexcept
-	{
-		return __mask >> __shift;
+		}
+		else {
+			if constexpr (__elements() < 8)
+				return (__mask << __shift) & __all_mask;
+			else
+				return __mask << __shift;
+		}
 	}
 
 	raze_nodiscard raze_always_inline static mask_type __bit_lshift(
 		mask_type	__mask,
 		uint32		__shift) noexcept
 	{
-		return __mask << __shift;
+		raze_maybe_unused_attribute constexpr auto __all_mask = ((sizeof(mask_type) * 8) == __elements())
+			? math::__maximum_integral_limit<mask_type>()
+			: mask_type(((mask_type(1) << __elements()) - 1));
+
+		if constexpr (__elements() < 8)
+			return (__mask << __shift) & __all_mask;
+		else
+			return (__mask << __shift);
 	}
+
+	template <uint32 _Shift_>
+	raze_nodiscard raze_always_inline static mask_type __bit_rslide(
+		mask_type								__mask,
+		std::integral_constant<uint32, _Shift_>	__shift) noexcept
+	{
+		if constexpr (__shift >= __elements())
+			return 0;
+		else
+			return __bit_rshift(__mask, __shift);
+	}
+
+	raze_nodiscard raze_always_inline static mask_type __bit_rslide(
+		mask_type	__mask,
+		uint32		__shift) noexcept
+	{
+		return (__shift >= __elements()) ? 0 : __bit_rshift(__mask, __shift);
+	}
+
+	template <uint32 _Shift_>
+	raze_nodiscard raze_always_inline static mask_type __bit_lslide(
+		mask_type								__mask,
+		std::integral_constant<uint32, _Shift_>	__shift) noexcept
+	{
+		if constexpr (__shift >= __elements())
+			return 0;
+		else
+			return __bit_lshift(__mask, __shift);
+	}
+
+	raze_nodiscard raze_always_inline static mask_type __bit_lslide(
+		mask_type	__mask,
+		uint32		__shift) noexcept
+	{
+		return (__shift >= __elements()) ? 0 : __bit_lshift(__mask, __shift);
+	}
+
 
 	raze_nodiscard raze_always_inline static int32 __count_set(mask_type __mask) noexcept {
 		return math::__popcnt_n_bits<__bit_width()>(__to_gpr<__isa>(__mask));
@@ -287,13 +345,15 @@ public:
 		uint32		__n,
 		uint32		__k) noexcept
 	{
+		constexpr auto __first_n_table = __generate_first_n_table<__elements()>();
+
 		auto __size = uint32(__k - __n + 1);
 		auto __x = mask_type(0);
 
 		if (__size >= sizeof(mask_type) * 8)
 			__x = math::__maximum_integral_limit<mask_type>();
 		else
-			__x = __bit_lshift((__bit_lshift(1, __size) - 1), __n);
+			__x = __bit_lshift(__first_n_table[__size], __n);
 
 		return __bit_and(__mask, __x) == __x;
 	}

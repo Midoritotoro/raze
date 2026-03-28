@@ -1048,16 +1048,16 @@ raze_always_inline _DataparType_ rotate_left(
  *      [1 2 3 4] rotate_right by 1  →  [4 1 2 3]
  *  @endcode
 */
-//template <class _DataparType_>
-//raze_always_inline _DataparType_ rotate_right(
-//	const _DataparType_&	__datapar,
-//	uint32                  __elements) noexcept
-//		requires(__is_valid_simd_v<_DataparType_>)
-//{
-//	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-//	return _Rotate_right<_RawDataparType::__isa, _RawDataparType::__width,
-//		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
-//}
+template <class _DataparType_>
+raze_always_inline _DataparType_ rotate_right(
+	const _DataparType_&	__datapar,
+	uint32                  __elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Rotate_right<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
+}
 
 /**
  *  @brief  Element-wise cyclic right rotation of a SIMD vector (compile-time constant).
@@ -1075,18 +1075,18 @@ raze_always_inline _DataparType_ rotate_left(
  *  rotation amount to be propagated as a compile-time constant, enabling
  *  additional optimization opportunities in the backend.
 */
-//template <
-//	class   _DataparType_,
-//	uint32  _Elements_>
-//raze_always_inline _DataparType_ rotate_right(
-//	const _DataparType_&						__datapar,
-//	std::integral_constant<uint32, _Elements_>  __elements) noexcept
-//		requires(__is_valid_simd_v<_DataparType_>)
-//{
-//	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-//	return _Rotate_right<_RawDataparType::__isa, _RawDataparType::__width,
-//		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
-//}
+template <
+	class   _DataparType_,
+	uint32  _Elements_>
+raze_always_inline _DataparType_ rotate_right(
+	const _DataparType_&						__datapar,
+	std::integral_constant<uint32, _Elements_>  __elements) noexcept
+		requires(__is_valid_simd_v<_DataparType_>)
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Rotate_right<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__datapar), __elements);
+}
 
 using prefetch_level = __prefetch_level;
 

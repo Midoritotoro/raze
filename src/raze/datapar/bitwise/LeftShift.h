@@ -102,7 +102,7 @@ struct _Left_shift<arch::ISA::AVX512BW, 512, _DesiredType_>:
 		uint32			__shift) raze_const_operator noexcept
 	{
 		if constexpr (__is_epi8_v<_DesiredType_> || __is_epu8_v<_DesiredType_>) {
-			const auto __and_mask = _mm512_and_si512(__intrin_bitcast<__m512i>(__left), _mm512_set1_epi8(0xFFu >> __shift));
+			const auto __and_mask = _mm512_and_si512(__intrin_bitcast<__m512i>(__left), _mm512_set1_epi8(0xFFull >> __shift));
 			return __intrin_bitcast<_IntrinType_>(_mm512_sll_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>) {

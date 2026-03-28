@@ -2,9 +2,10 @@
 
 #include <src/raze/datapar/IntrinBitcast.h>
 #include <src/raze/datapar/memory/Store.h>
-#include <src/raze/datapar/memory/MaskStore.h>
 #include <src/raze/datapar/memory/Load.h>
 #include <src/raze/datapar/shuffle/BroadcastZeros.h>
+
+#include <array>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -25,10 +26,10 @@ struct _Rotate_left<arch::ISA::SSE2, 128, _DesiredType_> {
 		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 		alignas(sizeof(_IntrinType_)) _DesiredType_ __array[__length * 2];
 
-		_Store<arch::ISA::SSE2, 128>()(__array, __left, __aligned_policy{});
-		_Mask_store<arch::ISA::SSE2, 128, _DesiredType_>()(__array + __length, (1u << __elements) - 1, __left, __aligned_policy{});
+		_Store<arch::ISA::SSE2, 128>()(__array, __left, __aligned_policy{}); 
+		_Store<arch::ISA::SSE2, 128>()(__array + __length, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__array, __aligned_policy{});
+		return _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__array + __elements, __aligned_policy{});
 	}
 
 	template <
@@ -38,7 +39,18 @@ struct _Rotate_left<arch::ISA::SSE2, 128, _DesiredType_> {
 		_IntrinType_							__left,
 		std::integral_constant<uint32, _Shift_> __elements) raze_const_operator noexcept
 	{
-		
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
+
+		if constexpr (__elements == 0 || __elements == __length) {
+			return __left;
+		}
+		else if constexpr (__elements == (__length / 2)) {
+			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi32(
+				__intrin_bitcast<__m128i>(__left), 0x4E));
+		}
+		else {
+			return (*this)(__left, __elements.value);
+		}
 	}
 };
 
@@ -51,9 +63,9 @@ struct _Rotate_left<arch::ISA::SSSE3, 128, _DesiredType_> :
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__elements) raze_const_operator noexcept
 	{
-		return _Rotate_left<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __shift);
+		return _Rotate_left<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __elements);
 	}
 
 	template <
@@ -61,9 +73,20 @@ struct _Rotate_left<arch::ISA::SSSE3, 128, _DesiredType_> :
 		uint32	_Shift_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_							__left,
-		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+		std::integral_constant<uint32, _Shift_> __elements) raze_const_operator noexcept
 	{
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
+		if constexpr (__elements == 0 || __elements == __length) {
+			return __left;
+		}
+		else if constexpr (__elements == (__length / 2)) {
+			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi32(
+				__intrin_bitcast<__m128i>(__left), 0x4E));
+		}
+		else {
+			return (*this)(__left, __elements.value);
+		}
 	}
 };
 
@@ -72,14 +95,15 @@ struct _Rotate_left<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__elements) raze_const_operator noexcept
 	{
-		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
+		alignas(sizeof(_IntrinType_)) _DesiredType_ __array[__length * 2];
 
 		_Store<arch::ISA::AVX2, 256>()(__array, __left, __aligned_policy{});
-		_Mask_store<arch::ISA::AVX2, 256, _DesiredType_>()(__array + sizeof(_IntrinType_), (1u << __shift) - 1, __left, __aligned_policy{});
+		_Store<arch::ISA::AVX2, 256>()(__array + __length, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__array, __aligned_policy{});
+		return _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__array + __elements, __aligned_policy{});
 	}
 
 	template <
@@ -87,9 +111,16 @@ struct _Rotate_left<arch::ISA::AVX2, 256, _DesiredType_> {
 		uint32	_Shift_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_							__left,
-		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+		std::integral_constant<uint32, _Shift_> __elements) raze_const_operator noexcept
 	{
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
+		if constexpr (__elements == 0 || __elements == __length) {
+			return __left;
+		}
+		else {
+			return (*this)(__left, __elements.value);
+		}
 	}
 };
 
@@ -100,9 +131,9 @@ struct _Rotate_left<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__elements) raze_const_operator noexcept
 	{
-		return _Rotate_left<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __shift);
+		return _Rotate_left<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __elements);
 	}
 
 	template <
@@ -110,9 +141,16 @@ struct _Rotate_left<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 		uint32	_Shift_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_							__left,
-		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+		std::integral_constant<uint32, _Shift_> __elements) raze_const_operator noexcept
 	{
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
+		if constexpr (__elements == 0 || __elements == __length) {
+			return __left;
+		}
+		else {
+			return (*this)(__left, __elements.value);
+		}
 	}
 };
 
@@ -122,14 +160,15 @@ struct _Rotate_left<arch::ISA::AVX512F, 512, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__elements) raze_const_operator noexcept
 	{
-		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
+		alignas(sizeof(_IntrinType_)) _DesiredType_ __array[__length * 2];
 
 		_Store<arch::ISA::AVX512F, 512>()(__array, __left, __aligned_policy{});
-		_Mask_store<arch::ISA::AVX512F, 512, _DesiredType_>()(__array + sizeof(_IntrinType_), (1u << __shift) - 1, __left, __aligned_policy{});
+		_Store<arch::ISA::AVX512F, 512>()(__array + __length, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__array, __aligned_policy{});
+		return _Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__array + __elements, __aligned_policy{});
 	}
 
 	template <
@@ -137,9 +176,16 @@ struct _Rotate_left<arch::ISA::AVX512F, 512, _DesiredType_> {
 		uint32	_Shift_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_							__left,
-		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+		std::integral_constant<uint32, _Shift_> __elements) raze_const_operator noexcept
 	{
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
+		if constexpr (__elements == 0 || __elements == __length) {
+			return __left;
+		}
+		else {
+			return (*this)(__left, __elements.value);
+		}
 	}
 };
 
@@ -150,14 +196,15 @@ struct _Rotate_left<arch::ISA::AVX512BW, 512, _DesiredType_> :
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__elements) raze_const_operator noexcept
 	{
-		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
+		alignas(sizeof(_IntrinType_)) _DesiredType_ __array[__length * 2];
 
 		_Store<arch::ISA::AVX512BW, 512>()(__array, __left, __aligned_policy{});
-		_Mask_store<arch::ISA::AVX512BW, 512, int8>()(__array + sizeof(_IntrinType_), (1u << __shift) - 1, __left, __aligned_policy{});
+		_Store<arch::ISA::AVX512BW, 512>()(__array + __length, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::AVX512BW, 512, _IntrinType_>()(__array, __aligned_policy{});
+		return _Load<arch::ISA::AVX512BW, 512, _IntrinType_>()(__array + __elements, __aligned_policy{});
 	}
 
 	template <
@@ -165,9 +212,16 @@ struct _Rotate_left<arch::ISA::AVX512BW, 512, _DesiredType_> :
 		uint32	_Shift_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_							__left,
-		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+		std::integral_constant<uint32, _Shift_> __elements) raze_const_operator noexcept
 	{
+		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
+		if constexpr (__elements == 0 || __elements == __length) {
+			return __left;
+		}
+		else {
+			return (*this)(__left, __elements.value);
+		}
 	}
 };
 
