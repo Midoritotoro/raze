@@ -590,107 +590,107 @@ void test_methods() {
     //    }
     //}
 
-    //{
-    //    alignas(64) T arr[N];
-    //    for (size_t i = 0; i < N; ++i)
-    //        arr[i] = static_cast<T>(i + 1);
+   /* {
+        alignas(64) T arr[N];
+        for (size_t i = 0; i < N; ++i)
+            arr[i] = static_cast<T>(i + 1);
 
-    //    Simd v = raze::datapar::load<Simd>(arr);
+        Simd v = raze::datapar::load<Simd>(arr);
 
-    //    for (raze::uint32 sh = 0; sh <= N; ++sh) {
-    //        auto slid = raze::datapar::slide_left(v, sh);
+        for (raze::uint32 sh = 0; sh <= N; ++sh) {
+            auto slid = raze::datapar::slide_right(v, sh);
 
-    //        alignas(64) T expected[N];
+            alignas(64) T expected[N];
 
-    //        if (sh >= N) {
-    //            for (size_t i = 0; i < N; ++i)
-    //                expected[i] = T(0);
-    //        }
-    //        else {
-    //            for (size_t i = 0; i < N; ++i) {
-    //                if (i >= sh)
-    //                    expected[i] = arr[i - sh];
-    //                else
-    //                    expected[i] = T(0);
-    //            }
-    //        }
+            if (sh >= N) {
+                for (size_t i = 0; i < N; ++i)
+                    expected[i] = T(0);
+            }
+            else {
+                for (size_t i = 0; i < N; ++i) {
+                    if (i >= sh)
+                        expected[i] = arr[i - sh];
+                    else
+                        expected[i] = T(0);
+                }
+            }
 
-    //        for (size_t i = 0; i < N; ++i)
-    //            raze_assert(slid[i] == expected[i]);
-    //    }
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(slid[i] == expected[i]);
+        }
 
-    //    [&]<std::size_t... I>(std::index_sequence<I...>) {
-    //        (([&] {
-    //            constexpr raze::uint32 sh = I;
-    //            auto slid = raze::datapar::slide_left(v, std::integral_constant<raze::uint32, sh>{});
+        [&]<std::size_t... I>(std::index_sequence<I...>) {
+            (([&] {
+                constexpr raze::uint32 sh = I;
+                auto slid = raze::datapar::slide_right(v, std::integral_constant<raze::uint32, sh>{});
 
-    //            alignas(64) T expected[N];
+                alignas(64) T expected[N];
 
-    //            if constexpr (sh >= N) {
-    //                for (size_t i = 0; i < N; ++i)
-    //                    expected[i] = T(0);
-    //            }
-    //            else {
-    //                for (size_t i = 0; i < N; ++i) {
-    //                    if (i >= sh)
-    //                        expected[i] = arr[i - sh];
-    //                    else
-    //                        expected[i] = T(0);
-    //                }
-    //            }
+                if constexpr (sh >= N) {
+                    for (size_t i = 0; i < N; ++i)
+                        expected[i] = T(0);
+                }
+                else {
+                    for (size_t i = 0; i < N; ++i) {
+                        if (i >= sh)
+                            expected[i] = arr[i - sh];
+                        else
+                            expected[i] = T(0);
+                    }
+                }
 
-    //            for (size_t i = 0; i < N; ++i)
-    //                raze_assert(slid[i] == expected[i]);
-    //            }()), ...);
-    //    }(std::make_index_sequence<N + 1>{});
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(slid[i] == expected[i]);
+                }()), ...);
+        }(std::make_index_sequence<N + 1>{});
 
-    //    for (raze::uint32 sh = 0; sh <= N; ++sh) {
-    //        auto slid = raze::datapar::slide_right(v, sh);
+        for (raze::uint32 sh = 0; sh <= N; ++sh) {
+            auto slid = raze::datapar::slide_left(v, sh);
 
-    //        alignas(64) T expected[N];
+            alignas(64) T expected[N];
 
-    //        if (sh >= N) {
-    //            for (size_t i = 0; i < N; ++i)
-    //                expected[i] = T(0);
-    //        }
-    //        else {
-    //            for (size_t i = 0; i < N; ++i) {
-    //                if (i + sh < N)
-    //                    expected[i] = arr[i + sh];
-    //                else
-    //                    expected[i] = T(0);
-    //            }
-    //        }
+            if (sh >= N) {
+                for (size_t i = 0; i < N; ++i)
+                    expected[i] = T(0);
+            }
+            else {
+                for (size_t i = 0; i < N; ++i) {
+                    if (i + sh < N)
+                        expected[i] = arr[i + sh];
+                    else
+                        expected[i] = T(0);
+                }
+            }
 
-    //        for (size_t i = 0; i < N; ++i)
-    //            raze_assert(slid[i] == expected[i]);
-    //    }
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(slid[i] == expected[i]);
+        }
 
-    //    [&]<std::size_t... I>(std::index_sequence<I...>) {
-    //        (([&] {
-    //            constexpr raze::uint32 sh = I;
-    //            auto slid = raze::datapar::slide_right(v, std::integral_constant<raze::uint32, sh>{});
+        [&]<std::size_t... I>(std::index_sequence<I...>) {
+            (([&] {
+                constexpr raze::uint32 sh = I;
+                auto slid = raze::datapar::slide_left(v, std::integral_constant<raze::uint32, sh>{});
 
-    //            alignas(64) T expected[N];
+                alignas(64) T expected[N];
 
-    //            if constexpr (sh >= N) {
-    //                for (size_t i = 0; i < N; ++i)
-    //                    expected[i] = T(0);
-    //            }
-    //            else {
-    //                for (size_t i = 0; i < N; ++i) {
-    //                    if (i + sh < N)
-    //                        expected[i] = arr[i + sh];
-    //                    else
-    //                        expected[i] = T(0);
-    //                }
-    //            }
+                if constexpr (sh >= N) {
+                    for (size_t i = 0; i < N; ++i)
+                        expected[i] = T(0);
+                }
+                else {
+                    for (size_t i = 0; i < N; ++i) {
+                        if (i + sh < N)
+                            expected[i] = arr[i + sh];
+                        else
+                            expected[i] = T(0);
+                    }
+                }
 
-    //            for (size_t i = 0; i < N; ++i)
-    //                raze_assert(slid[i] == expected[i]);
-    //            }()), ...);
-    //    }(std::make_index_sequence<N + 1>{});
-    //}
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(slid[i] == expected[i]);
+                }()), ...);
+        }(std::make_index_sequence<N + 1>{});
+    }*/
 
     //{
     //    alignas(64) T arr[N];
@@ -961,37 +961,37 @@ int main() {
     test_methods<raze::arch::ISA::SSE41, 128>();
     test_methods<raze::arch::ISA::SSE42, 128>();
 
-    //test_methods<raze::arch::ISA::AVX2, 128>();
-    //test_methods<raze::arch::ISA::AVX2, 256>();
-    //
-    //test_methods<raze::arch::ISA::AVX512F, 512>();
-    //test_methods<raze::arch::ISA::AVX512BW, 512>();
-    //test_methods<raze::arch::ISA::AVX512DQ, 512>();
-    //test_methods<raze::arch::ISA::AVX512BWDQ, 512>();
-    //test_methods<raze::arch::ISA::AVX512VBMI, 512>();
-    //test_methods<raze::arch::ISA::AVX512VBMI2, 512>();
-    //test_methods<raze::arch::ISA::AVX512VBMIDQ, 512>();
-    //test_methods<raze::arch::ISA::AVX512VBMI2DQ, 512>();
+    test_methods<raze::arch::ISA::AVX2, 128>();
+    test_methods<raze::arch::ISA::AVX2, 256>();
+    
+    test_methods<raze::arch::ISA::AVX512F, 512>();
+    test_methods<raze::arch::ISA::AVX512BW, 512>();
+    test_methods<raze::arch::ISA::AVX512DQ, 512>();
+    test_methods<raze::arch::ISA::AVX512BWDQ, 512>();
+    test_methods<raze::arch::ISA::AVX512VBMI, 512>();
+    test_methods<raze::arch::ISA::AVX512VBMI2, 512>();
+    test_methods<raze::arch::ISA::AVX512VBMIDQ, 512>();
+    test_methods<raze::arch::ISA::AVX512VBMI2DQ, 512>();
 
-    //test_methods<raze::arch::ISA::AVX512VLF, 128>();
-    //test_methods<raze::arch::ISA::AVX512VLBW, 128>();
-    //test_methods<raze::arch::ISA::AVX512VLBWDQ, 128>();
-    //test_methods<raze::arch::ISA::AVX512VLDQ, 128>();
+    test_methods<raze::arch::ISA::AVX512VLF, 128>();
+    test_methods<raze::arch::ISA::AVX512VLBW, 128>();
+    test_methods<raze::arch::ISA::AVX512VLBWDQ, 128>();
+    test_methods<raze::arch::ISA::AVX512VLDQ, 128>();
 
-    //test_methods<raze::arch::ISA::AVX512VLF, 256>();
-    //test_methods<raze::arch::ISA::AVX512VLBW, 256>();
-    //test_methods<raze::arch::ISA::AVX512VLBWDQ, 256>();
-    //test_methods<raze::arch::ISA::AVX512VLDQ, 256>();
+    test_methods<raze::arch::ISA::AVX512VLF, 256>();
+    test_methods<raze::arch::ISA::AVX512VLBW, 256>();
+    test_methods<raze::arch::ISA::AVX512VLBWDQ, 256>();
+    test_methods<raze::arch::ISA::AVX512VLDQ, 256>();
 
-    //test_methods<raze::arch::ISA::AVX512VBMIVL, 128>();
-    //test_methods<raze::arch::ISA::AVX512VBMI2VL, 128>();
-    //test_methods<raze::arch::ISA::AVX512VBMIVLDQ, 128>();
-    //test_methods<raze::arch::ISA::AVX512VBMI2VLDQ, 128>();
+    test_methods<raze::arch::ISA::AVX512VBMIVL, 128>();
+    test_methods<raze::arch::ISA::AVX512VBMI2VL, 128>();
+    test_methods<raze::arch::ISA::AVX512VBMIVLDQ, 128>();
+    test_methods<raze::arch::ISA::AVX512VBMI2VLDQ, 128>();
 
-    //test_methods<raze::arch::ISA::AVX512VBMIVL, 256>();
-    //test_methods<raze::arch::ISA::AVX512VBMI2VL, 256>();
-    //test_methods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
-    //test_methods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
+    test_methods<raze::arch::ISA::AVX512VBMIVL, 256>();
+    test_methods<raze::arch::ISA::AVX512VBMI2VL, 256>();
+    test_methods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
+    test_methods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
 
     return 0;
 }

@@ -25,10 +25,10 @@ struct _Slide_right<arch::ISA::SSE2, 128> {
 
 		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
-		_Store<arch::ISA::SSE2, 128>()(__array, __left, __aligned_policy{});
-		_Store<arch::ISA::SSE2, 128>()(__array + sizeof(_IntrinType_), _mm_setzero_si128(), __aligned_policy{});
+		_Store<arch::ISA::SSE2, 128>()(__array, _mm_setzero_si128(), __aligned_policy{});
+		_Store<arch::ISA::SSE2, 128>()(__array + __shift, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__array + __shift, __aligned_policy{});
+		return _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__array, __aligned_policy{});
 	}
 
 	template <
@@ -38,14 +38,15 @@ struct _Slide_right<arch::ISA::SSE2, 128> {
 		_IntrinType_							__left,
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
-		if constexpr (__shift >= sizeof(_IntrinType_))
+		if constexpr (__shift >= sizeof(_IntrinType_)) {
 			return _Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()();
-
-		else if constexpr (__shift == 0)
+		}
+		else if constexpr (__shift == 0) {
 			return __left;
-
-		else
+		}
+		else {
 			return (*this)(__left, __shift.value);
+		}
 	}
 };
 
@@ -60,15 +61,7 @@ struct _Slide_right<arch::ISA::SSSE3, 128>:
 		_IntrinType_	__left,
 		uint32			__shift) raze_const_operator noexcept
 	{
-		if (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::SSSE3, 128, _IntrinType_>()();
-
-		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
-
-		_Store<arch::ISA::SSSE3, 128>()(__array, __left, __aligned_policy{});
-		_Store<arch::ISA::SSSE3, 128>()(__array + sizeof(_IntrinType_), _mm_setzero_si128(), __aligned_policy{});
-
-		return _Load<arch::ISA::SSSE3, 128, _IntrinType_>()(__array + __shift, __aligned_policy{});
+		return _Slide_right<arch::ISA::SSE2, 128>()(__left, __shift);
 	}
 
 	template <
@@ -85,11 +78,10 @@ struct _Slide_right<arch::ISA::SSSE3, 128>:
 			return __left;
 
 		else
-			return __intrin_bitcast<_IntrinType_>(_mm_alignr_epi8(_mm_setzero_si128(),
-				__intrin_bitcast<__m128i>(__left), __shift));
+			return __intrin_bitcast<_IntrinType_>(_mm_alignr_epi8(
+				__intrin_bitcast<__m128i>(__left), _mm_setzero_si128(), 16 - __shift));
 	}
 };
-
 
 template <>
 struct _Slide_right<arch::ISA::AVX2, 256> {
@@ -103,10 +95,10 @@ struct _Slide_right<arch::ISA::AVX2, 256> {
 
 		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
-		_Store<arch::ISA::AVX2, 256>()(__array, __left, __aligned_policy{});
-		_Store<arch::ISA::AVX2, 256>()(__array + sizeof(_IntrinType_), _mm256_setzero_si256(), __aligned_policy{});
+		_Store<arch::ISA::AVX2, 256>()(__array, _mm256_setzero_si256(), __aligned_policy{});
+		_Store<arch::ISA::AVX2, 256>()(__array + __shift, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__array + __shift, __aligned_policy{});
+		return _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__array, __aligned_policy{});
 	}
 
 	template <
@@ -123,25 +115,25 @@ struct _Slide_right<arch::ISA::AVX2, 256> {
 			return __left;
 		}
 		else if constexpr (__shift < 16) {
-			__low_part = _mm256_inserti128_si256(__low_part, _mm256_extracti128_si256(__intrin_bitcast<__m256i>(__left), 1), 0);
-			__high_part = __intrin_bitcast<__m256i>(__left);
+			__low_part = __intrin_bitcast<__m256i>(__left);
+			__high_part = _mm256_inserti128_si256(__high_part, __intrin_bitcast<__m128i>(__left), 1);
 		}
 		else if constexpr (__shift < 32) {
-			__high_part = _mm256_inserti128_si256(__high_part, _mm256_extracti128_si256(__intrin_bitcast<__m256i>(__left), 1), 0);
+			__low_part = _mm256_inserti128_si256(__low_part, __intrin_bitcast<__m128i>(__left), 1);
 		}
 		else {
 			return _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()();
 		}
 
 		if constexpr ((__shift % 16) == 0) 
-			return __intrin_bitcast<_IntrinType_>(__high_part);
+			return __intrin_bitcast<_IntrinType_>(__low_part);
 
-		return __intrin_bitcast<_IntrinType_>(_mm256_alignr_epi8(__low_part, __high_part, __shift & 0xF));
+		return __intrin_bitcast<_IntrinType_>(_mm256_alignr_epi8(__low_part, __high_part, 16 - (__shift & 0xF)));
 	}
 };
 
 template <> 
-struct _Slide_right<arch::ISA::AVX512VLF, 256>:
+struct _Slide_right<arch::ISA::AVX512VLF, 256>: 
 	_Slide_right<arch::ISA::AVX2, 256> 
 {
 	template <class _IntrinType_>
@@ -162,18 +154,16 @@ struct _Slide_right<arch::ISA::AVX512VLF, 256>:
 		if constexpr (__shift == 0) {
 			return __left;
 		}
-		else if constexpr (__shift >= sizeof(_IntrinType_)) {
-			return _Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()();
-		}
 		else if constexpr ((__shift % 4) == 0) {
-			return __intrin_bitcast<_IntrinType_>(_mm256_alignr_epi32(_mm256_setzero_si256(), 
-				__intrin_bitcast<__m256i>(__left), (__shift >> 2) & 7));
+			return __intrin_bitcast<_IntrinType_>(_mm256_alignr_epi32(
+				__intrin_bitcast<__m256i>(__left), _mm256_setzero_si256(), (8 - (__shift >> 2)) & 7));
 		}
 		else {
 			return _Slide_right<arch::ISA::AVX2, 256>()(__left, std::integral_constant<uint32, __shift>{});
 		}
 	}
 };
+
 
 template <>
 struct _Slide_right<arch::ISA::AVX512F, 512> {
@@ -187,10 +177,10 @@ struct _Slide_right<arch::ISA::AVX512F, 512> {
 
 		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
-		_Store<arch::ISA::AVX512F, 512>()(__array, __left, __aligned_policy{});
-		_Store<arch::ISA::AVX512F, 512>()(__array + sizeof(_IntrinType_), _mm512_setzero_si512(), __aligned_policy{});
+		_Store<arch::ISA::AVX512F, 512>()(__array, _mm512_setzero_si512(), __aligned_policy{});
+		_Store<arch::ISA::AVX512F, 512>()(__array + __shift, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__array + __shift, __aligned_policy{});
+		return _Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__array, __aligned_policy{});
 	}
 
 	template <
@@ -207,56 +197,63 @@ struct _Slide_right<arch::ISA::AVX512F, 512> {
 			return __left;
 		}
 		else if constexpr (__shift < 16) {
-			__low_part = _mm512_maskz_shuffle_i64x2(0x3F, __intrin_bitcast<__m512i>(__left), 
-				__intrin_bitcast<__m512i>(__left), 0x39);
-			__high_part = __intrin_bitcast<__m512i>(__left);
+			__low_part = __intrin_bitcast<__m512i>(__left);
+			__high_part = _mm512_maskz_shuffle_i64x2(0xFC, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x90);
 		}
 		else if constexpr (__shift < 32) {
-			__low_part = _mm512_maskz_shuffle_i64x2(0x0F, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x0E);
-			__high_part = _mm512_maskz_shuffle_i64x2(0x3F, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x39);
+			__low_part = _mm512_maskz_shuffle_i64x2(0xFC, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x90);
+			__high_part = _mm512_maskz_shuffle_i64x2(0xF0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x40);
 		}
 		else if constexpr (__shift < 48) {
-			__low_part = _mm512_maskz_shuffle_i64x2(0x03, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x03);
-			__high_part = _mm512_maskz_shuffle_i64x2(0x0F, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x0E);
+			__low_part = _mm512_maskz_shuffle_i64x2(0xF0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x40);
+			__high_part = _mm512_maskz_shuffle_i64x2(0xC0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x00);
 		}
 		else if constexpr (__shift < 64) {
-			__low_part = _mm512_setzero_si512();
-			__high_part = _mm512_maskz_shuffle_i64x2(0x03, __intrin_bitcast<__m512i>(__left), 
-				__intrin_bitcast<__m512i>(__left), 0x03);
+			__low_part = _mm512_maskz_shuffle_i64x2(0xC0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x00);
 		}
 		else {
 			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
 		}
 
 		if constexpr ((__shift % 4) == 0) {
-			return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi32(_mm512_setzero_si512(),
-				__intrin_bitcast<__m512i>(__left), ((__shift >> 2) & 15)));
+			return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi32(
+				__intrin_bitcast<__m512i>(__left), _mm512_setzero_si512(), (16 - (__shift >> 2)) & 15));
 		}
 
 		const auto __low256 = _mm256_alignr_epi8(__intrin_bitcast<__m256i>(__low_part),
-			__intrin_bitcast<__m256i>(__high_part), __shift & 0xF);
+			__intrin_bitcast<__m256i>(__high_part), 16 - (__shift & 0xF));
 
 		const auto __high256 = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__low_part), 1),
-			_mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__high_part), 1), __shift & 0xF);
+			_mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__high_part), 1), 16 - (__shift & 0xF));
 
 		return __intrin_bitcast<_IntrinType_>(_mm512_inserti64x4(__intrin_bitcast<__m512i>(__low256), __high256, 1));
 	}
 };
 
 template <> 
-struct _Slide_right<arch::ISA::AVX512BW, 512>:
-	_Slide_right<arch::ISA::AVX512F, 512> 
+struct _Slide_right<arch::ISA::AVX512BW, 512>: 
+	_Slide_right<arch::ISA::AVX512F, 512>
 {
-		template <class _IntrinType_>
+	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
 		uint32			__shift) raze_const_operator noexcept
 	{
-		return _Slide_right<arch::ISA::AVX512F, 512>()(__left, __shift);
+		if (__shift >= sizeof(_IntrinType_))
+			return _Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()();
+
+		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
+
+		_Store<arch::ISA::AVX512BW, 512>()(__array, _mm512_setzero_si512(), __aligned_policy{});
+		_Store<arch::ISA::AVX512BW, 512>()(__array + __shift, __left, __aligned_policy{});
+
+		return _Load<arch::ISA::AVX512BW, 512, _IntrinType_>()(__array, __aligned_policy{});
 	}
 
 	template <
@@ -273,39 +270,39 @@ struct _Slide_right<arch::ISA::AVX512BW, 512>:
 			return __left;
 		}
 		else if constexpr (__shift < 16) {
-			__low_part = _mm512_maskz_shuffle_i64x2(0x3F, __intrin_bitcast<__m512i>(__left), 
-				__intrin_bitcast<__m512i>(__left), 0x39);
-			__high_part = __intrin_bitcast<__m512i>(__left);
+			__low_part = __intrin_bitcast<__m512i>(__left);
+			__high_part = _mm512_maskz_shuffle_i64x2(0xFC, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x90);
 		}
 		else if constexpr (__shift < 32) {
-			__low_part = _mm512_maskz_shuffle_i64x2(0x0F, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x0E);
-			__high_part = _mm512_maskz_shuffle_i64x2(0x3F, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x39);
+			__low_part = _mm512_maskz_shuffle_i64x2(0xFC, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x90);
+			__high_part = _mm512_maskz_shuffle_i64x2(0xF0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x40);
 		}
 		else if constexpr (__shift < 48) {
-			__low_part = _mm512_maskz_shuffle_i64x2(0x03, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x03);
-			__high_part = _mm512_maskz_shuffle_i64x2(0x0F, __intrin_bitcast<__m512i>(__left),
-				__intrin_bitcast<__m512i>(__left), 0x0E);
+			__low_part = _mm512_maskz_shuffle_i64x2(0xF0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x40);
+			__high_part = _mm512_maskz_shuffle_i64x2(0xC0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x00);
 		}
 		else if constexpr (__shift < 64) {
-			__low_part = _mm512_setzero_si512();
-			__high_part = _mm512_maskz_shuffle_i64x2(0x03, __intrin_bitcast<__m512i>(__left), 
-				__intrin_bitcast<__m512i>(__left), 0x03);
+			__low_part = _mm512_maskz_shuffle_i64x2(0xC0, __intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__left), 0x00);
 		}
 		else {
 			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
 		}
 
 		if constexpr ((__shift % 4) == 0) {
-			return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi32(_mm512_setzero_si512(),
-				__intrin_bitcast<__m512i>(__left), ((__shift >> 2) & 15)));
+			return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi32(__intrin_bitcast<__m512i>(__left),
+				_mm512_setzero_si512(), (16 - (__shift >> 2)) & 15));
 		}
 
-		return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi8(__low_part, __high_part, __shift & 0xF));
+		return __intrin_bitcast<_IntrinType_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift & 0xF)));
 	}
 };
+
 
 template <> struct _Slide_right<arch::ISA::SSE41, 128> : _Slide_right<arch::ISA::SSSE3, 128> {};
 template <> struct _Slide_right<arch::ISA::SSE42, 128> : _Slide_right<arch::ISA::SSE41, 128> {};

@@ -4,6 +4,8 @@
 #include <src/raze/datapar/memory/Store.h>
 #include <src/raze/datapar/memory/Load.h>
 #include <src/raze/datapar/shuffle/BroadcastZeros.h>
+#include <src/raze/datapar/shuffle/SlideRight.h>
+#include <src/raze/datapar/shuffle/Blend.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -72,7 +74,7 @@ struct _Aligned_constexpr_array {
 template <
 	uint64		_Alignment_, 
 	uint64 ...	_Indices_>
-constexpr auto __expand_16bit_shuffle_to_pshufb_indices(std::integer_sequence<uint64, _Indices_...>) noexcept {
+constexpr auto __expand_16bit_shuffle_to_8bit_shuffle(std::integer_sequence<uint64, _Indices_...>) noexcept {
 	constexpr auto __length = sizeof...(_Indices_);
 	constexpr uint64 __indices[] = { _Indices_... };
 
@@ -81,6 +83,23 @@ constexpr auto __expand_16bit_shuffle_to_pshufb_indices(std::integer_sequence<ui
 	for (auto __i = 0; __i < __length; ++__i) {
 		__result.__array[__i << 1] = static_cast<uint8>(__indices[__i] << 1);
 		__result.__array[(__i << 1) + 1] = static_cast<uint8>((__indices[__i] << 1) + 1);
+	}
+
+	return __result;
+}
+
+template <
+	uint64		_Alignment_,
+	uint64 ...	_Indices_>
+constexpr auto __expand_64bit_shuffle_to_32bit_shuffle(std::integer_sequence<uint64, _Indices_...>) noexcept {
+	constexpr auto __length = sizeof...(_Indices_);
+	constexpr uint64 __indices[] = { _Indices_... };
+
+	_Aligned_constexpr_array<uint32, __length << 1, _Alignment_> __result{};
+
+	for (auto __i = 0; __i < __length; ++__i) {
+		__result.__array[__i << 1] = static_cast<uint32>(__indices[__i] << 1);
+		__result.__array[(__i << 1) + 1] = static_cast<uint32>((__indices[__i] << 1) + 1);
 	}
 
 	return __result;
@@ -203,11 +222,9 @@ struct _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> :
 				__intrin_bitcast<__m128i>(__vector), __pshufb_mask));
 		}
 		else if constexpr (sizeof(_DesiredType_) == 2) {
-			const auto __select_low8_mask = _mm_set1_epi16(0x00FF);
 			const auto __select_even_mask = _mm_set_epi8(13, 12, 9, 8, 5, 4, 1, 0, 13, 12, 9, 8, 5, 4, 1, 0);
-			const auto __low_indices = _mm_and_si128(__intrin_bitcast<__m128i>(__indices), __select_low8_mask);
 
-			const auto __doubled = _mm_slli_epi16(__low_indices, 1);
+			const auto __doubled = _mm_slli_epi16(__intrin_bitcast<__m128i>(__indices), 1);
 			const auto __doubled_plus_one = _mm_add_epi16(__doubled, _mm_set1_epi16(1));
 
 			const auto __low_result = _mm_unpacklo_epi8(__doubled, __doubled_plus_one);
@@ -225,9 +242,6 @@ struct _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> :
 			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi8(
 				__intrin_bitcast<__m128i>(__vector), __intrin_bitcast<__m128i>(__indices)));
 		}
-		else {
-			return __shuffle_fallback<arch::ISA::SSSE3, 128, _DesiredType_>(__vector, __indices);
-		}
 	}
 
 	template <
@@ -243,7 +257,7 @@ struct _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> :
 			return _Shuffle<arch::ISA::SSE2, 128, _DesiredType_>()(__vector, __indices_sequence);
 		}
 		else if constexpr (sizeof(_DesiredType_) == 2) {
-			constexpr auto __pshufb_indices = __expand_16bit_shuffle_to_pshufb_indices<sizeof(_IntrinType_)>(__indices_sequence);
+			constexpr auto __pshufb_indices = __expand_16bit_shuffle_to_8bit_shuffle<sizeof(_IntrinType_)>(__indices_sequence);
 			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi8(__intrin_bitcast<__m128i>(__vector),
 				_Load<arch::ISA::SSSE3, 128, __m128i>()(__pshufb_indices.__array, __aligned_policy{})));
 		}
@@ -251,6 +265,77 @@ struct _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> :
 			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi8(__intrin_bitcast<__m128i>(__vector),
 				_Load<arch::ISA::SSSE3, 128, __m128i>()(__indices, __aligned_policy{})));
 		}
+	}
+};
+
+
+template <class _DesiredType_> struct _Shuffle<arch::ISA::SSE41, 128, _DesiredType_> : _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Shuffle<arch::ISA::SSE42, 128, _DesiredType_> : _Shuffle<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX2, 128, _DesiredType_> : _Shuffle<arch::ISA::SSE42, 128, _DesiredType_> {};
+
+template <class _DesiredType_>
+struct _Shuffle<arch::ISA::AVX512VLF, 128, _DesiredType_>:
+	_Shuffle<arch::ISA::AVX2, 128, _DesiredType_> 
+{
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 8) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi64(
+				__intrin_bitcast<__m256i>(__indices), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else if constexpr (sizeof(_DesiredType_) == 4) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi32(
+				__intrin_bitcast<__m256i>(__indices), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_>()(__vector, __indices);
+		}
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		return _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_>()(__vector, __indices_sequence);
+	}
+};
+
+template <class _DesiredType_> 
+struct _Shuffle<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
+	_Shuffle<arch::ISA::AVX512VLF, 128, _DesiredType_> 
+{
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 2) {
+			return __intrin_bitcast<_IntrinType_>(_mm_permutexvar_epi16(
+				__intrin_bitcast<__m128i>(__indices), __intrin_bitcast<__m128i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector, __indices);
+		}
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		return _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_>()(__vector, __indices_sequence);
 	}
 };
 
@@ -263,22 +348,33 @@ struct _Shuffle<arch::ISA::AVX2, 256, _DesiredType_> {
 		_IntrinType_		__vector,
 		_IndexIntrinType_	__indices) raze_const_operator noexcept
 	{
-		/*if constexpr (sizeof(_DesiredType_) == 8) {
-			const auto __select_low32_mask = _mm256_set1_epi64x(0x00000000FFFFFFFF);
-			const auto __offsets = _mm256_set_epi64x(3, 2, 1, 0);
+		if constexpr (sizeof(_DesiredType_) == 8) {
+			const auto __shuffle_mask = _mm256_setr_epi32(0, 2, 4, 6, -1, -1, -1, -1);
+			const auto __blend_mask = _mm256_setr_epi32(-1, -1, -1, -1, 0, 0, 0, 0);
 
-			const auto __selected = _mm256_and_si256(__intrin_bitcast<__m256i>(__vector), __select_low32_mask);
+			const auto __base_offset_0 = _mm256_slli_epi64(__intrin_bitcast<__m256i>(__indices), 1);
+			const auto __base_offset_1 = _mm256_add_epi64(__base_offset_0, _mm256_set1_epi64x(1));
 
-			const auto __base = _mm256_srli_epi32(__selected, 1);
-			const auto __base_with_offsets = _mm256_add_epi64(__base, __offsets);
+			const auto __selected_0 = _mm256_permutevar8x32_epi32(__base_offset_0, __shuffle_mask);
+			const auto __selected_1 = _mm256_permutevar8x32_epi32(__base_offset_1, __shuffle_mask);
+
+			const auto __interleaved_low = _mm_unpacklo_epi32(
+				__intrin_bitcast<__m128i>(__selected_0), __intrin_bitcast<__m128i>(__selected_1));
+			const auto __interleaved_high = _mm_unpackhi_epi32(
+				__intrin_bitcast<__m128i>(__selected_0), __intrin_bitcast<__m128i>(__selected_1));
+
+			const auto __vpermd_indices = _mm256_set_m128i(__interleaved_high, __interleaved_low);
+
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutevar8x32_epi32(
+				__intrin_bitcast<__m256i>(__vector), __vpermd_indices));
 		}
 		else if constexpr (sizeof(_DesiredType_) == 4) {
 			return __intrin_bitcast<_IntrinType_>(_mm256_permutevar8x32_epi32(
 				__intrin_bitcast<__m256i>(__vector), __intrin_bitcast<__m256i>(__indices)));
 		}
-		else if constexpr (sizeof(_DesiredType_) == 2) {
-
-		}*/
+		else {
+			return __shuffle_fallback<arch::ISA::AVX2, 256, _DesiredType_>(__vector, __indices);
+		}
 	}
 
 	template <
@@ -288,7 +384,20 @@ struct _Shuffle<arch::ISA::AVX2, 256, _DesiredType_> {
 		_IntrinType_								__vector,
 		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
 	{
-
+		if constexpr (sizeof(_DesiredType_) == 8) {
+			alignas(sizeof(_IntrinType_)) constexpr auto __expanded =
+				__expand_64bit_shuffle_to_32bit_shuffle<sizeof(_IntrinType_)>(__indices_sequence);
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutevar8x32_epi32(__intrin_bitcast<__m256i>(__vector),
+				_Load<arch::ISA::AVX2, 256, __m256i>()(__expanded.__array, __aligned_policy{})));
+		}
+		else if constexpr (sizeof(_DesiredType_) == 4) {
+			alignas(sizeof(_IntrinType_)) constexpr uint32 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutevar8x32_epi32(__intrin_bitcast<__m256i>(__vector), 
+				_Load<arch::ISA::AVX2, 256, __m256i>()(__indices, __aligned_policy{})));
+		}
+		else {
+			return __shuffle_fallback<arch::ISA::AVX2, 256, _DesiredType_>(__vector, __indices_sequence);
+		}
 	}
 };
 
@@ -296,44 +405,259 @@ template <class _DesiredType_>
 struct _Shuffle<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 	_Shuffle<arch::ISA::AVX2, 256, _DesiredType_>
 {
-	
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 8) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi64(
+				__intrin_bitcast<__m256i>(__indices), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else if constexpr (sizeof(_DesiredType_) == 4) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi32(
+				__intrin_bitcast<__m256i>(__indices), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else {
+			return __shuffle_fallback<arch::ISA::AVX512VLF, 256, _DesiredType_>(__vector, __indices);
+		}
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 8) {
+			alignas(sizeof(_IntrinType_)) constexpr uint64 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi64(_Load<arch::ISA::AVX2, 256, __m256i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else if constexpr (sizeof(_DesiredType_) == 4) {
+			alignas(sizeof(_IntrinType_)) constexpr uint32 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi32(_Load<arch::ISA::AVX2, 256, __m256i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else {
+			return __shuffle_fallback<arch::ISA::AVX2, 256, _DesiredType_>(__vector, __indices_sequence);
+		}
+	}
+};
+
+template <class _DesiredType_> 
+struct _Shuffle<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
+	_Shuffle<arch::ISA::AVX512VLF, 256, _DesiredType_> 
+{
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 2) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi16(
+				__intrin_bitcast<__m256i>(__indices), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector, __indices);
+		}
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 2) {
+			alignas(sizeof(_IntrinType_)) constexpr uint16 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi16(_Load<arch::ISA::AVX512VLBW, 256, __m256i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector, __indices_sequence);
+		}
+	}
+};
+
+template <class _DesiredType_> 
+struct _Shuffle<arch::ISA::AVX512VBMIVL, 256, _DesiredType_>: 
+	_Shuffle<arch::ISA::AVX512VLBW, 256, _DesiredType_>
+{
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 1) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi8(
+				__intrin_bitcast<__m256i>(__indices), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__vector, __indices);
+		}
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 1) {
+			alignas(sizeof(_IntrinType_)) constexpr uint8 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm256_permutexvar_epi8(_Load<arch::ISA::AVX512VBMIVL, 256, __m256i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m256i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__vector, __indices_sequence);
+		}
+	}
 };
 
 
 template <class _DesiredType_>
 struct _Shuffle<arch::ISA::AVX512F, 512, _DesiredType_> {
-	
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 8) {
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi64(
+				__intrin_bitcast<__m512i>(__indices), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else if constexpr (sizeof(_DesiredType_) == 4) {
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi32(
+				__intrin_bitcast<__m512i>(__indices), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else {
+			return __shuffle_fallback<arch::ISA::AVX512F, 512, _DesiredType_>(__vector, __indices);
+		}
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 8) {
+			alignas(sizeof(_IntrinType_)) constexpr uint64 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi64(_Load<arch::ISA::AVX512F, 512, __m512i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else if constexpr (sizeof(_DesiredType_) == 4) {
+			alignas(sizeof(_IntrinType_)) constexpr uint32 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi32(_Load<arch::ISA::AVX512F, 512, __m512i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else {
+			return __shuffle_fallback<arch::ISA::AVX512F, 512, _DesiredType_>(__vector, __indices_sequence);
+		}
+	}
 };
 
 template <class _DesiredType_>
 struct _Shuffle<arch::ISA::AVX512BW, 512, _DesiredType_> :
 	_Shuffle<arch::ISA::AVX512F, 512, _DesiredType_>
 {
-	
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 2) {
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi16(
+				__intrin_bitcast<__m512i>(__indices), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector, __indices);
+		}
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 2) {
+			alignas(sizeof(_IntrinType_)) constexpr uint16 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi16(_Load<arch::ISA::AVX512BW, 512, __m512i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector, __indices_sequence);
+		}
+	}
 };
 
+template <class _DesiredType_> 
+struct _Shuffle<arch::ISA::AVX512VBMI, 512, _DesiredType_>:
+	_Shuffle<arch::ISA::AVX512BW, 512, _DesiredType_> 
+{
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 1) {
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi8(
+				__intrin_bitcast<__m512i>(__indices), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512BW, 512, _DesiredType_>()(__vector, __indices);
+		}
+	}
 
-template <class _DesiredType_> struct _Shuffle<arch::ISA::SSE41, 128, _DesiredType_> : _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Shuffle<arch::ISA::SSE42, 128, _DesiredType_> : _Shuffle<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX2, 128, _DesiredType_> : _Shuffle<arch::ISA::SSE42, 128, _DesiredType_> {};
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		if constexpr (sizeof(_DesiredType_) == 1) {
+			alignas(sizeof(_IntrinType_)) constexpr uint8 __indices[] = { _Indices_... };
+			return __intrin_bitcast<_IntrinType_>(_mm512_permutexvar_epi8(_Load<arch::ISA::AVX512VBMI, 512, __m512i>()(
+				__indices, __aligned_policy{}), __intrin_bitcast<__m512i>(__vector)));
+		}
+		else {
+			return _Shuffle<arch::ISA::AVX512BW, 512, _DesiredType_>()(__vector, __indices_sequence);
+		}
+	}
+};
 
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Shuffle<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Shuffle<arch::ISA::AVX512BW, 512, _DesiredType_> {};
-template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Shuffle<arch::ISA::AVX512BW, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _Shuffle<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Shuffle<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Shuffle<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VLF, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VLBW, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VLDQ, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX512VBMIVL, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
