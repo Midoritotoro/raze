@@ -14,3 +14,4 @@
 #include <src/raze/datapar/shuffle/ShuffleTables.h>
 #include <src/raze/datapar/shuffle/RotateLeft.h>
 #include <src/raze/datapar/shuffle/RotateRight.h>
+#include <src/raze/datapar/shuffle/Shuffle.h>

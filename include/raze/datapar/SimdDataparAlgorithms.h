@@ -802,7 +802,7 @@ __simd_nodiscard_inline int32 find_last_not_set(const _SimdMask_& __mask) noexce
  *  @return The number of true lanes in @p __mask.
 */
 template <class _SimdMask_>
-__simd_nodiscard_inline auto count_set(const _SimdMask_& __mask) noexcept
+__simd_nodiscard_inline int32 count_set(const _SimdMask_& __mask) noexcept
 	requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__count_set();
@@ -1119,6 +1119,96 @@ raze_always_inline void prefetch(
 			type_traits::is_iterator_input_ranges_v<_InputIterator_>)
 {
 	_Prefetch<__level>()(__first);
+}
+
+/**
+ * @brief Performs a lane permutation of a SIMD vector using compile‑time
+ *        known indices.
+ *
+ * This overload implements a shuffle operation where the permutation pattern
+ * is encoded in the template parameter pack `_Indices_`. Although the shuffle
+ * itself is executed at runtime, the backend can select the most efficient
+ * ISA instructions at compile time because the indices are constant
+ * expressions.
+ *
+ * @tparam _DataparType_
+ *     A valid SIMD vector type (`simd<T, Abi>`).
+ *
+ * @tparam _Indices_
+ *     A pack of compile‑time lane indices. The number of indices must be
+ *     exactly `_DataparType_::size()`. Each index must be in the range
+ *     `[0, _DataparType_::size())`. Out‑of‑range indices result in undefined
+ *     behavior.
+ *
+ * @param __datapar
+ *     The input SIMD vector whose lanes will be permuted.
+ *
+ * @param __indices
+ *     A `std::integer_sequence<std::size_t, _Indices_...>` used for
+ *     overload resolution.
+ *
+ * @return
+ *     A new SIMD vector where lane `i` contains `__datapar[_Indices_[i]]`.
+ *
+ *     This often results in a single instruction or a minimal instruction
+ *     sequence, unlike the runtime variant which must use general‑purpose
+ *     dynamic permutation instructions.
+*/
+template <
+	class		_DataparType_,
+	uint64...	_Indices_>
+raze_nodiscard raze_always_inline _DataparType_ shuffle(
+	const _DataparType_&								__datapar,
+	std::integer_sequence<std::size_t, _Indices_...>	__indices) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && sizeof...(_Indices_) == std::remove_cvref_t<_DataparType_>::size())
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Shuffle<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__datapar), __indices);
+}
+
+/**
+ * @brief Performs a lane permutation of a SIMD vector using runtime‑provided
+ *        indices, enabling fully dynamic shuffle patterns.
+ *
+ * This overload implements a dynamic shuffle operation where the permutation
+ * pattern is supplied at runtime via another SIMD vector. Each lane of
+ * `__indices` specifies which lane of `__datapar` should be placed into the
+ * corresponding lane of the result.
+ *
+ * @tparam _DataparType_
+ *     A valid SIMD vector type (`simd<T, Abi>`).
+ *
+ * @tparam _IndexDataparType_
+ *     A SIMD vector type whose element type is an integer and whose ABI
+ *     matches `_DataparType_`. The number of lanes and ISA must be identical.
+ *
+ * @param __datapar
+ *     The input SIMD vector to be permuted.
+ *
+ * @param __indices
+ *     A SIMD vector of lane indices. For lane `i`, the value
+ *     `__indices[i]` selects the source lane from `__datapar`. 
+ *	   Out‑of‑range indices result in undefined behavior.
+ *
+ * @return
+ *     A new SIMD vector where lane `i` contains `__datapar[__indices[i]]`.
+*/
+template <
+	class _DataparType_,
+	class _IndexDataparType_>
+raze_nodiscard raze_always_inline _DataparType_ shuffle(
+	const _DataparType_&		__datapar,
+	const _IndexDataparType_&	__indices) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && __is_valid_simd_v<_IndexDataparType_> &&
+			(std::remove_cvref_t<_DataparType_>::__isa == std::remove_cvref_t<_IndexDataparType_>::__isa) &&
+			(std::remove_cvref_t<_DataparType_>::__width == std::remove_cvref_t<_IndexDataparType_>::__width) && 
+			(std::remove_cvref_t<_DataparType_>::size() == std::remove_cvref_t<_IndexDataparType_>::size()) &&
+			(std::is_integral_v<typename std::remove_cvref_t<_IndexDataparType_>::value_type>))
+{
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Shuffle<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__datapar), __data(__indices));
 }
 
 __RAZE_DATAPAR_NAMESPACE_END

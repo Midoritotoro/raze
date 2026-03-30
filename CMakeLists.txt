@@ -256,6 +256,7 @@ set(PRIVATE_HEADERS
     src/raze/datapar/shuffle/SlideRight.h
     src/raze/datapar/shuffle/RotateLeft.h
     src/raze/datapar/shuffle/RotateRight.h
+    src/raze/datapar/shuffle/Shuffle.h
 
     src/raze/datapar/Shuffle.h
     src/raze/datapar/Bitwise.h
