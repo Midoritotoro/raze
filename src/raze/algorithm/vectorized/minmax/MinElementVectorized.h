@@ -69,15 +69,15 @@ struct __min_element_vectorized_internal {
                 __current_values = datapar::load<_Simd_>(__first);
                 const auto __less_mask = (__current_values < __current_values_min);
 
-                __current_indices_min = datapar::blend(__current_indices,
+                __current_indices_min = datapar::select(__current_indices,
                     __current_indices_min, __less_mask);
-                __current_values_min = datapar::blend(__current_values, 
+                __current_values_min = datapar::select(__current_values, 
                     __current_values_min, __less_mask);
             }
             else {
                 const auto __all_min = _Simd_(datapar::horizontal_min(__current_values_min));
 
-                const auto __min_values_indices = datapar::blend(__current_indices_min,
+                const auto __min_values_indices = datapar::select(__current_indices_min,
                     _IndexSimdType(_UnsignedValueType(-1)), __current_values_min == __all_min);
                 const auto __all_min_indices = _IndexSimdType(datapar::horizontal_min(
                     datapar::simd_cast<_UnsignedValueType>(__min_values_indices)));

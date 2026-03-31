@@ -69,15 +69,15 @@ struct __max_element_vectorized_internal {
                 __current_values = datapar::load<_Simd_>(__first);
                 const auto __greater_mask = (__current_values > __current_values_max);
 
-                __current_indices_max   = datapar::blend(__current_indices,
+                __current_indices_max   = datapar::select(__current_indices,
                     __current_indices_max, __greater_mask);
-                __current_values_max    = datapar::blend(__current_values,
+                __current_values_max    = datapar::select(__current_values,
                     __current_values_max, __greater_mask);
             }
             else {
                 const auto __all_max = _Simd_(datapar::horizontal_max(__current_values_max));
 
-                const auto __max_values_indices = datapar::blend(__current_indices_max, 
+                const auto __max_values_indices = datapar::select(__current_indices_max, 
                     _IndexSimdType(_UnsignedValueType(-1)), __current_values_max == __all_max);
                 const auto __all_max_indices = _IndexSimdType(datapar::horizontal_min(
                     datapar::simd_cast<_UnsignedValueType>(__max_values_indices)));

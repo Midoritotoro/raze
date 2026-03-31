@@ -201,39 +201,35 @@ struct _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> :
 			return _Shuffle<arch::ISA::SSE2, 128, _DesiredType_>()(__vector, __indices);
 		}
 		else if constexpr (sizeof(_DesiredType_) == 4) {
-			const auto __select_mask = _mm_set_epi8(-1, -1, -1, -1, -1, -1, -1, -1, 12, 8, 4, 0, -1, -1, -1, -1);
+			const auto __extract_dword_bytes_mask = _mm_setr_epi8(0, 0, 0, 0, 0, 4, 8, 12, 0, 0, 0, 0, 0, 0, 0, 0);
+			const auto __add_one_mask = _mm_setr_epi8(0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0);
+			const auto __add_two_three_pattern_mask = _mm_setr_epi8(0, 0, 0, 0, 0, 0, 0, 0, 2, 3, 2, 3, 2, 3, 2, 3);
 
-			const auto __base_offset_0 = _mm_slli_epi32(__intrin_bitcast<__m128i>(__indices), 2);
-			const auto __base_offset_1 = _mm_add_epi32(__base_offset_0, _mm_set1_epi32(1));
-			const auto __base_offset_2 = _mm_add_epi32(__base_offset_0, _mm_set1_epi32(2));
-			const auto __base_offset_3 = _mm_add_epi32(__base_offset_0, _mm_set1_epi32(3));
+			const auto __byte_offsets = _mm_slli_epi32(__intrin_bitcast<__m128i>(__indices), 2);
+			const auto __base_bytes = _mm_shuffle_epi8(__byte_offsets, __extract_dword_bytes_mask);
 
-			const auto __bytes_offset_0 = _mm_shuffle_epi8(__base_offset_0, __select_mask);
-			const auto __bytes_offset_1 = _mm_shuffle_epi8(__base_offset_1, __select_mask);
-			const auto __bytes_offset_2 = _mm_shuffle_epi8(__base_offset_2, __select_mask);
-			const auto __bytes_offset_3 = _mm_shuffle_epi8(__base_offset_3, __select_mask);
+			const auto __base_plus_one_bytes = _mm_or_si128(__base_bytes, __add_one_mask);
+			const auto __duplicated_bytes = _mm_unpacklo_epi8(__base_bytes, __base_bytes);
 
-			const auto __interleave_01 = _mm_unpacklo_epi8(__bytes_offset_0, __bytes_offset_1);
-			const auto __interleave_23 = _mm_unpacklo_epi8(__bytes_offset_2, __bytes_offset_3);
+			const auto __base_plus_two_three_bytes = _mm_or_si128(__duplicated_bytes, __add_two_three_pattern_mask);
 
-			const auto __pshufb_mask = _mm_unpackhi_epi16(__interleave_01, __interleave_23);
+			const auto __low_half = _mm_unpacklo_epi8(__base_bytes, __base_plus_one_bytes);
+			const auto __pshufb_mask = _mm_unpackhi_epi16(__low_half, __base_plus_two_three_bytes);
 
-			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi8(
-				__intrin_bitcast<__m128i>(__vector), __pshufb_mask));
+			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi8(__intrin_bitcast<__m128i>(__vector), __pshufb_mask));
+
 		}
 		else if constexpr (sizeof(_DesiredType_) == 2) {
-			const auto __select_even_mask = _mm_set_epi8(13, 12, 9, 8, 5, 4, 1, 0, 13, 12, 9, 8, 5, 4, 1, 0);
+			const auto __extract_low_bytes_mask = _mm_setr_epi8(0, 2, 4, 6, 8, 10, 12, 14, 0, 0, 0, 0, 0, 0, 0, 0);
+			const auto __add_one_to_each_byte_mask = _mm_setr_epi8(1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0);
 
-			const auto __doubled = _mm_slli_epi16(__intrin_bitcast<__m128i>(__indices), 1);
-			const auto __doubled_plus_one = _mm_add_epi16(__doubled, _mm_set1_epi16(1));
+			const auto __byte_offsets = _mm_add_epi16(__intrin_bitcast<__m128i>(__indices),
+				__intrin_bitcast<__m128i>(__indices));
 
-			const auto __low_result = _mm_unpacklo_epi8(__doubled, __doubled_plus_one);
-			const auto __high_result = _mm_unpackhi_epi8(__doubled, __doubled_plus_one);
+			const auto __low_bytes = _mm_shuffle_epi8(__byte_offsets, __extract_low_bytes_mask);
+			const auto __high_bytes = _mm_or_si128(__low_bytes, __add_one_to_each_byte_mask);
 
-			const auto __low_selected = _mm_shuffle_epi8(__low_result, __select_even_mask);
-			const auto __high_selected = _mm_shuffle_epi8(__high_result, __select_even_mask);
-
-			const auto __pshufb_mask = _mm_alignr_epi8(__high_selected, __low_selected, 8);
+			const auto __pshufb_mask = _mm_unpacklo_epi8(__low_bytes, __high_bytes);
 
 			return __intrin_bitcast<_IntrinType_>(_mm_shuffle_epi8(
 				__intrin_bitcast<__m128i>(__vector), __pshufb_mask));

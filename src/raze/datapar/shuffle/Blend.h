@@ -24,8 +24,10 @@ struct _Blend<arch::ISA::SSE2, 128, _DesiredType_> {
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
 		return __intrin_bitcast<_IntrinType_>(_mm_or_si128(
-			_mm_and_si128(__intrin_bitcast<__m128i>(__mask), __intrin_bitcast<__m128i>(__first)),
-			_mm_andnot_si128(__intrin_bitcast<__m128i>(__mask), __intrin_bitcast<__m128i>(__second))));
+			_mm_and_si128(__intrin_bitcast<__m128i>(__mask),
+                __intrin_bitcast<__m128i>(__first)),
+			_mm_andnot_si128(__intrin_bitcast<__m128i>(__mask),
+                __intrin_bitcast<__m128i>(__second))));
 	}
 
 	template <
@@ -57,8 +59,23 @@ struct _Blend<arch::ISA::SSE41, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return __intrin_bitcast<_IntrinType_>(_mm_blendv_epi8(__intrin_bitcast<__m128i>(__second),
-			__intrin_bitcast<__m128i>(__first), __intrin_bitcast<__m128i>(__mask)));
+		if constexpr (sizeof(_DesiredType_) == 8) 
+			return __intrin_bitcast<_IntrinType_>(_mm_blendv_pd(
+                __intrin_bitcast<__m128d>(__second),
+				__intrin_bitcast<__m128d>(__first),
+                __intrin_bitcast<__m128d>(__mask)));
+
+		else if constexpr (sizeof(_DesiredType_) == 4)
+			return __intrin_bitcast<_IntrinType_>(_mm_blendv_ps(
+                __intrin_bitcast<__m128>(__second),
+				__intrin_bitcast<__m128>(__first),
+                __intrin_bitcast<__m128>(__mask)));
+
+		else
+			return __intrin_bitcast<_IntrinType_>(_mm_blendv_epi8(
+                __intrin_bitcast<__m128i>(__second),
+				__intrin_bitcast<__m128i>(__first),
+                __intrin_bitcast<__m128i>(__mask)));
 	}
 
 	template <
@@ -74,8 +91,12 @@ struct _Blend<arch::ISA::SSE41, 128, _DesiredType_>:
 	}
 };
 
-template <class _DesiredType_>
-struct _Blend<arch::ISA::AVX2, 256, _DesiredType_> {
+template <class _DesiredType_> struct _Blend<arch::ISA::SSE42, 128, _DesiredType_> : _Blend<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX2, 128, _DesiredType_> : _Blend<arch::ISA::SSE42, 128, _DesiredType_> {};
+
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>:
+	_Blend<arch::ISA::AVX2, 128, _DesiredType_> 
+{
 	template <
 		class _IntrinType_,
 		class _MaskType_>
@@ -85,8 +106,10 @@ struct _Blend<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return __intrin_bitcast<_IntrinType_>(_mm256_blendv_epi8(__intrin_bitcast<__m256i>(__second),
-			__intrin_bitcast<__m256i>(__first), __intrin_bitcast<__m256i>(__mask)));
+		return __intrin_bitcast<_IntrinType_>(_mm_ternarylogic_epi32(
+            __intrin_bitcast<__m128i>(__mask),
+	        __intrin_bitcast<__m128i>(__first),
+            __intrin_bitcast<__m128i>(__second), 0xCA));
 	}
 
 	template <
@@ -98,8 +121,188 @@ struct _Blend<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Blend()(__first, __second, _To_vector<arch::ISA::AVX2, 256, _IntrinType_, _DesiredType_>()(__mask));
+		if constexpr (sizeof(_DesiredType_) == 8)
+			return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi64(
+                __mask,	__intrin_bitcast<__m128i>(__first),
+                __intrin_bitcast<__m128i>(__second)));
+
+        else if constexpr (sizeof(_DesiredType_) == 4)
+            return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi32(
+                __mask, __intrin_bitcast<__m128i>(__first),
+                __intrin_bitcast<__m128i>(__second)));
+
+        else
+            return (*this)(__first, __second, _To_vector<arch::ISA::AVX512VLF,
+                256, _IntrinType_, _DesiredType_>()(__mask));
 	}
+};
+
+template <class _DesiredType_> 
+struct _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
+    _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>
+{
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
+	{
+		return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__first, __second, __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_>)
+    {
+        if constexpr (sizeof(_DesiredType_) == 2)
+            return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi16(
+                __mask, __intrin_bitcast<__m128i>(__first),
+                __intrin_bitcast<__m128i>(__second)));
+
+        else if constexpr (sizeof(_DesiredType_) == 1)
+            return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi8(
+                __mask, __intrin_bitcast<__m128i>(__first), 
+                __intrin_bitcast<__m128i>(__second)));
+
+        else 
+            return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__first, __second, __mask);
+    }
+};
+
+template <class _DesiredType_>
+struct _Blend<arch::ISA::AVX2, 256, _DesiredType_> {
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
+	{
+		if constexpr (sizeof(_DesiredType_) == 8)
+			return __intrin_bitcast<_IntrinType_>(_mm256_blendv_pd(
+                __intrin_bitcast<__m256d>(__second),
+				__intrin_bitcast<__m256d>(__first),
+                __intrin_bitcast<__m256d>(__mask)));
+
+		else if constexpr (sizeof(_DesiredType_) == 4)
+			return __intrin_bitcast<_IntrinType_>(_mm256_blendv_ps(
+                __intrin_bitcast<__m256>(__second),
+				__intrin_bitcast<__m256>(__first),
+                __intrin_bitcast<__m256>(__mask)));
+
+		else
+			return __intrin_bitcast<_IntrinType_>(_mm256_blendv_epi8(
+                __intrin_bitcast<__m256i>(__second),
+				__intrin_bitcast<__m256i>(__first),
+                __intrin_bitcast<__m256i>(__mask)));
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_>)
+	{
+		return _Blend()(__first, __second, _To_vector<arch::ISA::AVX2,
+            256, _IntrinType_, _DesiredType_>()(__mask));
+	}
+};
+
+template <class _DesiredType_> 
+struct _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>: 
+    _Blend<arch::ISA::AVX2, 256, _DesiredType_>
+{
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
+	{
+	    return __intrin_bitcast<_IntrinType_>(_mm256_ternarylogic_epi32(
+            __intrin_bitcast<__m256i>(__mask),
+	        __intrin_bitcast<__m256i>(__first),
+            __intrin_bitcast<__m256i>(__second), 0xCA));	
+    }
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
+    {
+        if constexpr (sizeof(_DesiredType_) == 8)
+            return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi64(
+                __mask, __intrin_bitcast<__m256i>(__first),
+                __intrin_bitcast<__m256i>(__second)));
+
+        if constexpr (sizeof(_DesiredType_) == 4)
+            return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi32(
+                __mask, __intrin_bitcast<__m256i>(__first), 
+                __intrin_bitcast<__m256i>(__second)));
+
+        else
+            return (*this)(__first, __second, _To_vector<arch::ISA::AVX512VLF, 
+                256, _IntrinType_, _DesiredType_>()(__mask));
+    }   
+};
+
+template <class _DesiredType_> 
+struct _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>: 
+    _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>
+{
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
+	{
+	    return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__first, __second, __mask);
+    }
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_>)
+    {
+        if constexpr (sizeof(_DesiredType_) == 2)
+            return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi16(
+                __mask, __intrin_bitcast<__m256i>(__first),
+                __intrin_bitcast<__m256i>(__second)));
+
+        else if constexpr (sizeof(_DesiredType_) == 1)
+            return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi8(
+                __mask, __intrin_bitcast<__m256i>(__first), 
+                __intrin_bitcast<__m256i>(__second)));
+
+        else 
+            return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__first, __second, __mask);
+    }
 };
 
 template <class _DesiredType_>
@@ -113,8 +316,10 @@ struct _Blend<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return __intrin_bitcast<_IntrinType_>(_mm512_ternarylogic_epi32(__intrin_bitcast<__m512i>(__mask),
-			__intrin_bitcast<__m512i>(__first), __intrin_bitcast<__m512i>(__second), 0xCA));
+        return __intrin_bitcast<_IntrinType_>(_mm512_ternarylogic_epi32(
+            __intrin_bitcast<__m512i>(__mask),
+	        __intrin_bitcast<__m512i>(__first),
+            __intrin_bitcast<__m512i>(__second), 0xCA));
 	}
 
 	template <
@@ -126,7 +331,18 @@ struct _Blend<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Blend()(__first, __second, _To_vector<arch::ISA::AVX512F, 512, _IntrinType_, _DesiredType_>()(__mask));
+        if constexpr (sizeof(_DesiredType_) == 8)
+            return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi64(
+                __mask, __intrin_bitcast<__m512i>(__first),
+                __intrin_bitcast<__m512i>(__second)));
+
+        else if constexpr (sizeof(_DesiredType_) == 4)
+            return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi32(
+                __mask, __intrin_bitcast<__m512i>(__first),
+                __intrin_bitcast<__m512i>(__second)));
+
+        else
+		    return _Blend()(__first, __second, _To_vector<arch::ISA::AVX512F, 512, _IntrinType_, _DesiredType_>()(__mask));
 	}
 };
 
@@ -143,12 +359,7 @@ struct _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		if constexpr (sizeof(_DesiredType_) == 2)
-			return __intrin_bitcast<_IntrinType_>(_mm512_ternarylogic_epi32(
-				__intrin_bitcast<__m512i>(__mask), __intrin_bitcast<__m512i>(__first), __intrin_bitcast<__m512i>(__second), 0xCA));
-
-		else
-			return _Blend()(__first, __second, _Simd_to_mask<arch::ISA::AVX512BW, 512, _DesiredType_>()(__mask));
+		return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__first, __second, __mask);
 	}
 
 	template <
@@ -160,18 +371,20 @@ struct _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (sizeof(_DesiredType_) == 2)
-			return _Blend()(__first, __second, _To_vector<arch::ISA::AVX512BW, 512, _IntrinType_, _DesiredType_>()(__mask));
-
-		else
-			return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi8(
-				__expand_mask_bits_zmm(__mask), __intrin_bitcast<__m512i>(__second),
+        if constexpr (sizeof(_DesiredType_) == 2)
+			return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi16(
+				__mask, __intrin_bitcast<__m512i>(__second),
 				__intrin_bitcast<__m512i>(__first)));
+
+		else if constexpr (sizeof(_DesiredType_) == 1)
+			return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi8(
+				__mask, __intrin_bitcast<__m512i>(__second),
+				__intrin_bitcast<__m512i>(__first)));
+        else
+            return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__first, __second, __mask);
 	}
 };
 
-template <class _DesiredType_> struct _Blend<arch::ISA::SSE42, 128, _DesiredType_>: _Blend<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Blend<arch::ISA::AVX2, 128, _DesiredType_>: _Blend<arch::ISA::SSE42, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512BWDQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -180,8 +393,6 @@ template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2, 512, _Desir
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>: _Blend<arch::ISA::AVX2, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIVL, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
@@ -189,8 +400,6 @@ template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2VL, 256, _Des
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMI2VLDQ, 256, _DesiredType_>: _Blend<arch::ISA::AVX512VBMIVLDQ, 256, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>: _Blend<arch::ISA::AVX2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLDQ, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLBWDQ, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VBMIVL, 128, _DesiredType_>: _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_> {};

@@ -78,10 +78,10 @@ struct __minmax_element_vectorized_internal {
                 const auto __greater_mask = (__current_values < __current_values_max);
                 const auto __less_mask = (__current_values < __current_values_min);
 
-                __current_indices_min = datapar::blend(__current_indices, __current_indices_min, __less_mask);
-                __current_values_min = datapar::blend(__current_values, __current_values_min, __less_mask);
+                __current_indices_min = datapar::select(__current_indices, __current_indices_min, __less_mask);
+                __current_values_min = datapar::select(__current_values, __current_values_min, __less_mask);
 
-                __current_indices_max = datapar::blend(__current_indices_max, __current_indices, __greater_mask);
+                __current_indices_max = datapar::select(__current_indices_max, __current_indices, __greater_mask);
                 __current_values_max = datapar::vertical_max(__current_values, __current_values_max);
             }
             else {
@@ -91,8 +91,8 @@ struct __minmax_element_vectorized_internal {
                 const auto __mask_max = (__current_values_max == __all_max);
                 const auto __mask_min = (__current_values_min == __all_min);
 
-                const auto __max_values_indices = datapar::blend(__current_indices_max, _IndexSimdType::zero(), __mask_max);
-                const auto __min_values_indices = datapar::blend(__current_indices_min, _IndexSimdType(_UnsignedValueType(-1)), __mask_min);
+                const auto __max_values_indices = datapar::select(__current_indices_max, _IndexSimdType::zero(), __mask_max);
+                const auto __min_values_indices = datapar::select(__current_indices_min, _IndexSimdType(_UnsignedValueType(-1)), __mask_min);
 
                 const auto __all_max_indices = _IndexSimdType(datapar::horizontal_max(datapar::simd_cast<_UnsignedValueType>(__max_values_indices)));
                 const auto __all_min_indices = _IndexSimdType(datapar::horizontal_min(datapar::simd_cast<_UnsignedValueType>(__min_values_indices)));

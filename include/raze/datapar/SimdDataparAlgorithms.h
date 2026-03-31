@@ -218,11 +218,11 @@ raze_always_inline __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>
  *    result[i] = __mask[i] ? __first[i] : __second[i].
  *
  *  The mask may be a SIMD vector or a SIMD mask;
- */
+*/
 template <
 	class _DataparType_,
 	class _MaskType_>
-__simd_nodiscard_inline _DataparType_ blend(
+__simd_nodiscard_inline _DataparType_ select(
 	const _DataparType_&	__first,
 	const _DataparType_&	__second,
 	const _MaskType_&		__mask) noexcept
@@ -1209,6 +1209,1171 @@ raze_nodiscard raze_always_inline _DataparType_ shuffle(
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Shuffle<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__datapar), __data(__indices));
+}
+
+/**
+ *  @brief  Conditionally adds two SIMD vectors.
+ *
+ *  Performs a per‑lane addition of @p __left and @p __right under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are taken
+ *  from @p __additional_source instead of being updated.
+ *
+ *  @param __left   Left operand of the addition.
+ *  @param __right  Right operand of the addition.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] + __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] + right[i]) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_add(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally adds two SIMD vectors, zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane addition of @p __left and @p __right under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are set to zero.
+ *
+ *  @param __left   Left operand of the addition.
+ *  @param __right  Right operand of the addition.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] + __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] + right[i]) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_add(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally subtracts two SIMD vectors.
+ *
+ *  Performs a per‑lane subtraction of @p __right from @p __left under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  taken from @p __additional_source.
+ *
+ *  @param __left   Left operand of the subtraction.
+ *  @param __right  Right operand of the subtraction.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] - __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] - right[i]) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_sub(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally subtracts two SIMD vectors, zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane subtraction of @p __right from @p __left under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  set to zero.
+ *
+ *  @param __left   Left operand of the subtraction.
+ *  @param __right  Right operand of the subtraction.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] - __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] - right[i]) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_sub(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally multiplies two SIMD vectors.
+ *
+ *  Performs a per‑lane multiplication of @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  taken from @p __additional_source instead of being updated.
+ *
+ *  @param __left   Left operand of the multiplication.
+ *  @param __right  Right operand of the multiplication.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] * __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ * 
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] * right[i]) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_mul(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+
+/**
+ *  @brief  Conditionally multiplies two SIMD vectors, zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane multiplication of @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  set to zero.
+ *
+ *  @param __left   Left operand of the multiplication.
+ *  @param __right  Right operand of the multiplication.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] * __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] * right[i]) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_mul(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally divides two SIMD vectors.
+ *
+ *  Performs a per‑lane division of @p __left by @p __right under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are taken
+ *  from @p __additional_source.
+ *
+ *  @param __left   Numerator of the division.
+ *  @param __right  Denominator of the division.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] / __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] / right[i]) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_div(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally divides two SIMD vectors, zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane division of @p __left by @p __right under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are set to zero.
+ *
+ *  @param __left   Numerator of the division.
+ *  @param __right  Denominator of the division.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] / __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (left[i] / right[i]) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_div(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally computes the absolute value of a SIMD vector.
+ *
+ *  Computes @c abs(__left[i]) for lanes where @p __mask[i] is true.
+ *  Lanes where the mask is false are taken from @p __additional_source.
+ *
+ *  @param __left   Input SIMD vector whose absolute values are computed.
+ *  @param __right  Unused; reserved for API symmetry.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c abs(__left[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? abs(left[i]) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_abs(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally computes the absolute value of a SIMD vector,
+ *          zeroing masked‑off lanes.
+ *
+ *  Computes @c abs(__left[i]) for lanes where @p __mask[i] is true.
+ *  Lanes where the mask is false are set to zero.
+ *
+ *  @param __left   Input SIMD vector whose absolute values are computed.
+ *  @param __right  Unused; reserved for API symmetry.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c abs(__left[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? abs(left[i]) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_abs(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally computes the per‑lane maximum of two SIMD vectors.
+ *
+ *  Performs a per‑lane maximum between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  taken from @p __additional_source.
+ *
+ *  @param __left   First operand of the per‑lane maximum.
+ *  @param __right  Second operand of the per‑lane maximum.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c max(__left[i], __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? max(left[i], right[i]) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_vertical_max(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally computes the per‑lane maximum of two SIMD vectors,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane maximum between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  set to zero.
+ *
+ *  @param __left   First operand of the per‑lane maximum.
+ *  @param __right  Second operand of the per‑lane maximum.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c max(__left[i], __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? max(left[i], right[i]) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_vertical_max(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally computes the per‑lane minimum of two SIMD vectors.
+ *
+ *  Performs a per‑lane minimum between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  taken from @p __additional_source.
+ *
+ *  @param __left   First operand of the per‑lane minimum.
+ *  @param __right  Second operand of the per‑lane minimum.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c min(__left[i], __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? min(left[i], right[i]) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_vertical_min(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally computes the per‑lane minimum of two SIMD vectors,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane minimum between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  set to zero.
+ *
+ *  @param __left   First operand of the per‑lane minimum.
+ *  @param __right  Second operand of the per‑lane minimum.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c min(__left[i], __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? min(left[i], right[i]) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_vertical_min(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise OR to two SIMD vectors.
+ *
+ *  Performs a per‑lane bitwise OR between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  taken from @p __additional_source.
+ *
+ *  @param __left   First operand of the bitwise OR.
+ *  @param __right  Second operand of the bitwise OR.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] | __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? left[i] | right[i] : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_or(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise OR to two SIMD vectors,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane bitwise OR between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  set to zero.
+ *
+ *  @param __left   First operand of the bitwise OR.
+ *  @param __right  Second operand of the bitwise OR.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] | __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? left[i] | right[i] : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_or(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise XOR to two SIMD vectors.
+ *
+ *  Performs a per‑lane bitwise XOR between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  taken from @p __additional_source.
+ *
+ *  @param __left   First operand of the bitwise XOR.
+ *  @param __right  Second operand of the bitwise XOR.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] ^ __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? left[i] ^ right[i] : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_xor(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise XOR to two SIMD vectors,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane bitwise XOR between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  set to zero.
+ *
+ *  @param __left   First operand of the bitwise XOR.
+ *  @param __right  Second operand of the bitwise XOR.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] ^ __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? left[i] ^ right[i] : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_xor(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise AND to two SIMD vectors.
+ *
+ *  Performs a per‑lane bitwise AND between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  taken from @p __additional_source.
+ *
+ *  @param __left   First operand of the bitwise AND.
+ *  @param __right  Second operand of the bitwise AND.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] & __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? left[i] & right[i] : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_and(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise AND to two SIMD vectors,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane bitwise AND between @p __left and @p __right under
+ *  control of the SIMD mask @p __mask. Lanes where the mask is false are
+ *  set to zero.
+ *
+ *  @param __left   First operand of the bitwise AND.
+ *  @param __right  Second operand of the bitwise AND.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] & __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? left[i] & right[i] : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_and(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally performs a per‑lane right shift.
+ *
+ *  Performs a per‑lane right shift of @p __left by the constant shift
+ *  amount @p __shift under control of the SIMD mask @p __mask. Lanes
+ *  where the mask is false are taken from @p __additional_source.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Scalar shift amount applied to every lane.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - the result of shifting @c __left[i] right by @c __shift
+ *            when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @note
+ *  - **Unsigned element types:** logical right shift.
+ *  - **Signed element types:** arithmetic (sign‑extending) right shift.
+ *  - If @c __shift >= bit_width(value_type), the result is:
+ *        - zero for unsigned types,
+ *        - sign‑extended for signed types.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (is_unsigned<T> ?
+ *          logical_shift_right(left[i], shift) :
+ *          arithmetic_shift_right(left[i], shift)) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_shiftr(
+    const _DataparType_&    __left,
+    uint32					__shift,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally performs a per‑lane right shift,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane right shift of @p __left by the constant shift
+ *  amount @p __shift under control of the SIMD mask @p __mask. Lanes
+ *  where the mask is false are set to zero.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Scalar shift amount applied to every lane.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - the result of shifting @c __left[i] right by @c __shift
+ *            when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @note
+ *  - **Unsigned element types:** logical right shift.
+ *  - **Signed element types:** arithmetic (sign‑extending) right shift.
+ *  - If @c __shift >= bit_width(value_type), the result is:
+ *        - zero for unsigned types,
+ *        - sign‑extended for signed types.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (is_unsigned<T> ?
+ *          logical_shift_right(left[i], shift) :
+ *			arithmetic_shift_right(left[i], shift)) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_shiftr(
+    const _DataparType_&    __left,
+	uint32					__shift,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+
+/**
+ *  @brief  Conditionally performs a per‑lane logical left shift.
+ *
+ *  Performs a per‑lane logical left shift of @p __left by the constant
+ *  shift amount @p __shift under control of the SIMD mask @p __mask.
+ *  Lanes where the mask is false are taken from @p __additional_source.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Scalar shift amount applied to every lane.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] << __shift) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @note
+ *  - Left shift is *always logical* for all element types.
+ *  - If @c __shift >= bit_width(value_type), the result is zero.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? logical_shift_left(left[i], shift) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_shiftl(
+    const _DataparType_&    __left,
+    uint32					__shift,
+    const _MaskType_&       __mask,
+    const _DataparType_&    __additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally performs a per‑lane logical left shift,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane logical left shift of @p __left by the constant
+ *  shift amount @p __shift under control of the SIMD mask @p __mask.
+ *  Lanes where the mask is false are set to zero.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Scalar shift amount applied to every lane.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] << __shift) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @note
+ *  - Left shift is *always logical* for all element types.
+ *  - If @c __shift >= bit_width(value_type), the result is zero.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? logical_shift_left(left[i], shift) : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_shiftl(
+    const _DataparType_&    __left,
+	uint32					__shift,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally performs a per‑lane right shift with a compile‑time constant shift amount.
+ *
+ *  Performs a per‑lane right shift of @p __left by the compile‑time
+ *  constant @p _Shift_ under control of the SIMD mask @p __mask.
+ *  Lanes where the mask is false are taken from @p __additional_source.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Compile‑time constant shift amount.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - the result of shifting @c __left[i] right by @c _Shift_
+ *            when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @note
+ *  - **Unsigned types:** logical right shift.
+ *  - **Signed types:** arithmetic (sign‑extending) right shift.
+ *  - If @c _Shift_ >= bit_width(value_type), the result is:
+ *        - zero for unsigned types,
+ *        - sign‑extended for signed types.
+ *
+ *  @note
+ *  Compile‑time shift enables additional backend optimizations.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (is_unsigned<T> ?
+ *			logical_shift_right(left[i], _Shift_) :
+ *          arithmetic_shift_right(left[i], _Shift_)) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class	_DataparType_,
+	uint32	_Shift_,
+    class	_MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_shiftr(
+    const _DataparType_&					__left,
+    std::integral_constant<uint32, _Shift_>	__shift,
+    const _MaskType_&						__mask,
+    const _DataparType_&					__additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally performs a per‑lane right shift with a compile‑time constant shift amount,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane right shift of @p __left by the compile‑time
+ *  constant @p _Shift_ under control of the SIMD mask @p __mask.
+ *  Lanes where the mask is false are set to zero.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Compile‑time constant shift amount.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - the result of shifting @c __left[i] right by @c _Shift_
+ *            when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @note
+ *  - **Unsigned types:** logical right shift.
+ *  - **Signed types:** arithmetic (sign‑extending) right shift.
+ *  - If @c _Shift_ >= bit_width(value_type), the result is:
+ *        - zero for unsigned types,
+ *        - sign‑extended for signed types.
+ *
+ *  @note
+ *  Compile‑time shift enables additional backend optimizations.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? (is_unsigned<T> ?
+ *			logical_shift_right(left[i], _Shift_) :
+ *			arithmetic_shift_right(left[i], _Shift_)) : 0;
+ *  @endcode
+*/
+template <
+    class	_DataparType_,
+	uint32	_Shift_,
+    class	_MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_shiftr(
+    const _DataparType_&					__left,
+    std::integral_constant<uint32, _Shift_>	__shift,
+    const _MaskType_&						__mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally performs a per‑lane logical left shift with a compile‑time constant shift amount.
+ *
+ *  Performs a per‑lane logical left shift of @p __left by the compile‑time
+ *  constant @p _Shift_ under control of the SIMD mask @p __mask.
+ *  Lanes where the mask is false are taken from @p __additional_source.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Compile‑time constant shift amount.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] << _Shift_) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @note
+ *  - Left shift is *always logical* for all element types.
+ *  - If @c _Shift_ >= bit_width(value_type), the result is zero.
+ *
+ *  @note
+ *  Compile‑time shift enables additional backend optimizations.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? logical_shift_left(left[i], _Shift_) : additional_source[i];
+ *  @endcode
+*/
+template <
+    class	_DataparType_,
+	uint32	_Shift_,
+    class	_MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_shiftl(
+    const _DataparType_&					__left,
+    std::integral_constant<uint32, _Shift_>	__shift,
+    const _MaskType_&						__mask,
+    const _DataparType_&					__additional_source) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally performs a per‑lane logical left shift with a compile‑time constant shift amount,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane logical left shift of @p __left by the compile‑time
+ *  constant @p _Shift_ under control of the SIMD mask @p __mask.
+ *  Lanes where the mask is false are set to zero.
+ *
+ *  @param __left   Input SIMD vector whose lanes are shifted.
+ *  @param __shift  Compile‑time constant shift amount.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (__left[i] << _Shift_) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @note
+ *  - Left shift is *always logical* for all element types.
+ *  - If @c _Shift_ >= bit_width(value_type), the result is zero.
+ *
+ *  @note
+ *  Compile‑time shift enables additional backend optimizations.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? logical_shift_left(left[i], _Shift_) : 0;
+ *  @endcode
+*/
+template <
+    class	_DataparType_,
+	uint32	_Shift_,
+    class	_MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_shiftl(
+    const _DataparType_&					__left,
+    std::integral_constant<uint32, _Shift_>	__shift,
+    const _MaskType_&						__mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Computes bitwise ANDNOT (~left & right) for SIMD vectors or masks.
+ *
+ *  @param __left  Value to be inverted.
+ *  @param __right  Value to be AND‑combined with @p ~__left.
+ *
+ *  @return A SIMD vector or mask containing @c (~left & right).
+*/
+template <class _DataparOrMaskType_>
+raze_nodiscard raze_always_inline _DataparOrMaskType_ andnot(
+	const _DataparOrMaskType_& __left,
+	const _DataparOrMaskType_& __right) noexcept
+		requires(__is_valid_simd_v<_DataparOrMaskType_> || __is_simd_mask_v<_DataparOrMaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise ANDNOT (~left & right).
+ *
+ *  Performs a per‑lane bitwise ANDNOT between @p __left and @p __right
+ *  under control of the SIMD mask @p __mask. Lanes where the mask is
+ *  false are taken from @p __additional_source.
+ *
+ *  @param __left   Value whose bits are inverted before AND.
+ *  @param __right  Value AND‑combined with @p ~__left.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                  Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector or mask where each lane is:
+ *
+ *          - @c (~__left[i] & __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? ~left[i] & right[i] : additional_source[i];
+ *  @endcode
+*/
+template <
+    class _DataparOrMaskType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparOrMaskType_ mask_andnot(
+    const _DataparOrMaskType_&	__left,
+    const _DataparOrMaskType_&	__right,
+    const _MaskType_&			__mask,
+    const _DataparOrMaskType_&	__additional_source) noexcept
+        requires((__is_valid_simd_v<_DataparOrMaskType_> ||
+			__is_simd_mask_v<_DataparOrMaskType_>) && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise ANDNOT (~left & right),
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane bitwise ANDNOT between @p __left and @p __right
+ *  under control of the SIMD mask @p __mask. Lanes where the mask is
+ *  false are set to zero.
+ *
+ *  @param __left   Value whose bits are inverted before AND.
+ *  @param __right  Value AND‑combined with @p ~__left.
+ *  @param __mask   SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (~__left[i] & __right[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? ~left[i] & right[i] : 0;
+ *  @endcode
+*/
+template <
+    class _DataparType_,
+    class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_andnot(
+    const _DataparType_&    __left,
+    const _DataparType_&    __right,
+    const _MaskType_&       __mask) noexcept 
+        requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
 }
 
 __RAZE_DATAPAR_NAMESPACE_END
