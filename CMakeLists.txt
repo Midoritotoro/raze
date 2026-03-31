@@ -285,12 +285,18 @@ set(PRIVATE_HEADERS
     src/raze/datapar/shuffle/RotateRight.h
     src/raze/datapar/shuffle/Shuffle.h
 
+    src/raze/datapar/expression/Where.h
+    src/raze/datapar/expression/WhereZero.h
+    src/raze/datapar/expression/IsWhere.h
+    src/raze/datapar/expression/IsWhereZero.h
+
     src/raze/datapar/Shuffle.h
     src/raze/datapar/Bitwise.h
     src/raze/datapar/Reduce.h
     src/raze/datapar/Arithmetic.h
     src/raze/datapar/Compare.h
     src/raze/datapar/Memory.h
+    src/raze/datapar/Expression.h
 )
 
 set(PUBLIC_HEADERS

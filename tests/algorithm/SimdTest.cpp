@@ -46,58 +46,6 @@ Mask make_random_mask() {
 }
 
 template <
-    class Simd,
-    class Mask, 
-    class MaskOp, 
-    class MaskzOp, 
-    class ScalarOp>
-void test_masked_binary_op(
-    const MaskOp & op, 
-    const MaskzOp& maskz_op,
-    const ScalarOp& scalar_op) 
-{
-    using T = typename Simd::value_type;
-    constexpr size_t N = Simd::size();
-
-    alignas(64) T a_arr[N], b_arr[N], src_arr[N];
-
-    for (size_t i = 0; i < N; ++i) {
-        a_arr[i] = T(i + 1);
-        b_arr[i] = T((i + 1) * 3);
-        src_arr[i] = T(100 + i);
-    }
-
-    Simd a = raze::datapar::load<Simd>(a_arr);
-    Simd b = raze::datapar::load<Simd>(b_arr);
-    Simd src = raze::datapar::load<Simd>(src_arr);
-
-    auto test_mask = [&](Mask mask) {
-        {
-            auto r = op(a, b, mask, src);
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = mask[i] ? scalar_op(a_arr[i], b_arr[i]) : src_arr[i];
-                raze_assert(r[i] == expected);
-            }
-        }
-
-        {
-            auto r = maskz_op(a, b, mask);
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = mask[i] ? scalar_op(a_arr[i], b_arr[i]) : T(0);
-                raze_assert(r[i] == expected);
-            }
-        }
-    };
-
-    test_mask(Mask(true));
-    test_mask(Mask(false));
-    test_mask(make_alternating_mask<Mask>());
-    test_mask(make_random_mask<Mask>());
-}
-
-template <
     class           Simd,
     raze::uint64    Seed>
 void test_shuffle_with_compile_time_pattern() {
@@ -1004,61 +952,6 @@ void test_methods() {
    //     // test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
    // }
 
-    test_masked_binary_op<Simd, Mask>(
-        [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_add(a, b, m, src); },
-        [](auto a, auto b, auto m) { return raze::datapar::maskz_add(a, b, m); },
-        [](auto x, auto y) { return x + y; });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_sub(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_sub(a, b, m); },
-    //    [](auto x, auto y) { return x - y; });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_mul(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_mul(a, b, m); },
-    //    [](auto x, auto y) { return x * y; });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_div(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_div(a, b, m); },
-    //    [](auto x, auto y) { return x / y; });
-   
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_and(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_and(a, b, m); },
-    //    [](auto x, auto y) { return T(x & y); });
-    //
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_or(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_or(a, b, m); },
-    //    [](auto x, auto y) { return T(x | y); });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_xor(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_xor(a, b, m); },
-    //    [](auto x, auto y) { return T(x ^ y); });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_andnot(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_andnot(a, b, m); },
-    //    [](auto x, auto y) { return T(~x & y); });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_vertical_max(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_vertical_max(a, b, m); },
-    //    [](auto x, auto y) { return std::max(x, y); });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto b, auto m, auto src) { return raze::datapar::mask_vertical_min(a, b, m, src); },
-    //    [](auto a, auto b, auto m) { return raze::datapar::maskz_vertical_min(a, b, m); },
-    //    [](auto x, auto y) { return std::min(x, y); });
-
-    //test_masked_binary_op<Simd, Mask>(
-    //    [](auto a, auto, auto m, auto src) { return raze::datapar::mask_abs(a, a, m, src); },
-    //    [](auto a, auto, auto m) { return raze::datapar::maskz_abs(a, a, m); },
-    //    [](auto x, auto) { return T(raze::math::abs(x)); });
-
     {
         alignas(64) T a_arr[N], b_arr[N];
         for (size_t i = 0; i < N; ++i) {
@@ -1102,6 +995,75 @@ void test_methods() {
             raze_assert(r[i] == expected);
         }
     }*/
+
+    {
+        alignas(64) T arrA[N], arrB[N], arrSrc[N];
+
+        for (size_t i = 0; i < N; ++i) {
+            arrA[i] = static_cast<T>(i + 1);
+            arrB[i] = static_cast<T>((i + 1) * 3);
+            arrSrc[i] = static_cast<T>(100 + i);
+        }
+
+        Simd a = raze::datapar::load<Simd>(arrA);
+        Simd b = raze::datapar::load<Simd>(arrB);
+        Simd src = raze::datapar::load<Simd>(arrSrc);
+
+        auto test_mask = [&](Mask mask) {
+            {
+                auto r_add = raze::datapar::where(a, src, mask) + b;
+                auto r_sub = raze::datapar::where(a, src, mask) - b;
+                //auto r_mul = raze::datapar::where(a, src, mask) * b;
+
+                for (size_t i = 0; i < N; ++i) {
+                    if (mask[i]) {
+                        raze_assert(r_add[i] == static_cast<T>(arrA[i] + arrB[i]));
+                        raze_assert(r_sub[i] == static_cast<T>(arrA[i] - arrB[i]));
+                        //raze_assert(r_mul[i] == static_cast<T>(arrA[i] * arrB[i]));
+                    }
+                    else {
+                        raze_assert(r_add[i] == arrSrc[i]);
+                        raze_assert(r_sub[i] == arrSrc[i]);
+                        //raze_assert(r_mul[i] == arrSrc[i]);
+                    }
+                }
+            }
+
+
+            {
+                auto r_add = raze::datapar::where(a, mask) + b;
+                auto r_sub = raze::datapar::where(a, mask) - b;
+               // auto r_mul = raze::datapar::where(a, mask) * b;
+
+                for (size_t i = 0; i < N; ++i) {
+                    if (mask[i]) {
+                        raze_assert(r_add[i] == static_cast<T>(arrA[i] + arrB[i]));
+                        raze_assert(r_sub[i] == static_cast<T>(arrA[i] - arrB[i]));
+                      //  raze_assert(r_mul[i] == static_cast<T>(arrA[i] * arrB[i]));
+                    }
+                    else {
+                        raze_assert(r_add[i] == T(0));
+                        raze_assert(r_sub[i] == T(0));
+                       // raze_assert(r_mul[i] == T(0));
+                    }
+                }
+            }
+
+            //auto r_div = raze::datapar::where(a, src, mask) / b;
+
+            //for (size_t i = 0; i < N; ++i) {
+            //    if (mask[i])
+            //        raze_assert(r_div[i] == static_cast<T>(arrA[i] / arrB[i]));
+            //    else
+            //        raze_assert(r_div[i] == arrSrc[i]);
+            //}
+        };
+
+        test_mask(Mask(true));
+        test_mask(Mask(false));
+        test_mask(make_alternating_mask<Mask>());
+        test_mask(make_random_mask<Mask>());
+    }
 }
 
 template <raze::arch::ISA _ISA_, raze::uint32 _Width_>
