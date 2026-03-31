@@ -123,13 +123,13 @@ template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 128, _Desired
 	{
 		if constexpr (sizeof(_DesiredType_) == 8)
 			return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi64(
-                __mask,	__intrin_bitcast<__m128i>(__first),
-                __intrin_bitcast<__m128i>(__second)));
+                __mask,	__intrin_bitcast<__m128i>(__second),
+                __intrin_bitcast<__m128i>(__first)));
 
         else if constexpr (sizeof(_DesiredType_) == 4)
             return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi32(
-                __mask, __intrin_bitcast<__m128i>(__first),
-                __intrin_bitcast<__m128i>(__second)));
+                __mask, __intrin_bitcast<__m128i>(__second),
+                __intrin_bitcast<__m128i>(__first)));
 
         else
             return (*this)(__first, __second, _To_vector<arch::ISA::AVX512VLF,
@@ -164,13 +164,13 @@ struct _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
     {
         if constexpr (sizeof(_DesiredType_) == 2)
             return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi16(
-                __mask, __intrin_bitcast<__m128i>(__first),
-                __intrin_bitcast<__m128i>(__second)));
+                __mask, __intrin_bitcast<__m128i>(__second),
+                __intrin_bitcast<__m128i>(__first)));
 
         else if constexpr (sizeof(_DesiredType_) == 1)
             return __intrin_bitcast<_IntrinType_>(_mm_mask_blend_epi8(
-                __mask, __intrin_bitcast<__m128i>(__first), 
-                __intrin_bitcast<__m128i>(__second)));
+                __mask, __intrin_bitcast<__m128i>(__second),
+                __intrin_bitcast<__m128i>(__first)));
 
         else 
             return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__first, __second, __mask);
@@ -251,13 +251,13 @@ struct _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>:
     {
         if constexpr (sizeof(_DesiredType_) == 8)
             return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi64(
-                __mask, __intrin_bitcast<__m256i>(__first),
-                __intrin_bitcast<__m256i>(__second)));
+                __mask, __intrin_bitcast<__m256i>(__second),
+                __intrin_bitcast<__m256i>(__first)));
 
         if constexpr (sizeof(_DesiredType_) == 4)
             return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi32(
-                __mask, __intrin_bitcast<__m256i>(__first), 
-                __intrin_bitcast<__m256i>(__second)));
+                __mask, __intrin_bitcast<__m256i>(__second),
+                __intrin_bitcast<__m256i>(__first)));
 
         else
             return (*this)(__first, __second, _To_vector<arch::ISA::AVX512VLF, 
@@ -292,13 +292,13 @@ struct _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
     {
         if constexpr (sizeof(_DesiredType_) == 2)
             return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi16(
-                __mask, __intrin_bitcast<__m256i>(__first),
-                __intrin_bitcast<__m256i>(__second)));
+                __mask, __intrin_bitcast<__m256i>(__second),
+                __intrin_bitcast<__m256i>(__first)));
 
         else if constexpr (sizeof(_DesiredType_) == 1)
             return __intrin_bitcast<_IntrinType_>(_mm256_mask_blend_epi8(
-                __mask, __intrin_bitcast<__m256i>(__first), 
-                __intrin_bitcast<__m256i>(__second)));
+                __mask, __intrin_bitcast<__m256i>(__second),
+                __intrin_bitcast<__m256i>(__first)));
 
         else 
             return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__first, __second, __mask);
@@ -333,13 +333,13 @@ struct _Blend<arch::ISA::AVX512F, 512, _DesiredType_> {
 	{
         if constexpr (sizeof(_DesiredType_) == 8)
             return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi64(
-                __mask, __intrin_bitcast<__m512i>(__first),
-                __intrin_bitcast<__m512i>(__second)));
+                __mask, __intrin_bitcast<__m512i>(__second),
+                __intrin_bitcast<__m512i>(__first)));
 
         else if constexpr (sizeof(_DesiredType_) == 4)
             return __intrin_bitcast<_IntrinType_>(_mm512_mask_blend_epi32(
-                __mask, __intrin_bitcast<__m512i>(__first),
-                __intrin_bitcast<__m512i>(__second)));
+                __mask, __intrin_bitcast<__m512i>(__second),
+				__intrin_bitcast<__m512i>(__first)));
 
         else
 		    return _Blend()(__first, __second, _To_vector<arch::ISA::AVX512F, 512, _IntrinType_, _DesiredType_>()(__mask));

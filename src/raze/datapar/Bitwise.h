@@ -1,9 +1,21 @@
 #pragma once 
 
+
+#include <src/raze/datapar/bitwise/Andnot.h>
+#include <src/raze/datapar/bitwise/MaskAndnot.h>
+#include <src/raze/datapar/bitwise/MaskzAndnot.h>
 #include <src/raze/datapar/bitwise/BitAnd.h>
+#include <src/raze/datapar/bitwise/MaskBitAnd.h>
+#include <src/raze/datapar/bitwise/MaskzBitAnd.h>
 #include <src/raze/datapar/bitwise/BitNot.h>
+#include <src/raze/datapar/bitwise/MaskBitNot.h>
+#include <src/raze/datapar/bitwise/MaskzBitNot.h>
 #include <src/raze/datapar/bitwise/BitOr.h>
+#include <src/raze/datapar/bitwise/MaskBitOr.h>
+#include <src/raze/datapar/bitwise/MaskzBitOr.h>
 #include <src/raze/datapar/bitwise/BitXor.h>
+#include <src/raze/datapar/bitwise/MaskBitXor.h>
+#include <src/raze/datapar/bitwise/MaskzBitXor.h>
 #include <src/raze/datapar/bitwise/MaskConvert.h>
 #include <src/raze/datapar/bitwise/ToBitmask.h>
 #include <src/raze/datapar/bitwise/ToMask.h>

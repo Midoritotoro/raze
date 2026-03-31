@@ -1,10 +1,26 @@
 #pragma once 
 
 #include <src/raze/datapar/arithmetic/Abs.h>
+#include <src/raze/datapar/arithmetic/MaskAbs.h>
+#include <src/raze/datapar/arithmetic/MaskzAbs.h>
 #include <src/raze/datapar/arithmetic/Add.h>
+#include <src/raze/datapar/arithmetic/MaskAdd.h>
+#include <src/raze/datapar/arithmetic/MaskzAdd.h>
 #include <src/raze/datapar/arithmetic/Div.h>
+#include <src/raze/datapar/arithmetic/MaskDiv.h>
+#include <src/raze/datapar/arithmetic/MaskzDiv.h>
 #include <src/raze/datapar/arithmetic/Mul.h>
+#include <src/raze/datapar/arithmetic/MaskMul.h>
+#include <src/raze/datapar/arithmetic/MaskzMul.h>
 #include <src/raze/datapar/arithmetic/Negate.h>
+#include <src/raze/datapar/arithmetic/MaskNegate.h>
+#include <src/raze/datapar/arithmetic/MaskzNegate.h>
 #include <src/raze/datapar/arithmetic/Sub.h>
+#include <src/raze/datapar/arithmetic/MaskSub.h>
+#include <src/raze/datapar/arithmetic/MaskzSub.h>
 #include <src/raze/datapar/arithmetic/VerticalMax.h>
+#include <src/raze/datapar/arithmetic/MaskVerticalMax.h>
+#include <src/raze/datapar/arithmetic/MaskzVerticalMax.h>
 #include <src/raze/datapar/arithmetic/VerticalMin.h>
+#include <src/raze/datapar/arithmetic/MaskVerticalMin.h>
+#include <src/raze/datapar/arithmetic/MaskzVerticalMin.h>

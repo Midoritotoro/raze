@@ -1230,7 +1230,6 @@ raze_nodiscard raze_always_inline _DataparType_ shuffle(
  *
  *          - @c __additional_source[i] otherwise.
  *
- *
  *  @par Semantics
  *  @code
  *      result[i] = mask[i] ? (left[i] + right[i]) : additional_source[i];
@@ -1246,7 +1245,10 @@ raze_nodiscard raze_always_inline _DataparType_ mask_add(
     const _DataparType_&    __additional_source) noexcept 
         requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
 {
-
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Mask_add<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__left), 
+			__data(__right), __data(__mask), __data(__additional_source));
 }
 
 /**
@@ -1279,7 +1281,10 @@ raze_nodiscard raze_always_inline _DataparType_ maskz_add(
     const _MaskType_&       __mask) noexcept 
         requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
 {
-
+	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
+	return _Maskz_add<_RawDataparType::__isa, _RawDataparType::__width,
+		typename _RawDataparType::value_type>()(__data(__left),
+			__data(__right), __data(__mask));
 }
 
 /**
@@ -2372,6 +2377,140 @@ raze_nodiscard raze_always_inline _DataparType_ maskz_andnot(
     const _DataparType_&    __right,
     const _MaskType_&       __mask) noexcept 
         requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally negates elements of a SIMD vector.
+ *
+ *  Performs a per‑lane arithmetic negation of @p __vector under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are taken
+ *  from @p __additional_source instead of being updated.
+ *
+ *  @param __vector  Input SIMD vector whose lanes are conditionally negated.
+ *  @param __mask    SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source
+ *                   Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (-__vector[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? -vector[i] : additional_source[i];
+ *  @endcode
+*/
+template <
+	class _DataparType_,
+	class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_negate(
+	const _DataparType_&	__vector,
+	const _MaskType_&		__mask,
+	const _DataparType_&	__additional_source) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally negates elements of a SIMD vector,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane arithmetic negation of @p __vector under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are set to zero.
+ *
+ *  @param __vector  Input SIMD vector whose lanes are conditionally negated.
+ *  @param __mask    SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (-__vector[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? -vector[i] : 0;
+ *  @endcode
+*/
+template <
+	class _DataparType_,
+	class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_negate(
+	const _DataparType_&	__vector,
+	const _MaskType_&		__mask) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise NOT to a SIMD vector.
+ *
+ *  Performs a per‑lane bitwise inversion of @p __vector under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are taken
+ *  from @p __additional_source instead of being updated.
+ *
+ *  @param __vector            Input SIMD vector whose bits are conditionally inverted.
+ *  @param __mask              SIMD mask controlling which lanes participate in the operation.
+ *  @param __additional_source Value used for lanes where @p __mask is false.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (~__vector[i]) when @p __mask[i] is true,
+ *
+ *          - @c __additional_source[i] otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? ~vector[i] : additional_source[i];
+ *  @endcode
+*/
+template <
+	class _DataparType_,
+	class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ mask_not(
+	const _DataparType_&	__vector,
+	const _MaskType_&		__mask,
+	const _DataparType_&	__additional_source) noexcept
+		requires(__is_valid_simd_v<_DataparType_>&& __is_simd_mask_v<_MaskType_>)
+{
+
+}
+
+/**
+ *  @brief  Conditionally applies bitwise NOT to a SIMD vector,
+ *          zeroing masked‑off lanes.
+ *
+ *  Performs a per‑lane bitwise inversion of @p __vector under control
+ *  of the SIMD mask @p __mask. Lanes where the mask is false are set
+ *  to zero.
+ *
+ *  @param __vector  Input SIMD vector whose bits are conditionally inverted.
+ *  @param __mask    SIMD mask controlling which lanes participate in the operation.
+ *
+ *  @return A SIMD vector where each lane is:
+ *
+ *          - @c (~__vector[i]) when @p __mask[i] is true,
+ *
+ *          - @c 0 otherwise.
+ *
+ *  @par Semantics
+ *  @code
+ *      result[i] = mask[i] ? ~vector[i] : 0;
+ *  @endcode
+*/
+template <
+	class _DataparType_,
+	class _MaskType_>
+raze_nodiscard raze_always_inline _DataparType_ maskz_not(
+	const _DataparType_&	__vector,
+	const _MaskType_&		__mask) noexcept
+		requires(__is_valid_simd_v<_DataparType_>&& __is_simd_mask_v<_MaskType_>)
 {
 
 }

@@ -5,7 +5,6 @@
 
 #include <raze/compatibility/SimdCompatibility.h>
 
-
 #if !defined(raze_fastcall)
 #  if defined(raze_processor_x86_32)
 #    if defined(raze_cpp_gnu) || defined(raze_cpp_clang)

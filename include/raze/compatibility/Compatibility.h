@@ -30,6 +30,7 @@
 #include <raze/compatibility/StaticOperators.h>
 #include <raze/compatibility/MsvcIntrinWorkaround.h>
 #include <raze/compatibility/AutoVectorization.h>
+#include <raze/compatibility/StackProtection.h>
 
 #include <cstddef>
 

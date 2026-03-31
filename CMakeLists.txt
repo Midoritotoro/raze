@@ -177,10 +177,21 @@ set(PRIVATE_HEADERS
     src/raze/algorithm/MsvcIteratorUnwrap.h
     src/raze/algorithm/SimdTransformable.h
     
+    src/raze/datapar/bitwise/Andnot.h
+    src/raze/datapar/bitwise/MaskAndnot.h
+    src/raze/datapar/bitwise/MaskzAndnot.h
     src/raze/datapar/bitwise/BitAnd.h
+    src/raze/datapar/bitwise/MaskBitAnd.h
+    src/raze/datapar/bitwise/MaskzBitAnd.h
     src/raze/datapar/bitwise/BitOr.h
+    src/raze/datapar/bitwise/MaskBitOr.h
+    src/raze/datapar/bitwise/MaskzBitOr.h
     src/raze/datapar/bitwise/BitXor.h
+    src/raze/datapar/bitwise/MaskBitXor.h
+    src/raze/datapar/bitwise/MaskzBitXor.h
     src/raze/datapar/bitwise/BitNot.h
+    src/raze/datapar/bitwise/MaskBitNot.h
+    src/raze/datapar/bitwise/MaskzBitNot.h
     src/raze/datapar/bitwise/ToMask.h
     src/raze/datapar/bitwise/ToVector.h
     src/raze/datapar/bitwise/ToBitmask.h
@@ -203,13 +214,29 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/RightShift.h
 
     src/raze/datapar/arithmetic/Sub.h
+    src/raze/datapar/arithmetic/MaskSub.h
+    src/raze/datapar/arithmetic/MaskzSub.h
     src/raze/datapar/arithmetic/Add.h
+    src/raze/datapar/arithmetic/MaskAdd.h
+    src/raze/datapar/arithmetic/MaskzAdd.h
     src/raze/datapar/arithmetic/Mul.h
+    src/raze/datapar/arithmetic/MaskMul.h
+    src/raze/datapar/arithmetic/MaskzMul.h
     src/raze/datapar/arithmetic/Div.h
+    src/raze/datapar/arithmetic/MaskDiv.h
+    src/raze/datapar/arithmetic/MaskzDiv.h
     src/raze/datapar/arithmetic/Negate.h
+    src/raze/datapar/arithmetic/MaskNegate.h
+    src/raze/datapar/arithmetic/MaskzNegate.h
     src/raze/datapar/arithmetic/VerticalMax.h
+    src/raze/datapar/arithmetic/MaskVerticalMax.h
+    src/raze/datapar/arithmetic/MaskzVerticalMax.h
+    src/raze/datapar/arithmetic/VerticalMin.h
+    src/raze/datapar/arithmetic/MaskVerticalMin.h
     src/raze/datapar/arithmetic/VerticalMin.h
     src/raze/datapar/arithmetic/Abs.h
+    src/raze/datapar/arithmetic/MaskAbs.h
+    src/raze/datapar/arithmetic/MaskzAbs.h
     src/raze/datapar/arithmetic/Divisor.h
 
     src/raze/datapar/compare/Less.h
@@ -315,6 +342,7 @@ set(PUBLIC_HEADERS
     include/raze/compatibility/SimdCompatibility.h
     include/raze/compatibility/StaticOperators.h
     include/raze/compatibility/AutoVectorization.h
+    include/raze/compatibility/StackProtection.h
 
     include/raze/Types.h
     include/raze/RazeNamespace.h
