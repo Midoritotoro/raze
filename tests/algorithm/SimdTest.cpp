@@ -998,7 +998,6 @@ void test_methods() {
 
     {
         alignas(64) T arrA[N], arrB[N], arrSrc[N];
-
         for (size_t i = 0; i < N; ++i) {
             arrA[i] = static_cast<T>(i + 1);
             arrB[i] = static_cast<T>((i + 1) * 3);
@@ -1009,60 +1008,132 @@ void test_methods() {
         Simd b = raze::datapar::load<Simd>(arrB);
         Simd src = raze::datapar::load<Simd>(arrSrc);
 
-        auto test_mask = [&](Mask mask) {
-            {
-                auto r_add = raze::datapar::where(a, src, mask) + b;
-                auto r_sub = raze::datapar::where(a, src, mask) - b;
-                //auto r_mul = raze::datapar::where(a, src, mask) * b;
+        Mask m;
+        for (size_t i = 0; i < N; ++i)
+            m[i] = (i % 2 == 0);
 
-                for (size_t i = 0; i < N; ++i) {
-                    if (mask[i]) {
-                        raze_assert(r_add[i] == static_cast<T>(arrA[i] + arrB[i]));
-                        raze_assert(r_sub[i] == static_cast<T>(arrA[i] - arrB[i]));
-                        //raze_assert(r_mul[i] == static_cast<T>(arrA[i] * arrB[i]));
-                    }
-                    else {
-                        raze_assert(r_add[i] == arrSrc[i]);
-                        raze_assert(r_sub[i] == arrSrc[i]);
-                        //raze_assert(r_mul[i] == arrSrc[i]);
-                    }
-                }
+        auto w = raze::datapar::where(a, src, m);
+        auto wz = raze::datapar::where(a, m);
+
+        {
+            auto r1 = w + b;
+            auto r2 = b + w;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected = m[i] ? (arrA[i] + arrB[i]) : arrSrc[i];
+                raze_assert(r1[i] == expected);
+                raze_assert(r2[i] == expected);
             }
+        }
 
+        {
+            auto r1 = w - b;
+            auto r2 = b - w;
 
-            {
-                auto r_add = raze::datapar::where(a, mask) + b;
-                auto r_sub = raze::datapar::where(a, mask) - b;
-               // auto r_mul = raze::datapar::where(a, mask) * b;
+            for (size_t i = 0; i < N; ++i) {
+                T expected1 = m[i] ? (arrA[i] - arrB[i]) : arrSrc[i];
+                T expected2 = m[i] ? (arrB[i] - arrA[i]) : arrSrc[i];
 
-                for (size_t i = 0; i < N; ++i) {
-                    if (mask[i]) {
-                        raze_assert(r_add[i] == static_cast<T>(arrA[i] + arrB[i]));
-                        raze_assert(r_sub[i] == static_cast<T>(arrA[i] - arrB[i]));
-                      //  raze_assert(r_mul[i] == static_cast<T>(arrA[i] * arrB[i]));
-                    }
-                    else {
-                        raze_assert(r_add[i] == T(0));
-                        raze_assert(r_sub[i] == T(0));
-                       // raze_assert(r_mul[i] == T(0));
-                    }
-                }
+                raze_assert(r1[i] == expected1);
+                raze_assert(r2[i] == expected2);
             }
+        }
 
-            //auto r_div = raze::datapar::where(a, src, mask) / b;
+        {
+            auto r1 = w * b;
+            auto r2 = b * w;
 
-            //for (size_t i = 0; i < N; ++i) {
-            //    if (mask[i])
-            //        raze_assert(r_div[i] == static_cast<T>(arrA[i] / arrB[i]));
-            //    else
-            //        raze_assert(r_div[i] == arrSrc[i]);
-            //}
-        };
+            for (size_t i = 0; i < N; ++i) {
+                T expected = m[i] ? (arrA[i] * arrB[i]) : arrSrc[i];
+                raze_assert(r1[i] == expected);
+                raze_assert(r2[i] == expected);
+            }
+        }
 
-        test_mask(Mask(true));
-        test_mask(Mask(false));
-        test_mask(make_alternating_mask<Mask>());
-        test_mask(make_random_mask<Mask>());
+        {
+            auto r1 = w / b;
+            auto r2 = b / w;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected1 = m[i] ? (arrA[i] / arrB[i]) : arrSrc[i];
+                T expected2 = m[i] ? (arrB[i] / arrA[i]) : arrSrc[i];
+
+                raze_assert(r1[i] == expected1);
+                raze_assert(r2[i] == expected2);
+            }
+        }
+
+       /* {
+            T scalar = static_cast<T>(5);
+
+            auto r1 = w / scalar;
+            auto r2 = scalar / w;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected1 = m[i] ? (arrA[i] / scalar) : arrSrc[i];
+                T expected2 = m[i] ? (scalar / arrA[i]) : arrSrc[i];
+
+                raze_assert(r1[i] == expected1);
+                raze_assert(r2[i] == expected2);
+            }
+        }
+
+        {
+            auto r = wz + b;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected = m[i] ? (arrA[i] + arrB[i]) : T(0);
+                raze_assert(r[i] == expected);
+            }
+        }
+
+        {
+            auto r1 = wz - b;
+            auto r2 = a - wz;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected = m[i] ? (arrA[i] - arrB[i]) : T(0);
+                raze_assert(r1[i] == expected);
+                raze_assert(r2[i] == expected);
+            }
+        }
+
+        {
+            auto r1 = wz * b;
+            auto r2 = a * wz;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected = m[i] ? (arrA[i] * arrB[i]) : T(0);
+                raze_assert(r1[i] == expected);
+                raze_assert(r2[i] == expected);
+            }
+        }
+
+        {
+            auto r1 = wz / b;
+            auto r2 = a / wz;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected = m[i] ? (arrA[i] / arrB[i]) : T(0);
+                raze_assert(r1[i] == expected);
+                raze_assert(r2[i] == expected);
+            }
+        }
+
+        {
+            T scalar = static_cast<T>(5);
+
+            auto r1 = wz / scalar;
+            auto r2 = scalar / wz;
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected1 = m[i] ? (arrA[i] / scalar) : T(0);
+                T expected2 = m[i] ? (scalar / arrA[i]) : T(0);
+
+                raze_assert(r1[i] == expected1);
+                raze_assert(r2[i] == expected2);
+            }
+        }*/
     }
 }
 

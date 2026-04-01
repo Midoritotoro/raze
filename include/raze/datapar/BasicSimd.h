@@ -169,7 +169,7 @@ public:
         const simd& __left,
         uint32      __shift) noexcept
     {
-        return _Left_shift<__isa, __width, _Type_>()(__left._vector, __shift);
+        return _Left_shift<__isa, __width, _Type_>()(__data(__left), __shift);
     }
 
     /**
@@ -190,7 +190,7 @@ public:
         const simd& __left,
         uint32      __shift) noexcept
     {
-        return _Right_shift<__isa, __width, _Type_>()(__left._vector, __shift);
+        return _Right_shift<__isa, __width, _Type_>()(__data(__left), __shift);
     }
 
     /**
@@ -203,7 +203,7 @@ public:
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Sub<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Sub<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
     }
 
     /**
@@ -216,7 +216,7 @@ public:
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Add<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Add<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
     }
 
     /**
@@ -229,36 +229,33 @@ public:
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Mul<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Mul<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
     }
 
     /**
-     * @brief Element-wise division of two SIMD vectors.
+     * @brief Element-wise division.
     */
     template <class _RightType_>
     raze_always_inline friend simd operator/(
         const simd&         __left,
         const _RightType_&  __right) noexcept requires(
-            std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)
-    {
-        auto __temp = simd();
-
-        for (auto __i = 0; __i < size(); ++__i)
-            __temp[__i] = __left[__i] / __right[__i];
-
-        return __temp;
-    }
-
-    /**
-     * @brief Element-wise division by a scalar.
-    */
-    template <class _RightType_>
-    raze_always_inline friend simd operator/(
-        const simd&         __left,
-        const _RightType_&  __right) noexcept requires(
+            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
             std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Div<__isa, __width, _Type_>()(__left._vector, __data(simd(__right)));
+        return _Div<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
+    }
+
+    /**
+     * @brief Element-wise division.
+    */
+    template <class _RightType_>
+    raze_always_inline friend simd operator/(
+        const _RightType_&  __left,
+        const simd&         __right) noexcept requires(
+            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
+            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+    {
+        return _Div<__isa, __width, _Type_>()(__data(simd(__left)), __data(__right));
     }
 
     /**
@@ -268,7 +265,7 @@ public:
         const simd& __left,
         const simd& __right) noexcept
     {
-        return _And<__isa, __width>()(__left._vector, __right._vector);
+        return _And<__isa, __width>()(__data(__left), __data(__right));
     }
 
     /**
@@ -278,7 +275,7 @@ public:
         const simd& __left, 
         const simd& __right) noexcept
     {
-        return _Or<__isa, __width>()(__left._vector, __right._vector);
+        return _Or<__isa, __width>()(__data(__left), __data(__right));
     }
 
     /**
@@ -288,7 +285,7 @@ public:
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Xor<__isa, __width>()(__left._vector, __right._vector);
+        return _Xor<__isa, __width>()(__data(__left), __data(__right));
     }
 
     /**
@@ -306,7 +303,7 @@ public:
         const simd& __left,
         const simd& __right) noexcept 
     {
-        return _Equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
+        return _Equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     /**
@@ -317,35 +314,35 @@ public:
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Not_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
+        return _Not_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     raze_always_inline friend mask_type operator<(
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Less<__isa, __width, _Type_>()(__left._vector, __right._vector);
+        return _Less<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     raze_always_inline friend mask_type operator<=(
         const simd& __left,
         const simd& __right) noexcept
     {
-        return _Less_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
+        return _Less_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     raze_always_inline friend mask_type operator>(
         const simd& __left,
         const simd& __right) noexcept 
     {
-        return _Greater<__isa, __width, _Type_>()(__left._vector, __right._vector);
+        return _Greater<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     raze_always_inline friend mask_type operator>=(
         const simd& __left, 
         const simd& __right) noexcept
     {
-        return _Greater_equal<__isa, __width, _Type_>()(__left._vector, __right._vector);
+        return _Greater_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     raze_always_inline simd& operator>>=(uint32 __shift) noexcept {
