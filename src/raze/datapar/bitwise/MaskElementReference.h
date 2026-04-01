@@ -7,11 +7,22 @@
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
 
-template <
-	class _Type_,
-	class _Abi_>
-using __mask_element_reference = std::conditional_t<std::is_integral_v<typename _Mask_implementation<_Type_, _Abi_>::mask_type>,
-	_Bit_reference<typename _Mask_implementation<_Type_, _Abi_>::mask_type>,
-	_Simd_bool_reference<typename _Mask_implementation<_Type_, _Abi_>::mask_type>>;
+template <class _MaskType_>
+raze_always_inline _Bit_reference<_MaskType_> __make_mask_element_reference(
+	_MaskType_& __mask,
+	int32		__index) noexcept
+		requires(std::is_integral_v<_MaskType_>)
+{
+	return _Bit_reference(__mask, __index);
+}
+
+template <class _MaskType_> 
+raze_always_inline _Simd_bool_reference<_MaskType_> __make_mask_element_reference(
+	_MaskType_& __mask, 
+	int32		__index) noexcept
+		requires(__is_valid_simd_v<_MaskType_>)
+{
+	return _Simd_bool_reference(__mask, __index);
+}
 
 __RAZE_DATAPAR_NAMESPACE_END

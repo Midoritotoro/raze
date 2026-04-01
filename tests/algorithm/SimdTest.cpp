@@ -45,6 +45,39 @@ Mask make_random_mask() {
     return m;
 }
 
+template <class T, size_t N, class Simd, class Mask,
+    class WhereExpr, class WhereZeroExpr, class SimdOp, class ScalarOp>
+void test_where_binary(
+    const T(&arrA)[N], const T(&arrB)[N], const T(&arrSrc)[N],
+    const Mask& m, const Simd& a, const Simd& b,
+    const Simd& src, const WhereExpr& w,
+    const WhereZeroExpr& wz,  SimdOp simd_op, ScalarOp scalar_op) noexcept
+{
+    {
+        auto r1 = simd_op(w, b);
+        auto r2 = simd_op(b, w);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected1 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], false);
+            T expected2 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], true);
+            raze_assert(r1[i] == expected1);
+            raze_assert(r2[i] == expected2);
+        }
+    }
+
+    {
+        auto r1 = simd_op(wz, b); 
+        auto r2 = simd_op(b, wz);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected1 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, false) : T(0);
+            T expected2 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, true) : T(0);
+            raze_assert(r1[i] == expected1);
+            raze_assert(r2[i] == expected2);
+        }
+    }
+}
+
 template <
     class           Simd,
     raze::uint64    Seed>
@@ -999,9 +1032,9 @@ void test_methods() {
     {
         alignas(64) T arrA[N], arrB[N], arrSrc[N];
         for (size_t i = 0; i < N; ++i) {
-            arrA[i] = static_cast<T>(i + 1);
-            arrB[i] = static_cast<T>((i + 1) * 3);
-            arrSrc[i] = static_cast<T>(100 + i);
+            arrA[i] = i + 1;
+            arrB[i] = (i + 1) * 3;
+            arrSrc[i] = 100 + i;
         }
 
         Simd a = raze::datapar::load<Simd>(arrA);
@@ -1015,125 +1048,42 @@ void test_methods() {
         auto w = raze::datapar::where(a, src, m);
         auto wz = raze::datapar::where(a, m);
 
-        {
-            auto r1 = w + b;
-            auto r2 = b + w;
 
-            for (size_t i = 0; i < N; ++i) {
-                T expected = m[i] ? (arrA[i] + arrB[i]) : arrSrc[i];
-                raze_assert(r1[i] == expected);
-                raze_assert(r2[i] == expected);
+        test_where_binary<T, N>(
+            arrA, arrB, arrSrc, m,
+            a, b, src, w, wz,
+            raze::type_traits::plus{},
+            [](T A, T B, T Src, bool cond, bool rev) {
+                return cond ? (rev ? B + A : A + B) : Src;
             }
-        }
+        );
 
-        {
-            auto r1 = w - b;
-            auto r2 = b - w;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected1 = m[i] ? (arrA[i] - arrB[i]) : arrSrc[i];
-                T expected2 = m[i] ? (arrB[i] - arrA[i]) : arrSrc[i];
-
-                raze_assert(r1[i] == expected1);
-                raze_assert(r2[i] == expected2);
+        test_where_binary<T, N>(
+            arrA, arrB, arrSrc, m,
+            a, b, src, w, wz,
+            raze::type_traits::minus{},
+            [](T A, T B, T Src, bool cond, bool rev) {
+                return cond ? (rev ? B - A : A - B) : Src;
             }
-        }
+        );
 
-        {
-            auto r1 = w * b;
-            auto r2 = b * w;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = m[i] ? (arrA[i] * arrB[i]) : arrSrc[i];
-                raze_assert(r1[i] == expected);
-                raze_assert(r2[i] == expected);
+        test_where_binary<T, N>(
+            arrA, arrB, arrSrc, m,
+            a, b, src, w, wz,
+            raze::type_traits::multiplies{},
+            [](T A, T B, T Src, bool cond, bool rev) {
+                return cond ? (rev ? B * A : A * B) : Src;
             }
-        }
+        );
 
-        {
-            auto r1 = w / b;
-            auto r2 = b / w;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected1 = m[i] ? (arrA[i] / arrB[i]) : arrSrc[i];
-                T expected2 = m[i] ? (arrB[i] / arrA[i]) : arrSrc[i];
-
-                raze_assert(r1[i] == expected1);
-                raze_assert(r2[i] == expected2);
+        test_where_binary<T, N>(
+            arrA, arrB, arrSrc, m,
+            a, b, src, w, wz,
+            raze::type_traits::divides{},
+            [](T A, T B, T Src, bool cond, bool rev) {
+                return cond ? (rev ? B / A : A / B) : Src;
             }
-        }
-
-       /* {
-            T scalar = static_cast<T>(5);
-
-            auto r1 = w / scalar;
-            auto r2 = scalar / w;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected1 = m[i] ? (arrA[i] / scalar) : arrSrc[i];
-                T expected2 = m[i] ? (scalar / arrA[i]) : arrSrc[i];
-
-                raze_assert(r1[i] == expected1);
-                raze_assert(r2[i] == expected2);
-            }
-        }
-
-        {
-            auto r = wz + b;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = m[i] ? (arrA[i] + arrB[i]) : T(0);
-                raze_assert(r[i] == expected);
-            }
-        }
-
-        {
-            auto r1 = wz - b;
-            auto r2 = a - wz;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = m[i] ? (arrA[i] - arrB[i]) : T(0);
-                raze_assert(r1[i] == expected);
-                raze_assert(r2[i] == expected);
-            }
-        }
-
-        {
-            auto r1 = wz * b;
-            auto r2 = a * wz;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = m[i] ? (arrA[i] * arrB[i]) : T(0);
-                raze_assert(r1[i] == expected);
-                raze_assert(r2[i] == expected);
-            }
-        }
-
-        {
-            auto r1 = wz / b;
-            auto r2 = a / wz;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = m[i] ? (arrA[i] / arrB[i]) : T(0);
-                raze_assert(r1[i] == expected);
-                raze_assert(r2[i] == expected);
-            }
-        }
-
-        {
-            T scalar = static_cast<T>(5);
-
-            auto r1 = wz / scalar;
-            auto r2 = scalar / wz;
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected1 = m[i] ? (arrA[i] / scalar) : T(0);
-                T expected2 = m[i] ? (scalar / arrA[i]) : T(0);
-
-                raze_assert(r1[i] == expected1);
-                raze_assert(r2[i] == expected2);
-            }
-        }*/
+        );
     }
 }
 

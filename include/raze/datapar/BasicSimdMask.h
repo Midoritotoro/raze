@@ -91,11 +91,11 @@ public:
 	}
 
 	raze_always_inline bool operator[](int32 __index) const noexcept {
-		return __mask_element_reference<_Type_, _Abi_>(_mask, __index);
+		return __make_mask_element_reference(_mask, __index);
 	}
 
-	raze_always_inline __mask_element_reference<_Type_, _Abi_> operator[](int32 __index) noexcept {
-		return __mask_element_reference<_Type_, _Abi_>(_mask, __index);
+	raze_always_inline auto operator[](int32 __index) noexcept {
+		return __make_mask_element_reference(_mask, __index);
 	}
 	
 	template <uint32 _Elements_>
