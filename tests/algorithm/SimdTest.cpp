@@ -78,6 +78,33 @@ void test_where_binary(
     }
 }
 
+template <class T, size_t N, class Simd, class Mask,
+    class WhereExpr, class WhereZeroExpr, class SimdOp, class ScalarOp>
+void test_where_unary(
+    const T(&arrA)[N], const T(&arrSrc)[N],
+    const Mask& m, const Simd& a,
+    const Simd& src, const WhereExpr& w,
+    const WhereZeroExpr& wz,  SimdOp simd_op, ScalarOp scalar_op) noexcept
+{
+    {
+        auto r1 = simd_op(w, a);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected1 = scalar_op(arrA[i], arrSrc[i], m[i], false);
+            raze_assert(r1[i] == expected1);
+        }
+    }
+
+    {
+        auto r1 = simd_op(wz, a); 
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected1 = m[i] ? scalar_op(arrA[i], T(0), true, false) : T(0);
+            raze_assert(r1[i] == expected1);
+        }
+    }
+}
+
 template <
     class           Simd,
     raze::uint64    Seed>
@@ -142,950 +169,627 @@ void test_shuffle_with_compile_time_all_patterns(std::index_sequence<Seeds...>) 
     (test_shuffle_with_compile_time_pattern<Simd, Seeds>(), ...);
 }
 
-template <typename T, raze::arch::ISA Arch, raze::uint32 _Width_>
-void test_methods() {
-    using Simd = raze::datapar::simd<T, raze::datapar::x86_abi<Arch, _Width_>>;
-    using Mask = typename Simd::mask_type;
-    constexpr size_t N = Simd::size();
+template<class Simd, class Mask, class T, size_t N>
+void test_simd_basics() {
+    Simd v1;
+    Simd v2(5);
 
-    if (raze::arch::ProcessorFeatures::isSupported<Simd::__isa>() == false) {
-        std::cout << "Not supported" << '\n';
-        return;
+    for (size_t i = 0; i < N; ++i)
+        raze_assert(v2[i] == 5);
+
+    alignas(64) T arr[N];
+    std::iota(arr, arr + N, 1);
+
+    Simd v3 = raze::datapar::load<Simd>(arr);
+    for (size_t i = 0; i < N; ++i)
+        raze_assert(v3[i] == arr[i]);
+
+    Simd v4(v3);
+    Simd v5 = v3;
+
+    for (size_t i = 0; i < N; ++i) {
+        raze_assert(v4[i] == arr[i]);
+        raze_assert(v5[i] == arr[i]);
     }
 
-   // {
-   //     Simd v1;
-   //     Simd v2(5);
-
-   //     for (int i = 0; i < v2.size(); ++i)
-   //         raze_assert(v2[i] == 5);
-
-   //     alignas(16) T arr[N];
-   //     std::iota(arr, arr + N, 1);
-
-   //     Simd v3 = raze::datapar::load<Simd>(arr);
-   //     for (int i = 0; i < v2.size(); ++i)
-   //         raze_assert(v3[i] == arr[i]);
-
-   //     Simd v4(v3);
-   //     for (int i = 0; i < v2.size(); ++i) 
-   //         raze_assert(v4[i] == arr[i]);
-
-   //     Simd v5(v3);
-   //     for (int i = 0; i < v2.size(); ++i)
-   //         raze_assert(v5[i] == arr[i]);
-   // }
-
-   // {
-   //     Simd v;
-   //     v.fill(42);
-   //     for (int i = 0; i < v.size(); ++i) 
-   //         raze_assert(v[i] == 42);
-
-   //     v[0] = 99;
-   //     raze_assert(v[0] == 99);
-   // }
-
-   // {
-   //     using raze::datapar::simd_cast;
-   //     Simd v(11);
-
-   //     auto vOther = simd_cast<raze::datapar::simd128_sse2<float>>(v);
-   //     auto vOther2 = simd_cast<raze::arch::ISA::SSE2, float>(v);
-   //     auto vOther3 = simd_cast<raze::arch::ISA::SSE2>(v);
-   //     auto vOther4 = simd_cast<__m128i>(v);
-   //     auto vOther5 = simd_cast<int>(v);
-
-   //     static_assert(std::is_same_v<decltype(vOther), decltype(vOther2)>);
-   //     static_assert(std::is_same_v<decltype(vOther2), raze::datapar::simd128_sse2<float>>);
-   //     static_assert(std::is_same_v<decltype(vOther3), raze::datapar::simd<typename Simd::value_type, raze::datapar::x86_abi<raze::arch::ISA::SSE2, 128>>>);
-   //     static_assert(std::is_same_v<decltype(vOther4), __m128i>);
-   //     static_assert(std::is_same_v<decltype(vOther5), raze::datapar::simd<int, typename Simd::abi_type>>);
-   // }
-
-   // {
-   //     const auto tests_for_mask = [](Mask mask) {
-   //         alignas(64) T src[N];
-   //         alignas(64) T dst[N];
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             src[i] = static_cast<T>(i + 1);
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             dst[i] = static_cast<T>(100 + i);
-
-   //         Simd loaded_unaligned = raze::datapar::maskz_load<Simd>(src, mask);
-
-   //         for (size_t i = 0; i < N; ++i) {
-   //             if (mask[i])
-   //                 raze_assert(loaded_unaligned[i] == src[i]);
-   //             else
-   //                 raze_assert(loaded_unaligned[i] == T(0));
-   //         }
-
-   //         Simd loaded_aligned = raze::datapar::maskz_load<Simd>(src, mask, raze::datapar::aligned_policy{});
-   //         for (size_t i = 0; i < N; ++i) {
-   //             if (mask[i])
-   //                 raze_assert(loaded_aligned[i] == src[i]);
-   //             else
-   //                 raze_assert(loaded_aligned[i] == T(0));
-   //         }
-
-   //         Simd v(77);
-   //         raze::datapar::mask_store(dst, v, mask);
-
-   //         for (size_t i = 0; i < N; ++i) {
-   //             if (mask[i])
-   //                 raze_assert(dst[i] == T(77));
-   //             else
-   //                 raze_assert(dst[i] == T(100 + i));
-   //         }
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             dst[i] = static_cast<T>(200 + i);
-
-   //         raze::datapar::mask_store(dst, v, mask, raze::datapar::aligned_policy{});
-   //         for (size_t i = 0; i < N; ++i) {
-   //             if (mask[i])
-   //                 raze_assert(dst[i] == T(77));
-   //             else
-   //                 raze_assert(dst[i] == T(200 + i));
-   //         }
-   //     };
-
-   //     bool maskArray[N];
-
-   //     for (int i = 0; i < N; ++i)
-   //         maskArray[i] = ((i % 2) == 0);
-
-   //     tests_for_mask(true);
-   //     tests_for_mask(false);
-   //     tests_for_mask(maskArray);
-   // }
-
-   // {
-   //     alignas(64) T src[N];
-   //     for (size_t i = 0; i < N; ++i) src[i] = static_cast<T>(i + 1);
-
-   //     Simd v = raze::datapar::load<Simd>(src);
-
-   //     Mask mask = 0;
-
-   //     {
-   //         alignas(64) T dst[N] = {};
-   //         raze::datapar::compress_store(dst, v, mask, raze::datapar::aligned_policy{});
-
-   //         alignas(64) T expected[N];
-   //         mask_compress_any<Simd>(src, src, expected, mask);
-
-   //         raze_assert(std::equal(expected, expected + N, dst));
-   //     }
-
-   //     {
-   //         alignas(64) T dst[N] = {};
-   //         raze::datapar::compress_store(dst, v, mask);
-
-   //         alignas(64) T expected[N];
-   //         mask_compress_any<Simd>(src, src, expected, mask);
-
-   //         raze_assert(std::equal(expected, expected + N, dst));
-   //     }
-
-   //     {
-   //         alignas(64) T dst[N] = {};
-   //         raze::datapar::compress_store(dst, v, mask, raze::datapar::aligned_policy{});
-
-   //         alignas(64) T expected[N];
-   //         mask_compress_any<Simd>(src, src, expected, mask);
-
-   //         raze_assert(std::equal(expected, expected + N, dst));
-   //     }
-   // }
-
-   // {
-   //     std::vector<T> va(N), vb(N), vc(N);
-
-   //     for (size_t i = 0; i < N; ++i) {
-   //         va[i] = static_cast<T>(i + 1);
-   //         vb[i] = static_cast<T>(i + 1);
-   //         vc[i] = static_cast<T>(i + 2);
-   //     }
-
-   //     Simd a = raze::datapar::load<Simd>(va.data());
-   //     Simd b = raze::datapar::load<Simd>(vb.data());
-   //     Simd c = raze::datapar::load<Simd>(vc.data());
-
-   //     raze::datapar::simd<int, raze::datapar::x86_abi<raze::arch::ISA::SSE2, 128>> v1;
-   //     raze::datapar::simd<int, raze::datapar::x86_abi<raze::arch::ISA::SSE2, 128>> v2;
-
-   //     auto m = v1 == v2;
-
-   //     raze_assert(raze::datapar::all_of(m));
-   //     raze_assert(raze::datapar::any_of(m));
-
-   //     auto mEq = (a == b);
-   //     for (size_t i = 0; i < N; ++i) {
-   //         raze_assert(mEq[i] == true);
-   //     }
-
-   //     auto mNeq = (a != c);
-   //     for (size_t i = 0; i < N; ++i) {
-   //         raze_assert(mNeq[i] == true);
-   //     }
-
-   //     auto mGt = (c > a);
-   //     auto mLt = (a < c);
-   //     for (size_t i = 0; i < N; ++i) {
-   //         raze_assert(mGt[i] == true);
-   //         raze_assert(mLt[i] == true);
-   //     }
-
-   //     auto mGe = (a >= b);
-   //     auto mLe = (a <= b);
-   //     for (size_t i = 0; i < N; ++i) {
-   //         raze_assert(mGe[i] == true);
-   //         raze_assert(mLe[i] == true);
-   //     }
-   // }
-
-   // {
-   //     alignas(64) T arr0[N], arrMax[N];
-   //     for (size_t i = 0; i < N; ++i) {
-   //         arr0[i] = 0;
-   //         arrMax[i] = std::numeric_limits<T>::max();
-   //     }
-
-   //     Simd v0 = raze::datapar::load<Simd>(arr0);
-   //     Simd vmax = raze::datapar::load<Simd>(arrMax);
-
-   //     raze_assert(raze::datapar::any_of(v0 != vmax));
-
-   //     auto mEq = (v0 == v0);
-   //     auto mNeq = (v0 != vmax);
-   //     for (size_t i = 0; i < N; ++i) {
-   //         raze_assert(mEq[i] == true);
-   //         raze_assert(mNeq[i] == true);
-   //     }
-
-   //     auto mLt = (v0 < vmax);
-   //     auto mGt = (vmax > v0);
-   //     auto mLe = (v0 <= v0);
-   //     auto mGe = (vmax >= vmax);
-
-   //     for (size_t i = 0; i < N; ++i) {
-   //         raze_assert(mLt[i] == true);
-   //         raze_assert(mGt[i] == true);
-   //         raze_assert(mLe[i] == true);
-   //         raze_assert(mGe[i] == true);
-   //     }
-   // }
-
-   // {
-   //     for (long long step = 1; step < (1LL << (std::numeric_limits<T>::digits - 2)); step <<= 1) {
-   //         alignas(64) T arrA[N], arrB[N];
-
-   //         for (size_t i = 0; i < N; ++i) {
-   //             arrA[i] = step;
-   //             arrB[i] = step + 1;
-   //         }
-   //         Simd vA = raze::datapar::load<Simd>(arrA);
-   //         Simd vB = raze::datapar::load<Simd>(arrB);
-
-   //         auto mEq = (vA == vA);
-   //         auto mNeq = (vA != vB);
-   //         auto mLt = (vA < vB);
-   //         auto mGt = (vB > vA);
-   //         auto mLe = (vA <= vA);
-   //         auto mGe = (vB >= vB);
-
-   //         for (size_t i = 0; i < N; ++i) {
-   //             raze_assert(mEq[i] == true);
-   //             raze_assert(mNeq[i] == true);
-   //             raze_assert(mLt[i] == true);
-   //             raze_assert(mGt[i] == true);
-   //             raze_assert(mLe[i] == true);
-   //             raze_assert(mGe[i] == true);
-   //         }
-   //     }
-   // }
-
-   // {
-   //     raze::datapar::__reduce_type<T> reduced = 0;
-
-   //     alignas(64) T array[N] = {};
-   //     for (auto i = 0; i < N; ++i) {
-   //         array[i] = (unsigned char)(i * 0x7fdbu);
-   //     }
-
-   //     for (auto i = 0; i < N; ++i) {
-   //         reduced += (unsigned char)(array[i]);
-   //     }
-
-   //     auto simdReduced = raze::datapar::reduce_add(raze::datapar::load<Simd>(array));
-
-   //     raze_assert(simdReduced == reduced);
-   // }
-
-   // {
-   //     alignas(64) T arrA[N], arrB[N];
-
-   //     for (size_t i = 0; i < N; ++i) {
-   //         if (i % 4 == 0)
-   //             arrA[i] = static_cast<T>(100);
-   //         else if (i % 5 == 0)
-   //             arrA[i] = static_cast<T>(-50);
-   //         else
-   //             arrA[i] = static_cast<T>(i - 2);
-
-   //         if (i % 3 == 0)
-   //             arrB[i] = static_cast<T>(200);
-   //         else if (i % 7 == 0)
-   //             arrB[i] = static_cast<T>(-100);
-   //         else
-   //             arrB[i] = static_cast<T>(N - i);
-   //     }
-
-   //     Simd a = raze::datapar::load<Simd>(arrA);
-   //     Simd b = raze::datapar::load<Simd>(arrB);
-
-   //     auto absVec = raze::datapar::abs(a);
-   //     for (size_t i = 0; i < N; ++i) {
-   //         raze_assert(absVec[i] == static_cast<T>(raze::math::abs(arrA[i])));
-   //     }
-   // }
-
-   // {
-   //     alignas(64) T arr[N];
-   //     alignas(64) T reversed[N];
-
-   //     std::iota(arr, arr + N, 0);
-
-   //     auto v = raze::datapar::reverse(raze::datapar::load<Simd>(arr));
-   //     raze::datapar::store(reversed, v);
-
-   //     for (size_t i = 0; i < N; ++i)
-   //         raze_assert(reversed[i] == arr[N - 1 - i]);
-   // }
-
-   // for (size_t i = 0; i < N; ++i) {
-   //     Simd v1(0);
-   //     Simd v2(0);
-
-   //     v1[i] = 42;
-   //     v2[i] = 42;
-
-   //     auto mask = (v1 == v2);
-
-   //     raze_assert(raze::datapar::any_of(mask));
-   //     raze_assert(raze::datapar::all_of(mask));
-
-   //     raze_assert(raze::datapar::count_set(mask) == N);
-   //     raze_assert(raze::datapar::find_first_set(mask) == 0);
-   //     raze_assert(raze::datapar::find_last_set(mask) == 0);
-   // }
-
-   // {
-   //     alignas(64) T arrA[N], arrB[N];
-
-   //     for (size_t i = 0; i < N; ++i) {
-   //         arrA[i] = static_cast<T>(i + 1);
-   //         arrB[i] = static_cast<T>(N - i);
-   //     }
-
-   //     Simd a = raze::datapar::load<Simd>(arrA);
-   //     Simd b = raze::datapar::load<Simd>(arrB);
-
-   //     {
-   //         auto v = a + b;
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == arrA[i] + arrB[i]);
-   //     }
-
-   //     {
-   //         auto v = a - b;
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(arrA[i] - arrB[i]));
-   //     }
-
-   //     {
-   //         auto v = a * b;
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(arrA[i] * arrB[i]));
-   //     }
-
-   //     {
-   //         for (size_t i = 0; i < N; ++i)
-   //             arrB[i] = static_cast<T>(i + 1);
-
-   //         b = raze::datapar::load<Simd>(arrB);
-
-   //         auto v = a / b;
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(arrA[i] / arrB[i]));
-
-   //         for (size_t i = 0; i < N; ++i) {
-   //             auto v2 = a / b[i];
-   //             auto scalar = static_cast<T>(arrA[i] / arrB[i]);
-   //             raze_assert(v2[i] == scalar);
-   //         }
-   //     }
-
-   //     {
-   //         auto a1 = (a + b);
-   //         auto a2 = (a - b);
-   //         auto v = a1 * a2;
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(static_cast<T>(arrA[i] + arrB[i]) * static_cast<T>(arrA[i] - arrB[i])));
-   //     }
-
-   //     {
-   //         auto v = -a;
-   //         for (size_t i = 0; i < N; ++i) {
-   //             auto t = static_cast<T>(-arrA[i]);
-   //             raze_assert(v[i] == t);
-   //         }
-   //     }
-   // }
-
-   // {
-   //     alignas(64) T arrA[N], arrB[N];
-
-   //     for (size_t i = 0; i < N; ++i) {
-   //         arrA[i] = static_cast<T>((i * 0x5A5A) ^ (i + 3));
-   //         arrB[i] = static_cast<T>((N - i) * 0x33 ^ (i * 7));
-   //     }
-
-   //     Simd a = raze::datapar::load<Simd>(arrA);
-   //     Simd b = raze::datapar::load<Simd>(arrB);
-
-   //     if constexpr (std::is_integral_v<T>) {
-   //         {
-   //             auto v = a & b;
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(v[i] == (arrA[i] & arrB[i]));
-   //         }
-
-   //         {
-   //             auto v = a | b;
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(v[i] == (arrA[i] | arrB[i]));
-   //         }
-
-   //         {
-   //             auto v = a ^ b;
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(v[i] == (arrA[i] ^ arrB[i]));
-   //         }
-
-   //         {
-   //             auto v = ~a;
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(v[i] == static_cast<T>(~arrA[i]));
-   //         }
-
-   //         {
-   //             auto v = (a & b) ^ (~a | b);
-   //             for (size_t i = 0; i < N; ++i) {
-   //                 T val = ((arrA[i] & arrB[i]) ^ (~arrA[i] | arrB[i]));
-   //                 raze_assert(v[i] == val);
-   //             }
-   //         }
-   //     }
-   // }
-
-   // {
-   //     if constexpr (std::is_integral_v<T>) {
-   //         alignas(64) T arrA[N];
-   //         for (size_t i = 0; i < N; ++i)
-   //             arrA[i] = static_cast<T>((i + 1) * 3);
-
-   //         arrA[N - 1] = raze::math::__maximum_integral_limit<T>();
-   //         arrA[0] = raze::math::__minimum_integral_limit<T>();
-
-   //         Simd a = raze::datapar::load<Simd>(arrA);
-
-   //         for (raze::uint32 sh = 0; sh <= (sizeof(T) * 8); ++sh) {
-   //             {
-   //                 auto v = (a << sh);
-
-   //                 for (size_t i = 0; i < N; ++i) {
-   //                     T expected = 0;
-
-   //                     if (sh < (sizeof(T) * 8)) {
-   //                         expected = static_cast<T>(arrA[i] << sh);
-   //                     }
-   //                     
-   //                     raze_assert(v[i] == expected);
-   //                 }
-   //             }
-
-   //             {
-   //                 auto v = (a >> sh);
-
-   //                 for (size_t i = 0; i < N; ++i) {
-   //                     T expected = 0;
-
-   //                     if (sh < (sizeof(T) * 8)) {
-   //                         expected = static_cast<T>(arrA[i] >> sh);
-   //                     }
-   //                     else {
-   //                         if constexpr (std::is_signed_v<T>)
-   //                             expected = arrA[i] >> (sizeof(T) * 8 - 1);
-   //                     }
-
-   //                     raze_assert(v[i] == expected);
-   //                 }
-   //             }
-   //         }
-   //     }
-   // }
-
-   ///* {
-   //     alignas(64) T arr[N];
-   //     for (size_t i = 0; i < N; ++i)
-   //         arr[i] = static_cast<T>(i + 1);
-
-   //     Simd v = raze::datapar::load<Simd>(arr);
-
-   //     for (raze::uint32 sh = 0; sh <= N; ++sh) {
-   //         auto slid = raze::datapar::slide_right(v, sh);
-
-   //         alignas(64) T expected[N];
-
-   //         if (sh >= N) {
-   //             for (size_t i = 0; i < N; ++i)
-   //                 expected[i] = T(0);
-   //         }
-   //         else {
-   //             for (size_t i = 0; i < N; ++i) {
-   //                 if (i >= sh)
-   //                     expected[i] = arr[i - sh];
-   //                 else
-   //                     expected[i] = T(0);
-   //             }
-   //         }
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(slid[i] == expected[i]);
-   //     }
-
-   //     [&]<std::size_t... I>(std::index_sequence<I...>) {
-   //         (([&] {
-   //             constexpr raze::uint32 sh = I;
-   //             auto slid = raze::datapar::slide_right(v, std::integral_constant<raze::uint32, sh>{});
-
-   //             alignas(64) T expected[N];
-
-   //             if constexpr (sh >= N) {
-   //                 for (size_t i = 0; i < N; ++i)
-   //                     expected[i] = T(0);
-   //             }
-   //             else {
-   //                 for (size_t i = 0; i < N; ++i) {
-   //                     if (i >= sh)
-   //                         expected[i] = arr[i - sh];
-   //                     else
-   //                         expected[i] = T(0);
-   //                 }
-   //             }
-
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(slid[i] == expected[i]);
-   //             }()), ...);
-   //     }(std::make_index_sequence<N + 1>{});
-
-   //     for (raze::uint32 sh = 0; sh <= N; ++sh) {
-   //         auto slid = raze::datapar::slide_left(v, sh);
-
-   //         alignas(64) T expected[N];
-
-   //         if (sh >= N) {
-   //             for (size_t i = 0; i < N; ++i)
-   //                 expected[i] = T(0);
-   //         }
-   //         else {
-   //             for (size_t i = 0; i < N; ++i) {
-   //                 if (i + sh < N)
-   //                     expected[i] = arr[i + sh];
-   //                 else
-   //                     expected[i] = T(0);
-   //             }
-   //         }
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(slid[i] == expected[i]);
-   //     }
-
-   //     [&]<std::size_t... I>(std::index_sequence<I...>) {
-   //         (([&] {
-   //             constexpr raze::uint32 sh = I;
-   //             auto slid = raze::datapar::slide_left(v, std::integral_constant<raze::uint32, sh>{});
-
-   //             alignas(64) T expected[N];
-
-   //             if constexpr (sh >= N) {
-   //                 for (size_t i = 0; i < N; ++i)
-   //                     expected[i] = T(0);
-   //             }
-   //             else {
-   //                 for (size_t i = 0; i < N; ++i) {
-   //                     if (i + sh < N)
-   //                         expected[i] = arr[i + sh];
-   //                     else
-   //                         expected[i] = T(0);
-   //                 }
-   //             }
-
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(slid[i] == expected[i]);
-   //             }()), ...);
-   //     }(std::make_index_sequence<N + 1>{});
-   // }*/
-
-   // {
-   //     alignas(64) T arr[N];
-   //     for (size_t i = 0; i < N; ++i)
-   //         arr[i] = static_cast<T>(i + 1);
-
-   //     Simd v = raze::datapar::load<Simd>(arr);
-
-   //     for (raze::uint32 sh = 0; sh < N; ++sh) {
-   //         auto rotated = raze::datapar::rotate_left(v, sh);
-
-   //         alignas(64) T expected[N];
-   //         for (size_t i = 0; i < N; ++i)
-   //             expected[i] = arr[(i + sh) % N];
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(rotated[i] == expected[i]);
-   //     }
-
-   //     [&]<std::size_t... I>(std::index_sequence<I...>) {
-   //         (([&] {
-   //             constexpr raze::uint32 sh = I;
-   //             auto rotated = raze::datapar::rotate_left(v, std::integral_constant<raze::uint32, sh>{});
-
-   //             alignas(64) T expected[N];
-   //             for (size_t i = 0; i < N; ++i)
-   //                 expected[i] = arr[(i + sh) % N];
-
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(rotated[i] == expected[i]);
-   //             }()), ...);
-   //     }(std::make_index_sequence<N>{});
-
-   //     for (raze::uint32 sh = 0; sh < N; ++sh) {
-   //         auto rotated = raze::datapar::rotate_right(v, sh);
-
-   //         alignas(64) T expected[N];
-   //         for (size_t i = 0; i < N; ++i)
-   //             expected[i] = arr[(i + N - sh) % N];
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(rotated[i] == expected[i]);
-   //     }
-
-   //     [&]<std::size_t... I>(std::index_sequence<I...>) {
-   //         (([&] {
-   //             constexpr raze::uint32 sh = I;
-   //             auto rotated = raze::datapar::rotate_right(v, std::integral_constant<raze::uint32, sh>{});
-
-   //             alignas(64) T expected[N];
-   //             for (size_t i = 0; i < N; ++i)
-   //                 expected[i] = arr[(i + N - sh) % N];
-
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(rotated[i] == expected[i]);
-   //             }()), ...);
-   //     }(std::make_index_sequence<N>{});
-   // }
-
-   // {
-   //     alignas(64) T arrA[N], arrB[N];
-   //     for (size_t i = 0; i < N; ++i) {
-   //         arrA[i] = static_cast<T>(i + 1);
-   //         arrB[i] = static_cast<T>((i + 1) * 3);
-   //     }
-
-   //     Simd a = raze::datapar::load<Simd>(arrA);
-   //     Simd b = raze::datapar::load<Simd>(arrB);
-
-   //     {
-   //         Simd v = a;
-   //         v += b;
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(arrA[i] + arrB[i]));
-   //     }
-
-   //     {
-   //         Simd v = a;
-   //         v -= b;
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(arrA[i] - arrB[i]));
-   //     }
-
-   //     {
-   //         Simd v = a;
-   //         v *= b;
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(arrA[i] * arrB[i]));
-   //     }
-
-   //     {
-   //         for (size_t i = 0; i < N; ++i)
-   //             arrB[i] = static_cast<T>(i + 1);
-
-   //         b = raze::datapar::load<Simd>(arrB);
-
-   //         Simd v = a;
-   //         v /= b;
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(v[i] == static_cast<T>(arrA[i] / arrB[i]));
-   //     }
-
-   //     if constexpr (std::is_integral_v<T>) {
-   //         for (raze::uint32 sh = 0; sh <= sizeof(T) * 8; ++sh) {
-   //             {
-   //                 Simd v = a;
-   //                 v <<= sh;
-
-   //                 for (size_t i = 0; i < N; ++i) {
-   //                     T expected = 0;
-   //                     if (sh < sizeof(T) * 8)
-   //                         expected = static_cast<T>(arrA[i] << sh);
-
-   //                     raze_assert(v[i] == expected);
-   //                 }
-   //             }
-
-   //             {
-   //                 Simd v = a;
-   //                 v >>= sh;
-
-   //                 for (size_t i = 0; i < N; ++i) {
-   //                     T expected = 0;
-
-   //                     if (sh < sizeof(T) * 8)
-   //                         expected = static_cast<T>(arrA[i] >> sh);
-   //                     else if constexpr (std::is_signed_v<T>)
-   //                         expected = static_cast<T>(arrA[i] >> (sizeof(T) * 8 - 1));
-
-   //                     raze_assert(v[i] == expected);
-   //                 }
-   //             }
-   //         }
-   //     }
-
-   //     if constexpr (std::is_integral_v<T>) {
-   //         {
-   //             Simd v = a;
-   //             v &= b;
-
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(v[i] == (arrA[i] & arrB[i]));
-   //         }
-
-   //         {
-   //             Simd v = a;
-   //             v |= b;
-
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(v[i] == (arrA[i] | arrB[i]));
-   //         }
-
-   //         {
-   //             Simd v = a;
-   //             v ^= b;
-
-   //             for (size_t i = 0; i < N; ++i)
-   //                 raze_assert(v[i] == (arrA[i] ^ arrB[i]));
-   //         }
-   //     }
-   // }
-
-   // using _IndexType = typename raze::IntegerForSizeof<T>::Unsigned;
-
-   // {
-   //     alignas(64) T arr[N];
-   //     for (size_t i = 0; i < N; ++i)
-   //         arr[i] = static_cast<T>(i + 1);
-
-   //     Simd v = raze::datapar::load<Simd>(arr);
-
-   //     [&] <std::size_t... I>(std::index_sequence<I...>) {
-   //         constexpr size_t M = sizeof...(I);
-   //         auto r = raze::datapar::shuffle(v, std::integer_sequence<raze::uint64, (N - 1 - I)...>{});
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(r[i] == arr[N - 1 - i]);
-   //     }(std::make_index_sequence<N>{});
-
-   //     {
-   //         alignas(64) _IndexType idxArr[N];
-   //         for (size_t i = 0; i < N; ++i)
-   //             idxArr[i] = static_cast<_IndexType>(i);
-
-   //         auto idx = raze::datapar::load<raze::datapar::simd<_IndexType, typename Simd::abi_type>>(idxArr);
-   //         auto r = raze::datapar::shuffle(v, idx);
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(r[i] == arr[i]);
-   //     }
-
-   //     std::mt19937_64 rng(0xBADC0FFEEULL);
-   //     std::uniform_int_distribution<uint32_t> dist(0, N - 1);
-
-   //     for (int iter = 0; iter < 10000; ++iter) {
-   //         uint32_t repeated = dist(rng);
-
-   //         alignas(64) _IndexType idxArr[N];
-   //         for (size_t i = 0; i < N; ++i)
-   //             idxArr[i] = repeated;
-
-   //         auto idx = raze::datapar::load<raze::datapar::simd<_IndexType, typename Simd::abi_type>>(idxArr);
-   //         auto r = raze::datapar::shuffle(v, idx);
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(r[i] == arr[repeated]);
-   //     }
-
-   //     for (int iter = 0; iter < 10000; ++iter) {
-   //         uint32_t repeated = dist(rng);
-
-   //         alignas(64) _IndexType idxArr[N];
-   //         for (size_t i = 0; i < N; ++i)
-   //             idxArr[i] = repeated;
-
-   //         auto idx = raze::datapar::load<raze::datapar::simd<_IndexType, typename Simd::abi_type>>(idxArr);
-   //         auto r = raze::datapar::shuffle(v, idx);
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(r[i] == arr[repeated]);
-   //     }
-
-   //     for (int iter = 0; iter < 10000; ++iter) {
-   //         uint32_t a = dist(rng);
-   //         uint32_t b = dist(rng);
-
-   //         alignas(64) _IndexType idxArr[N];
-   //         for (size_t i = 0; i < N; ++i)
-   //             idxArr[i] = (a * i + b) % N;
-
-   //         auto idx = raze::datapar::load<raze::datapar::simd<_IndexType, typename Simd::abi_type>>(idxArr);
-   //         auto r = raze::datapar::shuffle(v, idx);
-
-   //         for (size_t i = 0; i < N; ++i)
-   //             raze_assert(r[i] == arr[idxArr[i]]);
-   //     }
-
-   //     // test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
-   // }
+    Simd v;
+    v.fill(42);
+    for (size_t i = 0; i < N; ++i)
+        raze_assert(v[i] == 42);
+
+    v[0] = 99;
+    raze_assert(v[0] == 99);
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_load_store() {
+    alignas(64) T arr[N];
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    const auto test_all = [&]<class _AlignmentPolicy_>(_AlignmentPolicy_ && policy) {
+        Simd v = raze::datapar::load<Simd>(arr, policy);
+
+        alignas(64) T out[N];
+        raze::datapar::store(out, v, policy);
+
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(out[i] == arr[i]);
+    };
+
+    test_all(raze::datapar::aligned_policy());
+    test_all(raze::datapar::unaligned_policy());
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_masked_load_store() {
+    Mask mask = make_alternating_mask<Mask>();
+    alignas(64) T src[N], fallback[N], dst[N];
+
+    for (size_t i = 0; i < N; ++i) {
+        src[i] = T(i + 1);
+        fallback[i] = T(100 + i);
+        dst[i] = T(200 + i);
+    }
+
+    const auto test_all = [&]<class _AlignmentPolicy_>(_AlignmentPolicy_ && policy) {
+        {
+            Simd v = raze::datapar::load(raze::datapar::where(src, mask), policy);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (mask[i] ? src[i] : T(0)));
+        }
+
+        {
+            Simd fb = raze::datapar::load<Simd>(fallback);
+            Simd v = raze::datapar::load(raze::datapar::where(src, fb, mask), policy);
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (mask[i] ? src[i] : fallback[i]));
+        }
+
+        {
+            Simd val(77);
+            raze::datapar::store(dst, raze::datapar::where(val, mask), policy);
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(dst[i] == (mask[i] ? T(77) : T(200 + i)));
+        }
+    };
+
+    test_all(raze::datapar::aligned_policy());
+    test_all(raze::datapar::unaligned_policy());
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_reduce_and_horizontal() {
+    alignas(64) T arr[N];
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    //Simd v = raze::datapar::load<Simd>(arr);
+    //Mask mask = make_alternating_mask<Mask>();
+
+    //{
+    //    T expected = 0;
+    //    for (size_t i = 0; i < N; ++i)
+    //        if (mask[i]) expected += arr[i];
+
+    //    auto r = raze::datapar::reduce_add(raze::datapar::where(v, mask));
+    //    raze_assert(r == expected);
+    //}
+
+    //{
+    //    T minv = std::numeric_limits<T>::max();
+    //    T maxv = std::numeric_limits<T>::lowest();
+
+    //    for (size_t i = 0; i < N; ++i) {
+    //        if (mask[i]) {
+    //            minv = std::min(minv, arr[i]);
+    //            maxv = std::max(maxv, arr[i]);
+    //        }
+    //    }
+
+    //    auto rmin = raze::datapar::horizontal_min(raze::datapar::where(v, mask));
+    //    auto rmax = raze::datapar::horizontal_max(raze::datapar::where(v, mask));
+
+    //    raze_assert(rmin == minv);
+    //    raze_assert(rmax == maxv);
+    //}
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_where_semantics() {
+    alignas(64) T arrA[N], arrB[N], arrSrc[N];
+    for (size_t i = 0; i < N; ++i) {
+        arrA[i] = i + 1;
+        arrB[i] = (i + 1) * 3;
+        arrSrc[i] = 100 + i;
+    }
+
+    Simd a = raze::datapar::load<Simd>(arrA);
+    Simd b = raze::datapar::load<Simd>(arrB);
+    Simd src = raze::datapar::load<Simd>(arrSrc);
+
+    Mask m;
+    for (size_t i = 0; i < N; ++i)
+        m[i] = (i % 2 == 0);
+
+    auto w = raze::datapar::where(a, src, m);
+    auto wz = raze::datapar::where(a, m);
+
+
+    test_where_binary<T, N>(
+        arrA, arrB, arrSrc, m,
+        a, b, src, w, wz,
+        raze::type_traits::plus{},
+        [](T A, T B, T Src, bool cond, bool rev) {
+            return cond ? (rev ? B + A : A + B) : Src;
+        }
+    );
+
+    test_where_binary<T, N>(
+        arrA, arrB, arrSrc, m,
+        a, b, src, w, wz,
+        raze::type_traits::minus{},
+        [](T A, T B, T Src, bool cond, bool rev) {
+            return cond ? (rev ? B - A : A - B) : Src;
+        }
+    );
+
+    test_where_binary<T, N>(
+        arrA, arrB, arrSrc, m,
+        a, b, src, w, wz,
+        raze::type_traits::multiplies{},
+        [](T A, T B, T Src, bool cond, bool rev) {
+            return cond ? (rev ? B * A : A * B) : Src;
+        }
+    );
+
+    test_where_binary<T, N>(
+        arrA, arrB, arrSrc, m,
+        a, b, src, w, wz,
+        raze::type_traits::divides{},
+        [](T A, T B, T Src, bool cond, bool rev) {
+            return cond ? (rev ? B / A : A / B) : Src;
+        }
+    );
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_shuffle_rotate_reverse() {
+    alignas(64) T arr[N];
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    Simd v = raze::datapar::load<Simd>(arr);
 
     {
-        alignas(64) T a_arr[N], b_arr[N];
-        for (size_t i = 0; i < N; ++i) {
-            a_arr[i] = T(i + 1);
-            b_arr[i] = T(200 + i);
-        }
-
-        Simd a = raze::datapar::load<Simd>(a_arr);
-        Simd b = raze::datapar::load<Simd>(b_arr);
-
-        auto test_mask = [&](Mask mask) {
-            auto r = raze::datapar::select(a, b, mask);
-
-            for (size_t i = 0; i < N; ++i) {
-                T expected = mask[i] ? a_arr[i] : b_arr[i];
-                raze_assert(r[i] == expected);
-            }
-        };
-
-        test_mask(Mask(true));
-        test_mask(Mask(false));
-        test_mask(make_alternating_mask<Mask>());
-        test_mask(make_random_mask<Mask>());
+        auto r = raze::datapar::reverse(v);
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(r[i] == arr[N - 1 - i]);
     }
 
-    /*{
-        alignas(64) T a_arr[N], b_arr[N];
+    for (size_t sh = 0; sh < N; ++sh) {
+        auto rl = raze::datapar::rotate_left(v, sh);
+        auto rr = raze::datapar::rotate_right(v, sh);
 
         for (size_t i = 0; i < N; ++i) {
-            a_arr[i] = T((i + 1) * 7);
-            b_arr[i] = T((i + 1) * 3);
+            raze_assert(rl[i] == arr[(i + sh) % N]);
+            raze_assert(rr[i] == arr[(i + N - sh) % N]);
         }
+    }
 
-        Simd a = raze::datapar::load<Simd>(a_arr);
-        Simd b = raze::datapar::load<Simd>(b_arr);
+    test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<4>{});
+}
 
-        auto r = raze::datapar::andnot(a, b);
+template<class Simd, class Mask, class T, size_t N>
+void test_slide_runtime() {
+    alignas(64) T arr[N];
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    Simd v = raze::datapar::load<Simd>(arr);
+
+    for (size_t sh = 0; sh <= N; ++sh) {
+        auto r = raze::datapar::slide_left(v, sh);
 
         for (size_t i = 0; i < N; ++i) {
-            T expected = T(~a_arr[i] & b_arr[i]);
+            T expected = (i + sh < N) ? arr[i + sh] : T(0);
             raze_assert(r[i] == expected);
         }
-    }*/
+    }
+
+    for (size_t sh = 0; sh <= N; ++sh) {
+        auto r = raze::datapar::slide_right(v, sh);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected = (i >= sh) ? arr[i - sh] : T(0);
+            raze_assert(r[i] == expected);
+        }
+    }
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_slide_compiletime() {
+    alignas(64) T arr[N];
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    Simd v = raze::datapar::load<Simd>(arr);
+
+    [&] <size_t... I>(std::index_sequence<I...>) {
+        (([&] {
+            constexpr size_t sh = I;
+            auto r = raze::datapar::slide_left(v, std::integral_constant<size_t, sh>{});
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected = (i + sh < N) ? arr[i + sh] : T(0);
+                raze_assert(r[i] == expected);
+            }
+            }()), ...);
+
+        (([&] {
+            constexpr size_t sh = I;
+            auto r = raze::datapar::slide_right(v, std::integral_constant<size_t, sh>{});
+
+            for (size_t i = 0; i < N; ++i) {
+                T expected = (i >= sh) ? arr[i - sh] : T(0);
+                raze_assert(r[i] == expected);
+            }
+            }()), ...);
+
+    }(std::make_index_sequence<N + 1>{});
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_rotate_runtime() {
+    alignas(64) T arr[N];
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    Simd v = raze::datapar::load<Simd>(arr);
+
+    for (size_t sh = 0; sh < N; ++sh) {
+        auto r = raze::datapar::rotate_left(v, sh);
+
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(r[i] == arr[(i + sh) % N]);
+    }
+
+    for (size_t sh = 0; sh < N; ++sh) {
+        auto r = raze::datapar::rotate_right(v, sh);
+
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(r[i] == arr[(i + N - sh) % N]);
+    }
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_rotate_compiletime() {
+    alignas(64) T arr[N];
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    Simd v = raze::datapar::load<Simd>(arr);
+
+    [&] <size_t... I>(std::index_sequence<I...>) {
+        (([&] {
+            constexpr size_t sh = I;
+            auto r = raze::datapar::rotate_left(v, std::integral_constant<size_t, sh>{});
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(r[i] == arr[(i + sh) % N]);
+            }()), ...);
+
+        (([&] {
+            constexpr size_t sh = I;
+            auto r = raze::datapar::rotate_right(v, std::integral_constant<size_t, sh>{});
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(r[i] == arr[(i + N - sh) % N]);
+            }()), ...);
+
+    }(std::make_index_sequence<N>{});
+}
+
+
+template<class Simd, class Mask, class T, size_t N>
+void test_compress() {
+    alignas(64) T src[N];
+    for (size_t i = 0; i < N; ++i)
+        src[i] = T(i + 1);
+
+    Simd v = raze::datapar::load<Simd>(src);
+    Mask mask = make_random_mask<Mask>();
+
+    alignas(64) T dst[N], expected[N];
+    mask_compress_any<Simd>(src, src, expected, mask);
+
+    raze::datapar::compress_store(dst, v, mask);
+    raze_assert(std::equal(dst, dst + N, expected, expected + N));
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_arithmetic() {
+    alignas(64) T arrA[N], arrB[N];
+    for (size_t i = 0; i < N; ++i) {
+        arrA[i] = T(i + 1);
+        arrB[i] = T((i + 1) * 3);
+    }
+
+    Simd a = raze::datapar::load<Simd>(arrA);
+    Simd b = raze::datapar::load<Simd>(arrB);
 
     {
-        alignas(64) T arrA[N], arrB[N], arrSrc[N];
+        auto v = a + b;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] + arrB[i]));
+    }
+
+    {
+        auto v = a - b;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] - arrB[i]));
+    }
+
+    {
+        auto v = a * b;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] * arrB[i]));
+    }
+
+    {
+        for (size_t i = 0; i < N; ++i)
+            arrB[i] = T(i + 1);
+
+        b = raze::datapar::load<Simd>(arrB);
+        auto v = a / b;
+
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] / arrB[i]));
+    }
+
+    {
+        auto v = -a;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(-arrA[i]));
+    }
+
+    {
+        Simd v = a;
+        v += b;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] + arrB[i]));
+    }
+
+    {
+        Simd v = a;
+        v -= b;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] - arrB[i]));
+    }
+
+    {
+        Simd v = a;
+        v *= b;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] * arrB[i]));
+    }
+
+    {
+        Simd v = a;
+        v /= b;
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(v[i] == T(arrA[i] / arrB[i]));
+    }
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_comparisons() {
+    alignas(64) T arrA[N], arrB[N];
+    for (size_t i = 0; i < N; ++i) {
+        arrA[i] = T(i + 1);
+        arrB[i] = T(N - i);
+    }
+
+    Simd a = raze::datapar::load<Simd>(arrA);
+    Simd b = raze::datapar::load<Simd>(arrB);
+
+    {
+        auto m = (a == a);
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(m[i] == true);
+    }
+
+    {
+        auto m = (a != b);
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(m[i] == (arrA[i] != arrB[i]));
+    }
+
+    {
+        auto m = (a < b);
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(m[i] == (arrA[i] < arrB[i]));
+    }
+
+    {
+        auto m = (a > b);
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(m[i] == (arrA[i] > arrB[i]));
+    }
+
+    {
+        auto m = (a <= b);
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(m[i] == (arrA[i] <= arrB[i]));
+    }
+
+    {
+        auto m = (a >= b);
+        for (size_t i = 0; i < N; ++i)
+            raze_assert(m[i] == (arrA[i] >= arrB[i]));
+    }
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_bitwise() {
+    if constexpr (std::is_integral_v<T>) {
+        alignas(64) T arrA[N], arrB[N];
+
         for (size_t i = 0; i < N; ++i) {
-            arrA[i] = i + 1;
-            arrB[i] = (i + 1) * 3;
-            arrSrc[i] = 100 + i;
+            arrA[i] = T((i * 0x5A5A) ^ (i + 3));
+            arrB[i] = T((N - i) * 0x33 ^ (i * 7));
         }
+
+        arrA[N - 1] = raze::math::__maximum_integral_limit<T>();
+        arrA[0]     = raze::math::__minimum_integral_limit<T>();
 
         Simd a = raze::datapar::load<Simd>(arrA);
         Simd b = raze::datapar::load<Simd>(arrB);
-        Simd src = raze::datapar::load<Simd>(arrSrc);
 
-        Mask m;
-        for (size_t i = 0; i < N; ++i)
-            m[i] = (i % 2 == 0);
+        {
+            auto v = a & b;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (arrA[i] & arrB[i]));
+        }
 
-        auto w = raze::datapar::where(a, src, m);
-        auto wz = raze::datapar::where(a, m);
+        {
+            auto v = a | b;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (arrA[i] | arrB[i]));
+        }
 
+        {
+            auto v = a ^ b;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (arrA[i] ^ arrB[i]));
+        }
 
-        test_where_binary<T, N>(
-            arrA, arrB, arrSrc, m,
-            a, b, src, w, wz,
-            raze::type_traits::plus{},
-            [](T A, T B, T Src, bool cond, bool rev) {
-                return cond ? (rev ? B + A : A + B) : Src;
+        {
+            auto v = ~a;
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == T(~arrA[i]));
+        }
+
+        {
+            auto v = (a & b) ^ (~a | b);
+            for (size_t i = 0; i < N; ++i) {
+                T expected = (arrA[i] & arrB[i]) ^ (~arrA[i] | arrB[i]);
+                raze_assert(v[i] == expected);
             }
-        );
+        }
 
-        test_where_binary<T, N>(
-            arrA, arrB, arrSrc, m,
-            a, b, src, w, wz,
-            raze::type_traits::minus{},
-            [](T A, T B, T Src, bool cond, bool rev) {
-                return cond ? (rev ? B - A : A - B) : Src;
-            }
-        );
+        {
+            Simd v = a;
+            v &= b;
 
-        test_where_binary<T, N>(
-            arrA, arrB, arrSrc, m,
-            a, b, src, w, wz,
-            raze::type_traits::multiplies{},
-            [](T A, T B, T Src, bool cond, bool rev) {
-                return cond ? (rev ? B * A : A * B) : Src;
-            }
-        );
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (arrA[i] & arrB[i]));
+        }
 
-        test_where_binary<T, N>(
-            arrA, arrB, arrSrc, m,
-            a, b, src, w, wz,
-            raze::type_traits::divides{},
-            [](T A, T B, T Src, bool cond, bool rev) {
-                return cond ? (rev ? B / A : A / B) : Src;
+        {
+            Simd v = a;
+            v |= b;
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (arrA[i] | arrB[i]));
+        }
+
+        {
+            Simd v = a;
+            v ^= b;
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(v[i] == (arrA[i] ^ arrB[i]));
+        }
+
+        for (raze::uint32 sh = 0; sh <= sizeof(T) * 8; ++sh) {
+            {
+                Simd v = a;
+                v <<= sh;
+
+                for (size_t i = 0; i < N; ++i) {
+                    T expected = 0;
+                    if (sh < sizeof(T) * 8)
+                        expected = T(arrA[i] << sh);
+
+                    raze_assert(v[i] == expected);
+                }
             }
-        );
+
+            {
+                Simd v = a;
+                v >>= sh;
+
+                for (size_t i = 0; i < N; ++i) {
+                    T expected = 0;
+
+                    if (sh < sizeof(T) * 8) {
+                        expected = T(arrA[i] >> sh);
+                    } else {
+                        if constexpr (std::is_signed_v<T>)
+                            expected = T(arrA[i] >> (sizeof(T) * 8 - 1));
+                    }
+
+                    raze_assert(v[i] == expected);
+                }
+            }
+        }
     }
 }
+template<class Simd, class Mask, class T, size_t N>
+void test_select()
+{
+    alignas(64) T a_arr[N], b_arr[N];
+    for (size_t i = 0; i < N; ++i) {
+        a_arr[i] = T(i + 1);
+        b_arr[i] = T(200 + i);
+    }
+
+    Simd a = raze::datapar::load<Simd>(a_arr);
+    Simd b = raze::datapar::load<Simd>(b_arr);
+
+    auto test_mask = [&](Mask mask) {
+        auto r = raze::datapar::select(a, b, mask);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected = mask[i] ? a_arr[i] : b_arr[i];
+            raze_assert(r[i] == expected);
+        }
+    };
+
+    test_mask(Mask(true));
+    test_mask(Mask(false));
+    test_mask(make_alternating_mask<Mask>());
+    test_mask(make_random_mask<Mask>());
+}
+
+template <typename T, raze::arch::ISA Arch,raze::uint32 Width>
+void test_methods() {
+    using Simd = raze::datapar::simd<T, raze::datapar::x86_abi<Arch, Width>>;
+    using Mask = typename Simd::mask_type;
+    constexpr size_t N = Simd::size();
+
+    if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>()) return;
+
+    test_simd_basics<Simd, Mask, T, N>();
+    test_load_store<Simd, Mask, T, N>();
+    test_masked_load_store<Simd, Mask, T, N>();
+    test_comparisons<Simd, Mask, T, N>();
+    test_arithmetic<Simd, Mask, T, N>();
+    test_bitwise<Simd, Mask, T, N>();
+    test_reduce_and_horizontal<Simd, Mask, T, N>();
+    test_where_semantics<Simd, Mask, T, N>();
+    test_shuffle_rotate_reverse<Simd, Mask, T, N>();
+    test_compress<Simd, Mask, T, N>();
+    test_slide_runtime<Simd, Mask, T, N>();
+    test_slide_compiletime<Simd, Mask, T, N>();
+    test_rotate_runtime<Simd, Mask, T, N>();
+    test_rotate_compiletime<Simd, Mask, T, N>();
+    test_select<Simd, Mask, T, N>();
+}
+
 
 template <raze::arch::ISA _ISA_, raze::uint32 _Width_>
 void test_methods() {

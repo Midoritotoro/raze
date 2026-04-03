@@ -24,13 +24,20 @@ __RAZE_DATAPAR_NAMESPACE_BEGIN
 */
 template <class _DataparType_>
 __simd_nodiscard_inline auto reduce_add(const _DataparType_& __datapar) noexcept 
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> ||
-		__is_intrin_type_v<std::remove_cvref_t<_DataparType_>>)
+	requires(__is_valid_simd_v<_DataparType_>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Reduce_add<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__datapar));
 }
+
+template <class _WhereExpression_>
+__simd_nodiscard_inline auto reduce_add(const _WhereExpression_& __where_expression) noexcept
+	requires (__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+{
+	return __where_expression.__reduce_add();
+}
+
 
 template <class _DataparType_>
 using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_abi<_DataparType_::__isa, _DataparType_::__width>>;
@@ -44,7 +51,7 @@ using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_abi<_
 */
 template <class _DataparType_> 
 __simd_nodiscard_inline __tail_mask_type<_DataparType_> first_n(uint32 __elements) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+	requires(__is_valid_simd_v<_DataparType_>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return __tail_mask_type<_DataparType_>(_First_n<_RawDataparType::__isa,
@@ -61,12 +68,20 @@ __simd_nodiscard_inline __tail_mask_type<_DataparType_> first_n(uint32 __element
  */
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+	requires(__is_valid_simd_v<_DataparType_>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Abs<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__datapar));
 }
+
+template <class _WhereExpression_>
+__simd_nodiscard_inline _WhereExpression_ abs(const _WhereExpression_& __where_expression) noexcept
+	requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+{
+	return __where_expression.__abs();
+}
+
 
 /**
  *  @brief  Computes the horizontal minimum of all lanes.
@@ -80,11 +95,19 @@ __simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexce
  */
 template <class _DataparType_>
 __simd_nodiscard_inline typename _DataparType_::value_type horizontal_min(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
+	requires(__is_valid_simd_v<_DataparType_>) 
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Horizontal_min<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__datapar));
+}
+
+template <class _WhereExpression_>
+__simd_nodiscard_inline typename _WhereExpression_::value_type	
+	horizontal_min(const _WhereExpression_& __where_expression) noexcept
+		requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+{
+	return __where_expression.__horizontal_min();
 }
 
 /**
@@ -99,11 +122,19 @@ __simd_nodiscard_inline typename _DataparType_::value_type horizontal_min(const 
  */
 template <class _DataparType_>
 __simd_nodiscard_inline typename _DataparType_::value_type horizontal_max(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
+	requires(__is_valid_simd_v<_DataparType_>) 
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Horizontal_max<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__datapar));
+}
+
+template <class _WhereExpression_>
+__simd_nodiscard_inline typename _WhereExpression_::value_type	
+	horizontal_max(const _WhereExpression_& __where_expression) noexcept
+		requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+{
+	return __where_expression.__horizontal_max();
 }
 
 /**
@@ -119,11 +150,20 @@ template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ vertical_min(
 	const _DataparType_& __first, 
 	const _DataparType_& __second) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
+		requires(__is_valid_simd_v<_DataparType_>) 
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Vertical_min<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__first), __data(__second));
+}
+
+template <class _WhereExpression_>
+__simd_nodiscard_inline _WhereExpression_ vertical_min(
+	const _WhereExpression_& __first_where_expression,
+	const _WhereExpression_& __second_where_expression) noexcept
+		requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+{
+	return __first_where_expression.__vertical_min(__second_where_expression);
 }
 
 /**
@@ -139,11 +179,20 @@ template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ vertical_max(
 	const _DataparType_& __first,
 	const _DataparType_& __second) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
+		requires(__is_valid_simd_v<_DataparType_>) 
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Vertical_max<_RawDataparType::__isa, _RawDataparType::__width,
 		typename _RawDataparType::value_type>()(__data(__first), __data(__second));
+}
+
+template <class _WhereExpression_>
+__simd_nodiscard_inline _WhereExpression_ vertical_max(
+	const _WhereExpression_& __first_where_expression,
+	const _WhereExpression_& __second_where_expression) noexcept
+		requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+{
+	return __first_where_expression.__vertical_max(__second_where_expression);
 }
 
 template <arch::ISA _ISA_>
@@ -185,7 +234,7 @@ raze_always_inline __zero_upper_at_exit_guard<_ISA_> make_guard() noexcept {
 */
 template <class _DataparType_>
 raze_always_inline __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>::__isa> make_guard() noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>) 
+	requires(__is_valid_simd_v<_DataparType_>) 
 {
 	return __zero_upper_at_exit_guard<std::remove_cvref_t<_DataparType_>::__isa>();
 }
@@ -212,8 +261,9 @@ __simd_nodiscard_inline _DataparType_ select(
 	const _DataparType_&	__first,
 	const _DataparType_&	__second,
 	const _MaskType_&		__mask) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> 
-			&& (__is_valid_simd_v<std::remove_cvref_t<_MaskType_>> || __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>))
+		requires(__is_valid_simd_v<_DataparType_> && 
+				(__is_valid_simd_v<_MaskType_> ||
+				__is_simd_mask_v<_MaskType_>))
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Blend<_RawDataparType::__isa, _RawDataparType::__width,
@@ -226,11 +276,10 @@ __simd_nodiscard_inline _DataparType_ select(
  *  @param __datapar  SIMD vector to be reversed.
  *
  *  @return A SIMD vector with lane order reversed.
- */
-
+*/
 template <class _DataparType_>
 __simd_nodiscard_inline _DataparType_ reverse(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+	requires(__is_valid_simd_v<_DataparType_>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Reverse<_RawDataparType::__isa, _RawDataparType::__width,
@@ -416,16 +465,29 @@ raze_always_inline void nt_store(
  *  Performs an unconditional load of the entire vector.
  */
 template <
-	class _DataparType_, 
+	class _DataparType_,
+	class _IteratorType_,
 	class _AlignmentPolicy_ = unaligned_policy>
 raze_always_inline _DataparType_ load(
-	const void*			__address,
+	_IteratorType_		__first,
 	_AlignmentPolicy_&& __policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+		requires(__is_valid_simd_v<_DataparType_>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
 	return _Load<_RawDataparType::__isa, _RawDataparType::__width, 
-		typename _RawDataparType::vector_type>()(__address, __policy);
+		typename _RawDataparType::vector_type>()(std::to_address(__first), __policy);
+}
+
+template <
+	class _WhereMemoryExpression_, 
+	class _AlignmentPolicy_ = unaligned_policy>
+raze_always_inline typename _WhereMemoryExpression_::datapar_type load(
+	const _WhereMemoryExpression_&	__where_memory_expression,
+	_AlignmentPolicy_&&				__policy = _AlignmentPolicy_{}) noexcept
+		requires(__is_where_memory_v<_WhereMemoryExpression_> || 
+			__is_where_zero_memory_v<_WhereMemoryExpression_>)
+{
+	return __where_memory_expression.__load(__policy);
 }
 
 /**
@@ -437,106 +499,33 @@ raze_always_inline _DataparType_ load(
  *  Stores all lanes of @p __datapar to @p __address using the specified alignment policy.
  */
 template <
+	class _IteratorType_,
 	class _DataparType_, 
 	class _AlignmentPolicy_ = unaligned_policy>
 raze_always_inline void store(
-	void*					__address,
+	_IteratorType_			__first,
 	const _DataparType_&	__datapar,
 	_AlignmentPolicy_&&		__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>>)
+		requires(type_traits::is_iterator_v<_IteratorType_> && 
+			__is_valid_simd_v<_DataparType_>)
 {
 	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Store<_RawDataparType::__isa, _RawDataparType::__width>()(__address, __data(__datapar), __policy);
+	return _Store<_RawDataparType::__isa, _RawDataparType::__width>()(
+		std::to_address(__first), __data(__datapar), __policy);
 }
 
-/**
- *  @brief  Masked load with zeroing.
- *
- *  @param __address  Pointer to memory to load from.
- *  @param __mask     SIMD mask controlling which lanes are loaded.
- *
- *  @return  A SIMD vector where each lane is loaded from @p __address when
- *           the corresponding mask lane is true, and zero otherwise.
- *
- *  This operation may be used for tail handling only when
- *  @c _DataparType_::is_native_mask_load_supported is true, ensuring that
- *  masked-off lanes do not perform memory accesses. This form can be faster 
- *	than @c mask_load because masked-off lanes require no fallback value.
- */
 template <
-	class _DataparType_,
-	class _MaskType_,
+	class _IteratorType_,
+	class _WhereExpression_, 
 	class _AlignmentPolicy_ = unaligned_policy>
-__simd_nodiscard_inline _DataparType_ maskz_load(
-	const void*				__address,
-	const _MaskType_&		__mask,
-	_AlignmentPolicy_&&		__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-
-	return _Maskz_load<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type, typename _RawDataparType::vector_type>()(__address, __data(__mask), __policy);
-}
-
-/**
- *  @brief  Masked load with fallback.
- *
- *  @param __address           Pointer to memory to load from.
- *  @param __mask              SIMD mask controlling which lanes are loaded.
- *  @param __additional_source Value used for lanes where @p __mask is false.
- *
- *  @return  A SIMD vector where each lane is loaded from @p __address when
- *           the corresponding mask lane is true, or taken from
- *           @p __additional_source otherwise.
- *
- *  This operation may be used for tail handling only when
- *  @c _DataparType_::is_native_mask_load_supported is true, ensuring that
- *  masked-off lanes do not perform memory accesses.
- */
-template <
-	class _DataparType_,
-	class _MaskType_,
-	class _AlignmentPolicy_ = unaligned_policy>
-__simd_nodiscard_inline _DataparType_ mask_load(
-	const void*					__address,
-	const _MaskType_&			__mask,
-	const _DataparType_&		__additional_source,
+raze_always_inline void store(
+	_IteratorType_				__first,
+	const _WhereExpression_&	__where_expression,
 	_AlignmentPolicy_&&			__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
+		requires(type_traits::is_iterator_v<_IteratorType_> && 
+			(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>))
 {
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Mask_load<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
-		__address, __data(__mask), __data(__additional_source), __policy);
-}
-
-/**
- *  @brief  Masked store.
- *
- *  @param __address  Pointer to memory where elements are stored.
- *  @param __datapar  SIMD vector providing values to store.
- *  @param __mask     SIMD mask selecting which lanes are written.
- *
- *  Stores each lane of @p __datapar to @p __address when the corresponding
- *  lane of @p __mask is true; masked‑off lanes are not written. This
- *  operation may be used for tail handling only when
- *  @c _DataparType_::is_native_mask_store_supported is true, ensuring that
- *  masked‑off lanes do not perform memory accesses.
- */
-template <
-	class _DataparType_,	
-	class _MaskType_,
-	class _AlignmentPolicy_ = unaligned_policy>
-raze_always_inline void mask_store(
-	void*					__address,
-	const _DataparType_&	__datapar,
-	const _MaskType_&		__mask,
-	_AlignmentPolicy_&&		__policy = _AlignmentPolicy_{}) noexcept
-		requires(__is_valid_simd_v<std::remove_cvref_t<_DataparType_>> && __is_simd_mask_v<std::remove_cvref_t<_MaskType_>>)
-{ 
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	_Mask_store<_RawDataparType::__isa, _RawDataparType::__width, typename _RawDataparType::value_type>()(
-		__address, __data(__mask), __data(__datapar), __policy);
+	__where_expression.__store(__first, __policy);
 }
 
 /**
@@ -852,9 +841,9 @@ __simd_nodiscard_inline void clear_right(_SimdMask_& __mask) noexcept
 */
 template <class _SimdMask_>
 __simd_nodiscard_inline bool is_contiguous(
-	const _SimdMask_& __mask,
-	uint32             __n,
-	uint32             __k) noexcept
+	const _SimdMask_&	__mask,
+	uint32				__n,
+	uint32				__k) noexcept
 		requires(__is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>)
 {
 	return __mask.__is_contiguous(__n, __k);
@@ -1272,6 +1261,32 @@ raze_nodiscard raze_always_inline _Where_zero<_DataparType_, _MaskType_> where(
 		requires(__is_valid_simd_v<_DataparType_> && __is_simd_mask_v<_MaskType_>)
 {
 	return _Where_zero<_DataparType_, _MaskType_>(__vector, __mask);
+}
+
+template <
+	class _IteratorType_,
+	class _MaskType_>
+raze_nodiscard raze_always_inline _Where_zero_memory<_IteratorType_, _MaskType_> where(
+	_IteratorType_		__first,
+	const _MaskType_&	__mask) noexcept
+		requires(__is_simd_mask_v<_MaskType_> && type_traits::is_iterator_v<_IteratorType_>)
+{
+	return _Where_zero_memory<_IteratorType_, _MaskType_>(__first, __mask);
+}
+
+
+template <
+	class _IteratorType_,
+	class _DataparType_,
+	class _MaskType_>
+raze_nodiscard raze_always_inline _Where_memory<_IteratorType_, _DataparType_, _MaskType_> where(
+	_IteratorType_			__first,
+	const _DataparType_&	__additional_source,
+	const _MaskType_&		__mask) noexcept
+		requires(__is_simd_mask_v<_MaskType_> && __is_valid_simd_v<_DataparType_> &&
+			type_traits::is_iterator_v<_IteratorType_>)
+{
+	return _Where_memory<_IteratorType_, _DataparType_, _MaskType_>(__first, __additional_source, __mask);
 }
 
 __RAZE_DATAPAR_NAMESPACE_END

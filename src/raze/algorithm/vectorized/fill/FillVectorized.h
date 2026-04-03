@@ -54,8 +54,9 @@ struct __memset_vectorized_internal {
         if (__tail_size == 0)
             return __destination;
 
-        if constexpr (_Simd_::template is_native_mask_store_supported_v<>)
-            datapar::mask_store(__destination, __broadcasted, datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType)));
+        if constexpr (_Simd_::is_native_mask_store_supported_v)
+            datapar::store(__destination, datapar::where(__broadcasted,
+                datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType))));
         else
             return __memset_scalar(__destination, __value, (__tail_size / sizeof(_ValueType)));
 

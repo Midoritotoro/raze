@@ -287,8 +287,12 @@ set(PRIVATE_HEADERS
 
     src/raze/datapar/expression/Where.h
     src/raze/datapar/expression/WhereZero.h
+    src/raze/datapar/expression/WhereMemory.h
+    src/raze/datapar/expression/WhereZeroMemory.h
     src/raze/datapar/expression/IsWhere.h
     src/raze/datapar/expression/IsWhereZero.h
+    src/raze/datapar/expression/IsWhereMemory.h
+    src/raze/datapar/expression/IsWhereZeroMemory.h
 
     src/raze/datapar/Shuffle.h
     src/raze/datapar/Bitwise.h

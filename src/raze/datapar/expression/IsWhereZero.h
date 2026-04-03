@@ -21,14 +21,19 @@ struct __is_where_zero:
 template <class _WhereZero_>
 struct __is_where_zero<
     _WhereZero_,
-    std::void_t<_Where_zero<typename _WhereZero_::datapar_type,
+    std::void_t<
+        _Where_zero<
+                typename _WhereZero_::datapar_type,
                 typename _WhereZero_::mask_type>>>
     : std::bool_constant<
         type_traits::is_virtual_base_of_v<
-            _Where_zero<typename _WhereZero_::datapar_type,
+            _Where_zero<
+                typename _WhereZero_::datapar_type,
                 typename _WhereZero_::mask_type>,
     _WhereZero_> ||
-        std::is_same_v<_Where_zero<typename _WhereZero_::datapar_type,
+        std::is_same_v<
+            _Where_zero<
+                typename _WhereZero_::datapar_type,
 				typename _WhereZero_::mask_type>,
             _WhereZero_>> 
 {};

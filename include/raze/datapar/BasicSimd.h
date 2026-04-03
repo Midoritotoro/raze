@@ -235,27 +235,20 @@ public:
     /**
      * @brief Element-wise division.
     */
-    template <class _RightType_>
+    template <
+        class _LeftType_,
+        class _RightType_>
     raze_always_inline friend simd operator/(
-        const simd&         __left,
+        const _LeftType_&   __left,
         const _RightType_&  __right) noexcept requires(
-            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
-            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+            (std::is_same_v<std::remove_cvref_t<_LeftType_>, simd> && (
+                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type> ||
+                std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)) ||
+            (std::is_same_v<std::remove_cvref_t<_RightType_>, simd> && (
+                std::is_convertible_v<std::remove_cvref_t<_LeftType_>, value_type> ||
+                std::is_same_v<std::remove_cvref_t<_LeftType_>, simd>)))
     {
-        return _Div<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
-    }
-
-    /**
-     * @brief Element-wise division.
-    */
-    template <class _RightType_>
-    raze_always_inline friend simd operator/(
-        const _RightType_&  __left,
-        const simd&         __right) noexcept requires(
-            std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
-            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
-    {
-        return _Div<__isa, __width, _Type_>()(__data(simd(__left)), __data(__right));
+        return _Div<__isa, __width, _Type_>()(__data(simd(__left)), __data(simd(__right)));
     }
 
     /**

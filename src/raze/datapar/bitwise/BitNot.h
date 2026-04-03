@@ -18,13 +18,13 @@ struct _Not<arch::ISA::SSE2, 128> {
 		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept 
 	{
 		if      constexpr (std::is_same_v<_IntrinType_, __m128d>)
-			return _mm_xor_pd(__vector, _mm_cmpeq_pd(__vector, __vector));
+			return _mm_xor_pd(__vector, __intrin_bitcast<__m128d>(_mm_set1_epi32(-1)));
 
 		else if constexpr (std::is_same_v<_IntrinType_, __m128i>)
-			return _mm_xor_si128(__vector, _mm_cmpeq_epi32(__vector, __vector));
+			return _mm_xor_si128(__vector, _mm_set1_epi32(-1));
 
 		else if constexpr (std::is_same_v<_IntrinType_, __m128>)
-			return _mm_xor_ps(__vector, _mm_cmpeq_ps(__vector, __vector));
+			return _mm_xor_ps(__vector, __intrin_bitcast<__m128>(_mm_set1_epi32(-1)));
 	}
 };
 
@@ -35,13 +35,13 @@ struct _Not<arch::ISA::AVX2, 256> {
 		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept 
 	{
 		if      constexpr (std::is_same_v<_IntrinType_, __m256d>)
-			return _mm256_xor_pd(__vector, _mm256_cmp_pd(__vector, __vector, _CMP_EQ_OQ));
+			return _mm256_xor_pd(__vector, __intrin_bitcast<__m256d>(_mm256_set1_epi32(-1)));
 
 		else if constexpr (std::is_same_v<_IntrinType_, __m256i>)
-			return _mm256_xor_si256(__vector, _mm256_cmpeq_epi32(__vector, __vector));
+			return _mm256_xor_si256(__vector, _mm256_set1_epi32(-1));
 
 		else if constexpr (std::is_same_v<_IntrinType_, __m256>)
-			return _mm256_xor_ps(__vector, _mm256_cmp_ps(__vector, __vector, _CMP_EQ_OQ));
+			return _mm256_xor_ps(__vector, __intrin_bitcast<__m256>(_mm256_set1_epi32(-1)));
 	}
 };
 
@@ -52,13 +52,13 @@ struct _Not<arch::ISA::AVX512F, 512> {
 		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept 
 	{
 		if      constexpr (std::is_same_v<_IntrinType_, __m512d>)
-			return _mm512_xor_pd(__vector, _mm512_set1_pd(-1));
+			return _mm512_xor_pd(__vector, __intrin_bitcast<__m512d>(_mm512_set1_epi32(-1)));
 
 		else if constexpr (std::is_same_v<_IntrinType_, __m512i>)
 			return _mm512_xor_si512(__vector, _mm512_set1_epi32(-1));
 
 		else if constexpr (std::is_same_v<_IntrinType_, __m512>)
-			return _mm512_xor_ps(__vector, _mm512_set1_ps(-1));
+			return _mm512_xor_ps(__vector, __intrin_bitcast<__m512>(_mm512_set1_epi32(-1)));
 	}
 };
 

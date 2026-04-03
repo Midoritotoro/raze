@@ -18,6 +18,7 @@ class _Where_zero {
 public:
     using datapar_type  = _DataparType_;
     using mask_type     = _MaskType_;
+    using abi_type      = typename datapar_type::abi_type;
     using value_type    = typename datapar_type::value_type;
 
     static constexpr auto __isa = datapar_type::__isa;
@@ -35,8 +36,20 @@ public:
 
     ~_Where_zero() = default;
 
+    
+    template <
+        class _IteratorType_,
+        class _AlignmentPolicy_>
+    raze_always_inline void __store(
+        _IteratorType_      __begin,
+        _AlignmentPolicy_&& __policy) const noexcept
+    {
+        return _Mask_store<__isa, __width, value_type>()(std::to_address(__begin),
+            __data(_mask), __data(_reference), __policy);
+    }
+
     raze_always_inline friend datapar_type operator+(
-        const _Where_zero&       __left,
+        const _Where_zero&  __left,
         const datapar_type& __right) noexcept
     {
         return _Maskz_add<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
@@ -45,14 +58,14 @@ public:
 
     raze_always_inline friend datapar_type operator+(
         const datapar_type& __left,
-        const _Where_zero&       __right) noexcept
+        const _Where_zero&  __right) noexcept
     {
         return _Maskz_add<__isa, __width, value_type>()(__data(__right._reference), __data(__left),
             __data(__right._mask));
     }
 
     raze_always_inline friend datapar_type operator-(
-        const _Where_zero&       __left,
+        const _Where_zero&  __left,
         const datapar_type& __right) noexcept
     {
         return _Maskz_sub<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
@@ -61,14 +74,14 @@ public:
 
     raze_always_inline friend datapar_type operator-(
         const datapar_type& __left,
-        const _Where_zero&       __right) noexcept
+        const _Where_zero&  __right) noexcept
     {
         return _Maskz_sub<__isa, __width, value_type>()(__data(__left), __data(__right._reference),
             __data(__right._mask));
     }
 
     raze_always_inline friend datapar_type operator*(
-        const _Where_zero&       __left,
+        const _Where_zero&  __left,
         const datapar_type& __right) noexcept
     {
         return _Maskz_mul<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
@@ -77,14 +90,14 @@ public:
 
     raze_always_inline friend datapar_type operator*(
         const datapar_type& __left,
-        const _Where_zero&       __right) noexcept
+        const _Where_zero&  __right) noexcept
     {
         return _Maskz_mul<__isa, __width, value_type>()(__data(__left), __data(__right._reference),
             __data(__right._mask));
     }
 
     raze_always_inline friend datapar_type operator/(
-        const _Where_zero&       __left,
+        const _Where_zero&  __left,
         const datapar_type& __right) noexcept
     {
         return _Maskz_div<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
@@ -93,7 +106,7 @@ public:
 
     raze_always_inline friend datapar_type operator/(
         const datapar_type& __left,
-        const _Where_zero&       __right) noexcept
+        const _Where_zero&  __right) noexcept
     {
         return _Maskz_div<__isa, __width, value_type>()(__data(__left), __data(__right._reference),
             __data(__right._mask));
@@ -109,7 +122,7 @@ public:
 
     raze_always_inline friend datapar_type operator/(
         const value_type&   __left,
-        const _Where_zero&       __right) noexcept
+        const _Where_zero&  __right) noexcept
     {
         return _Maskz_div<__isa, __width, value_type>()(__data(datapar_type(__left)), __data(__right._reference),
             __data(__right._mask));

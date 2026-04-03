@@ -21,14 +21,19 @@ struct __is_where :
 template <class _Where_>
 struct __is_where<
     _Where_,
-    std::void_t<_Where<typename _Where_::datapar_type,
+    std::void_t<
+            _Where<
+                typename _Where_::datapar_type,
                 typename _Where_::mask_type>>>
     : std::bool_constant<
         type_traits::is_virtual_base_of_v<
-            _Where<typename _Where_::datapar_type,
+            _Where<
+                typename _Where_::datapar_type,
                 typename _Where_::mask_type>,
     _Where_> ||
-        std::is_same_v<_Where<typename _Where_::datapar_type,
+        std::is_same_v<
+            _Where<
+                typename _Where_::datapar_type,
 				typename _Where_::mask_type>,
             _Where_>> 
 {};

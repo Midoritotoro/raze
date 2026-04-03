@@ -18,6 +18,7 @@ class _Where {
 public:
     using datapar_type  = _DataparType_;
     using mask_type     = _MaskType_;
+    using abi_type      = typename datapar_type::abi_type;
     using value_type    = typename datapar_type::value_type;
 
     static constexpr auto __isa = datapar_type::__isa;
@@ -36,6 +37,17 @@ public:
     _Where(_Where&&) noexcept = default;
 
     ~_Where() = default;
+
+    template <
+        class _IteratorType_,
+        class _AlignmentPolicy_>
+    raze_always_inline void __store(
+        _IteratorType_      __begin,
+        _AlignmentPolicy_&& __policy) const noexcept
+    {
+        return _Mask_store<__isa, __width, value_type>()(std::to_address(__begin),
+            __data(_mask), __data(_reference), __policy);
+    }
 
     raze_always_inline friend datapar_type operator+(
         const _Where&       __left,

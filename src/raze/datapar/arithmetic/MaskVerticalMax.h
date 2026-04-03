@@ -497,7 +497,7 @@ struct _Mask_vertical_max<arch::ISA::AVX512BW, 512, _DesiredType_> :
 		else if constexpr (__is_epi8_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm512_mask_max_epi8(
 				__intrin_bitcast<__m512i>(__additional_source), __mask,
-				__intrin_bitcast<__m512i>(__left), __intrin_bitcast<__m512i>(__right)))
+				__intrin_bitcast<__m512i>(__left), __intrin_bitcast<__m512i>(__right)));
 
 		else if constexpr (__is_epu8_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm512_mask_max_epu8(

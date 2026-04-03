@@ -210,24 +210,15 @@ struct _Less<arch::ISA::AVX512F, 512, _DesiredType_> {
             return _mm512_cmplt_pd_mask(__intrin_bitcast<__m512d>(__left), __intrin_bitcast<__m512d>(__right));
         }
         else {
-            const auto __compared_low128 = _Less<arch::ISA::SSE42, 128, _DesiredType_>()(
-                __intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+            const auto __compared_low = _Less<arch::ISA::AVX2, 256, _DesiredType_>()(
+                __intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right));
 
-            const auto __compared2_low128 = _Less<arch::ISA::SSE42, 128, _DesiredType_>()(
-                _mm256_extractf128_si256(__intrin_bitcast<__m256i>(__left), 1), _mm256_extractf128_si256(__intrin_bitcast<__m256i>(__right), 1));
+            const auto __compared_high = _Less<arch::ISA::AVX2, 256, _DesiredType_>()(
+                _mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__left), 1),
+                _mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__right), 1));
 
-            const auto __compared_high128 = _Less<arch::ISA::SSE42, 128, _DesiredType_>()(
-                _mm512_extracti32x4_epi32(__intrin_bitcast<__m512i>(__left), 2), _mm512_extracti32x4_epi32(__intrin_bitcast<__m512i>(__right), 2));
-
-            const auto __compared2_high128 = _Less<arch::ISA::SSE42, 128, _DesiredType_>()(
-                _mm512_extracti32x4_epi32(__intrin_bitcast<__m512i>(__left), 3), _mm512_extracti32x4_epi32(__intrin_bitcast<__m512i>(__right), 3));
-
-            auto __result = __intrin_bitcast<__m512i>(__compared_low128);
-
-            __result = _mm512_inserti32x4(__result, __compared2_low128, 1);
-            __result = _mm512_inserti32x4(__result, __compared_high128, 2);
-
-            return _To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(_mm512_inserti32x4(__result, __compared2_high128, 3));
+            return __intrin_bitcast<_IntrinType_>(_mm512_inserti64x4(
+                __intrin_bitcast<__m512i>(__compared_low), __compared_high, 1));
         }
     }
 };

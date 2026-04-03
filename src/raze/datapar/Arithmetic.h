@@ -24,3 +24,5 @@
 #include <src/raze/datapar/arithmetic/VerticalMin.h>
 #include <src/raze/datapar/arithmetic/MaskVerticalMin.h>
 #include <src/raze/datapar/arithmetic/MaskzVerticalMin.h>
+#include <src/raze/datapar/arithmetic/MaskAssign.h>
+#include <src/raze/datapar/arithmetic/MaskzAssign.h>
