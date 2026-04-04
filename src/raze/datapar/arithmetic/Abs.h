@@ -49,7 +49,7 @@ struct _Abs<arch::ISA::SSE2, 128, _DesiredType_> {
 			return __intrin_bitcast<_IntrinType_>(_mm_and_ps(__intrin_bitcast<__m128>(__vector), __intrin_bitcast<__m128>(__mask)));
 		}
 		else if constexpr (__is_pd_v<_DesiredType_>) {
-			const auto __mask = _mm_set_epi32(0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu);
+			const auto __mask = _mm_setr_epi32(-1, 0x7FFFFFFFu, -1, 0x7FFFFFFFu);
 			return __intrin_bitcast<_IntrinType_>(_mm_and_pd(__intrin_bitcast<__m128d>(__vector), __intrin_bitcast<__m128d>(__mask)));
 		}
 	}
@@ -80,7 +80,7 @@ struct _Abs<arch::ISA::AVX2, 256, _DesiredType_> {
 			return __intrin_bitcast<_IntrinType_>(_mm256_abs_epi8(__intrin_bitcast<__m256i>(__vector)));
 		}
 		else if constexpr (__is_pd_v<_DesiredType_>) {
-			const auto __mask = _mm256_set_epi32(0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu,
+			const auto __mask = _mm256_setr_epi32(0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu,
 				0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu);
 			return __intrin_bitcast<_IntrinType_>(_mm256_and_pd(
 				__intrin_bitcast<__m256d>(__vector), __intrin_bitcast<__m256d>(__mask)));

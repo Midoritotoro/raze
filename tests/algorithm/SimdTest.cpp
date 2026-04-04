@@ -260,42 +260,7 @@ void test_masked_load_store() {
     test_all(raze::datapar::unaligned_policy());
 }
 
-template<class Simd, class Mask, class T, size_t N>
-void test_reduce_and_horizontal() {
-    alignas(64) T arr[N];
-    for (size_t i = 0; i < N; ++i)
-        arr[i] = T(i + 1);
 
-    //Simd v = raze::datapar::load<Simd>(arr);
-    //Mask mask = make_alternating_mask<Mask>();
-
-    //{
-    //    T expected = 0;
-    //    for (size_t i = 0; i < N; ++i)
-    //        if (mask[i]) expected += arr[i];
-
-    //    auto r = raze::datapar::reduce_add(raze::datapar::where(v, mask));
-    //    raze_assert(r == expected);
-    //}
-
-    //{
-    //    T minv = std::numeric_limits<T>::max();
-    //    T maxv = std::numeric_limits<T>::lowest();
-
-    //    for (size_t i = 0; i < N; ++i) {
-    //        if (mask[i]) {
-    //            minv = std::min(minv, arr[i]);
-    //            maxv = std::max(maxv, arr[i]);
-    //        }
-    //    }
-
-    //    auto rmin = raze::datapar::horizontal_min(raze::datapar::where(v, mask));
-    //    auto rmax = raze::datapar::horizontal_max(raze::datapar::where(v, mask));
-
-    //    raze_assert(rmin == minv);
-    //    raze_assert(rmax == maxv);
-    //}
-}
 
 template<class Simd, class Mask, class T, size_t N>
 void test_where_semantics() {
@@ -765,6 +730,248 @@ void test_select()
     test_mask(make_random_mask<Mask>());
 }
 
+template<class Simd, class Mask, class T, size_t N>
+void test_reduce_add() {
+    alignas(64) T arr[N];
+
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T(i + 1);
+
+    Simd v = raze::datapar::load<Simd>(arr);
+
+    {
+        auto r = raze::datapar::reduce_add(v);
+
+        raze::datapar::__reduce_type<T> expected = 0;
+        for (size_t i = 0; i < N; ++i)
+            expected += arr[i];
+
+        raze_assert(r == expected);
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+
+        Simd a = v;
+        auto w = raze::datapar::where(a, m);
+
+        auto r = raze::datapar::reduce_add(w);
+
+        raze::datapar::__reduce_type<T> expected = 0;
+        for (size_t i = 0; i < N; ++i)
+            if (m[i])
+                expected += arr[i];
+
+        raze_assert(r == expected);
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+
+        Simd a = v;
+        auto wz = raze::datapar::where(a, m);
+
+        auto r = raze::datapar::reduce_add(wz);
+
+        raze::datapar::__reduce_type<T> expected = 0;
+        for (size_t i = 0; i < N; ++i)
+            if (m[i])
+                expected += arr[i];
+
+        raze_assert(r == expected);
+    }
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_abs() {
+    alignas(64) T arr[N];
+    alignas(64) T fallback[N];
+
+    std::iota(fallback, fallback + N, 1);
+
+    for (size_t i = 0; i < N; ++i) {
+        if constexpr (std::is_signed_v<T>)
+            arr[i] = T((i % 2 == 0) ? -(T(i) + 1) : (T(i) + 1));
+        else
+            arr[i] = T(i + 1);
+    }
+    
+    Simd v = raze::datapar::load<Simd>(arr);
+    Simd fbk = raze::datapar::load<Simd>(fallback);
+
+    {
+        auto r = raze::datapar::abs(v);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected = arr[i] < T(0) ? T(-arr[i]) : arr[i];
+            raze_assert(r[i] == expected);
+        }
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+        auto w = raze::datapar::where(v, fbk, m);
+
+        auto r = raze::datapar::abs(w);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected = m[i] ? raze::math::abs(arr[i]) : fallback[i];
+            raze_assert(r[i] == expected);
+        }
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+        auto wz = raze::datapar::where(v, m);
+
+        auto r = raze::datapar::abs(wz);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected = m[i] ? raze::math::abs(arr[i]) : 0;
+            raze_assert(r[i] == expected);
+        }
+    }
+}
+
+template<class Simd, class Mask, class T, size_t N>
+void test_horizontal_min_max() {
+    alignas(64) T arr[N];
+    alignas(64) T fallback[N];
+
+    std::iota(fallback, fallback + N, 1);
+
+    for (size_t i = 0; i < N; ++i)
+        arr[i] = T((i % 3 == 0) ? -(i + 5) : (i + 1));
+
+    Simd v = raze::datapar::load<Simd>(arr);
+    Simd fbk = raze::datapar::load<Simd>(fallback);
+
+    {
+        auto rmin = raze::datapar::horizontal_min(v);
+        auto rmax = raze::datapar::horizontal_max(v);
+
+        T expected_min = arr[0];
+        T expected_max = arr[0];
+
+        for (size_t i = 1; i < N; ++i) {
+            expected_min = std::min(expected_min, arr[i]);
+            expected_max = std::max(expected_max, arr[i]);
+        }
+
+        raze_assert(rmin == expected_min);
+        raze_assert(rmax == expected_max);
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+        auto w = raze::datapar::where(v, fbk, m);
+
+        auto rmin = raze::datapar::horizontal_min(w);
+        auto rmax = raze::datapar::horizontal_max(w);
+
+        T expected_min = m[0] ? arr[0] : fallback[0];
+        T expected_max = m[0] ? arr[0] : fallback[0];
+
+        for (size_t i = 1; i < N; ++i) {
+            expected_min = m[i] ? std::min(expected_min, arr[i]) : std::min(expected_min, fallback[i]);
+            expected_max = m[i] ? std::max(expected_max, arr[i]) : std::max(expected_max, fallback[i]);
+        }
+
+        raze_assert(rmin == expected_min);
+        raze_assert(rmax == expected_max);
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+        auto wz = raze::datapar::where(v, m);
+
+        auto rmin = raze::datapar::horizontal_min(wz);
+        auto rmax = raze::datapar::horizontal_max(wz);
+
+        T expected_min = m[0] ? arr[0] : T(0);
+        T expected_max = expected_min;
+
+        for (size_t i = 1; i < N; ++i) {
+            T val = m[i] ? arr[i] : T(0);
+            expected_min = std::min(expected_min, val);
+            expected_max = std::max(expected_max, val);
+        }
+
+        raze_assert(rmin == expected_min);
+        raze_assert(rmax == expected_max);
+    }
+}
+
+
+template<class Simd, class Mask, class T, size_t N>
+void test_vertical_min_max() {
+    alignas(64) T arrA[N], arrB[N];
+    alignas(64) T fallback[N];
+
+    std::iota(fallback, fallback + N, 1);
+
+
+    for (size_t i = 0; i < N; ++i) {
+        arrA[i] = T((i % 2 == 0) ? (i + 1) : -(i + 3));
+        arrB[i] = T((i % 3 == 0) ? (i + 5) : -(i + 2));
+    }
+
+    Simd a = raze::datapar::load<Simd>(arrA);
+    Simd b = raze::datapar::load<Simd>(arrB);
+    Simd fbk = raze::datapar::load<Simd>(fallback);
+
+    {
+        auto vmin = raze::datapar::vertical_min(a, b);
+        auto vmax = raze::datapar::vertical_max(a, b);
+
+        for (size_t i = 0; i < N; ++i) {
+            T emin = std::min(arrA[i], arrB[i]);
+            T emax = std::max(arrA[i], arrB[i]);
+
+            raze_assert(vmin[i] == emin);
+            raze_assert(vmax[i] == emax);
+        }
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+        auto wz = raze::datapar::where(a, m);
+
+        auto wmin = raze::datapar::vertical_min(b, wz);
+        auto wmax = raze::datapar::vertical_max(b, wz);
+
+        for (size_t i = 0; i < N; ++i) {
+            if (m[i]) {
+                T emin = std::min(arrB[i], arrA[i]);
+                T emax = std::max(arrB[i], arrA[i]);
+                raze_assert(wmin[i] == emin || wmin[i] == emax);
+            }
+            else {
+                raze_assert(wmin[i] == T(0));
+            }
+        }
+    }
+
+    {
+        Mask m = make_alternating_mask<Mask>();
+        auto w = raze::datapar::where(a, fbk, m);
+
+        auto wmin = raze::datapar::vertical_min(w, b);
+        auto wmax = raze::datapar::vertical_max(w, b);
+
+        for (size_t i = 0; i < N; ++i) {
+            if (m[i]) {
+                T emin = std::min(arrA[i], arrB[i]);
+                T emax = std::max(arrA[i], arrB[i]);
+                raze_assert(wmin[i] == emin || wmin[i] == emax);
+            }
+            else {
+                raze_assert(wmin[i] == fallback[i]);
+            }
+        }
+    }
+}
+
 template <typename T, raze::arch::ISA Arch,raze::uint32 Width>
 void test_methods() {
     using Simd = raze::datapar::simd<T, raze::datapar::x86_abi<Arch, Width>>;
@@ -779,7 +986,10 @@ void test_methods() {
     test_comparisons<Simd, Mask, T, N>();
     test_arithmetic<Simd, Mask, T, N>();
     test_bitwise<Simd, Mask, T, N>();
-    test_reduce_and_horizontal<Simd, Mask, T, N>();
+    test_reduce_add<Simd, Mask, T, N>();
+    test_abs<Simd, Mask, T, N>();
+    test_horizontal_min_max<Simd, Mask, T, N>();
+    test_vertical_min_max<Simd, Mask, T, N>();
     test_where_semantics<Simd, Mask, T, N>();
     test_shuffle_rotate_reverse<Simd, Mask, T, N>();
     test_compress<Simd, Mask, T, N>();

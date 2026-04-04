@@ -7,21 +7,21 @@ __RAZE_DATAPAR_NAMESPACE_BEGIN
 
 template <typename _Type_>
 struct __reduce_type_helper {
-    static constexpr auto _Size = sizeof(_Type_);
+    static constexpr auto __size = sizeof(_Type_);
 
     using type =
         std::conditional_t<
-            _Size == 1,
+            __size == 1,
             std::conditional_t<std::is_unsigned_v<_Type_>, uint32, int32>,
         std::conditional_t<
-            _Size == 2,
+            __size == 2,
             std::conditional_t<std::is_unsigned_v<_Type_>, uint64, int64>,
         std::conditional_t<
-            _Size == 4,
+            __size == 4,
             std::conditional_t<std::is_floating_point_v<_Type_>, double,
                 std::conditional_t<std::is_unsigned_v<_Type_>, uint64, int64>>,
         std::conditional_t<
-            _Size == 8,
+            __size == 8,
             std::conditional_t<std::is_floating_point_v<_Type_>, double,
                 std::conditional_t<std::is_unsigned_v<_Type_>, uint64, int64>>,
         int64>>>>;

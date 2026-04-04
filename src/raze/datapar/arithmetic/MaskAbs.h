@@ -101,7 +101,8 @@ struct _Mask_abs<arch::ISA::AVX512F, 512, _DesiredType_> {
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return __vector;
+			return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
+				__vector, __additional_source, __mask);
 		}
 		else if constexpr (__is_epi64_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm512_mask_abs_epi64(
@@ -160,7 +161,8 @@ struct _Mask_abs<arch::ISA::AVX512BW, 512, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return __vector;
+			return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
+				__vector, __additional_source, __mask);
 		}
 		else if constexpr (__is_epi8_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm512_mask_abs_epi8(
@@ -208,7 +210,8 @@ struct _Mask_abs<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return __vector;
+			return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+				__vector, __additional_source, __mask);
 		}
 		else if constexpr (__is_epi64_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm256_mask_abs_epi64(
@@ -256,7 +259,8 @@ struct _Mask_abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return __vector;
+			return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
+				__vector, __additional_source, __mask);
 		}
 		else if constexpr (__is_epi8_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm256_mask_abs_epi8(
@@ -269,7 +273,7 @@ struct _Mask_abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 				__intrin_bitcast<__m256i>(__vector)));
 		}
 		else {
-			return _Mask_abs<arch::ISA::AVX512F, 256, _DesiredType_>()(
+			return _Mask_abs<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
 				__vector, __mask, __additional_source);
 		}
 	}
@@ -304,7 +308,8 @@ struct _Mask_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return __vector;
+			return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+				__vector, __additional_source, __mask);
 		}
 		else if constexpr (__is_epi64_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm_mask_abs_epi64(
@@ -352,7 +357,8 @@ struct _Mask_abs<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return __vector;
+			return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
+				__vector, __additional_source, __mask);
 		}
 		else if constexpr (__is_epi8_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm_mask_abs_epi8(

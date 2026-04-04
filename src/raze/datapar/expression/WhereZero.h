@@ -48,6 +48,37 @@ public:
             __data(_mask), __data(_reference), __policy);
     }
 
+    raze_nodiscard raze_always_inline auto __reduce_add() const noexcept {
+        return _Reduce_add<__isa, __width, value_type>()(_Blend<__isa, __width, value_type>()(__data(_reference),
+            _Broadcast_zeros<__isa, __width, typename datapar_type::vector_type>()(), __data(_mask)));
+    }
+
+    raze_nodiscard raze_always_inline auto __abs() const noexcept {
+        return _Maskz_abs<__isa, __width, value_type>()(__data(_reference), __data(_mask));
+    }
+
+    raze_nodiscard raze_always_inline auto __horizontal_min() const noexcept {
+        return _Horizontal_min<__isa, __width, value_type>()(
+            _Blend<__isa, __width, value_type>()(__data(_reference),
+                _Broadcast_zeros<__isa, __width, typename datapar_type::vector_type>()(), __data(_mask)));
+    }
+
+    raze_nodiscard raze_always_inline auto __horizontal_max() const noexcept {
+        return _Horizontal_max<__isa, __width, value_type>()(
+            _Blend<__isa, __width, value_type>()(__data(_reference),
+                _Broadcast_zeros<__isa, __width, typename datapar_type::vector_type>()(), __data(_mask)));
+    }
+
+    raze_nodiscard raze_always_inline auto __vertical_min(const datapar_type& __datapar) const noexcept {
+        return _Maskz_vertical_min<__isa, __width, value_type>()(__data(__datapar),
+            __data(_reference), __data(_mask));
+    }
+
+    raze_nodiscard raze_always_inline auto __vertical_max(const datapar_type& __datapar) const noexcept {
+        return _Maskz_vertical_max<__isa, __width, value_type>()(__data(__datapar),
+            __data(_reference), __data(_mask));
+    }
+
     raze_always_inline friend datapar_type operator+(
         const _Where_zero&  __left,
         const datapar_type& __right) noexcept

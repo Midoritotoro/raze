@@ -76,7 +76,7 @@ __simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexce
 }
 
 template <class _WhereExpression_>
-__simd_nodiscard_inline _WhereExpression_ abs(const _WhereExpression_& __where_expression) noexcept
+__simd_nodiscard_inline typename _WhereExpression_::datapar_type abs(const _WhereExpression_& __where_expression) noexcept
 	requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
 {
 	return __where_expression.__abs();
@@ -157,13 +157,28 @@ __simd_nodiscard_inline _DataparType_ vertical_min(
 		typename _RawDataparType::value_type>()(__data(__first), __data(__second));
 }
 
-template <class _WhereExpression_>
-__simd_nodiscard_inline _WhereExpression_ vertical_min(
-	const _WhereExpression_& __first_where_expression,
-	const _WhereExpression_& __second_where_expression) noexcept
-		requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+template <
+	class _DataparType_,
+	class _WhereExpression_>
+__simd_nodiscard_inline _DataparType_ vertical_min(
+	const _DataparType_&		__datapar,
+	const _WhereExpression_&	__where_expression) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && 
+			(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>))
 {
-	return __first_where_expression.__vertical_min(__second_where_expression);
+	return __where_expression.__vertical_min(__datapar);
+}
+
+template <
+	class _WhereExpression_,
+	class _DataparType_>
+__simd_nodiscard_inline _DataparType_ vertical_min(
+	const _WhereExpression_&	__where_expression,
+	const _DataparType_&		__datapar) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && 
+			(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>))
+{
+	return __where_expression.__vertical_min(__datapar);
 }
 
 /**
@@ -186,13 +201,28 @@ __simd_nodiscard_inline _DataparType_ vertical_max(
 		typename _RawDataparType::value_type>()(__data(__first), __data(__second));
 }
 
-template <class _WhereExpression_>
-__simd_nodiscard_inline _WhereExpression_ vertical_max(
-	const _WhereExpression_& __first_where_expression,
-	const _WhereExpression_& __second_where_expression) noexcept
-		requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
+template <
+	class _DataparType_,
+	class _WhereExpression_>
+__simd_nodiscard_inline _DataparType_ vertical_max(
+	const _DataparType_&		__datapar,
+	const _WhereExpression_&	__where_expression) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && 
+			(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>))
 {
-	return __first_where_expression.__vertical_max(__second_where_expression);
+	return __where_expression.__vertical_max(__datapar);
+}
+
+template <
+	class _WhereExpression_,
+	class _DataparType_>
+__simd_nodiscard_inline _DataparType_ vertical_max(
+	const _WhereExpression_&	__where_expression,
+	const _DataparType_&		__datapar) noexcept
+		requires(__is_valid_simd_v<_DataparType_> && 
+			(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>))
+{
+	return __where_expression.__vertical_max(__datapar);
 }
 
 template <arch::ISA _ISA_>
