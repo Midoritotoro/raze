@@ -163,53 +163,83 @@ public:
             __data(__right._mask), __data(__right._source));
     }
 
-    //raze_always_inline friend datapar_type operator&(
-    //    const _Where&       __left,
-    //    const datapar_type& __right) noexcept
-    //{
-    //    return _Mask_and<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
-    //        __data(__left._mask), __data(__left._source));
-    //}
+    raze_always_inline friend datapar_type operator&(
+        const _Where&       __left,
+        const datapar_type& __right) noexcept
+    {
+        return _Mask_and<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
+            __data(__left._mask), __data(__left._source));
+    }
 
-    //raze_always_inline friend datapar_type operator&(
-    //    const datapar_type& __left,
-    //    const _Where&       __right) noexcept
-    //{
-    //    return _Mask_and<__isa, __width, value_type>()(__data(__right._reference), __data(__left),
-    //        __data(__right._mask), __data(__right._source));
-    //}
+    raze_always_inline friend datapar_type operator&(
+        const datapar_type& __left,
+        const _Where&       __right) noexcept
+    {
+        return _Mask_and<__isa, __width, value_type>()(__data(__right._reference), __data(__left),
+            __data(__right._mask), __data(__right._source));
+    }
 
-    //raze_always_inline friend datapar_type operator|(
-    //    const _Where&       __left,
-    //    const datapar_type& __right) noexcept
-    //{
-    //    return _Mask_or<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
-    //        __data(__left._mask), __data(__left._source));
-    //}
+    raze_always_inline friend datapar_type operator|(
+        const _Where&       __left,
+        const datapar_type& __right) noexcept
+    {
+        return _Mask_or<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
+            __data(__left._mask), __data(__left._source));
+    }
 
-    //raze_always_inline friend datapar_type operator|(
-    //    const datapar_type& __left,
-    //    const _Where&       __right) noexcept
-    //{
-    //    return _Mask_or<__isa, __width, value_type>()(__data(__right._reference), __data(__left),
-    //        __data(__right._mask), __data(__right._source));
-    //}
+    raze_always_inline friend datapar_type operator|(
+        const datapar_type& __left,
+        const _Where&       __right) noexcept
+    {
+        return _Mask_or<__isa, __width, value_type>()(__data(__right._reference), __data(__left),
+            __data(__right._mask), __data(__right._source));
+    }
 
-    //raze_always_inline friend datapar_type operator^(
-    //    const _Where&       __left,
-    //    const datapar_type& __right) noexcept
-    //{
-    //    return _Mask_xor<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
-    //        __data(__left._mask), __data(__left._source));
-    //}
+    raze_always_inline friend datapar_type operator^(
+        const _Where&       __left,
+        const datapar_type& __right) noexcept
+    {
+        return _Mask_xor<__isa, __width, value_type>()(__data(__left._reference), __data(__right),
+            __data(__left._mask), __data(__left._source));
+    }
 
-    //raze_always_inline friend datapar_type operator^(
-    //    const datapar_type& __left,
-    //    const _Where&       __right) noexcept
-    //{
-    //    return _Mask_xor<__isa, __width, value_type>()(__data(__right._reference), __data(__left),
-    //        __data(__right._mask), __data(__right._source));
-    //}
+    raze_always_inline friend datapar_type operator^(
+        const datapar_type& __left,
+        const _Where&       __right) noexcept
+    {
+        return _Mask_xor<__isa, __width, value_type>()(__data(__right._reference), __data(__left),
+            __data(__right._mask), __data(__right._source));
+    }
+
+    raze_always_inline datapar_type operator+() const noexcept {
+        return _Mask_assign<__isa, __width, value_type>()(
+            __data(_reference), __data(_mask), __data(_source));
+    }
+
+    raze_always_inline datapar_type operator-() const noexcept {
+        return _Mask_negate<__isa, __width, value_type>()(
+            __data(_reference), __data(_mask), __data(_source));
+    }
+
+    raze_always_inline _Where operator++(int) noexcept {
+        _Where __self = *this;
+        *this += datapar_type(1);
+        return __self;
+    }
+
+    raze_always_inline _Where& operator++() noexcept {
+        return *this += datapar_type(1);
+    }
+
+    raze_always_inline _Where operator--(int) noexcept {
+        _Where __self = *this;
+        *this -= datapar_type(1);
+        return __self;
+    }
+
+    raze_always_inline _Where& operator--() noexcept {
+        return *this -= datapar_type(1);
+    }
 private:
     datapar_type _source;
     datapar_type& _reference;

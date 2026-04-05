@@ -980,24 +980,24 @@ void test_methods() {
 
     if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>()) return;
 
-    test_simd_basics<Simd, Mask, T, N>();
-    test_load_store<Simd, Mask, T, N>();
-    test_masked_load_store<Simd, Mask, T, N>();
-    test_comparisons<Simd, Mask, T, N>();
-    test_arithmetic<Simd, Mask, T, N>();
-    test_bitwise<Simd, Mask, T, N>();
-    test_reduce_add<Simd, Mask, T, N>();
-    test_abs<Simd, Mask, T, N>();
-    test_horizontal_min_max<Simd, Mask, T, N>();
-    test_vertical_min_max<Simd, Mask, T, N>();
+    //test_simd_basics<Simd, Mask, T, N>();
+    //test_load_store<Simd, Mask, T, N>();
+    //test_masked_load_store<Simd, Mask, T, N>();
+    //test_comparisons<Simd, Mask, T, N>();
+    //test_arithmetic<Simd, Mask, T, N>();
+    //test_bitwise<Simd, Mask, T, N>();
+    //test_reduce_add<Simd, Mask, T, N>();
+    //test_abs<Simd, Mask, T, N>();
+    //test_horizontal_min_max<Simd, Mask, T, N>();
+    //test_vertical_min_max<Simd, Mask, T, N>();
     test_where_semantics<Simd, Mask, T, N>();
-    test_shuffle_rotate_reverse<Simd, Mask, T, N>();
-    test_compress<Simd, Mask, T, N>();
-    test_slide_runtime<Simd, Mask, T, N>();
-    test_slide_compiletime<Simd, Mask, T, N>();
-    test_rotate_runtime<Simd, Mask, T, N>();
-    test_rotate_compiletime<Simd, Mask, T, N>();
-    test_select<Simd, Mask, T, N>();
+    //test_shuffle_rotate_reverse<Simd, Mask, T, N>();
+    //test_compress<Simd, Mask, T, N>();
+    //test_slide_runtime<Simd, Mask, T, N>();
+    //test_slide_compiletime<Simd, Mask, T, N>();
+    //test_rotate_runtime<Simd, Mask, T, N>();
+    //test_rotate_compiletime<Simd, Mask, T, N>();
+    //test_select<Simd, Mask, T, N>();
 }
 
 

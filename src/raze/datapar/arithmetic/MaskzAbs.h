@@ -1,7 +1,7 @@
 #pragma once 
 
 #include <src/raze/datapar/arithmetic/Abs.h>
-#include <src/raze/datapar/shuffle/BroadcastZeros.h>
+#include <src/raze/datapar/arithmetic/MaskzAssign.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -22,9 +22,8 @@ struct _Maskz_abs<arch::ISA::SSE2, 128, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::SSE2, 128, _DesiredType_>()(
-			_Abs<arch::ISA::SSE2, 128, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::SSE2, 128, _DesiredType_>()(
+			_Abs<arch::ISA::SSE2, 128, _DesiredType_>()(__vector), __mask);
 	}
 
 	template <
@@ -35,9 +34,8 @@ struct _Maskz_abs<arch::ISA::SSE2, 128, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::SSE2, 128, _DesiredType_>()(
-			_Abs<arch::ISA::SSE2, 128, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::SSE2, 128, _DesiredType_>()(
+			_Abs<arch::ISA::SSE2, 128, _DesiredType_>()(__vector), __mask);
 	}
 };
 
@@ -51,9 +49,8 @@ struct _Maskz_abs<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(
-			_Abs<arch::ISA::AVX2, 256, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX2, 256, _DesiredType_>()(
+			_Abs<arch::ISA::AVX2, 256, _DesiredType_>()(__vector), __mask);
 	}
 
 	template <
@@ -64,9 +61,8 @@ struct _Maskz_abs<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(
-			_Abs<arch::ISA::AVX2, 256, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX2, 256, _DesiredType_>()(
+			_Abs<arch::ISA::AVX2, 256, _DesiredType_>()(__vector), __mask);
 	}
 };
 
@@ -80,9 +76,8 @@ struct _Maskz_abs<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-			_Abs<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(
+			_Abs<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector), __mask);
 	}
 
 	template <
@@ -94,8 +89,7 @@ struct _Maskz_abs<arch::ISA::AVX512F, 512, _DesiredType_> {
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector, 
-				_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector, __mask);
 		}
 		else if constexpr (__is_epi64_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm512_maskz_abs_epi64(__mask,
@@ -114,9 +108,8 @@ struct _Maskz_abs<arch::ISA::AVX512F, 512, _DesiredType_> {
 				__intrin_bitcast<__m512d>(__vector)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-				_Abs<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector),
-				_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(
+				_Abs<arch::ISA::AVX512F, 512, _DesiredType_>()(__vector), __mask);
 		}
 	}
 };
@@ -133,11 +126,9 @@ struct _Maskz_abs<arch::ISA::AVX512BW, 512, _DesiredType_> :
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
-			_Abs<arch::ISA::AVX512BW, 512, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512BW, 512, _DesiredType_>()(
+			_Abs<arch::ISA::AVX512BW, 512, _DesiredType_>()(__vector), __mask);
 	}
-
 
 	template <
 		class _IntrinType_,
@@ -148,8 +139,7 @@ struct _Maskz_abs<arch::ISA::AVX512BW, 512, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512BW, 512, _DesiredType_>()(__vector, __mask);
 		}
 		else if constexpr (__is_epi8_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm512_maskz_abs_epi8(__mask,
@@ -177,11 +167,9 @@ struct _Maskz_abs<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-			_Abs<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+			_Abs<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector), __mask);
 	}
-
 
 	template <
 		class _IntrinType_,
@@ -192,8 +180,7 @@ struct _Maskz_abs<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector, __mask);
 		}
 		else if constexpr (__is_epi64_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm256_maskz_abs_epi64(__mask,
@@ -204,9 +191,8 @@ struct _Maskz_abs<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 				__intrin_bitcast<__m256i>(__vector)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-				_Abs<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector),
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+				_Abs<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__vector), __mask);
 		}
 	}
 };
@@ -223,9 +209,8 @@ struct _Maskz_abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
-			_Abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__vector), 
-			_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
+			_Abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__vector), __mask);
 	}
 
 	template <
@@ -237,8 +222,7 @@ struct _Maskz_abs<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__vector, __mask);
 		}
 		else if constexpr (__is_epi8_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm256_maskz_abs_epi8(__mask,
@@ -266,9 +250,8 @@ struct _Maskz_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-			_Abs<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector), 
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+			_Abs<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector), __mask);
 	}
 
 	template <
@@ -280,8 +263,7 @@ struct _Maskz_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector, __mask);
 		}
 		else if constexpr (__is_epi64_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm_maskz_abs_epi64(__mask,
@@ -292,9 +274,8 @@ struct _Maskz_abs<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 				__intrin_bitcast<__m128i>(__vector)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-				_Abs<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector),
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+				_Abs<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__vector), __mask);
 		}
 	}
 };
@@ -311,9 +292,8 @@ struct _Maskz_abs<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
-			_Abs<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__vector),
-			_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
+			_Abs<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__vector), __mask);
 	}
 
 	template <
@@ -325,8 +305,7 @@ struct _Maskz_abs<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (std::is_unsigned_v<_DesiredType_>) {
-			return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__vector, __mask);
 		}
 		else if constexpr (__is_epi8_v<_DesiredType_>) {
 			return __intrin_bitcast<_IntrinType_>(_mm_maskz_abs_epi8(__mask,

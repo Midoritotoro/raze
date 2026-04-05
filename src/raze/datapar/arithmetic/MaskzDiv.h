@@ -24,9 +24,8 @@ struct _Maskz_div<arch::ISA::SSE2, 128, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::SSE2, 128, _DesiredType_>()(
-			_Div<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::SSE2, 128, _DesiredType_>()(
+			_Div<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -38,9 +37,8 @@ struct _Maskz_div<arch::ISA::SSE2, 128, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::SSE2, 128, _DesiredType_>()(
-			_Div<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::SSE2, 128, _DesiredType_>()(
+			_Div<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 
@@ -60,9 +58,8 @@ struct _Maskz_div<arch::ISA::SSE41, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::SSE41, 128, _DesiredType_>()(
-			_Div<arch::ISA::SSE41, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::SSE41, 128, _DesiredType_>()(
+			_Div<arch::ISA::SSE41, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -74,9 +71,8 @@ struct _Maskz_div<arch::ISA::SSE41, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::SSE41, 128, _DesiredType_>()(
-			_Div<arch::ISA::SSE41, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::SSE41, 128, _DesiredType_>()(
+			_Div<arch::ISA::SSE41, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 
@@ -102,9 +98,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 				__intrin_bitcast<__m128>(__left), _mm_set1_ps(__right)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -126,9 +121,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 				__intrin_bitcast<__m128>(__left), __intrin_bitcast<__m128>(__right)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -141,9 +135,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-			_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+			_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -155,9 +148,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-			_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+			_Div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 
@@ -179,9 +171,8 @@ struct _Maskz_div<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 			return _Maskz_div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right, __mask);
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -198,9 +189,8 @@ struct _Maskz_div<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 			return _Maskz_div<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__left, __right, __mask);
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -213,9 +203,8 @@ struct _Maskz_div<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
-			_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
+			_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -227,9 +216,8 @@ struct _Maskz_div<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
-			_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
+			_Div<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 
@@ -244,9 +232,8 @@ struct _Maskz_div<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(
-			_Div<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX2, 256, _DesiredType_>()(
+			_Div<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -258,9 +245,8 @@ struct _Maskz_div<arch::ISA::AVX2, 256, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX2, 256, _DesiredType_>()(
-			_Div<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX2, 256, _DesiredType_>()(
+			_Div<arch::ISA::AVX2, 256, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 
@@ -286,9 +272,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 256, _DesiredType_>:
 				__intrin_bitcast<__m256>(__left), _mm256_set1_ps(__right)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -310,9 +295,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 256, _DesiredType_>:
 				__intrin_bitcast<__m256>(__left), __intrin_bitcast<__m256>(__right)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -325,9 +309,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 256, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-			_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+			_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -339,9 +322,8 @@ struct _Maskz_div<arch::ISA::AVX512VLF, 256, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-			_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+			_Div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 
@@ -362,9 +344,8 @@ struct _Maskz_div<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 			return _Maskz_div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right, __mask);
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -381,9 +362,8 @@ struct _Maskz_div<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 			return _Maskz_div<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__left, __right, __mask);
 		}
 		else {
-			return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
-				_Div<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
+				_Div<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -396,9 +376,8 @@ struct _Maskz_div<arch::ISA::AVX512VLBW, 256, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
-			_Div<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
+			_Div<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -436,9 +415,8 @@ struct _Maskz_div<arch::ISA::AVX512F, 512, _DesiredType_> {
 				__intrin_bitcast<__m512>(__left), _mm512_set1_ps(__right)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-				_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(
+				_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -460,9 +438,8 @@ struct _Maskz_div<arch::ISA::AVX512F, 512, _DesiredType_> {
 				__intrin_bitcast<__m512>(__left), __intrin_bitcast<__m512>(__right)));
 		}
 		else {
-			return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-				_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(
+				_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -475,9 +452,8 @@ struct _Maskz_div<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-			_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(
+			_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -489,9 +465,8 @@ struct _Maskz_div<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-			_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(
+			_Div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 
@@ -512,9 +487,8 @@ struct _Maskz_div<arch::ISA::AVX512BW, 512, _DesiredType_>:
 			return _Maskz_div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right, __mask);
 		}
 		else {
-			return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
-				_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512BW, 512, _DesiredType_>()(
+				_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -531,9 +505,8 @@ struct _Maskz_div<arch::ISA::AVX512BW, 512, _DesiredType_>:
 			return _Maskz_div<arch::ISA::AVX512F, 512, _DesiredType_>()(__left, __right, __mask);
 		}
 		else {
-			return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
-				_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right),
-				_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512BW, 512, _DesiredType_>()(
+				_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right), __mask);
 		}
 	}
 
@@ -546,9 +519,8 @@ struct _Maskz_div<arch::ISA::AVX512BW, 512, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
-			_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512BW, 512, _DesiredType_>()(
+			_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right), __mask);
 	}
 
 	template <
@@ -560,9 +532,8 @@ struct _Maskz_div<arch::ISA::AVX512BW, 512, _DesiredType_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
-			_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right),
-			_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+		return _Maskz_assign<arch::ISA::AVX512BW, 512, _DesiredType_>()(
+			_Div<arch::ISA::AVX512BW, 512, _DesiredType_>()(__left, __right), __mask);
 	}
 };
 

@@ -1,6 +1,5 @@
 #pragma once 
 
-#include <src/raze/datapar/IntrinBitcast.h>
 #include <src/raze/datapar/shuffle/Blend.h>
 
 
