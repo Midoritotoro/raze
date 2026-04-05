@@ -265,7 +265,7 @@ struct _Maskz_negate<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 		else {
 			const auto __changed_sign = _Sub<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
 				_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __vector);
-			return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__changed_sign, __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__changed_sign, __mask);
 		}
 	}
 };
@@ -302,7 +302,7 @@ struct _Maskz_negate<arch::ISA::AVX512VLBW, 128, _DesiredType_> :
 		else {
 			const auto __changed_sign = _Sub<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
 				_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __vector);
-			return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__changed_sign, __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__changed_sign, __mask);
 		}
 	}
 };

@@ -90,7 +90,7 @@ struct _Mask_negate<arch::ISA::AVX512F, 512, _DesiredType_> {
 			_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __vector);
 
 		return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-			__changed_sign, __mask, __additional_source);
+			__changed_sign, __additional_source, __mask);
 	}
 
 
@@ -122,7 +122,7 @@ struct _Mask_negate<arch::ISA::AVX512F, 512, _DesiredType_> {
 				_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __vector);
 			
 			return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(
-				__changed_sign, __mask, __additional_source);
+				__changed_sign, __additional_source, __mask);
 		}
 	}
 };
@@ -144,7 +144,7 @@ struct _Mask_negate<arch::ISA::AVX512BW, 512, _DesiredType_> :
 			_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __vector);
 
 		return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
-			__changed_sign, __mask, __additional_source);
+			__changed_sign, __additional_source, __mask);
 	}
 
 
@@ -165,7 +165,7 @@ struct _Mask_negate<arch::ISA::AVX512BW, 512, _DesiredType_> :
 				_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __vector);
 
 			return _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>()(
-				__changed_sign, __mask, __additional_source);
+				__changed_sign, __additional_source, __mask);
 		}
 	}
 };
@@ -187,7 +187,7 @@ struct _Mask_negate<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 			_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __vector);
 
 		return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-			__changed_sign, __mask, __additional_source);
+			__changed_sign, __additional_source, __mask);
 	}
 
 	template <
@@ -216,7 +216,7 @@ struct _Mask_negate<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 				_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __vector);
 
 			return _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
-				__changed_sign, __mask, __additional_source);
+				__changed_sign, __additional_source, __mask);
 		}
 	}
 };
@@ -238,7 +238,7 @@ struct _Mask_negate<arch::ISA::AVX512VLBW, 256, _DesiredType_> :
 			_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __vector);
 
 		return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
-			__changed_sign, __mask, __additional_source);
+			__changed_sign, __additional_source, __mask);
 	}
 
 
@@ -259,7 +259,7 @@ struct _Mask_negate<arch::ISA::AVX512VLBW, 256, _DesiredType_> :
 				_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __vector);
 
 			return _Blend<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(
-				__changed_sign, __mask, __additional_source);
+				__changed_sign, __additional_source, __mask);
 		}
 	}
 };
@@ -281,7 +281,7 @@ struct _Mask_negate<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 			_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __vector);
 
 		return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-			__changed_sign, __mask, __additional_source);
+			__changed_sign, __additional_source, __mask);
 	}
 
 	template <
@@ -310,7 +310,7 @@ struct _Mask_negate<arch::ISA::AVX512VLF, 128, _DesiredType_> :
 				_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __vector);
 
 			return _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-				__changed_sign, __mask, __additional_source);
+				__changed_sign, __additional_source, __mask);
 		}
 	}
 };
@@ -332,7 +332,7 @@ struct _Mask_negate<arch::ISA::AVX512VLBW, 128, _DesiredType_> :
 			_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __vector);
 
 		return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
-			__changed_sign, __mask, __additional_source);
+			__changed_sign, __additional_source, __mask);
 	}
 
 
@@ -353,7 +353,7 @@ struct _Mask_negate<arch::ISA::AVX512VLBW, 128, _DesiredType_> :
 				_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __vector);
 
 			return _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(
-				__changed_sign, __mask, __additional_source);
+				__changed_sign, __additional_source, __mask);
 		}
 	}
 };

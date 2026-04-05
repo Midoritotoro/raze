@@ -153,8 +153,8 @@ struct _Maskz_xor<arch::ISA::AVX512VLF, 256, _DesiredType_> :
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
-			_Xor<arch::ISA::AVX512VLF, 128>()(__left, __right), __mask);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+			_Xor<arch::ISA::AVX512VLF, 256>()(__left, __right), __mask);
 	}
 
 	template <

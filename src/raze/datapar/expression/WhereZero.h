@@ -217,7 +217,12 @@ public:
             __data(_reference), __data(_mask));
     }
 
-    raze_always_inline _Where_zero operator++(int) noexcept {
+    raze_always_inline datapar_type operator~() const noexcept {
+        return _Maskz_not<__isa, __width, value_type>()(
+            __data(_reference), __data(_mask));
+    }
+
+    /*raze_always_inline _Where_zero operator++(int) noexcept {
         _Where_zero __self = *this;
         *this += datapar_type(1);
         return __self;
@@ -235,7 +240,7 @@ public:
 
     raze_always_inline _Where_zero& operator--() noexcept {
         return *this -= datapar_type(1);
-    }
+    }*/
 private:
     datapar_type& _reference;
     mask_type _mask;

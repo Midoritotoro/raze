@@ -58,10 +58,24 @@ void test_where_binary(
         auto r2 = simd_op(b, w);
 
         for (size_t i = 0; i < N; ++i) {
-            T expected1 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], false);
-            T expected2 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], true);
-            raze_assert(r1[i] == expected1);
-            raze_assert(r2[i] == expected2);
+            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>, raze::type_traits::bit_or<>,
+                raze::type_traits::bit_xor<>, raze::type_traits::bit_and<>> && std::is_floating_point_v<T>)
+            {
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+
+                auto expected1 = std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], false));
+                auto expected2 = std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], true));
+                T extracted1 = r1[i];
+                T extracted2 = r2[i];
+                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+                raze_assert(std::bit_cast<_Reinterpret_type>(extracted2) == expected2);
+            }
+            else {
+                T expected1 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], false);
+                T expected2 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], true);
+                raze_assert(r1[i] == expected1);
+                raze_assert(r2[i] == expected2);
+            }
         }
     }
 
@@ -70,10 +84,24 @@ void test_where_binary(
         auto r2 = simd_op(b, wz);
 
         for (size_t i = 0; i < N; ++i) {
-            T expected1 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, false) : T(0);
-            T expected2 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, true) : T(0);
-            raze_assert(r1[i] == expected1);
-            raze_assert(r2[i] == expected2);
+            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>, raze::type_traits::bit_or<>,
+                raze::type_traits::bit_xor<>, raze::type_traits::bit_and<>> && std::is_floating_point_v<T>)
+            {
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+
+                auto expected1 = m[i] ? std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], T(0), true, false)) : _Reinterpret_type(0);
+                auto expected2 = m[i] ? std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], T(0), true, true)) : _Reinterpret_type(0);
+                T extracted1 = r1[i];
+                T extracted2 = r2[i];
+                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+                raze_assert(std::bit_cast<_Reinterpret_type>(extracted2) == expected2);
+            }
+            else {
+                T expected1 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, false) : T(0);
+                T expected2 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, true) : T(0);
+                raze_assert(r1[i] == expected1);
+                raze_assert(r2[i] == expected2);
+            }
         }
     }
 }
@@ -87,20 +115,41 @@ void test_where_unary(
     const WhereZeroExpr& wz,  SimdOp simd_op, ScalarOp scalar_op) noexcept
 {
     {
-        auto r1 = simd_op(w, a);
+        auto r1 = simd_op(w);
 
         for (size_t i = 0; i < N; ++i) {
-            T expected1 = scalar_op(arrA[i], arrSrc[i], m[i], false);
-            raze_assert(r1[i] == expected1);
+            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>,
+                raze::type_traits::bit_not<>> && std::is_floating_point_v<T>)
+            {
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+
+                auto expected1 = std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrSrc[i], m[i], false));
+                T extracted1 = r1[i];
+                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+            }
+            else {
+                T expected1 = scalar_op(arrA[i], arrSrc[i], m[i], false);
+                raze_assert(r1[i] == expected1);
+            }
         }
     }
 
     {
-        auto r1 = simd_op(wz, a); 
+        auto r1 = simd_op(wz); 
 
         for (size_t i = 0; i < N; ++i) {
-            T expected1 = m[i] ? scalar_op(arrA[i], T(0), true, false) : T(0);
-            raze_assert(r1[i] == expected1);
+            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>,
+                raze::type_traits::bit_not<>> && std::is_floating_point_v<T>)
+            {
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+                auto expected1 = m[i] ? std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], T(0), true, false)) : _Reinterpret_type(0);
+                T extracted1 = r1[i];
+                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+            }
+            else {
+                T expected1 = m[i] ? scalar_op(arrA[i], T(0), true, false) : T(0);
+                raze_assert(r1[i] == expected1);
+            }
         }
     }
 }
@@ -282,6 +331,25 @@ void test_where_semantics() {
     auto w = raze::datapar::where(a, src, m);
     auto wz = raze::datapar::where(a, m);
 
+    test_where_unary<T, N>(
+        arrA, arrSrc, m, a, src, w, wz,
+        raze::type_traits::negate{},
+        [](T A, T Src, bool cond, bool rev) {
+            return cond ? (-A) : Src;
+    });
+
+    test_where_unary<T, N>(
+        arrA, arrSrc, m, a, src, w, wz,
+        raze::type_traits::bit_not{},
+        [](T A, T Src, bool cond, bool rev) {
+            if constexpr (std::is_floating_point_v<T>) {
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+                return cond ? std::bit_cast<T>(~std::bit_cast<_Reinterpret_type>(A)) : Src;
+            }
+            else {
+                return cond ? (~A) : Src;
+            }
+    });
 
     test_where_binary<T, N>(
         arrA, arrB, arrSrc, m,
@@ -316,6 +384,54 @@ void test_where_semantics() {
         raze::type_traits::divides{},
         [](T A, T B, T Src, bool cond, bool rev) {
             return cond ? (rev ? B / A : A / B) : Src;
+        }
+    );
+
+    test_where_binary<T, N>(
+        arrA, arrB, arrSrc, m,
+        a, b, src, w, wz,
+        raze::type_traits::bit_and{},
+        [](T A, T B, T Src, bool cond, bool rev) {
+            if constexpr (std::is_floating_point_v<T>) { 
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+                return cond ? std::bit_cast<T>((std::bit_cast<_Reinterpret_type>(B)
+                    & std::bit_cast<_Reinterpret_type>(A))) : Src;
+            }
+            else {
+                return cond ? (A & B) : Src;
+            }
+        }
+    );
+
+    test_where_binary<T, N>(
+        arrA, arrB, arrSrc, m,
+        a, b, src, w, wz,
+        raze::type_traits::bit_or{},
+        [](T A, T B, T Src, bool cond, bool rev) {
+            if constexpr (std::is_floating_point_v<T>) {
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+                return cond ? std::bit_cast<T>((std::bit_cast<_Reinterpret_type>(B)
+                    | std::bit_cast<_Reinterpret_type>(A))) : Src;
+            }
+            else {
+                return cond ? (A | B) : Src;
+            }
+        }
+    );
+
+    test_where_binary<T, N>(
+        arrA, arrB, arrSrc, m,
+        a, b, src, w, wz,
+        raze::type_traits::bit_xor{},
+        [](T A, T B, T Src, bool cond, bool rev) {
+            if constexpr (std::is_floating_point_v<T>) {
+                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+                return cond ? std::bit_cast<T>((std::bit_cast<_Reinterpret_type>(B)
+                    ^ std::bit_cast<_Reinterpret_type>(A))) : Src;
+            }
+            else {
+                return cond ? (A ^ B) : Src;
+            }
         }
     );
 }
@@ -980,24 +1096,24 @@ void test_methods() {
 
     if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>()) return;
 
-    //test_simd_basics<Simd, Mask, T, N>();
-    //test_load_store<Simd, Mask, T, N>();
-    //test_masked_load_store<Simd, Mask, T, N>();
-    //test_comparisons<Simd, Mask, T, N>();
-    //test_arithmetic<Simd, Mask, T, N>();
-    //test_bitwise<Simd, Mask, T, N>();
-    //test_reduce_add<Simd, Mask, T, N>();
-    //test_abs<Simd, Mask, T, N>();
-    //test_horizontal_min_max<Simd, Mask, T, N>();
-    //test_vertical_min_max<Simd, Mask, T, N>();
+    test_simd_basics<Simd, Mask, T, N>();
+    test_load_store<Simd, Mask, T, N>();
+    test_masked_load_store<Simd, Mask, T, N>();
+    test_comparisons<Simd, Mask, T, N>();
+    test_arithmetic<Simd, Mask, T, N>();
+    test_bitwise<Simd, Mask, T, N>();
+    test_reduce_add<Simd, Mask, T, N>();
+    test_abs<Simd, Mask, T, N>();
+    test_horizontal_min_max<Simd, Mask, T, N>();
+    test_vertical_min_max<Simd, Mask, T, N>();
     test_where_semantics<Simd, Mask, T, N>();
-    //test_shuffle_rotate_reverse<Simd, Mask, T, N>();
-    //test_compress<Simd, Mask, T, N>();
-    //test_slide_runtime<Simd, Mask, T, N>();
-    //test_slide_compiletime<Simd, Mask, T, N>();
-    //test_rotate_runtime<Simd, Mask, T, N>();
-    //test_rotate_compiletime<Simd, Mask, T, N>();
-    //test_select<Simd, Mask, T, N>();
+    test_shuffle_rotate_reverse<Simd, Mask, T, N>();
+    test_compress<Simd, Mask, T, N>();
+    test_slide_runtime<Simd, Mask, T, N>();
+    test_slide_compiletime<Simd, Mask, T, N>();
+    test_rotate_runtime<Simd, Mask, T, N>();
+    test_rotate_compiletime<Simd, Mask, T, N>();
+    test_select<Simd, Mask, T, N>();
 }
 
 
