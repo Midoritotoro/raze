@@ -35,3 +35,8 @@
 #include <src/raze/datapar/bitwise/LeftShift.h>
 #include <src/raze/datapar/bitwise/FirstN.h>
 #include <src/raze/datapar/bitwise/ToK.h>
+#include <src/raze/datapar/bitwise/MaskLeftShift.h>
+#include <src/raze/datapar/bitwise/MaskRightShift.h>
+#include <src/raze/datapar/bitwise/MaskzLeftShift.h>
+#include <src/raze/datapar/bitwise/MaskzRightShift.h>
+#include <src/raze/datapar/bitwise/Ternarylogic.h>

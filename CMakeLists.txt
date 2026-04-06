@@ -212,6 +212,11 @@ set(PRIVATE_HEADERS
     src/raze/datapar/bitwise/ToGPR.h
     src/raze/datapar/bitwise/LeftShift.h
     src/raze/datapar/bitwise/RightShift.h
+    src/raze/datapar/bitwise/MaskLeftShift.h
+    src/raze/datapar/bitwise/MaskzLeftShift.h
+    src/raze/datapar/bitwise/MaskRightShift.h
+    src/raze/datapar/bitwise/MaskzRightShift.h
+    src/raze/datapar/bitwise/Ternarylogic.h
 
     src/raze/datapar/arithmetic/Sub.h
     src/raze/datapar/arithmetic/MaskSub.h
