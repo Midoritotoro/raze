@@ -50,102 +50,27 @@ struct _Fold<arch::ISA::SSE2, 128, _DesiredType_> {
 
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 4));
-
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 2));
 
-            return _mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__folded));
+            return static_cast<_DesiredType_>(_mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__folded)));
         }
         else if constexpr (sizeof(_DesiredType_) == 1) {
             auto __folded = __intrin_bitcast<__m128i>(__vector);
 
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 4));
-
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 2));
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 1));
 
-            return _mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__folded));
+            return static_cast<_DesiredType_>(_mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__folded)));
         }
     }
 };
+
+template <class _DesiredType_> struct _Fold<arch::ISA::SSSE3, 128, _DesiredType_> : _Fold<arch::ISA::SSE3, 128, _DesiredType_> {};
 
 template <class _DesiredType_> 
-struct _Fold<arch::ISA::SSSE3, 128, _DesiredType_>: 
-    _Fold<arch::ISA::SSE3, 128, _DesiredType_> 
-{
-    template <
-        class _IntrinType_,
-        class _ReduceBinaryFunction_>
-    raze_nodiscard raze_static_operator raze_always_inline _DesiredType_ operator()(
-        _IntrinType_            __vector,
-        _ReduceBinaryFunction_  __reduce) raze_const_operator noexcept
-    {
-        if constexpr (sizeof(_DesiredType_) == 8) {
-            auto __folded = __intrin_bitcast<__m128d>(__vector);
-
-            const auto __shuffled = _mm_shuffle_pd(__folded, __folded, 1);
-            __folded = __reduce(__shuffled, __folded);
-
-            if constexpr (__is_pd_v<_DesiredType_>)
-                return _mm_cvtsd_f64(__folded);
-            else
-                return _mm_cvtsi128_si64(__intrin_bitcast<__m128i>(__folded));
-        }
-        else if constexpr (sizeof(_DesiredType_) == 4) {
-            auto __folded = __intrin_bitcast<__m128i>(__vector);
-
-            const auto __shuffled1 = _mm_shuffle_epi32(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffled1);
-
-            const auto __shuffled2 = _mm_shuffle_epi32(__folded, 0xB1);
-            __folded = __reduce(__folded, __shuffled2);
-
-            if constexpr (__is_ps_v<_DesiredType_>)
-                return _mm_cvtss_f32(__intrin_bitcast<__m128>(__folded));
-            else
-                return _mm_cvtsi128_si32(__folded);
-        }
-        else if constexpr (sizeof(_DesiredType_) == 2) {
-            const auto __shuffle_words = _mm_set_epi8(13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2);
-
-            auto __folded = __intrin_bitcast<__m128i>(__vector);
-        
-            const auto __shuffled1 = _mm_shuffle_epi32(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffled1);
-
-            const auto __shuffle2 = _mm_shuffle_epi32(__folded, 0xB1);
-            __folded = __reduce(__folded, __shuffle2);
-
-            const auto __shuffle3 = _mm_shuffle_epi8(__folded, __shuffle_words);
-            __folded = __reduce(__folded, __shuffle3);
-
-            return _mm_cvtsi128_si32(__folded);
-        }
-        else if constexpr (sizeof(_DesiredType_) == 1) {
-            const auto __shuffle_bytes = _mm_set_epi8(14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1);
-            const auto __shuffle_words = _mm_set_epi8(13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2);
-
-            auto __folded = __intrin_bitcast<__m128i>(__vector);
-
-            const auto __shuffled1 = _mm_shuffle_epi32(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffled1);
-
-            const auto __shuffled2 = _mm_shuffle_epi32(__folded, 0xB1);
-            __folded = __reduce(__folded, __shuffled2);
-
-            const auto __shuffled3 = _mm_shuffle_epi8(__folded, __shuffle_words);
-            __folded = __reduce(__folded, __shuffled3);
-
-            const auto __shuffled4 = _mm_shuffle_epi8(__folded, __shuffle_bytes);
-            __folded = __reduce(__folded, __shuffled4);
-
-            return _mm_cvtsi128_si32(__folded);
-        }
-    }
-};
-
-template <class _DesiredType_>
-struct _Fold<arch::ISA::AVX2, 256, _DesiredType_> {
+struct _Fold<arch::ISA::AVX, 256, _DesiredType_> {
     template <
         class _IntrinType_,
         class _ReduceBinaryFunction_>
@@ -155,80 +80,72 @@ struct _Fold<arch::ISA::AVX2, 256, _DesiredType_> {
     {
         if constexpr (sizeof(_DesiredType_) == 8) {
             auto __folded = __intrin_bitcast<__m256d>(__vector);
-        
+
             const auto __shuffle1 = _mm256_shuffle_pd(__folded, __folded, 5);
             __folded = __reduce(__folded, __shuffle1);
 
-            const auto __shuffle2 = _mm256_permute4x64_epi64(__intrin_bitcast<__m256i>(__folded), 0x1B);
-            __folded = __intrin_bitcast<__m256d>(__reduce(
-                __intrin_bitcast<__m256i>(__folded), __intrin_bitcast<__m256i>(__shuffle2)));
+            const auto __swapped_halfs = __intrin_bitcast<__m256>(_mm256_permute2f128_pd(__folded, __folded, 1));
+            const auto __shuffle2 = _mm256_shuffle_ps(__swapped_halfs, __swapped_halfs, 0x4E);
+            __folded = __reduce(__intrin_bitcast<__m256i>(__folded), __shuffle2);
 
             if constexpr (__is_pd_v<_DesiredType_>)
                 return _mm256_cvtsd_f64(__folded);
-            else 
+            else
                 return _mm256_cvtsi256_si64(__intrin_bitcast<__m256i>(__folded));
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {
-            auto __folded = __intrin_bitcast<__m256i>(__vector);
+            auto __folded = __intrin_bitcast<__m256>(__vector);
 
-            const auto __shuffle1 = _mm256_permute4x64_epi64(__folded, 0x4E);
+            const auto __swapped_halfs = __intrin_bitcast<__m256>(_mm256_permute2f128_pd(__folded, __folded, 1));
+            const auto __shuffle1 = _mm256_shuffle_ps(__swapped_halfs, __swapped_halfs, 0x4E);
             __folded = __reduce(__folded, __shuffle1);
 
-            const auto __shuffle2 = _mm256_shuffle_epi32(__folded, 0x4E);
+            const auto __shuffle2 = _mm256_shuffle_ps(__folded, __folded, 0x4E);
             __folded = __reduce(__folded, __shuffle2);
 
-            const auto __shuffle3 = _mm256_shuffle_epi32(__folded, 0xB1);
+            const auto __shuffle3 = _mm256_shuffle_ps(__folded, __folded, 0xB1);
             __folded = __reduce(__folded, __shuffle3);
 
             if constexpr (__is_ps_v<_DesiredType_>)
                 return _mm256_cvtss_f32(__intrin_bitcast<__m256>(__folded));
-            else 
+            else
                 return _mm256_cvtsi256_si32(__folded);
         }
         else if constexpr (sizeof(_DesiredType_) == 2) {
-            const auto __shuffle_words = _mm256_broadcastsi128_si256(_mm_set_epi8(13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
+            const auto __high = _mm256_permute2f128_pd(__intrin_bitcast<__m256d>(__vector),
+                __intrin_bitcast<__m256d>(__vector), 1);
 
-            auto __folded = __intrin_bitcast<__m256i>(__vector);
+            auto __folded = __intrin_bitcast<__m256d>(__vector);
+            __folded = __reduce(__folded, __high);
 
-            const auto __shuffle1 = _mm256_permute4x64_epi64(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffle1);
+            const auto __low = __intrin_bitcast<__m128d>(__folded);
 
-            const auto __shuffle2 = _mm256_shuffle_epi32(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffle2);
+            __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 8)));
+            __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 4)));
+            __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 2)));
 
-            const auto __shuffle3 = _mm256_shuffle_epi32(__folded, 0xB1);
-            __folded = __reduce(__folded, __shuffle3);
-
-            const auto __shuffle4 = _mm256_shuffle_epi8(__folded, __shuffle_words);
-            __folded = __reduce(__folded, __shuffle4);
-
-            return _mm256_cvtsi256_si32(__folded);
+            return static_cast<_DesiredType_>(_mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__low)));
         }
         else if constexpr (sizeof(_DesiredType_) == 1) {
-            const auto __shuffle_words = _mm256_broadcastsi128_si256(_mm_set_epi8(13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
-            const auto __shuffle_bytes = _mm256_broadcastsi128_si256(_mm_set_epi8(14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1));
+            const auto __high = _mm256_permute2f128_pd(__intrin_bitcast<__m256d>(__vector),
+                __intrin_bitcast<__m256d>(__vector), 1);
 
-            auto __folded = __intrin_bitcast<__m256i>(__vector);
-      
-            const auto __shuffle1 = _mm256_permute4x64_epi64(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffle1);
+            auto __folded = __intrin_bitcast<__m256d>(__vector);
+            __folded = __reduce(__folded, __high);
 
-            const auto __shuffle2 = _mm256_shuffle_epi32(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffle2);
+            const auto __low = __intrin_bitcast<__m128d>(__folded);
 
-            const auto __shuffle3 = _mm256_shuffle_epi32(__folded, 0xB1);
-            __folded = __reduce(__folded, __shuffle3);
+            __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 8)));
+            __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 4)));
+            __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 2)));
+            __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 1)));
 
-            const auto __shuffle4 = _mm256_shuffle_epi8(__folded, __shuffle_words);
-            __folded = __reduce(__folded, __shuffle4);
-
-            const auto __shuffle5 = _mm256_shuffle_epi8(__folded, __shuffle_bytes);
-            __folded = __reduce(__folded, __shuffle5);
-
-            return _mm256_cvtsi256_si32(__folded);
+            return static_cast<_DesiredType_>(_mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__low)));
         }
     }
 };
+
+template <class _DesiredType_> struct _Fold<arch::ISA::AVX2, 256, _DesiredType_> : _Fold<arch::ISA::AVX, 256, _DesiredType_> {};
 
 template <class _DesiredType_>
 struct _Fold<arch::ISA::AVX512F, 512, _DesiredType_> {
@@ -425,7 +342,10 @@ struct _Fold<arch::ISA::AVX512BW, 512, _DesiredType_> :
 template <class _DesiredType_> struct _Fold<arch::ISA::SSE3, 128, _DesiredType_> : _Fold<arch::ISA::SSE2, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Fold<arch::ISA::SSE41, 128, _DesiredType_> : _Fold<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Fold<arch::ISA::SSE42, 128, _DesiredType_> : _Fold<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Fold<arch::ISA::AVX2, 128, _DesiredType_> : _Fold<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Fold<arch::ISA::AVX, 128, _DesiredType_> : _Fold<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Fold<arch::ISA::FMA3, 128, _DesiredType_> : _Fold<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Fold<arch::ISA::AVX2, 128, _DesiredType_> : _Fold<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Fold<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Fold<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Fold<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Fold<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Fold<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Fold<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -434,6 +354,8 @@ template <class _DesiredType_> struct _Fold<arch::ISA::AVX512VBMI2, 512, _Desire
 template <class _DesiredType_> struct _Fold<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Fold<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Fold<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Fold<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Fold<arch::ISA::FMA3, 256, _DesiredType_> : _Fold<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Fold<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Fold<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Fold<arch::ISA::AVX512VLF, 256, _DesiredType_> : _Fold<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Fold<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Fold<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Fold<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Fold<arch::ISA::AVX512VLF, 256, _DesiredType_> {};

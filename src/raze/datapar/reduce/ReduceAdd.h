@@ -1,9 +1,7 @@
 #pragma once 
 
-#include <src/raze/datapar/arithmetic/Sub.h>
-#include <src/raze/datapar/shuffle/BroadcastZeros.h>
-
 #include <src/raze/datapar/reduce/ReduceAddType.h>
+#include <src/raze/datapar/arithmetic/Add.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -31,6 +29,31 @@ struct _Reduce_add<arch::ISA::SSE2, 128, _DesiredType_> {
                 _Extract<arch::ISA::SSE2, 128, int64>()(__vector, 1));
 #endif // defined(raze_processor_x86_32)
         }
+        else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>) {
+            const auto __shuffled1 = _mm_shuffle_epi32(__intrin_bitcast<__m128i>(__vector), _MM_SHUFFLE(2, 3, 0, 1));
+            const auto __reduce1 = _mm_add_epi32(__intrin_bitcast<__m128i>(__vector), __shuffled1);
+
+            const auto __shuffled2 = _mm_shuffle_epi32(__reduce1, _MM_SHUFFLE(1, 0, 3, 2));
+            const auto __reduce2 = _mm_add_epi32(__intrin_bitcast<__m128i>(__vector), __shuffled2);
+
+            return _mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__vector));
+        }
+        else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>) {
+            const auto __zeros = _mm_setzero_si128();
+
+            const auto __low = _mm_unpacklo_epi16(__intrin_bitcast<__m128i>(__vector), __zeros);
+            const auto __high = _mm_unpackhi_epi16(__intrin_bitcast<__m128i>(__vector), __zeros);
+
+            const auto __reduce1 = _mm_add_epi32(__low, __high);
+
+            const auto __shuffle1 = _mm_shuffle_epi32(__reduce1, _MM_SHUFFLE(2, 3, 0, 1));
+            const auto __reduce2 = _mm_add_epi32(__reduce1, __shuffle1);
+
+            const auto __shuffled2 = _mm_shuffle_epi32(__reduce2, _MM_SHUFFLE(1, 0, 3, 2));
+            const auto __reduce3 = _mm_add_epi32(__reduce2, __shuffled2);
+
+            return _mm_cvtsi128_si32(__reduce3);
+        }
         else if constexpr (__is_epi8_v<_DesiredType_> || __is_epu8_v<_DesiredType_>) {
             const auto __first_reduce = _mm_sad_epu8(__intrin_bitcast<__m128i>(__vector), _mm_setzero_si128());
 #if defined(raze_processor_x86_32)
@@ -41,18 +64,19 @@ struct _Reduce_add<arch::ISA::SSE2, 128, _DesiredType_> {
                 + _Extract<arch::ISA::SSE2, 128, int64>()(__first_reduce, 1));
 #endif // defined(raze_processor_x86_32)
         }
-        else {
-            constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
+        else if constexpr (__is_ps_v<_DesiredType_>) {
+            const auto __shuffled1 = _mm_movehl_ps(__intrin_bitcast<__m128>(__vector), __intrin_bitcast<__m128>(__vector));
+            const auto __reduce1 = _mm_add_ps(__intrin_bitcast<__m128>(__vector), __shuffled1);
 
-            alignas(16) _DesiredType_ __array[__length];
-            _mm_store_si128(reinterpret_cast<__m128i*>(&__array), __intrin_bitcast<__m128i>(__vector));
+            const auto __shuffled2 = _mm_shuffle_ps(__reduce1, __reduce1, 0x1);
+            const auto __reduce2 = _mm_add_ss(__reduce1, __shuffled2);
 
-            auto __sum = _ReduceType(0);
-
-            for (auto __index = 0; __index < __length; ++__index)
-                __sum += __array[__index];
-
-            return __sum;
+            return _mm_cvtss_f32(__reduce2);
+        }
+        else if constexpr (__is_pd_v<_DesiredType_>) {
+            const auto __reduce = _mm_add_sd(__intrin_bitcast<__m128d>(__vector), _mm_unpackhi_pd(
+                __intrin_bitcast<__m128d>(__vector), __intrin_bitcast<__m128d>(__vector)));
+            return _mm_cvtsd_f64(__reduce);
         }
 	}
 };
@@ -68,12 +92,8 @@ struct _Reduce_add<arch::ISA::SSSE3, 128, _DesiredType_>:
         using _ReduceType = __reduce_type<_DesiredType_>;
 
         if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>) {
-            const auto __zeros = _mm_setzero_si128();
-
-            const auto __reduce4 = _mm_hadd_epi32(__intrin_bitcast<__m128i>(__vector), __zeros); // (0+1),(2+3),0,0
-            const auto __reduce5 = _mm_hadd_epi32(__reduce4, __zeros);                         // (0+...+3),0,0,0
-
-            return static_cast<_ReduceType>(_mm_cvtsi128_si32(__reduce5));
+            const auto __reduce4 = _mm_hadd_epi32(__intrin_bitcast<__m128i>(__vector), __intrin_bitcast<__m128i>(__vector));
+            return static_cast<_ReduceType>(_mm_cvtsi128_si32(_mm_hadd_epi32(__reduce4, __reduce4)));
         }
         else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>) {
             const auto __zeros = _mm_setzero_si128();
@@ -81,8 +101,8 @@ struct _Reduce_add<arch::ISA::SSSE3, 128, _DesiredType_>:
             const auto __reduce2 = _mm_hadd_epi16(__intrin_bitcast<__m128i>(__vector), __zeros);
             const auto __reduce3 = _mm_unpacklo_epi16(__reduce2, __zeros);
 
-            const auto __reduce4 = _mm_hadd_epi32(__reduce3, __zeros); // (0+1),(2+3),0,0
-            const auto __reduce5 = _mm_hadd_epi32(__reduce4, __zeros); // (0+...+3),0,0,0
+            const auto __reduce4 = _mm_hadd_epi32(__reduce3, __zeros);
+            const auto __reduce5 = _mm_hadd_epi32(__reduce4, __zeros);
 
             return static_cast<_ReduceType>(_mm_cvtsi128_si32(__reduce5));
         }
@@ -92,8 +112,32 @@ struct _Reduce_add<arch::ISA::SSSE3, 128, _DesiredType_>:
     }
 };
 
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::SSE3, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSE2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::SSE41, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSSE3, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::SSE42, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSE41, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::FMA3, 128, _DesiredType_> : _Reduce_add<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX2, 128, _DesiredType_> : _Reduce_add<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Reduce_add<arch::ISA::AVX2, 128, _DesiredType_> {};
+
+template <class _DesiredType_> 
+struct _Reduce_add<arch::ISA::AVX, 256, _DesiredType_> {
+    template <class _IntrinType_>
+    raze_nodiscard raze_static_operator raze_always_inline __reduce_type<_DesiredType_> 
+        operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    {
+        const auto __low = __intrin_bitcast<__m128>(__vector);
+        const auto __high = _mm256_extractf128_ps(__intrin_bitcast<__m256>(__vector), 1);
+
+        const auto __vertical_sum = _Add<arch::ISA::AVX, 128, _DesiredType_>()(__low, __high);
+        return _Reduce_add<arch::ISA::AVX, 128, _DesiredType_>()(__vertical_sum);
+    }
+};
+
 template <class _DesiredType_>
-struct _Reduce_add<arch::ISA::AVX2, 256, _DesiredType_> {
+struct _Reduce_add<arch::ISA::AVX2, 256, _DesiredType_>:
+    _Reduce_add<arch::ISA::AVX, 256, _DesiredType_> 
+{
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
         __reduce_type<_DesiredType_> operator()(_IntrinType_ __vector) raze_const_operator noexcept
@@ -110,11 +154,11 @@ struct _Reduce_add<arch::ISA::AVX2, 256, _DesiredType_> {
         if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>) {
             const auto __zeros = _mm256_setzero_si256();
 
-            const auto __reduce4 = _mm256_hadd_epi32(__intrin_bitcast<__m256i>(__vector), __zeros); // (0+1),(2+3),0,0
-            const auto __reduce5 = _mm256_permute4x64_epi64(__reduce4, 0xD8); // low lane  (0+1),(2+3),(4+5),(6+7)
+            const auto __reduce4 = _mm256_hadd_epi32(__intrin_bitcast<__m256i>(__vector), __zeros);
+            const auto __reduce5 = _mm256_permute4x64_epi64(__reduce4, 0xD8);
 
-            const auto __reduce6 = _mm256_hadd_epi32(__reduce5, __zeros); // (0+...+3),(4+...+7),0,0
-            const auto __reduce7 = _mm256_hadd_epi32(__reduce6, __zeros); // (0+...+7),0,0,0
+            const auto __reduce6 = _mm256_hadd_epi32(__reduce5, __zeros);
+            const auto __reduce7 = _mm256_hadd_epi32(__reduce6, __zeros);
 
             return static_cast<_ReduceType>(_mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__reduce7)));
         }
@@ -124,11 +168,11 @@ struct _Reduce_add<arch::ISA::AVX2, 256, _DesiredType_> {
             const auto __reduce2 = _mm256_hadd_epi16(__intrin_bitcast<__m256i>(__vector), __zeros);
             const auto __reduce3 = _mm256_unpacklo_epi16(__reduce2, __zeros);
 
-            const auto __reduce4 = _mm256_hadd_epi32(__reduce3, __zeros); // (0+1),(2+3),0,0
-            const auto __reduce5 = _mm256_permute4x64_epi64(__reduce4, 0xD8); // (0+1),(2+3),(4+5),(6+7)
+            const auto __reduce4 = _mm256_hadd_epi32(__reduce3, __zeros);
+            const auto __reduce5 = _mm256_permute4x64_epi64(__reduce4, 0xD8);
 
-            const auto __reduce6 = _mm256_hadd_epi32(__reduce5, __zeros); // (0+...+3),(4+...+7),0,0
-            const auto __reduce7 = _mm256_hadd_epi32(__reduce6, __zeros); // (0+...+7),0,0,0
+            const auto __reduce6 = _mm256_hadd_epi32(__reduce5, __zeros);
+            const auto __reduce7 = _mm256_hadd_epi32(__reduce6, __zeros);
 
             return static_cast<_ReduceType>(_mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__reduce7)));
         }
@@ -142,17 +186,7 @@ struct _Reduce_add<arch::ISA::AVX2, 256, _DesiredType_> {
             return _Reduce_add<arch::ISA::SSSE3, 128, int64>()(__reduce8);
         }
         else {
-            constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
-
-            alignas(32) _DesiredType_ __array[__length];
-            _mm256_store_si256(reinterpret_cast<__m256i*>(&__array), __intrin_bitcast<__m256i>(__vector));
-
-            auto __sum = _ReduceType(0);
-
-            for (auto __index = 0; __index < __length; ++__index)
-                __sum += __array[__index];
-
-            return __sum;
+            return _Reduce_add<arch::ISA::AVX, 256, _DesiredType_>()(__vector);
         }
 	}
 };
@@ -215,11 +249,6 @@ struct _Reduce_add<arch::ISA::AVX512BW, 512, _DesiredType_>:
     }
 };
 
-template <class _DesiredType_> struct _Reduce_add<arch::ISA::SSE3, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSE2, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Reduce_add<arch::ISA::SSE41, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSSE3, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Reduce_add<arch::ISA::SSE42, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX2, 128, _DesiredType_> : _Reduce_add<arch::ISA::SSE42, 128, _DesiredType_> {};
-
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Reduce_add<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Reduce_add<arch::ISA::AVX512BW, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _Reduce_add<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -227,6 +256,8 @@ template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512VBMI2, 512, _
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Reduce_add<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Reduce_add<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::FMA3, 256, _DesiredType_> : _Reduce_add<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Reduce_add<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512VLF, 256, _DesiredType_> : _Reduce_add<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Reduce_add<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Reduce_add<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Reduce_add<arch::ISA::AVX512VLF, 256, _DesiredType_> {};

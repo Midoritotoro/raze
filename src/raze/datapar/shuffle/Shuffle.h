@@ -264,10 +264,13 @@ struct _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> :
 	}
 };
 
-
 template <class _DesiredType_> struct _Shuffle<arch::ISA::SSE41, 128, _DesiredType_> : _Shuffle<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Shuffle<arch::ISA::SSE42, 128, _DesiredType_> : _Shuffle<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX2, 128, _DesiredType_> : _Shuffle<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX, 128, _DesiredType_> : _Shuffle<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Shuffle<arch::ISA::FMA3, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX2, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Shuffle<arch::ISA::AVX2, 128, _DesiredType_> {};
+
 
 template <class _DesiredType_>
 struct _Shuffle<arch::ISA::AVX512VLF, 128, _DesiredType_>:
@@ -336,7 +339,35 @@ struct _Shuffle<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 };
 
 template <class _DesiredType_>
-struct _Shuffle<arch::ISA::AVX2, 256, _DesiredType_> {
+struct _Shuffle<arch::ISA::AVX, 256, _DesiredType_> {
+	template <
+		class _IntrinType_,
+		class _IndexIntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_		__vector,
+		_IndexIntrinType_	__indices) raze_const_operator noexcept
+	{
+		return __shuffle_fallback<arch::ISA::AVX2, 256, _DesiredType_>(__vector, __indices);
+	}
+
+	template <
+		class		_IntrinType_,
+		uint64 ...	_Indices_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_								__vector,
+		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
+	{
+		return __shuffle_fallback<arch::ISA::AVX2, 256, _DesiredType_>(__vector, __indices_sequence);
+	}
+};
+
+
+template <class _DesiredType_> struct _Shuffle<arch::ISA::FMA3, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX, 256, _DesiredType_> {};
+
+template <class _DesiredType_>
+struct _Shuffle<arch::ISA::AVX2, 256, _DesiredType_>:
+	_Shuffle<arch::ISA::AVX, 256, _DesiredType_> 
+{
 	template <
 		class _IntrinType_,
 		class _IndexIntrinType_>
@@ -396,6 +427,8 @@ struct _Shuffle<arch::ISA::AVX2, 256, _DesiredType_> {
 		}
 	}
 };
+
+template <class _DesiredType_> struct _Shuffle<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Shuffle<arch::ISA::AVX2, 256, _DesiredType_> {};
 
 template <class _DesiredType_>
 struct _Shuffle<arch::ISA::AVX512VLF, 256, _DesiredType_> :

@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/datapar/SimdIntegralTypesCheck.h>
+#include <src/raze/math/BitTestAndSet.h>
 
 
 __RAZE_DATAPAR_NAMESPACE_BEGIN
@@ -128,14 +129,14 @@ public:
 	}
 private:
 	raze_always_inline value_type __read() const noexcept {
-		return (_reference >> _index) & 1;
+		return math::__bit_test(_reference, _index);
 	}
 
 	raze_always_inline void __write(value_type __value) noexcept {
 		if (__value)
-			_reference |= (_Type_(1) << _index);
+			math::__bit_test_and_set(_reference, _index);
 		else
-			_reference &= ~(_Type_(1) << _index);
+			math::__bit_test_and_reset(_reference, _index);
 	}
 
 	_Type_& _reference;

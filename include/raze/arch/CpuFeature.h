@@ -14,7 +14,9 @@ enum class ISA : raze::uchar {
 	SSE41,
 	SSE42,
 	AVX,
+	FMA3,
 	AVX2,
+	AVX2FMA3,			// AXV2 + FMA3
 	AVX512F,
 	AVX512BW,
 	AVX512DQ,

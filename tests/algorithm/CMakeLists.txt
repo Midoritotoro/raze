@@ -3,6 +3,8 @@
 project(razeTestsAlgorithm LANGUAGES CXX)
 
 set(raze_DIR "C:/Users/danya/source/repos/Midoritotoro/raze/out/build")
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if (PROJECT_IS_TOP_LEVEL)
     find_package(raze REQUIRED COMPONENTS raze)

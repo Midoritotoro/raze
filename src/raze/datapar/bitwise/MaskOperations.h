@@ -35,6 +35,7 @@ public:
 			? math::__maximum_integral_limit<mask_type>()
 			: mask_type(((mask_type(1) << __elements()) - 1));
 
+#if (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 		if constexpr (__elements() < 8 && __has_avx512dq_support_v<__isa>)
 			return __ktestcb(__mask, _cvtu32_mask8(__max_for_bits));
 
@@ -51,10 +52,12 @@ public:
 			return __kortestcq(__mask, __mask);
 
 		else
+#endif // (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 			return (__mask == __max_for_bits);
 	}
 
 	raze_nodiscard raze_always_inline static bool __none_of(mask_type __mask) noexcept {
+#if (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 		if constexpr (sizeof(mask_type) == 2 && __has_avx512f_support_v<__isa>)
 			return __kortestzw(__mask, __mask);
 
@@ -68,8 +71,10 @@ public:
 			return __kortestzq(__mask, __mask);
 
 		else
+#endif // (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 			return (__mask == 0);
 	}
+
 
 	raze_nodiscard raze_always_inline static bool __any_of(mask_type __mask) noexcept {
 		return !__none_of(__mask);
@@ -234,7 +239,7 @@ public:
 	}
 
 	template <uint32 _Shift_>
-	raze_nodiscard raze_always_inline static mask_type __bit_rslide(
+	raze_nodiscard raze_always_inline static mask_type __bit_lslide(
 		mask_type								__mask,
 		std::integral_constant<uint32, _Shift_>	__shift) noexcept
 	{
@@ -244,7 +249,7 @@ public:
 			return __bit_rshift(__mask, __shift);
 	}
 
-	raze_nodiscard raze_always_inline static mask_type __bit_rslide(
+	raze_nodiscard raze_always_inline static mask_type __bit_lslide(
 		mask_type	__mask,
 		uint32		__shift) noexcept
 	{
@@ -252,7 +257,7 @@ public:
 	}
 
 	template <uint32 _Shift_>
-	raze_nodiscard raze_always_inline static mask_type __bit_lslide(
+	raze_nodiscard raze_always_inline static mask_type __bit_rslide(
 		mask_type								__mask,
 		std::integral_constant<uint32, _Shift_>	__shift) noexcept
 	{
@@ -262,7 +267,7 @@ public:
 			return __bit_lshift(__mask, __shift);
 	}
 
-	raze_nodiscard raze_always_inline static mask_type __bit_lslide(
+	raze_nodiscard raze_always_inline static mask_type __bit_rslide(
 		mask_type	__mask,
 		uint32		__shift) noexcept
 	{

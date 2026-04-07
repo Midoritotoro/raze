@@ -39,20 +39,16 @@ struct _Broadcast<arch::ISA::SSE2, 128, _IntrinType_> {
 };
 
 template <class _IntrinType_>
-struct _Broadcast<arch::ISA::AVX2, 256, _IntrinType_> {
+struct _Broadcast<arch::ISA::AVX, 256, _IntrinType_> {
 	template <class _DesiredType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
 		_IntrinType_ operator()(_DesiredType_ __value) raze_const_operator noexcept
 	{
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-#if !defined(raze_os_win64)
 			return __intrin_bitcast<_IntrinType_>(_mm256_set1_epi64x(memory::pointer_to_integral(__value)));
-#else
-			return __intrin_bitcast<_IntrinType_>(_mm256_broadcastq_epi64(_mm_cvtsi64_si128(memory::pointer_to_integral(__value))));
-#endif // !defined(raze_os_win64)
 
 		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_broadcastd_epi32(_mm_cvtsi32_si128(memory::pointer_to_integral(__value))));
+			return __intrin_bitcast<_IntrinType_>(_mm256_set1_epi32(memory::pointer_to_integral(__value)));
 
 		else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm256_set1_epi16(__value));
@@ -67,6 +63,34 @@ struct _Broadcast<arch::ISA::AVX2, 256, _IntrinType_> {
 			return __intrin_bitcast<_IntrinType_>(_mm256_set1_pd(__value));
 	}
 };
+
+template <class _IntrinType_> 
+struct _Broadcast<arch::ISA::AVX2, 256, _IntrinType_>: 
+	_Broadcast<arch::ISA::AVX, 256, _IntrinType_>
+{
+	template <class _DesiredType_>
+	raze_nodiscard raze_static_operator raze_always_inline 
+		_IntrinType_ operator()(_DesiredType_ __value) raze_const_operator noexcept
+	{
+		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
+#if !defined(raze_os_win64)
+			return __intrin_bitcast<_IntrinType_>(_mm256_set1_epi64x(memory::pointer_to_integral(__value)));
+#else
+			return __intrin_bitcast<_IntrinType_>(_mm256_broadcastq_epi64(
+				_mm_cvtsi64_si128(memory::pointer_to_integral(__value))));
+#endif // !defined(raze_os_win64)
+
+		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm256_broadcastd_epi32(
+				_mm_cvtsi32_si128(memory::pointer_to_integral(__value))));
+
+		else
+			return _Broadcast<arch::ISA::AVX, 256, _IntrinType_>()(__value);
+	}
+};
+
+template <class _IntrinType_> struct _Broadcast<arch::ISA::FMA3, 256, _IntrinType_> : _Broadcast<arch::ISA::AVX, 256, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast<arch::ISA::AVX2FMA3, 256, _IntrinType_> : _Broadcast<arch::ISA::AVX2, 256, _IntrinType_> {};
 
 template <class _IntrinType_>
 struct _Broadcast<arch::ISA::AVX512F, 512, _IntrinType_> {
@@ -102,7 +126,10 @@ template <class _IntrinType_> struct _Broadcast<arch::ISA::SSE3, 128, _IntrinTyp
 template <class _IntrinType_> struct _Broadcast<arch::ISA::SSSE3, 128, _IntrinType_>: _Broadcast<arch::ISA::SSE3, 128, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast<arch::ISA::SSE41, 128, _IntrinType_>: _Broadcast<arch::ISA::SSSE3, 128, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast<arch::ISA::SSE42, 128, _IntrinType_>: _Broadcast<arch::ISA::SSE41, 128, _IntrinType_> {};
-template <class _IntrinType_> struct _Broadcast<arch::ISA::AVX2, 128, _IntrinType_>: _Broadcast<arch::ISA::SSE42, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast<arch::ISA::AVX, 128, _IntrinType_> : _Broadcast<arch::ISA::SSE42, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast<arch::ISA::AVX2, 128, _IntrinType_>: _Broadcast<arch::ISA::AVX, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast<arch::ISA::FMA3, 128, _IntrinType_> : _Broadcast<arch::ISA::AVX, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast<arch::ISA::AVX2FMA3, 128, _IntrinType_> : _Broadcast<arch::ISA::AVX2, 128, _IntrinType_> {};
 
 template <class _IntrinType_> struct _Broadcast<arch::ISA::AVX512BW, 512, _IntrinType_>: _Broadcast<arch::ISA::AVX512F, 512, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast<arch::ISA::AVX512DQ, 512, _IntrinType_>: _Broadcast<arch::ISA::AVX512F, 512, _IntrinType_> {};

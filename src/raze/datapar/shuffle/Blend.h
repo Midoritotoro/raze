@@ -92,7 +92,8 @@ struct _Blend<arch::ISA::SSE41, 128, _DesiredType_>:
 };
 
 template <class _DesiredType_> struct _Blend<arch::ISA::SSE42, 128, _DesiredType_> : _Blend<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Blend<arch::ISA::AVX2, 128, _DesiredType_> : _Blend<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX, 128, _DesiredType_> : _Blend<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX2, 128, _DesiredType_> : _Blend<arch::ISA::AVX, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 	_Blend<arch::ISA::AVX2, 128, _DesiredType_> 
@@ -178,6 +179,52 @@ struct _Blend<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 };
 
 template <class _DesiredType_>
+struct _Blend<arch::ISA::AVX, 256, _DesiredType_> {
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_>)
+	{
+		if constexpr (sizeof(_DesiredType_) == 8)
+			return __intrin_bitcast<_IntrinType_>(_mm256_blendv_pd(
+				__intrin_bitcast<__m256d>(__second),
+				__intrin_bitcast<__m256d>(__first),
+				__intrin_bitcast<__m256d>(__mask)));
+
+		else if constexpr (sizeof(_DesiredType_) == 4)
+			return __intrin_bitcast<_IntrinType_>(_mm256_blendv_ps(
+				__intrin_bitcast<__m256>(__second),
+				__intrin_bitcast<__m256>(__first),
+				__intrin_bitcast<__m256>(__mask)));
+
+		else
+			return __intrin_bitcast<_IntrinType_>(_mm256_or_ps(
+				_mm256_and_ps(__intrin_bitcast<__m256>(__mask),
+					__intrin_bitcast<__m256>(__first)),
+				_mm256_andnot_ps(__intrin_bitcast<__m256>(__mask),
+					__intrin_bitcast<__m256>(__second))));
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__first,
+		_IntrinType_	__second,
+		_MaskType_		__mask) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_>)
+	{
+		return (*this)(__first, __second, _To_vector<arch::ISA::AVX, 256, _IntrinType_, _DesiredType_>()(__mask));
+	}
+};
+
+template <class _DesiredType_> struct _Blend<arch::ISA::FMA3, 256, _DesiredType_> : _Blend<arch::ISA::AVX, 256, _DesiredType_> {};
+
+template <class _DesiredType_>
 struct _Blend<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <
 		class _IntrinType_,
@@ -220,6 +267,8 @@ struct _Blend<arch::ISA::AVX2, 256, _DesiredType_> {
             256, _IntrinType_, _DesiredType_>()(__mask));
 	}
 };
+
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX2FMA3, 256, _DesiredType_>: _Blend<arch::ISA::AVX2, 256, _DesiredType_>  {};
 
 template <class _DesiredType_> 
 struct _Blend<arch::ISA::AVX512VLF, 256, _DesiredType_>: 
@@ -384,7 +433,6 @@ struct _Blend<arch::ISA::AVX512BW, 512, _DesiredType_>:
             return _Blend<arch::ISA::AVX512F, 512, _DesiredType_>()(__first, __second, __mask);
 	}
 };
-
 
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX512BWDQ, 512, _DesiredType_>: _Blend<arch::ISA::AVX512BW, 512, _DesiredType_> {};

@@ -255,26 +255,6 @@ public:
         return *this;
     }
 
-    raze_always_inline _Where operator++(int) noexcept {
-        _Where __self = *this;
-        *this += datapar_type(1);
-        return __self;
-    }
-
-    raze_always_inline _Where& operator++() noexcept {
-        return (*this += datapar_type(1));
-    }
-
-    raze_always_inline _Where operator--(int) noexcept {
-        _Where __self = *this;
-        *this -= datapar_type(1);
-        return __self;
-    }
-
-    raze_always_inline _Where& operator--() noexcept {
-        return (*this -= datapar_type(1));
-    }
-
     raze_always_inline _Where& operator>>=(uint32 __shift) noexcept {
         const auto __result = *this >> __shift;
         _reference = __result;

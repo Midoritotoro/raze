@@ -103,14 +103,14 @@ public:
 		const simd_mask&							__left,
 		std::integral_constant<uint32, _Elements_>	__elements) noexcept
 	{
-		return _Impl::__slide_right(__left, __elements);
+		return _Impl::__slide_right(__data(__left), __elements);
 	}
 
 	friend raze_always_inline simd_mask operator>>(
 		const simd_mask&	__left,
 		uint32				__elements) noexcept
 	{
-		return _Impl::__slide_right(__left, __elements);
+		return _Impl::__slide_right(__data(__left), __elements);
 	}
 
 	template <uint32 _Elements_>
@@ -118,14 +118,14 @@ public:
 		const simd_mask&							__left,
 		std::integral_constant<uint32, _Elements_>	__elements) noexcept
 	{
-		return _Impl::__slide_left(__left, __elements);
+		return _Impl::__slide_left(__data(__left), __elements);
 	}
 
 	friend raze_always_inline simd_mask operator<<(
 		const simd_mask&	__left,
 		uint32				__elements) noexcept
 	{
-		return _Impl::__slide_left(__left, __elements);
+		return _Impl::__slide_left(__data(__left), __elements);
 	}
 
 	template <uint32 _Elements_>
@@ -157,7 +157,7 @@ public:
 		const _OtherMask_&	__right) noexcept 
 			requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
-		return _Impl::__bit_and(__left, __right);
+		return _Impl::__bit_and(__data(__left), __data(__right));
 	}
 
 	template <class _OtherMask_>
@@ -166,7 +166,7 @@ public:
 		const _OtherMask_&	__right) noexcept 
 			requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
-		return _Impl::__bit_or(__left, __right);
+		return _Impl::__bit_or(__data(__left), __data(__right));
 	}
 
 	template <class _OtherMask_>
@@ -175,7 +175,7 @@ public:
 		const _OtherMask_&	__right) noexcept
 			requires(__compatible_mask<simd_mask, _OtherMask_>)
 	{
-		return _Impl::__bit_xor(__left, __right);
+		return _Impl::__bit_xor(__data(__left), __data(__right));
 	}
 
 	template <class _OtherMask_>
@@ -207,7 +207,7 @@ public:
 		const simd_mask& __left,
 		const simd_mask& __right) noexcept
 	{
-		return _Impl::__bit_xor(__left, __right);
+		return _Impl::__bit_xor(__data(__left), __data(__right));
 	}
 
 	friend raze_always_inline simd_mask operator==(
@@ -241,7 +241,7 @@ public:
 		return _Impl::__some_of(_mask);
 	}
 
-	raze_always_inline operator mask_type() const noexcept {
+	explicit raze_always_inline operator mask_type() const noexcept {
 		return _mask;
 	}
 

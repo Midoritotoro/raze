@@ -20,9 +20,6 @@ struct _Slide_right<arch::ISA::SSE2, 128> {
 		_IntrinType_	__left,
 		uint32			__shift) raze_const_operator noexcept
 	{
-		if (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()();
-
 		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
 		_Store<arch::ISA::SSE2, 128>()(__array, _mm_setzero_si128(), __aligned_policy{});
@@ -83,16 +80,50 @@ struct _Slide_right<arch::ISA::SSSE3, 128>:
 	}
 };
 
-template <>
-struct _Slide_right<arch::ISA::AVX2, 256> {
+
+template <> 
+struct _Slide_right<arch::ISA::AVX, 256> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
 		uint32			__shift) raze_const_operator noexcept
 	{
-		if (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()();
+		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
+		_Store<arch::ISA::AVX, 256>()(__array, _mm256_setzero_si256(), __aligned_policy{});
+		_Store<arch::ISA::AVX, 256>()(__array + __shift, __left, __aligned_policy{});
+
+		return _Load<arch::ISA::AVX, 256, _IntrinType_>()(__array, __aligned_policy{});
+	}
+
+	template <
+		class	_IntrinType_,
+		uint32	_Shift_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_							__left,
+		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
+	{
+		if constexpr (__shift >= sizeof(_IntrinType_)) {
+			return _Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_>()();
+		}
+		else if constexpr (__shift == 0) {
+			return __left;
+		}
+		else {
+			return (*this)(__left, __shift.value);
+		}
+	}
+};
+
+template <>
+struct _Slide_right<arch::ISA::AVX2, 256>:
+	_Slide_right<arch::ISA::AVX, 256> 
+{
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) raze_const_operator noexcept
+	{
 		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
 		_Store<arch::ISA::AVX2, 256>()(__array, _mm256_setzero_si256(), __aligned_policy{});
@@ -111,7 +142,10 @@ struct _Slide_right<arch::ISA::AVX2, 256> {
 		auto __low_part = _mm256_setzero_si256();
 		auto __high_part = _mm256_setzero_si256();
 
-		if constexpr (__shift == 0) {
+		if constexpr (__shift >= sizeof(_IntrinType_)) {
+			return _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()();
+		}
+		else if constexpr (__shift == 0) {
 			return __left;
 		}
 		else if constexpr (__shift < 16) {
@@ -151,7 +185,10 @@ struct _Slide_right<arch::ISA::AVX512VLF, 256>:
 		_IntrinType_							__left,
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
-		if constexpr (__shift == 0) {
+		if constexpr (__shift >= sizeof(_IntrinType_)) {
+			return _Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()();
+		}
+		else if constexpr (__shift == 0) {
 			return __left;
 		}
 		else if constexpr ((__shift % 4) == 0) {
@@ -172,9 +209,6 @@ struct _Slide_right<arch::ISA::AVX512F, 512> {
 		_IntrinType_	__left,
 		uint32			__shift) raze_const_operator noexcept
 	{
-		if (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
-
 		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
 		_Store<arch::ISA::AVX512F, 512>()(__array, _mm512_setzero_si512(), __aligned_policy{});
@@ -190,6 +224,10 @@ struct _Slide_right<arch::ISA::AVX512F, 512> {
 		_IntrinType_							__left,
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
+		if constexpr (__shift >= sizeof(_IntrinType_)) {
+			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
+		}
+
 		auto __low_part = _mm512_setzero_si512();
 		auto __high_part = _mm512_setzero_si512();
 
@@ -245,9 +283,6 @@ struct _Slide_right<arch::ISA::AVX512BW, 512>:
 		_IntrinType_	__left,
 		uint32			__shift) raze_const_operator noexcept
 	{
-		if (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()();
-
 		alignas(sizeof(_IntrinType_)) int8 __array[sizeof(_IntrinType_) * 2];
 
 		_Store<arch::ISA::AVX512BW, 512>()(__array, _mm512_setzero_si512(), __aligned_policy{});
@@ -263,9 +298,13 @@ struct _Slide_right<arch::ISA::AVX512BW, 512>:
 		_IntrinType_							__left,
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
+		if constexpr (__shift >= sizeof(_IntrinType_)) {
+			return _Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()();
+		}
+
 		auto __low_part = _mm512_setzero_si512();
 		auto __high_part = _mm512_setzero_si512();
-
+		
 		if constexpr (__shift == 0) {
 			return __left;
 		}
@@ -306,7 +345,10 @@ struct _Slide_right<arch::ISA::AVX512BW, 512>:
 
 template <> struct _Slide_right<arch::ISA::SSE41, 128> : _Slide_right<arch::ISA::SSSE3, 128> {};
 template <> struct _Slide_right<arch::ISA::SSE42, 128> : _Slide_right<arch::ISA::SSE41, 128> {};
-template <> struct _Slide_right<arch::ISA::AVX2, 128> : _Slide_right<arch::ISA::SSE42, 128> {};
+template <> struct _Slide_right<arch::ISA::AVX, 128> : _Slide_right<arch::ISA::SSE42, 128> {};
+template <> struct _Slide_right<arch::ISA::FMA3, 128> : _Slide_right<arch::ISA::AVX, 128> {};
+template <> struct _Slide_right<arch::ISA::AVX2, 128> : _Slide_right<arch::ISA::AVX, 128> {};
+template <> struct _Slide_right<arch::ISA::AVX2FMA3, 128> : _Slide_right<arch::ISA::AVX2, 128> {};
 
 template <> struct _Slide_right<arch::ISA::AVX512DQ, 512> : _Slide_right<arch::ISA::AVX512F, 512> {};
 template <> struct _Slide_right<arch::ISA::AVX512BWDQ, 512> : _Slide_right<arch::ISA::AVX512BW, 512> {};
@@ -315,6 +357,8 @@ template <> struct _Slide_right<arch::ISA::AVX512VBMI2, 512> : _Slide_right<arch
 template <> struct _Slide_right<arch::ISA::AVX512VBMIDQ, 512> : _Slide_right<arch::ISA::AVX512BWDQ, 512> {};
 template <> struct _Slide_right<arch::ISA::AVX512VBMI2DQ, 512> : _Slide_right<arch::ISA::AVX512VBMIDQ, 512> {};
 
+template <> struct _Slide_right<arch::ISA::FMA3, 256> : _Slide_right<arch::ISA::AVX, 256> {};
+template <> struct _Slide_right<arch::ISA::AVX2FMA3, 256> : _Slide_right<arch::ISA::AVX2, 256> {};
 template <> struct _Slide_right<arch::ISA::AVX512VLBW, 256> : _Slide_right<arch::ISA::AVX512VLF, 256> {};
 template <> struct _Slide_right<arch::ISA::AVX512VLDQ, 256> : _Slide_right<arch::ISA::AVX512VLF, 256> {};
 template <> struct _Slide_right<arch::ISA::AVX512VLBWDQ, 256> : _Slide_right<arch::ISA::AVX512VLBW, 256> {};

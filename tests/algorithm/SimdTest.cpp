@@ -111,11 +111,9 @@ template <class T, size_t N, class Simd, class Mask,
 void test_where_unary(
     const T(&arrA)[N], const T(&arrSrc)[N],
     const Mask& m, const Simd& a,
-    const Simd& src, WhereExpr& w,
-    WhereZeroExpr& wz,  SimdOp simd_op, ScalarOp scalar_op) noexcept
+    const Simd& src, const WhereExpr& w,
+    const WhereZeroExpr& wz,  SimdOp simd_op, ScalarOp scalar_op) noexcept
 {
-    Simd a_copy = a;
-
     {
         auto r1 = simd_op(w);
         
@@ -134,7 +132,6 @@ void test_where_unary(
                 raze_assert(r1[i] == expected1);
             }
         }
-        w = a_copy;
     }
 
     {
@@ -154,8 +151,6 @@ void test_where_unary(
                 raze_assert(r1[i] == expected1);
             }
         }
-
-        wz = a_copy;
     }
 }
 
@@ -336,33 +331,7 @@ void test_where_semantics() {
     auto w = raze::datapar::where(a, src, m);
     auto wz = raze::datapar::where(a, m);
 
-    test_where_unary<T, N>(
-        arrA, arrSrc, m, a, src, w, wz,
-        [](auto A) { return ++A; },
-        [](T A, T Src, bool cond, bool rev) {
-            return cond ? (++A) : Src;
-    });
 
-    test_where_unary<T, N>(
-        arrA, arrSrc, m, a, src, w, wz,
-        [](auto A) { return A++; },
-        [](T A, T Src, bool cond, bool rev) {
-            return cond ? (A++) : Src;
-    });
-
-    test_where_unary<T, N>(
-        arrA, arrSrc, m, a, src, w, wz,
-        [](auto A) { return --A; },
-        [](T A, T Src, bool cond, bool rev) {
-            return cond ? (--A) : Src;
-    });
-
-    test_where_unary<T, N>(
-        arrA, arrSrc, m, a, src, w, wz,
-        [](auto A) { return A--; },
-        [](T A, T Src, bool cond, bool rev) {
-            return cond ? (A--) : Src;
-    });
 
     test_where_unary<T, N>(
         arrA, arrSrc, m, a, src, w, wz,
@@ -1129,24 +1098,24 @@ void test_methods() {
 
     if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>()) return;
 
-    //test_simd_basics<Simd, Mask, T, N>();
-    //test_load_store<Simd, Mask, T, N>();
-    //test_masked_load_store<Simd, Mask, T, N>();
-    //test_comparisons<Simd, Mask, T, N>();
-    //test_arithmetic<Simd, Mask, T, N>();
-    //test_bitwise<Simd, Mask, T, N>();
-    //test_reduce_add<Simd, Mask, T, N>();
-    //test_abs<Simd, Mask, T, N>();
-    //test_horizontal_min_max<Simd, Mask, T, N>();
-    //test_vertical_min_max<Simd, Mask, T, N>();
+    test_simd_basics<Simd, Mask, T, N>();
+    test_load_store<Simd, Mask, T, N>();
+    test_masked_load_store<Simd, Mask, T, N>();
+    test_comparisons<Simd, Mask, T, N>();
+    test_arithmetic<Simd, Mask, T, N>();
+    test_bitwise<Simd, Mask, T, N>();
+    test_reduce_add<Simd, Mask, T, N>();
+    test_abs<Simd, Mask, T, N>();
+    test_horizontal_min_max<Simd, Mask, T, N>();
+    test_vertical_min_max<Simd, Mask, T, N>();
     test_where_semantics<Simd, Mask, T, N>();
-    //test_shuffle_rotate_reverse<Simd, Mask, T, N>();
-    //test_compress<Simd, Mask, T, N>();
-    //test_slide_runtime<Simd, Mask, T, N>();
-    //test_slide_compiletime<Simd, Mask, T, N>();
-    //test_rotate_runtime<Simd, Mask, T, N>();
-    //test_rotate_compiletime<Simd, Mask, T, N>();
-    //test_select<Simd, Mask, T, N>();
+    test_shuffle_rotate_reverse<Simd, Mask, T, N>();
+    test_compress<Simd, Mask, T, N>();
+    test_slide_runtime<Simd, Mask, T, N>();
+    test_slide_compiletime<Simd, Mask, T, N>();
+    test_rotate_runtime<Simd, Mask, T, N>();
+    test_rotate_compiletime<Simd, Mask, T, N>();
+    test_select<Simd, Mask, T, N>();
 }
 
 

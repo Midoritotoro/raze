@@ -26,7 +26,7 @@ struct _Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_> {
 };
 
 template <class _IntrinType_>
-struct _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_> {
+struct _Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_> {
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()() raze_const_operator noexcept {
 		if constexpr (std::is_same_v<_IntrinType_, __m256i>)
 			return _mm256_setzero_si256();
@@ -57,7 +57,10 @@ template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::SSE3, 128, _Int
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::SSSE3, 128, _IntrinType_>: _Broadcast_zeros<arch::ISA::SSE3, 128, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_>: _Broadcast_zeros<arch::ISA::SSSE3, 128, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::SSE42, 128, _IntrinType_>: _Broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_> {};
-template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX2, 128, _IntrinType_>: _Broadcast_zeros<arch::ISA::SSE42, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX, 128, _IntrinType_> : _Broadcast_zeros<arch::ISA::SSE42, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::FMA3, 128, _IntrinType_> : _Broadcast_zeros<arch::ISA::AVX, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX2, 128, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX2FMA3, 128, _IntrinType_> : _Broadcast_zeros<arch::ISA::AVX2, 128, _IntrinType_> {};
 
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512DQ, 512, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_> {};
@@ -67,6 +70,9 @@ template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512VBMI2, 51
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512VBMIDQ, 512, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX512BWDQ, 512, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512VBMI2DQ, 512, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX512VBMIDQ, 512, _IntrinType_> {};
 
+template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::FMA3, 256, _IntrinType_> : _Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_> : _Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_> {};
+template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX2FMA3, 256, _IntrinType_> : _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_> {};
 template <class _IntrinType_> struct _Broadcast_zeros<arch::ISA::AVX512VLDQ, 256, _IntrinType_>: _Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_> {};
