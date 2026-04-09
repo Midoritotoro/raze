@@ -45,7 +45,7 @@ struct _Store<arch::ISA::SSE2, 128> {
 };
 
 template <>
-struct _Store<arch::ISA::AVX2, 256> {
+struct _Store<arch::ISA::AVX, 256> {
 	template <
 		class _IntrinType_,
 		class _AlignmentPolicy_ = __unaligned_policy>
@@ -114,7 +114,10 @@ template <> struct _Store<arch::ISA::SSE3, 128> : _Store<arch::ISA::SSE2, 128> {
 template <> struct _Store<arch::ISA::SSSE3, 128> : _Store<arch::ISA::SSE3, 128> {};
 template <> struct _Store<arch::ISA::SSE41, 128> : _Store<arch::ISA::SSSE3, 128> {};
 template <> struct _Store<arch::ISA::SSE42, 128> : _Store<arch::ISA::SSE41, 128> {};
-template <> struct _Store<arch::ISA::AVX2, 128> : _Store<arch::ISA::SSE42, 128> {};
+template <> struct _Store<arch::ISA::AVX, 128> : _Store<arch::ISA::SSE42, 128> {};
+template <> struct _Store<arch::ISA::FMA3, 128> : _Store<arch::ISA::AVX, 128> {};
+template <> struct _Store<arch::ISA::AVX2, 128> : _Store<arch::ISA::AVX, 128> {};
+template <> struct _Store<arch::ISA::AVX2FMA3, 128> : _Store<arch::ISA::AVX2, 128> {};
 
 template <> struct _Store<arch::ISA::AVX512BW, 512> : _Store<arch::ISA::AVX512F, 512> {};
 template <> struct _Store<arch::ISA::AVX512DQ, 512> : _Store<arch::ISA::AVX512F, 512> {};
@@ -124,6 +127,9 @@ template <> struct _Store<arch::ISA::AVX512VBMI2, 512> : _Store<arch::ISA::AVX51
 template <> struct _Store<arch::ISA::AVX512VBMIDQ, 512> : _Store<arch::ISA::AVX512BWDQ, 512> {};
 template <> struct _Store<arch::ISA::AVX512VBMI2DQ, 512> : _Store<arch::ISA::AVX512VBMIDQ, 512> {};
 
+template <> struct _Store<arch::ISA::FMA3, 256> : _Store<arch::ISA::AVX, 256> {};
+template <> struct _Store<arch::ISA::AVX2, 256> : _Store<arch::ISA::AVX, 256> {};
+template <> struct _Store<arch::ISA::AVX2FMA3, 256> : _Store<arch::ISA::AVX2, 256> {};
 template <> struct _Store<arch::ISA::AVX512VLF, 256> : _Store<arch::ISA::AVX2, 256> {};
 template <> struct _Store<arch::ISA::AVX512VLBW, 256> : _Store<arch::ISA::AVX512VLF, 256> {};
 template <> struct _Store<arch::ISA::AVX512VLDQ, 256> : _Store<arch::ISA::AVX512VLF, 256> {};

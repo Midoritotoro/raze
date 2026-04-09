@@ -32,8 +32,8 @@ struct _Negate<arch::ISA::SSE2, 128, _DesiredType_> {
 	}
 };
 
-template <class _DesiredType_>
-struct _Negate<arch::ISA::AVX2, 256, _DesiredType_> {
+template <class _DesiredType_> 
+struct _Negate<arch::ISA::AVX, 256, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_
 		operator()(_IntrinType_ __vector) raze_const_operator noexcept 
@@ -45,6 +45,21 @@ struct _Negate<arch::ISA::AVX2, 256, _DesiredType_> {
 		else if constexpr (__is_pd_v<_DesiredType_>)
 			return __intrin_bitcast<_IntrinType_>(_mm256_xor_pd(__intrin_bitcast<__m256d>(__vector),
 				__intrin_bitcast<__m256d>(_mm256_setr_epi32(0, 0x80000000, 0, 0x80000000, 0, 0x80000000, 0, 0x80000000))));
+
+		else
+			return _Sub<arch::ISA::AVX, 256, _DesiredType_>()(
+				_Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_>()(), __vector);
+	}
+};
+
+template <class _DesiredType_>
+struct _Negate<arch::ISA::AVX2, 256, _DesiredType_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_
+		operator()(_IntrinType_ __vector) raze_const_operator noexcept 
+	{
+		if      constexpr (__is_ps_v<_DesiredType_> || __is_pd_v<_DesiredType_>)
+			return _Negate<arch::ISA::AVX, 256, _DesiredType_>()(__vector);
 
 		else
 			return _Sub<arch::ISA::AVX2, 256, _DesiredType_>()(
@@ -77,7 +92,10 @@ template <class _DesiredType_> struct _Negate<arch::ISA::SSE3, 128, _DesiredType
 template <class _DesiredType_> struct _Negate<arch::ISA::SSSE3, 128, _DesiredType_>: _Negate<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Negate<arch::ISA::SSE41, 128, _DesiredType_>: _Negate<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Negate<arch::ISA::SSE42, 128, _DesiredType_>: _Negate<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Negate<arch::ISA::AVX2, 128, _DesiredType_>: _Negate<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Negate<arch::ISA::AVX, 128, _DesiredType_>: _Negate<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Negate<arch::ISA::AVX2, 128, _DesiredType_> : _Negate<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Negate<arch::ISA::FMA3, 128, _DesiredType_> : _Negate<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Negate<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Negate<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Negate<arch::ISA::AVX512BW, 512, _DesiredType_>: _Negate<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Negate<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Negate<arch::ISA::AVX512F, 512, _DesiredType_> {};
@@ -87,6 +105,8 @@ template <class _DesiredType_> struct _Negate<arch::ISA::AVX512VBMI2, 512, _Desi
 template <class _DesiredType_> struct _Negate<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_>: _Negate<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Negate<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_>: _Negate<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Negate<arch::ISA::FMA3, 256, _DesiredType_> : _Negate<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Negate<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Negate<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Negate<arch::ISA::AVX512VLF, 256, _DesiredType_>: _Negate<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Negate<arch::ISA::AVX512VLBW, 256, _DesiredType_>: _Negate<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Negate<arch::ISA::AVX512VLDQ, 256, _DesiredType_>: _Negate<arch::ISA::AVX512VLF, 256, _DesiredType_> {};

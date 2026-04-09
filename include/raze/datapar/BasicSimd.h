@@ -74,7 +74,7 @@ public:
      * Native support is important for performance and for correctly handling
      * partial vectors (“tail elements”).
     */
-    static constexpr inline bool is_native_mask_load_supported_v = __is_native_mask_load_supported_v<__isa, __width, sizeof(value_type)>;
+    static constexpr inline bool is_native_mask_load_supported_v = __is_native_mask_load_supported_v<__isa, __width, value_type>;
 
     /**
      * @brief Indicates whether the current ISA/ABI supports native masked stores.
@@ -97,7 +97,7 @@ public:
      * avoids unnecessary memory traffic, and improves performance in
      * algorithms that rely on partial‑vector writes.
     */
-    static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<__isa, __width, sizeof(value_type)>;
+    static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<__isa, __width, value_type>;
 
     /**
      * @brief Constructs an uninitialized SIMD vector.

@@ -34,7 +34,11 @@ template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::SSE3, 128, _De
 template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::SSSE3, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::SSE41, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::SSE42, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::AVX2, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::AVX, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::AVX2, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::FMA3, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Mask_left_shift<arch::ISA::AVX2, 128, _DesiredType_> {};
+
 
 template <class _DesiredType_> 
 struct _Mask_left_shift<arch::ISA::AVX512VLF, 128, _DesiredType_>: 
@@ -129,6 +133,23 @@ struct _Mask_left_shift<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 	}
 };
 
+template <class _DesiredType_> 
+struct _Mask_left_shift<arch::ISA::AVX, 256, _DesiredType_> {
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__additional_source) raze_const_operator noexcept
+	{
+		return _Blend<arch::ISA::AVX, 256, _DesiredType_>()(
+			_Left_shift<arch::ISA::AVX, 256, _DesiredType_>()(__left, __shift),
+			__additional_source, __mask);
+	}
+};
+
 template <class _DesiredType_>
 struct _Mask_left_shift<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <
@@ -145,6 +166,9 @@ struct _Mask_left_shift<arch::ISA::AVX2, 256, _DesiredType_> {
 			__additional_source, __mask);
 	}
 };
+
+template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::FMA3, 256, _DesiredType_> : _Mask_left_shift<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_left_shift<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Mask_left_shift<arch::ISA::AVX2, 256, _DesiredType_> {};
 
 template <class _DesiredType_> 
 struct _Mask_left_shift<arch::ISA::AVX512VLF, 256, _DesiredType_>:

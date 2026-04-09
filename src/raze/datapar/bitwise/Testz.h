@@ -43,6 +43,15 @@ struct _Testz<arch::ISA::SSE41, 128>:
 	}
 };
 
+template <> 
+struct _Testz<arch::ISA::AVX, 256> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline
+		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	{
+		return _mm256_testz_si256(__intrin_bitcast<__m256i>(__vector), __intrin_bitcast<__m256i>(__vector));
+	}
+};
 
 template <>
 struct _Testz<arch::ISA::AVX2, 256> {
@@ -66,7 +75,10 @@ struct _Testz<arch::ISA::AVX512F, 512> {
 };
 
 template <> struct _Testz<arch::ISA::SSE42, 128> : _Testz<arch::ISA::SSE41, 128> {};
-template <> struct _Testz<arch::ISA::AVX2, 128> : _Testz<arch::ISA::SSE42, 128> {};
+template <> struct _Testz<arch::ISA::AVX, 128> : _Testz<arch::ISA::SSE42, 128> {};
+template <> struct _Testz<arch::ISA::AVX2, 128> : _Testz<arch::ISA::AVX, 128> {};
+template <> struct _Testz<arch::ISA::FMA3, 128> : _Testz<arch::ISA::AVX, 128> {};
+template <> struct _Testz<arch::ISA::AVX2FMA3, 128> : _Testz<arch::ISA::AVX2, 128> {};
 
 template <> struct _Testz<arch::ISA::AVX512BW, 512> : _Testz<arch::ISA::AVX512F, 512> {};
 template <> struct _Testz<arch::ISA::AVX512DQ, 512> : _Testz<arch::ISA::AVX512F, 512> {};
@@ -76,6 +88,8 @@ template <> struct _Testz<arch::ISA::AVX512VBMI2, 512> : _Testz<arch::ISA::AVX51
 template <> struct _Testz<arch::ISA::AVX512VBMIDQ, 512> : _Testz<arch::ISA::AVX512BWDQ, 512> {};
 template <> struct _Testz<arch::ISA::AVX512VBMI2DQ, 512> : _Testz<arch::ISA::AVX512VBMIDQ, 512> {};
 
+template <> struct _Testz<arch::ISA::FMA3, 256> : _Testz<arch::ISA::AVX, 256> {};
+template <> struct _Testz<arch::ISA::AVX2FMA3, 256> : _Testz<arch::ISA::AVX2, 256> {};
 template <> struct _Testz<arch::ISA::AVX512VLF, 256> : _Testz<arch::ISA::AVX2, 256> {};
 template <> struct _Testz<arch::ISA::AVX512VLBW, 256> : _Testz<arch::ISA::AVX512VLF, 256> {};
 template <> struct _Testz<arch::ISA::AVX512VLDQ, 256> : _Testz<arch::ISA::AVX512VLF, 256> {};

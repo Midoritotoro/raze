@@ -94,8 +94,11 @@ struct _Blend<arch::ISA::SSE41, 128, _DesiredType_>:
 template <class _DesiredType_> struct _Blend<arch::ISA::SSE42, 128, _DesiredType_> : _Blend<arch::ISA::SSE41, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX, 128, _DesiredType_> : _Blend<arch::ISA::SSE42, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Blend<arch::ISA::AVX2, 128, _DesiredType_> : _Blend<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Blend<arch::ISA::AVX2, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Blend<arch::ISA::FMA3, 128, _DesiredType_> : _Blend<arch::ISA::AVX, 128, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>:
+template <class _DesiredType_> 
+struct _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>:
 	_Blend<arch::ISA::AVX2, 128, _DesiredType_> 
 {
 	template <

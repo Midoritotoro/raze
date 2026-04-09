@@ -251,6 +251,39 @@ struct _Mask_div<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 	}
 };
 
+template <class _DesiredType_> 
+struct _Mask_div<arch::ISA::AVX, 256, _DesiredType_> {
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		_DesiredType_	__right,
+		_MaskType_		__mask,
+		_IntrinType_	__additional_source) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Blend<arch::ISA::AVX, 256, _DesiredType_>()(
+			_Div<arch::ISA::AVX, 256, _DesiredType_>()(__left, __right),
+			__additional_source, __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		_IntrinType_	__right,
+		_MaskType_		__mask,
+		_IntrinType_	__additional_source) raze_const_operator noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Blend<arch::ISA::AVX, 256, _DesiredType_>()(
+			_Div<arch::ISA::AVX, 256, _DesiredType_>()(__left, __right),
+			__additional_source, __mask);
+	}
+};
+
 template <class _DesiredType_>
 struct _Mask_div<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <
@@ -615,7 +648,10 @@ struct _Mask_div<arch::ISA::AVX512BW, 512, _DesiredType_>:
 };
 
 template <class _DesiredType_> struct _Mask_div<arch::ISA::SSE42, 128, _DesiredType_> : _Mask_div<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX2, 128, _DesiredType_> : _Mask_div<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX, 128, _DesiredType_> : _Mask_div<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX2, 128, _DesiredType_> : _Mask_div<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_div<arch::ISA::FMA3, 128, _DesiredType_> : _Mask_div<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Mask_div<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Mask_div<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Mask_div<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -624,6 +660,8 @@ template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512VBMI2, 512, _De
 template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Mask_div<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Mask_div<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Mask_div<arch::ISA::FMA3, 256, _DesiredType_> : _Mask_div<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Mask_div<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Mask_div<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Mask_div<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Mask_div<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Mask_div<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};

@@ -60,7 +60,7 @@ struct __contains {
 };
 
 #define __xmm_features arch::ISA::SSE, arch::ISA::SSE2, arch::ISA::SSE3, arch::ISA::SSSE3, arch::ISA::SSE41, arch::ISA::SSE42
-#define __ymm_features arch::ISA::AVX, arch::ISA::AVX2
+#define __ymm_features arch::ISA::AVX, arch::ISA::AVX2, arch::ISA::AVX2FMA3, arch::ISA::FMA3
 #define __zmm_features arch::ISA::AVX512F, arch::ISA::AVX512BW, arch::ISA::AVX512BWDQ, \
 	arch::ISA::AVX512DQ, arch::ISA::AVX512VLDQ, arch::ISA::AVX512VLBW, arch::ISA::AVX512VLF, \
 	arch::ISA::AVX512VLBWDQ, arch::ISA::AVX512VBMI, arch::ISA::AVX512VBMI2, arch::ISA::AVX512VBMIDQ,\

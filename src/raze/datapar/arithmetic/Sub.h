@@ -19,22 +19,64 @@ struct _Sub<arch::ISA::SSE2, 128, _DesiredType_> {
 		_IntrinType_ __right) raze_const_operator noexcept
 	{
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi64(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi64(
+				__intrin_bitcast<__m128i>(__left),
+				__intrin_bitcast<__m128i>(__right)));
 
 		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi32(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi32(
+				__intrin_bitcast<__m128i>(__left),
+				__intrin_bitcast<__m128i>(__right)));
 
 		else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi16(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi16(
+				__intrin_bitcast<__m128i>(__left), 
+				__intrin_bitcast<__m128i>(__right)));
 
 		else if constexpr (__is_epi8_v<_DesiredType_> || __is_epu8_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi8(__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm_sub_epi8(
+				__intrin_bitcast<__m128i>(__left), 
+				__intrin_bitcast<__m128i>(__right)));
 
 		else if constexpr (__is_ps_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_sub_ps(__intrin_bitcast<__m128>(__left), __intrin_bitcast<__m128>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm_sub_ps(
+				__intrin_bitcast<__m128>(__left),
+				__intrin_bitcast<__m128>(__right)));
 
 		else if constexpr (__is_pd_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_sub_pd(__intrin_bitcast<__m128d>(__left), __intrin_bitcast<__m128d>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm_sub_pd(
+				__intrin_bitcast<__m128d>(__left), 
+				__intrin_bitcast<__m128d>(__right)));
+	}
+};
+
+template <class _DesiredType_> 
+struct _Sub<arch::ISA::AVX, 256, _DesiredType_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_ __left,
+		_IntrinType_ __right) raze_const_operator noexcept
+	{
+		if constexpr (__is_ps_v<_DesiredType_>) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_ps(
+				__intrin_bitcast<__m256>(__left),
+				__intrin_bitcast<__m256>(__right)));
+		}
+		else if constexpr (__is_pd_v<_DesiredType_>) {
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_pd(
+				__intrin_bitcast<__m256d>(__left),
+				__intrin_bitcast<__m256d>(__right)));
+		}
+		else {
+			const auto __low = _Sub<arch::ISA::SSE42, 128, _DesiredType_>()(
+				__intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+			const auto __high = _Sub<arch::ISA::SSE42, 128, _DesiredType_>()(
+				_mm256_extractf128_si256(__intrin_bitcast<__m256i>(__left), 1),
+				_mm256_extractf128_si256(__intrin_bitcast<__m256i>(__right), 1));
+
+			return __intrin_bitcast<_IntrinType_>(_mm256_insertf128_si256(
+				__intrin_bitcast<__m256i>(__low), __high, 1));
+		}
 	}
 };
 
@@ -46,22 +88,34 @@ struct _Sub<arch::ISA::AVX2, 256, _DesiredType_> {
 		_IntrinType_ __right) raze_const_operator noexcept
 	{
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi64(__intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi64(
+				__intrin_bitcast<__m256i>(__left),
+				__intrin_bitcast<__m256i>(__right)));
 
 		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi32(__intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi32(
+				__intrin_bitcast<__m256i>(__left),
+				__intrin_bitcast<__m256i>(__right)));
 
 		else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi16(__intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi16(
+				__intrin_bitcast<__m256i>(__left), 
+				__intrin_bitcast<__m256i>(__right)));
 
 		else if constexpr (__is_epi8_v<_DesiredType_> || __is_epu8_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi8(__intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_epi8(
+				__intrin_bitcast<__m256i>(__left), 
+				__intrin_bitcast<__m256i>(__right)));
 
 		else if constexpr (__is_ps_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_sub_ps(__intrin_bitcast<__m256>(__left), __intrin_bitcast<__m256>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_ps(
+				__intrin_bitcast<__m256>(__left), 
+				__intrin_bitcast<__m256>(__right)));
 
 		else if constexpr (__is_pd_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_sub_pd(__intrin_bitcast<__m256d>(__left), __intrin_bitcast<__m256d>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm256_sub_pd(
+				__intrin_bitcast<__m256d>(__left), 
+				__intrin_bitcast<__m256d>(__right)));
 	}
 };
 
@@ -73,20 +127,30 @@ struct _Sub<arch::ISA::AVX512F, 512, _DesiredType_> {
 		_IntrinType_ __right) raze_const_operator noexcept
 	{
 		if constexpr (__is_pd_v<_DesiredType_>) {
-			return __intrin_bitcast<_IntrinType_>(_mm512_sub_pd(__intrin_bitcast<__m512d>(__left), __intrin_bitcast<__m512d>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm512_sub_pd(
+				__intrin_bitcast<__m512d>(__left), 
+				__intrin_bitcast<__m512d>(__right)));
 		}
 		else if constexpr (__is_ps_v<_DesiredType_>) {
-			return __intrin_bitcast<_IntrinType_>(_mm512_sub_ps(__intrin_bitcast<__m512>(__left), __intrin_bitcast<__m512>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm512_sub_ps(
+				__intrin_bitcast<__m512>(__left), 
+				__intrin_bitcast<__m512>(__right)));
 		}
 		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>) {
-			return __intrin_bitcast<_IntrinType_>(_mm512_sub_epi32(__intrin_bitcast<__m512i>(__left), __intrin_bitcast<__m512i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm512_sub_epi32(
+				__intrin_bitcast<__m512i>(__left),
+				__intrin_bitcast<__m512i>(__right)));
 		}
 		else if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>) {
-			return __intrin_bitcast<_IntrinType_>(_mm512_sub_epi64(__intrin_bitcast<__m512i>(__left), __intrin_bitcast<__m512i>(__right)));
+			return __intrin_bitcast<_IntrinType_>(_mm512_sub_epi64(
+				__intrin_bitcast<__m512i>(__left), 
+				__intrin_bitcast<__m512i>(__right)));
 		}
 		else {
-			const auto __low	= _Sub<arch::ISA::AVX2, 256, _DesiredType_>()(__intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right));
-			const auto __high	= _Sub<arch::ISA::AVX2, 256, _DesiredType_>()(_mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__left), 1),
+			const auto __low	= _Sub<arch::ISA::AVX2, 256, _DesiredType_>()(
+				__intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right));
+			const auto __high	= _Sub<arch::ISA::AVX2, 256, _DesiredType_>()(
+				_mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__left), 1),
 				_mm512_extracti64x4_epi64(__intrin_bitcast<__m512i>(__right), 1));
 
 			return __intrin_bitcast<_IntrinType_>(_mm512_inserti64x4(__intrin_bitcast<__m512i>(__low), __high, 1));
@@ -98,7 +162,10 @@ template <class _DesiredType_> struct _Sub<arch::ISA::SSE3, 128, _DesiredType_>:
 template <class _DesiredType_> struct _Sub<arch::ISA::SSSE3, 128, _DesiredType_>: _Sub<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Sub<arch::ISA::SSE41, 128, _DesiredType_>: _Sub<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Sub<arch::ISA::SSE42, 128, _DesiredType_>: _Sub<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Sub<arch::ISA::AVX2, 128, _DesiredType_>: _Sub<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Sub<arch::ISA::AVX, 128, _DesiredType_>: _Sub<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Sub<arch::ISA::AVX2, 128, _DesiredType_> : _Sub<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Sub<arch::ISA::FMA3, 128, _DesiredType_> : _Sub<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Sub<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Sub<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Sub<arch::ISA::AVX512BW, 512, _DesiredType_>: _Sub<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Sub<arch::ISA::AVX512DQ, 512, _DesiredType_>: _Sub<arch::ISA::AVX512F, 512, _DesiredType_> {};
@@ -108,6 +175,8 @@ template <class _DesiredType_> struct _Sub<arch::ISA::AVX512VBMI2, 512, _Desired
 template <class _DesiredType_> struct _Sub<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_>: _Sub<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Sub<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_>: _Sub<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Sub<arch::ISA::FMA3, 256, _DesiredType_> : _Sub<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Sub<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Sub<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Sub<arch::ISA::AVX512VLF, 256, _DesiredType_>: _Sub<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Sub<arch::ISA::AVX512VLBW, 256, _DesiredType_>: _Sub<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Sub<arch::ISA::AVX512VLDQ, 256, _DesiredType_>: _Sub<arch::ISA::AVX512VLF, 256, _DesiredType_> {};

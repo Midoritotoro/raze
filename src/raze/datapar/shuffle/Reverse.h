@@ -25,7 +25,7 @@ struct _Reverse {
 		operator()(_IntrinType_ __vector) raze_const_operator noexcept
 	{
 		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
-		return _Shuffle<_ISA_, _Width_, _DesiredType_>()(__vector, make_reverse_integer_sequence<__length>{})
+		return _Shuffle<_ISA_, _Width_, _DesiredType_>()(__vector, make_reverse_integer_sequence<__length>{});
 	}
 };
 

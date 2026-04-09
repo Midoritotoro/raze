@@ -47,6 +47,19 @@ struct _First_n<arch::ISA::SSE2, 128, _DesiredType_> {
 	}
 };
 
+template <class _DesiredType_>
+struct _First_n<arch::ISA::AVX, 256, _DesiredType_> {
+    raze_nodiscard raze_static_operator raze_always_inline
+		auto operator()(uint32 __elements) raze_const_operator noexcept
+	{
+		alignas(32) static constexpr uint32 __first_n_mask[16] = 
+			{ ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0, 0, 0, 0, 0 };
+        const auto __bytes = __elements * sizeof(_DesiredType_);
+
+		return _mm256_load_si256(reinterpret_cast<const __m256i*>(
+			reinterpret_cast<const uint8*>(__first_n_mask) + (32 - __bytes)));
+	}
+};
 
 template <class _DesiredType_>
 struct _First_n<arch::ISA::AVX2, 256, _DesiredType_> {
@@ -189,7 +202,10 @@ template <class _DesiredType_> struct _First_n<arch::ISA::SSE3, 128, _DesiredTyp
 template <class _DesiredType_> struct _First_n<arch::ISA::SSSE3, 128, _DesiredType_> : _First_n<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _First_n<arch::ISA::SSE41, 128, _DesiredType_> : _First_n<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _First_n<arch::ISA::SSE42, 128, _DesiredType_> : _First_n<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _First_n<arch::ISA::AVX2, 128, _DesiredType_> : _First_n<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _First_n<arch::ISA::AVX, 128, _DesiredType_> : _First_n<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _First_n<arch::ISA::AVX2, 128, _DesiredType_> : _First_n<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _First_n<arch::ISA::FMA3, 128, _DesiredType_> : _First_n<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _First_n<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _First_n<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _First_n<arch::ISA::AVX512DQ, 512, _DesiredType_> : _First_n<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _First_n<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _First_n<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -198,6 +214,8 @@ template <class _DesiredType_> struct _First_n<arch::ISA::AVX512VBMI2, 512, _Des
 template <class _DesiredType_> struct _First_n<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _First_n<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _First_n<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _First_n<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _First_n<arch::ISA::FMA3, 256, _DesiredType_> : _First_n<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _First_n<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _First_n<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _First_n<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _First_n<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _First_n<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _First_n<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _First_n<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _First_n<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};

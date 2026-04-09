@@ -90,6 +90,33 @@ struct _To_vector<arch::ISA::SSSE3, 128, _IntrinType_, _DesiredType_>:
     }
 };
 
+template <
+    class _IntrinType_,
+    class _DesiredType_> 
+struct _To_vector<arch::ISA::AVX, 256, _IntrinType_, _DesiredType_> {
+    template <class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline 
+        _IntrinType_ operator()(_MaskType_ __mask) raze_const_operator noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
+    {
+        if constexpr (__is_intrin_type_v<_MaskType_>) {
+            return __intrin_bitcast<_IntrinType_>(__mask);
+        }
+        else {
+            using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_DesiredType_)>;
+            using _HalfType = IntegerForSize<__constexpr_max<(sizeof(_MaskType) >> 1), 1>()>::Unsigned;
+
+            constexpr auto __maximum = math::__maximum_integral_limit<_HalfType>();
+            constexpr auto __shift = (sizeof(_MaskType) << 2);
+
+            const auto __low = _To_vector<arch::ISA::SSSE3, 128, __m128i, _DesiredType_>()(__mask & __maximum);
+            const auto __high = _To_vector<arch::ISA::SSSE3, 128, __m128i, _DesiredType_>()(__mask >> __shift);
+
+            return __intrin_bitcast<_IntrinType_>(_mm256_insertf128_si256(__intrin_bitcast<__m256i>(__low), __high, 1));
+        }
+    }
+};
+
 
 template <
     class _IntrinType_,
@@ -393,13 +420,18 @@ struct _To_vector<arch::ISA::AVX512VLBWDQ, 256, _IntrinType_, _DesiredType_> :
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::SSE3, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::SSE2, 128, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::SSE41, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::SSSE3, 128, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::SSE42, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::SSE41, 128, _IntrinType_, _DesiredType_> {};
-template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX2, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::SSE42, 128, _IntrinType_, _DesiredType_> {};
+template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::SSE42, 128, _IntrinType_, _DesiredType_> {};
+template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX2, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX, 128, _IntrinType_, _DesiredType_> {};
+template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::FMA3, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX, 128, _IntrinType_, _DesiredType_> {};
+template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX2FMA3, 128, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX2, 128, _IntrinType_, _DesiredType_> {};
 
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX512VBMI, 512, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX512BW, 512, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX512VBMI2, 512, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX512VBMI, 512, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX512VBMIDQ, 512, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX512BWDQ, 512, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX512VBMI2DQ, 512, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX512VBMIDQ, 512, _IntrinType_, _DesiredType_> {};
 
+template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::FMA3, 256, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX, 256, _IntrinType_, _DesiredType_> {};
+template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX2FMA3, 256, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX2, 256, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX512VLF, 256, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX2, 256, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX512VBMIVL, 256, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX512VLBW, 256, _IntrinType_, _DesiredType_> {};
 template <class _IntrinType_, class _DesiredType_> struct _To_vector<arch::ISA::AVX512VBMI2VL, 256, _IntrinType_, _DesiredType_> : _To_vector<arch::ISA::AVX512VBMIVL, 256, _IntrinType_, _DesiredType_> {};

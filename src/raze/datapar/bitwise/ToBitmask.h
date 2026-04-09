@@ -29,6 +29,28 @@ struct _To_bitmask<arch::ISA::SSE2, 128, _DesiredType_> {
 };
 
 template <class _DesiredType_>
+struct _To_bitmask<arch::ISA::AVX, 256, _DesiredType_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline
+		auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	{
+		if constexpr (std::is_integral_v<_IntrinType_>) {
+			return __vector;
+		}
+		else if constexpr (sizeof(_DesiredType_) >= 4) {
+			return _To_mask<arch::ISA::AVX, 256, _DesiredType_>()(__vector);
+		}
+		else {
+			const auto __low = _To_bitmask<arch::ISA::SSE42, 128, _DesiredType_>()(__intrin_bitcast<__m128i>(__vector));
+			const auto __high = _To_bitmask<arch::ISA::SSE42, 128, _DesiredType_>()(
+				_mm256_extractf128_si256(__intrin_bitcast<__m256i>(__vector), 1));
+
+			return (static_cast<uint32>(__high) << 16) | static_cast<uint32>(__low);
+		}
+	}
+};
+
+template <class _DesiredType_>
 struct _To_bitmask<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline 
@@ -250,13 +272,18 @@ template <class _DesiredType_> struct _To_bitmask<arch::ISA::SSE3, 128, _Desired
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::SSSE3, 128, _DesiredType_> : _To_bitmask<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::SSE41, 128, _DesiredType_> : _To_bitmask<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::SSE42, 128, _DesiredType_> : _To_bitmask<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX2, 128, _DesiredType_> : _To_bitmask<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX, 128, _DesiredType_> : _To_bitmask<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX2, 128, _DesiredType_> : _To_bitmask<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _To_bitmask<arch::ISA::FMA3, 128, _DesiredType_> : _To_bitmask<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _To_bitmask<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX512VBMI, 512, _DesiredType_> : _To_bitmask<arch::ISA::AVX512BW, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX512VBMI2, 512, _DesiredType_> : _To_bitmask<arch::ISA::AVX512VBMI, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _To_bitmask<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _To_bitmask<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _To_bitmask<arch::ISA::FMA3, 256, _DesiredType_> : _To_bitmask<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _To_bitmask<arch::ISA::AVX2, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX512VLF, 256, _DesiredType_> : _To_bitmask<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _To_bitmask<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _To_bitmask<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_> : _To_bitmask<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> {};

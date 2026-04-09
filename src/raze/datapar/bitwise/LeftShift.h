@@ -38,6 +38,22 @@ struct _Left_shift<arch::ISA::SSE2, 128, _DesiredType_> {
 	}
 };
 
+template <class _DesiredType_>
+struct _Left_shift<arch::ISA::AVX, 256, _DesiredType_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) raze_const_operator noexcept
+	{
+		const auto __low = _Left_shift<arch::ISA::SSE42, 128, _DesiredType_>()(
+			__intrin_bitcast<__m128i>(__left), __shift);
+		const auto __high = _Left_shift<arch::ISA::SSE42, 128, _DesiredType_>()(
+			_mm256_extractf128_si256(__intrin_bitcast<__m256i>(__left), 1), __shift);
+
+		return __intrin_bitcast<_IntrinType_>(_mm256_insertf128_si256(
+			__intrin_bitcast<__m256i>(__low), __high, 1));
+	}
+};
 
 template <class _DesiredType_>
 struct _Left_shift<arch::ISA::AVX2, 256, _DesiredType_> {
@@ -119,7 +135,10 @@ template <class _DesiredType_> struct _Left_shift<arch::ISA::SSE3, 128, _Desired
 template <class _DesiredType_> struct _Left_shift<arch::ISA::SSSE3, 128, _DesiredType_> : _Left_shift<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Left_shift<arch::ISA::SSE41, 128, _DesiredType_> : _Left_shift<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Left_shift<arch::ISA::SSE42, 128, _DesiredType_> : _Left_shift<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX2, 128, _DesiredType_> : _Left_shift<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX, 128, _DesiredType_> : _Left_shift<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Left_shift<arch::ISA::FMA3, 128, _DesiredType_> : _Left_shift<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX2, 128, _DesiredType_> : _Left_shift<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Left_shift<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Left_shift<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Left_shift<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -128,6 +147,8 @@ template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512VBMI2, 512, _
 template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Left_shift<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Left_shift<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Left_shift<arch::ISA::FMA3, 256, _DesiredType_> : _Left_shift<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Left_shift<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512VLF, 256, _DesiredType_> : _Left_shift<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Left_shift<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Left_shift<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Left_shift<arch::ISA::AVX512VLF, 256, _DesiredType_> {};

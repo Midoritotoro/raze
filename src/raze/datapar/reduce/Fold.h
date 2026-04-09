@@ -86,7 +86,7 @@ struct _Fold<arch::ISA::AVX, 256, _DesiredType_> {
 
             const auto __swapped_halfs = __intrin_bitcast<__m256>(_mm256_permute2f128_pd(__folded, __folded, 1));
             const auto __shuffle2 = _mm256_shuffle_ps(__swapped_halfs, __swapped_halfs, 0x4E);
-            __folded = __reduce(__intrin_bitcast<__m256i>(__folded), __shuffle2);
+            __folded = __reduce(__folded, __intrin_bitcast<__m256d>(__shuffle2));
 
             if constexpr (__is_pd_v<_DesiredType_>)
                 return _mm256_cvtsd_f64(__folded);
@@ -96,7 +96,7 @@ struct _Fold<arch::ISA::AVX, 256, _DesiredType_> {
         else if constexpr (sizeof(_DesiredType_) == 4) {
             auto __folded = __intrin_bitcast<__m256>(__vector);
 
-            const auto __swapped_halfs = __intrin_bitcast<__m256>(_mm256_permute2f128_pd(__folded, __folded, 1));
+            const auto __swapped_halfs = __intrin_bitcast<__m256>(_mm256_permute2f128_ps(__folded, __folded, 1));
             const auto __shuffle1 = _mm256_shuffle_ps(__swapped_halfs, __swapped_halfs, 0x4E);
             __folded = __reduce(__folded, __shuffle1);
 
@@ -109,7 +109,7 @@ struct _Fold<arch::ISA::AVX, 256, _DesiredType_> {
             if constexpr (__is_ps_v<_DesiredType_>)
                 return _mm256_cvtss_f32(__intrin_bitcast<__m256>(__folded));
             else
-                return _mm256_cvtsi256_si32(__folded);
+                return _mm256_cvtsi256_si32(__intrin_bitcast<__m256i>(__folded));
         }
         else if constexpr (sizeof(_DesiredType_) == 2) {
             const auto __high = _mm256_permute2f128_pd(__intrin_bitcast<__m256d>(__vector),
@@ -118,7 +118,7 @@ struct _Fold<arch::ISA::AVX, 256, _DesiredType_> {
             auto __folded = __intrin_bitcast<__m256d>(__vector);
             __folded = __reduce(__folded, __high);
 
-            const auto __low = __intrin_bitcast<__m128d>(__folded);
+            auto __low = __intrin_bitcast<__m128d>(__folded);
 
             __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 8)));
             __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 4)));
@@ -133,7 +133,7 @@ struct _Fold<arch::ISA::AVX, 256, _DesiredType_> {
             auto __folded = __intrin_bitcast<__m256d>(__vector);
             __folded = __reduce(__folded, __high);
 
-            const auto __low = __intrin_bitcast<__m128d>(__folded);
+            auto __low = __intrin_bitcast<__m128d>(__folded);
 
             __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 8)));
             __low = __reduce(__low, __intrin_bitcast<__m128d>(_mm_srli_si128(__intrin_bitcast<__m128i>(__low), 4)));

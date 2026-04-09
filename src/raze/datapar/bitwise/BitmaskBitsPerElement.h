@@ -30,7 +30,25 @@ template <class _DesiredType_>
 inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::AVX2, 128, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
 
 template <class _DesiredType_>
+inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::AVX, 128, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
+
+template <class _DesiredType_>
+inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::AVX2FMA3, 128, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
+
+template <class _DesiredType_>
+inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::FMA3, 128, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
+
+template <class _DesiredType_>
 inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::AVX2, 256, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
+
+template <class _DesiredType_>
+inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::AVX, 256, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
+
+template <class _DesiredType_>
+inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::AVX2FMA3, 256, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
+
+template <class _DesiredType_>
+inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::FMA3, 256, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;
 
 template <class _DesiredType_>
 inline constexpr sizetype __bitmask_bits_per_element<arch::ISA::AVX512F, 512, _DesiredType_> = (sizeof(_DesiredType_) == 2) ? 2 : 1;

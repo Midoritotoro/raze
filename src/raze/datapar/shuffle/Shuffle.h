@@ -347,7 +347,7 @@ struct _Shuffle<arch::ISA::AVX, 256, _DesiredType_> {
 		_IntrinType_		__vector,
 		_IndexIntrinType_	__indices) raze_const_operator noexcept
 	{
-		return __shuffle_fallback<arch::ISA::AVX2, 256, _DesiredType_>(__vector, __indices);
+		return __shuffle_fallback<arch::ISA::AVX, 256, _DesiredType_>(__vector, __indices);
 	}
 
 	template <
@@ -357,7 +357,7 @@ struct _Shuffle<arch::ISA::AVX, 256, _DesiredType_> {
 		_IntrinType_								__vector,
 		std::integer_sequence<uint64, _Indices_...> __indices_sequence) raze_const_operator noexcept
 	{
-		return __shuffle_fallback<arch::ISA::AVX2, 256, _DesiredType_>(__vector, __indices_sequence);
+		return __shuffle_fallback<arch::ISA::AVX, 256, _DesiredType_>(__vector, __indices_sequence);
 	}
 };
 

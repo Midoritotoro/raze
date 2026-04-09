@@ -27,6 +27,7 @@ public:
     raze_nodiscard raze_always_inline static bool SSE42()       noexcept;
     raze_nodiscard raze_always_inline static bool AVX()         noexcept;
     raze_nodiscard raze_always_inline static bool AVX2()        noexcept;
+    raze_nodiscard raze_always_inline static bool FMA3()        noexcept;
     raze_nodiscard raze_always_inline static bool AVX512F()     noexcept;
     raze_nodiscard raze_always_inline static bool AVX512BW()    noexcept;
     raze_nodiscard raze_always_inline static bool AVX512PF()    noexcept;
@@ -57,6 +58,7 @@ private:
         
         bool _avx           : 1 = false;
         bool _avx2          : 1 = false;
+        bool _fma3          : 1 = false;
 
         bool _avx512f       : 1 = false;
         bool _avx512bw      : 1 = false;
@@ -68,7 +70,7 @@ private:
         bool _avx512vbmi    : 1 = false;
         bool _avx512vbmi2   : 1 = false;
 
-        bool _popcnt        : 1 = false;
+        bool _popcnt = false;
     };
 
     static inline ProcessorFeaturesInternal _processorFeaturesInternal;
@@ -107,6 +109,7 @@ ProcessorFeatures::ProcessorFeaturesInternal::ProcessorFeaturesInternal() noexce
         
         _popcnt = (leaf1Ecx >> 23) & 1;
         _avx    = (leaf1Ecx >> 28) & 1;
+        _fma3   = ((leaf1Ecx >> 27) & 1) && ((leaf1Ecx >> 12) & 1);
     }
 
     if (leafCount >= 7) {
@@ -221,6 +224,12 @@ bool ProcessorFeatures::isSupported() noexcept {
         return _processorFeaturesInternal._avx;
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX2))
         return _processorFeaturesInternal._avx2;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::FMA3))
+        return _processorFeaturesInternal._fma3;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX))
+        return _processorFeaturesInternal._avx;
+    else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX2FMA3))
+        return _processorFeaturesInternal._avx2 && _processorFeaturesInternal._fma3;
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512F))
         return _processorFeaturesInternal._avx512f;
     else if constexpr (static_cast<int8>(_Feature_) == static_cast<int8>(ISA::AVX512BW))

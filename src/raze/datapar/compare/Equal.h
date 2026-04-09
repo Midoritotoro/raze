@@ -87,6 +87,37 @@ struct _Equal<arch::ISA::SSE41, 128, _DesiredType_>:
 };
 
 template <class _DesiredType_>
+struct _Equal<arch::ISA::AVX, 256, _DesiredType_> {
+    template <class _IntrinType_>
+    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+        _IntrinType_ __left,
+        _IntrinType_ __right) raze_const_operator noexcept
+    {
+        if constexpr (__is_pd_v<_DesiredType_>) {
+            return __intrin_bitcast<_IntrinType_>(_mm256_cmp_pd(
+                __intrin_bitcast<__m256d>(__left), __intrin_bitcast<__m256d>(__right), _CMP_EQ_OQ));
+        }
+        else if constexpr (__is_ps_v<_DesiredType_>) {
+            return __intrin_bitcast<_IntrinType_>(_mm256_cmp_ps(
+                __intrin_bitcast<__m256>(__left), __intrin_bitcast<__m256>(__right), _CMP_EQ_OQ));
+        }
+        else {
+            const auto __low = _Equal<arch::ISA::SSE42, 128, _DesiredType_>()(
+                __intrin_bitcast<__m128i>(__left), __intrin_bitcast<__m128i>(__right));
+
+            const auto __high = _Equal<arch::ISA::SSE42, 128, _DesiredType_>()(
+                _mm256_extractf128_si256(__intrin_bitcast<__m256i>(__left), 1),
+                _mm256_extractf128_si256(__intrin_bitcast<__m256i>(__right), 1));
+
+            return __intrin_bitcast<_IntrinType_>(_mm256_insertf128_si256(
+                __intrin_bitcast<__m256i>(__left), __high, 1));
+        }
+    }
+};
+
+template <class _DesiredType_> struct _Equal<arch::ISA::FMA3, 256, _DesiredType_> : _Equal<arch::ISA::AVX, 256, _DesiredType_> {};
+
+template <class _DesiredType_>
 struct _Equal<arch::ISA::AVX2, 256, _DesiredType_> {
 	template <class _IntrinType_>
 	raze_nodiscard raze_static_operator raze_always_inline auto operator()(
@@ -118,6 +149,8 @@ struct _Equal<arch::ISA::AVX2, 256, _DesiredType_> {
                 __intrin_bitcast<__m256i>(__left), __intrin_bitcast<__m256i>(__right)));
 	}
 };
+
+template <class _DesiredType_> struct _Equal<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Equal<arch::ISA::AVX2, 256, _DesiredType_> {};
 
 template <class _DesiredType_>
 struct _Equal<arch::ISA::AVX512F, 512, _DesiredType_> {
@@ -298,7 +331,10 @@ struct _Equal<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 template <class _DesiredType_> struct _Equal<arch::ISA::SSE3, 128, _DesiredType_> : _Equal<arch::ISA::SSE2, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Equal<arch::ISA::SSSE3, 128, _DesiredType_> : _Equal<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Equal<arch::ISA::SSE42, 128, _DesiredType_> : _Equal<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Equal<arch::ISA::AVX2, 128, _DesiredType_> : _Equal<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Equal<arch::ISA::AVX, 128, _DesiredType_> : _Equal<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Equal<arch::ISA::FMA3, 128, _DesiredType_> : _Equal<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Equal<arch::ISA::AVX2, 128, _DesiredType_> : _Equal<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Equal<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Equal<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Equal<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Equal<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Equal<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Equal<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -322,3 +358,4 @@ template <class _DesiredType_> struct _Equal<arch::ISA::AVX512VBMIVLDQ, 128, _De
 template <class _DesiredType_> struct _Equal<arch::ISA::AVX512VBMI2VLDQ, 128, _DesiredType_> : _Equal<arch::ISA::AVX512VBMIVLDQ, 128, _DesiredType_> {};
 
 __RAZE_DATAPAR_NAMESPACE_END
+

@@ -228,7 +228,7 @@ struct _Rotate_right<arch::ISA::AVX512BW, 512, _DesiredType_> :
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::SSE41, 128, _DesiredType_> : _Rotate_right<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::SSE42, 128, _DesiredType_> : _Rotate_right<arch::ISA::SSE41, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX, 128, _DesiredType_> : _Rotate_right<arch::ISA::SSE42, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Rotate_right<arch::ISA::FMA3, 128, _DesiredType_> : _Rotate_right<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_right<arch::ISA::FMA3, 128, _DesiredType_> : _Rotate_right<arch::ISA::AVX, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX2, 128, _DesiredType_> : _Rotate_right<arch::ISA::AVX, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Rotate_right<arch::ISA::AVX2, 128, _DesiredType_> {};
 
@@ -239,8 +239,7 @@ template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX512VBMI2, 512,
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Rotate_right<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Rotate_right<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
-template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX, 256, _DesiredType_> {};
-template <class _DesiredType_> struct _Rotate_right<arch::ISA::FMA3, 256, _DesiredType_> : _Rotate_right<arch::ISA::SSE42, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Rotate_right<arch::ISA::FMA3, 256, _DesiredType_> : _Rotate_right<arch::ISA::AVX, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX2, 256, _DesiredType_> : _Rotate_right<arch::ISA::AVX, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Rotate_right<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Rotate_right<arch::ISA::AVX512VLBW, 256, _DesiredType_> : _Rotate_right<arch::ISA::AVX512VLF, 256, _DesiredType_> {};

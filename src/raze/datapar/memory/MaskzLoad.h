@@ -26,8 +26,8 @@ struct _Maskz_load<arch::ISA::SSE2, 128, _DesiredType_, _IntrinType_> {
 		_AlignmentPolicy_&&	__alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Mask_load<arch::ISA::SSE2, 128, _DesiredType_>()(__address, __mask,
-			_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __alignment_policy);
+		return _Maskz_assign<arch::ISA::SSE2, 128, _DesiredType_>()(
+			_Load<arch::ISA::SSE2, 128, _IntrinType_>()(__address), __mask);
 	}
 };
 
@@ -46,8 +46,8 @@ struct _Maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Mask_load<arch::ISA::SSE3, 128, _DesiredType_>()(__address, __mask,
-			_Broadcast_zeros<arch::ISA::SSE3, 128, _IntrinType_>()(), __alignment_policy);
+		return _Maskz_assign<arch::ISA::SSE3, 128, _DesiredType_>()(
+			_Load<arch::ISA::SSE3, 128, _IntrinType_>()(__address), __mask);
 	}
 };
 
@@ -66,16 +66,18 @@ struct _Maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Mask_load<arch::ISA::SSE41, 128, _DesiredType_>()(__address, __mask,
-			_Broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_>()(), __alignment_policy);
+		return _Maskz_assign<arch::ISA::SSE41, 128, _DesiredType_>()(
+			_Load<arch::ISA::SSE41, 128, _IntrinType_>()(__address), __mask);
 	}
 };
 
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::SSSE3, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_> {};
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::SSE42, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_> {};
 
 template <
 	class _DesiredType_,
-	class _IntrinType_>
-struct _Maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>:
+	class _IntrinType_> 
+struct _Maskz_load<arch::ISA::AVX, 128, _DesiredType_, _IntrinType_>: 
 	_Maskz_load<arch::ISA::SSE42, 128, _DesiredType_, _IntrinType_>
 {
 	template <
@@ -87,32 +89,29 @@ struct _Maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_maskload_epi64(reinterpret_cast<const long long*>(__address),
-				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask)));
-
-		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_maskload_epi32(reinterpret_cast<const int*>(__address),
-				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask)));
-
-		else if constexpr (__is_ps_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_maskload_ps(reinterpret_cast<const float*>(__address),
-				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask)));
+		if constexpr (__is_ps_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm_maskload_ps(
+				reinterpret_cast<const float*>(__address),
+				_To_vector<arch::ISA::AVX, 128, __m128i, _DesiredType_>()(__mask)));
 
 		else if constexpr (__is_pd_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm_maskload_ps(reinterpret_cast<const float*>(__address),
-				__mask_convert<arch::ISA::AVX2, 128, _DesiredType_, __m128i>(__mask)));
+			return __intrin_bitcast<_IntrinType_>(_mm_maskload_pd(
+				reinterpret_cast<const double*>(__address),
+				_To_vector<arch::ISA::AVX, 128, __m128i, _DesiredType_>()(__mask)));
 
 		else
-			return _Mask_load<arch::ISA::AVX2, 128, _DesiredType_>()(__address, __mask,
-				_Broadcast_zeros<arch::ISA::AVX2, 128, _IntrinType_>()(), __alignment_policy);
+			return _Maskz_assign<arch::ISA::AVX, 128, _DesiredType_>()(
+				_Load<arch::ISA::AVX, 128, _IntrinType_>()(__address), __mask);
 	}
 };
+
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::FMA3, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX, 128, _DesiredType_, _IntrinType_> {};
 
 template <
 	class _DesiredType_,
 	class _IntrinType_>
-struct _Maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>
+struct _Maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::AVX, 128, _DesiredType_, _IntrinType_>
 {
 	template <
 		class _MaskType_,
@@ -124,26 +123,106 @@ struct _Maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_epi64(reinterpret_cast<const long long*>(__address),
-				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask)));
+			return __intrin_bitcast<_IntrinType_>(_mm_maskload_epi64(
+				reinterpret_cast<const long long*>(__address),
+				_To_vector<arch::ISA::AVX2, 128, __m128i, _DesiredType_>()(__mask)));
 
 		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_epi32(reinterpret_cast<const int*>(__address),
-				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask)));
+			return __intrin_bitcast<_IntrinType_>(_mm_maskload_epi32(
+				reinterpret_cast<const int*>(__address),
+				_To_vector<arch::ISA::AVX2, 128, __m128i, _DesiredType_>()(__mask)));
 
 		else if constexpr (__is_ps_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_ps(reinterpret_cast<const float*>(__address),
-				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask)));
+			return __intrin_bitcast<_IntrinType_>(_mm_maskload_ps(
+				reinterpret_cast<const float*>(__address),
+				_To_vector<arch::ISA::AVX2, 128, __m128i, _DesiredType_>()(__mask)));
 
 		else if constexpr (__is_pd_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_ps(reinterpret_cast<const float*>(__address),
-				__mask_convert<arch::ISA::AVX2, 256, _DesiredType_, __m256i>(__mask)));
+			return __intrin_bitcast<_IntrinType_>(_mm_maskload_ps(
+				reinterpret_cast<const float*>(__address),
+				_To_vector<arch::ISA::AVX2, 128, __m128i, _DesiredType_>()(__mask)));
 
 		else
-			return _Mask_load<arch::ISA::AVX2, 256, _DesiredType_>()(__address, __mask,
-				_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __alignment_policy);
+			return _Maskz_assign<arch::ISA::AVX2, 128, _DesiredType_>()(
+				_Load<arch::ISA::AVX2, 128, _IntrinType_>()(__address), __mask);
 	}
 };
+
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX2FMA3, 128, _DesiredType_, _IntrinType_>: _Maskz_load<arch::ISA::AVX2, 128, _DesiredType_, _IntrinType_> {};
+
+template <
+	class _DesiredType_,
+	class _IntrinType_> 
+struct _Maskz_load<arch::ISA::AVX, 256, _DesiredType_, _IntrinType_> {
+	template <
+		class _MaskType_,
+		class _AlignmentPolicy_ = __unaligned_policy>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		const void*			__address,
+		_MaskType_			__mask,
+		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
+	{
+		if constexpr (__is_ps_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_ps(
+				reinterpret_cast<const float*>(__address),
+				_To_vector<arch::ISA::AVX, 256, __m256i, _DesiredType_>()(__mask)));
+
+		else if constexpr (__is_pd_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_ps(
+				reinterpret_cast<const float*>(__address),
+				_To_vector<arch::ISA::AVX, 256, __m256i, _DesiredType_>()(__mask)));
+
+		else
+			return _Maskz_assign<arch::ISA::AVX, 256, _DesiredType_>()(
+				_Load<arch::ISA::AVX, 256, _IntrinType_>()(__address), __mask);
+	}
+};
+
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::FMA3, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX, 256, _DesiredType_, _IntrinType_> {};
+
+template <
+	class _DesiredType_,
+	class _IntrinType_>
+struct _Maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_>:
+	_Maskz_load<arch::ISA::AVX, 256, _DesiredType_, _IntrinType_> 
+{
+	template <
+		class _MaskType_,
+		class _AlignmentPolicy_ = __unaligned_policy>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		const void*			__address,
+		_MaskType_			__mask,
+		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
+			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
+	{
+		if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_epi64(
+				reinterpret_cast<const long long*>(__address),
+				_To_vector<arch::ISA::AVX2, 256, __m256i, _DesiredType_>()(__mask)));
+
+		else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_epi32(
+				reinterpret_cast<const int*>(__address),
+				_To_vector<arch::ISA::AVX2, 256, __m256i, _DesiredType_>()(__mask)));
+
+		else if constexpr (__is_ps_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_ps(
+				reinterpret_cast<const float*>(__address),
+				_To_vector<arch::ISA::AVX2, 256, __m256i, _DesiredType_>()(__mask)));
+
+		else if constexpr (__is_pd_v<_DesiredType_>)
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskload_ps(
+				reinterpret_cast<const float*>(__address),
+				_To_vector<arch::ISA::AVX2, 256, __m256i, _DesiredType_>()(__mask)));
+
+		else
+			return _Maskz_assign<arch::ISA::AVX2, 256, _DesiredType_>()(
+				_Load<arch::ISA::AVX2, 256, _IntrinType_>()(__address), __mask);
+	}
+};
+
+template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX2FMA3, 256, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX2, 256, _DesiredType_, _IntrinType_> {};
 
 template <
 	class _DesiredType_,
@@ -161,40 +240,40 @@ struct _Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> {
 		if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {
 			if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_load_epi64(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint8>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 
 			else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_load_epi32(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint16>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 
 			else if constexpr (__is_pd_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_load_pd(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint8>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 
 			else if constexpr (__is_ps_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_load_ps(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint16>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 		}
 		else {
 			if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_epi64(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint8>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 
 			else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_epi32(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint16>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 
 			else if constexpr (__is_pd_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_pd(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint8>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 
 			else if constexpr (__is_ps_v<_DesiredType_>)
 				return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_ps(
-					__mask_convert<arch::ISA::AVX512F, 512, _DesiredType_, uint16>(__mask), __address));
+					_To_mask<arch::ISA::AVX512F, 512, _DesiredType_>()(__mask), __address));
 		}
 
-		return _Mask_load<arch::ISA::AVX512F, 512, _DesiredType_>()(__address, __mask, 
-			_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __alignment_policy);
+		return _Maskz_assign<arch::ISA::AVX512F, 512, _DesiredType_>()(
+			_Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__address), __mask);
 	}
 };
 
@@ -214,13 +293,16 @@ struct _Maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_>:
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
 		if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_epi16(__mask_convert<arch::ISA::AVX512BW, 512, _DesiredType_, uint32>(__mask), __address));
+			return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_epi16(
+				_To_mask<arch::ISA::AVX512BW, 512, _DesiredType_>()(__mask), __address));
 
 		else if constexpr (__is_epi8_v<_DesiredType_> || __is_epu8_v<_DesiredType_>)
-			return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_epi8(__mask_convert<arch::ISA::AVX512BW, 512, _DesiredType_, uint64>(__mask), __address));
+			return __intrin_bitcast<_IntrinType_>(_mm512_maskz_loadu_epi8(
+				_To_mask<arch::ISA::AVX512BW, 512, _DesiredType_>()(__mask), __address));
 
 		else
-			return _Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
+			return _Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_>()(
+				__address, __mask, __alignment_policy);
 	}
 };
 
@@ -245,34 +327,34 @@ struct _Maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>:
 		else {
 			if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {
 				if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_epi64(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_epi64(__mask, __address));
 
 				else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_epi32(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_epi32(__mask, __address));
 
 				else if constexpr (__is_pd_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_pd(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_pd(__mask, __address));
 
 				else if constexpr (__is_ps_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_ps(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_load_ps(__mask, __address));
 			}
 			else {
 				if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi64(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi64(__mask, __address));
 
 				else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi32(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi32(__mask, __address));
 
 				else if constexpr (__is_pd_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_pd(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_pd(__mask, __address));
 
 				else if constexpr (__is_ps_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_ps(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_ps(__mask, __address));
 			}
 		}
 
-		return _Mask_load<arch::ISA::AVX512VLF, 256, _DesiredType_>()(__address, __mask,
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __alignment_policy);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 256, _DesiredType_>()(
+			_Load<arch::ISA::AVX512VLF, 256, _IntrinType_>()(__address), __mask);
 	}
 };
 
@@ -291,14 +373,17 @@ struct _Maskz_load<arch::ISA::AVX512VLBW, 256, _DesiredType_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		if constexpr (sizeof(_DesiredType_) >= 4)
-			return _Maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
-
-		else if constexpr (sizeof(_DesiredType_) == 2)
-			return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi16(__mask_convert<arch::ISA::AVX512VLBW, 256, _DesiredType_, uint16>(__mask), __address));
+		if constexpr (sizeof(_DesiredType_) == 2)
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi16(
+				_To_mask<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__mask), __address));
 
 		else if constexpr (sizeof(_DesiredType_) == 1)
-			return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi8(__mask_convert<arch::ISA::AVX512VLBW, 256, _DesiredType_, uint32>(__mask), __address));
+			return __intrin_bitcast<_IntrinType_>(_mm256_maskz_loadu_epi8(
+				_To_mask<arch::ISA::AVX512VLBW, 256, _DesiredType_>()(__mask), __address));
+
+		else
+			return _Maskz_load<arch::ISA::AVX512VLF, 256, _DesiredType_, _IntrinType_>()(
+				__address, __mask, __alignment_policy);
 	}
 };
 
@@ -323,34 +408,34 @@ struct _Maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>:
 		else {
 			if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment) {
 				if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_epi64(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_epi64(__mask, __address));
 
 				else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_epi32(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_epi32(__mask, __address));
 
 				else if constexpr (__is_pd_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_pd(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_pd(__mask, __address));
 
 				else if constexpr (__is_ps_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_ps(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_load_ps(__mask, __address));
 			}
 			else {
 				if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi64(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi64(__mask, __address));
 
 				else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi32(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi32(__mask, __address));
 
 				else if constexpr (__is_pd_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_pd(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_pd(__mask, __address));
 
 				else if constexpr (__is_ps_v<_DesiredType_>)
-					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_ps(static_cast<uint8>(__mask), __address));
+					return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_ps(__mask, __address));
 			}
 		}
 
-		return _Mask_load<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__address, __mask,
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __alignment_policy);
+		return _Maskz_assign<arch::ISA::AVX512VLF, 128, _DesiredType_>()(
+			_Load<arch::ISA::AVX512VLF, 128, _IntrinType_>()(__address), __mask);
 	}
 };
 
@@ -369,19 +454,19 @@ struct _Maskz_load<arch::ISA::AVX512VLBW, 128, _DesiredType_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		if constexpr (sizeof(_DesiredType_) >= 4)
-			return _Maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>()(__address, __mask, __alignment_policy);
-
-		else if constexpr (sizeof(_DesiredType_) == 2)
-			return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi16(__mask_convert<arch::ISA::AVX512VLBW, 128, _DesiredType_, uint16>(__mask), __address));
+		if constexpr (sizeof(_DesiredType_) == 2)
+			return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi16(
+				_To_mask<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__mask), __address));
 
 		else if constexpr (sizeof(_DesiredType_) == 1)
-			return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi8(__mask_convert<arch::ISA::AVX512VLBW, 128, _DesiredType_, uint32>(__mask), __address));
+			return __intrin_bitcast<_IntrinType_>(_mm_maskz_loadu_epi8(
+				_To_mask<arch::ISA::AVX512VLBW, 128, _DesiredType_>()(__mask), __address));
+
+		else
+			return _Maskz_load<arch::ISA::AVX512VLF, 128, _DesiredType_, _IntrinType_>()(
+				__address, __mask, __alignment_policy);
 	}
 };
-
-template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::SSSE3, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::SSE3, 128, _DesiredType_, _IntrinType_> {};
-template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::SSE42, 128, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::SSE41, 128, _DesiredType_, _IntrinType_> {};
 
 template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512DQ, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512F, 512, _DesiredType_, _IntrinType_> {};
 template <class _DesiredType_, class _IntrinType_> struct _Maskz_load<arch::ISA::AVX512BWDQ, 512, _DesiredType_, _IntrinType_> : _Maskz_load<arch::ISA::AVX512BW, 512, _DesiredType_, _IntrinType_> {};

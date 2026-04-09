@@ -33,7 +33,11 @@ template <> struct _Not<arch::ISA::SSE3, 128> : _Not<arch::ISA::SSE2, 128> {};
 template <> struct _Not<arch::ISA::SSSE3, 128> : _Not<arch::ISA::SSE3, 128> {};
 template <> struct _Not<arch::ISA::SSE41, 128> : _Not<arch::ISA::SSSE3, 128> {};
 template <> struct _Not<arch::ISA::SSE42, 128> : _Not<arch::ISA::SSE41, 128> {};
-template <> struct _Not<arch::ISA::AVX2, 128> : _Not<arch::ISA::SSE42, 128> {};
+template <> struct _Not<arch::ISA::AVX, 128> : _Not<arch::ISA::SSE42, 128> {};
+template <> struct _Not<arch::ISA::FMA3, 128> : _Not<arch::ISA::AVX, 128> {};
+template <> struct _Not<arch::ISA::AVX2, 128> : _Not<arch::ISA::AVX, 128> {};
+template <> struct _Not<arch::ISA::AVX2FMA3, 128> : _Not<arch::ISA::AVX2, 128> {};
+
 
 template <> 
 struct _Not<arch::ISA::AVX512VLF, 128>:
@@ -49,6 +53,20 @@ struct _Not<arch::ISA::AVX512VLF, 128>:
 	}
 };
 
+template <> struct _Not<arch::ISA::AVX, 256> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline
+		_IntrinType_ operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	{
+		if constexpr (std::is_same_v<_IntrinType_, __m256d>)
+			return _mm256_xor_pd(__vector, __intrin_bitcast<__m256d>(_mm256_set1_epi32(-1)));
+
+		else
+			return __intrin_bitcast<_IntrinType_>(_mm256_xor_ps(
+				__intrin_bitcast<__m256>(__vector),
+				__intrin_bitcast<__m256>(_mm256_set1_epi32(-1))));
+	}
+};
 
 template <>
 struct _Not<arch::ISA::AVX2, 256> {
@@ -66,6 +84,9 @@ struct _Not<arch::ISA::AVX2, 256> {
 			return _mm256_xor_ps(__vector, __intrin_bitcast<__m256>(_mm256_set1_epi32(-1)));
 	}
 };
+
+template <> struct _Not<arch::ISA::FMA3, 256> : _Not<arch::ISA::AVX, 256> {};
+template <> struct _Not<arch::ISA::AVX2FMA3, 256> : _Not<arch::ISA::AVX2, 256> {};
 
 template <> 
 struct _Not<arch::ISA::AVX512VLF, 256>: 

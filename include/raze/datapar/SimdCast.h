@@ -25,7 +25,7 @@ struct __rebind_vector_element_t<_RebindType_, _VectorType_, false, true> {
         std::conditional_t<sizeof(_VectorType_) == 64,
         type_traits::__deduce_simd_vector_type<arch::ISA::AVX512F, _RebindType_, 512>,
         std::conditional_t<sizeof(_VectorType_) == 32,
-        type_traits::__deduce_simd_vector_type<arch::ISA::AVX2, _RebindType_, 256>,
+        type_traits::__deduce_simd_vector_type<arch::ISA::AVX, _RebindType_, 256>,
         std::conditional_t<sizeof(_VectorType_) == 16,
         type_traits::__deduce_simd_vector_type<arch::ISA::SSE2, _RebindType_, 128>, void>>>>;
 };

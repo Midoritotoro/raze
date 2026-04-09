@@ -20,13 +20,26 @@ struct _Greater_equal<arch::ISA::SSE2, 128, _DesiredType_> {
         _IntrinType_ __right) raze_const_operator noexcept
     {
         if constexpr (__is_pd_v<_DesiredType_>)
-            return __intrin_bitcast<_IntrinType_>(_mm_cmpge_pd(__intrin_bitcast<__m128d>(__left), __intrin_bitcast<__m128d>(__right)));
+            return __intrin_bitcast<_IntrinType_>(_mm_cmpge_pd(
+                __intrin_bitcast<__m128d>(__left), __intrin_bitcast<__m128d>(__right)));
 
         else if constexpr (__is_ps_v<_DesiredType_>)
-            return __intrin_bitcast<_IntrinType_>(_mm_cmpge_ps(__intrin_bitcast<__m128>(__left), __intrin_bitcast<__m128>(__right)));
+            return __intrin_bitcast<_IntrinType_>(_mm_cmpge_ps(
+                __intrin_bitcast<__m128>(__left), __intrin_bitcast<__m128>(__right)));
 
         else
             return _Not<arch::ISA::SSE2, 128>()(_Less<arch::ISA::SSE2, 128, _DesiredType_>()(__left, __right));
+    }
+};
+
+template <class _DesiredType_> 
+struct _Greater_equal<arch::ISA::AVX, 256, _DesiredType_> {
+    template <class _IntrinType_>
+    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+        _IntrinType_ __left,
+        _IntrinType_ __right) raze_const_operator noexcept
+    {
+        return _Not<arch::ISA::AVX, 256>()(_Less<arch::ISA::AVX, 256, _DesiredType_>()(__left, __right));
     }
 };
 
@@ -228,7 +241,10 @@ template <class _DesiredType_> struct _Greater_equal<arch::ISA::SSE3, 128, _Desi
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::SSSE3, 128, _DesiredType_> : _Greater_equal<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::SSE41, 128, _DesiredType_> : _Greater_equal<arch::ISA::SSSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::SSE42, 128, _DesiredType_> : _Greater_equal<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX2, 128, _DesiredType_> : _Greater_equal<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX, 128, _DesiredType_> : _Greater_equal<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX2, 128, _DesiredType_> : _Greater_equal<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater_equal<arch::ISA::FMA3, 128, _DesiredType_> : _Greater_equal<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Greater_equal<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Greater_equal<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Greater_equal<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -237,6 +253,8 @@ template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512VBMI2, 512
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Greater_equal<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Greater_equal<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Greater_equal<arch::ISA::FMA3, 256, _DesiredType_> : _Greater_equal<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Greater_equal<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Greater_equal<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Greater_equal<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater_equal<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Greater_equal<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};

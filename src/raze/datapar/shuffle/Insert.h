@@ -102,82 +102,6 @@ struct _Insert<arch::ISA::SSE2, 128> {
 template <> struct _Insert<arch::ISA::SSE3, 128> : _Insert<arch::ISA::SSE2, 128> {};
 template <> struct _Insert<arch::ISA::SSSE3, 128> : _Insert<arch::ISA::SSE3, 128> {};
 
-template <> struct _Insert<arch::ISA::SSE42, 128> : _Insert<arch::ISA::SSE41, 128> {};
-template <> struct _Insert<arch::ISA::AVX, 128> : _Insert<arch::ISA::SSE42, 128> {};
-template <> struct _Insert<arch::ISA::FMA3, 128> : _Insert<arch::ISA::SSE42, 128> {};
-template <> struct _Insert<arch::ISA::AVX2, 128> : _Insert<arch::ISA::AVX, 128> {};
-template <> struct _Insert<arch::ISA::AVX2FMA3, 128> : _Insert<arch::ISA::AVX2, 128> {};
-
-template <> 
-struct _Insert<arch::ISA::AVX512VLF, 128>:
-    _Insert<arch::ISA::AVX2, 128>
-{
-    template <
-        class _IntrinType_,
-        class _DesiredType_>
-    raze_static_operator raze_always_inline void operator()(
-        _IntrinType_&   __vector,
-        uint8			__index,
-        _DesiredType_	__value) raze_const_operator noexcept
-    {
-        if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>) {
-            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi64(
-                __intrin_bitcast<__m128i>(__vector),
-                static_cast<uint8>(uint8(1) << __index),
-                memory::pointer_to_integral(__value)));
-        }
-        else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>) {
-            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi32(
-                __intrin_bitcast<__m128i>(__vector), 
-                static_cast<uint8>(uint8(1) << __index),
-                memory::pointer_to_integral(__value)));
-        }
-        else if constexpr (__is_ps_v<_DesiredType_>) {
-            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_broadcastss_ps(
-                __intrin_bitcast<__m128>(__vector),
-                static_cast<uint8>(uint8(1) << __index),
-                _mm_set_ss(__value)));
-        }
-        else {
-            const auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
-
-            const auto __broadcasted = _Broadcast<arch::ISA::AVX512VLF, 128, _IntrinType_>()(__value);
-            const auto __insert_mask = _Load<arch::ISA::AVX512VLF, 128, _IntrinType_>()(
-                __mask.__array + __mask.__offset - __index);
-
-            __vector = _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
-        }
-    }
-};
-
-template <> 
-struct _Insert<arch::ISA::AVX512VLBW, 128>:
-    _Insert<arch::ISA::AVX512VLF, 128> 
-{
-    template <
-        class _IntrinType_,
-        class _DesiredType_>
-    raze_static_operator raze_always_inline void operator()(
-        _IntrinType_&   __vector,
-        uint8			__index,
-        _DesiredType_	__value) raze_const_operator noexcept
-    {
-        if constexpr (sizeof(_DesiredType_) >= 4)
-            return _Insert<arch::ISA::AVX512VLF, 128>()(__vector, __index, __value);
-
-        else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>)
-            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi16(
-                __intrin_bitcast<__m128i>(__vector),
-                static_cast<uint8>(uint8(1) << __index), 
-                memory::pointer_to_integral(__value)));
-
-        else if constexpr (__is_epi8_v<_DesiredType_> || __is_epu8_v<_DesiredType_>)
-            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi8(
-                __intrin_bitcast<__m128i>(__vector),
-                static_cast<uint16>(uint16(1) << __index),
-                memory::pointer_to_integral(__value)));
-    }
-};
 
 template <> 
 struct _Insert<arch::ISA::SSE41, 128>: 
@@ -269,6 +193,82 @@ struct _Insert<arch::ISA::SSE41, 128>:
     }
 };
 
+template <> struct _Insert<arch::ISA::SSE42, 128> : _Insert<arch::ISA::SSE41, 128> {};
+template <> struct _Insert<arch::ISA::AVX, 128> : _Insert<arch::ISA::SSE42, 128> {};
+template <> struct _Insert<arch::ISA::FMA3, 128> : _Insert<arch::ISA::SSE42, 128> {};
+template <> struct _Insert<arch::ISA::AVX2, 128> : _Insert<arch::ISA::AVX, 128> {};
+template <> struct _Insert<arch::ISA::AVX2FMA3, 128> : _Insert<arch::ISA::AVX2, 128> {};
+
+template <> 
+struct _Insert<arch::ISA::AVX512VLF, 128>:
+    _Insert<arch::ISA::AVX2, 128>
+{
+    template <
+        class _IntrinType_,
+        class _DesiredType_>
+    raze_static_operator raze_always_inline void operator()(
+        _IntrinType_&   __vector,
+        uint8			__index,
+        _DesiredType_	__value) raze_const_operator noexcept
+    {
+        if constexpr (__is_epi64_v<_DesiredType_> || __is_epu64_v<_DesiredType_>) {
+            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi64(
+                __intrin_bitcast<__m128i>(__vector),
+                static_cast<uint8>(uint8(1) << __index),
+                memory::pointer_to_integral(__value)));
+        }
+        else if constexpr (__is_epi32_v<_DesiredType_> || __is_epu32_v<_DesiredType_>) {
+            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi32(
+                __intrin_bitcast<__m128i>(__vector), 
+                static_cast<uint8>(uint8(1) << __index),
+                memory::pointer_to_integral(__value)));
+        }
+        else if constexpr (__is_ps_v<_DesiredType_>) {
+            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_broadcastss_ps(
+                __intrin_bitcast<__m128>(__vector),
+                static_cast<uint8>(uint8(1) << __index),
+                _mm_set_ss(__value)));
+        }
+        else {
+            const auto __mask = __simd_make_insert_mask<_IntrinType_, typename IntegerForSizeof<_DesiredType_>::Unsigned>();
+
+            const auto __broadcasted = _Broadcast<arch::ISA::AVX512VLF, 128, _IntrinType_>()(__value);
+            const auto __insert_mask = _Load<arch::ISA::AVX512VLF, 128, _IntrinType_>()(
+                __mask.__array + __mask.__offset - __index);
+
+            __vector = _Blend<arch::ISA::AVX512VLF, 128, _DesiredType_>()(__broadcasted, __vector, __insert_mask);
+        }
+    }
+};
+
+template <> 
+struct _Insert<arch::ISA::AVX512VLBW, 128>:
+    _Insert<arch::ISA::AVX512VLF, 128> 
+{
+    template <
+        class _IntrinType_,
+        class _DesiredType_>
+    raze_static_operator raze_always_inline void operator()(
+        _IntrinType_&   __vector,
+        uint8			__index,
+        _DesiredType_	__value) raze_const_operator noexcept
+    {
+        if constexpr (sizeof(_DesiredType_) >= 4)
+            return _Insert<arch::ISA::AVX512VLF, 128>()(__vector, __index, __value);
+
+        else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>)
+            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi16(
+                __intrin_bitcast<__m128i>(__vector),
+                static_cast<uint8>(uint8(1) << __index), 
+                memory::pointer_to_integral(__value)));
+
+        else if constexpr (__is_epi8_v<_DesiredType_> || __is_epu8_v<_DesiredType_>)
+            __vector = __intrin_bitcast<_IntrinType_>(_mm_mask_set1_epi8(
+                __intrin_bitcast<__m128i>(__vector),
+                static_cast<uint16>(uint16(1) << __index),
+                memory::pointer_to_integral(__value)));
+    }
+};
 
 template <>
 struct _Insert<arch::ISA::AVX, 256> {

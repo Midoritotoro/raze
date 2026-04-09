@@ -50,7 +50,10 @@ struct _Maskz_or<arch::ISA::SSE41, 128, _DesiredType_> :
 };
 
 template <class _DesiredType_> struct _Maskz_or<arch::ISA::SSE42, 128, _DesiredType_> : _Maskz_or<arch::ISA::SSE41, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Maskz_or<arch::ISA::AVX2, 128, _DesiredType_> : _Maskz_or<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Maskz_or<arch::ISA::AVX, 128, _DesiredType_> : _Maskz_or<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Maskz_or<arch::ISA::AVX2, 128, _DesiredType_> : _Maskz_or<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Maskz_or<arch::ISA::FMA3, 128, _DesiredType_> : _Maskz_or<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Maskz_or<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Maskz_or<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_>
 struct _Maskz_or<arch::ISA::AVX512VLF, 128, _DesiredType_> :
@@ -126,6 +129,20 @@ struct _Maskz_or<arch::ISA::AVX512VLBW, 128, _DesiredType_> :
 	}
 };
 
+template <class _DesiredType_> 
+struct _Maskz_or<arch::ISA::AVX, 256, _DesiredType_> {
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		_IntrinType_	__right,
+		_MaskType_		__mask) raze_const_operator noexcept
+	{
+		return _Maskz_assign<arch::ISA::AVX, 256, _DesiredType_>()(
+			_Or<arch::ISA::AVX, 256>()(__left, __right), __mask);
+	}
+};
 
 template <class _DesiredType_>
 struct _Maskz_or<arch::ISA::AVX2, 256, _DesiredType_> {
@@ -141,6 +158,9 @@ struct _Maskz_or<arch::ISA::AVX2, 256, _DesiredType_> {
 			_Or<arch::ISA::AVX2, 256>()(__left, __right), __mask);
 	}
 };
+
+template <class _DesiredType_> struct _Maskz_or<arch::ISA::FMA3, 256, _DesiredType_> : _Maskz_or<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Maskz_or<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Maskz_or<arch::ISA::AVX2, 256, _DesiredType_> {};
 
 template <class _DesiredType_>
 struct _Maskz_or<arch::ISA::AVX512VLF, 256, _DesiredType_> :

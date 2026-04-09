@@ -32,6 +32,16 @@ struct _Nt_load<arch::ISA::SSE41, 128, _IntrinType_>:
 	}
 };
 
+template <class _IntrinType_> 
+struct _Nt_load<arch::ISA::AVX, 256, _IntrinType_> {
+	raze_nodiscard raze_static_operator raze_always_inline
+		_IntrinType_ operator()(const void* __address) raze_const_operator noexcept
+	{
+		return _Load<arch::ISA::AVX, 256, _IntrinType_>()(__address, __aligned_policy{});
+	}
+};
+
+
 template <class _IntrinType_>
 struct _Nt_load<arch::ISA::AVX2, 256, _IntrinType_> {
 	raze_nodiscard raze_static_operator raze_always_inline
@@ -53,7 +63,10 @@ struct _Nt_load<arch::ISA::AVX512F, 512, _IntrinType_> {
 template <class _IntrinType_> struct _Nt_load<arch::ISA::SSE3, 128, _IntrinType_> : _Nt_load<arch::ISA::SSE2, 128, _IntrinType_> {};
 template <class _IntrinType_> struct _Nt_load<arch::ISA::SSSE3, 128, _IntrinType_> : _Nt_load<arch::ISA::SSE3, 128, _IntrinType_> {};
 template <class _IntrinType_> struct _Nt_load<arch::ISA::SSE42, 128, _IntrinType_> : _Nt_load<arch::ISA::SSE41, 128, _IntrinType_> {};
-template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX2, 128, _IntrinType_> : _Nt_load<arch::ISA::SSE42, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX, 128, _IntrinType_> : _Nt_load<arch::ISA::SSE42, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Nt_load<arch::ISA::FMA3, 128, _IntrinType_> : _Nt_load<arch::ISA::AVX, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX2, 128, _IntrinType_> : _Nt_load<arch::ISA::AVX, 128, _IntrinType_> {};
+template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX2FMA3, 128, _IntrinType_> : _Nt_load<arch::ISA::AVX2, 128, _IntrinType_> {};
 
 template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512BW, 512, _IntrinType_> : _Nt_load<arch::ISA::AVX512F, 512, _IntrinType_> {};
 template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512DQ, 512, _IntrinType_> : _Nt_load<arch::ISA::AVX512F, 512, _IntrinType_> {};
@@ -63,6 +76,8 @@ template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512VBMI2, 512, _Intr
 template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512VBMIDQ, 512, _IntrinType_> : _Nt_load<arch::ISA::AVX512BWDQ, 512, _IntrinType_> {};
 template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512VBMI2DQ, 512, _IntrinType_> : _Nt_load<arch::ISA::AVX512VBMIDQ, 512, _IntrinType_> {};
 
+template <class _IntrinType_> struct _Nt_load<arch::ISA::FMA3, 256, _IntrinType_> : _Nt_load<arch::ISA::AVX, 256, _IntrinType_> {};
+template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX2FMA3, 256, _IntrinType_> : _Nt_load<arch::ISA::AVX2, 256, _IntrinType_> {};
 template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512VLF, 256, _IntrinType_> : _Nt_load<arch::ISA::AVX2, 256, _IntrinType_> {};
 template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512VLBW, 256, _IntrinType_> : _Nt_load<arch::ISA::AVX512VLF, 256, _IntrinType_> {};
 template <class _IntrinType_> struct _Nt_load<arch::ISA::AVX512VLDQ, 256, _IntrinType_> : _Nt_load<arch::ISA::AVX512VLF, 256, _IntrinType_> {};

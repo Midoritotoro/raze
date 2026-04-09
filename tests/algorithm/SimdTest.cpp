@@ -1096,7 +1096,8 @@ void test_methods() {
     using Mask = typename Simd::mask_type;
     constexpr size_t N = Simd::size();
 
-    if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>()) return;
+    if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>()) 
+        return;
 
     test_simd_basics<Simd, Mask, T, N>();
     test_load_store<Simd, Mask, T, N>();
@@ -1144,9 +1145,15 @@ int main() {
     test_methods<raze::arch::ISA::SSE41, 128>();
     test_methods<raze::arch::ISA::SSE42, 128>();
 
+    test_methods<raze::arch::ISA::AVX, 128>();
+    test_methods<raze::arch::ISA::FMA3, 128>();
     test_methods<raze::arch::ISA::AVX2, 128>();
+    test_methods<raze::arch::ISA::AVX2FMA3, 128>();
     test_methods<raze::arch::ISA::AVX2, 256>();
-    
+    test_methods<raze::arch::ISA::AVX, 256>();
+    test_methods<raze::arch::ISA::FMA3, 256>();
+    test_methods<raze::arch::ISA::AVX2FMA3, 256>();
+
     test_methods<raze::arch::ISA::AVX512F, 512>();
     test_methods<raze::arch::ISA::AVX512BW, 512>();
     test_methods<raze::arch::ISA::AVX512DQ, 512>();

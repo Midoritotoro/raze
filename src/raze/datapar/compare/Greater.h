@@ -50,6 +50,17 @@ struct _Greater<arch::ISA::SSE42, 128, _DesiredType_>:
 };
 
 template <class _DesiredType_>
+struct _Greater<arch::ISA::AVX, 256, _DesiredType_> {
+    template <class _IntrinType_>
+    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+        _IntrinType_ __left,
+        _IntrinType_ __right) raze_const_operator noexcept
+    {
+        return _Less<arch::ISA::AVX, 256, _DesiredType_>()(__right, __left);
+    }
+};
+
+template <class _DesiredType_>
 struct _Greater<arch::ISA::AVX2, 256, _DesiredType_> {
     template <class _IntrinType_>
     raze_nodiscard raze_static_operator raze_always_inline auto operator()(
@@ -139,7 +150,10 @@ struct _Greater<arch::ISA::AVX512VLBW, 128, _DesiredType_>:
 template <class _DesiredType_> struct _Greater<arch::ISA::SSE3, 128, _DesiredType_> : _Greater<arch::ISA::SSE2, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater<arch::ISA::SSSE3, 128, _DesiredType_> : _Greater<arch::ISA::SSE3, 128, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater<arch::ISA::SSE41, 128, _DesiredType_> : _Greater<arch::ISA::SSSE3, 128, _DesiredType_> {};
-template <class _DesiredType_> struct _Greater<arch::ISA::AVX2, 128, _DesiredType_> : _Greater<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater<arch::ISA::AVX, 128, _DesiredType_> : _Greater<arch::ISA::SSE42, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater<arch::ISA::FMA3, 128, _DesiredType_> : _Greater<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater<arch::ISA::AVX2, 128, _DesiredType_> : _Greater<arch::ISA::AVX, 128, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater<arch::ISA::AVX2FMA3, 128, _DesiredType_> : _Greater<arch::ISA::AVX2, 128, _DesiredType_> {};
 
 template <class _DesiredType_> struct _Greater<arch::ISA::AVX512DQ, 512, _DesiredType_> : _Greater<arch::ISA::AVX512F, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater<arch::ISA::AVX512BWDQ, 512, _DesiredType_> : _Greater<arch::ISA::AVX512BW, 512, _DesiredType_> {};
@@ -148,6 +162,8 @@ template <class _DesiredType_> struct _Greater<arch::ISA::AVX512VBMI2, 512, _Des
 template <class _DesiredType_> struct _Greater<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> : _Greater<arch::ISA::AVX512BWDQ, 512, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater<arch::ISA::AVX512VBMI2DQ, 512, _DesiredType_> : _Greater<arch::ISA::AVX512VBMIDQ, 512, _DesiredType_> {};
 
+template <class _DesiredType_> struct _Greater<arch::ISA::FMA3, 256, _DesiredType_> : _Greater<arch::ISA::AVX, 256, _DesiredType_> {};
+template <class _DesiredType_> struct _Greater<arch::ISA::AVX2FMA3, 256, _DesiredType_> : _Greater<arch::ISA::AVX2, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater<arch::ISA::AVX512VLDQ, 256, _DesiredType_> : _Greater<arch::ISA::AVX512VLF, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater<arch::ISA::AVX512VLBWDQ, 256, _DesiredType_> : _Greater<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};
 template <class _DesiredType_> struct _Greater<arch::ISA::AVX512VBMIVL, 256, _DesiredType_> : _Greater<arch::ISA::AVX512VLBW, 256, _DesiredType_> {};

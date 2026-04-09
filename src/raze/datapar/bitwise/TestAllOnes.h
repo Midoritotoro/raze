@@ -42,6 +42,16 @@ struct _Test_all_ones<arch::ISA::SSE41, 128> :
 	}
 };
 
+template <> 
+struct _Test_all_ones<arch::ISA::AVX, 256> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline
+		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	{
+		const auto __all_ones = _Equal<arch::ISA::AVX, 256, double>()(__vector, __vector);
+		return _mm256_testc_si256(__intrin_bitcast<__m256i>(__vector), __intrin_bitcast<__m256i>(__all_ones));
+	}
+};
 
 template <>
 struct _Test_all_ones<arch::ISA::AVX2, 256> {
@@ -69,7 +79,10 @@ struct _Test_all_ones<arch::ISA::AVX512F, 512> {
 };
 
 template <> struct _Test_all_ones<arch::ISA::SSE42, 128> : _Test_all_ones<arch::ISA::SSE41, 128> {};
-template <> struct _Test_all_ones<arch::ISA::AVX2, 128> : _Test_all_ones<arch::ISA::SSE42, 128> {};
+template <> struct _Test_all_ones<arch::ISA::AVX, 128> : _Test_all_ones<arch::ISA::SSE42, 128> {};
+template <> struct _Test_all_ones<arch::ISA::AVX2, 128> : _Test_all_ones<arch::ISA::AVX, 128> {};
+template <> struct _Test_all_ones<arch::ISA::FMA3, 128> : _Test_all_ones<arch::ISA::AVX, 128> {};
+template <> struct _Test_all_ones<arch::ISA::AVX2FMA3, 128> : _Test_all_ones<arch::ISA::AVX2, 128> {};
 
 template <> struct _Test_all_ones<arch::ISA::AVX512BW, 512> : _Test_all_ones<arch::ISA::AVX512F, 512> {};
 template <> struct _Test_all_ones<arch::ISA::AVX512DQ, 512> : _Test_all_ones<arch::ISA::AVX512F, 512> {};
@@ -79,6 +92,8 @@ template <> struct _Test_all_ones<arch::ISA::AVX512VBMI2, 512> : _Test_all_ones<
 template <> struct _Test_all_ones<arch::ISA::AVX512VBMIDQ, 512> : _Test_all_ones<arch::ISA::AVX512BWDQ, 512> {};
 template <> struct _Test_all_ones<arch::ISA::AVX512VBMI2DQ, 512> : _Test_all_ones<arch::ISA::AVX512VBMIDQ, 512> {};
 
+template <> struct _Test_all_ones<arch::ISA::FMA3, 256> : _Test_all_ones<arch::ISA::AVX, 256> {};
+template <> struct _Test_all_ones<arch::ISA::AVX2FMA3, 256> : _Test_all_ones<arch::ISA::AVX2, 256> {};
 template <> struct _Test_all_ones<arch::ISA::AVX512VLF, 256> : _Test_all_ones<arch::ISA::AVX2, 256> {};
 template <> struct _Test_all_ones<arch::ISA::AVX512VLBW, 256> : _Test_all_ones<arch::ISA::AVX512VLF, 256> {};
 template <> struct _Test_all_ones<arch::ISA::AVX512VLDQ, 256> : _Test_all_ones<arch::ISA::AVX512VLF, 256> {};

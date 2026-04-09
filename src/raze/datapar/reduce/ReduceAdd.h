@@ -34,9 +34,9 @@ struct _Reduce_add<arch::ISA::SSE2, 128, _DesiredType_> {
             const auto __reduce1 = _mm_add_epi32(__intrin_bitcast<__m128i>(__vector), __shuffled1);
 
             const auto __shuffled2 = _mm_shuffle_epi32(__reduce1, _MM_SHUFFLE(1, 0, 3, 2));
-            const auto __reduce2 = _mm_add_epi32(__intrin_bitcast<__m128i>(__vector), __shuffled2);
+            const auto __reduce2 = _mm_add_epi32(__reduce1, __shuffled2);
 
-            return _mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__vector));
+            return _mm_cvtsi128_si32(__intrin_bitcast<__m128i>(__reduce2));
         }
         else if constexpr (__is_epi16_v<_DesiredType_> || __is_epu16_v<_DesiredType_>) {
             const auto __zeros = _mm_setzero_si128();

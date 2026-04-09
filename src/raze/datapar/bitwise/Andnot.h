@@ -28,6 +28,21 @@ struct _Andnot<arch::ISA::SSE2, 128> {
 	}
 };
 
+template <> struct _Andnot<arch::ISA::AVX, 256> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_ __left,
+		_IntrinType_ __right) raze_const_operator noexcept
+	{
+		if constexpr (std::is_same_v<_IntrinType_, __m256d>)
+			return _mm256_andnot_pd(__left, __right);
+
+		else
+			return __intrin_bitcast<_IntrinType_>(_mm256_andnot_ps(
+				__intrin_bitcast<__m256>(__left), __intrin_bitcast<__m256>(__right)));
+	}
+}; 
+
 template <>
 struct _Andnot<arch::ISA::AVX2, 256> {
 	template <class _IntrinType_>
@@ -35,14 +50,11 @@ struct _Andnot<arch::ISA::AVX2, 256> {
 		_IntrinType_ __left,
 		_IntrinType_ __right) raze_const_operator noexcept
 	{
-		if      constexpr (std::is_same_v<_IntrinType_, __m256d>)
-			return _mm256_andnot_pd(__left, __right);
-
-		else if constexpr (std::is_same_v<_IntrinType_, __m256i>)
+		if constexpr (std::is_same_v<_IntrinType_, __m256i>)
 			return _mm256_andnot_si256(__left, __right);
 
-		else if constexpr (std::is_same_v<_IntrinType_, __m256>)
-			return _mm256_andnot_ps(__left, __right);
+		else
+			return _Andnot<arch::ISA::AVX, 256>()(__left, __right);
 	}
 };
 
@@ -68,7 +80,10 @@ template <> struct _Andnot<arch::ISA::SSE3, 128> : _Andnot<arch::ISA::SSE2, 128>
 template <> struct _Andnot<arch::ISA::SSSE3, 128> : _Andnot<arch::ISA::SSE3, 128> {};
 template <> struct _Andnot<arch::ISA::SSE41, 128> : _Andnot<arch::ISA::SSSE3, 128> {};
 template <> struct _Andnot<arch::ISA::SSE42, 128> : _Andnot<arch::ISA::SSE41, 128> {};
-template <> struct _Andnot<arch::ISA::AVX2, 128> : _Andnot<arch::ISA::SSE42, 128> {};
+template <> struct _Andnot<arch::ISA::AVX, 128> : _Andnot<arch::ISA::SSE42, 128> {};
+template <> struct _Andnot<arch::ISA::FMA3, 128> : _Andnot<arch::ISA::AVX, 128> {};
+template <> struct _Andnot<arch::ISA::AVX2, 128> : _Andnot<arch::ISA::AVX, 128> {};
+template <> struct _Andnot<arch::ISA::AVX2FMA3, 128> : _Andnot<arch::ISA::AVX, 128> {};
 
 template <> struct _Andnot<arch::ISA::AVX512BW, 512> : _Andnot<arch::ISA::AVX512F, 512> {};
 template <> struct _Andnot<arch::ISA::AVX512DQ, 512> : _Andnot<arch::ISA::AVX512F, 512> {};
@@ -78,6 +93,8 @@ template <> struct _Andnot<arch::ISA::AVX512VBMI2, 512> : _Andnot<arch::ISA::AVX
 template <> struct _Andnot<arch::ISA::AVX512VBMIDQ, 512> : _Andnot<arch::ISA::AVX512BWDQ, 512> {};
 template <> struct _Andnot<arch::ISA::AVX512VBMI2DQ, 512> : _Andnot<arch::ISA::AVX512VBMIDQ, 512> {};
 
+template <> struct _Andnot<arch::ISA::FMA3, 256> : _Andnot<arch::ISA::AVX, 256> {};
+template <> struct _Andnot<arch::ISA::AVX2FMA3, 256> : _Andnot<arch::ISA::AVX, 256> {};
 template <> struct _Andnot<arch::ISA::AVX512VLF, 256> : _Andnot<arch::ISA::AVX2, 256> {};
 template <> struct _Andnot<arch::ISA::AVX512VLBW, 256> : _Andnot<arch::ISA::AVX512VLF, 256> {};
 template <> struct _Andnot<arch::ISA::AVX512VLDQ, 256> : _Andnot<arch::ISA::AVX512VLF, 256> {};
