@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/raze/datapar/SizedSimdDispatcher.h>
-#include <raze/datapar/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -30,12 +30,12 @@ struct __reverse_copy_vectorized_internal {
         const void* __last,
         void*       __destination) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         const auto __stop_at = __bytes_pointer_offset(__last, -__aligned_size);
 
         do {
-            datapar::store(__destination, datapar::reverse(
-                datapar::load<_Simd_>(__bytes_pointer_offset(__last, -sizeof(_Simd_)))));
+            vx::store(__destination, vx::reverse(
+                vx::load<_Simd_>(__bytes_pointer_offset(__last, -sizeof(_Simd_)))));
 
             __advance_bytes(__destination, sizeof(_Simd_));
             __rewind_bytes(__last, sizeof(_Simd_));
@@ -52,7 +52,7 @@ __raze_simd_algorithm_inline void __reverse_copy_vectorized(
     const void* __last,
     void*       __destination) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__reverse_copy_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__reverse_copy_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__reverse_copy_scalar<_Type_>, __first, __last, __destination);
 }
 

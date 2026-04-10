@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -32,20 +32,20 @@ struct __mismatch_vectorized_internal {
         const void*         __second,
         const sizetype      __length) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         auto __cached_first = static_cast<const _ValueType*>(__first);
 
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
         do {
-            const auto __loaded_first   = datapar::load<_Simd_>(__first);
-            const auto __loaded_second  = datapar::load<_Simd_>(__second);
+            const auto __loaded_first   = vx::load<_Simd_>(__first);
+            const auto __loaded_second  = vx::load<_Simd_>(__second);
 
             const auto __compared = (__loaded_first == __loaded_second);
 
-            if (datapar::some_of(__compared))
+            if (vx::some_of(__compared))
                 return (static_cast<const _ValueType*>(__first) - __cached_first) 
-                    + datapar::find_first_not_set(__compared);
+                    + vx::find_first_not_set(__compared);
 
             __advance_bytes(__first, sizeof(_Simd_));
             __advance_bytes(__second, sizeof(_Simd_));
@@ -55,16 +55,16 @@ struct __mismatch_vectorized_internal {
             return __length;
 
         if constexpr (_Simd_::is_native_mask_load_supported_v) {
-            const auto __tail_mask = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
+            const auto __tail_mask = vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
 
-            const auto __loaded_first   = datapar::maskz_load<_Simd_>(__first, __tail_mask);
-            const auto __loaded_second  = datapar::maskz_load<_Simd_>(__second, __tail_mask);
+            const auto __loaded_first   = vx::maskz_load<_Simd_>(__first, __tail_mask);
+            const auto __loaded_second  = vx::maskz_load<_Simd_>(__second, __tail_mask);
 
             const auto __combined_mask = (__loaded_first == __loaded_second) & __tail_mask;
 
-            if (datapar::any_of(__combined_mask != __tail_mask))
+            if (vx::any_of(__combined_mask != __tail_mask))
                 return (static_cast<const _ValueType*>(__first) - __cached_first) 
-                    + datapar::find_first_not_set(__combined_mask);
+                    + vx::find_first_not_set(__combined_mask);
 
             return __length;
         }
@@ -81,7 +81,7 @@ raze_declare_const_function __raze_simd_algorithm_inline sizetype __mismatch_vec
     const void*     __second,
     const sizetype  __length) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__mismatch_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__mismatch_vectorized_internal, _Type_>()(
         __length * sizeof(_Type_), &__mismatch_scalar<_Type_>, __first, __second, __length);
 }
 

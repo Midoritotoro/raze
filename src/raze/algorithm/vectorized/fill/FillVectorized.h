@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 #include <raze/memory/Alignment.h>
 
@@ -39,7 +39,7 @@ struct __memset_vectorized_internal {
     {
         raze_unused(__count);
 
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
 
         constexpr auto __block_size = sizeof(_Simd_);
         const auto __broadcasted = _Simd_(__value);
@@ -47,7 +47,7 @@ struct __memset_vectorized_internal {
         const auto __stop_at = __bytes_pointer_offset(__destination, __aligned_size);
 
         do {
-            datapar::store(__destination, __broadcasted);
+            vx::store(__destination, __broadcasted);
             __advance_bytes(__destination, __block_size);
         } while (__destination != __stop_at);
 
@@ -55,8 +55,8 @@ struct __memset_vectorized_internal {
             return __destination;
 
         if constexpr (_Simd_::is_native_mask_store_supported_v)
-            datapar::store(__destination, datapar::where(__broadcasted,
-                datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType))));
+            vx::store(__destination, vx::where(__broadcasted,
+                vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType))));
         else
             return __memset_scalar(__destination, __value, (__tail_size / sizeof(_ValueType)));
 
@@ -71,7 +71,7 @@ raze_always_inline void* __memset_vectorized(
     _Type_      __value,
     sizetype    __count) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__memset_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__memset_vectorized_internal, _Type_>()(
         __count * sizeof(_Type_), &__memset_scalar<_Type_>, __destination, __value, __count);
 }
 

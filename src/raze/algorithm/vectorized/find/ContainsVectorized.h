@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -35,13 +35,13 @@ struct __contains_vectorized_internal {
         const void* __last,
         _ValueType  __value) raze_const_operator noexcept
     {
-        const auto __guard      = datapar::make_guard<_Simd_>();
+        const auto __guard      = vx::make_guard<_Simd_>();
         const auto __comparand  = _Simd_(__value);
 
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
         do {
-            if (datapar::any_of(datapar::load<_Simd_>(__first) == __comparand))
+            if (vx::any_of(vx::load<_Simd_>(__first) == __comparand))
                 return true;
 
             __advance_bytes(__first, sizeof(_Simd_));
@@ -51,8 +51,8 @@ struct __contains_vectorized_internal {
             return false;
         
         if constexpr (_Simd_::is_native_mask_load_supported_v) {
-            const auto __tail_mask  = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
-            return datapar::any_of((__comparand == datapar::maskz_load<_Simd_>(__first, __tail_mask)) & __tail_mask);
+            const auto __tail_mask  = vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
+            return vx::any_of((__comparand == vx::maskz_load<_Simd_>(__first, __tail_mask)) & __tail_mask);
         }
         else {
             return __contains_scalar(__first, __last, __value);
@@ -66,7 +66,7 @@ raze_declare_const_function __raze_simd_algorithm_inline bool __contains_vectori
     const void* __last,
     _Type_      __value) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__contains_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__contains_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__contains_scalar<_Type_>, __first, __last, __value);
 }
 

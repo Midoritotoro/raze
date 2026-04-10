@@ -51,13 +51,13 @@
 
 
 
-#ifndef __RAZE_DATAPAR_NAMESPACE_BEGIN 
-#define __RAZE_DATAPAR_NAMESPACE_BEGIN namespace raze { namespace datapar {
-#endif // __RAZE_DATAPAR_NAMESPACE_BEGIN
+#ifndef __RAZE_VX_NAMESPACE_BEGIN 
+#define __RAZE_VX_NAMESPACE_BEGIN namespace raze { namespace vx {
+#endif // __RAZE_VX_NAMESPACE_BEGIN
 
-#ifndef __RAZE_DATAPAR_NAMESPACE_END
-#define __RAZE_DATAPAR_NAMESPACE_END }}
-#endif // __RAZE_DATAPAR_NAMESPACE_END
+#ifndef __RAZE_VX_NAMESPACE_END
+#define __RAZE_VX_NAMESPACE_END }}
+#endif // __RAZE_VX_NAMESPACE_END
 
 
 

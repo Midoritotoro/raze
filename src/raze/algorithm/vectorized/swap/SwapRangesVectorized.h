@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/raze/datapar/SizedSimdDispatcher.h>
-#include <raze/datapar/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -34,15 +34,15 @@ struct __swap_ranges_vectorized_internal {
 		void*									__second,
 		raze_maybe_unused_attribute sizetype	__count) raze_const_operator noexcept
 	{	
-		const auto __guard = datapar::make_guard<_Simd_>();
+		const auto __guard = vx::make_guard<_Simd_>();
 		const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
 		do {
-			const auto __loaded_first	= datapar::load<_Simd_>(__first);
-			const auto __loaded_second	= datapar::load<_Simd_>(__second);
+			const auto __loaded_first	= vx::load<_Simd_>(__first);
+			const auto __loaded_second	= vx::load<_Simd_>(__second);
 
-			datapar::store(__second, __loaded_first);
-			datapar::store(__first, __loaded_second);
+			vx::store(__second, __loaded_first);
+			vx::store(__first, __loaded_second);
 
 			__advance_bytes(__first, sizeof(_Simd_));
 			__advance_bytes(__second, sizeof(_Simd_));
@@ -61,7 +61,7 @@ __raze_simd_algorithm_inline void __swap_ranges_vectorized(
 {
 	using _IntegerType = typename IntegerForSizeof<_Type_>::Unsigned;
 
-	datapar::__simd_sized_dispatcher<__swap_ranges_vectorized_internal, _IntegerType>()(
+	vx::__simd_sized_dispatcher<__swap_ranges_vectorized_internal, _IntegerType>()(
 		__count * sizeof(_IntegerType), &__swap_ranges_scalar<_IntegerType>, __first, __second, __count);
 }
 

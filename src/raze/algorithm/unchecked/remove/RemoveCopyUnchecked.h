@@ -6,7 +6,7 @@
 #include <src/raze/algorithm/AlgorithmDebug.h>
 #include <src/raze/type_traits/SimdAlgorithmSafety.h>
 
-#include <src/raze/datapar/IsComparable.h>
+#include <src/raze/vx/IsComparable.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

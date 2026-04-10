@@ -1,4 +1,4 @@
-#include <raze/datapar/SimdDataparAlgorithms.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
 #include <raze/math/Math.h>
 #include <raze/algorithm/fill/Fill.h>
 #include <string>
@@ -11,7 +11,7 @@
 
 template <typename T, raze::arch::ISA Arch, raze::uint32 _Width_>
 void testSimdMaskMethods() {
-    using Simd = raze::datapar::simd<T, raze::datapar::x86_abi<Arch, _Width_>>;
+    using Simd = raze::vx::simd<T, raze::vx::x86_runtime_abi<Arch, _Width_>>;
     using Mask = typename Simd::mask_type;
     constexpr size_t N = Simd::size();
 
@@ -24,8 +24,8 @@ void testSimdMaskMethods() {
         Mask all_true(true);
         Mask all_false(false);
         
-        raze_assert(raze::datapar::all_of(all_true));
-        raze_assert(raze::datapar::none_of(all_false));
+        raze_assert(raze::vx::all_of(all_true));
+        raze_assert(raze::vx::none_of(all_false));
     }
 
     {
@@ -92,17 +92,17 @@ void testSimdMaskMethods() {
     {
         Mask all_true(true);
         Mask all_false(false);
-        raze_assert(raze::datapar::all_of(all_true));
-        raze_assert(raze::datapar::none_of(all_true) == false);
-        raze_assert(raze::datapar::some_of(all_true) == false);
-        raze_assert(raze::datapar::none_of(all_false));
-        raze_assert(raze::datapar::any_of(all_false) == false);
-        raze_assert(raze::datapar::some_of(all_false));
+        raze_assert(raze::vx::all_of(all_true));
+        raze_assert(raze::vx::none_of(all_true) == false);
+        raze_assert(raze::vx::some_of(all_true) == false);
+        raze_assert(raze::vx::none_of(all_false));
+        raze_assert(raze::vx::any_of(all_false) == false);
+        raze_assert(raze::vx::some_of(all_false));
         Mask mixed(false);
         if (N > 0) mixed[0] = true;
-        raze_assert(raze::datapar::any_of(mixed));
-        raze_assert(raze::datapar::some_of(mixed));
-        raze_assert(raze::datapar::all_of(mixed) == false);
+        raze_assert(raze::vx::any_of(mixed));
+        raze_assert(raze::vx::some_of(mixed));
+        raze_assert(raze::vx::all_of(mixed) == false);
     }
 
     auto makeMask = [N](std::initializer_list<size_t> bits) {
@@ -123,22 +123,22 @@ void testSimdMaskMethods() {
             Mask m{};
             for (size_t i = 0; i < N; ++i) m[i] = false;
 
-            raze_assert(raze::datapar::count_set(m) == 0);
-            raze_assert(!raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == N);
-            raze_assert(raze::datapar::find_last_set(m) == N);
+            raze_assert(raze::vx::count_set(m) == 0);
+            raze_assert(!raze::vx::any_of(m));
+            raze_assert(!raze::vx::all_of(m));
+            raze_assert(raze::vx::find_first_set(m) == N);
+            raze_assert(raze::vx::find_last_set(m) == N);
         }
 
         {
             Mask m{};
             for (size_t i = 0; i < N; ++i) m[i] = true;
 
-            raze_assert(raze::datapar::count_set(m) == N);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == 0);
-            raze_assert(raze::datapar::find_last_set(m) == 0);
+            raze_assert(raze::vx::count_set(m) == N);
+            raze_assert(raze::vx::any_of(m));
+            raze_assert(raze::vx::all_of(m));
+            raze_assert(raze::vx::find_first_set(m) == 0);
+            raze_assert(raze::vx::find_last_set(m) == 0);
         }
 
         for (size_t i = 0; i < N; ++i) {
@@ -146,11 +146,11 @@ void testSimdMaskMethods() {
             for (size_t j = 0; j < N; ++j) m[j] = false;
             m[i] = true;
 
-            raze_assert(raze::datapar::count_set(m) == 1);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == i);
-            auto f = raze::datapar::find_last_set(m);
+            raze_assert(raze::vx::count_set(m) == 1);
+            raze_assert(raze::vx::any_of(m));
+            raze_assert(!raze::vx::all_of(m));
+            raze_assert(raze::vx::find_first_set(m) == i);
+            auto f = raze::vx::find_last_set(m);
             raze_assert(f == N - i - 1);
         }
 
@@ -161,13 +161,13 @@ void testSimdMaskMethods() {
 
             size_t expectedCount = (N + 1) / 2;
 
-            raze_assert(raze::datapar::count_set(m) == expectedCount);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
-            raze_assert(raze::datapar::find_first_set(m) == 0);
+            raze_assert(raze::vx::count_set(m) == expectedCount);
+            raze_assert(raze::vx::any_of(m));
+            raze_assert(!raze::vx::all_of(m));
+            raze_assert(raze::vx::find_first_set(m) == 0);
 
             size_t last = (N % 2 == 0 ? 1 : N - 1);
-            raze_assert(raze::datapar::find_last_set(m) == last);
+            raze_assert(raze::vx::find_last_set(m) == last);
         }
 
         {
@@ -176,10 +176,10 @@ void testSimdMaskMethods() {
 
             size_t expectedCount = std::count_if(ilist.begin(), ilist.end(), [N](int val) { return val < N; });
 
-            raze_assert(raze::datapar::count_set(m) == expectedCount);
-            raze_assert(raze::datapar::find_first_set(m) == 1);
-            raze_assert(raze::datapar::any_of(m));
-            raze_assert(!raze::datapar::all_of(m));
+            raze_assert(raze::vx::count_set(m) == expectedCount);
+            raze_assert(raze::vx::find_first_set(m) == 1);
+            raze_assert(raze::vx::any_of(m));
+            raze_assert(!raze::vx::all_of(m));
         }
     }
 
@@ -188,16 +188,16 @@ void testSimdMaskMethods() {
             Mask m{};
             for (size_t i = 0; i < N; ++i) m[i] = false;
 
-            raze_assert(raze::datapar::find_first_not_set(m) == 0);
-            raze_assert(raze::datapar::find_last_not_set(m) == 0);
+            raze_assert(raze::vx::find_first_not_set(m) == 0);
+            raze_assert(raze::vx::find_last_not_set(m) == 0);
         }
 
         {
             Mask m{};
             for (size_t i = 0; i < N; ++i) m[i] = true;
 
-            raze_assert(raze::datapar::find_first_not_set(m) == N);
-            raze_assert(raze::datapar::find_last_not_set(m) == N);
+            raze_assert(raze::vx::find_first_not_set(m) == N);
+            raze_assert(raze::vx::find_last_not_set(m) == N);
         }
 
         for (size_t i = 0; i < N; ++i) {
@@ -205,8 +205,8 @@ void testSimdMaskMethods() {
             for (size_t j = 0; j < N; ++j) m[j] = true;
             m[i] = false;
 
-            raze_assert(raze::datapar::find_first_not_set(m) == i);
-            raze_assert(raze::datapar::find_last_not_set(m) == (N - i - 1));
+            raze_assert(raze::vx::find_first_not_set(m) == i);
+            raze_assert(raze::vx::find_last_not_set(m) == (N - i - 1));
         }
 
         {
@@ -216,8 +216,8 @@ void testSimdMaskMethods() {
 
             size_t expectedFirst = (N > 1 ? 1 : N);
 
-            raze_assert(raze::datapar::find_first_not_set(m) == expectedFirst);
-            raze_assert(raze::datapar::find_last_not_set(m) == 0);
+            raze_assert(raze::vx::find_first_not_set(m) == expectedFirst);
+            raze_assert(raze::vx::find_last_not_set(m) == 0);
         }
 
         {
@@ -231,18 +231,18 @@ void testSimdMaskMethods() {
             for (size_t i = 0; i < N; ++i)
                 if (!m[i]) expectedLast = N - i - 1;
 
-            raze_assert(raze::datapar::find_first_not_set(m) == expectedFirst);
-            raze_assert(raze::datapar::find_last_not_set(m) == expectedLast);
+            raze_assert(raze::vx::find_first_not_set(m) == expectedFirst);
+            raze_assert(raze::vx::find_last_not_set(m) == expectedLast);
         }
     }
 
     {
         using M1 = Mask;
-        using M2 = typename raze::datapar::simd<T, raze::datapar::x86_abi<Arch, _Width_>>::mask_type;
-        using M3 = typename raze::datapar::simd<typename raze::IntegerForSizeof<T>::Unsigned, raze::datapar::x86_abi<Arch, _Width_>>::mask_type;
-        static_assert(raze::datapar::__compatible_mask<M1, M2>);
-        static_assert(raze::datapar::__compatible_mask<M1, M3>);
-        static_assert(raze::datapar::__compatible_mask<M2, M3>);
+        using M2 = typename raze::vx::simd<T, raze::vx::x86_runtime_abi<Arch, _Width_>>::mask_type;
+        using M3 = typename raze::vx::simd<typename raze::IntegerForSizeof<T>::Unsigned, raze::vx::x86_runtime_abi<Arch, _Width_>>::mask_type;
+        static_assert(raze::vx::__compatible_mask<M1, M2>);
+        static_assert(raze::vx::__compatible_mask<M1, M3>);
+        static_assert(raze::vx::__compatible_mask<M2, M3>);
     }
 
     {
@@ -250,14 +250,14 @@ void testSimdMaskMethods() {
             Mask m(false);
             for (size_t n = 0; n < N; ++n)
                 for (size_t k = n; k < N; ++k)
-                    raze_assert(!raze::datapar::is_contiguous(m, n, k));
+                    raze_assert(!raze::vx::is_contiguous(m, n, k));
         }
 
         {
             Mask m(true);
             for (size_t n = 0; n < N; ++n)
                 for (size_t k = n; k < N; ++k)
-                    raze_assert(raze::datapar::is_contiguous(m, n, k));
+                    raze_assert(raze::vx::is_contiguous(m, n, k));
         }
 
         for (size_t pos = 0; pos < N; ++pos) {
@@ -267,7 +267,7 @@ void testSimdMaskMethods() {
             for (size_t n = 0; n < N; ++n) {
                 for (size_t k = n; k < N; ++k) {
                     bool expected = (n == pos && k == pos);
-                    raze_assert(raze::datapar::is_contiguous(m, n, k) == expected);
+                    raze_assert(raze::vx::is_contiguous(m, n, k) == expected);
                 }
             }
         }
@@ -283,7 +283,7 @@ void testSimdMaskMethods() {
                     for (size_t i = n; i <= k; ++i)
                         if (!m[i]) expected = false;
 
-                    raze_assert(raze::datapar::is_contiguous(m, n, k) == expected);
+                    raze_assert(raze::vx::is_contiguous(m, n, k) == expected);
                 }
             }
         }
@@ -302,7 +302,7 @@ void testSimdMaskMethods() {
                             if (!m[i]) expected = false;
 
                    
-                        raze_assert(raze::datapar::is_contiguous(m, n, k) == expected);
+                        raze_assert(raze::vx::is_contiguous(m, n, k) == expected);
                     }
                 }
             }

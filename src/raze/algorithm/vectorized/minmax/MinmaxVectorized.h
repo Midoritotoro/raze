@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -36,43 +36,43 @@ struct __minmax_vectorized_internal {
         const void* __first,
         const void* __last) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
 
         auto __maximum_values = _Simd_::zero();
         auto __minimum_values = _Simd_::zero();
 
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
-        __maximum_values = datapar::load<_Simd_>(__first);
+        __maximum_values = vx::load<_Simd_>(__first);
         __advance_bytes(__first, sizeof(_Simd_));
 
         while (__first != __stop_at) {
-            const auto __loaded = datapar::load<_Simd_>(__first);
+            const auto __loaded = vx::load<_Simd_>(__first);
 
-            __maximum_values = datapar::vertical_max(__maximum_values, __loaded);
-            __minimum_values = datapar::vertical_min(__minimum_values, __loaded);
+            __maximum_values = vx::vertical_max(__maximum_values, __loaded);
+            __minimum_values = vx::vertical_min(__minimum_values, __loaded);
 
             __advance_bytes(__first, sizeof(_Simd_));
         }
 
         if (__tail_size != 0) {
             if constexpr (_Simd_::is_native_mask_load_supported_v) {
-                const auto __loaded = datapar::maskz_load<_Simd_>(__first, datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType)));
+                const auto __loaded = vx::maskz_load<_Simd_>(__first, vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType)));
 
-                __maximum_values = datapar::vertical_max(__maximum_values, __loaded);
-                __minimum_values = datapar::vertical_min(__minimum_values, __loaded);
+                __maximum_values = vx::vertical_max(__maximum_values, __loaded);
+                __minimum_values = vx::vertical_min(__minimum_values, __loaded);
             }
             else {
                 const auto __minmax = __minmax_scalar<_ValueType>(__first, __last);
 
                 return std::pair{
-                    std::min(__minmax.first, datapar::horizontal_min(__minimum_values)),
-                    std::max(__minmax.second, datapar::horizontal_max(__maximum_values))
+                    std::min(__minmax.first, vx::horizontal_min(__minimum_values)),
+                    std::max(__minmax.second, vx::horizontal_max(__maximum_values))
                 };
             }
         }
 
-        return { datapar::horizontal_min(__minimum_values), datapar::horizontal_max(__maximum_values) };
+        return { vx::horizontal_min(__minimum_values), vx::horizontal_max(__maximum_values) };
     }
 };
 
@@ -81,7 +81,7 @@ raze_declare_const_function __raze_simd_algorithm_inline std::pair<_Type_, _Type
     const void* __first,
     const void* __last) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__minmax_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__minmax_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__minmax_scalar<_Type_>, __first, __last);
 }
 

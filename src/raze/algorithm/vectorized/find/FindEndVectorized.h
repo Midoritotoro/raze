@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -48,7 +48,7 @@ struct __find_end_vectorized_internal {
 		const void* __sub_first,
 		sizetype	__sub_length) raze_const_operator noexcept
 	{
-		const auto __guard = datapar::make_guard<_Simd_>();
+		const auto __guard = vx::make_guard<_Simd_>();
 
 		const auto __broadcasted_first_sub = _Simd_(static_cast<const _ValueType*>(__sub_first)[0]);
 		const auto __broadcasted_last_sub = _Simd_(static_cast<const _ValueType*>(__sub_first)[__sub_length - 1]);
@@ -68,31 +68,31 @@ struct __find_end_vectorized_internal {
 			__rewind_bytes(__main_last, sizeof(_Simd_));
 			__processed_bytes += sizeof(_Simd_);
 
-			const auto __loaded_last = datapar::load<_Simd_>(__main_last);
+			const auto __loaded_last = vx::load<_Simd_>(__main_last);
 			const auto __equal_last = (__loaded_last == __broadcasted_last_sub);
 
-			if (datapar::none_of(__equal_last))
+			if (vx::none_of(__equal_last))
 				continue;
 
 			const auto __sequence_start = __bytes_pointer_offset(__main_last, -(__last_offset - sizeof(_ValueType)));
 
-			const auto __loaded_first = datapar::load<_Simd_>(__sequence_start);
+			const auto __loaded_first = vx::load<_Simd_>(__sequence_start);
 			const auto __equal_first = (__loaded_first == __broadcasted_first_sub);
 
 			auto __combined = __equal_first & __equal_last;
 
-			if (datapar::any_of(__combined)) {
+			if (vx::any_of(__combined)) {
 				auto __integer_mask = __combined.bits();
 
 				do {
-					const auto __offset_bytes = (__integer_mask.elements() - datapar::find_last_set(__integer_mask)) * sizeof(_ValueType);
+					const auto __offset_bytes = (__integer_mask.elements() - vx::find_last_set(__integer_mask)) * sizeof(_ValueType);
 					const auto __main_match = __bytes_pointer_offset(__sequence_start, __offset_bytes);
 
 					if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
 						return static_cast<const _ValueType*>(__main_match) - 1;
 
-					datapar::clear_right(__integer_mask);
-				} while (datapar::any_of(__integer_mask));
+					vx::clear_right(__integer_mask);
+				} while (vx::any_of(__integer_mask));
 			}
 		}
 
@@ -122,7 +122,7 @@ __raze_simd_algorithm_inline const _Type_* __find_end_vectorized(
 	const void* __sub_first,
 	sizetype	__sub_length) noexcept
 {
-	return datapar::__simd_sized_dispatcher<__find_end_vectorized_internal, _Type_>()(
+	return vx::__simd_sized_dispatcher<__find_end_vectorized_internal, _Type_>()(
 		__main_length * sizeof(_Type_), &__find_end_scalar<_Type_>, __main_first, __main_length, __sub_first, __sub_length);
 }
 

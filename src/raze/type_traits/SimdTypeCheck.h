@@ -6,7 +6,7 @@
 #include <src/raze/type_traits/IntegralProperties.h>
 #include <src/raze/type_traits/TypeCheck.h>
 
-#include <src/raze/datapar/SimdIntegralTypesCheck.h>
+#include <src/raze/vx/SimdIntegralTypesCheck.h>
 
 
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
@@ -30,7 +30,7 @@ constexpr inline bool __is_vector_type_supported_v<bool> = false;
 template <
     arch::ISA   _ISA_,
     typename    _VectorElementType_,
-    uint32      _Width_ = datapar::__default_width<_ISA_>>
+    uint32      _Width_ = vx::__default_width<_ISA_>>
 struct __deduce_simd_vector_type__ {
 private:
     using _Type_ = std::decay_t<_VectorElementType_>;

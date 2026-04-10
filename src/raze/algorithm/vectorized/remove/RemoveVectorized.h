@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/raze/datapar/SizedSimdDispatcher.h>
-#include <raze/datapar/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -38,14 +38,14 @@ struct __remove_vectorized_internal {
         const void* __last,
         _ValueType  __value) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         const auto __comparand = _Simd_(__value);
 
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
         do {
-            const auto __loaded = datapar::load<_Simd_>(__current);
-            __first = datapar::compress_store(__first, __loaded, __comparand == __loaded);
+            const auto __loaded = vx::load<_Simd_>(__current);
+            __first = vx::compress_store(__first, __loaded, __comparand == __loaded);
             __advance_bytes(__current, sizeof(_Simd_));
         } while (__current != __stop_at);
 
@@ -61,7 +61,7 @@ __raze_simd_algorithm_inline _Type_* __remove_vectorized(
     const void* __last,
     _Type_      __value) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__remove_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__remove_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__remove_scalar<_Type_>, __first, __first, __last, __value);
 }
 

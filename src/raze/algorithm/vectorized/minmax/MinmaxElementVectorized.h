@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 #include <raze/algorithm/minmax/Min.h>
 #include <raze/algorithm/minmax/Max.h>
@@ -43,9 +43,9 @@ struct __minmax_element_vectorized_internal {
         const void* __last) raze_const_operator noexcept
     {
         using _UnsignedValueType = IntegerForSizeof<_ValueType>::Unsigned;
-        using _IndexSimdType = datapar::simd<_UnsignedValueType, typename _Simd_::abi_type>;
+        using _IndexSimdType = vx::simd<_UnsignedValueType, typename _Simd_::abi_type>;
 
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
 
         const auto __first_begin = static_cast<const _ValueType*>(__first);
         auto __minmax = _MinmaxType { __first_begin, __first_begin };
@@ -53,7 +53,7 @@ struct __minmax_element_vectorized_internal {
         auto __current_indices_min = _IndexSimdType::zero();
         auto __current_indices_max = _IndexSimdType::zero();
         auto __current_indices = _IndexSimdType::zero();
-        auto __current_values = datapar::load<_Simd_>(__first);
+        auto __current_values = vx::load<_Simd_>(__first);
         auto __current_values_max = __current_values;
         auto __current_values_min = __current_values;
 
@@ -73,35 +73,35 @@ struct __minmax_element_vectorized_internal {
             ++__current_indices;
 
             if (__first != __stop_at) {
-                __current_values = datapar::load<_Simd_>(__first);
+                __current_values = vx::load<_Simd_>(__first);
 
                 const auto __greater_mask = (__current_values < __current_values_max);
                 const auto __less_mask = (__current_values < __current_values_min);
 
-                __current_indices_min = datapar::select(__current_indices, __current_indices_min, __less_mask);
-                __current_values_min = datapar::select(__current_values, __current_values_min, __less_mask);
+                __current_indices_min = vx::select(__current_indices, __current_indices_min, __less_mask);
+                __current_values_min = vx::select(__current_values, __current_values_min, __less_mask);
 
-                __current_indices_max = datapar::select(__current_indices_max, __current_indices, __greater_mask);
-                __current_values_max = datapar::vertical_max(__current_values, __current_values_max);
+                __current_indices_max = vx::select(__current_indices_max, __current_indices, __greater_mask);
+                __current_values_max = vx::vertical_max(__current_values, __current_values_max);
             }
             else {
-                const auto __all_max = _Simd_(datapar::horizontal_max(__current_values_max));
-                const auto __all_min = _Simd_(datapar::horizontal_min(__current_values_min));
+                const auto __all_max = _Simd_(vx::horizontal_max(__current_values_max));
+                const auto __all_min = _Simd_(vx::horizontal_min(__current_values_min));
 
                 const auto __mask_max = (__current_values_max == __all_max);
                 const auto __mask_min = (__current_values_min == __all_min);
 
-                const auto __max_values_indices = datapar::select(__current_indices_max, _IndexSimdType::zero(), __mask_max);
-                const auto __min_values_indices = datapar::select(__current_indices_min, _IndexSimdType(_UnsignedValueType(-1)), __mask_min);
+                const auto __max_values_indices = vx::select(__current_indices_max, _IndexSimdType::zero(), __mask_max);
+                const auto __min_values_indices = vx::select(__current_indices_min, _IndexSimdType(_UnsignedValueType(-1)), __mask_min);
 
-                const auto __all_max_indices = _IndexSimdType(datapar::horizontal_max(datapar::simd_cast<_UnsignedValueType>(__max_values_indices)));
-                const auto __all_min_indices = _IndexSimdType(datapar::horizontal_min(datapar::simd_cast<_UnsignedValueType>(__min_values_indices)));
+                const auto __all_max_indices = _IndexSimdType(vx::horizontal_max(vx::simd_cast<_UnsignedValueType>(__max_values_indices)));
+                const auto __all_min_indices = _IndexSimdType(vx::horizontal_min(vx::simd_cast<_UnsignedValueType>(__min_values_indices)));
 
                 const auto __final_max_mask = (__all_max_indices == __max_values_indices) & __mask_max;
                 const auto __final_min_mask = __all_min_indices == __min_values_indices;
 
-                const auto __horizontal_max_position = (_Simd_::size() - 1 - datapar::find_last_set(__final_max_mask));
-                const auto __horizontal_min_position = datapar::find_first_set(__final_min_mask);
+                const auto __horizontal_max_position = (_Simd_::size() - 1 - vx::find_last_set(__final_max_mask));
+                const auto __horizontal_min_position = vx::find_first_set(__final_min_mask);
 
                 const auto __vertical_max_position = sizetype(__current_indices_max[__horizontal_max_position]);
                 const auto __vertical_min_position = sizetype(__current_indices_min[__horizontal_min_position]);
@@ -127,7 +127,7 @@ struct __minmax_element_vectorized_internal {
                     __advance_bytes(__stop_at, __aligned_portion_size);
                     __portion_begin = static_cast<const _ValueType*>(__first);
 
-                    __current_values = datapar::load<_Simd_>(__first);
+                    __current_values = vx::load<_Simd_>(__first);
 
                     __current_values_max = __current_values;
                     __current_values_min = __current_values;
@@ -159,7 +159,7 @@ __raze_simd_algorithm_inline std::pair<const _Type_*, const _Type_*> __minmax_el
     const void* __first,
     const void* __last) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__minmax_element_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__minmax_element_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__minmax_element_scalar<_Type_>, __first, __last);
 }
 

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
 
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -32,17 +32,17 @@ struct __find_vectorized_internal {
         const void*                 __last,
         typename _Simd_::value_type __value) raze_const_operator noexcept
     {
-        const auto __guard      = datapar::make_guard<_Simd_>();
-        const auto __comparand  = _Simd_(__value);
+        const auto __guard = vx::make_guard<_Simd_>();
 
+        const auto __comparand = _Simd_(__value);
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
         do {
-            const auto __loaded = datapar::load<_Simd_>(__first);
-            const auto __mask   = __comparand == __loaded;
+            const auto __loaded = vx::load<_Simd_>(__first);
+            const auto __mask = __comparand == __loaded;
 
-            if (datapar::any_of(__mask))
-                return static_cast<const _ValueType*>(__first) + datapar::find_first_set(__mask);
+            if (vx::any_of(__mask))
+                return static_cast<const _ValueType*>(__first) + vx::find_first_set(__mask);
 
             __advance_bytes(__first, sizeof(_Simd_));
         } while (__first != __stop_at);
@@ -51,13 +51,13 @@ struct __find_vectorized_internal {
             return static_cast<const _ValueType*>(__last);
 
         if constexpr (_Simd_::is_native_mask_load_supported_v) {
-            const auto __tail_mask  = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
-            const auto __loaded     = datapar::load(datapar::where(__first, __tail_mask));
+            const auto __tail_mask = vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
+            const auto __loaded = vx::load(vx::where(__first, __tail_mask));
 
             const auto __mask = (__comparand == __loaded) & __tail_mask;
 
-            if (datapar::any_of(__mask))
-                return static_cast<const _ValueType*>(__first) + datapar::find_first_set(__mask);
+            if (vx::any_of(__mask))
+                return static_cast<const _ValueType*>(__first) + vx::find_first_set(__mask);
         }
         else {
             __last = __find_scalar(__first, __last, __value);
@@ -73,7 +73,7 @@ __raze_simd_algorithm_inline _Type_* __find_vectorized(
     const void* __last,
     _Type_      __value) noexcept
 {
-    return const_cast<_Type_*>(datapar::__simd_sized_dispatcher<__find_vectorized_internal, _Type_>()(
+    return const_cast<_Type_*>(vx::__simd_sized_dispatcher<__find_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__find_scalar<_Type_>, __first, __last, __value));
 }
 

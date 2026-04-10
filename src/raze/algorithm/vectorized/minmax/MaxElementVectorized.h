@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 #include <raze/algorithm/minmax/Min.h>
 #include <raze/algorithm/minmax/Max.h>
@@ -39,14 +39,14 @@ struct __max_element_vectorized_internal {
         const void* __last) raze_const_operator noexcept
     {
         using _UnsignedValueType = IntegerForSizeof<_ValueType>::Unsigned;
-        using _IndexSimdType = datapar::simd<_UnsignedValueType, typename _Simd_::abi_type>;
+        using _IndexSimdType = vx::simd<_UnsignedValueType, typename _Simd_::abi_type>;
 
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         auto __max_element = static_cast<const _ValueType*>(__first);
 
         auto __current_indices_max  = _IndexSimdType::zero();
         auto __current_indices = _IndexSimdType::zero();
-        auto __current_values = datapar::load<_Simd_>(__first);
+        auto __current_values = vx::load<_Simd_>(__first);
         auto __current_values_max = __current_values;
 
         constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
@@ -66,23 +66,23 @@ struct __max_element_vectorized_internal {
             ++__current_indices;
 
             if (__first != __stop_at) {
-                __current_values = datapar::load<_Simd_>(__first);
+                __current_values = vx::load<_Simd_>(__first);
                 const auto __greater_mask = (__current_values > __current_values_max);
 
-                __current_indices_max   = datapar::select(__current_indices,
+                __current_indices_max   = vx::select(__current_indices,
                     __current_indices_max, __greater_mask);
-                __current_values_max    = datapar::select(__current_values,
+                __current_values_max    = vx::select(__current_values,
                     __current_values_max, __greater_mask);
             }
             else {
-                const auto __all_max = _Simd_(datapar::horizontal_max(__current_values_max));
+                const auto __all_max = _Simd_(vx::horizontal_max(__current_values_max));
 
-                const auto __max_values_indices = datapar::select(__current_indices_max, 
+                const auto __max_values_indices = vx::select(__current_indices_max, 
                     _IndexSimdType(_UnsignedValueType(-1)), __current_values_max == __all_max);
-                const auto __all_max_indices = _IndexSimdType(datapar::horizontal_min(
-                    datapar::simd_cast<_UnsignedValueType>(__max_values_indices)));
+                const auto __all_max_indices = _IndexSimdType(vx::horizontal_min(
+                    vx::simd_cast<_UnsignedValueType>(__max_values_indices)));
 
-                const auto __horizontal_position = datapar::find_first_set(__all_max_indices == __max_values_indices);
+                const auto __horizontal_position = vx::find_first_set(__all_max_indices == __max_values_indices);
                 const auto __vertical_position = sizetype(__current_indices_max[__horizontal_position]);
                 
                 const auto __maybe_max_element = __bytes_pointer_offset(__portion_begin, 
@@ -101,7 +101,7 @@ struct __max_element_vectorized_internal {
                     __advance_bytes(__stop_at, __aligned_portion_size);
                     __portion_begin = static_cast<const _ValueType*>(__first);
 
-                    __current_values = datapar::load<_Simd_>(__first);
+                    __current_values = vx::load<_Simd_>(__first);
                     __current_values_max = __current_values;
                     __current_indices_max = _IndexSimdType::zero();
                 }
@@ -126,7 +126,7 @@ __raze_simd_algorithm_inline const _Type_* __max_element_vectorized(
     const void* __first,
     const void* __last) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__max_element_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__max_element_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__max_element_scalar<_Type_>, __first, __last);
 }
 

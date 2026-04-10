@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -35,14 +35,14 @@ struct __equal_vectorized_internal {
         const void*                             __second,
         raze_maybe_unused_attribute sizetype    __size) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
         do {
-            const auto __loaded_first   = datapar::load<_Simd_>(__first);
-            const auto __loaded_second  = datapar::load<_Simd_>(__second);
+            const auto __loaded_first   = vx::load<_Simd_>(__first);
+            const auto __loaded_second  = vx::load<_Simd_>(__second);
 
-            if (datapar::some_of(__loaded_first == __loaded_second))
+            if (vx::some_of(__loaded_first == __loaded_second))
                 return false;
 
             __advance_bytes(__first, sizeof(_Simd_));
@@ -54,13 +54,13 @@ struct __equal_vectorized_internal {
 
         if constexpr (_Simd_::is_native_mask_load_supported_v) {
             const auto __tail_length = __tail_size / sizeof(_ValueType);
-            const auto __tail_mask = datapar::first_n<_Simd_>(__tail_length);
+            const auto __tail_mask = vx::first_n<_Simd_>(__tail_length);
 
-            const auto __loaded_first   = datapar::maskz_load<_Simd_>(__first, __tail_mask);
-            const auto __loaded_second  = datapar::maskz_load<_Simd_>(__second, __tail_mask);
+            const auto __loaded_first   = vx::maskz_load<_Simd_>(__first, __tail_mask);
+            const auto __loaded_second  = vx::maskz_load<_Simd_>(__second, __tail_mask);
 
             const auto __combined_mask = (__loaded_first == __loaded_second) & __tail_mask;
-            return datapar::all_of(__combined_mask == __tail_mask);
+            return vx::all_of(__combined_mask == __tail_mask);
         }
         else {
             return __equal_scalar<_ValueType>(__first, __second, __tail_size);
@@ -76,7 +76,7 @@ raze_declare_const_function __raze_simd_algorithm_inline bool __equal_vectorized
 {
     const auto __bytes = __size * sizeof(_Type_);
 
-    return datapar::__simd_sized_dispatcher<__equal_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__equal_vectorized_internal, _Type_>()(
         __bytes, &__equal_scalar<_Type_>, __first, __second, __bytes);
 }
 

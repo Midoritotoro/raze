@@ -1,7 +1,7 @@
 #pragma once
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -35,15 +35,15 @@ struct __replace_vectorized_internal {
         constexpr auto __is_masked_memory_access_supported = _Simd_::is_native_mask_store_supported_v &&
             _Simd_::is_native_mask_load_supported_v;
 
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
         const auto __comparand      = _Simd_(__old_value);
         const auto __replacement    = _Simd_(__new_value);
 
         do {
-            const auto __loaded = datapar::load<_Simd_>(__first);
-            datapar::mask_store(__first, __replacement, __loaded == __comparand);
+            const auto __loaded = vx::load<_Simd_>(__first);
+            vx::mask_store(__first, __replacement, __loaded == __comparand);
             __advance_bytes(__first, sizeof(_Simd_));
         } while (__first != __stop_at);
 
@@ -51,11 +51,11 @@ struct __replace_vectorized_internal {
             return;
 
         if constexpr (__is_masked_memory_access_supported) {
-            const auto __tail_mask  = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
-            const auto __loaded     = datapar::maskz_load<_Simd_>(__first, __tail_mask);
+            const auto __tail_mask  = vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
+            const auto __loaded     = vx::maskz_load<_Simd_>(__first, __tail_mask);
 
             const auto __mask = ((__loaded == __comparand) & __tail_mask);
-            datapar::mask_store(__first, __replacement, __mask);
+            vx::mask_store(__first, __replacement, __mask);
         }
         else {
             __replace_scalar<typename _Simd_::value_type>(__first, __last, __old_value, __new_value);
@@ -70,7 +70,7 @@ __raze_simd_algorithm_inline void __replace_vectorized(
     const _Type_    __old_value,
     const _Type_    __new_value) noexcept
 {
-    datapar::__simd_sized_dispatcher<__replace_vectorized_internal, _Type_>()(
+    vx::__simd_sized_dispatcher<__replace_vectorized_internal, _Type_>()(
         __byte_length(__first, __last), &__replace_scalar<_Type_>,
         __first, __last, __old_value, __new_value);
 }

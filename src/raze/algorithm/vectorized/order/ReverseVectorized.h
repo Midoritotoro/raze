@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/raze/datapar/SizedSimdDispatcher.h>
-#include <raze/datapar/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -30,17 +30,17 @@ struct __reverse_vectorized_internal {
         void*       __first,
         void*       __last) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
         do {
             __rewind_bytes(__last, sizeof(_Simd_));
 
-            const auto __first_loaded = datapar::load<_Simd_>(__first);
-            const auto __last_loaded = datapar::load<_Simd_>(__last);
+            const auto __first_loaded = vx::load<_Simd_>(__first);
+            const auto __last_loaded = vx::load<_Simd_>(__last);
 
-            datapar::store(__last, datapar::reverse(__first_loaded));
-            datapar::store(__first, datapar::reverse(__last_loaded));
+            vx::store(__last, vx::reverse(__first_loaded));
+            vx::store(__first, vx::reverse(__last_loaded));
 
             __advance_bytes(__first, sizeof(_Simd_));
         } while (__first != __stop_at);
@@ -55,7 +55,7 @@ __raze_simd_algorithm_inline void __reverse_vectorized(
     void* __first,
     void* __last) noexcept
 {
-    datapar::__simd_sized_dispatcher<__reverse_vectorized_internal, _Type_>()(
+    vx::__simd_sized_dispatcher<__reverse_vectorized_internal, _Type_>()(
         __byte_length(__first, __last) >> 1, &__reverse_scalar<_Type_>, __first, __last);
 }
 

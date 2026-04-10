@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -57,7 +57,7 @@ struct __contains_subrange_vectorized_internal {
         const void* __sub_first,
         sizetype    __sub_length) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
 
         auto __main_begin = static_cast<const _ValueType*>(__main_first);
         auto __sub_begin = static_cast<const _ValueType*>(__sub_first);
@@ -72,25 +72,25 @@ struct __contains_subrange_vectorized_internal {
         auto __processed_bytes = sizetype(0);
 
         while (__processed_bytes < __aligned_size && (__main_bytes - __processed_bytes) >= (__last_offset + sizeof(_Simd_))) {
-            const auto __loaded_first = datapar::load<_Simd_>(__main_begin);
+            const auto __loaded_first = vx::load<_Simd_>(__main_begin);
             const auto __equal_first = (__broadcasted_first_sub == __loaded_first);
 
-            if (datapar::none_of(__equal_first)) {
+            if (vx::none_of(__equal_first)) {
                 __processed_bytes += sizeof(_Simd_);
                 __advance_bytes(__main_begin, sizeof(_Simd_));
                 continue;
             }
 
-            const auto __loaded_last = datapar::load<_Simd_>(__bytes_pointer_offset(__main_begin, __last_offset));
+            const auto __loaded_last = vx::load<_Simd_>(__bytes_pointer_offset(__main_begin, __last_offset));
             const auto __equal_last = (__broadcasted_last_sub == __loaded_last);
 
             auto __combined = __equal_first & __equal_last;
 
-            if (datapar::any_of(__combined)) {
+            if (vx::any_of(__combined)) {
                 auto __integer_mask = __combined.bits();
 
                 do {
-                    const auto __first_set = datapar::find_first_set(__integer_mask);
+                    const auto __first_set = vx::find_first_set(__integer_mask);
 
                     const auto __match_bytes = __first_set * sizeof(_ValueType) + sizeof(_ValueType);
                     const auto __main_match = __bytes_pointer_offset(__main_begin, __match_bytes);
@@ -98,8 +98,8 @@ struct __contains_subrange_vectorized_internal {
                     if (memcmp(__main_match, __bytes_pointer_offset(__sub_first, sizeof(_ValueType)), __sub_bytes - 2 * sizeof(_ValueType)) == 0)
                         return true;
 
-                    datapar::clear_left(__integer_mask);
-                } while (datapar::any_of(__integer_mask));
+                    vx::clear_left(__integer_mask);
+                } while (vx::any_of(__integer_mask));
             }
 
             __processed_bytes += sizeof(_Simd_);
@@ -125,7 +125,7 @@ __raze_simd_algorithm_inline bool __contains_subrange_vectorized(
     const void* __sub_first,
     sizetype	__sub_length) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__contains_subrange_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__contains_subrange_vectorized_internal, _Type_>()(
         __main_length * sizeof(_Type_), &__contains_subrange_scalar<_Type_>,
         __main_first, __main_length, __sub_first, __sub_length);
 }

@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <raze/datapar/SimdDataparAlgorithms.h>
-#include <src/raze/datapar/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -42,7 +42,7 @@ private:
 		const auto __stop_at = __bytes_pointer_offset(__first1, __aligned_size);
 
 		do {
-			const auto __loaded_main = datapar::load<_Simd_>(__first1);
+			const auto __loaded_main = vx::load<_Simd_>(__first1);
 
 			auto __values_begin = static_cast<const _ValueType*>(__first2);
 			auto __found_address = static_cast<const _ValueType*>(__last1);
@@ -51,9 +51,9 @@ private:
 				const auto __comparand = _Simd_(*__values_begin++);
 				const auto __mask = __comparand == __loaded_main;
 
-				if (datapar::any_of(__mask))
+				if (vx::any_of(__mask))
 					__found_address = raze::algorithm::min(__found_address,
-						static_cast<const _ValueType*>(__first1) + datapar::find_first_set(__mask));
+						static_cast<const _ValueType*>(__first1) + vx::find_first_set(__mask));
 			}
 
 			if (__found_address != __last1)
@@ -78,15 +78,15 @@ private:
 		auto __found = static_cast<const _ValueType*>(__last1);
 		auto __values_begin = static_cast<const _ValueType*>(__first2);
 
-		const auto __main_loaded = datapar::load<_Simd_>(__first1);
+		const auto __main_loaded = vx::load<_Simd_>(__first1);
 
 		const _Simd_ __values[sizeof...(_Indices_)] = {
 			 ([=, &__found]() noexcept {
 				const auto __comparand = _Simd_(__values_begin[_Indices_]);
 				const auto __compared = __main_loaded == __comparand;
 
-				if (datapar::any_of(__compared))
-					__found = raze::algorithm::min(__found, static_cast<const _ValueType*>(__first1) + datapar::find_first_set(__compared));
+				if (vx::any_of(__compared))
+					__found = raze::algorithm::min(__found, static_cast<const _ValueType*>(__first1) + vx::find_first_set(__compared));
 
 				return __comparand;
 			} ())...
@@ -99,13 +99,13 @@ private:
 		__advance_bytes(__first1, sizeof(_Simd_));
 
 		while (__first1 != __stop_at) {
-			const auto __current_loaded = datapar::load<_Simd_>(__first1);
+			const auto __current_loaded = vx::load<_Simd_>(__first1);
 
 			([=, &__found]() noexcept {
 				const auto __compared = __current_loaded == __values[_Indices_];
 
-				if (datapar::any_of(__compared))
-					__found = std::min(__found, static_cast<const _ValueType*>(__first1) + datapar::find_first_set(__compared));
+				if (vx::any_of(__compared))
+					__found = std::min(__found, static_cast<const _ValueType*>(__first1) + vx::find_first_set(__compared));
 			} (), ...);
 
 			if (__found != __last1)
@@ -125,7 +125,7 @@ public:
 		const void* __first2,
 		const void* __last2) raze_const_operator noexcept
 	{
-		const auto __guard = datapar::make_guard<_Simd_>();
+		const auto __guard = vx::make_guard<_Simd_>();
 		const auto __values_count = __byte_length(__first2, __last2) / sizeof(_ValueType);
 
 		switch (__values_count) {
@@ -175,7 +175,7 @@ raze_nodiscard __raze_simd_algorithm_inline const _Type_* __find_first_of_vector
 	const void* __first2,
 	const void* __last2) noexcept
 {
-	return datapar::__simd_sized_dispatcher<__find_first_of_vectorized_internal, _Type_>()(
+	return vx::__simd_sized_dispatcher<__find_first_of_vectorized_internal, _Type_>()(
 		__byte_length(__first1, __last1), &__find_first_of_scalar<_Type_>, __first1, __last1, __first2, __last2);
 }
 

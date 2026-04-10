@@ -1,7 +1,7 @@
 #pragma once
 
-#include <src/raze/datapar/SizedSimdDispatcher.h>
-#include <raze/datapar/SimdDataparAlgorithms.h>
+#include <src/raze/vx/SizedSimdDispatcher.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -35,13 +35,13 @@ struct __count_vectorized_internal {
         raze_maybe_unused_attribute sizetype    __bytes,
         _ValueType                              __value) raze_const_operator noexcept
     {
-        const auto __guard = datapar::make_guard<_Simd_>();
+        const auto __guard = vx::make_guard<_Simd_>();
         const auto __comparand = _Simd_(__value);
 
         auto __result = uint64(0);
-        auto __counter = datapar::simd_counter<_Simd_>();
+        auto __counter = vx::simd_counter<_Simd_>();
 
-        constexpr auto __max_portion_size = datapar::simd_counter<_Simd_>::portion_size();
+        constexpr auto __max_portion_size = vx::simd_counter<_Simd_>::portion_size();
 
         while (true) {
             const auto __current_portion_size = raze::algorithm::min(__aligned_size, __max_portion_size);
@@ -50,7 +50,7 @@ struct __count_vectorized_internal {
             __aligned_size -= __current_portion_size;
 
             do {
-                __counter.add(datapar::load<_Simd_>(__first) == __comparand);
+                __counter.add(vx::load<_Simd_>(__first) == __comparand);
                 __advance_bytes(__first, sizeof(_Simd_));
             } while (__first != __stop_at);
 
@@ -62,8 +62,8 @@ struct __count_vectorized_internal {
 
         if constexpr (_Simd_::is_native_mask_load_supported_v) {
             if (__tail_size != 0) {
-                const auto __tail_mask = datapar::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
-                __counter.add(datapar::maskz_load<_Simd_>(__first, __tail_mask) == __comparand, __tail_mask);
+                const auto __tail_mask = vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
+                __counter.add(vx::maskz_load<_Simd_>(__first, __tail_mask) == __comparand, __tail_mask);
             }
 
             return __result + __counter.finalize();
@@ -80,7 +80,7 @@ raze_declare_const_function __raze_simd_algorithm_inline sizetype __count_vector
     const sizetype  __bytes,
     _Type_          __value) noexcept
 {
-    return datapar::__simd_sized_dispatcher<__count_vectorized_internal, _Type_>()(
+    return vx::__simd_sized_dispatcher<__count_vectorized_internal, _Type_>()(
         __bytes, &__count_scalar<_Type_>, __first, __bytes, __value);
 }
 

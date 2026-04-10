@@ -9,7 +9,7 @@
 #include <iterator>
 #include <chrono>
 #include <raze/algorithm/copy/MoveBackward.h>
-#include <raze/datapar/BasicSimd.h>
+#include <raze/vx/BasicSimd.h>
 
 template <typename It1, typename It2>
 void assert_equal(It1 first1, It1 last1, It2 first2) {

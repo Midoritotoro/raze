@@ -7,7 +7,7 @@
 #include <raze/arch/ProcessorFeatures.h>
 
 #include <src/raze/type_traits/SimdTypeCheck.h>
-#include <raze/datapar/BasicSimd.h>
+#include <raze/vx/BasicSimd.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
