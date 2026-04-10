@@ -631,15 +631,15 @@ struct _Compress<arch::ISA::AVX512F, 512, _DesiredType_> {
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
         if constexpr (sizeof(_DesiredType_) == 8) {
-            const auto __not = uint8(~__mask);
-            const auto __processed_bytes = (math::population_count(__not) << 3);
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = (math::population_count(__to_gpr<arch::ISA::AVX512F>(__not)) << 3);
 
             return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm512_mask_compress_epi64(
                 __intrin_bitcast<__m512i>(__vector), __not, __intrin_bitcast<__m512i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {
-            const auto __not = uint16(~__mask);
-            const auto __processed_bytes = (math::population_count(__not) << 2);
+            const auto __not = _knot_mask16(__mask);
+            const auto __processed_bytes = (math::population_count(__to_gpr<arch::ISA::AVX512F>(__not)) << 2);
 
             return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm512_mask_compress_epi32(
                 __intrin_bitcast<__m512i>(__vector), __not, __intrin_bitcast<__m512i>(__vector))) };
@@ -830,15 +830,15 @@ struct _Compress<arch::ISA::AVX512VLF, 256, _DesiredType_>:
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
         if constexpr (sizeof(_DesiredType_) == 8) {
-            const auto __not = uint8(uint8(0xF) & uint8(~__mask));
-            const auto __processed_bytes = (math::population_count(__not) << 3);
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = (math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VLF>(__not)) << 3);
 
             return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm256_mask_compress_epi64(
                 __intrin_bitcast<__m256i>(__vector), __not, __intrin_bitcast<__m256i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {
-            const auto __not = uint16(uint16(0xFF) & uint16(~__mask));
-            const auto __processed_bytes = (math::population_count(__not) << 2);
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = (math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VLF>(__not)) << 2);
 
             return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm256_mask_compress_epi32(
                 __intrin_bitcast<__m256i>(__vector), __not, __intrin_bitcast<__m256i>(__vector))) };
@@ -875,15 +875,15 @@ struct _Compress<arch::ISA::AVX512VLF, 128, _DesiredType_> :
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
         if constexpr (sizeof(_DesiredType_) == 8) {
-            const auto __not = uint8(uint8(0xF) & uint8(~__mask));
-            const auto __processed_bytes = (math::population_count(__not) << 3);
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = (math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VLF>(__not)) << 3);
 
             return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm_mask_compress_epi64(
                 __intrin_bitcast<__m128i>(__vector), __not, __intrin_bitcast<__m128i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {
-            const auto __not = uint8(uint8(0xFF) & uint8(~__mask));
-            const auto __processed_bytes = (math::population_count(__not) << 2);
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = (math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VLF>(__not)) << 2);
 
             return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm_mask_compress_epi32(
                 __intrin_bitcast<__m128i>(__vector), __not, __intrin_bitcast<__m128i>(__vector))) };
@@ -917,33 +917,35 @@ struct _Compress<arch::ISA::AVX512VBMI2, 512, _DesiredType_>:
         _MaskType_		__mask) raze_const_operator noexcept
             requires(std::is_integral_v<_MaskType_>)
     {
-        if constexpr (sizeof(_DesiredType_) == 8) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm512_maskz_compress_epi64(__mask, __intrin_bitcast<__m512i>(__vector)));
+        constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        if constexpr (sizeof(_DesiredType_) == 8) {
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__to_gpr<arch::ISA::AVX512VBMI2>(__mask)));
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2>(__not)) << 3;
+
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm512_mask_compress_epi64(
+                __intrin_bitcast<__m512i>(__vector), __not, __intrin_bitcast<__m512i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm512_maskz_compress_epi32(__mask, __intrin_bitcast<__m512i>(__vector)));
+            const auto __not = _knot_mask16(__mask);
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2>(__not)) << 2;
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm512_mask_compress_epi32(
+                __intrin_bitcast<__m512i>(__vector), __not, __intrin_bitcast<__m512i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 2) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm512_maskz_compress_epi16(__mask, __intrin_bitcast<__m512i>(__vector)));
+            const auto __not = _knot_mask32(__mask);
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2>(__not)) << 1;
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm512_mask_compress_epi16(
+                __intrin_bitcast<__m512i>(__vector), __not, __intrin_bitcast<__m512i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 1) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm512_maskz_compress_epi8(__mask, __intrin_bitcast<__m512i>(__vector)));
+            const auto __not = _knot_mask64(__mask);
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2>(__not));
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm512_mask_compress_epi8(
+                __intrin_bitcast<__m512i>(__vector), __not, __intrin_bitcast<__m512i>(__vector))) };
         }
     }
 };
@@ -971,33 +973,35 @@ struct _Compress<arch::ISA::AVX512VBMI2VL, 256, _DesiredType_>:
         _MaskType_		__mask) raze_const_operator noexcept
             requires(std::is_integral_v<_MaskType_>)
     {
-        if constexpr (sizeof(_DesiredType_) == 8) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm256_maskz_compress_epi64(__mask, __intrin_bitcast<__m256i>(__vector)));
+        constexpr auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
-            const auto __set_bits = math::__popcnt_population_count(__mask & 0xF);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        if constexpr (sizeof(_DesiredType_) == 8) {
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not)) << 3;
+
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm256_mask_compress_epi64(
+                __intrin_bitcast<__m256i>(__vector), __not, __intrin_bitcast<__m256i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm256_maskz_compress_epi32(__mask, __intrin_bitcast<__m256i>(__vector)));
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not)) << 2;
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm256_mask_compress_epi32(
+                __intrin_bitcast<__m256i>(__vector), __not, __intrin_bitcast<__m256i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 2) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm256_maskz_compress_epi16(__mask, __intrin_bitcast<__m256i>(__vector)));
+            const auto __not = _knot_mask16(__mask);
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not)) << 1;
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm256_mask_compress_epi16(
+                __intrin_bitcast<__m256i>(__vector), __not, __intrin_bitcast<__m256i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 1) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm256_maskz_compress_epi8(__mask, __intrin_bitcast<__m256i>(__vector)));
+            const auto __not = _knot_mask32(__mask);
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not));
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm256_mask_compress_epi8(
+                __intrin_bitcast<__m256i>(__vector), __not, __intrin_bitcast<__m256i>(__vector))) };
         }
     }
 };
@@ -1025,33 +1029,35 @@ struct _Compress<arch::ISA::AVX512VBMI2VL, 128, _DesiredType_>:
         _MaskType_		__mask) raze_const_operator noexcept
         requires(std::is_integral_v<_MaskType_>)
     {
-        if constexpr (sizeof(_DesiredType_) == 8) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm_maskz_compress_epi64(__mask, __intrin_bitcast<__m128i>(__vector)));
+        const auto __length = sizeof(_IntrinType_) / sizeof(_DesiredType_);
 
-            const auto __set_bits = math::__popcnt_population_count(__mask & 0x03);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+        if constexpr (sizeof(_DesiredType_) == 8) {
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not)) << 3;
+
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm_mask_compress_epi64(
+                __intrin_bitcast<__m128i>(__vector), __not, __intrin_bitcast<__m128i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 4) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm_maskz_compress_epi32(__mask, __intrin_bitcast<__m128i>(__vector)));
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not)) << 2;
 
-            const auto __set_bits = math::__popcnt_population_count(__mask & 0xF);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm_mask_compress_epi32(
+                __intrin_bitcast<__m128i>(__vector), __not, __intrin_bitcast<__m128i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 2) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm_maskz_compress_epi16(__mask, __intrin_bitcast<__m128i>(__vector)));
+            const auto __not = static_cast<__mmask8>(_knot_mask16(__mask));
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not)) << 2;
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm_mask_compress_epi16(
+                __intrin_bitcast<__m128i>(__vector), __not, __intrin_bitcast<__m128i>(__vector))) };
         }
         else if constexpr (sizeof(_DesiredType_) == 1) {
-            const auto __compressed = __intrin_bitcast<_IntrinType_>(
-                _mm_maskz_compress_epi8(__mask, __intrin_bitcast<__m128i>(__vector)));
+            const auto __not = _knot_mask16(__mask);
+            const auto __processed_bytes = math::__native_popcnt_n_bits<__length>(__to_gpr<arch::ISA::AVX512VBMI2VL>(__not));
 
-            const auto __set_bits = math::__popcnt_population_count(__mask);
-            return { __set_bits * sizeof(_DesiredType_), __compressed };
+            return { __processed_bytes, __intrin_bitcast<_IntrinType_>(_mm_mask_compress_epi8(
+                __intrin_bitcast<__m128i>(__vector), __not, __intrin_bitcast<__m128i>(__vector))) };
         }
     }
 };

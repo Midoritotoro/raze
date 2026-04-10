@@ -127,11 +127,23 @@ constexpr raze_always_inline int32 __popcnt_n_bits(_IntegralType_ __value) noexc
     constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
 
     using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
+    return __population_count(static_cast<_UintForBits>(__value & __max_for_n_bits));
+}
 
-    if constexpr (_Bits_ >= 8)
-        return __population_count(static_cast<_UintForBits>(__value & __max_for_n_bits));
-    else 
-        return __bit_hacks_population_count(static_cast<_UintForBits>(__value & __max_for_n_bits));
+template <
+    sizetype                _Bits_,
+    std::unsigned_integral  _IntegralType_>
+constexpr raze_always_inline int32 __native_popcnt_n_bits(_IntegralType_ __value) noexcept {
+    static_assert(_Bits_ <= 64);
+    static_assert(_Bits_ <= (sizeof(_IntegralType_) * 8));
+
+    constexpr auto __max_for_n_bits = (_Bits_ == (sizeof(_IntegralType_) * 8))
+        ? math::__maximum_integral_limit<_IntegralType_>()
+        : _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
+    constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
+
+    using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
+    return __popcnt_population_count(static_cast<_UintForBits>(__value & __max_for_n_bits));
 }
 
 __RAZE_MATH_NAMESPACE_END
