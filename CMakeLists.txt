@@ -131,10 +131,14 @@ set(PRIVATE_HEADERS
     src/raze/math/BitTestAndSet.h
     src/raze/math/BitTestAndComplement.h
     src/raze/math/BitTest.h
-    src/raze/math/CosImplementation.h
-    src/raze/math/SinImplementation.h
-    src/raze/math/TanImplementation.h
-    src/raze/math/CotanImplementation.h
+    src/raze/math/Cos.h
+    src/raze/math/Sin.h
+    src/raze/math/Tan.h
+    src/raze/math/Cotan.h
+    src/raze/math/Fma.h
+    src/raze/math/Fnma.h
+    src/raze/math/Fms.h
+    src/raze/math/Fnms.h
     src/raze/math/MathConstants.h
     src/raze/math/SinTables.h
 
@@ -590,6 +594,7 @@ set(RAZE_FORCE_LIST
     RAZE_FORCE_SSE41
     RAZE_FORCE_SSE42
     RAZE_FORCE_AVX
+    RAZE_FORCE_FMA3
     RAZE_FORCE_AVX2
     RAZE_FORCE_AVX512F
     RAZE_FORCE_AVX512BW
@@ -648,6 +653,15 @@ if(RAZE_USER_FORCE_ENABLED)
             add_compile_definitions(RAZE_FORCE_AVX2=1)
         endif()
 
+        if(RAZE_FORCE_FMA3)
+            raze_test_msvc_arch("AVX2" AVX2_OK)
+            if(NOT AVX2_OK)
+                message(FATAL_ERROR "MSVC does not support /arch:AVX2")
+            endif()
+            add_compile_options(/arch:AVX2)
+            add_compile_definitions(RAZE_FORCE_FMA3=1)
+        endif()
+
 
        if(RAZE_FORCE_AVX512F OR RAZE_FORCE_AVX512BW OR RAZE_FORCE_AVX512CD
             OR RAZE_FORCE_AVX512DQ OR RAZE_FORCE_AVX512VL
@@ -693,6 +707,7 @@ if(RAZE_USER_FORCE_ENABLED)
             raze_require(RAZE_FORCE_SSE42       "-msse4.2")
             raze_require(RAZE_FORCE_AVX         "-mavx")
             raze_require(RAZE_FORCE_AVX2        "-mavx2")
+            raze_require(RAZE_FORCE_FMA3        "-mfma")
             raze_require(RAZE_FORCE_AVX512F     "-mavx512f")
             raze_require(RAZE_FORCE_AVX512BW    "-mavx512bw")
             raze_require(RAZE_FORCE_AVX512CD    "-mavx512cd")
@@ -700,6 +715,7 @@ if(RAZE_USER_FORCE_ENABLED)
             raze_require(RAZE_FORCE_AVX512VL    "-mavx512vl")
             raze_require(RAZE_FORCE_AVX512VBMI  "-mavx512vbmi")
             raze_require(RAZE_FORCE_AVX512VBMI2 "-mavx512vbmi2")
+
     endif()
 
     add_compile_definitions(RAZE_ISA_FORCE_ENABLED=1)

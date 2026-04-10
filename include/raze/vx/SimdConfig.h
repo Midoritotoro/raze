@@ -58,6 +58,14 @@
 #  endif // defined(__AVX2__)
 #endif // !defined(RAZE_HAS_AVX2_SUPPORT)
 
+#if !defined(RAZE_HAS_FMA3_SUPPORT)
+#  if defined(__FMA3__)
+#    define RAZE_HAS_FMA3_SUPPORT 1
+#  else
+#    define RAZE_HAS_FMA3_SUPPORT 0
+#  endif // defined(__FMA3__)
+#endif // !defined(RAZE_HAS_FMA3_SUPPORT)
+
 #if !defined(RAZE_HAS_AVX512F_SUPPORT) 
 #  if defined (__AVX512F__)
 #    define RAZE_HAS_AVX512F_SUPPORT 1
@@ -177,6 +185,12 @@
 #    undef RAZE_FORCE_AVX2
 #  endif // !RAZE_HAS_AVX2_SUPPORT
 # endif // defined(RAZE_FORCE_AVX2)
+
+#if defined(RAZE_FORCE_FMA3)
+#  if !RAZE_HAS_FMA3_SUPPORT
+#    undef RAZE_FORCE_FMA3
+#  endif // !RAZE_HAS_FMA3_SUPPORT
+# endif // defined(RAZE_FORCE_FMA3)
 
 #if defined(RAZE_FORCE_AVX)
 #  if !RAZE_HAS_AVX_SUPPORT

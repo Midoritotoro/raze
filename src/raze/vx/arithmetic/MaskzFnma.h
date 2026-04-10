@@ -64,7 +64,7 @@ struct _Maskz_fnma<arch::ISA::AVX512VLF, 128, _Type_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Bl_Maskz_assignend<arch::ISA::AVX512VLF, 128, _Type_>()(
+		return _Maskz_assign<arch::ISA::AVX512VLF, 128, _Type_>()(
 			_Fnma<arch::ISA::AVX512VLF, 128, _Type_>()(__x, __y, __z), __mask);
 	}
 
@@ -80,12 +80,12 @@ struct _Maskz_fnma<arch::ISA::AVX512VLF, 128, _Type_> {
 	{
 		if constexpr (__is_pd_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_maskz_fnmadd_pd(
-				__as<__m128d>(__x), __mask,
+				__mask, __as<__m128d>(__x),
 				__as<__m128d>(__y), __as<__m128d>(__z)));
 		}
 		else if constexpr (__is_ps_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_maskz_fnmadd_ps(
-				__as<__m128>(__x), __mask,
+				__mask, __as<__m128>(__x),
 				__as<__m128>(__y), __as<__m128>(__z)));
 		}
 		else {
@@ -228,12 +228,12 @@ struct _Maskz_fnma<arch::ISA::AVX512VLF, 256, _Type_> {
 	{
 		if constexpr (__is_pd_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_maskz_fnmadd_pd(
-				__as<__m256d>(__x), __mask,
+				__mask, __as<__m256d>(__x),
 				__as<__m256d>(__y), __as<__m256d>(__z)));
 		}
 		else if constexpr (__is_ps_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_maskz_fnmadd_ps(
-				__as<__m256>(__x), __mask,
+				__mask, __as<__m256>(__x),
 				__as<__m256>(__y), __as<__m256>(__z)));
 		}
 		else {
@@ -307,12 +307,12 @@ struct _Maskz_fnma<arch::ISA::AVX512F, 512, _Type_> {
 	{
 		if constexpr (__is_pd_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_maskz_fnmadd_pd(
-				__as<__m512d>(__x), __mask,
+				__mask, __as<__m512d>(__x),
 				__as<__m512d>(__y), __as<__m512d>(__z)));
 		}
 		else if constexpr (__is_ps_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_maskz_fnmadd_ps(
-				__as<__m512>(__x), __mask,
+				__mask, __as<__m512>(__x),
 				__as<__m512>(__y), __as<__m512>(__z)));
 		}
 		else {

@@ -317,11 +317,11 @@ public:
         return _mask[__i] ? _reference[__i] : _source[__i];
     }
 
-    raze_always_inline operator datapar_type&() noexcept {
+    explicit raze_always_inline operator datapar_type&() noexcept {
         return _reference;
     }
 
-    raze_always_inline operator datapar_type() const noexcept {
+    explicit raze_always_inline operator datapar_type() const noexcept {
         return static_cast<datapar_type>(_reference);
     }
 
@@ -338,7 +338,7 @@ public:
     }
 
     raze_nodiscard raze_always_inline mask_type mask() const noexcept {
-        return _reference;
+        return _mask;
     }
 private:
     datapar_type _source;

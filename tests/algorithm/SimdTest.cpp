@@ -45,6 +45,58 @@ Mask make_random_mask() {
     return m;
 }
 
+
+template <
+    class T, size_t N,
+    class Simd, class Mask,
+    class WhereExpr, class WhereZeroExpr,
+    class SimdOp, class ScalarOp>
+void test_where_ternary(
+    const T(&arrA)[N], const T(&arrB)[N], const T(&arrC)[N],
+    const Mask& m,
+    const Simd& a, const Simd& b, const Simd& c,
+    const Simd& src,
+    const WhereExpr& w,
+    const WhereZeroExpr& wz,
+    SimdOp simd_op,
+    ScalarOp scalar_op) noexcept
+{
+    {
+        auto r1 = simd_op(w, b, c);
+        auto r2 = simd_op(a, w, c);
+        auto r3 = simd_op(a, b, w);
+
+        for (size_t i = 0; i < N; ++i) {
+            T expected1 = scalar_op(arrA[i], arrB[i], arrC[i], src[i], m[i], 0);
+            T expected2 = scalar_op(arrA[i], arrA[i], arrC[i], src[i], m[i], 1);
+            T expected3 = scalar_op(arrA[i], arrB[i], arrA[i], src[i], m[i], 2);
+
+            raze_assert(r1[i] == expected1);
+            raze_assert(r2[i] == expected2);
+            raze_assert(r3[i] == expected3);
+        }
+    }
+
+    {
+        auto r1 = simd_op(wz, b, c);
+        auto r2 = simd_op(a, wz, c);
+        auto r3 = simd_op(a, b, wz);
+
+        for (size_t i = 0; i < N; ++i) {
+            T zero = T(0);
+
+            T expected1 = m[i] ? scalar_op(arrA[i], arrB[i], arrC[i], zero, true, 0) : zero;
+            T expected2 = m[i] ? scalar_op(arrA[i], arrA[i], arrC[i], zero, true, 1) : zero;
+            T expected3 = m[i] ? scalar_op(arrA[i], arrB[i], arrA[i], zero, true, 2) : zero;
+
+            raze_assert(r1[i] == expected1);
+            raze_assert(r2[i] == expected2);
+            raze_assert(r3[i] == expected3);
+        }
+    }
+}
+
+
 template <class T, size_t N, class Simd, class Mask,
     class WhereExpr, class WhereZeroExpr, class SimdOp, class ScalarOp>
 void test_where_binary(
@@ -1090,6 +1142,66 @@ void test_vertical_min_max() {
     }
 }
 
+template<class Simd, class Mask, class T, size_t N>
+void test_fma_family() {
+    alignas(64) T arrA[N], arrB[N], arrC[N], arrSrc[N];
+
+    for (size_t i = 0; i < N; ++i) {
+        arrA[i] = T(i + 1);
+        arrB[i] = T((i + 1) * 3);
+        arrC[i] = T((i + 1) * 7);
+        arrSrc[i] = T(100 + i);
+    }
+
+    Simd a = raze::vx::load<Simd>(arrA);
+    Simd b = raze::vx::load<Simd>(arrB);
+    Simd c = raze::vx::load<Simd>(arrC);
+    Simd src = raze::vx::load<Simd>(arrSrc);
+
+    Mask m;
+    for (size_t i = 0; i < N; ++i)
+        m[i] = (i % 2 == 0);
+
+    auto w = raze::vx::where(a, src, m);
+    auto wz = raze::vx::where(a, m);
+
+    auto fma_ref = [](T x, T y, T z) { return T(x * y + z); };
+    auto fms_ref = [](T x, T y, T z) { return T(x * y - z); };
+    auto fnma_ref = [](T x, T y, T z) { return T(-(x * y) + z); };
+    auto fnms_ref = [](T x, T y, T z) { return T(-(x * y) - z); };
+
+
+    auto simd_fma = [&](const auto& x, const auto& y, const auto& z) { return raze::math::fma(x, y, z); };
+    auto simd_fms = [&](const auto& x, const auto& y, const auto& z) { return raze::math::fms(x, y, z); };
+    auto simd_fnma = [&](const auto& x, const auto& y, const auto& z) { return raze::math::fnma(x, y, z); };
+    auto simd_fnms = [&](const auto& x, const auto& y, const auto& z) { return raze::math::fnms(x, y, z); };
+
+    test_where_ternary<T, N>(arrA, arrB, arrC, m, a, b, c, src, w, wz, simd_fma, [=](T A, T B, T C, T Src, bool cond, int pos) {
+        if (!cond) 
+            return Src;
+
+        return fma_ref(A, B, C);
+    });
+    test_where_ternary<T, N>(arrA, arrB, arrC, m, a, b, c, src, w, wz, simd_fms,[=](T A, T B, T C, T Src, bool cond, int pos) {
+        if (!cond) 
+            return Src;
+
+        return fms_ref(A, B, C);
+    });
+    test_where_ternary<T, N>(arrA, arrB, arrC, m, a, b, c, src, w, wz, simd_fnma,[=](T A, T B, T C, T Src, bool cond, int pos) {
+        if (!cond) 
+            return Src;
+
+        return fnma_ref(A, B, C);
+    });
+    test_where_ternary<T, N>(arrA, arrB, arrC, m, a, b, c, src, w, wz, simd_fnms,[=](T A, T B, T C, T Src, bool cond, int pos) {
+        if (!cond) 
+            return Src;
+
+        return fnms_ref(A, B, C);
+    });
+}
+
 template <typename T, raze::arch::ISA Arch,raze::uint32 Width>
 void test_methods() {
     using Simd = raze::vx::simd<T, raze::vx::x86_runtime_abi<Arch, Width>>;
@@ -1117,6 +1229,7 @@ void test_methods() {
     test_rotate_runtime<Simd, Mask, T, N>();
     test_rotate_compiletime<Simd, Mask, T, N>();
     test_select<Simd, Mask, T, N>();
+    test_fma_family<Simd, Mask, T, N>();
 }
 
 
