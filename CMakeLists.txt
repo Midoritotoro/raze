@@ -317,6 +317,8 @@ set(PRIVATE_HEADERS
     src/raze/vx/expression/IsWhereMemory.h
     src/raze/vx/expression/IsWhereZeroMemory.h
 
+    src/raze/vx/expression/lazy/AsTernaryMask.h
+
     src/raze/vx/Shuffle.h
     src/raze/vx/Bitwise.h
     src/raze/vx/Reduce.h

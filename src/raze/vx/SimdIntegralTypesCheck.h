@@ -224,7 +224,14 @@ constexpr inline bool __has_avx512dq_support_v = static_cast<int>(_ISA_) == stat
     || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
     || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ);
 
-
-
+template <arch::ISA _ISA_>
+constexpr inline bool __has_avx512vl_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLF)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBW)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVL)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
 
 __RAZE_VX_NAMESPACE_END
