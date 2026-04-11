@@ -88,9 +88,15 @@ constexpr _Not_t<_Type_> operator~(_Type_) noexcept {
     return {}; 
 }
 
-template <auto _Expression_>
-raze_nodiscard consteval uint8 __as_ternary_mask() {
-    using _ExpressionType_ = decltype(_Expression_);
+template <class _Type_>
+concept lazy_expression_type =
+    requires(bool __a, bool __b, bool __c) {
+        { _Type_::__eval(__a, __b, __c) } -> std::same_as<bool>;
+    };
+
+
+template <lazy_expression_type _Expression_>
+raze_nodiscard consteval uint8 __as_ternary_mask() noexcept {
     auto __imm = uint8(0);
 
     for (auto __mask = 0; __mask < 8; ++__mask) {
@@ -98,7 +104,7 @@ raze_nodiscard consteval uint8 __as_ternary_mask() {
         const auto __b = static_cast<bool>(__mask & 2);
         const auto __c = static_cast<bool>(__mask & 4);
 
-        if (_ExpressionType_::__eval(__a, __b, __c))
+        if (_Expression_::__eval(__a, __b, __c))
             __imm |= (1u << __mask);
     }
     

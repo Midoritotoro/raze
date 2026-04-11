@@ -1319,4 +1319,77 @@ raze_nodiscard raze_always_inline _Where_memory<_IteratorType_, _DataparType_, _
 	return _Where_memory<_IteratorType_, _DataparType_, _MaskType_>(__first, __source, __mask);
 }
 
+/**
+ * @brief Applies a compile‑time ternary boolean function to three SIMD vectors.
+ *
+ * This function evaluates boolean operation defined by the
+ * compile‑time constant @_TernaryMask_. The mask encodes the truth table of a
+ * ternary boolean function and determines how the corresponding lanes of
+ * @p __x, @p __y, and @p __z are combined.
+ *
+ * @tparam _Simd_
+ *     A valid SIMD vector type (`simd<T, Abi>`).
+ *
+ * @tparam _TernaryMask_
+ *     An 8‑bit compile‑time constant in the range [0, 255] describing the
+ *     ternary boolean function to apply.
+ *
+ * @param __x  First SIMD input vector.
+ * @param __y  Second SIMD input vector.
+ * @param __z  Third SIMD input vector.
+ * @param __imm8
+ *     A `std::integral_constant<uint8, _TernaryMask_>` selecting the boolean
+ *     function at compile time.
+ *
+ * @return
+ *     A SIMD vector where each lane contains the result of applying the
+ *     ternary boolean function to the corresponding lanes of the inputs.
+ *
+ * @example
+ *     auto r = ternarylogic(a, b, c, std::integral_constant<uint8, 0x96>{});
+ *
+ * @example
+ *     auto r = ternarylogic(x, y, z, as_ternary_mask<A & B | ~C>());
+*/
+template <
+	class _Simd_,
+	uint8 _TernaryMask_>
+raze_nodiscard raze_always_inline _Simd_ ternarylogic(
+	const _Simd_&									__x,
+	const _Simd_&									__y,
+	const _Simd_&									__z,
+	std::integral_constant<uint8, _TernaryMask_>	__imm8) noexcept
+		requires((_TernaryMask_ >= 0 && _TernaryMask_ <= 255) && 
+			__is_valid_simd_v<_Simd_>)
+{
+	using _RawSimdType = std::remove_cvref_t<_Simd_>;
+	return _Ternarylogic<_RawSimdType::__isa, _RawSimdType::__width>()(
+		__data(__x), __data(__y), __data(__z), __imm8);
+}
+
+/**
+ * @brief Generates a compile‑time ternary‑logic mask from a lazy expression.
+ *
+ * This function evaluates a ternary boolean expression represented by
+ * @_Expression_ and converts it into an 8‑bit truth‑table mask. 
+ *
+ * The resulting mask is returned as a `std::integral_constant<uint8, Mask>`,
+ * making it suitable for direct use in `ternarylogic(...)` or other APIs that
+ * require a compile‑time ternary mask.
+ *
+ * @tparam _Expression_
+ *     A lazy ternary‑logic expression type satisfying `lazy_expression_type`.
+ *
+ * @return
+ *     A `std::integral_constant<uint8, Mask>` representing the truth table of
+ *     @_Expression_.
+ * 
+ * @example
+ *     auto r = ternarylogic(x, y, z, as_ternary_mask<A ^ B ^ C>());
+*/
+template <lazy_expression_type _Expression_>
+raze_nodiscard consteval auto as_ternary_mask() noexcept {
+	return std::integral_constant<uint8, __as_ternary_mask<_Expression_>()>{};
+}
+
 __RAZE_VX_NAMESPACE_END

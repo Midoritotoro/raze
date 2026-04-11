@@ -1,6 +1,12 @@
 #pragma once 
 
 #include <src/raze/vx/IntrinBitcast.h>
+#include <src/raze/vx/bitwise/BitAnd.h>
+#include <src/raze/vx/bitwise/BitNot.h>
+#include <src/raze/vx/bitwise/BitOr.h>
+#include <src/raze/vx/bitwise/BitXor.h>
+#include <src/raze/vx/bitwise/Andnot.h>
+#include <src/raze/vx/shuffle/BroadcastZeros.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -31,12 +37,12 @@ struct _Ternarylogic {
                     __as<__m128i>(__y),  __as<__m128i>(__z), __imm8));
             }
         } else {
-            constexpr auto __and    = _And<_ISA_, _Width_>();
-            constexpr auto __or     = _Or<_ISA_, _Width_>();
-            constexpr auto __xor    = _Xor<_ISA_, _Width_>();
-            constexpr auto __andnot = _Andnot<_ISA_, _Width_>();
-            constexpr auto __not    = _Not<_ISA_, _Width_>();
-            constexpr auto __zero   = _Broadcast_zeros<_ISA_, _Width_, _IntrinType_>();
+             auto __and    = _And<_ISA_, _Width_>();
+             auto __or     = _Or<_ISA_, _Width_>();
+             auto __xor    = _Xor<_ISA_, _Width_>();
+             auto __andnot = _Andnot<_ISA_, _Width_>();
+             auto __not    = _Not<_ISA_, _Width_>();
+             auto __zero   = _Broadcast_zeros<_ISA_, _Width_, _IntrinType_>();
 
             if constexpr(__imm8 == 0x00)
                 return __zero();
@@ -61,7 +67,7 @@ struct _Ternarylogic {
             if constexpr(__imm8 == 0x0a) 
                 return __andnot(__x, __z);
             if constexpr(__imm8 == 0x0b) 
-                return __andnot(__x, __not(__or(__y, __z)));
+                return __andnot(__x, __or(__not(__y), __z));
             if constexpr(__imm8 == 0x0c) 
                 return __andnot(__x, __y);
             if constexpr(__imm8 == 0x0d) 
@@ -111,7 +117,7 @@ struct _Ternarylogic {
             if constexpr(__imm8 == 0x22)
                 return __andnot(__y, __z);
             if constexpr(__imm8 == 0x23) 
-                return __andnot(__y, __not(__or(__x, __z)));
+                return __andnot(__y, __or(__not(__x), __z));
             if constexpr(__imm8 == 0x24)
                 return __and(__xor(__x, __y), __xor(__y, __z));
             if constexpr(__imm8 == 0x25)
@@ -321,7 +327,7 @@ struct _Ternarylogic {
             if constexpr(__imm8 == 0x88) 
                 return __and(__z, __y);
             if constexpr(__imm8 == 0x89) 
-                return __andnot(__xor(__y, __z), __not(__or(__x, __y)));
+                return __andnot(__xor(__y, __z), __or(__not(__x), __y));
             if constexpr(__imm8 == 0x8a) 
                 return __andnot(__andnot(__y, __x), __z);
             if constexpr(__imm8 == 0x8b) 

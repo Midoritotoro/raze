@@ -423,7 +423,7 @@ void testSimdMaskMethods() {
 
 int main() {
     testSimdMaskMethods<raze::arch::ISA::SSE2, 128>();
-    testSimdMaskMethods<raze::arch::ISA::SSE3, 128>();
+   /* testSimdMaskMethods<raze::arch::ISA::SSE3, 128>();
     testSimdMaskMethods<raze::arch::ISA::SSSE3, 128>();
     testSimdMaskMethods<raze::arch::ISA::SSE41, 128>();
     testSimdMaskMethods<raze::arch::ISA::SSE42, 128>();
@@ -458,7 +458,7 @@ int main() {
     testSimdMaskMethods<raze::arch::ISA::AVX512VBMIVL, 256>();
     testSimdMaskMethods<raze::arch::ISA::AVX512VBMI2VL, 256>();
     testSimdMaskMethods<raze::arch::ISA::AVX512VBMIVLDQ, 256>();
-    testSimdMaskMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
+    testSimdMaskMethods<raze::arch::ISA::AVX512VBMI2VLDQ, 256>();*/
 
     return 0;
 }

@@ -9,3 +9,5 @@
 #include <src/raze/vx/expression/IsWhereZeroMemory.h>
 #include <src/raze/vx/expression/WhereMemory.h>
 #include <src/raze/vx/expression/WhereZeroMemory.h>
+
+#include <src/raze/vx/expression/lazy/AsTernaryMask.h>
