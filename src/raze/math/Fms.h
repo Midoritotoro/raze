@@ -14,7 +14,7 @@ __RAZE_MATH_NAMESPACE_BEGIN
 template <class _Type_>
 raze_nodiscard raze_always_inline _Type_ __fms(
 	_Type_ __x, _Type_ __y, _Type_ __z) noexcept
-		requires(std::is_integral_v<_Type_>)
+		requires(std::is_arithmetic_v<_Type_>)
 {
 #if ((defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && RAZE_HAS_FMA3_SUPPORT) || (defined(raze_cpp_msvc) && RAZE_FORCE_FMA3)
 	if constexpr (vx::__is_pd_v<_Type_>)

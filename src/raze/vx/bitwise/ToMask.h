@@ -6,7 +6,7 @@
 #include <raze/memory/PointerToIntegral.h>
 #include <raze/math/IntegralTypesConversions.h>
 
-#include <raze/vx/BasicSimdMask.h>
+#include <src/raze/vx/MaskTypeSelector.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

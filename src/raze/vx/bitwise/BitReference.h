@@ -2,6 +2,8 @@
 
 #include <src/raze/vx/SimdIntegralTypesCheck.h>
 #include <src/raze/math/BitTestAndSet.h>
+#include <src/raze/math/BitTest.h>
+#include <src/raze/math/BitTestAndReset.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

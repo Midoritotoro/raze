@@ -59,31 +59,6 @@ __simd_nodiscard_inline __tail_mask_type<_DataparType_> first_n(uint32 __element
 }
 
 /**
- *  @brief  Per‑lane absolute value.
- *
- *  @param __datapar  SIMD vector whose lanes are transformed.
- *
- *  @return  A SIMD vector where each lane contains the absolute value of the
- *           corresponding lane of @p __datapar.
- */
-template <class _DataparType_>
-__simd_nodiscard_inline _DataparType_ abs(const _DataparType_& __datapar) noexcept
-	requires(__is_valid_simd_v<_DataparType_>)
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return _Abs<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(__data(__datapar));
-}
-
-template <class _WhereExpression_>
-__simd_nodiscard_inline typename _WhereExpression_::datapar_type abs(const _WhereExpression_& __where_expression) noexcept
-	requires(__is_where_v<_WhereExpression_> || __is_where_zero_v<_WhereExpression_>)
-{
-	return __where_expression.__abs();
-}
-
-
-/**
  *  @brief  Computes the horizontal minimum of all lanes.
  *
  *  @param __datapar  A SIMD vector.

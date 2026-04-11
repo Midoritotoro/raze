@@ -1,0 +1,65 @@
+#include <tests/vx/SimdTestTools.h>
+#include <raze/vx/SimdDataparAlgorithms.h>
+
+template <
+    class           _Type_,
+    raze::arch::ISA _ISA_,
+    raze::uint32    _Width_>
+struct compare_tests {
+    using Simd = raze::vx::simd<_Type_, raze::vx::x86_runtime_abi<_ISA_, _Width_>>;
+    using Mask = typename Simd::mask_type;
+    using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
+    static constexpr size_t N = Simd::size();
+
+    void operator()() {
+        alignas(64) _Type_ arrA[N], arrB[N];
+        for (size_t i = 0; i < N; ++i) {
+            arrA[i] = _Type_(i + 1);
+            arrB[i] = _Type_(N - i);
+        }
+
+        Simd a = raze::vx::load<Simd>(arrA);
+        Simd b = raze::vx::load<Simd>(arrB);
+
+        {
+            auto m = (a == a);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == true);
+        }
+
+        {
+            auto m = (a != b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] != arrB[i]));
+        }
+
+        {
+            auto m = (a < b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] < arrB[i]));
+        }
+
+        {
+            auto m = (a > b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] > arrB[i]));
+        }
+
+        {
+            auto m = (a <= b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] <= arrB[i]));
+        }
+
+        {
+            auto m = (a >= b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] >= arrB[i]));
+        }
+    }
+};
+
+int main() {
+    test_all<compare_tests>();
+    return 0;
+}

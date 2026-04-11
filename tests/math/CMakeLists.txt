@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 4.1  FATAL_ERROR)
 project(razeTestsMath LANGUAGES CXX)
 
 
-set(raze_DIR "C:/Users/danya/source/repos/Midoritotoro/raze/out/build")
+set(raze_DIR "${CMAKE_CURRENT_LIST_DIR}/../../out/build")
+
 
 if (PROJECT_IS_TOP_LEVEL)
     find_package(raze REQUIRED COMPONENTS
@@ -14,8 +15,8 @@ endif()
 enable_testing()
 macro(raze_math_add_test filename)
     add_executable(${filename} ${filename}.cpp)
+    add_compile_options(/bigobj)
 
-    set(CMAKE_CXX_FLAGS "-march=native")
     target_link_libraries(
       ${filename} PRIVATE
       raze::raze
