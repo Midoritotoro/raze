@@ -36,7 +36,6 @@ public:
     _Where_zero(_Where_zero&&) noexcept = default;
 
     ~_Where_zero() = default;
-
     
     template <
         class _IteratorType_,

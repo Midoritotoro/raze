@@ -89,13 +89,13 @@ constexpr _Not_t<_Type_> operator~(_Type_) noexcept {
 }
 
 template <class _Type_>
-concept lazy_expression_type =
+concept ternary_mask_expression_type =
     requires(bool __a, bool __b, bool __c) {
         { _Type_::__eval(__a, __b, __c) } -> std::same_as<bool>;
     };
 
 
-template <lazy_expression_type _Expression_>
+template <ternary_mask_expression_type _Expression_>
 raze_nodiscard consteval uint8 __as_ternary_mask() noexcept {
     auto __imm = uint8(0);
 

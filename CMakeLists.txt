@@ -309,15 +309,20 @@ set(PRIVATE_HEADERS
     src/raze/vx/shuffle/Shuffle.h
 
     src/raze/vx/expression/Where.h
+    src/raze/vx/expression/ConstWhere.h
     src/raze/vx/expression/WhereZero.h
+    src/raze/vx/expression/ConstWhereZero.h
     src/raze/vx/expression/WhereMemory.h
     src/raze/vx/expression/WhereZeroMemory.h
     src/raze/vx/expression/IsWhere.h
     src/raze/vx/expression/IsWhereZero.h
     src/raze/vx/expression/IsWhereMemory.h
     src/raze/vx/expression/IsWhereZeroMemory.h
+    src/raze/vx/expression/IsConstWhere.h
+    src/raze/vx/expression/IsConstWhereZero.h
 
     src/raze/vx/expression/lazy/AsTernaryMask.h
+    src/raze/vx/expression/lazy/LazyOperations.h
 
     src/raze/vx/Shuffle.h
     src/raze/vx/Bitwise.h
