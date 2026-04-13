@@ -223,6 +223,8 @@ set(PRIVATE_HEADERS
     src/raze/vx/bitwise/MaskRightShift.h
     src/raze/vx/bitwise/MaskzRightShift.h
     src/raze/vx/bitwise/Ternarylogic.h
+    src/raze/vx/bitwise/MaskTernarylogic.h
+    src/raze/vx/bitwise/MaskzTernarylogic.h
 
     src/raze/vx/arithmetic/Sub.h
     src/raze/vx/arithmetic/MaskSub.h
@@ -331,6 +333,29 @@ set(PRIVATE_HEADERS
     src/raze/vx/Compare.h
     src/raze/vx/Memory.h
     src/raze/vx/Expression.h
+
+    src/raze/options/Aggregator.h
+    src/raze/options/As.h
+    src/raze/options/Call.h
+    src/raze/options/Callable.h
+    src/raze/options/Concepts.h
+    src/raze/options/ConditionalCallable.h
+    src/raze/options/DecoratedWith.h
+    src/raze/options/Drop.h
+    src/raze/options/Fetch.h
+    src/raze/options/Foldable.h
+    src/raze/options/Functor.h
+    src/raze/options/IgnoreNone.h
+    src/raze/options/Keys.h
+    src/raze/options/Keywords.h
+    src/raze/options/Merge.h
+    src/raze/options/Option.h
+    src/raze/options/Options.h
+    src/raze/options/SameAs.h
+    src/raze/options/SelectKeys.h
+    src/raze/options/Settings.h
+    src/raze/options/StrictElementwiseCallable.h
+    src/raze/options/TypeOr.h
 )
 
 set(PUBLIC_HEADERS
@@ -448,6 +473,9 @@ set(PUBLIC_HEADERS
     include/raze/vx/SimdDataparAlgorithms.h
     include/raze/vx/SimdConfig.h
     include/raze/vx/Abi.h
+    include/raze/vx/Concepts.h
+
+    include/raze/options/Options.h
 )
 
 include(CMakePackageConfigHelpers)

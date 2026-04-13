@@ -110,7 +110,7 @@ struct _Equal<arch::ISA::AVX, 256, _Type_> {
                 _mm256_extractf128_si256(__as<__m256i>(__right), 1));
 
             return __as<_IntrinType_>(_mm256_insertf128_si256(
-                __as<__m256i>(__left), __high, 1));
+                __as<__m256i>(__low), __high, 1));
         }
     }
 };

@@ -40,29 +40,45 @@ struct vertical_minmax_tests {
             auto wz = raze::vx::where(a, m);
             auto w = raze::vx::where(a, fbk, m);
 
+            auto const_wz = raze::vx::where(Simd(a), m);
+            auto const_w = raze::vx::where(Simd(a), fbk, m);
+
+
             {
-                auto wmin = raze::vx::vertical_min(b, wz);
-                auto wmax = raze::vx::vertical_max(b, wz);
+                auto wz_min = raze::vx::vertical_min(b, wz);
+                auto wz_max = raze::vx::vertical_max(b, wz);
+
+                auto constwz_min = raze::vx::vertical_min(b, const_wz);
+                auto constwz_max = raze::vx::vertical_max(b, const_wz);
+                
+                raze_assert(raze::vx::all_of(constwz_min == wz_min));
+                raze_assert(raze::vx::all_of(constwz_max == wz_max));
 
                 for (size_t i = 0; i < N; ++i) {
                     if (m[i])
-                        raze_assert(wmin[i] == std::min(arrB[i], arrA[i]) ||
-                            wmin[i] == std::max(arrB[i], arrA[i]));
+                        raze_assert(wz_min[i] == std::min(arrB[i], arrA[i]) &&
+                            wz_max[i] == std::max(arrB[i], arrA[i]));
                     else
-                        raze_assert(wmin[i] == _Type_(0));
+                        raze_assert(wz_min[i] == _Type_(0) && wz_max[i] == _Type_(0));
                 }
             }
 
             {
-                auto wmin = raze::vx::vertical_min(w, b);
-                auto wmax = raze::vx::vertical_max(w, b);
+                auto w_min = raze::vx::vertical_min(w, b);
+                auto w_max = raze::vx::vertical_max(w, b);
+
+                auto constw_min = raze::vx::vertical_min(b, const_w);
+                auto constw_max = raze::vx::vertical_max(b, const_w);
+
+                raze_assert(raze::vx::all_of(constw_min == w_min));
+                raze_assert(raze::vx::all_of(constw_max == w_max));
 
                 for (size_t i = 0; i < N; ++i) {
                     if (m[i])
-                        raze_assert(wmin[i] == std::min(arrA[i], arrB[i]) || 
-                            wmin[i] == std::max(arrA[i], arrB[i]));
+                        raze_assert(w_min[i] == std::min(arrB[i], arrA[i]) &&
+                            w_max[i] == std::max(arrB[i], arrA[i]));
                     else
-                        raze_assert(wmin[i] == fallback[i]);
+                        raze_assert(w_min[i] == fallback[i] && w_max[i] == fallback[i]);
                 }
             }
         }

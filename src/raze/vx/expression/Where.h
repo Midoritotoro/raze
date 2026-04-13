@@ -84,6 +84,39 @@ public:
             __data(_reference), __data(_mask), __data(_source));
     }
 
+    template <uint8 _TernaryMask_>
+    raze_nodiscard static raze_always_inline auto __ternarylogic(
+        const datapar_type&                             __x,
+        const datapar_type&                             __y,
+        const _Where&                                   __z,
+        std::integral_constant<uint8, _TernaryMask_>    __imm8) noexcept
+    {
+        return _Mask_ternarylogic<__isa, __width, value_type>()(__data(__x), __data(__y), 
+            __data(__z._reference), __imm8, __data(__z._mask), __data(__z._source));
+    }
+
+    template <uint8 _TernaryMask_>
+    raze_nodiscard static raze_always_inline auto __ternarylogic(
+        const datapar_type&                             __x,
+        const _Where&                                   __y,
+        const datapar_type&                             __z,
+        std::integral_constant<uint8, _TernaryMask_>    __imm8) noexcept
+    {
+        return _Mask_ternarylogic<__isa, __width, value_type>()(__data(__x), __data(__y._reference),
+            __data(__z), __imm8, __data(__y._mask), __data(__y._source));
+    }
+
+    template <uint8 _TernaryMask_>
+    raze_nodiscard static raze_always_inline auto __ternarylogic(
+        const _Where&                                   __x,
+        const datapar_type&                             __y,
+        const datapar_type&                             __z,
+        std::integral_constant<uint8, _TernaryMask_>    __imm8) noexcept
+    {
+        return _Mask_ternarylogic<__isa, __width, value_type>()(__data(__x._reference), __data(__y),
+            __data(__z), __imm8, __data(__x._mask), __data(__x._source));
+    }
+
     raze_always_inline friend datapar_type operator+(
         const _Where&       __left,
         const datapar_type& __right) noexcept

@@ -40,3 +40,5 @@
 #include <src/raze/vx/bitwise/MaskzLeftShift.h>
 #include <src/raze/vx/bitwise/MaskzRightShift.h>
 #include <src/raze/vx/bitwise/Ternarylogic.h>
+#include <src/raze/vx/bitwise/MaskTernarylogic.h>
+#include <src/raze/vx/bitwise/MaskzTernarylogic.h>

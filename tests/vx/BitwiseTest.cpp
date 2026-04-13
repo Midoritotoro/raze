@@ -122,54 +122,62 @@ struct bitwise_tests {
             auto w = raze::vx::where(a, src, m);
             auto wz = raze::vx::where(a, m);
 
-            test_where_unary<_Type_, N>(
-                arrA, arrSrc, m, a, src, w, wz,
-                raze::type_traits::bit_not{},
-                [](_Type_ A, _Type_ Src, bool cond, bool rev) {
-                    if constexpr (std::is_floating_point_v<_Type_>)
-                        return cond ? std::bit_cast<_Type_>(~std::bit_cast<U>(A)) : Src;
-                    else
-                        return cond ? (~A) : Src;
-                });
+            auto const_w = raze::vx::where(Simd(a), src, m);
+            auto const_wz = raze::vx::where(Simd(a), m);
 
-            test_where_binary<_Type_, N>(
-                arrA, arrB, arrSrc, m,
-                a, b, src, w, wz,
-                raze::type_traits::bit_and{},
-                [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                    if constexpr (std::is_floating_point_v<_Type_>)
-                        return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
-                            & std::bit_cast<U>(A))) : Src;
-                    else
-                        return cond ? (A & B) : Src;
-                }
-            );
+            const auto run_tests = [arrA, arrB, arrSrc, m, a, b, src](auto w, auto wz) {
+                test_where_unary<_Type_, N>(
+                    arrA, arrSrc, m, a, src, w, wz,
+                    raze::type_traits::bit_not{},
+                    [](_Type_ A, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>(~std::bit_cast<U>(A)) : Src;
+                        else
+                            return cond ? (~A) : Src;
+                    });
 
-            test_where_binary<_Type_, N>(
-                arrA, arrB, arrSrc, m,
-                a, b, src, w, wz,
-                raze::type_traits::bit_or{},
-                [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                    if constexpr (std::is_floating_point_v<_Type_>)
-                        return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
-                            | std::bit_cast<U>(A))) : Src;
-                    else
-                        return cond ? (A | B) : Src;
-                }
-            );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src, w, wz,
+                    raze::type_traits::bit_and{},
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
+                                & std::bit_cast<U>(A))) : Src;
+                        else
+                            return cond ? (A & B) : Src;
+                    }
+                );
 
-            test_where_binary<_Type_, N>(
-                arrA, arrB, arrSrc, m,
-                a, b, src, w, wz,
-                raze::type_traits::bit_xor{},
-                [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                    if constexpr (std::is_floating_point_v<_Type_>)
-                        return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
-                            ^ std::bit_cast<U>(A))) : Src;
-                    else
-                        return cond ? (A ^ B) : Src;
-                }
-            );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src, w, wz,
+                    raze::type_traits::bit_or{},
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
+                                | std::bit_cast<U>(A))) : Src;
+                        else
+                            return cond ? (A | B) : Src;
+                    }
+                );
+
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src, w, wz,
+                    raze::type_traits::bit_xor{},
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
+                                ^ std::bit_cast<U>(A))) : Src;
+                        else
+                            return cond ? (A ^ B) : Src;
+                    }
+                );
+            };
+
+            run_tests(w, wz);
+            run_tests(const_w, const_wz);
         }
     }
 };

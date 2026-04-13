@@ -29,10 +29,12 @@ struct horizontal_minmax_tests {
 
             auto w = raze::vx::where(v, fbk, m);
             auto wz = raze::vx::where(v, m);
+            auto const_w = raze::vx::where(Simd(v), fbk, m);
+            auto const_wz = raze::vx::where(Simd(v), m);
 
-            {
-                auto rminw = raze::vx::horizontal_min(w);
-                auto rmaxw = raze::vx::horizontal_max(w);
+            const auto test_w = [=](auto w_expr) {
+                auto rminw = raze::vx::horizontal_min(w_expr);
+                auto rmaxw = raze::vx::horizontal_max(w_expr);
 
                 _Type_ expected_min = m[0] ? arr[0] : fallback[0];
                 _Type_ expected_max = m[0] ? arr[0] : fallback[0];
@@ -44,11 +46,12 @@ struct horizontal_minmax_tests {
 
                 raze_assert(rminw == expected_min);
                 raze_assert(rmaxw == expected_max);
-            }
+            };
 
-            {
-                auto rminwz = raze::vx::horizontal_min(wz);
-                auto rmaxwz = raze::vx::horizontal_max(wz);
+            
+            const auto test_wz = [=] (auto wz_expr) {
+                auto rminwz = raze::vx::horizontal_min(wz_expr);
+                auto rmaxwz = raze::vx::horizontal_max(wz_expr);
 
                 _Type_ expected_min = m[0] ? arr[0] : _Type_(0);
                 _Type_ expected_max = expected_min;
@@ -61,7 +64,13 @@ struct horizontal_minmax_tests {
 
                 raze_assert(rminwz == expected_min);
                 raze_assert(rmaxwz == expected_max);
-            }
+            };
+
+            test_w(const_w);
+            test_w(w);
+
+            test_wz(const_wz);
+            test_wz(wz);
         }
     }
 };

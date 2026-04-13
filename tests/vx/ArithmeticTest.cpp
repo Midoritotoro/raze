@@ -81,48 +81,56 @@ struct arithmetic_tests {
             auto w = raze::vx::where(a, src, m);
             auto wz = raze::vx::where(a, m);
 
-            test_where_unary<_Type_, N>(
-                arrA, arrSrc, m, a, src, w, wz,
-                raze::type_traits::negate{},
-                [](_Type_ A, _Type_ Src, bool cond, bool rev) {
-                    return cond ? (-A) : Src;
-            });
+            auto const_w = raze::vx::where(Simd(a), src, m);
+            auto const_wz = raze::vx::where(Simd(a), m);
+            
+            const auto run_tests = [arrA, arrB, arrSrc, a, b, m, src](auto w, auto wz) {
+                test_where_unary<_Type_, N>(
+                    arrA, arrSrc, m, a, src, w, wz,
+                    raze::type_traits::negate{},
+                    [](_Type_ A, _Type_ Src, bool cond, bool rev) {
+                        return cond ? (-A) : Src;
+                    });
 
-            test_where_binary<_Type_, N>(
-                arrA, arrB, arrSrc, m,
-                a, b, src, w, wz,
-                raze::type_traits::plus{},
-                [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                    return cond ? (rev ? B + A : A + B) : Src;
-                }
-            );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src, w, wz,
+                    raze::type_traits::plus{},
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        return cond ? (rev ? B + A : A + B) : Src;
+                    }
+                );
 
-            test_where_binary<_Type_, N>(
-                arrA, arrB, arrSrc, m,
-                a, b, src, w, wz,
-                raze::type_traits::minus{},
-                [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                    return cond ? (rev ? B - A : A - B) : Src;
-                }
-            );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src, w, wz,
+                    raze::type_traits::minus{},
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        return cond ? (rev ? B - A : A - B) : Src;
+                    }
+                );
 
-            test_where_binary<_Type_, N>(
-                arrA, arrB, arrSrc, m,
-                a, b, src, w, wz,
-                raze::type_traits::multiplies{},
-                [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                    return cond ? (rev ? B * A : A * B) : Src;
-                }
-            );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src, w, wz,
+                    raze::type_traits::multiplies{},
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        return cond ? (rev ? B * A : A * B) : Src;
+                    }
+                );
 
-            test_where_binary<_Type_, N>(
-                arrA, arrB, arrSrc, m,
-                a, b, src, w, wz,
-                raze::type_traits::divides{},
-                [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                    return cond ? (rev ? B / A : A / B) : Src;
-                }
-            );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src, w, wz,
+                    raze::type_traits::divides{},
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        return cond ? (rev ? B / A : A / B) : Src;
+                    }
+                );
+            };
+
+            run_tests(w, wz);
+            run_tests(const_w, const_wz);
         }
     }
 };

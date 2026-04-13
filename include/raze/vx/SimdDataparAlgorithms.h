@@ -5,40 +5,9 @@
 #include <raze/vx/BasicSimdMask.h>
 #include <src/raze/vx/Reduce.h>
 #include <src/raze/vx/Expression.h>
-
+#include <raze/vx/Concepts.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
-
-template <class _WhereExpression_>
-concept const_where_expression_type = __is_const_where_v<_WhereExpression_> || 
-	__is_const_where_zero_v<_WhereExpression_>;
-
-template <class _WhereExpression_>
-concept where_expression_type = __is_where_v<_WhereExpression_> || 
-	__is_where_zero_v<_WhereExpression_>;
-
-template <class _WhereExpression_>
-concept where_memory_expression_type = __is_where_memory_v<_WhereExpression_> || 
-	__is_where_zero_memory_v<_WhereExpression_>;
-
-template <class _WhereExpression_>
-concept any_where_expression_type = where_memory_expression_type<_WhereExpression_> ||
-	where_expression_type<_WhereExpression_> || const_where_expression_type<_WhereExpression_>;
-
-template <class _WhereExpression_>
-concept non_memory_where_expression_type = any_where_expression_type<_WhereExpression_> &&
-	!where_memory_expression_type<_WhereExpression_>;
-
-template <class _Simd_>
-concept simd_type = __is_valid_simd_v<_Simd_>;
-
-template <class _SimdMask_>
-concept simd_mask_type = __is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>;
-
-template <class _AlignmentPolicy_>
-concept alignment_policy_type = requires {
-		{ _AlignmentPolicy_::__alignment } -> std::convertible_to<bool>;
-	};
 
 /**
  *  @brief  Computes the horizontal sum of all lanes in a SIMD vector.
@@ -226,7 +195,7 @@ struct __zero_upper_at_exit_guard {
 
 template <arch::ISA _ISA_>
 raze_always_inline auto make_guard() noexcept {
-	return __zero_upper_at_exit_guard<_Simd_::__isa>{};
+	return __zero_upper_at_exit_guard<_ISA_>{};
 }
 
 /**
@@ -973,10 +942,10 @@ raze_nodiscard raze_always_inline _Simd_ rotate_left(
  *      [1 2 3 4] rotate_right by 1  →  [4 1 2 3]
  *  @endcode
 */
-template <simd_type _DataparType_>
-raze_nodiscard raze_always_inline _DataparType_ rotate_right(
-	const _DataparType_&	__vector,
-	uint32                  __elements) noexcept
+template <simd_type _Simd_>
+raze_nodiscard raze_always_inline _Simd_ rotate_right(
+	const _Simd_&	__vector,
+	uint32          __elements) noexcept
 {
 	return _Rotate_right<_Simd_::__isa, _Simd_::__width,
 		typename _Simd_::value_type>()(__data(__vector), __elements);
@@ -1157,7 +1126,7 @@ template <
 raze_nodiscard raze_always_inline _Where<_Simd_, _SimdMask_> where(
 	_Simd_&				__vector,
 	const _Simd_&		__source,
-	const _MaskType_&	__mask) noexcept
+	const _SimdMask_&	__mask) noexcept
 {
 	return _Where<_Simd_, _SimdMask_>(__vector, __source, __mask);
 }
@@ -1289,6 +1258,52 @@ raze_nodiscard raze_always_inline _Simd_ ternarylogic(
 	return _Ternarylogic<_Simd_::__isa, _Simd_::__width>()(
 		__data(__x), __data(__y), __data(__z), __imm8);
 }
+
+template <
+	non_memory_where_expression_type	_WhereExpression_,
+	simd_type							_Simd_,
+	uint8								_TernaryMask_>
+raze_nodiscard raze_always_inline _Simd_ ternarylogic(
+	const _WhereExpression_&						__where_x,
+	const _Simd_&									__y,
+	const _Simd_&									__z,
+	std::integral_constant<uint8, _TernaryMask_>	__imm8) noexcept
+		requires((_TernaryMask_ >= 0 && _TernaryMask_ <= 255) && 
+			__is_valid_simd_v<_Simd_>)
+{
+	return _WhereExpression_::__ternarylogic(__where_x, __y, __z, __imm8);
+}
+
+template <
+	simd_type							_Simd_,
+	non_memory_where_expression_type	_WhereExpression_,
+	uint8								_TernaryMask_>
+raze_nodiscard raze_always_inline _Simd_ ternarylogic(
+	const _Simd_&									__x,
+	const _WhereExpression_&						__where_y,
+	const _Simd_&									__z,
+	std::integral_constant<uint8, _TernaryMask_>	__imm8) noexcept
+		requires((_TernaryMask_ >= 0 && _TernaryMask_ <= 255) && 
+			__is_valid_simd_v<_Simd_>)
+{
+	return _WhereExpression_::__ternarylogic(__x, __where_y, __z, __imm8);
+}
+
+template <
+	simd_type							_Simd_,
+	non_memory_where_expression_type	_WhereExpression_,
+	uint8								_TernaryMask_>
+raze_nodiscard raze_always_inline _Simd_ ternarylogic(
+	const _Simd_&									__x,
+	const _Simd_&									__y,
+	const _WhereExpression_&						__where_z,
+	std::integral_constant<uint8, _TernaryMask_>	__imm8) noexcept
+		requires((_TernaryMask_ >= 0 && _TernaryMask_ <= 255) && 
+			__is_valid_simd_v<_Simd_>)
+{
+	return _WhereExpression_::__ternarylogic(__x, __y, __where_z, __imm8);
+}
+
 
 /**
  * @brief Generates a compile‑time ternary‑logic mask from a lazy expression.

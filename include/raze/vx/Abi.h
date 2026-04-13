@@ -64,6 +64,10 @@ public:
 	static constexpr auto registers_count = __calculate_registers_count();
 };
 
+#if defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
+  using default_abi = x86_runtime_abi<arch::ISA::SSE2>;
+#endif // defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
+
 template <sizetype _Width_>
 struct x86_abi {
 	// Not supported
