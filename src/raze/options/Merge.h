@@ -1,9 +1,12 @@
 #pragma once 
 
-#include <raze/options/Concepts.h>
+#include <src/raze/options/Concepts.h>
 
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
+
+template <concepts::option ... _Options_>
+struct settings;
 
 template <
     concepts::option ... _Keys1_, 

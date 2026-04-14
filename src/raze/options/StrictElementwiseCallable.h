@@ -45,7 +45,7 @@ struct strict_elementwise_callable:
             return ignore{};
     }
 
-template <
+    template <
         callable_options    __Options_, 
         class               _Type_,
         class ...           _Types_>
@@ -56,7 +56,7 @@ template <
         _Types_ ...         __args) const noexcept
     {
         if constexpr (!__Options_::contains(condition_key) || 
-            match_option<condition_key, __Options_, ignore_none_>)
+            match_option<condition_key, __Options_, __ignore_none>)
         {
             constexpr bool supports_call = !std::same_as<ignore, 
                 decltype(adapt_call(__arch, __options, __first, __args...))>;

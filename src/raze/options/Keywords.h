@@ -105,12 +105,12 @@ constexpr flag_keyword() {}
 
     template <class _Type_>
     constexpr auto operator|(_Type_&& __value) const noexcept {
-        return _::__type_or<flag_keyword, std::remove_cvref_t<_Type_>>{std::forward<_Type_>(__value)};
+        return __type_or<flag_keyword, std::remove_cvref_t<_Type_>>{std::forward<_Type_>(__value)};
     }
 
     template <class _Function_> 
     constexpr auto operator|(call<_Function_>&& __callable) const noexcept {
-        return _::__type_or<flag_keyword, call<_Function_>>{std::forward<_Function_>(__callable)};
+        return __type_or<flag_keyword, call<_Function_>>{std::forward<_Function_>(__callable)};
     }
 
     constexpr auto operator()(const keyword_type&) const noexcept { 
@@ -122,9 +122,9 @@ constexpr flag_keyword() {}
         class       _Option1_,
         class ...   _Options_>
     constexpr decltype(auto) operator()(_Option0_&&, _Option1_&&, _Options_&& ...) const {
-        return  stdfix::same_as<keyword_type, typename std::remove_cvref_t<_Option0_>::keyword_type>
-            ||  stdfix::same_as<keyword_type, typename std::remove_cvref_t<_Option1_>::keyword_type>
-            || (stdfix::same_as<keyword_type, typename std::remove_cvref_t<_Options_>::keyword_type> || ...);
+        return  concepts::same_as<keyword_type, typename std::remove_cvref_t<_Option0_>::keyword_type>
+            || concepts::same_as<keyword_type, typename std::remove_cvref_t<_Option1_>::keyword_type>
+            || (concepts::same_as<keyword_type, typename std::remove_cvref_t<_Options_>::keyword_type> || ...);
     }
 };
 
@@ -205,5 +205,20 @@ constexpr auto values(const settings<_Options_...>& __settings) noexcept {
     return __values_t<settings<_Options_...>, _List_>{
         __settings[typename _Options_::keyword_type{}]... };
 }
+
+template <
+    concepts::settings _S1_, 
+    concepts::settings _S2_>
+struct is_equivalent_settings: 
+    std::bool_constant<is_equivalent<__keywords_t<_S1_, keys>,
+        __keywords_t<_S2_, keys>>::value &&  
+    is_equivalent<__keywords_t<_S2_, keys>, 
+        __keywords_t<_S1_, keys>>::value>
+{};
+
+template <
+    concepts::settings _S1_, 
+    concepts::settings _S2_>
+constexpr inline bool is_equivalent_settings_v = is_equivalent<_S1_, _S2_>::value;
 
 __RAZE_OPTIONS_NAMESPACE_END

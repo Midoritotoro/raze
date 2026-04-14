@@ -41,7 +41,7 @@ concept simd_mask_type = __is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_
 
 template <class _AlignmentPolicy_>
 concept alignment_policy_type = requires {
-	{ _AlignmentPolicy_::__alignment } -> std::convertible_to<bool>;
+	{ std::remove_cvref_t<_AlignmentPolicy_>::__alignment } -> std::convertible_to<bool>;
 };
 
 __RAZE_VX_NAMESPACE_END

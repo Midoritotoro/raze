@@ -7,6 +7,7 @@
 #include <src/raze/vx/Expression.h>
 #include <raze/vx/Concepts.h>
 
+
 __RAZE_VX_NAMESPACE_BEGIN
 
 /**
@@ -418,37 +419,6 @@ raze_always_inline void nt_store(
 		std::to_address(__first), __data(__vector));
 }
 
-/**
- *  @brief  Loads a SIMD vector from memory.
- *
- *  @param __address  Pointer to the source memory.
- *
- *  @return  A SIMD vector containing all lanes loaded from @p __address,
- *           using the specified alignment policy.
- *
- *  Performs an unconditional load of the entire vector.
- */
-template <
-	simd_type						_Simd_,
-	std::input_or_output_iterator	_Iterator_,
-	alignment_policy_type			_AlignmentPolicy_ = unaligned_policy>
-raze_nodiscard raze_always_inline _Simd_ load(
-	_Iterator_			__first,
-	_AlignmentPolicy_&& __policy = _AlignmentPolicy_{}) noexcept
-{
-	return _Load<_Simd_::__isa, _Simd_::__width,
-		typename _Simd_::vector_type>()(std::to_address(__first), __policy);
-}
-
-template <
-	where_memory_expression_type	_WhereMemoryExpression_, 
-	alignment_policy_type			_AlignmentPolicy_ = unaligned_policy>
-raze_always_inline typename _WhereMemoryExpression_::datapar_type load(
-	const _WhereMemoryExpression_&	__where,
-	_AlignmentPolicy_&&				__policy = _AlignmentPolicy_{}) noexcept
-{
-	return __where.__load(__policy);
-}
 
 /**
  *  @brief  Stores a SIMD vector to memory.

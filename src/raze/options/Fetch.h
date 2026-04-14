@@ -42,25 +42,25 @@ constexpr decltype(auto) fetch(
 template <
     auto        _Keyword_, 
     class ...   _Sources_> 
-struct fetch;
+struct __fetch_t;
 
 template <
     auto                    _Keyword_, 
     concepts::option ...    _Options_>
-struct fetch<_Keyword_, _Options_...>  {
+struct __fetch_t<_Keyword_, _Options_...>  {
     using type = decltype(fetch(_Keyword_, std::declval<_Options_>()...));
 };
 
 template <
     auto               _Keyword_,
     concepts::settings _Settings_>
-struct fetch<_Keyword_, _Settings_>  {
+struct __fetch_t<_Keyword_, _Settings_>  {
     using type = decltype(fetch(_Keyword_, std::declval<_Settings_>()));
 };
 
 template <
     auto        _Keyword_, 
     class ...   _Sources_>
-using fetch_t = typename fetch<_Keyword_, _Sources_...>::type;
+using fetch_t = typename __fetch_t<_Keyword_, _Sources_...>::type;
 
 __RAZE_OPTIONS_NAMESPACE_END

@@ -11,7 +11,7 @@ struct settings {
     using settings_type = void;
     using base = aggregator<_Options_...>;
 
-    constexpr settings(const _Options_& ... __options): 
+    constexpr settings(const _Options_& ... __options) noexcept: 
         _content(__options...) 
     {}
 
@@ -22,7 +22,7 @@ struct settings {
     template <concepts::keyword _Key_>
     static constexpr auto contains(const _Key_& __keyword) noexcept {
         using found = decltype((std::declval<base>())(_Key_{}));
-        return !stdfix::same_as<found, unknown_key>;
+        return !concepts::same_as<found, unknown_key>;
     }
         
     template <concepts::keyword ... _Keys_>
@@ -57,7 +57,7 @@ struct settings {
     template <
         concepts::keyword   _Key_, 
         class               _Value_>
-    constexpr auto operator[](_::__type_or<_Key_, _Value_> __value) const {
+    constexpr auto operator[](__type_or<_Key_, _Value_> __value) const {
         if constexpr(contains(_Key_{})) 
             return (*this)[_Key_{}];
         else if constexpr(requires(_Value_ __t) { __t.perform(); })  

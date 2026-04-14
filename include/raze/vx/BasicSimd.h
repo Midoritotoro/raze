@@ -14,6 +14,8 @@
 #include <src/raze/vx/Bitwise.h>
 
 #include <raze/vx/Abi.h>
+#include <raze/options/Options.h>
+
 
 raze_disable_warning_msvc(26495)
 
@@ -22,6 +24,15 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 using aligned_policy    = __aligned_policy;
 using unaligned_policy  = __unaligned_policy;
+
+template <bool _Alignment_>
+struct alignment_policy {
+    static constexpr bool __alignment = _Alignment_;
+};
+
+struct aligned_mode {};
+constexpr inline auto aligned = raze::options::flag(aligned_mode{});
+struct aligned_option : raze::options::exact_option<aligned> {};
 
 /**
  * @class simd
@@ -472,6 +483,39 @@ public:
     raze_always_inline operator vector_type() const noexcept {
         return _vector;
     }
+
+    /**
+     *  @brief  Loads a SIMD vector from memory.
+     *
+     *  @param __address  Pointer to the source memory.
+     *
+     *  @return  A SIMD vector containing all lanes loaded from @p __address,
+     *           using the specified alignment policy.
+     *
+     *  Performs an unconditional load of the entire vector.
+    */
+
+    template <class _Options_>
+    struct copy_from_t :
+        raze::options::strict_elementwise_callable<copy_from_t, _Options_, aligned_option>
+    {
+        static constexpr auto __policy = alignment_policy<_Options_::contains(aligned)>{};
+
+        template <std::input_or_output_iterator	_Iterator_>
+        raze_nodiscard raze_always_inline simd operator()(_Iterator_ __first) const noexcept {
+            return raze::options::__dispatch_call(*this, std::to_address(__first));
+        }
+
+        template <class ... _Args_>
+        static inline constexpr simd deferred_call(auto __arch, auto, _Args_&& ... __args) noexcept {
+            return _Load<simd::__isa, simd::__width, simd::vector_type>()(
+                std::forward<_Args_>(__args)..., __policy);
+        }
+
+        using callable_tag_type = copy_from_t;
+    };
+
+    static constexpr inline auto copy_from = raze::options::functor<copy_from_t>;
 private:
     raze_always_inline void __insert(
         int32       __position,

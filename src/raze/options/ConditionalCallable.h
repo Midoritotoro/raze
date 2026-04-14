@@ -1,7 +1,8 @@
 #pragma once 
 
 #include <src/raze/options/Callable.h>
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <src/raze/options/IgnoreNone.h>
+#include <raze/vx/Concepts.h>
 
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
@@ -54,11 +55,11 @@ struct relative_conditional_option {
         const auto&                     __base, 
         relative_conditional_expr auto  __option) const 
     {
-        return raze::detail::merge_prefer_first(__base, options{condition_key = __option});
+        return raze::options::merge_prefer_first(__base, options{condition_key = __option});
     }
 
     inline constexpr auto default_to(const auto& __base) const {
-        return raze::detail::merge_prefer_first(options{condition_key = ignore_none}, __base);
+        return raze::options::merge_prefer_first(options{condition_key = ignore_none}, __base);
     }
 };
 
@@ -109,7 +110,7 @@ struct or_: _Condition_ {
         return or_<_Condition_, _Type_>{static_cast<const _Condition_&>(*this), __value};
     }
 
-    constexpr C drop_alternative() const { 
+    constexpr _Condition_ drop_alternative() const { 
         return *this; 
     }
 
@@ -157,16 +158,17 @@ struct conditional_option {
 
     inline constexpr auto process(
         const auto&                     __base, 
-        raze::vx::simd_mask_type auto   __option) const {
-        return process(base, condition_key = if_(opt));
+        raze::vx::simd_mask_type auto   __option) const 
+    {
+        return process(__base, condition_key = if_(__option));
     }
 
-    inline constexpr auto process(auto const& base, conditional_expr auto opt) const {
-        return process(base, condition_key = opt);
+    inline constexpr auto process(const auto& __base, conditional_expr auto __option) const {
+        return process(__base, condition_key = __option);
     }
 
-    inline constexpr auto default_to(auto const& base) const  {
-        return raze::detail::merge_prefer_first(options{condition_key = ignore_none}, base);
+    inline constexpr auto default_to(const auto& __base) const  {
+        return raze::options::merge_prefer_first(options{condition_key = ignore_none}, __base);
     }
 };
 

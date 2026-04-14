@@ -36,7 +36,7 @@ struct __ignore_none {
         return _Type_::size();
     }
 
-    constexpr bool friend operator==(ignore_none_ const&, ignore_none_ const&) noexcept = default;
+    constexpr bool friend operator==(__ignore_none const&, __ignore_none const&) noexcept = default;
 };
 
 constexpr inline __ignore_none ignore_none = {};

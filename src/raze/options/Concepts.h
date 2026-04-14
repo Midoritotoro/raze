@@ -1,9 +1,6 @@
 #pragma once 
 
 #include <src/raze/options/Keys.h>
-#include <src/raze/options/Option.h>
-#include <src/raze/options/SameAs.h>
-#include <src/raze/options/Keywords.h>
 #include <concepts>
 
 
@@ -38,21 +35,6 @@ template <
 concept __checks_for = requires(_Key_) {
     { _Key_::template check<_Type_>() };
 };
-
-template <
-    concepts::settings _S1_, 
-    concepts::settings _S2_>
-struct is_equivalent: 
-    std::bool_constant<is_equivalent<__keywords_t<_S1_, keys>,
-        __keywords_t<_S2_, keys>>::value &&  
-    is_equivalent<__keywords_t<_S2_, keys>, 
-        __keywords_t<_S1_, :keys>>::value>
-{};
-
-template <
-    concepts::settings _S1_, 
-    concepts::settings _S2_>
-constexpr inline bool is_equivalent_v = is_equivalent<_S1_, _S2_>::value;
 
 __RAZE_OPTIONS_CONCEPTS_NAMESPACE_END
 

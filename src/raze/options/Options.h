@@ -1,6 +1,5 @@
 #pragma once 
 
-#include <src/raze/options/Concepts.h>
 #include <src/raze/options/Option.h>
 #include <src/raze/options/Settings.h>
 #include <src/raze/options/Merge.h>
@@ -78,23 +77,18 @@ concept callable_options = concepts::settings<_Type_>;
 template <class _Type_>
 concept callable_option = concepts::option<_Type_>;
 
-template <
-    class   _Option_,
-    auto    _Keyword_>
-concept exactly = concepts::exactly<_Option_, _Keyword_>;
-
-template <auto _Decorator_> 
+template<auto Decorator> 
 struct exact_option {
-    inline constexpr auto process(
-        const auto&                     __base, 
-        exactly<Decorator> const auto&  __options) const noexcept
+    constexpr auto process(
+        auto const&                                 __base, 
+        concepts::exactly<Decorator> auto const&    __options) const noexcept
     {
-        return raze::options::merge_prefer_first(__base, raze::options::options{ __options });
+        return raze::options::merge_prefer_first(__base, options{ __options });
     }
 
-    inline constexpr auto default_to(const auto& __base) const noexcept { 
-        return __base;
-    }
+     constexpr auto default_to(auto const& __base) const { 
+         return __base;
+     }
 };
 
 __RAZE_OPTIONS_NAMESPACE_END
