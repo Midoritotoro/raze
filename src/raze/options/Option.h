@@ -12,7 +12,7 @@ struct option {
     using stored_value_type = std::decay_t<_Value_>;
     using keyword_type = _Keyword_;
 
-    constexpr stored_value_type operator()(const keyword_type&) const noexcept {
+    constexpr raze_always_inline stored_value_type operator()(const keyword_type&) const noexcept {
         return _contents;
     }
 

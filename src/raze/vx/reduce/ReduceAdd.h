@@ -81,9 +81,30 @@ struct _Reduce_add<arch::ISA::SSE2, 128, _Type_> {
 	}
 };
 
+template <class _Type_>
+struct _Reduce_add<arch::ISA::SSE3, 128, _Type_> {
+    template <class _IntrinType_>
+    raze_nodiscard raze_static_operator raze_always_inline
+        __reduce_type<_Type_> operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    {
+        using _ReduceType = __reduce_type<_Type_>;
+
+        if constexpr (__is_ps_v<_Type_>) {
+            const auto __reduce4 = _mm_hadd_ps(__as<__m128>(__vector), __as<__m128>(__vector));
+            return static_cast<_ReduceType>(_mm_cvtss_f32(_mm_hadd_ps(__reduce4, __reduce4)));
+        }
+        else if constexpr (__is_pd_v<_Type_>) {
+            return _mm_cvtsd_f64(_mm_hadd_pd(__as<__m128d>(__vector), __as<__m128d>(__vector)));
+        }
+        else {
+            return _Reduce_add<arch::ISA::SSE2, 128, _Type_>()(__vector);
+        }
+    }
+};
+
+
 template <class _Type_> 
-struct _Reduce_add<arch::ISA::SSSE3, 128, _Type_>:
-    _Reduce_add<arch::ISA::SSE3, 128, _Type_> 
+struct _Reduce_add<arch::ISA::SSSE3, 128, _Type_>
 {
     template <class _IntrinType_>
     raze_nodiscard raze_static_operator raze_always_inline
@@ -107,12 +128,11 @@ struct _Reduce_add<arch::ISA::SSSE3, 128, _Type_>:
             return static_cast<_ReduceType>(_mm_cvtsi128_si32(__reduce5));
         }
         else {
-            return _Reduce_add<arch::ISA::SSE2, 128, _Type_>()(__vector);
+            return _Reduce_add<arch::ISA::SSE3, 128, _Type_>()(__vector);
         }
     }
 };
 
-template <class _Type_> struct _Reduce_add<arch::ISA::SSE3, 128, _Type_> : _Reduce_add<arch::ISA::SSE2, 128, _Type_> {};
 template <class _Type_> struct _Reduce_add<arch::ISA::SSE41, 128, _Type_> : _Reduce_add<arch::ISA::SSSE3, 128, _Type_> {};
 template <class _Type_> struct _Reduce_add<arch::ISA::SSE42, 128, _Type_> : _Reduce_add<arch::ISA::SSE41, 128, _Type_> {};
 template <class _Type_> struct _Reduce_add<arch::ISA::AVX, 128, _Type_> : _Reduce_add<arch::ISA::SSE42, 128, _Type_> {};

@@ -8,7 +8,7 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 template <
     concepts::keyword       _Keyword_,
     concepts::option ...    _Options_>
-constexpr auto drop(
+constexpr raze_always_inline auto drop(
     const _Keyword_&                __keyword, 
     const settings<_Options_...>&   __settings) noexcept
 {

@@ -11,7 +11,9 @@ struct call {
         _callable(__function)
     {}
 
-    constexpr auto perform() const noexcept(std::is_nothrow_invocable_v<_Function_>) {
+    constexpr raze_always_inline auto perform() const
+        noexcept(std::is_nothrow_invocable_v<_Function_>) 
+    {
         return _callable();
     }
 

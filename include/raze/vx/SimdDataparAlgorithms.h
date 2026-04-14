@@ -39,24 +39,35 @@ struct reduce_add_t:
 	raze::options::strict_elementwise_callable<reduce_add_t, _Options_>
 {
 	template <simd_type _Simd_>
-	__reduce_type<typename _Simd_::value_type> operator()(const _Simd_& __vector) const noexcept {
+	raze_always_inline __reduce_type<typename _Simd_::value_type> 
+		operator()(const _Simd_& __vector) const noexcept 
+	{
 		return raze::options::__dispatch_call(*this, __vector);
 	}
 
 	template <simd_type _Simd_>
-	static auto deferred_call(auto, auto __options, const _Simd_& __vector) noexcept {
+	static raze_always_inline auto deferred_call(auto, auto __options, const _Simd_& __vector) noexcept {
 		using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-		auto __mask = __options[raze::options::condition_key].mask(raze::options::as<_Mask_>{});
 
-		if constexpr (simd_mask_type<decltype(__mask)>) {
-			return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
-				_Blend<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
-				__data(__vector), _Broadcast_zeros<_Simd_::__isa, _Simd_::__width,
-					typename _Simd_::vector_type>()(), __data(__mask)));
-		}
-		else {
+		if constexpr (options::concepts::same_as<_Mask_, options::unknown_key>) {
 			return _Reduce_add<_Simd_::__isa, _Simd_::__width,
 				typename _Simd_::value_type>()(__data(__vector));
+		}
+		else {
+			auto __condition = __options[raze::options::condition_key];
+			const auto __mask = __condition.mask(raze::options::as<_Mask_>{});
+
+			if constexpr (!_Mask_::has_alternative) {
+				return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
+					_Blend<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
+						__data(__vector), _Broadcast_zeros<_Simd_::__isa, _Simd_::__width,
+						typename _Simd_::vector_type>()(), __data(__mask)));
+			}
+			else {
+				return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
+					_Blend<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
+						__data(__vector), __data(__condition.alternative()), __data(__mask)));
+			}
 		}
 	}
 

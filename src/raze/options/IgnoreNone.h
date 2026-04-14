@@ -16,10 +16,10 @@ struct __ignore_none {
         return *this;  
     }
 
-    //template <class _Type_> 
-    //raze_always_inline auto mask(const as<T>& __target) const noexcept {
-    //    return detail::to_logical(*this, __target);
-    //}
+    template <class _Type_> 
+    raze_always_inline auto mask(const as<_Type_>& __target) const noexcept {
+        return { 0 };
+    }
 
     template <class _Type_> 
     constexpr raze_always_inline std::ptrdiff_t offset(const as<_Type_>&) const noexcept {
@@ -36,7 +36,7 @@ struct __ignore_none {
         return _Type_::size();
     }
 
-    constexpr bool friend operator==(__ignore_none const&, __ignore_none const&) noexcept = default;
+    raze_always_inline constexpr bool friend operator==(__ignore_none const&, __ignore_none const&) noexcept = default;
 };
 
 constexpr inline __ignore_none ignore_none = {};

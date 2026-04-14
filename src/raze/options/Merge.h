@@ -11,7 +11,7 @@ struct settings;
 template <
     concepts::option ... _Keys1_, 
     concepts::option ... _Keys2_>
-constexpr auto merge(
+constexpr raze_always_inline auto merge(
     const settings<_Keys1_...>& __options, 
     const settings<_Keys2_...>& __definition) noexcept
 {

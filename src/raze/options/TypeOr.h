@@ -12,7 +12,7 @@ struct __type_or {
     _Value_ _value;
 
     template <concepts::option ... _Options_>
-    constexpr decltype(auto) operator()(_Options_&&... __options) const noexcept { 
+    constexpr raze_always_inline decltype(auto) operator()(_Options_&&... __options) const noexcept {
         return fetch(*this, std::forward<_Options_>(__options)...); 
     }
 };

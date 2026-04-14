@@ -356,6 +356,8 @@ set(PRIVATE_HEADERS
     src/raze/options/Settings.h
     src/raze/options/StrictElementwiseCallable.h
     src/raze/options/TypeOr.h
+    src/raze/options/Or.h
+    src/raze/options/If.h
 )
 
 set(PUBLIC_HEADERS

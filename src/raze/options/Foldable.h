@@ -6,7 +6,7 @@
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 struct accumulate_decorations {
-    inline constexpr auto operator()(auto __accumulator, const auto& __m) const { 
+    raze_always_inline constexpr auto operator()(auto __accumulator, const auto& __m) const {
         return __m.default_to(__accumulator); 
     }
 };

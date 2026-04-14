@@ -15,23 +15,23 @@ struct settings {
         _content(__options...) 
     {}
 
-    static constexpr std::ptrdiff_t size() noexcept { 
+    static raze_always_inline constexpr std::ptrdiff_t size() noexcept {
         return sizeof...(_Options_); 
     }
 
     template <concepts::keyword _Key_>
-    static constexpr auto contains(const _Key_& __keyword) noexcept {
+    static raze_always_inline constexpr auto contains(const _Key_& __keyword) noexcept {
         using found = decltype((std::declval<base>())(_Key_{}));
         return !concepts::same_as<found, unknown_key>;
     }
         
     template <concepts::keyword ... _Keys_>
-    static constexpr auto contains_any(_Keys_ ... __keys) noexcept { 
+    static raze_always_inline constexpr auto contains_any(_Keys_ ... __keys) noexcept {
         return (contains(__keys) || ...); 
     }
 
     template <concepts::keyword ... _Keys_>
-    static constexpr auto contains_only(const _Keys_& ... __keys) noexcept {
+    static raze_always_inline constexpr auto contains_only(const _Keys_& ... __keys) noexcept {
         using current_keys = keys<typename _Options_::keyword_type...>;
         using acceptable_keys = keys<_Keys_...>;
         using unique_set = typename uniques<current_keys, acceptable_keys>::type;
@@ -40,24 +40,29 @@ struct settings {
     }
 
     template <concepts::keyword... _Keys_>
-    static constexpr auto contains_none(_Keys_ ... __keys) noexcept {
+    static raze_always_inline constexpr auto contains_none(_Keys_ ... __keys) noexcept {
         return !contains_any(__keys...); 
     }
 
     template <concepts::keyword _Key_> 
-    constexpr auto operator[](const _Key_& __key) const noexcept {
+    constexpr raze_always_inline auto operator[](const _Key_& __key) const noexcept {
         return _content(__key);
     }
 
+    template <concepts::keyword ... _Keys_> 
+    constexpr raze_always_inline auto operator[](const _Keys_& ... __keys) const noexcept {
+        return (_content(__keys), ...);
+    }
+
     template <class _Keyword_>
-    constexpr auto operator[](const flag_keyword<_Keyword_>&) const noexcept {
+    constexpr raze_always_inline auto operator[](const flag_keyword<_Keyword_>&) const noexcept {
         return contains(flag_keyword<_Keyword_>{});
     }
 
     template <
         concepts::keyword   _Key_, 
         class               _Value_>
-    constexpr auto operator[](__type_or<_Key_, _Value_> __value) const {
+    constexpr raze_always_inline auto operator[](__type_or<_Key_, _Value_> __value) const {
         if constexpr(contains(_Key_{})) 
             return (*this)[_Key_{}];
         else if constexpr(requires(_Value_ __t) { __t.perform(); })  

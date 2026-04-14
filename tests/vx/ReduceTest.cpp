@@ -21,33 +21,25 @@ struct reduce_tests {
         Simd fbk;
         fbk.copy_from(fallback);
 
-        //raze_assert(raze::vx::reduce_add(v) == std::accumulate(arr, arr + N, 
-        //    raze::vx::__reduce_type<_Type_>{0}, std::plus{}));
+        raze_assert(raze::vx::reduce_add(v) == std::accumulate(arr, arr + N, 
+            raze::vx::__reduce_type<_Type_>{0}, std::plus{}));
 
         for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
 
-            //auto w = raze::vx::where(v, fbk, m);
-            //auto wz = raze::vx::where(v, m);
+            {
+                auto r1 = raze::vx::reduce_add[m, fbk](v);
 
-            //auto const_w = raze::vx::where(Simd(v), fbk, m);
-            //auto const_wz = raze::vx::where(Simd(v), m);
+                raze::vx::__reduce_type<_Type_> expected = 0;
 
-            //{
-            //    auto r1 = raze::vx::reduce_add(w);
-            //    auto r2 = raze::vx::reduce_add(const_w);
+                for (size_t i = 0; i < N; ++i)
+                    if (m[i])
+                        expected += arr[i];
+                    else
+                        expected += fallback[i];
 
-            //    raze::vx::__reduce_type<_Type_> expected = 0;
-
-            //    for (size_t i = 0; i < N; ++i)
-            //        if (m[i])
-            //            expected += arr[i];
-            //        else
-            //            expected += fallback[i];
-
-            //    raze_assert(expected == r1);
-            //    raze_assert(expected == r2);
-            //}
+                raze_assert(expected == r1);
+            }
 
             {
                 auto r1 = raze::vx::reduce_add[m](v);

@@ -9,7 +9,7 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 template <
     concepts::keyword       _Keyword_, 
     concepts::option ...    _Options_>
-constexpr decltype(auto) fetch(
+constexpr raze_always_inline decltype(auto) fetch(
     const _Keyword_&        __keyword,
     const _Options_& ...    __options) noexcept
 {
@@ -21,7 +21,7 @@ template <
     concepts::keyword       _Keyword_, 
     class                   _Value_,
     concepts::option ...    _Options_>
-constexpr decltype(auto) fetch(
+constexpr raze_always_inline decltype(auto) fetch(
     const __type_or<_Keyword_, _Value_>&    __keyword,
     const _Options_& ...                    __options) noexcept
 {
@@ -32,7 +32,7 @@ constexpr decltype(auto) fetch(
 template <
     class               _Key_, 
     concepts::settings  _Settings_>
-constexpr decltype(auto) fetch(
+constexpr raze_always_inline decltype(auto) fetch(
     const _Key_&        __key,
     const _Settings_&   __settings) noexcept
 {

@@ -20,7 +20,7 @@ struct aggregator:
     using _Options_::operator()...;
 
     template <concepts::keyword _Keyword_> 
-    constexpr auto operator()(const _Keyword_&) const noexcept {
+    constexpr raze_always_inline auto operator()(const _Keyword_&) const noexcept {
         return unknown_key{};
     }
 };

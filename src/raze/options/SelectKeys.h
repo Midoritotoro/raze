@@ -12,7 +12,8 @@ template <
 struct filter {
     using type = keys<_Keywors_...>;
 
-    template <class _Type_> constexpr auto operator+(const keys<_Type_>&) const {
+    template <class _Type_> 
+    constexpr raze_always_inline auto operator+(const keys<_Type_>&) const noexcept {
         using kw_t = typename _Type_::keyword_type;
 
         if constexpr (!concepts::same_as<_Key_, typename kw_t::tag_type>)

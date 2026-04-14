@@ -14,8 +14,8 @@ template <
 concept match_option = concepts::same_as<_Type_, fetch_t<_Keyword_, _Options_>>;
 
 inline constexpr struct { 
-    inline auto operator()(auto, auto x) const { 
-        return x; 
+    raze_always_inline auto operator()(auto, auto __x) const {
+        return __x; 
     } 
 } return_2nd = {};
 
@@ -58,9 +58,6 @@ struct strict_elementwise_callable:
         if constexpr (!__Options_::contains(condition_key) || 
             match_option<condition_key, __Options_, __ignore_none>)
         {
-            constexpr bool supports_call = !std::same_as<ignore, 
-                decltype(adapt_call(__arch, __options, __first, __args...))>;
-
             return adapt_call(__arch, __options.drop(condition_key), __first, __args...);
         }
         else {
