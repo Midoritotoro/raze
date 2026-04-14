@@ -23,16 +23,48 @@ __RAZE_VX_NAMESPACE_BEGIN
  *  This function performs a horizontal reduction using addition, combining
  *  all lanes of the SIMD vector into a single scalar value.
 */
-template <simd_type _Simd_>
-raze_nodiscard raze_always_inline auto reduce_add(const _Simd_& __vector) noexcept {
-	return _Reduce_add<_Simd_::__isa, _Simd_::__width,
-		typename _Simd_::value_type>()(__data(__vector));
-}
+//template <simd_type _Simd_>
+//raze_nodiscard raze_always_inline auto reduce_add(const _Simd_& __vector) noexcept {
+//	return _Reduce_add<_Simd_::__isa, _Simd_::__width,
+//		typename _Simd_::value_type>()(__data(__vector));
+//}
+//
+//template <non_memory_where_expression_type _WhereExpression_>
+//raze_nodiscard raze_always_inline auto reduce_add(const _WhereExpression_& __where) noexcept {
+//	return __where.__reduce_add();
+//}
 
-template <non_memory_where_expression_type _WhereExpression_>
-raze_nodiscard raze_always_inline auto reduce_add(const _WhereExpression_& __where) noexcept {
-	return __where.__reduce_add();
-}
+template <class _Options_>
+struct reduce_add_t:
+	raze::options::strict_elementwise_callable<reduce_add_t, _Options_>
+{
+	template <simd_type _Simd_>
+	__reduce_type<typename _Simd_::value_type> operator()(const _Simd_& __vector) const noexcept {
+		return raze::options::__dispatch_call(*this, __vector);
+	}
+
+	template <simd_type _Simd_>
+	static auto deferred_call(auto, auto __options, const _Simd_& __vector) noexcept {
+		using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+		auto __mask = __options[raze::options::condition_key].mask(raze::options::as<_Mask_>{});
+
+		if constexpr (simd_mask_type<decltype(__mask)>) {
+			return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
+				_Blend<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
+				__data(__vector), _Broadcast_zeros<_Simd_::__isa, _Simd_::__width,
+					typename _Simd_::vector_type>()(), __data(__mask)));
+		}
+		else {
+			return _Reduce_add<_Simd_::__isa, _Simd_::__width,
+				typename _Simd_::value_type>()(__data(__vector));
+		}
+	}
+
+	using callable_tag_type = reduce_add_t;
+};
+
+constexpr inline auto reduce_add = raze::options::functor<reduce_add_t>;
+
 
 template <class _DataparType_>
 using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_runtime_abi<_DataparType_::__isa, _DataparType_::__width>>;
@@ -417,40 +449,6 @@ raze_always_inline void nt_store(
 {
 	_Nt_store<_Simd_::__isa, _Simd_::__width>()(
 		std::to_address(__first), __data(__vector));
-}
-
-
-/**
- *  @brief  Stores a SIMD vector to memory.
- *
- *  @param __address  Pointer to the destination memory.
- *  @param __datapar  SIMD vector whose lanes are written to memory.
- *
- *  Stores all lanes of @p __datapar to @p __address using the specified alignment policy.
- */
-template <
-	std::input_or_output_iterator	_Iterator_,
-	simd_type						_Simd_, 
-	alignment_policy_type			_AlignmentPolicy_ = unaligned_policy>
-raze_always_inline void store(
-	_Iterator_			__first,
-	const _Simd_&		__vector,
-	_AlignmentPolicy_&&	__policy = _AlignmentPolicy_{}) noexcept
-{
-	return _Store<_Simd_::__isa, _Simd_::__width>()(
-		std::to_address(__first), __data(__vector), __policy);
-}
-
-template <
-	std::input_or_output_iterator		_Iterator_,
-	non_memory_where_expression_type	_WhereExpression_, 
-	alignment_policy_type				_AlignmentPolicy_ = unaligned_policy>
-raze_always_inline void store(
-	_Iterator_					__first,
-	const _WhereExpression_&	__where,
-	_AlignmentPolicy_&&			__policy = _AlignmentPolicy_{}) noexcept
-{
-	__where.__store(__first, __policy);
 }
 
 /**

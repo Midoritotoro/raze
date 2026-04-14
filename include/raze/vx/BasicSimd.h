@@ -22,6 +22,9 @@ raze_disable_warning_msvc(26495)
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <class _Iterator_>
+concept any_iterator_or_pointer = std::input_or_output_iterator<_Iterator_> || std::is_pointer_v<_Iterator_>;
+
 using aligned_policy    = __aligned_policy;
 using unaligned_policy  = __unaligned_policy;
 
@@ -487,35 +490,91 @@ public:
     /**
      *  @brief  Loads a SIMD vector from memory.
      *
-     *  @param __address  Pointer to the source memory.
-     *
-     *  @return  A SIMD vector containing all lanes loaded from @p __address,
-     *           using the specified alignment policy.
+     *  @param __first  Pointer to the source memory.
      *
      *  Performs an unconditional load of the entire vector.
     */
+    template <any_iterator_or_pointer _Iterator_>
+    raze_always_inline void copy_from(_Iterator_ __first) noexcept {
+        _vector = _Load<__isa, __width, vector_type>()(std::to_address(__first));
+    }
 
-    template <class _Options_>
-    struct copy_from_t :
-        raze::options::strict_elementwise_callable<copy_from_t, _Options_, aligned_option>
+    template <any_iterator_or_pointer _Iterator_>
+    raze_always_inline void copy_from(_Iterator_ __first, decltype(aligned)) noexcept {
+        _vector = _Load<__isa, __width, vector_type>()(std::to_address(__first), aligned_policy{});
+    }
+
+    template <
+        any_iterator_or_pointer _Iterator_,
+        simd_mask_type          _Mask_>
+    raze_always_inline void copy_from(
+        _Iterator_      __first, 
+        const _Mask_&   __mask, 
+        const simd&     __source) noexcept 
     {
-        static constexpr auto __policy = alignment_policy<_Options_::contains(aligned)>{};
+        _vector = _Mask_load<__isa, __width, _Type_>()(
+            std::to_address(__first), __data(__mask), __data(__source));
+    }
 
-        template <std::input_or_output_iterator	_Iterator_>
-        raze_nodiscard raze_always_inline simd operator()(_Iterator_ __first) const noexcept {
-            return raze::options::__dispatch_call(*this, std::to_address(__first));
-        }
+    template <
+        any_iterator_or_pointer _Iterator_,
+        simd_mask_type          _Mask_>
+    raze_always_inline void copy_from(
+        _Iterator_      __first, 
+        const _Mask_&   __mask, 
+        const simd&     __source, 
+        decltype(aligned)) noexcept
+    {
+        _vector = _Mask_load<__isa, __width, _Type_>()(
+            std::to_address(__first), __data(__mask), __data(__source), aligned_policy{});
+    }
 
-        template <class ... _Args_>
-        static inline constexpr simd deferred_call(auto __arch, auto, _Args_&& ... __args) noexcept {
-            return _Load<simd::__isa, simd::__width, simd::vector_type>()(
-                std::forward<_Args_>(__args)..., __policy);
-        }
+    template <
+        any_iterator_or_pointer _Iterator_,
+        simd_mask_type          _Mask_>
+    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask) noexcept {
+        _vector = _Maskz_load<__isa, __width, _Type_, vector_type>()(
+            std::to_address(__first), __data(__mask));
+    }
 
-        using callable_tag_type = copy_from_t;
-    };
+    template <
+        any_iterator_or_pointer _Iterator_,
+        simd_mask_type          _Mask_>
+    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) noexcept {
+        _vector = _Maskz_load<__isa, __width, _Type_, vector_type>()(
+            std::to_address(__first), __data(__mask), aligned_policy{});
+    }
 
-    static constexpr inline auto copy_from = raze::options::functor<copy_from_t>;
+    /**
+     *  @brief  Stores a SIMD vector to memory.
+     *
+     *  @param __first  Pointer to the destination memory.
+     *
+     *  Stores all lanes to @p __first.
+    */
+    template <any_iterator_or_pointer _Iterator_>
+    raze_always_inline void copy_to(_Iterator_ __first) const noexcept {
+        _Store<__isa, __width>()(std::to_address(__first), _vector);
+    }
+
+    template <any_iterator_or_pointer _Iterator_>
+    raze_always_inline void copy_to(_Iterator_ __first, decltype(aligned)) const noexcept {
+        _Store<__isa, __width>()(std::to_address(__first), _vector, aligned_policy{});
+    }
+
+    template <
+        any_iterator_or_pointer _Iterator_,
+        simd_mask_type          _Mask_>
+    raze_always_inline void copy_to(_Iterator_ __first, const _Mask_& __mask) const noexcept {
+        _Mask_store<__isa, __width, _Type_>()(std::to_address(__first), __data(__mask), _vector);
+    }
+
+    template <
+        any_iterator_or_pointer _Iterator_,
+        simd_mask_type          _Mask_>
+    raze_always_inline void copy_to(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) const noexcept {
+        _Mask_store<__isa, __width, _Type_>()(std::to_address(__first), __data(__mask), _vector, aligned_policy{});
+    }
 private:
     raze_always_inline void __insert(
         int32       __position,

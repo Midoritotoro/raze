@@ -17,26 +17,20 @@ struct memory_tests {
             for (size_t i = 0; i < N; ++i)
                 arr[i] = _Type_(i + 1);
 
-            Simd va;
-            va = Simd::copy_from[raze::vx::aligned](arr);
-            Simd vu;
-            vu = Simd::copy_from(arr);
-
-
+            Simd va; va.copy_from(arr, raze::vx::aligned);
+            Simd vu; vu.copy_from(arr);
 
             alignas(64) _Type_ out[N];
             _Type_ outU[N];
 
-           /* raze::vx::store(out, va);
-            raze::vx::store(outU, vu);
+            va.copy_to(out, raze::vx::aligned);
+            vu.copy_to(outU);
 
-            for (size_t i = 0; i < N; ++i)
-                raze_assert(out[i] == arr[i]);*/
-
-  
+            raze_assert(std::equal(out, out + N, outU, outU + N));
+            raze_assert(std::equal(out, out + N, arr, arr + N));
         }
 
-       /* {
+        {
             alignas(64) _Type_ src[N], fallback[N], dst[N];
 
             for (size_t i = 0; i < N; ++i) {
@@ -45,24 +39,39 @@ struct memory_tests {
                 dst[i] = _Type_(200 + i);
             }
 
-            const auto test_all = [&]<class _AlignmentPolicy_>(_AlignmentPolicy_ && policy, Mask mask) {
+            const auto test_all = [&] (Mask mask) {
                 {
-                    Simd v = raze::vx::load(raze::vx::where(src, mask), policy);
+                    Simd vu;
+                    vu.copy_from(src, mask);
+
+                    Simd va;
+                    va.copy_from(src, mask, raze::vx::aligned);
+
+                    raze_assert(raze::vx::all_of(va == vu));
+
                     for (size_t i = 0; i < N; ++i)
-                        raze_assert(v[i] == (mask[i] ? src[i] : T(0)));
+                        raze_assert(vu[i] == (mask[i] ? src[i] : _Type_(0)));
                 }
 
                 {
-                    Simd fb = raze::vx::load<Simd>(fallback);
-                    Simd v = raze::vx::load(raze::vx::where(src, fb, mask), policy);
+                    Simd fb;
+                    fb.copy_from(fallback);
+
+                    Simd vu; 
+                    vu.copy_from(src, mask, fb);
+
+                    Simd va;
+                    va.copy_from(src, mask, fb, raze::vx::aligned);
+
+                    raze_assert(raze::vx::all_of(va == vu));
 
                     for (size_t i = 0; i < N; ++i)
-                        raze_assert(v[i] == (mask[i] ? src[i] : fallback[i]));
+                        raze_assert(vu[i] == (mask[i] ? src[i] : fallback[i]));
                 }
 
                 {
                     Simd val(77);
-                    raze::vx::store(dst, raze::vx::where(val, mask), policy);
+                    val.copy_to(dst, mask);
 
                     for (size_t i = 0; i < N; ++i)
                         raze_assert(dst[i] == (mask[i] ? _Type_(77) : _Type_(200 + i)));
@@ -70,10 +79,10 @@ struct memory_tests {
             };
             
             for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
-                test_all(raze::vx::aligned_policy(), make_random_mask<Mask>());
-                test_all(raze::vx::unaligned_policy(), make_random_mask<Mask>());
+                test_all(make_random_mask<Mask>());
+                test_all(make_random_mask<Mask>());
             }
-        }*/
+        }
     }
 };
 

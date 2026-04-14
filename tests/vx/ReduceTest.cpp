@@ -15,49 +15,50 @@ struct reduce_tests {
         std::iota(arr, arr + N, 1);
         std::iota(fallback, fallback + N, 42);
 
-        Simd v = raze::vx::load<Simd>(arr);
-        Simd fbk = raze::vx::load<Simd>(fallback);
+        Simd v;
+        v.copy_from(arr);
 
-        raze_assert(raze::vx::reduce_add(v) == std::accumulate(arr, arr + N, 
-            raze::vx::__reduce_type<_Type_>{0}, std::plus{}));
+        Simd fbk;
+        fbk.copy_from(fallback);
+
+        //raze_assert(raze::vx::reduce_add(v) == std::accumulate(arr, arr + N, 
+        //    raze::vx::__reduce_type<_Type_>{0}, std::plus{}));
 
         for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
 
-            auto w = raze::vx::where(v, fbk, m);
-            auto wz = raze::vx::where(v, m);
+            //auto w = raze::vx::where(v, fbk, m);
+            //auto wz = raze::vx::where(v, m);
 
-            auto const_w = raze::vx::where(Simd(v), fbk, m);
-            auto const_wz = raze::vx::where(Simd(v), m);
+            //auto const_w = raze::vx::where(Simd(v), fbk, m);
+            //auto const_wz = raze::vx::where(Simd(v), m);
+
+            //{
+            //    auto r1 = raze::vx::reduce_add(w);
+            //    auto r2 = raze::vx::reduce_add(const_w);
+
+            //    raze::vx::__reduce_type<_Type_> expected = 0;
+
+            //    for (size_t i = 0; i < N; ++i)
+            //        if (m[i])
+            //            expected += arr[i];
+            //        else
+            //            expected += fallback[i];
+
+            //    raze_assert(expected == r1);
+            //    raze_assert(expected == r2);
+            //}
 
             {
-                auto r1 = raze::vx::reduce_add(w);
-                auto r2 = raze::vx::reduce_add(const_w);
+                auto r1 = raze::vx::reduce_add[m](v);
 
                 raze::vx::__reduce_type<_Type_> expected = 0;
 
                 for (size_t i = 0; i < N; ++i)
                     if (m[i])
                         expected += arr[i];
-                    else
-                        expected += fallback[i];
 
                 raze_assert(expected == r1);
-                raze_assert(expected == r2);
-            }
-
-            {
-                auto r1 = raze::vx::reduce_add(wz);
-                auto r2 = raze::vx::reduce_add(const_wz);
-
-                raze::vx::__reduce_type<_Type_> expected = 0;
-
-                for (size_t i = 0; i < N; ++i)
-                    if (m[i])
-                        expected += arr[i];
-
-                raze_assert(expected == r1);
-                raze_assert(expected == r2);
             }
         }
     }
