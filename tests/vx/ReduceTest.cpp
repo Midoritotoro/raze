@@ -29,7 +29,6 @@ struct reduce_tests {
 
             {
                 auto r1 = raze::vx::reduce_add[m, fbk](v);
-
                 raze::vx::__reduce_type<_Type_> expected = 0;
 
                 for (size_t i = 0; i < N; ++i)
@@ -43,7 +42,6 @@ struct reduce_tests {
 
             {
                 auto r1 = raze::vx::reduce_add[m](v);
-
                 raze::vx::__reduce_type<_Type_> expected = 0;
 
                 for (size_t i = 0; i < N; ++i)

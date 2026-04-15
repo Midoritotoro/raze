@@ -40,8 +40,7 @@ struct _And<arch::ISA::AVX, 256> {
 
 		else
 			return __as<_IntrinType_>(_mm256_and_ps(
-				__as<__m256>(__left),
-				__as<__m256>(__right)));
+				__as<__m256>(__left), __as<__m256>(__right)));
 	}
 };
 

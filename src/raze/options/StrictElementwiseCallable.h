@@ -97,4 +97,5 @@ constexpr raze_always_inline auto __dispatch_call(
         return __callable.behavior(int(0), __callable.options(), std::forward<_Args_>(__args)...);
 }
 
+
 __RAZE_OPTIONS_NAMESPACE_END

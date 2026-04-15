@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/shuffle/Blend.h>
 #include <src/raze/vx/shuffle/BroadcastZeros.h>
+#include <src/raze/vx/bitwise/BitAnd.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -20,12 +21,40 @@ struct _Maskz_assign<arch::ISA::SSE2, 128, _Type_> {
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) raze_const_operator noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::SSE2, 128, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __mask);
+		if constexpr (std::is_integral_v<_MaskType_>)
+			return _Blend<arch::ISA::SSE2, 128, _Type_>()(__vector,
+				_Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()(), __mask);
+		else
+			return _And<arch::ISA::SSE2, 128>()(__as<_IntrinType_>(__mask), __vector);
 	}
 };
+
+template <class _Type_> struct _Maskz_assign<arch::ISA::SSE3, 128, _Type_> : _Maskz_assign<arch::ISA::SSE2, 128, _Type_> {};
+template <class _Type_> struct _Maskz_assign<arch::ISA::SSSE3, 128, _Type_> : _Maskz_assign<arch::ISA::SSE3, 128, _Type_> {};
+
+template <class _Type_>
+struct _Maskz_assign<arch::ISA::SSE41, 128, _Type_> {
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__vector,
+		_MaskType_		__mask) raze_const_operator noexcept
+	{
+		if constexpr (std::is_integral_v<_MaskType_>)
+			return _Blend<arch::ISA::SSE41, 128, _Type_>()(__vector,
+				_Broadcast_zeros<arch::ISA::SSE41, 128, _IntrinType_>()(), __mask);
+		else
+			return _And<arch::ISA::SSE41, 128>()(__as<_IntrinType_>(__mask), __vector);
+	}
+};
+
+template <class _Type_> struct _Maskz_assign<arch::ISA::SSE42, 128, _Type_> : _Maskz_assign<arch::ISA::SSE41, 128, _Type_> {};
+template <class _Type_> struct _Maskz_assign<arch::ISA::AVX, 128, _Type_> : _Maskz_assign<arch::ISA::SSE42, 128, _Type_> {};
+template <class _Type_> struct _Maskz_assign<arch::ISA::AVX2, 128, _Type_> : _Maskz_assign<arch::ISA::AVX, 128, _Type_> {};
+template <class _Type_> struct _Maskz_assign<arch::ISA::FMA3, 128, _Type_> : _Maskz_assign<arch::ISA::AVX, 128, _Type_> {};
+template <class _Type_> struct _Maskz_assign<arch::ISA::AVX2FMA3, 128, _Type_> : _Maskz_assign<arch::ISA::AVX2, 128, _Type_> {};
 
 template <class _Type_> 
 struct _Maskz_assign<arch::ISA::AVX, 256, _Type_> {
@@ -35,10 +64,12 @@ struct _Maskz_assign<arch::ISA::AVX, 256, _Type_> {
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) raze_const_operator noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX, 256, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_>()(), __mask);
+		if constexpr (std::is_integral_v<_MaskType_>)
+			return _Blend<arch::ISA::AVX, 256, _Type_>()(__vector,
+				_Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_>()(), __mask);
+		else
+			return _And<arch::ISA::AVX, 256>()(__vector, __as<_IntrinType_>(__mask));
 	}
 };
 
@@ -50,10 +81,12 @@ struct _Maskz_assign<arch::ISA::AVX2, 256, _Type_> {
 	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) raze_const_operator noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX2, 256, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __mask);
+		if constexpr (std::is_integral_v<_MaskType_>)
+			return _Blend<arch::ISA::AVX2, 256, _Type_>()(__vector,
+				_Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()(), __mask);
+		else
+			return _And<arch::ISA::AVX2, 256>()(__vector, __as<_IntrinType_>(__mask));
 	}
 };
 
@@ -67,8 +100,7 @@ struct _Maskz_assign<arch::ISA::AVX512F, 512, _Type_> {
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512F, 512, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()(), __mask);
+		return _And<arch::ISA::AVX512F, 512>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
@@ -113,10 +145,8 @@ struct _Maskz_assign<arch::ISA::AVX512BW, 512, _Type_> :
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512BW, 512, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+		return _And<arch::ISA::AVX512F, 512>()(__vector, __as<_IntrinType_>(__mask));
 	}
-
 
 	template <
 		class _IntrinType_,
@@ -135,8 +165,7 @@ struct _Maskz_assign<arch::ISA::AVX512BW, 512, _Type_> :
 				__mask, __as<__m512i>(__vector)));
 
 		else
-			return _Blend<arch::ISA::AVX512BW, 512, _Type_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512BW, 512, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512F, 512, _Type_>()(__vector, __mask);
 	}
 };
 
@@ -152,10 +181,8 @@ struct _Maskz_assign<arch::ISA::AVX512VLF, 256, _Type_> :
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 256, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()(), __mask);
+		return _And<arch::ISA::AVX512VLF, 256>()(__vector, __as<_IntrinType_>(__mask));
 	}
-
 
 	template <
 		class _IntrinType_,
@@ -199,10 +226,8 @@ struct _Maskz_assign<arch::ISA::AVX512VLBW, 256, _Type_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLBW, 256, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __mask);
+		return _And<arch::ISA::AVX512VLBW, 256>()(__vector, __as<_IntrinType_>(__mask));
 	}
-
 
 	template <
 		class _IntrinType_,
@@ -221,8 +246,7 @@ struct _Maskz_assign<arch::ISA::AVX512VLBW, 256, _Type_>:
 				__mask, __as<__m256i>(__vector)));
 
 		else
-			return _Blend<arch::ISA::AVX512VLBW, 256, _Type_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 256, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __mask);
 	}
 };
 
@@ -238,8 +262,7 @@ struct _Maskz_assign<arch::ISA::AVX512VLF, 128, _Type_> :
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLF, 128, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX512VLF, 128, _IntrinType_>()(), __mask);
+		return _And<arch::ISA::AVX512VLF, 128>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
@@ -284,8 +307,7 @@ struct _Maskz_assign<arch::ISA::AVX512VLBW, 128, _Type_>:
 		_MaskType_		__mask) raze_const_operator noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _Blend<arch::ISA::AVX512VLBW, 128, _Type_>()(__vector,
-			_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+		return _And<arch::ISA::AVX512VLBW, 128>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
@@ -305,20 +327,9 @@ struct _Maskz_assign<arch::ISA::AVX512VLBW, 128, _Type_>:
 				__mask, __as<__m128i>(__vector)));
 
 		else
-			return _Blend<arch::ISA::AVX512VLBW, 128, _Type_>()(__vector,
-				_Broadcast_zeros<arch::ISA::AVX512VLBW, 128, _IntrinType_>()(), __mask);
+			return _Maskz_assign<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __mask);
 	}
 };
-
-
-template <class _Type_> struct _Maskz_assign<arch::ISA::SSE3, 128, _Type_> : _Maskz_assign<arch::ISA::SSE2, 128, _Type_> {};
-template <class _Type_> struct _Maskz_assign<arch::ISA::SSSE3, 128, _Type_> : _Maskz_assign<arch::ISA::SSE3, 128, _Type_> {};
-template <class _Type_> struct _Maskz_assign<arch::ISA::SSE41, 128, _Type_> : _Maskz_assign<arch::ISA::SSSE3, 128, _Type_> {};
-template <class _Type_> struct _Maskz_assign<arch::ISA::SSE42, 128, _Type_> : _Maskz_assign<arch::ISA::SSE41, 128, _Type_> {};
-template <class _Type_> struct _Maskz_assign<arch::ISA::AVX, 128, _Type_> : _Maskz_assign<arch::ISA::SSE42, 128, _Type_> {};
-template <class _Type_> struct _Maskz_assign<arch::ISA::AVX2, 128, _Type_> : _Maskz_assign<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Maskz_assign<arch::ISA::FMA3, 128, _Type_> : _Maskz_assign<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Maskz_assign<arch::ISA::AVX2FMA3, 128, _Type_> : _Maskz_assign<arch::ISA::AVX2, 128, _Type_> {};
 
 template <class _Type_> struct _Maskz_assign<arch::ISA::AVX512DQ, 512, _Type_> : _Maskz_assign<arch::ISA::AVX512F, 512, _Type_> {};
 template <class _Type_> struct _Maskz_assign<arch::ISA::AVX512BWDQ, 512, _Type_> : _Maskz_assign<arch::ISA::AVX512BW, 512, _Type_> {};

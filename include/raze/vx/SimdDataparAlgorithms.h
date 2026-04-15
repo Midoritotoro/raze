@@ -23,17 +23,6 @@ __RAZE_VX_NAMESPACE_BEGIN
  *  This function performs a horizontal reduction using addition, combining
  *  all lanes of the SIMD vector into a single scalar value.
 */
-//template <simd_type _Simd_>
-//raze_nodiscard raze_always_inline auto reduce_add(const _Simd_& __vector) noexcept {
-//	return _Reduce_add<_Simd_::__isa, _Simd_::__width,
-//		typename _Simd_::value_type>()(__data(__vector));
-//}
-//
-//template <non_memory_where_expression_type _WhereExpression_>
-//raze_nodiscard raze_always_inline auto reduce_add(const _WhereExpression_& __where) noexcept {
-//	return __where.__reduce_add();
-//}
-
 template <class _Options_>
 struct reduce_add_t:
 	raze::options::strict_elementwise_callable<reduce_add_t, _Options_>
@@ -58,10 +47,9 @@ struct reduce_add_t:
 			const auto __mask = __condition.mask(raze::options::as<_Mask_>{});
 
 			if constexpr (!_Mask_::has_alternative) {
-				return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
-					_Blend<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
-						__data(__vector), _Broadcast_zeros<_Simd_::__isa, _Simd_::__width,
-						typename _Simd_::vector_type>()(), __data(__mask)));
+				const auto __masked = _Maskz_assign<_Simd_::__isa, _Simd_::__width,
+					typename _Simd_::value_type>()(__data(__vector), __data(__mask));
+				return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(__masked);
 			}
 			else {
 				return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
