@@ -1,4 +1,4 @@
-#pragma once 
+ #pragma once 
 
 #include <src/raze/vx/SimdIntegralTypesCheck.h>
 

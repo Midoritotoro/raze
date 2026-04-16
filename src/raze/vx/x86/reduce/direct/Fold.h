@@ -21,10 +21,8 @@ struct _Fold<arch::ISA::SSE2, 128, _Type_> {
         _ReduceBinaryFunction_  __reduce) raze_const_operator noexcept
     {
         if constexpr (sizeof(_Type_) == 8) {
-            auto __folded = __as<__m128d>(__vector);
-
-            const auto __shuffled = _mm_shuffle_pd(__folded, __folded, 1);
-            __folded = __reduce(__shuffled, __folded);
+            auto __folded = __as<__m128i>(__vector);
+            __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
 
             if constexpr (__is_pd_v<_Type_>)
                 return _mm_cvtsd_f64(__folded);
@@ -34,11 +32,8 @@ struct _Fold<arch::ISA::SSE2, 128, _Type_> {
         else if constexpr (sizeof(_Type_) == 4) {
             auto __folded = __as<__m128i>(__vector);
 
-            const auto __shuffled1 = _mm_shuffle_epi32(__folded, 0x4E);
-            __folded = __reduce(__folded, __shuffled1);
-
-            const auto __shuffled2 = _mm_shuffle_epi32(__folded, 0xB1);
-            __folded = __reduce(__folded, __shuffled2);
+            __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
+            __folded = __reduce(__folded, _mm_srli_si128(__folded, 4));
 
             if constexpr (__is_ps_v<_Type_>)
                 return _mm_cvtss_f32(__as<__m128>(__folded));

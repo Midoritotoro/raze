@@ -168,11 +168,8 @@ set(PRIVATE_HEADERS
     src/raze/vx/IntrinBitcast.h
     src/raze/vx/SimdIntegralTypesCheck.h
     src/raze/vx/MaskTypeSelector.h
-    src/raze/vx/SimdMaskTypeCheck.h
 
     src/raze/vx/IsComparable.h
-    src/raze/vx/SimdDispatcher.h
-    src/raze/vx/SizedSimdDispatcher.h
     src/raze/concurrency/WindowsThread.h
     src/raze/concurrency/ThreadYield.h
     src/raze/concurrency/WindowsThreadPool.h
@@ -182,49 +179,55 @@ set(PRIVATE_HEADERS
     src/raze/algorithm/FixedMemcmp.h
     src/raze/algorithm/MsvcIteratorUnwrap.h
     src/raze/algorithm/SimdTransformable.h
-    
-    src/raze/vx/x86/bitwise/Andnot.h
-    src/raze/vx/x86/bitwise/MaskAndnot.h
-    src/raze/vx/x86/bitwise/MaskzAndnot.h
-    src/raze/vx/x86/bitwise/BitAnd.h
-    src/raze/vx/x86/bitwise/MaskBitAnd.h
-    src/raze/vx/x86/bitwise/MaskzBitAnd.h
-    src/raze/vx/x86/bitwise/BitOr.h
-    src/raze/vx/x86/bitwise/MaskBitOr.h
-    src/raze/vx/x86/bitwise/MaskzBitOr.h
-    src/raze/vx/x86/bitwise/BitXor.h
-    src/raze/vx/x86/bitwise/MaskBitXor.h
-    src/raze/vx/x86/bitwise/MaskzBitXor.h
-    src/raze/vx/x86/bitwise/BitNot.h
-    src/raze/vx/x86/bitwise/MaskBitNot.h
-    src/raze/vx/x86/bitwise/MaskzBitNot.h
-    src/raze/vx/x86/bitwise/ToMask.h
-    src/raze/vx/x86/bitwise/ToVector.h
-    src/raze/vx/x86/bitwise/ToBitmask.h
-    src/raze/vx/x86/bitwise/MaskConvert.h
-    src/raze/vx/x86/bitwise/Testz.h
-    src/raze/vx/x86/bitwise/TestAllOnes.h
-    src/raze/vx/x86/bitwise/BitmaskBitsPerElement.h
-    src/raze/vx/x86/bitwise/MaskImplementation.h
-    src/raze/vx/x86/bitwise/BitReference.h
-    src/raze/vx/x86/bitwise/MaskElementReference.h
-    src/raze/vx/x86/bitwise/SimdElementReference.h
-    src/raze/vx/x86/bitwise/SimdBoolReference.h
-    src/raze/vx/x86/bitwise/MaskIntrin.h
-    src/raze/vx/x86/bitwise/MaskOperations.h
-    src/raze/vx/x86/bitwise/MaskBits.h
-    src/raze/vx/x86/bitwise/FirstN.h
-    src/raze/vx/x86/bitwise/ToK.h
-    src/raze/vx/x86/bitwise/ToGPR.h
-    src/raze/vx/x86/bitwise/LeftShift.h
-    src/raze/vx/x86/bitwise/RightShift.h
-    src/raze/vx/x86/bitwise/MaskLeftShift.h
-    src/raze/vx/x86/bitwise/MaskzLeftShift.h
-    src/raze/vx/x86/bitwise/MaskRightShift.h
-    src/raze/vx/x86/bitwise/MaskzRightShift.h
-    src/raze/vx/x86/bitwise/Ternarylogic.h
-    src/raze/vx/x86/bitwise/MaskTernarylogic.h
-    src/raze/vx/x86/bitwise/MaskzTernarylogic.h
+
+    src/raze/vx/dispatch/SimdDispatcher.h
+    src/raze/vx/dispatch/SizedSimdDispatcher.h
+
+    src/raze/vx/reference/SimdElementReference.h
+    src/raze/vx/reference/SimdBoolReference.h
+    src/raze/vx/reference/BitReference.h
+
+    src/raze/vx/x86/mask/MaskIntrin.h
+    src/raze/vx/x86/mask/MaskOperations.h
+    src/raze/vx/x86/mask/MaskBits.h
+    src/raze/vx/x86/mask/FirstN.h
+    src/raze/vx/x86/mask/ToK.h
+    src/raze/vx/x86/mask/ToGPR.h
+    src/raze/vx/x86/mask/ToMask.h
+    src/raze/vx/x86/mask/ToVector.h
+    src/raze/vx/x86/mask/ToBitmask.h
+    src/raze/vx/x86/mask/BitmaskBitsPerElement.h
+    src/raze/vx/x86/mask/MaskImplementation.h
+    src/raze/vx/x86/mask/MaskElementReference.h
+
+    src/raze/vx/x86/bitwise/direct/Andnot.h
+    src/raze/vx/x86/bitwise/direct/BitAnd.h
+    src/raze/vx/x86/bitwise/direct/BitOr.h
+    src/raze/vx/x86/bitwise/direct/BitXor.h
+    src/raze/vx/x86/bitwise/direct/BitNot.h
+    src/raze/vx/x86/bitwise/direct/Testz.h
+    src/raze/vx/x86/bitwise/direct/TestAllOnes.h
+    src/raze/vx/x86/bitwise/direct/LeftShift.h
+    src/raze/vx/x86/bitwise/direct/RightShift.h
+    src/raze/vx/x86/bitwise/direct/Ternarylogic.h
+
+    src/raze/vx/x86/bitwise/fallback/Andnot.h
+    src/raze/vx/x86/bitwise/fallback/BitAnd.h
+    src/raze/vx/x86/bitwise/fallback/BitOr.h
+    src/raze/vx/x86/bitwise/fallback/BitXor.h
+    src/raze/vx/x86/bitwise/fallback/BitNot.h
+    src/raze/vx/x86/bitwise/fallback/LeftShift.h
+    src/raze/vx/x86/bitwise/fallback/RightShift.h
+    src/raze/vx/x86/bitwise/fallback/Ternarylogic.h
+
+    src/raze/vx/x86/bitwise/drop/Andnot.h
+    src/raze/vx/x86/bitwise/drop/BitAnd.h
+    src/raze/vx/x86/bitwise/drop/BitOr.h
+    src/raze/vx/x86/bitwise/drop/BitXor.h
+    src/raze/vx/x86/bitwise/drop/BitNot.h
+    src/raze/vx/x86/bitwise/drop/LeftShift.h
+    src/raze/vx/x86/bitwise/drop/RightShift.h
+    src/raze/vx/x86/bitwise/drop/Ternarylogic.h
 
     src/raze/vx/x86/arithmetic/Sub.h
     src/raze/vx/x86/arithmetic/MaskSub.h
@@ -247,7 +250,7 @@ set(PRIVATE_HEADERS
     src/raze/vx/x86/arithmetic/VerticalMin.h
     src/raze/vx/x86/arithmetic/MaskVerticalMin.h
     src/raze/vx/x86/arithmetic/VerticalMin.h
-    src/raze/vx/x86/arithmetic/Abs.h
+    "src/raze/vx/x86/arithmetic/direct/Abs.h"
     src/raze/vx/x86/arithmetic/MaskAbs.h
     src/raze/vx/x86/arithmetic/MaskzAbs.h
     src/raze/vx/x86/arithmetic/Divisor.h
