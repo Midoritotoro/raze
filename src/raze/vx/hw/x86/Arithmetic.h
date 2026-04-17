@@ -1,0 +1,40 @@
+#pragma once 
+
+#include <src/raze/vx/hw/x86/arithmetic/direct/Abs.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Add.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Div.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fma.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fms.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fnma.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fnms.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Mul.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Negate.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Sub.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/VerticalMax.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/VerticalMin.h>
+
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Abs.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Add.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Div.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Fma.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Fms.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Fnma.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Fnms.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Mul.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Negate.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/Sub.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/VerticalMax.h>
+#include <src/raze/vx/hw/x86/arithmetic/fallback/VerticalMin.h>
+
+#include <src/raze/vx/hw/x86/arithmetic/drop/Abs.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Add.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Div.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Fma.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Fms.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Fnma.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Fnms.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Mul.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Negate.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/Sub.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/VerticalMax.h>
+#include <src/raze/vx/hw/x86/arithmetic/drop/VerticalMin.h>

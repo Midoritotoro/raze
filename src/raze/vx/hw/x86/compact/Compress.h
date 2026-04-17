@@ -1,7 +1,7 @@
 #pragma once 
 
 #include <src/raze/vx/IntrinBitcast.h>
-#include <src/raze/vx/shuffle/ShuffleTables.h>
+#include <src/raze/vx/shuffle/CompressTables.h>
 
 #include <src/raze/vx/bitwise/ToMask.h>
 #include <src/raze/vx/bitwise/ToVector.h>

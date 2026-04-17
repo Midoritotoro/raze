@@ -165,11 +165,10 @@ set(PRIVATE_HEADERS
 
     "src/raze/utility/Assert.h"
 
-    src/raze/vx/IntrinBitcast.h
-    src/raze/vx/SimdIntegralTypesCheck.h
-    src/raze/vx/MaskTypeSelector.h
+    src/raze/vx/hw/x86/cast/As.h
+    src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h
 
-    src/raze/vx/IsComparable.h
+    src/raze/algorithm/IsComparable.h
     src/raze/concurrency/WindowsThread.h
     src/raze/concurrency/ThreadYield.h
     src/raze/concurrency/WindowsThreadPool.h
@@ -187,6 +186,7 @@ set(PRIVATE_HEADERS
     src/raze/vx/reference/SimdBoolReference.h
     src/raze/vx/reference/BitReference.h
 
+    src/raze/vx/hw/x86/mask/MaskTypeSelector.h
     src/raze/vx/x86/mask/MaskIntrin.h
     src/raze/vx/x86/mask/MaskOperations.h
     src/raze/vx/x86/mask/MaskBits.h
@@ -229,53 +229,35 @@ set(PRIVATE_HEADERS
     src/raze/vx/x86/bitwise/drop/RightShift.h
     src/raze/vx/x86/bitwise/drop/Ternarylogic.h
 
-    src/raze/vx/x86/arithmetic/Sub.h
-    src/raze/vx/x86/arithmetic/MaskSub.h
-    src/raze/vx/x86/arithmetic/MaskzSub.h
-    src/raze/vx/x86/arithmetic/Add.h
-    src/raze/vx/x86/arithmetic/MaskAdd.h
-    src/raze/vx/x86/arithmetic/MaskzAdd.h
-    src/raze/vx/x86/arithmetic/Mul.h
-    src/raze/vx/x86/arithmetic/MaskMul.h
-    src/raze/vx/x86/arithmetic/MaskzMul.h
-    src/raze/vx/x86/arithmetic/Div.h
-    src/raze/vx/x86/arithmetic/MaskDiv.h
-    src/raze/vx/x86/arithmetic/MaskzDiv.h
-    src/raze/vx/x86/arithmetic/Negate.h
-    src/raze/vx/x86/arithmetic/MaskNegate.h
-    src/raze/vx/x86/arithmetic/MaskzNegate.h
-    src/raze/vx/x86/arithmetic/VerticalMax.h
-    src/raze/vx/x86/arithmetic/MaskVerticalMax.h
-    src/raze/vx/x86/arithmetic/MaskzVerticalMax.h
-    src/raze/vx/x86/arithmetic/VerticalMin.h
-    src/raze/vx/x86/arithmetic/MaskVerticalMin.h
-    src/raze/vx/x86/arithmetic/VerticalMin.h
-    "src/raze/vx/x86/arithmetic/direct/Abs.h"
-    src/raze/vx/x86/arithmetic/MaskAbs.h
-    src/raze/vx/x86/arithmetic/MaskzAbs.h
     src/raze/vx/x86/arithmetic/Divisor.h
-    src/raze/vx/x86/arithmetic/Fma.h
-    src/raze/vx/x86/arithmetic/Fnma.h
-    src/raze/vx/x86/arithmetic/Fms.h
-    src/raze/vx/x86/arithmetic/Fnms.h
-    src/raze/vx/x86/arithmetic/MaskFma.h
-    src/raze/vx/x86/arithmetic/MaskFnma.h
-    src/raze/vx/x86/arithmetic/MaskFms.h
-    src/raze/vx/x86/arithmetic/MaskFnms.h
-    src/raze/vx/x86/arithmetic/MaskzFma.h
-    src/raze/vx/x86/arithmetic/MaskzFnma.h
-    src/raze/vx/x86/arithmetic/MaskzFms.h
-    src/raze/vx/x86/arithmetic/MaskzFnms.h
+    src/raze/vx/x86/arithmetic/direct/Sub.h
+    src/raze/vx/x86/arithmetic/direct/Add.h
+    src/raze/vx/x86/arithmetic/direct/Mul.h
+    src/raze/vx/x86/arithmetic/direct/Div.h
+    src/raze/vx/x86/arithmetic/direct/Negate.h
+    src/raze/vx/x86/arithmetic/direct/VerticalMax.h
+    src/raze/vx/x86/arithmetic/direct/VerticalMin.h
+    src/raze/vx/x86/arithmetic/direct/Abs.h
+    src/raze/vx/x86/arithmetic/direct/Fma.h
+    src/raze/vx/x86/arithmetic/direct/Fnma.h
+    src/raze/vx/x86/arithmetic/direct/Fms.h
+    src/raze/vx/x86/arithmetic/direct/Fnms.h
 
-    src/raze/vx/x86/compare/Less.h
-    src/raze/vx/x86/compare/LessEqual.h
-    src/raze/vx/x86/compare/Greater.h
-    src/raze/vx/x86/compare/GreaterEqual.h
-    src/raze/vx/x86/compare/Equal.h
-    src/raze/vx/x86/compare/NotEqual.h
+    src/raze/vx/x86/compare/direct/Less.h
+    src/raze/vx/x86/compare/direct/LessEqual.h
+    src/raze/vx/x86/compare/direct/Greater.h
+    src/raze/vx/x86/compare/direct/GreaterEqual.h
+    src/raze/vx/x86/compare/direct/Equal.h
+    src/raze/vx/x86/compare/direct/NotEqual.h
+
+    src/raze/vx/x86/compare/drop/Less.h
+    src/raze/vx/x86/compare/drop/LessEqual.h
+    src/raze/vx/x86/compare/drop/Greater.h
+    src/raze/vx/x86/compare/drop/GreaterEqual.h
+    src/raze/vx/x86/compare/drop/Equal.h
+    src/raze/vx/x86/compare/drop/NotEqual.h
 
     src/raze/vx/x86/memory/MaskStoreIntrin.h
-    src/raze/vx/x86/memory/CompressStore.h
     src/raze/vx/x86/memory/Load.h
     src/raze/vx/x86/memory/Store.h
     src/raze/vx/x86/memory/MaskLoad.h
@@ -291,22 +273,41 @@ set(PRIVATE_HEADERS
     src/raze/vx/x86/memory/NtMFence.h
     src/raze/vx/x86/memory/Prefetch.h
 
-    src/raze/vx/x86/reduce/ReduceAdd.h
     src/raze/vx/x86/reduce/ReduceAddType.h
-    src/raze/vx/x86/reduce/Fold.h
-    src/raze/vx/x86/reduce/HorizontalMax.h
-    src/raze/vx/x86/reduce/HorizontalMin.h
 
-    src/raze/vx/x86/shuffle/ShuffleTables.h
-    src/raze/vx/x86/shuffle/MaskExpand.h
-    src/raze/vx/x86/shuffle/Insert.h
-    src/raze/vx/x86/shuffle/InsertMask.h
-    src/raze/vx/x86/shuffle/Extract.h
-    src/raze/vx/x86/shuffle/Compress.h
-    src/raze/vx/x86/shuffle/Broadcast.h
-    src/raze/vx/x86/shuffle/BroadcastZeros.h
+    src/raze/vx/x86/reduce/direct/ReduceAdd.h
+    src/raze/vx/x86/reduce/direct/Fold.h
+    src/raze/vx/x86/reduce/direct/HorizontalMax.h
+    src/raze/vx/x86/reduce/direct/HorizontalMin.h
+
+    src/raze/vx/x86/reduce/drop/ReduceAdd.h
+    src/raze/vx/x86/reduce/drop/HorizontalMax.h
+    src/raze/vx/x86/reduce/drop/HorizontalMin.h
+
+    src/raze/vx/x86/reduce/fallback/ReduceAdd.h
+    src/raze/vx/x86/reduce/fallback/HorizontalMax.h
+    src/raze/vx/x86/reduce/fallback/HorizontalMin.h
+
+    src/raze/vx/x86/access/Insert.h
+    src/raze/vx/x86/access/Extract.h
+    src/raze/vx/x86/access/InsertMask.h
+
+    src/raze/vx/x86/compact/Compress.h
+    src/raze/vx/x86/compact/CompressStore.h
+    src/raze/vx/x86/compact/CompressTables.h
+
+    src/raze/vx/x86/merge/Select.h
+    src/raze/vx/x86/merge/Selectz.h
+
+    src/raze/vx/x86/construct/direct/Broadcast.h
+    src/raze/vx/x86/construct/drop/Broadcast.h
+    src/raze/vx/x86/construct/fallback/Broadcast.h
+
+    src/raze/vx/x86/construct/Set.h
+    src/raze/vx/x86/construct/Iota.h
+    src/raze/vx/x86/construct/Zero.h
+
     src/raze/vx/x86/shuffle/Reverse.h
-    src/raze/vx/x86/shuffle/Blend.h
     src/raze/vx/x86/shuffle/SlideLeft.h
     src/raze/vx/x86/shuffle/SlideRight.h
     src/raze/vx/x86/shuffle/RotateLeft.h

@@ -2,11 +2,11 @@
 
 
 #include <src/raze/vx/expression/lazy/AsTernaryMask.h>
-#include <src/raze/vx/bitwise/MaskImplementation.h>
-#include <src/raze/vx/arithmetic/Fma.h>
-#include <src/raze/vx/arithmetic/Fms.h>
-#include <src/raze/vx/arithmetic/Fnms.h>
-#include <src/raze/vx/arithmetic/Fnma.h>
+#include <src/raze/vx/hw/x86/mask/MaskImplementation.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fma.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fms.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fnms.h>
+#include <src/raze/vx/hw/x86/arithmetic/direct/Fnma.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

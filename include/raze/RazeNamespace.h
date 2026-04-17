@@ -61,6 +61,26 @@
 
 
 
+#ifndef __RAZE_VX_DROP_NAMESPACE_BEGIN 
+#define __RAZE_VX_DROP_NAMESPACE_BEGIN namespace raze { namespace vx { namespace drop {
+#endif // __RAZE_VX_DROP_NAMESPACE_BEGIN
+
+#ifndef __RAZE_VX_DROP_NAMESPACE_END
+#define __RAZE_VX_DROP_NAMESPACE_END }}}
+#endif // __RAZE_VX_DROP_NAMESPACE_END
+
+
+
+#ifndef __RAZE_VX_FALLBACK_NAMESPACE_BEGIN 
+#define __RAZE_VX_FALLBACK_NAMESPACE_BEGIN namespace raze { namespace vx { namespace fallback {
+#endif // __RAZE_VX_FALLBACK_NAMESPACE_BEGIN
+
+#ifndef __RAZE_VX_FALLBACK_NAMESPACE_END
+#define __RAZE_VX_FALLBACK_NAMESPACE_END }}}
+#endif // __RAZE_VX_FALLBACK_NAMESPACE_END
+
+
+
 #ifndef __RAZE_MEMORY_NAMESPACE_BEGIN 
 #define __RAZE_MEMORY_NAMESPACE_BEGIN namespace raze { namespace memory {
 #endif // __RAZE_MEMORY_NAMESPACE_BEGIN

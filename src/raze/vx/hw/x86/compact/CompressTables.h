@@ -8,7 +8,7 @@ template <
     sizetype _VerticalSize_,
     sizetype _HorizontalSize_,
     sizetype _Alignment_>
-struct _Shuffle_tables {
+struct _Compress_tables {
     alignas(_Alignment_) uint8 __size[_VerticalSize_];
     alignas(_Alignment_) uint8 __shuffle[_VerticalSize_][_HorizontalSize_];
 };
@@ -17,11 +17,11 @@ template <
     sizetype _VerticalSize_,
     sizetype _HorizontalSize_,
     sizetype _Alignment_>
-constexpr auto __make_shuffle_tables(
+constexpr auto __make_compress_tables(
     const uint32 __multiplier,
     const uint32 __element_group_stride) noexcept
 {
-    auto __result = _Shuffle_tables<_VerticalSize_, _HorizontalSize_, _Alignment_>();
+    auto __result = _Compress_tables<_VerticalSize_, _HorizontalSize_, _Alignment_>();
 
     for (auto __vertical_index = uint32(0); __vertical_index != _VerticalSize_; ++__vertical_index) {
         auto __active_group_count = uint32(0);
@@ -50,31 +50,31 @@ constexpr auto __make_shuffle_tables(
 template <sizetype _Size_> 
 constexpr auto __tables_sse = [] { 
     static_assert(_Size_ == 1 || _Size_ == 2 || _Size_ == 4 || _Size_ == 8, "Unsupported element size for __tables_sse");
-    return _Shuffle_tables<1, 1, 16>();
+    return _Compress_tables<1, 1, 16>();
 }();
 
 template <>
-constexpr auto __tables_sse<1>  = __make_shuffle_tables<256, 8, 16>(1, 1);
+constexpr auto __tables_sse<1>  = __make_compress_tables<256, 8, 16>(1, 1);
 
 template <>
-constexpr auto __tables_sse<2>  = __make_shuffle_tables<256, 16, 16>(2, 2);
+constexpr auto __tables_sse<2>  = __make_compress_tables<256, 16, 16>(2, 2);
 
 template <>
-constexpr auto __tables_sse<4>  = __make_shuffle_tables<16, 16, 16>(4, 4);
+constexpr auto __tables_sse<4>  = __make_compress_tables<16, 16, 16>(4, 4);
 
 template <>
-constexpr auto __tables_sse<8>  = __make_shuffle_tables<4, 16, 16>(8, 8);
+constexpr auto __tables_sse<8>  = __make_compress_tables<4, 16, 16>(8, 8);
 
 template <sizetype _Size_>
 constexpr auto __tables_avx = [] { 
     static_assert(_Size_ == 1 || _Size_ == 2 || _Size_ == 4 || _Size_ == 8, "Unsupported element size for __tables_avx");
-    return _Shuffle_tables<1, 1, 16>();
+    return _Compress_tables<1, 1, 16>();
 }();
 
 template <>
-constexpr auto __tables_avx<4> = __make_shuffle_tables<256, 8, 16>(4, 1);
+constexpr auto __tables_avx<4> = __make_compress_tables<256, 8, 16>(4, 1);
 
 template <>
-constexpr auto __tables_avx<8> = __make_shuffle_tables<16, 8, 16>(8, 2);
+constexpr auto __tables_avx<8> = __make_compress_tables<16, 8, 16>(8, 2);
 
 __RAZE_VX_NAMESPACE_END
