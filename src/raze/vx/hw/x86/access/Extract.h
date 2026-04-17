@@ -1,13 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/Sub.h>
-#include <src/raze/vx/shuffle/Broadcast.h>
-
 #include <raze/memory/PointerToIntegral.h>
-#include <src/raze/vx/shuffle/InsertMask.h>
-
-#include <src/raze/vx/memory/Load.h>
-#include <src/raze/vx/shuffle/Blend.h>
+#include <src/raze/vx/hw/x86/memory/Load.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

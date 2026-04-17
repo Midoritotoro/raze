@@ -1,8 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
+#include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>
 #include <src/raze/type_traits/SimdTypeCheck.h>
-
 #include <raze/compatibility/Inline.h>
 
 
@@ -12,7 +11,7 @@ template <
     class _ToVector_,
     class _FromVector_>
 raze_nodiscard raze_always_inline _ToVector_ __as(_FromVector_ __from) noexcept 
-    requires (__is_intrin_type_v<_FromVector_> && __is_intrin_type_v<_ToVector_>)
+    requires(__is_intrin_type_v<_FromVector_> && __is_intrin_type_v<_ToVector_>)
 {
     using _RawFrom_ = std::remove_cvref_t<_FromVector_>;
     using _RawTo_   = std::remove_cvref_t<_ToVector_>;
