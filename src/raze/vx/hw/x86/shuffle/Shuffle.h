@@ -1,11 +1,10 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
-#include <src/raze/vx/memory/Store.h>
-#include <src/raze/vx/memory/Load.h>
-#include <src/raze/vx/shuffle/BroadcastZeros.h>
-#include <src/raze/vx/shuffle/SlideRight.h>
-#include <src/raze/vx/shuffle/Blend.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/memory/Store.h>
+#include <src/raze/vx/hw/x86/memory/Load.h>
+#include <src/raze/vx/hw/x86/construct/Zero.h>
+#include <src/raze/vx/hw/x86/shuffle/SlideRight.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

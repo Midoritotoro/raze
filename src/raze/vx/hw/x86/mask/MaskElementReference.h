@@ -1,8 +1,8 @@
 #pragma once 
 
-#include <src/raze/vx/bitwise/MaskImplementation.h>
-#include <src/raze/vx/bitwise/BitReference.h>
-#include <src/raze/vx/bitwise/SimdBoolReference.h>
+#include <src/raze/vx/hw/x86/mask/MaskImplementation.h>
+#include <src/raze/vx/reference/BitReference.h>
+#include <src/raze/vx/reference/SimdBoolReference.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

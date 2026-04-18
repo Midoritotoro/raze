@@ -1,8 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/Sub.h>
-#include <src/raze/vx/shuffle/BroadcastZeros.h>
-
+#include <src/raze/vx/hw/x86/cast/As.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

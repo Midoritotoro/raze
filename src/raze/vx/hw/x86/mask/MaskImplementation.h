@@ -1,21 +1,20 @@
 #pragma once 
 
-#include <src/raze/vx/bitwise/Testz.h>
-#include <src/raze/vx/bitwise/TestAllOnes.h>
-#include <src/raze/vx/MaskTypeSelector.h>
+#include <src/raze/vx/hw/x86/bitwise/Testz.h>
+#include <src/raze/vx/hw/x86/bitwise/TestAllOnes.h>
+#include <src/raze/vx/hw/x86/mask/MaskTypeSelector.h>
 #include <raze/vx/SimdBitmask.h>
 #include <raze/math/BitMath.h>
-#include <src/raze/vx/bitwise/ToMask.h>
-#include <src/raze/vx/bitwise/ToVector.h>
-#include <src/raze/vx/memory/MaskzLoad.h>
-#include <src/raze/vx/bitwise/FirstN.h>
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
+#include <src/raze/vx/hw/x86/mask/ToMask.h>
+#include <src/raze/vx/hw/x86/mask/ToVector.h>
+#include <src/raze/vx/hw/x86/memory/MaskzLoad.h>
+#include <src/raze/vx/hw/x86/mask/FirstN.h>
 #include <raze/algorithm/minmax/Max.h>
-#include <src/raze/vx/shuffle/SlideLeft.h>
-#include <src/raze/vx/shuffle/SlideRight.h>
+#include <src/raze/vx/hw/x86/shuffle/SlideLeft.h>
+#include <src/raze/vx/hw/x86/shuffle/SlideRight.h>
 #include <src/raze/math/BitTestAndReset.h>
 #include <src/raze/math/BitTest.h>
-#include <src/raze/vx/bitwise/MaskOperations.h>
+#include <src/raze/vx/hw/x86/mask/MaskOperations.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

@@ -1,8 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/memory/Store.h>
-#include <src/raze/vx/bitwise/MaskConvert.h>
-#include <src/raze/vx/shuffle/Compress.h>
+#include <src/raze/vx/hw/x86/memory/Store.h>
+#include <src/raze/vx/hw/x86/compact/Compress.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

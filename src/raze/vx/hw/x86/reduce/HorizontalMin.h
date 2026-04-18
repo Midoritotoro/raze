@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/VerticalMin.h>
-#include <src/raze/vx/reduce/Fold.h>
+#include <src/raze/vx/hw/x86/arithmetic/VerticalMin.h>
+#include <src/raze/vx/hw/x86/reduce/Fold.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

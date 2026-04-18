@@ -1,10 +1,9 @@
 #pragma once 
 
-#include <src/raze/vx/memory/Load.h>
-#include <src/raze/vx/memory/Store.h>
-#include <src/raze/vx/shuffle/Blend.h>
-#include <src/raze/vx/bitwise/MaskConvert.h>
-#include <src/raze/vx/memory/MaskStoreIntrin.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
+#include <src/raze/vx/hw/x86/memory/Load.h>
+#include <src/raze/vx/hw/x86/memory/Store.h>
+#include <src/raze/vx/hw/x86/memory/MaskStoreIntrin.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/reduce/ReduceAddType.h>
-#include <src/raze/vx/arithmetic/Add.h>
+#include <src/raze/vx/hw/x86/reduce/ReduceAddType.h>
+#include <src/raze/vx/hw/x86/arithmetic/Add.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

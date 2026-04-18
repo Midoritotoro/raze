@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/memory/MaskLoad.h>
-#include <src/raze/vx/shuffle/BroadcastZeros.h>
+#include <src/raze/vx/hw/x86/memory/MaskLoad.h>
+#include <src/raze/vx/hw/x86/construct/Zero.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

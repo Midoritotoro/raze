@@ -1,12 +1,9 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/Sub.h>
-#include <src/raze/vx/shuffle/BroadcastZeros.h>
-
 #include <raze/memory/PointerToIntegral.h>
 #include <raze/math/IntegralTypesConversions.h>
 
-#include <src/raze/vx/MaskTypeSelector.h>
+#include <src/raze/vx/hw/x86/mask/MaskTypeSelector.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -20,8 +17,8 @@ struct _To_mask;
 template <class _Type_>
 struct _To_mask<arch::ISA::SSE2, 128, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline 
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline 
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x10 / sizeof(_Type_)>;
 
@@ -45,8 +42,8 @@ struct _To_mask<arch::ISA::SSE2, 128, _Type_> {
 template <class _Type_> 
 struct _To_mask<arch::ISA::AVX, 256, _Type_> {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_Type_)>;
 
@@ -75,8 +72,8 @@ struct _To_mask<arch::ISA::AVX, 256, _Type_> {
 template <class _Type_>
 struct _To_mask<arch::ISA::AVX2, 256, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline 
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline 
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_Type_)>;
 
@@ -104,8 +101,8 @@ struct _To_mask<arch::ISA::AVX2, 256, _Type_> {
 template <class _Type_>
 struct _To_mask<arch::ISA::AVX512F, 512, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline 
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept 
+	raze_nodiscard raze_always_inline 
+        auto operator()(_IntrinType_ __vector) const noexcept 
     {
         using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_Type_)>;
 
@@ -136,8 +133,8 @@ struct _To_mask<arch::ISA::AVX512BW, 512, _Type_>:
     _To_mask<arch::ISA::AVX512F, 512, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline 
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept 
+    raze_nodiscard raze_always_inline 
+        auto operator()(_IntrinType_ __vector) const noexcept 
     {
         using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_Type_)>;
 
@@ -160,8 +157,8 @@ struct _To_mask<arch::ISA::AVX512BWDQ, 512, _Type_>:
     _To_mask<arch::ISA::AVX512BW, 512, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_Type_)>;
 
@@ -187,8 +184,8 @@ struct _To_mask<arch::ISA::AVX512DQ, 512, _Type_>:
     _To_mask<arch::ISA::AVX512F, 512, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_Type_)>;
 
@@ -211,8 +208,8 @@ struct _To_mask<arch::ISA::AVX512VLBW, 256, _Type_>:
     _To_mask<arch::ISA::AVX512VLF, 256, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_Type_)>;
 
@@ -235,8 +232,8 @@ struct _To_mask<arch::ISA::AVX512VLDQ, 256, _Type_>:
     _To_mask<arch::ISA::AVX512VLF, 256, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_Type_)>;
 
@@ -259,8 +256,8 @@ struct _To_mask<arch::ISA::AVX512VLBW, 128, _Type_>:
     _To_mask<arch::ISA::AVX512VLF, 128, _Type_> 
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x10 / sizeof(_Type_)>;
 
@@ -283,8 +280,8 @@ struct _To_mask<arch::ISA::AVX512VLDQ, 128, _Type_>:
     _To_mask<arch::ISA::AVX512VLF, 128, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         using _MaskType = __mmask_for_elements_t<0x10 / sizeof(_Type_)>;
 
@@ -307,12 +304,11 @@ struct _To_mask<arch::ISA::AVX512VLBWDQ, 128, _Type_>:
     _To_mask<arch::ISA::AVX512VLBW, 128, _Type_> 
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
-
         else if constexpr (sizeof(_Type_) <= 2)
             return _To_mask<arch::ISA::AVX512VLBW, 128, _Type_>()(__vector);
         else
@@ -325,12 +321,11 @@ struct _To_mask<arch::ISA::AVX512VLBWDQ, 256, _Type_> :
     _To_mask<arch::ISA::AVX512VLBW, 256, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(_IntrinType_ __vector) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(_IntrinType_ __vector) const noexcept
     {
         if constexpr (std::is_integral_v<_IntrinType_>)
             return __vector;
-
         else if constexpr (sizeof(_Type_) <= 2)
             return _To_mask<arch::ISA::AVX512VLBW, 256, _Type_>()(__vector);
         else

@@ -6,7 +6,7 @@
 #include <src/raze/type_traits/IntegralProperties.h>
 #include <src/raze/type_traits/TypeCheck.h>
 
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
+#include <src/raze/vx/hw/Cast.h>
 
 
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN

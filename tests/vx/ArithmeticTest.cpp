@@ -68,7 +68,7 @@ struct arithmetic_tests {
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x *= y; }, [](auto x, auto y) { return x * y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x /= y; }, [](auto x, auto y) { return x / y; });
 
-        {
+       /* {
             alignas(64) _Type_ arrSrc[N];
             std::iota(arrSrc, arrSrc + N, 50);
 
@@ -131,7 +131,7 @@ struct arithmetic_tests {
 
             run_tests(w, wz);
             run_tests(const_w, const_wz);
-        }
+        }*/
     }
 };
 

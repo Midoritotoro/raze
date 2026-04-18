@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
-#include <src/raze/vx/bitwise/ToMask.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/mask/ToMask.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -15,9 +15,9 @@ struct _Equal;
 template <class _Type_>
 struct _Equal<arch::ISA::SSE2, 128, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+	raze_nodiscard raze_always_inline auto operator()(
 		_IntrinType_ __left,
-		_IntrinType_ __right) raze_const_operator noexcept
+		_IntrinType_ __right) const noexcept
 	{
         if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
             const auto __equal_mask = _mm_cmpeq_epi32(
@@ -56,9 +56,9 @@ struct _Equal<arch::ISA::SSE41, 128, _Type_>:
     _Equal<arch::ISA::SSSE3, 128, _Type_> 
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)
             return __as<_IntrinType_>(_mm_cmpeq_epi64(
@@ -89,9 +89,9 @@ struct _Equal<arch::ISA::SSE41, 128, _Type_>:
 template <class _Type_>
 struct _Equal<arch::ISA::AVX, 256, _Type_> {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_pd_v<_Type_>) {
             return __as<_IntrinType_>(_mm256_cmp_pd(
@@ -120,9 +120,9 @@ template <class _Type_> struct _Equal<arch::ISA::FMA3, 256, _Type_> : _Equal<arc
 template <class _Type_>
 struct _Equal<arch::ISA::AVX2, 256, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+	raze_nodiscard raze_always_inline auto operator()(
 		_IntrinType_ __left,
-		_IntrinType_ __right) raze_const_operator noexcept
+		_IntrinType_ __right) const noexcept
 	{
         if constexpr (__is_pd_v<_Type_>)
             return __as<_IntrinType_>(_mm256_cmp_pd(
@@ -155,9 +155,9 @@ template <class _Type_> struct _Equal<arch::ISA::AVX2FMA3, 256, _Type_> : _Equal
 template <class _Type_>
 struct _Equal<arch::ISA::AVX512F, 512, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+	raze_nodiscard raze_always_inline auto operator()(
 		_IntrinType_ __left,
-		_IntrinType_ __right) raze_const_operator noexcept
+		_IntrinType_ __right) const noexcept
 	{
         if constexpr (__is_pd_v<_Type_>) {
             return _mm512_cmpeq_pd_mask(__as<__m512d>(__left), __as<__m512d>(__right));
@@ -199,9 +199,9 @@ struct _Equal<arch::ISA::AVX512BW, 512, _Type_>:
     _Equal<arch::ISA::AVX512F, 512, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_pd_v<_Type_>)
             return _mm512_cmpeq_pd_mask(__as<__m512d>(__left), __as<__m512d>(__right));
@@ -228,9 +228,9 @@ struct _Equal<arch::ISA::AVX512VLF, 256, _Type_>:
     _Equal<arch::ISA::AVX2, 256, _Type_> 
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_pd_v<_Type_>)
             return _mm256_cmp_pd_mask(__as<__m256d>(__left), __as<__m256d>(__right), _CMP_EQ_OQ);
@@ -254,9 +254,9 @@ struct _Equal<arch::ISA::AVX512VLBW, 256, _Type_>:
     _Equal<arch::ISA::AVX512VLF, 256, _Type_> 
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi16_v<_Type_>)
             return _mm256_cmpeq_epi16_mask(__as<__m256i>(__left), __as<__m256i>(__right));
@@ -280,9 +280,9 @@ struct _Equal<arch::ISA::AVX512VLF, 128, _Type_>:
     _Equal<arch::ISA::AVX2, 128, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_pd_v<_Type_>)
             return _mm_cmp_pd_mask(__as<__m128d>(__left), __as<__m128d>(__right), _CMP_EQ_OQ);
@@ -306,9 +306,9 @@ struct _Equal<arch::ISA::AVX512VLBW, 128, _Type_>:
     _Equal<arch::ISA::AVX512VLF, 128, _Type_> 
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi16_v<_Type_>)
             return _mm_cmpeq_epi16_mask(__as<__m128i>(__left), __as<__m128i>(__right));

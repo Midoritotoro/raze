@@ -1,8 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/compare/Equal.h>
-#include <src/raze/vx/bitwise/BitNot.h>
-
+#include <src/raze/vx/hw/x86/compare/Equal.h>
+#include <src/raze/vx/hw/x86/bitwise/BitNot.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -12,9 +11,9 @@ template <
     class		_Type_>
 struct _Not_equal {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         const auto __compared = _Equal<_ISA_, _Width_, _Type_>()(__left, __right);
         using _ComparedType = decltype(__compared);

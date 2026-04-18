@@ -1,7 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/bitwise/MaskConvert.h>
-#include <src/raze/vx/MaskTypeSelector.h>
+#include <src/raze/vx/hw/x86/mask/MaskTypeSelector.h>
 #include <raze/algorithm/minmax/Min.h>
 #include <array>
 
@@ -36,8 +35,8 @@ struct _First_n;
 
 template <class _Type_>
 struct _First_n<arch::ISA::SSE2, 128, _Type_> {
-	raze_nodiscard raze_static_operator raze_always_inline 
-		auto operator()(uint32 __elements) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline 
+		auto operator()(uint32 __elements) const noexcept
 	{
 		alignas(16) static constexpr uint32 __first_n_mask[8] =  { ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0 };
         const auto __bytes = __elements * sizeof(_Type_);
@@ -49,8 +48,8 @@ struct _First_n<arch::ISA::SSE2, 128, _Type_> {
 
 template <class _Type_>
 struct _First_n<arch::ISA::AVX, 256, _Type_> {
-    raze_nodiscard raze_static_operator raze_always_inline
-		auto operator()(uint32 __elements) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+		auto operator()(uint32 __elements) const noexcept
 	{
 		alignas(32) static constexpr uint32 __first_n_mask[16] = 
 			{ ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -63,8 +62,8 @@ struct _First_n<arch::ISA::AVX, 256, _Type_> {
 
 template <class _Type_>
 struct _First_n<arch::ISA::AVX2, 256, _Type_> {
-	raze_nodiscard raze_static_operator raze_always_inline
-		auto operator()(uint32 __elements) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline
+		auto operator()(uint32 __elements) const noexcept
 	{
 		alignas(32) static constexpr uint32 __first_n_mask[16] = 
 			{ ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -77,8 +76,8 @@ struct _First_n<arch::ISA::AVX2, 256, _Type_> {
 
 template <class _Type_>
 struct _First_n<arch::ISA::AVX512F, 512, _Type_> {
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(uint32 __elements) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(uint32 __elements) const noexcept
     {
         constexpr auto __length = sizeof(__m512i) / sizeof(_Type_);
 
@@ -106,8 +105,8 @@ template <class _Type_>
 struct _First_n<arch::ISA::AVX512BW, 512, _Type_> :
     _First_n<arch::ISA::AVX512F, 512, _Type_>
 {
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(uint32 __elements) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(uint32 __elements) const noexcept
     {
         constexpr auto __length = sizeof(__m512i) / sizeof(_Type_);
         using _MaskType = __mmask_for_elements_t<__length>;
@@ -120,8 +119,8 @@ template <class _Type_>
 struct _First_n<arch::ISA::AVX512VLF, 256, _Type_> :
     _First_n<arch::ISA::AVX2, 256, _Type_>
 {
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(uint32 __elements) raze_const_operator noexcept 
+    raze_nodiscard raze_always_inline
+        auto operator()(uint32 __elements) const noexcept 
     {
         constexpr auto __length = sizeof(__m256i) / sizeof(_Type_);
 
@@ -148,8 +147,8 @@ template <class _Type_>
 struct _First_n<arch::ISA::AVX512VLBW, 256, _Type_> :
     _First_n<arch::ISA::AVX512VLF, 256, _Type_>
 {
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(uint32 __elements) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(uint32 __elements) const noexcept
     {
         constexpr auto __length = sizeof(__m256i) / sizeof(_Type_);
         using _MaskType = __mmask_for_elements_t<__length>;
@@ -162,8 +161,8 @@ template <class _Type_>
 struct _First_n<arch::ISA::AVX512VLF, 128, _Type_> :
     _First_n<arch::ISA::AVX2, 128, _Type_>
 {
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(uint32 __elements) raze_const_operator noexcept
+    raze_nodiscard raze_always_inline
+        auto operator()(uint32 __elements) const noexcept
     {
         constexpr auto __length = sizeof(__m128i) / sizeof(_Type_);
 
@@ -188,8 +187,8 @@ template <class _Type_>
 struct _First_n<arch::ISA::AVX512VLBW, 128, _Type_> :
     _First_n<arch::ISA::AVX512VLF, 128, _Type_>
 {
-    raze_nodiscard raze_static_operator raze_always_inline
-        auto operator()(uint32 __elements) raze_const_operator noexcept 
+    raze_nodiscard raze_always_inline
+        auto operator()(uint32 __elements) const noexcept 
     {
         constexpr auto __length = sizeof(__m128i) / sizeof(_Type_);
         using _MaskType = __mmask_for_elements_t<__length>;

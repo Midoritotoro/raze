@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/bitwise/MaskImplementation.h>
+#include <src/raze/vx/hw/x86/mask/MaskImplementation.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

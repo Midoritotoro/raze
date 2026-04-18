@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/Sub.h>
-#include <src/raze/vx/shuffle/BroadcastZeros.h>
+#include <src/raze/vx/hw/x86/arithmetic/Sub.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN 
@@ -447,7 +447,7 @@ struct _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
-			return _Abs<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __mask)
+			return _Abs<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __mask);
 		}
 		else if constexpr (__is_epi16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_maskz_abs_epi16(__mask, __as<__m256i>(__vector)));

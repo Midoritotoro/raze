@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/construct/direct/Broadcast.h>
+#include <src/raze/vx/hw/x86/construct/Broadcast.h>
 
 #include <raze/memory/PointerToIntegral.h>
 #include <src/raze/vx/hw/x86/access/InsertMask.h>

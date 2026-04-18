@@ -1,8 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
+#include <src/raze/vx/hw/Cast.h>
 #include <src/raze/type_traits/SimdTypeCheck.h>
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
 #include <raze/vx/Abi.h>
 
 

@@ -1,9 +1,9 @@
 #pragma once 
 
-#include <src/raze/vx/bitwise/ToK.h>
-#include <src/raze/vx/bitwise/MaskIntrin.h>
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
-#include <src/raze/vx/SimdMaskTypeCheck.h>
+#include <src/raze/vx/hw/x86/mask/ToK.h>
+#include <src/raze/vx/hw/x86/mask/ToGPR.h>
+#include <src/raze/vx/hw/x86/mask/MaskIntrin.h>
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 #include <src/raze/math/BitTestAndReset.h>
 #include <raze/math/BitMath.h>
 

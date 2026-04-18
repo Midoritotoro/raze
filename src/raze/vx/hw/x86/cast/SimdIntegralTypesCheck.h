@@ -5,7 +5,7 @@
 #include <src/raze/type_traits/TypeCheck.h>
 #include <src/raze/type_traits/IsVirtualBaseOf.h>
 #include <src/raze/type_traits/FunctionInformation.h>
-#include <src/raze/vx/SimdMaskTypeCheck.h>
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

@@ -1,12 +1,12 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
-#include <src/raze/vx/shuffle/CompressTables.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/compact/CompressTables.h>
 
-#include <src/raze/vx/bitwise/ToMask.h>
-#include <src/raze/vx/bitwise/ToVector.h>
+#include <src/raze/vx/hw/x86/mask/ToMask.h>
+#include <src/raze/vx/hw/x86/mask/ToVector.h>
 
-#include <src/raze/vx/shuffle/Blend.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
 
 #include <src/raze/type_traits/SimdTypeCheck.h>

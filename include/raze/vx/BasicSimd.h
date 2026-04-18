@@ -1,17 +1,17 @@
 ﻿#pragma once 
 
-#include <src/raze/vx/Arithmetic.h>
+#include <src/raze/vx/hw/Arithmetic.h>
 
-#include <src/raze/vx/Compare.h>
-#include <src/raze/vx/Shuffle.h>
+#include <src/raze/vx/hw/Compare.h>
+#include <src/raze/vx/hw/Shuffle.h>
 
 #include <src/raze/utility/Assert.h>
 
 #include <raze/vx/BasicSimdMask.h>
 #include <raze/vx/SimdCast.h>
 
-#include <src/raze/vx/Memory.h>
-#include <src/raze/vx/Bitwise.h>
+#include <src/raze/vx/hw/Memory.h>
+#include <src/raze/vx/hw/Bitwise.h>
 
 #include <raze/vx/Abi.h>
 #include <raze/options/Options.h>
@@ -150,7 +150,7 @@ public:
      * @brief Returns a SIMD vector with all lanes set to zero.
     */
     raze_nodiscard static raze_always_inline simd zero() noexcept {
-        return _Broadcast_zeros<__isa, __width, vector_type>()();
+        return _Zero<__isa, __width, vector_type>()();
     }
 
     /**

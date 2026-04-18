@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/compare/Less.h>
-#include <src/raze/vx/bitwise/BitNot.h>
+#include <src/raze/vx/hw/x86/compare/Less.h>
+#include <src/raze/vx/hw/x86/bitwise/BitNot.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -15,9 +15,9 @@ struct _Greater_equal;
 template <class _Type_>
 struct _Greater_equal<arch::ISA::SSE2, 128, _Type_> {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_pd_v<_Type_>)
             return __as<_IntrinType_>(_mm_cmpge_pd(
@@ -35,9 +35,9 @@ struct _Greater_equal<arch::ISA::SSE2, 128, _Type_> {
 template <class _Type_> 
 struct _Greater_equal<arch::ISA::AVX, 256, _Type_> {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         return _Not<arch::ISA::AVX, 256>()(_Less<arch::ISA::AVX, 256, _Type_>()(__left, __right));
     }
@@ -46,9 +46,9 @@ struct _Greater_equal<arch::ISA::AVX, 256, _Type_> {
 template <class _Type_>
 struct _Greater_equal<arch::ISA::AVX2, 256, _Type_> {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         return _Not<arch::ISA::AVX2, 256>()(_Less<arch::ISA::AVX2, 256, _Type_>()(__left, __right));
     }
@@ -57,9 +57,9 @@ struct _Greater_equal<arch::ISA::AVX2, 256, _Type_> {
 template <class _Type_>
 struct _Greater_equal<arch::ISA::AVX512F, 512, _Type_> {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>) {
             return _mm512_cmpge_epi64_mask(__as<__m512i>(__left), __as<__m512i>(__right));
@@ -98,9 +98,9 @@ struct _Greater_equal<arch::ISA::AVX512BW, 512, _Type_>:
     _Greater_equal<arch::ISA::AVX512F, 512, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi8_v<_Type_>)
             return _mm512_cmpge_epi8_mask(__as<__m512i>(__left), __as<__m512i>(__right));
@@ -124,9 +124,9 @@ struct _Greater_equal<arch::ISA::AVX512VLF, 256, _Type_>:
     _Greater_equal<arch::ISA::AVX2, 256, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>) {
             return _mm256_cmpge_epi64_mask(__as<__m256i>(__left), __as<__m256i>(__right));
@@ -157,9 +157,9 @@ struct _Greater_equal<arch::ISA::AVX512VLBW, 256, _Type_>:
     _Greater_equal<arch::ISA::AVX512VLF, 256, _Type_> 
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi8_v<_Type_>)
             return _mm256_cmpge_epi8_mask(__as<__m256i>(__left), __as<__m256i>(__right));
@@ -183,9 +183,9 @@ struct _Greater_equal<arch::ISA::AVX512VLF, 128, _Type_> :
     _Greater_equal<arch::ISA::AVX2, 128, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>) {
             return _mm_cmpge_epi64_mask(__as<__m128i>(__left), __as<__m128i>(__right));
@@ -216,9 +216,9 @@ struct _Greater_equal<arch::ISA::AVX512VLBW, 128, _Type_> :
     _Greater_equal<arch::ISA::AVX512VLF, 128, _Type_>
 {
     template <class _IntrinType_>
-    raze_nodiscard raze_static_operator raze_always_inline auto operator()(
+    raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
-        _IntrinType_ __right) raze_const_operator noexcept
+        _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi8_v<_Type_>)
             return _mm_cmpge_epi8_mask(__as<__m128i>(__left), __as<__m128i>(__right));
