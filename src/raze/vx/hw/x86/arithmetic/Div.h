@@ -1,10 +1,10 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
-#include <src/raze/vx/shuffle/Blend.h>
-#include <src/raze/vx/arithmetic/Divisor.h>
-#include <src/raze/vx/memory/Store.h>
-#include <src/raze/vx/memory/Load.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
+#include <src/raze/vx/hw/x86/arithmetic/Divisor.h>
+#include <src/raze/vx/hw/x86/memory/Store.h>
+#include <src/raze/vx/hw/x86/memory/Load.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
