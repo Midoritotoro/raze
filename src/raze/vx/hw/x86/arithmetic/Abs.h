@@ -583,11 +583,11 @@ struct _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {
 			return _Abs<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __source, __mask);
 		}
 		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_abs_epi8(
+			return __as<_IntrinType_>(_mm_mask_abs_epi8(
 				__as<__m128i>(__source), __mask, __as<__m128i>(__vector)));
 		}
 		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_abs_epi16(
+			return __as<_IntrinType_>(_mm_mask_abs_epi16(
 				__as<__m128i>(__source), __mask, __as<__m128i>(__vector)));
 		}
 	}
