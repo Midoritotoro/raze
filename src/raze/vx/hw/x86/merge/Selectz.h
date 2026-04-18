@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <src/raze/vx/hw/x86/bitwise/BitAnd.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/vx/hw/x86/construct/Zero.h>
 
@@ -16,15 +17,15 @@ struct _Selectz<arch::ISA::SSE2, 128, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 	{
 		if constexpr (std::is_integral_v<_MaskType_>)
 			return _Select<arch::ISA::SSE2, 128, _Type_>()(__vector,
 				_Zero<arch::ISA::SSE2, 128, _IntrinType_>()(), __mask);
 		else
-			return _And<arch::ISA::SSE2, 128>()(__as<_IntrinType_>(__mask), __vector);
+			return _And<arch::ISA::SSE2, 128, _Type_>()(__as<_IntrinType_>(__mask), __vector);
 	}
 };
 
@@ -36,15 +37,15 @@ struct _Selectz<arch::ISA::SSE41, 128, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 	{
 		if constexpr (std::is_integral_v<_MaskType_>)
 			return _Select<arch::ISA::SSE41, 128, _Type_>()(__vector,
 				_Zero<arch::ISA::SSE41, 128, _IntrinType_>()(), __mask);
 		else
-			return _And<arch::ISA::SSE41, 128>()(__as<_IntrinType_>(__mask), __vector);
+			return _And<arch::ISA::SSE41, 128, _Type_>()(__as<_IntrinType_>(__mask), __vector);
 	}
 };
 
@@ -59,15 +60,15 @@ struct _Selectz<arch::ISA::AVX, 256, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 	{
 		if constexpr (std::is_integral_v<_MaskType_>)
 			return _Select<arch::ISA::AVX, 256, _Type_>()(__vector,
 				_Zero<arch::ISA::AVX, 256, _IntrinType_>()(), __mask);
 		else
-			return _And<arch::ISA::AVX, 256>()(__vector, __as<_IntrinType_>(__mask));
+			return _And<arch::ISA::AVX, 256, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 };
 
@@ -76,15 +77,15 @@ struct _Selectz<arch::ISA::AVX2, 256, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 	{
 		if constexpr (std::is_integral_v<_MaskType_>)
 			return _Select<arch::ISA::AVX2, 256, _Type_>()(__vector,
 				_Zero<arch::ISA::AVX2, 256, _IntrinType_>()(), __mask);
 		else
-			return _And<arch::ISA::AVX2, 256>()(__vector, __as<_IntrinType_>(__mask));
+			return _And<arch::ISA::AVX2, 256, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 };
 
@@ -93,20 +94,20 @@ struct _Selectz<arch::ISA::AVX512F, 512, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _And<arch::ISA::AVX512F, 512>()(__vector, __as<_IntrinType_>(__mask));
+		return _And<arch::ISA::AVX512F, 512, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)
@@ -138,20 +139,20 @@ struct _Selectz<arch::ISA::AVX512BW, 512, _Type_> :
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _And<arch::ISA::AVX512F, 512>()(__vector, __as<_IntrinType_>(__mask));
+		return _And<arch::ISA::AVX512F, 512, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)
@@ -174,20 +175,20 @@ struct _Selectz<arch::ISA::AVX512VLF, 256, _Type_> :
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _And<arch::ISA::AVX512VLF, 256>()(__vector, __as<_IntrinType_>(__mask));
+		return _And<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)
@@ -219,20 +220,20 @@ struct _Selectz<arch::ISA::AVX512VLBW, 256, _Type_>:
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _And<arch::ISA::AVX512VLBW, 256>()(__vector, __as<_IntrinType_>(__mask));
+		return _And<arch::ISA::AVX512VLBW, 256, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)
@@ -255,20 +256,20 @@ struct _Selectz<arch::ISA::AVX512VLF, 128, _Type_> :
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _And<arch::ISA::AVX512VLF, 128>()(__vector, __as<_IntrinType_>(__mask));
+		return _And<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)
@@ -300,20 +301,20 @@ struct _Selectz<arch::ISA::AVX512VLBW, 128, _Type_>:
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_>)
 	{
-		return _And<arch::ISA::AVX512VLBW, 128>()(__vector, __as<_IntrinType_>(__mask));
+		return _And<arch::ISA::AVX512VLBW, 128, _Type_>()(__vector, __as<_IntrinType_>(__mask));
 	}
 
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
 			requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)

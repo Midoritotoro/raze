@@ -1,7 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
-#include <src/raze/vx/shuffle/Blend.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -15,9 +14,9 @@ struct _Left_shift;
 template <class _Type_>
 struct _Left_shift<arch::ISA::SSE2, 128, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_sll_epi64(
@@ -36,14 +35,74 @@ struct _Left_shift<arch::ISA::SSE2, 128, _Type_> {
 			return __as<_IntrinType_>(_mm_sll_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+	{
+		return _Selectz<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __shift), __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+	{
+		return _Select<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
+};
+
+template <class _Type_> struct _Left_shift<arch::ISA::SSE3, 128, _Type_> : _Left_shift<arch::ISA::SSE2, 128, _Type_> {};
+template <class _Type_> struct _Left_shift<arch::ISA::SSSE3, 128, _Type_> : _Left_shift<arch::ISA::SSE3, 128, _Type_> {};
+
+template <class _Type_> 
+struct _Left_shift<arch::ISA::SSE41, 128, _Type_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) const noexcept
+	{
+		return _Left_shift<arch::ISA::SSE2, 128, _Type_>()(__left, __shift);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+	{
+		return _Selectz<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __shift), __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+	{
+		return _Select<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
 };
 
 template <class _Type_>
 struct _Left_shift<arch::ISA::AVX, 256, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		const auto __low = _Left_shift<arch::ISA::SSE42, 128, _Type_>()(
 			__as<__m128i>(__left), __shift);
@@ -53,14 +112,37 @@ struct _Left_shift<arch::ISA::AVX, 256, _Type_> {
 		return __as<_IntrinType_>(_mm256_insertf128_si256(
 			__as<__m256i>(__low), __high, 1));
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+	{
+		return _Selectz<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __shift), __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+	{
+		return _Select<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
 };
 
 template <class _Type_>
 struct _Left_shift<arch::ISA::AVX2, 256, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_sll_epi64(
@@ -79,14 +161,37 @@ struct _Left_shift<arch::ISA::AVX2, 256, _Type_> {
 			return __as<_IntrinType_>(_mm256_sll_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+	{
+		return _Selectz<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __shift), __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+	{
+		return _Select<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
 };
 
 template <class _Type_>
 struct _Left_shift<arch::ISA::AVX512F, 512, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_sll_epi64(
@@ -106,6 +211,37 @@ struct _Left_shift<arch::ISA::AVX512F, 512, _Type_> {
 			return __as<_IntrinType_>(_mm512_inserti64x4(__as<__m512i>(__low_shifted), __high_shifted, 1));
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+	{
+		if 
+			return _Selectz<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __shift), __mask);
+		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)
+			return __as<_IntrinType_>(_mm512_maskz_sll_epi64(__mask,
+				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+
+		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>)
+			return __as<_IntrinType_>(_mm512_maskz_sll_epi32(__mask,
+				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+	{
+		return _Select<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
 };
 
 template <class _Type_> 
@@ -113,9 +249,9 @@ struct _Left_shift<arch::ISA::AVX512BW, 512, _Type_>:
 	_Left_shift<arch::ISA::AVX512F, 512, _Type_> 
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
 			const auto __and_mask = _mm512_and_si512(__as<__m512i>(__left), _mm512_set1_epi8(0xFFull >> __shift));
@@ -129,11 +265,31 @@ struct _Left_shift<arch::ISA::AVX512BW, 512, _Type_>:
 			return _Left_shift<arch::ISA::AVX512F, 512, _Type_>()(__left, __shift);
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+	{
+		return _Selectz<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+	{
+		return _Select<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
 };
 
-template <class _Type_> struct _Left_shift<arch::ISA::SSE3, 128, _Type_> : _Left_shift<arch::ISA::SSE2, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::SSSE3, 128, _Type_> : _Left_shift<arch::ISA::SSE3, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::SSE41, 128, _Type_> : _Left_shift<arch::ISA::SSSE3, 128, _Type_> {};
 template <class _Type_> struct _Left_shift<arch::ISA::SSE42, 128, _Type_> : _Left_shift<arch::ISA::SSE41, 128, _Type_> {};
 template <class _Type_> struct _Left_shift<arch::ISA::AVX, 128, _Type_> : _Left_shift<arch::ISA::SSE42, 128, _Type_> {};
 template <class _Type_> struct _Left_shift<arch::ISA::FMA3, 128, _Type_> : _Left_shift<arch::ISA::AVX, 128, _Type_> {};

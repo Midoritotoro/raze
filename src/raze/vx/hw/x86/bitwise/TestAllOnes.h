@@ -1,8 +1,8 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/Sub.h>
-#include <src/raze/vx/compare/Equal.h>
-#include <src/raze/vx/bitwise/ToBitmask.h>
+#include <src/raze/vx/hw/x86/arithmetic/Sub.h>
+#include <src/raze/vx/hw/x86/compare/Equal.h>
+#include <src/raze/vx/hw/x86/mask/ToBitmask.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -15,8 +15,8 @@ struct _Test_all_ones;
 template <>
 struct _Test_all_ones<arch::ISA::SSE2, 128> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		const auto __all_ones = _Equal<arch::ISA::SSE2, 128, int32>()(__vector, __vector);
 		const auto __compared = _Equal<arch::ISA::SSE2, 128, int32>()(__vector, __all_ones);
@@ -34,8 +34,8 @@ struct _Test_all_ones<arch::ISA::SSE41, 128> :
 	_Test_all_ones<arch::ISA::SSSE3, 128>
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		const auto __all_ones = _Equal<arch::ISA::SSE41, 128, int64>()(__vector, __vector);
 		return _mm_testc_si128(__as<__m128i>(__vector), __as<__m128i>(__all_ones));
@@ -45,8 +45,8 @@ struct _Test_all_ones<arch::ISA::SSE41, 128> :
 template <> 
 struct _Test_all_ones<arch::ISA::AVX, 256> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		const auto __all_ones = _Equal<arch::ISA::AVX, 256, double>()(__vector, __vector);
 		return _mm256_testc_si256(__as<__m256i>(__vector), __as<__m256i>(__all_ones));
@@ -56,8 +56,8 @@ struct _Test_all_ones<arch::ISA::AVX, 256> {
 template <>
 struct _Test_all_ones<arch::ISA::AVX2, 256> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		const auto __all_ones = _Equal<arch::ISA::AVX2, 256, int64>()(__vector, __vector);
 		return _mm256_testc_si256(__as<__m256i>(__vector), __as<__m256i>(__all_ones));
@@ -67,8 +67,8 @@ struct _Test_all_ones<arch::ISA::AVX2, 256> {
 template <>
 struct _Test_all_ones<arch::ISA::AVX512F, 512> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		const auto __low = __as<__m256i>(__vector);
 		const auto __high = _mm512_extractf64x4_pd(__as<__m512d>(__vector), 1);

@@ -1,10 +1,8 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/Sub.h>
-#include <src/raze/vx/shuffle/BroadcastZeros.h>
-
-#include <src/raze/vx/compare/Equal.h>
-#include <src/raze/vx/bitwise/ToBitmask.h>
+#include <src/raze/vx/hw/x86/arithmetic/Sub.h>
+#include <src/raze/vx/hw/x86/compare/Equal.h>
+#include <src/raze/vx/hw/x86/mask/ToBitmask.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -17,10 +15,10 @@ struct _Testz;
 template <>
 struct _Testz<arch::ISA::SSE2, 128> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
-		const auto __zeros = _Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()();
+		const auto __zeros = _Zero<arch::ISA::SSE2, 128, _IntrinType_>()();
 		const auto __compared = _Equal<arch::ISA::SSE2, 128, int32>()(__vector, __zeros);
 
 		const auto __index_mask = _To_bitmask<arch::ISA::SSE2, 128, int32>()(__compared);
@@ -36,8 +34,8 @@ struct _Testz<arch::ISA::SSE41, 128>:
 	_Testz<arch::ISA::SSSE3, 128> 
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		return _mm_testz_si128(__as<__m128i>(__vector), __as<__m128i>(__vector));
 	}
@@ -46,8 +44,8 @@ struct _Testz<arch::ISA::SSE41, 128>:
 template <> 
 struct _Testz<arch::ISA::AVX, 256> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		return _mm256_testz_si256(__as<__m256i>(__vector), __as<__m256i>(__vector));
 	}
@@ -56,8 +54,8 @@ struct _Testz<arch::ISA::AVX, 256> {
 template <>
 struct _Testz<arch::ISA::AVX2, 256> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		return _mm256_testz_si256(__as<__m256i>(__vector), __as<__m256i>(__vector));
 	}
@@ -66,8 +64,8 @@ struct _Testz<arch::ISA::AVX2, 256> {
 template <>
 struct _Testz<arch::ISA::AVX512F, 512> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		bool operator()(_IntrinType_ __vector) raze_const_operator noexcept
+	raze_nodiscard raze_always_inline bool 
+		operator()(_IntrinType_ __vector) const noexcept
 	{
 		const auto __k = _mm512_test_epi32_mask(__as<__m512i>(__vector), __as<__m512i>(__vector));
 		return _kortestz_mask16_u8(__k, __k);

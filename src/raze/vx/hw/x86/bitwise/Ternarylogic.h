@@ -1,20 +1,20 @@
 #pragma once 
 
-#include <src/raze/vx/IntrinBitcast.h>
-#include <src/raze/vx/bitwise/BitAnd.h>
-#include <src/raze/vx/bitwise/BitNot.h>
-#include <src/raze/vx/bitwise/BitOr.h>
-#include <src/raze/vx/bitwise/BitXor.h>
-#include <src/raze/vx/bitwise/Andnot.h>
-#include <src/raze/vx/shuffle/BroadcastZeros.h>
+#include <src/raze/vx/hw/x86/bitwise/Andnot.h>
+#include <src/raze/vx/hw/x86/bitwise/BitAnd.h>
+#include <src/raze/vx/hw/x86/bitwise/BitOr.h>
+#include <src/raze/vx/hw/x86/bitwise/BitXor.h>
+#include <src/raze/vx/hw/x86/bitwise/BitNot.h>
+#include <src/raze/vx/hw/x86/construct/Zero.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
 
 
 template <
-    arch::ISA _ISA_,
-    uint32    _Width_>
+    arch::ISA   _ISA_,
+    uint32      _Width_,
+    class       _Type_>
 struct _Ternarylogic {
     template <
         class  _IntrinType_,
@@ -42,7 +42,7 @@ struct _Ternarylogic {
              auto __xor    = _Xor<_ISA_, _Width_>();
              auto __andnot = _Andnot<_ISA_, _Width_>();
              auto __not    = _Not<_ISA_, _Width_>();
-             auto __zero   = _Broadcast_zeros<_ISA_, _Width_, _IntrinType_>();
+             auto __zero   = _Zero<_ISA_, _Width_, _IntrinType_>();
 
             if constexpr(__imm8 == 0x00)
                 return __zero();
@@ -572,6 +572,63 @@ struct _Ternarylogic {
             if constexpr(__imm8 == 0xff)
                 return __not(__zero());
         }
+    }
+
+     template <
+        class _IntrinType_,
+        class _MaskType_,  
+        uint8 _TernaryMask_>
+    raze_nodiscard raze_always_inline _IntrinType_ operator()(
+        _IntrinType_                                    __x,
+        _IntrinType_                                    __y,
+        _IntrinType_                                    __z,
+        std::integral_constant<uint8, _TernaryMask_>    __imm8,
+        _MaskType_                                      __mask) const noexcept
+            requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
+    {
+        if constexpr (__has_avx512f_support_v<_ISA_> && std::is_integral_v<_MaskType_>) {
+            if constexpr (_Width_ == 512) {
+                if constexpr (sizeof(_Type_) == 8)
+                    return __as<_IntrinType_>(_mm512_maskz_ternarylogic_epi64(__mask, __as<__m512i>(__x), 
+                        __as<__m512i>(__y), __as<__m512i>(__z), __imm8));
+                else if constexpr (sizeof(_Type_) == 4)
+                    return __as<_IntrinType_>(_mm512_maskz_ternarylogic_epi32(__mask, __as<__m512i>(__x),
+                        __as<__m512i>(__y), __as<__m512i>(__z), __imm8));
+            }
+            else if constexpr (__has_avx512vl_support_v<_ISA_> && (_Width_ == 256)) {
+                if constexpr (sizeof(_Type_) == 8)
+                    return __as<_IntrinType_>(_mm256_maskz_ternarylogic_epi64(__mask, __as<__m256i>(__x),
+                        __as<__m256i>(__y), __as<__m256i>(__z), __imm8));
+                else if constexpr (sizeof(_Type_) == 4)
+                    return __as<_IntrinType_>(_mm256_maskz_ternarylogic_epi32(__mask, __as<__m256i>(__x),
+                        __as<__m256i>(__y), __as<__m256i>(__z), __imm8));
+            }
+            else if constexpr (__has_avx512vl_support_v<_ISA_> && (_Width_ == 128)) {
+                if constexpr (sizeof(_Type_) == 8)
+                    return __as<_IntrinType_>(_mm_maskz_ternarylogic_epi64(__mask, __as<__m128i>(__x),
+                        __as<__m128i>(__y), __as<__m128i>(__z), __imm8));
+                else if constexpr (sizeof(_Type_) == 4)
+                    return __as<_IntrinType_>(_mm_maskz_ternarylogic_epi32(__mask, __as<__m128i>(__x),
+                        __as<__m128i>(__y), __as<__m128i>(__z), __imm8));
+            }
+        }
+       
+        return _Selectz<_ISA_, _Width_, _Type_>()((*this)(__x, __y, __z, __imm8), __mask);
+    }
+
+    template <
+        class _IntrinType_,
+        class _MaskType_,  
+        uint8 _TernaryMask_>
+    raze_nodiscard raze_always_inline _IntrinType_ operator()(
+        _IntrinType_                                    __x,
+        _IntrinType_                                    __y,
+        _IntrinType_                                    __z,
+        std::integral_constant<uint8, _TernaryMask_>    __imm8,
+        _MaskType_                                      __mask,
+        _IntrinType_                                    __source) const noexcept
+    {
+        return _Select<_ISA_, _Width_, _Type_>()((*this)(__x, __y, __z, __imm8), __source, __mask);
     }
 };
 
