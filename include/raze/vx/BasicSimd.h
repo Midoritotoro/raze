@@ -6,12 +6,17 @@
 #include <src/raze/vx/hw/Shuffle.h>
 
 #include <src/raze/utility/Assert.h>
+#include <src/raze/vx/hw/Access.h>
 
 #include <raze/vx/BasicSimdMask.h>
 #include <raze/vx/SimdCast.h>
 
 #include <src/raze/vx/hw/Memory.h>
 #include <src/raze/vx/hw/Bitwise.h>
+
+#include <src/raze/vx/reference/SimdElementReference.h>
+#include <src/raze/vx/reference/SimdBoolReference.h>
+#include <src/raze/vx/reference/BitReference.h>
 
 #include <raze/vx/Abi.h>
 #include <raze/options/Options.h>
@@ -272,7 +277,7 @@ public:
         const simd& __left,
         const simd& __right) noexcept
     {
-        return _And<__isa, __width>()(__data(__left), __data(__right));
+        return _And<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     /**
@@ -282,7 +287,7 @@ public:
         const simd& __left, 
         const simd& __right) noexcept
     {
-        return _Or<__isa, __width>()(__data(__left), __data(__right));
+        return _Or<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     /**
@@ -292,14 +297,14 @@ public:
         const simd& __left, 
         const simd& __right) noexcept 
     {
-        return _Xor<__isa, __width>()(__data(__left), __data(__right));
+        return _Xor<__isa, __width, _Type_>()(__data(__left), __data(__right));
     }
 
     /**
      * @brief Bitwise NOT.
     */
     raze_always_inline simd operator~() const noexcept {
-        return _Not<__isa, __width>()(_vector);
+        return _Not<__isa, __width, _Type_>()(_vector);
     }
 
     /**

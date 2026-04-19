@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
 #include <src/raze/math/BitTestAndSet.h>
 #include <src/raze/math/BitTest.h>
 #include <src/raze/math/BitTestAndReset.h>

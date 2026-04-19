@@ -3,7 +3,11 @@
 #include <raze/vx/Simd.h>
 #include <raze/vx/SimdBitmask.h>
 #include <raze/vx/BasicSimdMask.h>
-#include <src/raze/vx/Reduce.h>
+#include <src/raze/vx/hw/Reduce.h>
+#include <src/raze/vx/hw/Compact.h>
+#include <src/raze/vx/hw/Compare.h>
+#include <src/raze/vx/hw/Construct.h>
+#include <src/raze/vx/hw/Shuffle.h>
 #include <src/raze/vx/Expression.h>
 #include <raze/vx/Concepts.h>
 

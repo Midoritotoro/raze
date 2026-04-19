@@ -18,8 +18,8 @@ struct compare_tests {
             arrB[i] = _Type_(N - i);
         }
 
-        Simd a = raze::vx::load<Simd>(arrA);
-        Simd b = raze::vx::load<Simd>(arrB);
+        Simd a; a.copy_from(arrA);
+        Simd b; b.copy_from(arrB);
 
         {
             auto m = (a == a);

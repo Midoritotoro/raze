@@ -1,10 +1,10 @@
 #pragma once 
 
 
-#include <src/raze/vx/MaskTypeSelector.h>
-#include <src/raze/vx/bitwise/BitmaskBitsPerElement.h>
-#include <src/raze/vx/bitwise/ToK.h>
-#include <src/raze/vx/bitwise/ToGPR.h>
+#include <src/raze/vx/hw/x86/mask/MaskTypeSelector.h>
+#include <src/raze/vx/hw/x86/mask/BitmaskBitsPerElement.h>
+#include <src/raze/vx/hw/x86/mask/ToK.h>
+#include <src/raze/vx/hw/x86/mask/ToGPR.h>
 #include <raze/math/BitMath.h>
 
 

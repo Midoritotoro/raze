@@ -1,10 +1,8 @@
 #pragma once 
 
 #include <raze/vx/SimdDataparAlgorithms.h>
-#include <src/raze/vx/SizedSimdDispatcher.h>
+#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 #include <src/raze/algorithm/SimdTransformable.h>
-
-
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

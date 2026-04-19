@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/arithmetic/Sub.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
 #include <raze/memory/PointerToIntegral.h>
 
 

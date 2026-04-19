@@ -26,9 +26,9 @@ struct _Compress<arch::ISA::SSE2, 128, _Type_> {
     template <
         class _IntrinType_,
         class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+	raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
 	{
 		return (*this)(__vector, _To_mask<arch::ISA::SSE2, 128, _Type_>()(__mask));
@@ -37,9 +37,9 @@ struct _Compress<arch::ISA::SSE2, 128, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+	raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_> || __is_pd_v<_Type_>) {
@@ -155,9 +155,9 @@ struct _Compress<arch::ISA::SSSE3, 128, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
     { 
         return (*this)(__vector, _To_mask<arch::ISA::SSE2, 128, _Type_>()(__mask));
@@ -166,9 +166,9 @@ struct _Compress<arch::ISA::SSSE3, 128, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_		__mask) raze_const_operator noexcept
+        _MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
     {
         if constexpr (sizeof(_Type_) == 1) {
@@ -203,7 +203,7 @@ struct _Compress<arch::ISA::SSSE3, 128, _Type_>:
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm_load_si128(reinterpret_cast<const __m128i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::SSSE3, 128, _Type_>()(__as<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Select<arch::ISA::SSSE3, 128, _Type_>()(__as<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -224,9 +224,9 @@ struct _Compress<arch::ISA::SSE41, 128, _Type_> :
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
         requires(__is_intrin_type_v<_MaskType_>)
 	{
         return (*this)(__vector, _To_mask<arch::ISA::SSE2, 128, _Type_>()(__mask));
@@ -235,9 +235,9 @@ struct _Compress<arch::ISA::SSE41, 128, _Type_> :
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+	raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept\
+		_MaskType_		__mask) const noexcept\
             requires(std::is_integral_v<_MaskType_>)
 	{
         if constexpr (sizeof(_Type_) == 1) {
@@ -272,7 +272,7 @@ struct _Compress<arch::ISA::SSE41, 128, _Type_> :
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm_load_si128(reinterpret_cast<const __m128i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::SSE41, 128, _Type_>()(__as<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Select<arch::ISA::SSE41, 128, _Type_>()(__as<__m128i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -291,9 +291,9 @@ struct _Compress<arch::ISA::AVX, 256, _Type_> {
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
 	{
         return (*this)(__vector, _To_mask<arch::ISA::AVX, 256, _Type_>()(__mask));
@@ -302,9 +302,9 @@ struct _Compress<arch::ISA::AVX, 256, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+	raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
 	{
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
@@ -340,7 +340,7 @@ struct _Compress<arch::ISA::AVX, 256, _Type_> {
             _mm_store_si128(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX, 256, _Type_>()(__as<__m256i>(__vector),
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX, 256, _Type_>()(__as<__m256i>(__vector),
                 __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
@@ -376,7 +376,7 @@ struct _Compress<arch::ISA::AVX, 256, _Type_> {
             _mm_store_si128(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX, 256, _Type_>()(__as<__m256i>(__vector),
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX, 256, _Type_>()(__as<__m256i>(__vector),
                 __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
@@ -412,7 +412,7 @@ struct _Compress<arch::ISA::AVX, 256, _Type_> {
             _mm_store_si128(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -470,7 +470,7 @@ struct _Compress<arch::ISA::AVX, 256, _Type_> {
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_fourth_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -484,9 +484,9 @@ struct _Compress<arch::ISA::AVX2, 256, _Type_> {
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
 	{
         return (*this)(__vector, _To_mask<arch::ISA::AVX2, 256, _Type_>()(__mask));
@@ -495,9 +495,9 @@ struct _Compress<arch::ISA::AVX2, 256, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+	raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
 	{
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
@@ -542,7 +542,7 @@ struct _Compress<arch::ISA::AVX2, 256, _Type_> {
             _mm_store_si128(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_higher_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -600,7 +600,7 @@ struct _Compress<arch::ISA::AVX2, 256, _Type_> {
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_fourth_segment));
 
             const auto __final_packed_vector = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temporary_stack_buffer));
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -612,9 +612,9 @@ struct _Compress<arch::ISA::AVX512F, 512, _Type_> {
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
         requires(__is_intrin_type_v<_MaskType_>)
 	{
         return (*this)(__vector, _To_mask<arch::ISA::AVX512F, 512, _Type_>()(__mask));
@@ -623,9 +623,9 @@ struct _Compress<arch::ISA::AVX512F, 512, _Type_> {
 	template <
 		class _IntrinType_,
 		class _MaskType_>
-	raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+	raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
 		_IntrinType_	__vector,
-		_MaskType_		__mask) raze_const_operator noexcept
+		_MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
 	{
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
@@ -692,7 +692,7 @@ struct _Compress<arch::ISA::AVX512F, 512, _Type_> {
             _mm_store_si128(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_fourth_segment));
 
             const auto __final_packed_vector = _mm512_load_si512(__temporary_stack_buffer);
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX512F, 512, _Type_>()(
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX512F, 512, _Type_>()(
                 __as<__m512i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
@@ -797,7 +797,7 @@ struct _Compress<arch::ISA::AVX512F, 512, _Type_> {
             _mm_storel_epi64(reinterpret_cast<__m128i*>(__destination_write_pointer), __as<__m128i>(__packed_data_eighth_segment));
 
             const auto __final_packed_vector = _mm512_load_si512(__temporary_stack_buffer);
-            const auto __final_blended_result_vector = _Blend<arch::ISA::AVX512F, 512, _Type_>()(__as<__m512i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
+            const auto __final_blended_result_vector = _Select<arch::ISA::AVX512F, 512, _Type_>()(__as<__m512i>(__vector), __final_packed_vector, __unprocessed_tail_blending_mask);
 
             return { __total_processed_byte_count_combined, __as<_IntrinType_>(__final_blended_result_vector) };
         }
@@ -811,9 +811,9 @@ struct _Compress<arch::ISA::AVX512VLF, 256, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _To_mask<arch::ISA::AVX512VLF, 256, _Type_>()(__mask));
@@ -822,9 +822,9 @@ struct _Compress<arch::ISA::AVX512VLF, 256, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_	__vector,
-        _MaskType_		__mask) raze_const_operator noexcept
+        _MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
     {
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
@@ -856,9 +856,9 @@ struct _Compress<arch::ISA::AVX512VLF, 128, _Type_> :
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _To_mask<arch::ISA::AVX512VLF, 128, _Type_>()(__mask));
@@ -867,9 +867,9 @@ struct _Compress<arch::ISA::AVX512VLF, 128, _Type_> :
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_	__vector,
-        _MaskType_		__mask) raze_const_operator noexcept
+        _MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
     {
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
@@ -901,9 +901,9 @@ struct _Compress<arch::ISA::AVX512VBMI2, 512, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _To_mask<arch::ISA::AVX512VBMI2, 512, _Type_>()(__mask));
@@ -912,9 +912,9 @@ struct _Compress<arch::ISA::AVX512VBMI2, 512, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_	__vector,
-        _MaskType_		__mask) raze_const_operator noexcept
+        _MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
     {
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
@@ -957,9 +957,9 @@ struct _Compress<arch::ISA::AVX512VBMI2VL, 256, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _To_mask<arch::ISA::AVX512VBMI2VL, 256, _Type_>()(__mask));
@@ -968,9 +968,9 @@ struct _Compress<arch::ISA::AVX512VBMI2VL, 256, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_	__vector,
-        _MaskType_		__mask) raze_const_operator noexcept
+        _MaskType_		__mask) const noexcept
             requires(std::is_integral_v<_MaskType_>)
     {
         constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
@@ -1013,9 +1013,9 @@ struct _Compress<arch::ISA::AVX512VBMI2VL, 128, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_    __vector,
-        _MaskType_      __mask) raze_const_operator noexcept
+        _MaskType_      __mask) const noexcept
             requires(__is_intrin_type_v<_MaskType_>)
     {
         return (*this)(__vector, _To_mask<arch::ISA::AVX512VBMI2VL, 128, _Type_>()(__mask));
@@ -1024,10 +1024,10 @@ struct _Compress<arch::ISA::AVX512VBMI2VL, 128, _Type_>:
     template <
         class _IntrinType_,
         class _MaskType_>
-    raze_nodiscard raze_static_operator raze_always_inline std::pair<int32, _IntrinType_> operator()(
+    raze_nodiscard raze_always_inline std::pair<int32, _IntrinType_> operator()(
         _IntrinType_	__vector,
-        _MaskType_		__mask) raze_const_operator noexcept
-        requires(std::is_integral_v<_MaskType_>)
+        _MaskType_		__mask) const noexcept
+            requires(std::is_integral_v<_MaskType_>)
     {
         const auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
 

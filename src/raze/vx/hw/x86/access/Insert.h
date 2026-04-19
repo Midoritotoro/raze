@@ -93,7 +93,7 @@ struct _Insert<arch::ISA::SSE2, 128> {
             const auto __broadcasted = _Broadcast<arch::ISA::SSE2, 128, _IntrinType_>()(memory::pointer_to_integral(__value));
             const auto __insert_mask = _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
-            __vector = _Blend<arch::ISA::SSE2, 128, _Type_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Select<arch::ISA::SSE2, 128, _Type_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };
@@ -235,7 +235,7 @@ struct _Insert<arch::ISA::AVX512VLF, 128>:
             const auto __insert_mask = _Load<arch::ISA::AVX512VLF, 128, _IntrinType_>()(
                 __mask.__array + __mask.__offset - __index);
 
-            __vector = _Blend<arch::ISA::AVX512VLF, 128, _Type_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Select<arch::ISA::AVX512VLF, 128, _Type_>()(__broadcasted, __vector, __insert_mask);
         }
     }
 };
@@ -333,7 +333,7 @@ struct _Insert<arch::ISA::AVX, 256> {
             const auto __broadcasted = _Broadcast<arch::ISA::AVX2, 256, _IntrinType_>()(__value);
             const auto __insert_mask = _Load<arch::ISA::AVX2, 256, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
-            __vector = _Blend<arch::ISA::AVX2, 256, _Type_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Select<arch::ISA::AVX2, 256, _Type_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };
@@ -425,7 +425,7 @@ struct _Insert<arch::ISA::AVX512VLF, 256>:
             const auto __insert_mask = _Load<arch::ISA::AVX512VLF, 256, _IntrinType_>()(
                 __mask.__array + __mask.__offset - __index);
 
-            __vector = _Blend<arch::ISA::AVX512VLF, 256, _Type_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Select<arch::ISA::AVX512VLF, 256, _Type_>()(__broadcasted, __vector, __insert_mask);
         }
     }
 };
@@ -499,7 +499,7 @@ struct _Insert<arch::ISA::AVX512F, 512> {
             const auto __broadcasted = _Broadcast<arch::ISA::AVX512F, 512, _IntrinType_>()(__value);
             const auto __insert_mask = _Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__mask.__array + __mask.__offset - __index);
 
-            __vector = _Blend<arch::ISA::AVX512F, 512, _Type_>()(__broadcasted, __vector, __insert_mask);
+            __vector = _Select<arch::ISA::AVX512F, 512, _Type_>()(__broadcasted, __vector, __insert_mask);
         }
 	}
 };

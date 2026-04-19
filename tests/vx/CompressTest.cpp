@@ -35,7 +35,7 @@ struct compress_tests {
         for (size_t i = 0; i < N; ++i)
             src[i] = _Type_(i + 1);
 
-        Simd v = raze::vx::load<Simd>(src);
+        Simd v; v.copy_from(src);
         
         for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             Mask mask = make_random_mask<Mask>();

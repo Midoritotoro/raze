@@ -21,7 +21,7 @@ struct _Not_equal {
         if constexpr (std::is_integral_v<_ComparedType>)
             return ~__compared;
         else
-            return _Not<_ISA_, _Width_>()(__compared);
+            return _Not<_ISA_, _Width_, _Type_>()(__compared);
     }
 };
 

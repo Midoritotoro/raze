@@ -1,7 +1,6 @@
 ﻿#pragma once 
 
-#include <src/raze/vx/bitwise/MaskBits.h>
-#include <src/raze/vx/bitwise/MaskElementReference.h>
+#include <src/raze/vx/hw/Mask.h>
 #include <src/raze/algorithm/MsvcIteratorUnwrap.h>
 #include <bitset>
 

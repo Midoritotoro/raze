@@ -51,9 +51,7 @@ struct _Less<arch::ISA::SSE2, 128, _Type_> {
             return __as<_IntrinType_>(__result);
         }
         else if constexpr (__is_epi32_v<_Type_>) {
-            return __as<_IntrinType_>(_mm_cmplt_epi32(
-                __as<__m128i>(__left),
-                __as<__m128i>(__right)));
+            return __as<_IntrinType_>(_mm_cmplt_epi32(__as<__m128i>(__left), __as<__m128i>(__right)));
         }
         else if constexpr (__is_epu32_v<_Type_>) {
             const auto __sign        = _mm_set1_epi32(0x80000000);
@@ -64,16 +62,11 @@ struct _Less<arch::ISA::SSE2, 128, _Type_> {
             return __as<_IntrinType_>(_mm_cmplt_epi32(__signed_left, __signed_right));
         }
         else if constexpr (__is_epi16_v<_Type_>) {
-            return __as<_IntrinType_>(_mm_cmplt_epi16(
-                __as<__m128i>(__left), 
-                __as<__m128i>(__right)));
+            return __as<_IntrinType_>(_mm_cmplt_epi16(__as<__m128i>(__left), __as<__m128i>(__right)));
         }
         else if constexpr (__is_epu16_v<_Type_>) {
-            const auto __substracted = _mm_subs_epu16(
-                __as<__m128i>(__right),
-                __as<__m128i>(__left));
-
-            return _Not<arch::ISA::SSE2, 128>()(__as<_IntrinType_>(
+            const auto __substracted = _mm_subs_epu16(__as<__m128i>(__right), __as<__m128i>(__left));
+            return _Not<arch::ISA::SSE2, 128, _Type_>()(__as<_IntrinType_>(
                 _mm_cmpeq_epi16(__substracted, _mm_setzero_si128())));
         }
         else if constexpr (__is_epi8_v<_Type_>) {
@@ -81,20 +74,15 @@ struct _Less<arch::ISA::SSE2, 128, _Type_> {
                 __as<__m128i>(__left), __as<__m128i>(__right)));
         }
         else if constexpr (__is_epu8_v<_Type_>) {
-            const auto __substracted = _mm_subs_epu8(
-                __as<__m128i>(__right), 
-                __as<__m128i>(__left));
-
-            return _Not<arch::ISA::SSE2, 128>()(__as<_IntrinType_>(
+            const auto __substracted = _mm_subs_epu8(__as<__m128i>(__right), __as<__m128i>(__left));
+            return _Not<arch::ISA::SSE2, 128, _Type_>()(__as<_IntrinType_>(
                 _mm_cmpeq_epi8(__substracted, _mm_setzero_si128())));
         }
         else if constexpr (__is_ps_v<_Type_>) {
-            return __as<_IntrinType_>(_mm_cmplt_ps(
-                __as<__m128>(__left), __as<__m128>(__right)));
+            return __as<_IntrinType_>(_mm_cmplt_ps(__as<__m128>(__left), __as<__m128>(__right)));
         }
         else if constexpr (__is_pd_v<_Type_>) {
-            return __as<_IntrinType_>(_mm_cmplt_pd(
-                __as<__m128d>(__left), __as<__m128d>(__right)));
+            return __as<_IntrinType_>(_mm_cmplt_pd(__as<__m128d>(__left), __as<__m128d>(__right)));
         }
     }
 };
@@ -109,8 +97,7 @@ struct _Less<arch::ISA::SSE42, 128, _Type_>:
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>) {
-            return __as<_IntrinType_>(_mm_cmpgt_epi64(
-                __as<__m128i>(__right), __as<__m128i>(__left)));
+            return __as<_IntrinType_>(_mm_cmpgt_epi64(__as<__m128i>(__right), __as<__m128i>(__left)));
         }
         else if constexpr (__is_epu64_v<_Type_>) {
             const auto __sign_64bit = _mm_set1_epi64x(0x8000000000000000);
@@ -134,12 +121,10 @@ struct _Less<arch::ISA::AVX, 256, _Type_> {
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_pd_v<_Type_>) {
-            return __as<_IntrinType_>(_mm256_cmp_pd(
-                __as<__m256d>(__left), __as<__m256d>(__right), _MM_CMPINT_LT));
+            return __as<_IntrinType_>(_mm256_cmp_pd(__as<__m256d>(__left), __as<__m256d>(__right), _MM_CMPINT_LT));
         }
         else if constexpr (__is_ps_v<_Type_>) {
-            return __as<_IntrinType_>(_mm256_cmp_ps(
-                __as<__m256>(__left), __as<__m256>(__right), _MM_CMPINT_LT));
+            return __as<_IntrinType_>(_mm256_cmp_ps(__as<__m256>(__left), __as<__m256>(__right), _MM_CMPINT_LT));
         }
         else {
             const auto __low = _Less<arch::ISA::SSE42, 128, _Type_>()(
@@ -163,16 +148,13 @@ struct _Less<arch::ISA::AVX2, 256, _Type_> {
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_pd_v<_Type_>) {
-            return __as<_IntrinType_>(_mm256_cmp_pd(
-                __as<__m256d>(__left), __as<__m256d>(__right), _MM_CMPINT_LT));
+            return __as<_IntrinType_>(_mm256_cmp_pd(__as<__m256d>(__left), __as<__m256d>(__right), _MM_CMPINT_LT));
         }
         else if constexpr (__is_ps_v<_Type_>) {
-            return __as<_IntrinType_>(_mm256_cmp_ps(
-                __as<__m256>(__left), __as<__m256>(__right), _MM_CMPINT_LT));
+            return __as<_IntrinType_>(_mm256_cmp_ps(__as<__m256>(__left), __as<__m256>(__right), _MM_CMPINT_LT));
         }
         else if constexpr (__is_epi64_v<_Type_>) {
-            return __as<_IntrinType_>(_mm256_cmpgt_epi64(
-                __as<__m256i>(__right), __as<__m256i>(__left)));
+            return __as<_IntrinType_>(_mm256_cmpgt_epi64(__as<__m256i>(__right), __as<__m256i>(__left)));
         }
         else if constexpr (__is_epu64_v<_Type_>) {
             const auto __sign_64bit = _mm256_set1_epi64x(0x8000000000000000);
@@ -195,8 +177,7 @@ struct _Less<arch::ISA::AVX2, 256, _Type_> {
             return __as<_IntrinType_>(_mm256_cmpgt_epi32(__right_signed, __left_signed));
         }
         else if constexpr (__is_epi16_v<_Type_>) {
-            return __as<_IntrinType_>(_mm256_cmpgt_epi16(
-                __as<__m256i>(__right), __as<__m256i>(__left)));
+            return __as<_IntrinType_>(_mm256_cmpgt_epi16(__as<__m256i>(__right), __as<__m256i>(__left)));
         }
         else if constexpr (__is_epu16_v<_Type_>) {
             const auto __sign_16bit = _mm256_set1_epi16(0x8000);
@@ -207,8 +188,7 @@ struct _Less<arch::ISA::AVX2, 256, _Type_> {
             return __as<_IntrinType_>(_mm256_cmpgt_epi16(__right_signed, __left_signed));
         }
         else if constexpr (__is_epi8_v<_Type_>) {
-            return __as<_IntrinType_>(_mm256_cmpgt_epi8(
-                __as<__m256i>(__right), __as<__m256i>(__left)));
+            return __as<_IntrinType_>(_mm256_cmpgt_epi8(__as<__m256i>(__right), __as<__m256i>(__left)));
         }
         else if constexpr (__is_epu8_v<_Type_>) {
             const auto __sign_8bit   = _mm256_set1_epi8(0x80);
@@ -229,34 +209,22 @@ struct _Less<arch::ISA::AVX512F, 512, _Type_> {
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>) {
-            return _mm512_cmplt_epi64_mask(
-                __as<__m512i>(__left),
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epi64_mask(__as<__m512i>(__left), __as<__m512i>(__right));
         }
         else if constexpr (__is_epu64_v<_Type_>) {
-            return _mm512_cmplt_epu64_mask(
-                __as<__m512i>(__left),
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epu64_mask(__as<__m512i>(__left), __as<__m512i>(__right));
         }
         else if constexpr (__is_epi32_v<_Type_>) {
-            return _mm512_cmplt_epi32_mask(
-                __as<__m512i>(__left), 
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epi32_mask(__as<__m512i>(__left), __as<__m512i>(__right));
         }
         else if constexpr (__is_epu32_v<_Type_>) {
-            return _mm512_cmplt_epu32_mask(
-                __as<__m512i>(__left),
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epu32_mask(__as<__m512i>(__left), __as<__m512i>(__right));
         }
         else if constexpr (__is_ps_v<_Type_>) {
-            return _mm512_cmplt_ps_mask(
-                __as<__m512>(__left), 
-                __as<__m512>(__right));
+            return _mm512_cmplt_ps_mask(__as<__m512>(__left), __as<__m512>(__right));
         }
         else if constexpr (__is_pd_v<_Type_>) {
-            return _mm512_cmplt_pd_mask(
-                __as<__m512d>(__left),
-                __as<__m512d>(__right));
+            return _mm512_cmplt_pd_mask(__as<__m512d>(__left), __as<__m512d>(__right));
         }
         else {
             const auto __compared_low = _Less<arch::ISA::AVX2, 256, _Type_>()(
@@ -282,24 +250,16 @@ struct _Less<arch::ISA::AVX512BW, 512, _Type_>:
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi16_v<_Type_>)
-            return _mm512_cmplt_epi16_mask(
-                __as<__m512i>(__left),
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epi16_mask(__as<__m512i>(__left), __as<__m512i>(__right));
 
         else if constexpr (__is_epu16_v<_Type_>)
-            return _mm512_cmplt_epu16_mask(
-                __as<__m512i>(__left),
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epu16_mask(__as<__m512i>(__left), __as<__m512i>(__right));
 
         else if constexpr (__is_epi8_v<_Type_>)
-            return _mm512_cmplt_epi8_mask(
-                __as<__m512i>(__left),
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epi8_mask(__as<__m512i>(__left), __as<__m512i>(__right));
 
         else if constexpr (__is_epu8_v<_Type_>)
-            return _mm512_cmplt_epu8_mask(
-                __as<__m512i>(__left),
-                __as<__m512i>(__right));
+            return _mm512_cmplt_epu8_mask(__as<__m512i>(__left), __as<__m512i>(__right));
 
         else
             return _Less<arch::ISA::AVX512F, 512, _Type_>()(__left, __right);
@@ -316,34 +276,22 @@ struct _Less<arch::ISA::AVX512VLF, 256, _Type_>:
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>)
-            return _mm256_cmplt_epi64_mask(
-                __as<__m256i>(__left),
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epi64_mask(__as<__m256i>(__left), __as<__m256i>(__right));
         
         else if constexpr (__is_epu64_v<_Type_>)
-            return _mm256_cmplt_epu64_mask(
-                __as<__m256i>(__left), 
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epu64_mask(__as<__m256i>(__left), __as<__m256i>(__right));
         
         else if constexpr (__is_epi32_v<_Type_>)
-            return _mm256_cmplt_epi32_mask(
-                __as<__m256i>(__left), 
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epi32_mask(__as<__m256i>(__left), __as<__m256i>(__right));
         
         else if constexpr (__is_epu32_v<_Type_>)
-            return _mm256_cmplt_epu32_mask(
-                __as<__m256i>(__left), 
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epu32_mask(__as<__m256i>(__left), __as<__m256i>(__right));
         
         else if constexpr (__is_ps_v<_Type_>)
-            return _mm256_cmp_ps_mask(
-                __as<__m256>(__left), 
-                __as<__m256>(__right), _CMP_LT_OQ);
+            return _mm256_cmp_ps_mask(__as<__m256>(__left), __as<__m256>(__right), _CMP_LT_OQ);
         
         else if constexpr (__is_pd_v<_Type_>)
-            return _mm256_cmp_pd_mask(
-                __as<__m256d>(__left), 
-                __as<__m256d>(__right), _CMP_LT_OQ);
+            return _mm256_cmp_pd_mask(__as<__m256d>(__left),  __as<__m256d>(__right), _CMP_LT_OQ);
         
         else
             return _Less<arch::ISA::AVX2, 256, _Type_>()(__left, __right);
@@ -351,33 +299,23 @@ struct _Less<arch::ISA::AVX512VLF, 256, _Type_>:
 };
 
 template <class _Type_> 
-struct _Less<arch::ISA::AVX512VLBW, 256, _Type_>:
-    _Less<arch::ISA::AVX512VLF, 256, _Type_> 
-{
+struct _Less<arch::ISA::AVX512VLBW, 256, _Type_> {
     template <class _IntrinType_>
     raze_nodiscard raze_always_inline auto operator()(
         _IntrinType_ __left,
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi16_v<_Type_>)
-            return _mm256_cmplt_epi16_mask(
-                __as<__m256i>(__left), 
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epi16_mask(__as<__m256i>(__left), __as<__m256i>(__right));
         
         else if constexpr (__is_epu16_v<_Type_>)
-            return _mm256_cmplt_epu16_mask(
-                __as<__m256i>(__left),
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epu16_mask(__as<__m256i>(__left), __as<__m256i>(__right));
         
         else if constexpr (__is_epi8_v<_Type_>)
-            return _mm256_cmplt_epi8_mask(
-                __as<__m256i>(__left),
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epi8_mask(__as<__m256i>(__left), __as<__m256i>(__right));
         
         else if constexpr (__is_epu8_v<_Type_>)
-            return _mm256_cmplt_epu8_mask(
-                __as<__m256i>(__left), 
-                __as<__m256i>(__right));
+            return _mm256_cmplt_epu8_mask(__as<__m256i>(__left),  __as<__m256i>(__right));
         
         else
             return _Less<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right);
@@ -395,34 +333,22 @@ struct _Less<arch::ISA::AVX512VLF, 128, _Type_> :
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>)
-            return _mm_cmplt_epi64_mask(
-                __as<__m128i>(__left), 
-                __as<__m128i>(__right));
+            return _mm_cmplt_epi64_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else if constexpr (__is_epu64_v<_Type_>)
-            return _mm_cmplt_epu64_mask(
-                __as<__m128i>(__left), 
-                __as<__m128i>(__right));
+            return _mm_cmplt_epu64_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else if constexpr (__is_epi32_v<_Type_>)
-            return _mm_cmplt_epi32_mask(
-                __as<__m128i>(__left),
-                __as<__m128i>(__right));
+            return _mm_cmplt_epi32_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else if constexpr (__is_epu32_v<_Type_>)
-            return _mm_cmplt_epu32_mask(
-                __as<__m128i>(__left),
-                __as<__m128i>(__right));
+            return _mm_cmplt_epu32_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else if constexpr (__is_ps_v<_Type_>)
-            return _mm_cmp_ps_mask(
-                __as<__m128>(__left),
-                __as<__m128>(__right), _CMP_LT_OQ);
+            return _mm_cmp_ps_mask(__as<__m128>(__left), __as<__m128>(__right), _CMP_LT_OQ);
 
         else if constexpr (__is_pd_v<_Type_>)
-            return _mm_cmp_pd_mask(
-                __as<__m128d>(__left),
-                __as<__m128d>(__right), _CMP_LT_OQ);
+            return _mm_cmp_pd_mask(__as<__m128d>(__left), __as<__m128d>(__right), _CMP_LT_OQ);
 
         else
             return _Less<arch::ISA::AVX2, 128, _Type_>()(__left, __right);
@@ -439,24 +365,16 @@ struct _Less<arch::ISA::AVX512VLBW, 128, _Type_> :
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi16_v<_Type_>)
-            return _mm_cmplt_epi16_mask(
-                __as<__m128i>(__left), 
-                __as<__m128i>(__right));
+            return _mm_cmplt_epi16_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else if constexpr (__is_epu16_v<_Type_>)
-            return _mm_cmplt_epu16_mask(
-                __as<__m128i>(__left), 
-                __as<__m128i>(__right));
+            return _mm_cmplt_epu16_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else if constexpr (__is_epi8_v<_Type_>)
-            return _mm_cmplt_epi8_mask(
-                __as<__m128i>(__left),
-                __as<__m128i>(__right));
+            return _mm_cmplt_epi8_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else if constexpr (__is_epu8_v<_Type_>)
-            return _mm_cmplt_epu8_mask(
-                __as<__m128i>(__left), 
-                __as<__m128i>(__right));
+            return _mm_cmplt_epu8_mask(__as<__m128i>(__left), __as<__m128i>(__right));
 
         else
             return _Less<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right);

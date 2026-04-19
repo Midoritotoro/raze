@@ -1,10 +1,7 @@
 #pragma once
 
 #include <raze/vx/SimdDataparAlgorithms.h>
-#include <src/raze/vx/SizedSimdDispatcher.h>
-
-#include <raze/algorithm/minmax/Min.h>
-#include <raze/algorithm/minmax/Max.h>
+#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

@@ -1,12 +1,11 @@
 #pragma once
 
-#include <src/raze/vx/Arithmetic.h>
-#include <src/raze/vx/Bitwise.h>
+#include <src/raze/vx/hw/Arithmetic.h>
+#include <src/raze/vx/hw/Bitwise.h>
 #include <src/raze/vx/expression/IsConstWhere.h>
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
-#include <src/raze/vx/SimdMaskTypeCheck.h>
-#include <src/raze/vx/Reduce.h>
-#include <src/raze/vx/shuffle/Blend.h>
+#include <src/raze/vx/hw/Mask.h>
+#include <src/raze/vx/hw/Reduce.h>
+#include <src/raze/vx/hw/Merge.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

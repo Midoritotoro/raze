@@ -32,7 +32,7 @@ struct _Vertical_min<arch::ISA::SSE2, 128, _Type_> {
 			return __as<_IntrinType_>(_mm_min_pd(__as<__m128d>(__left), __as<__m128d>(__right)));
 		}
 		else {
-			const auto __mask = _Greater<arch::ISA::SSE2, 128, _Type_>()(__left, __right);
+			const auto __mask = _Less<arch::ISA::SSE2, 128, _Type_>()(__left, __right);
 			return _Select<arch::ISA::SSE2, 128, _Type_>()(__left, __right, __mask);
 		}
 	}
@@ -129,7 +129,7 @@ struct _Vertical_min<arch::ISA::AVX, 256, _Type_> {
 			return __as<_IntrinType_>(_mm256_min_pd(__as<__m256d>(__left), __as<__m256d>(__right)));
 		}
 		else {
-			const auto __mask = _Greater<arch::ISA::AVX, 256, _Type_>()(__left, __right);
+			const auto __mask = _Less<arch::ISA::AVX, 256, _Type_>()(__left, __right);
 			return _Select<arch::ISA::AVX, 256, _Type_>()(__left, __right, __mask);
 		}
 	}
@@ -192,7 +192,7 @@ struct _Vertical_min<arch::ISA::AVX2, 256, _Type_> {
 			return __as<_IntrinType_>(_mm256_min_pd(__as<__m256d>(__left), __as<__m256d>(__right)));
 		}
 		else {
-			const auto __mask = _Greater<arch::ISA::AVX2, 256, _Type_>()(__left, __right);
+			const auto __mask = _Less<arch::ISA::AVX2, 256, _Type_>()(__left, __right);
 			return _Select<arch::ISA::AVX2, 256, _Type_>()(__left, __right, __mask);
 		}
 	}
@@ -249,7 +249,7 @@ struct _Vertical_min<arch::ISA::AVX512F, 512, _Type_> {
 			return __as<_IntrinType_>(_mm512_min_pd(__as<__m512d>(__left), __as<__m512d>(__right)));
 		}
 		else {
-			const auto __mask = _Greater<arch::ISA::AVX512F, 512, _Type_>()(__left, __right);
+			const auto __mask = _Less<arch::ISA::AVX512F, 512, _Type_>()(__left, __right);
 			return _Select<arch::ISA::AVX512F, 512, _Type_>()(__left, __right, __mask);
 		}
 	}

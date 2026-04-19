@@ -1,6 +1,6 @@
  #pragma once 
 
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
+#include <src/raze/vx/hw/Cast.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

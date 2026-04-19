@@ -28,7 +28,7 @@ struct _Greater_equal<arch::ISA::SSE2, 128, _Type_> {
                 __as<__m128>(__left), __as<__m128>(__right)));
 
         else
-            return _Not<arch::ISA::SSE2, 128>()(_Less<arch::ISA::SSE2, 128, _Type_>()(__left, __right));
+            return _Not<arch::ISA::SSE2, 128, _Type_>()(_Less<arch::ISA::SSE2, 128, _Type_>()(__left, __right));
     }
 };
 
@@ -39,7 +39,7 @@ struct _Greater_equal<arch::ISA::AVX, 256, _Type_> {
         _IntrinType_ __left,
         _IntrinType_ __right) const noexcept
     {
-        return _Not<arch::ISA::AVX, 256>()(_Less<arch::ISA::AVX, 256, _Type_>()(__left, __right));
+        return _Not<arch::ISA::AVX, 256, _Type_>()(_Less<arch::ISA::AVX, 256, _Type_>()(__left, __right));
     }
 };
 
@@ -50,7 +50,7 @@ struct _Greater_equal<arch::ISA::AVX2, 256, _Type_> {
         _IntrinType_ __left,
         _IntrinType_ __right) const noexcept
     {
-        return _Not<arch::ISA::AVX2, 256>()(_Less<arch::ISA::AVX2, 256, _Type_>()(__left, __right));
+        return _Not<arch::ISA::AVX2, 256, _Type_>()(_Less<arch::ISA::AVX2, 256, _Type_>()(__left, __right));
     }
 };
 

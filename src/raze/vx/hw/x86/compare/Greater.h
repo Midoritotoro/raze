@@ -32,8 +32,7 @@ struct _Greater<arch::ISA::SSE42, 128, _Type_>:
         _IntrinType_ __right) const noexcept
     {
         if constexpr (__is_epi64_v<_Type_>) {
-            return __as<_IntrinType_>(_mm_cmpgt_epi64(
-                __as<__m128i>(__left), __as<__m128i>(__right)));
+            return __as<_IntrinType_>(_mm_cmpgt_epi64(__as<__m128i>(__left), __as<__m128i>(__right)));
         }
         else if constexpr (__is_epu64_v<_Type_>) {
             const auto __sign_64bit = _mm_set1_epi64x(0x8000000000000000);

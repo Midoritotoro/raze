@@ -1,12 +1,5 @@
 #pragma once
 
-#include <src/raze/algorithm/AdvanceBytes.h>
-#include <raze/compatibility/SimdCompatibility.h>
-
-#include <raze/compatibility/FunctionAttributes.h>
-#include <raze/arch/ProcessorFeatures.h>
-
-#include <src/raze/type_traits/SimdTypeCheck.h>
 #include <raze/vx/BasicSimd.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

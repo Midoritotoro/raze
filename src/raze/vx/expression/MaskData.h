@@ -1,14 +1,14 @@
 #pragma once 
 
-#include <src/raze/vx/SimdMaskTypeCheck.h>
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
+#include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>
 #include <raze/compatibility/Compatibility.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _MaskType_>
-__simd_nodiscard_inline auto __data(const _MaskType_& __mask) noexcept
+raze_nodiscard raze_always_inline auto __data(const _MaskType_& __mask) noexcept
 	requires(__is_simd_mask_v<_MaskType_>)
 {
 	using _InternalMaskType = typename _MaskType_::mask_type;

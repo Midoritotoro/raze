@@ -3,7 +3,6 @@
 #include <src/raze/vx/hw/x86/mask/BitmaskBitsPerElement.h>
 #include <src/raze/vx/hw/x86/mask/FirstN.h>
 #include <src/raze/vx/hw/x86/mask/MaskBits.h>
-#include <src/raze/vx/hw/x86/mask/MaskConvert.h>
 #include <src/raze/vx/hw/x86/mask/MaskElementReference.h>
 #include <src/raze/vx/hw/x86/mask/MaskImplementation.h>
 #include <src/raze/vx/hw/x86/mask/MaskIntrin.h>

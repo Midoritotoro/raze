@@ -147,7 +147,7 @@ struct _Xor<arch::ISA::AVX2, 256, _Type_> {
 			return _mm256_xor_si256(__left, __right);
 
 		else
-			return _Xor<arch::ISA::AVX, 256>()(__left, __right);
+			return _Xor<arch::ISA::AVX, 256, _Type_>()(__left, __right);
 	}
 
 	template <

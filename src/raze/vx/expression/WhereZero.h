@@ -1,10 +1,9 @@
 #pragma once
 
-#include <src/raze/vx/Arithmetic.h>
-#include <src/raze/vx/Bitwise.h>
+#include <src/raze/vx/hw/Arithmetic.h>
+#include <src/raze/vx/hw/Bitwise.h>
 #include <src/raze/vx/expression/IsWhereZero.h>
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
-#include <src/raze/vx/SimdMaskTypeCheck.h>
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

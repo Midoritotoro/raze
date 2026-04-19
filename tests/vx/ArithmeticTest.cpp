@@ -49,15 +49,15 @@ struct arithmetic_tests {
 
         std::transform(arrB, arrB + N, arrB, [](auto x) { return x * 3; });
 
-        Simd a = raze::vx::load<Simd>(arrA);
-        Simd b = raze::vx::load<Simd>(arrB);
+        Simd a; a.copy_from(arrA);
+        Simd b; b.copy_from(arrB);
 
         run(a, b, arrA, arrB, [](auto x, auto y) { return x + y; }, [](auto x, auto y) { return x + y; });
         run(a, b, arrA, arrB, [](auto x, auto y) { return x - y; }, [](auto x, auto y) { return x - y; });
         run(a, b, arrA, arrB, [](auto x, auto y) { return x * y; }, [](auto x, auto y) { return x * y; });
 
         std::iota(arrB, arrB + N, _Type_(1));
-        b = raze::vx::load<Simd>(arrB);
+        b.copy_from(arrB);
 
         run(a, b, arrA, arrB, [](auto x, auto y) { return x / y; }, [](auto x, auto y) { return x / y; });
 

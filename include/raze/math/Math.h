@@ -2,7 +2,7 @@
 
 #include <raze/Types.h>
 #include <raze/compatibility/Compatibility.h>
-#include <src/raze/vx/arithmetic/Abs.h>
+#include <src/raze/vx/hw/Arithmetic.h>
 #include <src/raze/math/Fma.h>
 #include <src/raze/math/Fms.h>
 #include <src/raze/math/Fnma.h>

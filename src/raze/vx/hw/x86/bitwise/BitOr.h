@@ -147,7 +147,7 @@ struct _Or<arch::ISA::AVX2, 256, _Type_> {
 			return _mm256_or_si256(__left, __right);
 
 		else
-			return _Or<arch::ISA::AVX, 256>()(__left, __right);
+			return _Or<arch::ISA::AVX, 256, _Type_>()(__left, __right);
 	}
 
 	template <

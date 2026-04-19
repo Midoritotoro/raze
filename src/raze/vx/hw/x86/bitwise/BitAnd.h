@@ -147,7 +147,7 @@ struct _And<arch::ISA::AVX2, 256, _Type_> {
 			return _mm256_and_si256(__left, __right);
 
 		else
-			return _And<arch::ISA::AVX, 256>()(__left, __right);
+			return _And<arch::ISA::AVX, 256, _Type_>()(__left, __right);
 	}
 
 	template <

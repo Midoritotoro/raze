@@ -25,9 +25,9 @@ struct _Fold<arch::ISA::SSE2, 128, _Type_> {
             __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
 
             if constexpr (__is_pd_v<_Type_>)
-                return _mm_cvtsd_f64(__folded);
+                return _mm_cvtsd_f64(__as<__m128d>(__folded));
             else
-                return _mm_cvtsi128_si64(__as<__m128i>(__folded));
+                return _mm_cvtsi128_si64(__folded);
         }
         else if constexpr (sizeof(_Type_) == 4) {
             auto __folded = __as<__m128i>(__vector);

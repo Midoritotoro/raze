@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/shuffle/Blend.h>
+#include <src/raze/vx/hw/x86/merge/Selectz.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -14,9 +14,9 @@ struct _Right_shift;
 template <class _Type_>
 struct _Right_shift<arch::ISA::SSE2, 128, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_>) {
 			auto __high_shifted = _mm_setzero_si128();
@@ -33,28 +33,23 @@ struct _Right_shift<arch::ISA::SSE2, 128, _Type_> {
 				__low_shifted = _mm_srli_epi64(_mm_sra_epi32(__as<__m128i>(__left), __shift_vector), 32);
 			}
 
-			return __as<_IntrinType_>(_Blend<arch::ISA::SSE2, 128, _Type_>()(
+			return __as<_IntrinType_>(_Select<arch::ISA::SSE2, 128, _Type_>()(
 				__high_shifted, __low_shifted, _mm_set_epi32(-1, 0, -1, 0)));
 		}
 		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_srl_epi64(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+			return __as<_IntrinType_>(_mm_srl_epi64(__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_sra_epi32(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+			return __as<_IntrinType_>(_mm_sra_epi32(__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_srl_epi32(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+			return __as<_IntrinType_>(_mm_srl_epi32(__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_sra_epi16(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+			return __as<_IntrinType_>(_mm_sra_epi16(__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_srl_epi16(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+			return __as<_IntrinType_>(_mm_srl_epi16(__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi8_v<_Type_>) {
 			const auto __select_mask = _mm_set1_epi32(0x00FF00FF);
@@ -63,13 +58,38 @@ struct _Right_shift<arch::ISA::SSE2, 128, _Type_> {
 				_mm_slli_epi16(__as<__m128i>(__left), 8), _mm_cvtsi32_si128(__shift + 8));
 			const auto __odd_shifted = _mm_sra_epi16(__as<__m128i>(__left), _mm_cvtsi32_si128(__shift));
 
-			return __as<_IntrinType_>(_Blend<arch::ISA::SSE2, 128, _Type_>()(
+			return __as<_IntrinType_>(_Select<arch::ISA::SSE2, 128, _Type_>()(
 				__even_shifted, __odd_shifted, __select_mask));
 		}
 		else if constexpr (__is_epu8_v<_Type_>) {
 			const auto __and_mask = _mm_and_si128(__as<__m128i>(__left), _mm_set1_epi8(0xFFu << __shift));
 			return __as<_IntrinType_>(_mm_srl_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
 		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Select<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Selectz<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __shift), __mask);
 	}
 };
 
@@ -78,9 +98,9 @@ struct _Right_shift<arch::ISA::SSE41, 128, _Type_>:
 	_Right_shift<arch::ISA::SSSE3, 128, _Type_>
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_>) {
 			auto __high_shifted = _mm_setzero_si128();
@@ -106,12 +126,38 @@ struct _Right_shift<arch::ISA::SSE41, 128, _Type_>:
 				_mm_slli_epi16(__as<__m128i>(__left), 8), _mm_cvtsi32_si128(__shift + 8));
 			const auto __odd_shifted = _mm_sra_epi16(__as<__m128i>(__left), _mm_cvtsi32_si128(__shift));
 
-			return __as<_IntrinType_>(_Blend<arch::ISA::SSE41, 128, _Type_>()(
+			return __as<_IntrinType_>(_Select<arch::ISA::SSE41, 128, _Type_>()(
 				__even_shifted, __odd_shifted, __select_mask));
 		}
 		else {
 			return _Right_shift<arch::ISA::SSE2, 128, _Type_>()(__left, __shift);
 		}
+	}
+
+	
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Select<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Selectz<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __shift), __mask);
 	}
 };
 
@@ -120,9 +166,9 @@ struct _Right_shift<arch::ISA::AVX512VLF, 128, _Type_>:
 	_Right_shift<arch::ISA::AVX2, 128, _Type_> 
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_sra_epi64(
@@ -132,6 +178,67 @@ struct _Right_shift<arch::ISA::AVX512VLF, 128, _Type_>:
 			return _Right_shift<arch::ISA::SSE41, 128, _Type_>()(__left, __shift);
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
+			return _Select<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+		else if constexpr (__is_epi64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_sra_epi64(__as<__m128i>(__source),
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_srl_epi64(__as<__m128i>(__source),
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epi32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_sra_epi32(__as<__m128i>(__source),
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_srl_epi32(__as<__m128i>(__source), 
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
+			return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __shift), __mask);
+		}
+		else if constexpr (__is_epi64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_maskz_sra_epi64(
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_maskz_srl_epi64(
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epi32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_maskz_sra_epi32(
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_maskz_srl_epi32(
+				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+	}
 };
 
 template <class _Type_> 
@@ -139,9 +246,9 @@ struct _Right_shift<arch::ISA::AVX512VLBW, 128, _Type_> :
 	_Right_shift<arch::ISA::AVX512VLF, 128, _Type_> 
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi8_v<_Type_>) {
 			const auto __even_shifted = _mm_sra_epi16(
@@ -154,14 +261,67 @@ struct _Right_shift<arch::ISA::AVX512VLBW, 128, _Type_> :
 			return _Right_shift<arch::ISA::AVX512VLF, 128, _Type_>()(__left, __shift);
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+			return _Select<arch::ISA::AVX512VLBW, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+		else if constexpr (__is_epi16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_sra_epi16(
+				__as<__m128i>(__source), __mask,
+				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_srl_epi16(
+				__as<__m128i>(__source), __mask,
+				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else {
+			return _Select<arch::ISA::AVX512VLBW, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+			return _Selectz<arch::ISA::AVX512VLBW, 128, _Type_>()((*this)(__left, __shift), __mask);
+		}
+		else if constexpr (__is_epi16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_sra_epi16(__mask,
+				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm_mask_srl_epi16(__mask,
+				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else {
+			return _Selectz<arch::ISA::AVX512VLBW, 128, _Type_>()((*this)(__left, __shift), __mask);
+		}
+	}
 };
 
 template <class _Type_>
 struct _Right_shift<arch::ISA::AVX, 256, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		const auto __low = _Right_shift<arch::ISA::SSE42, 128, _Type_>()(
 			__as<__m128i>(__left), __shift);
@@ -171,14 +331,39 @@ struct _Right_shift<arch::ISA::AVX, 256, _Type_> {
 		return __as<_IntrinType_>(_mm256_insertf128_si256(
 			__as<__m256i>(__low), __high, 1));
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Select<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Selectz<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __shift), __mask);
+	}
 };
 
 template <class _Type_>
 struct _Right_shift<arch::ISA::AVX2, 256, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_>) {
 			auto __high_shifted = _mm256_setzero_si256();
@@ -224,13 +409,38 @@ struct _Right_shift<arch::ISA::AVX2, 256, _Type_> {
 				_mm256_slli_epi16(__as<__m256i>(__left), 8), _mm_cvtsi32_si128(__shift + 8));
 			const auto __odd_shifted = _mm256_sra_epi16(__as<__m256i>(__left), _mm_cvtsi32_si128(__shift));
 
-			return __as<_IntrinType_>(_Blend<arch::ISA::AVX2, 256, _Type_>()(
+			return __as<_IntrinType_>(_Select<arch::ISA::AVX2, 256, _Type_>()(
 				__even_shifted, __odd_shifted, __select_mask));
 		}
 		else if constexpr (__is_epu8_v<_Type_>) {
 			const auto __and_mask = _mm256_and_si256(__as<__m256i>(__left), _mm256_set1_epi8(0xFFu << __shift));
 			return __as<_IntrinType_>(_mm256_srl_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
 		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Select<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Selectz<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __shift), __mask);
 	}
 };
 
@@ -239,9 +449,9 @@ struct _Right_shift<arch::ISA::AVX512VLF, 256, _Type_>:
 	_Right_shift<arch::ISA::AVX2, 256, _Type_> 
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_sra_epi64(
@@ -251,15 +461,148 @@ struct _Right_shift<arch::ISA::AVX512VLF, 256, _Type_>:
 			return _Right_shift<arch::ISA::AVX2, 256, _Type_>()(__left, __shift);
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
+			return _Select<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+		else if constexpr (__is_epi64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_sra_epi64(__as<__m256i>(__source),
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_srl_epi64(__as<__m256i>(__source),
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epi32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_sra_epi32(__as<__m256i>(__source),
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_srl_epi32(__as<__m256i>(__source),
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
+			return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __shift), __mask);
+		}
+		else if constexpr (__is_epi64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_maskz_sra_epi64(
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_maskz_srl_epi64(
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epi32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_maskz_sra_epi32(
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_maskz_srl_epi32(
+				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+	}
 };
 
+template <class _Type_> 
+struct _Right_shift<arch::ISA::AVX512VLBW, 256, _Type_> {
+	template <class _IntrinType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift) const noexcept
+	{
+		if constexpr (__is_epi8_v<_Type_>) {
+			const auto __even_shifted = _mm256_sra_epi16(
+				_mm256_slli_epi16(__as<__m256i>(__left), 8), _mm_cvtsi32_si128(__shift + 8));
+			const auto __odd_shifted = _mm256_sra_epi16(__as<__m256i>(__left), _mm_cvtsi32_si128(__shift));
+
+			return __as<_IntrinType_>(_mm256_mask_mov_epi8(__odd_shifted, 0x55555555, __even_shifted));
+		}
+		else {
+			return _Right_shift<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __shift);
+		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+			return _Select<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+		else if constexpr (__is_epi16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_sra_epi16(
+				__as<__m256i>(__source), __mask,
+				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_srl_epi16(
+				__as<__m256i>(__source), __mask,
+				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else {
+			return _Select<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+			return _Selectz<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __mask);
+		}
+		else if constexpr (__is_epi16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_sra_epi16(__mask,
+				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm256_mask_srl_epi16(__mask,
+				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else {
+			return _Selectz<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __mask);
+		}
+	}
+};
 
 template <class _Type_>
 struct _Right_shift<arch::ISA::AVX512F, 512, _Type_> {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi64_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_sra_epi64(
@@ -287,6 +630,67 @@ struct _Right_shift<arch::ISA::AVX512F, 512, _Type_> {
 			return __as<_IntrinType_>(_mm512_inserti64x4(__as<__m512i>(__low_shifted), __high_shifted, 1));
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
+			return _Select<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+		else if constexpr (__is_epi64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_mask_sra_epi64(__as<__m512i>(__source),
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_mask_srl_epi64(__as<__m512i>(__source),
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epi32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_mask_sra_epi32(__as<__m512i>(__source),
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_mask_srl_epi32(__as<__m512i>(__source),
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
+			return _Selectz<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __shift), __mask);
+		}
+		else if constexpr (__is_epi64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_maskz_sra_epi64(
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu64_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_maskz_srl_epi64(
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epi32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_maskz_sra_epi32(
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu32_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_maskz_srl_epi32(
+				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+	}
 };
 
 template <class _Type_> 
@@ -294,9 +698,9 @@ struct _Right_shift<arch::ISA::AVX512BW, 512, _Type_> :
 	_Right_shift<arch::ISA::AVX512F, 512, _Type_> 
 {
 	template <class _IntrinType_>
-	raze_nodiscard raze_static_operator raze_always_inline _IntrinType_ operator()(
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__left,
-		uint32			__shift) raze_const_operator noexcept
+		uint32			__shift) const noexcept
 	{
 		if constexpr (__is_epi16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_sra_epi16(
@@ -322,6 +726,59 @@ struct _Right_shift<arch::ISA::AVX512BW, 512, _Type_> :
 			return _Right_shift<arch::ISA::AVX512F, 512, _Type_>()(__left, __shift);
 		}
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+			return _Select<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+		else if constexpr (__is_epi16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_mask_sra_epi16(
+				__as<__m512i>(__source), __mask,
+				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_mask_srl_epi16(
+				__as<__m512i>(__source), __mask,
+				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else {
+			return _Select<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __source, __mask);
+		}
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__left,
+		uint32			__shift,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+			return _Selectz<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __mask);
+		}
+		else if constexpr (__is_epi16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm512_mask_sra_epi16(__mask,
+				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else if constexpr (__is_epu16_v<_Type_>) {
+			return __as<_IntrinType_>(_mm5121_mask_srl_epi16(__mask,
+				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		}
+		else {
+			return _Selectz<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __mask);
+		}
+	}
 };
 
 template <class _Type_> struct _Right_shift<arch::ISA::SSE3, 128, _Type_> : _Right_shift<arch::ISA::SSE2, 128, _Type_> {};
@@ -341,7 +798,6 @@ template <class _Type_> struct _Right_shift<arch::ISA::AVX512VBMI2DQ, 512, _Type
 
 template <class _Type_> struct _Right_shift<arch::ISA::FMA3, 256, _Type_> : _Right_shift<arch::ISA::AVX, 256, _Type_> {};
 template <class _Type_> struct _Right_shift<arch::ISA::AVX2FMA3, 256, _Type_> : _Right_shift<arch::ISA::AVX2, 256, _Type_> {};
-template <class _Type_> struct _Right_shift<arch::ISA::AVX512VLBW, 256, _Type_> : _Right_shift<arch::ISA::AVX512VLF, 256, _Type_> {};
 template <class _Type_> struct _Right_shift<arch::ISA::AVX512VLDQ, 256, _Type_> : _Right_shift<arch::ISA::AVX512VLF, 256, _Type_> {};
 template <class _Type_> struct _Right_shift<arch::ISA::AVX512VLBWDQ, 256, _Type_> : _Right_shift<arch::ISA::AVX512VLBW, 256, _Type_> {};
 template <class _Type_> struct _Right_shift<arch::ISA::AVX512VBMIVL, 256, _Type_> : _Right_shift<arch::ISA::AVX512VLBW, 256, _Type_> {};

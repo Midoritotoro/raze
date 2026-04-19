@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <raze/compatibility/Compatibility.h>
-#include <src/raze/vx/SimdIntegralTypesCheck.h>
 #include <src/raze/vx/arithmetic/Fma.h>
 #include <src/raze/vx/arithmetic/MaskzFma.h>
 #include <src/raze/vx/bitwise/MaskImplementation.h>
@@ -16,16 +15,7 @@ raze_nodiscard raze_always_inline _Type_ __fma(
 	_Type_ __x, _Type_ __y, _Type_ __z) noexcept
 		requires(std::is_arithmetic_v<_Type_>)
 {
-#if ((defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && RAZE_HAS_FMA3_SUPPORT) || (defined(raze_cpp_msvc) && RAZE_FORCE_FMA3)
-	if constexpr (vx::__is_pd_v<_Type_>)
-		return _mm_cvtsd_f64(_mm_fmadd_pd(
-			_mm_set_sd(__x), _mm_set_sd(__y), _mm_set_sd(__z)));
-	else if constexpr (vx::__is_ps_v<_Type_>)
-		return _mm_cvtss_f32(_mm_fmadd_pd(
-			_mm_set_ss(__x), _mm_set_ss(__y), _mm_set_ss(__z)));
-	else
-#endif
-		return __x * __y + __z;
+	return __x * __y + __z;
 }
 
 template <class _Simd_>

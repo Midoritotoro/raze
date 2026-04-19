@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/bitwise/direct/Ternarylogic.h>
-#include <src/raze/vx/hw/x86/bitwise/direct/Andnot.h>
+#include <src/raze/vx/hw/x86/bitwise/Ternarylogic.h>
+#include <src/raze/vx/hw/x86/bitwise/Andnot.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
