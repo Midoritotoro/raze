@@ -24,17 +24,12 @@ struct horizontal_minmax_tests {
         raze_assert(raze::vx::horizontal_min(v) == (*std::min_element(arr, arr + N)));
         raze_assert(raze::vx::horizontal_max(v) == (*std::max_element(arr, arr + N)));
 
-      /*  for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+        for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
 
-            auto w = raze::vx::where(v, fbk, m);
-            auto wz = raze::vx::where(v, m);
-            auto const_w = raze::vx::where(Simd(v), fbk, m);
-            auto const_wz = raze::vx::where(Simd(v), m);
-
-            const auto test_w = [=](auto w_expr) {
-                auto rminw = raze::vx::horizontal_min(w_expr);
-                auto rmaxw = raze::vx::horizontal_max(w_expr);
+            {
+                auto rminw = raze::vx::horizontal_min[fbk, m](v);
+                auto rmaxw = raze::vx::horizontal_max[fbk, m](v);
 
                 _Type_ expected_min = m[0] ? arr[0] : fallback[0];
                 _Type_ expected_max = m[0] ? arr[0] : fallback[0];
@@ -46,12 +41,11 @@ struct horizontal_minmax_tests {
 
                 raze_assert(rminw == expected_min);
                 raze_assert(rmaxw == expected_max);
-            };
-
+            }
             
-            const auto test_wz = [=] (auto wz_expr) {
-                auto rminwz = raze::vx::horizontal_min(wz_expr);
-                auto rmaxwz = raze::vx::horizontal_max(wz_expr);
+            {
+                auto rminwz = raze::vx::horizontal_min[m](v);
+                auto rmaxwz = raze::vx::horizontal_max[m](v);
 
                 _Type_ expected_min = m[0] ? arr[0] : _Type_(0);
                 _Type_ expected_max = expected_min;
@@ -64,14 +58,8 @@ struct horizontal_minmax_tests {
 
                 raze_assert(rminwz == expected_min);
                 raze_assert(rmaxwz == expected_max);
-            };
-
-            test_w(const_w);
-            test_w(w);
-
-            test_wz(const_wz);
-            test_wz(wz);
-        }*/
+            }
+        }
     }
 };
 

@@ -72,7 +72,7 @@ struct _Configurable_binary_operation_base
 
             auto __rhs_data = [&] {
                 if constexpr (requires { __op<_Simd_>(__data(__x), __y); })
-                    return __data(__y);
+                    return __y;
                 else 
                     return __data(_Simd_(__y));
             }();

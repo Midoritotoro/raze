@@ -303,11 +303,11 @@ struct _Right_shift<arch::ISA::AVX512VLBW, 128, _Type_> :
 			return _Selectz<arch::ISA::AVX512VLBW, 128, _Type_>()((*this)(__left, __shift), __mask);
 		}
 		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_sra_epi16(__mask,
+			return __as<_IntrinType_>(_mm_maskz_sra_epi16(__mask,
 				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_srl_epi16(__mask,
+			return __as<_IntrinType_>(_mm_maskz_srl_epi16(__mask,
 				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else {
@@ -584,11 +584,11 @@ struct _Right_shift<arch::ISA::AVX512VLBW, 256, _Type_> {
 			return _Selectz<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __mask);
 		}
 		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_sra_epi16(__mask,
+			return __as<_IntrinType_>(_mm256_maskz_sra_epi16(__mask,
 				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_srl_epi16(__mask,
+			return __as<_IntrinType_>(_mm256_maskz_srl_epi16(__mask,
 				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else {
@@ -768,11 +768,11 @@ struct _Right_shift<arch::ISA::AVX512BW, 512, _Type_> :
 			return _Selectz<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __mask);
 		}
 		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_sra_epi16(__mask,
+			return __as<_IntrinType_>(_mm512_maskz_sra_epi16(__mask,
 				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm5121_mask_srl_epi16(__mask,
+			return __as<_IntrinType_>(_mm512_maskz_srl_epi16(__mask,
 				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
 		}
 		else {

@@ -7,6 +7,7 @@
 #endif
 
 #include <src/raze/vx/hw/configurable/ConfigurableBinaryOperation.h>
+#include <src/raze/vx/hw/configurable/ConfigurableUnaryOperation.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -31,5 +32,17 @@ using _Configurable_mul = __configurable_binary_operation_type<_Mul, _Options_>;
 
 template <class _Options_>
 using _Configurable_div = __configurable_binary_operation_type<_Div, _Options_>;
+
+template <class _Options_>
+using _Configurable_vertical_min = __configurable_binary_operation_type<_Vertical_min, _Options_>;
+
+template <class _Options_>
+using _Configurable_vertical_max = __configurable_binary_operation_type<_Vertical_max, _Options_>;
+
+template <class _Options_>
+using _Configurable_negate = __configurable_unary_operation_type<_Negate, _Options_>;
+
+template <class _Options_>
+using _Configurable_abs = __configurable_unary_operation_type<_Abs, _Options_>;
 
 __RAZE_VX_NAMESPACE_END

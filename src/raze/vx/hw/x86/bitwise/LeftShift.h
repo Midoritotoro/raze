@@ -297,12 +297,8 @@ struct _Left_shift<arch::ISA::AVX512BW, 512, _Type_>:
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
 			return _Selectz<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm512_and_si512(__as<__m512i>(__left), _mm512_set1_epi8(0xFFull >> __shift));
-			return __as<_IntrinType_>(_mm512_maskz_sll_epi16(__mask, __and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_maskz_sll_epi16(__mask,
@@ -410,12 +406,8 @@ struct _Left_shift<arch::ISA::AVX512VLBW, 256, _Type_> {
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
 			return _Selectz<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm256_and_si256(__as<__m256i>(__left), _mm256_set1_epi8(0xFFu >> __shift));
-			return __as<_IntrinType_>(_mm256_maskz_sll_epi16(__mask, __and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_maskz_sll_epi16(__mask,
@@ -433,13 +425,8 @@ struct _Left_shift<arch::ISA::AVX512VLBW, 256, _Type_> {
 		_IntrinType_	__source) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
 			return _Select<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm256_and_si256(__as<__m256i>(__left), _mm256_set1_epi8(0xFFu >> __shift));
-			return __as<_IntrinType_>(_mm256_mask_sll_epi16(__as<__m256i>(__source),
-				__mask, __and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_mask_sll_epi16(__as<__m256i>(__source), 
@@ -523,12 +510,8 @@ struct _Left_shift<arch::ISA::AVX512VLBW, 128, _Type_> {
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
 			return _Selectz<arch::ISA::AVX512VLBW, 128, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm_and_si128(__as<__m128i>(__left), _mm_set1_epi8(0xFFu >> __shift));
-			return __as<_IntrinType_>(_mm_maskz_sll_epi16(__mask, __and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_maskz_sll_epi16(__mask,
@@ -546,13 +529,8 @@ struct _Left_shift<arch::ISA::AVX512VLBW, 128, _Type_> {
 		_IntrinType_	__source) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
 			return _Select<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm_and_si128(__as<__m128i>(__left), _mm_set1_epi8(0xFFu >> __shift));
-			return __as<_IntrinType_>(_mm_mask_sll_epi16(__as<__m128i>(__source),
-				__mask, __and_mask, _mm_cvtsi32_si128(__shift)));
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_mask_sll_epi16(__as<__m128i>(__source), 

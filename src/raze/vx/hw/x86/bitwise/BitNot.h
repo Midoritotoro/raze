@@ -123,6 +123,29 @@ struct _Not<arch::ISA::AVX, 256, _Type_> {
 				__as<__m256>(__vector),
 				__as<__m256>(_mm256_set1_epi32(-1))));
 	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__vector,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Selectz<arch::ISA::AVX, 256, _Type_>()((*this)(__vector), __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__vector,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Select<arch::ISA::AVX, 256, _Type_>()((*this)(__vector), __source, __mask);
+	}
 };
 
 template <class _Type_>
@@ -139,6 +162,29 @@ struct _Not<arch::ISA::AVX2, 256, _Type_> {
 
 		else if constexpr (std::is_same_v<_IntrinType_, __m256>)
 			return _mm256_xor_ps(__vector, __as<__m256>(_mm256_set1_epi32(-1)));
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__vector,
+		_MaskType_		__mask) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Selectz<arch::ISA::AVX2, 256, _Type_>()((*this)(__vector), __mask);
+	}
+
+	template <
+		class _IntrinType_,
+		class _MaskType_>
+	raze_nodiscard raze_always_inline _IntrinType_ operator()(
+		_IntrinType_	__vector,
+		_MaskType_		__mask,
+		_IntrinType_	__source) const noexcept
+			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
+	{
+		return _Select<arch::ISA::AVX2, 256, _Type_>()((*this)(__vector), __source, __mask);
 	}
 };
 

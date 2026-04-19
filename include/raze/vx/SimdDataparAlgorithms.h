@@ -73,6 +73,21 @@ constexpr inline auto add = raze::options::functor<_Configurable_add>;
 constexpr inline auto sub = raze::options::functor<_Configurable_sub>;
 constexpr inline auto mul = raze::options::functor<_Configurable_mul>;
 constexpr inline auto div = raze::options::functor<_Configurable_div>;
+constexpr inline auto vertical_max = raze::options::functor<_Configurable_vertical_max>;
+constexpr inline auto vertical_min = raze::options::functor<_Configurable_vertical_min>;
+constexpr inline auto vmin = vertical_min;
+constexpr inline auto vmax = vertical_max;
+
+constexpr inline auto neg = raze::options::functor<_Configurable_negate>;
+constexpr inline auto abs = raze::options::functor<_Configurable_abs>;
+
+constexpr inline auto bit_or = raze::options::functor<_Configurable_or>;
+constexpr inline auto bit_xor = raze::options::functor<_Configurable_xor>;
+constexpr inline auto bit_and = raze::options::functor<_Configurable_and>;
+constexpr inline auto bit_andnot = raze::options::functor<_Configurable_andnot>;
+constexpr inline auto bit_shl = raze::options::functor<_Configurable_shl>;
+constexpr inline auto bit_shr = raze::options::functor<_Configurable_shr>;
+constexpr inline auto bit_not = raze::options::functor<_Configurable_not>;
 
 
 template <class _DataparType_>
@@ -143,82 +158,6 @@ raze_nodiscard raze_always_inline typename _WhereExpression_::value_type
 	horizontal_max(const _WhereExpression_& __where) noexcept
 {
 	return __where.__horizontal_max();
-}
-
-/**
- *  @brief  Per‑lane minimum of two SIMD vectors.
- *
- *  @param __x  First SIMD vector.
- *  @param __y  Second SIMD vector.
- *
- *  @return  A SIMD vector whose lanes contain the element‑wise minimum of
- *           @p __first and @p __second.
- */ 
-template <simd_type _Simd_>
-raze_nodiscard raze_always_inline _Simd_ vertical_min(
-	const _Simd_& __x,
-	const _Simd_& __y) noexcept
-{
-	return _Vertical_min<_Simd_::__isa, _Simd_::__width,
-		typename _Simd_::value_type>()(__data(__x), __data(__y));
-}
-
-template <
-	simd_type							_Simd_,
-	non_memory_where_expression_type	_WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ vertical_min(
-	const _Simd_&				__vector,
-	const _WhereExpression_&	__where) noexcept
-{
-	return __where.__vertical_min(__vector);
-}
-
-template <
-	non_memory_where_expression_type	_WhereExpression_,
-	simd_type							_Simd_>
-raze_nodiscard raze_always_inline _Simd_ vertical_min(
-	const _WhereExpression_&	__where,
-	const _Simd_&				__vector) noexcept
-{
-	return __where.__vertical_min(__vector);
-}
-
-/**
- *  @brief  Per‑lane maximum of two SIMD vectors.
- *
- *  @param __first   First SIMD vector.
- *  @param __second  Second SIMD vector.
- *
- *  @return  A SIMD vector whose lanes contain the element‑wise maximum of
- *           @p __first and @p __second.
- */
-template <simd_type _Simd_>
-raze_nodiscard raze_always_inline _Simd_ vertical_max(
-	const _Simd_& __x,
-	const _Simd_& __y) noexcept
-{
-	return _Vertical_max<_Simd_::__isa, _Simd_::__width,
-		typename _Simd_::value_type>()(__data(__x), __data(__y));
-}
-
-template <
-	simd_type							_Simd_,
-	non_memory_where_expression_type	_WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ vertical_max(
-	const _Simd_&				__vector,
-	const _WhereExpression_&	__where) noexcept
-{
-	return __where.__vertical_max(__vector);
-}
-
-template <
-	non_memory_where_expression_type	_WhereExpression_,
-	simd_type							_Simd_>
-raze_nodiscard raze_always_inline _Simd_ vertical_max(
-	const _WhereExpression_&	__where,
-	const _Simd_&				__vector) noexcept
-{
-	return __where.__vertical_max(__vector);
 }
 
 template <arch::ISA _ISA_>

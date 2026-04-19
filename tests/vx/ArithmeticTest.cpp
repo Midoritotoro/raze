@@ -75,12 +75,17 @@ struct arithmetic_tests {
             Simd src; src.copy_from(arrSrc);
 
             const auto run_tests = [arrA, arrB, arrSrc, a, b, src](auto m) {
-                /*test_where_unary<_Type_, N>(
-                    arrA, arrSrc, m, a, src, w, wz,
-                    raze::type_traits::negate{},
+                test_where_unary<_Type_, N>(
+                    arrA, arrSrc, m, a, src,
+                    [m, src](Simd A) {
+                        return raze::vx::neg[m, src](A);
+                    },
+                    [m](Simd A) {
+                        return raze::vx::neg[m](A);
+                    },
                     [](_Type_ A, _Type_ Src, bool cond, bool rev) {
                         return cond ? (-A) : Src;
-                    });*/
+                });
 
                 test_where_binary<_Type_, N>(
                     arrA, arrB, arrSrc, m,

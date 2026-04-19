@@ -145,9 +145,8 @@ template <
     size_t N, 
     class Simd,
     class Mask,
-    class WhereExpr,
-    class WhereZeroExpr, 
-    class SimdOp,
+    class SimdMaskOp,
+    class SimdMaskzOp,
     class ScalarOp>
 void test_where_unary(
     const T(&arrA)[N],
@@ -155,13 +154,12 @@ void test_where_unary(
     const Mask& m,
     const Simd& a,
     const Simd& src,
-    const WhereExpr& w,
-    const WhereZeroExpr& wz,
-    SimdOp simd_op, 
+    SimdMaskOp simd_mask_op,
+    SimdMaskzOp simd_maskz_op,
     ScalarOp scalar_op) noexcept
 {
     {
-        auto r1 = simd_op(w);
+        auto r1 = simd_mask_op(a);
         
         for (size_t i = 0; i < N; ++i) {
             using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
@@ -174,7 +172,7 @@ void test_where_unary(
     }
 
     {
-        auto r1 = simd_op(wz); 
+        auto r1 = simd_maskz_op(a);
 
         for (size_t i = 0; i < N; ++i) {
             using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
