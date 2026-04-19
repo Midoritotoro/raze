@@ -17,8 +17,8 @@ struct __ignore_none {
     }
 
     template <class _Type_> 
-    raze_always_inline auto mask(const as<_Type_>& __target) const noexcept {
-        return { 0 };
+    raze_always_inline _Type_ mask(const as<_Type_>& __target) const noexcept {
+        return _Type_{};
     }
 
     template <class _Type_> 

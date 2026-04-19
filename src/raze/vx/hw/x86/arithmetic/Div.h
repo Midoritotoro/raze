@@ -1235,12 +1235,12 @@ struct _Div<arch::ISA::AVX512VLF, 128, _Type_>  {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_div_pd(
+			return __as<_IntrinType_>(_mm_mask_div_pd(
 				__as<__m128d>(__source), __mask,
 				__as<__m128d>(__left), __as<__m128d>(__right)));
 		}
 		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_div_ps(
+			return __as<_IntrinType_>(_mm_mask_div_ps(
 				__as<__m128>(__source), __mask,
 				__as<__m128>(__left), __as<__m128>(__right)));
 		}

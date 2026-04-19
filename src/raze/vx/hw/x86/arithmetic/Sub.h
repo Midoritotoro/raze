@@ -193,10 +193,10 @@ struct _Sub<arch::ISA::AVX512VLBW, 128, _Type_> {
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) > 4) {
-			return _Sub<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __right), __mask);
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
+			return _Sub<arch::ISA::AVX512VLF, 128, _Type_>()(__left, __right, __mask);
 		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
+		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_maskz_sub_epi16(__mask,
 				__as<__m128i>(__left), __as<__m128i>(__right)));
 		}
@@ -216,8 +216,8 @@ struct _Sub<arch::ISA::AVX512VLBW, 128, _Type_> {
 		_IntrinType_	__source) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Sub<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __right), __source, __mask);
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
+			return _Sub<arch::ISA::AVX512VLF, 128, _Type_>()(__left, __right, __mask, __source);
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_mask_sub_epi16(__as<__m128i>(__source),
@@ -428,10 +428,10 @@ struct _Sub<arch::ISA::AVX512VLBW, 256, _Type_> {
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) > 4) {
-			return _Sub<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __right), __mask);
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
+			return _Sub<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right, __mask);
 		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
+		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_maskz_sub_epi16(__mask,
 				__as<__m256i>(__left), __as<__m256i>(__right)));
 		}
@@ -451,8 +451,8 @@ struct _Sub<arch::ISA::AVX512VLBW, 256, _Type_> {
 		_IntrinType_	__source) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Sub<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __right), __source, __mask);
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
+			return _Sub<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right, __mask, __source);
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_mask_sub_epi16(__as<__m256i>(__source),
@@ -583,10 +583,10 @@ struct _Sub<arch::ISA::AVX512BW, 512, _Type_> {
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) > 4) {
-			return _Sub<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __right), __mask);
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
+			return _Sub<arch::ISA::AVX512F, 512, _Type_>()(__left, __right, __mask);
 		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
+		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_maskz_sub_epi16(__mask,
 				__as<__m512i>(__left), __as<__m512i>(__right)));
 		}
@@ -606,8 +606,8 @@ struct _Sub<arch::ISA::AVX512BW, 512, _Type_> {
 		_IntrinType_	__source) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Sub<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __right), __source, __mask);
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
+			return _Sub<arch::ISA::AVX512F, 512, _Type_>()(__left, __right, __mask, __source);
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_mask_sub_epi16(__as<__m512i>(__source),

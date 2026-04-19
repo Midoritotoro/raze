@@ -149,7 +149,7 @@ struct _To_vector<arch::ISA::AVX2, 256, _IntrinType_, _Type_> {
             return __as<_IntrinType_>(_mm256_cmpgt_epi16(_mm256_and_si256(__shuffled, __select), _mm256_setzero_si256()));
         }
         else if constexpr (sizeof(_Type_) == 1) {
-            const auto __vector_mask = _mm256_setr_epi32(__mask & 0xFFFF, 0, 0, 0, (__mask >> 16) & 0xFFFF, 0, 0, 0);
+            const auto __vector_mask = _mm256_setr_epi32(__mask & 0xFFFF, 0, 0, 0, (uint32(__mask) >> 16) & 0xFFFF, 0, 0, 0);
 
             const auto __select = _mm256_set1_epi64x(0x8040201008040201ull);
             const auto __shuffled = _mm256_shuffle_epi8(__vector_mask, _mm256_set_epi64x(0x0101010101010101ll, 0, 0x0101010101010101ll, 0));

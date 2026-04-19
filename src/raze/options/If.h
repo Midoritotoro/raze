@@ -11,6 +11,8 @@ struct if_ {
     static constexpr bool is_inverted = false;
     static constexpr bool is_complete = false;
 
+    using condition_type = _Condition_;
+
     if_(_Condition_ __condition) noexcept:
         _condition(__condition) 
     {}

@@ -4,6 +4,7 @@
 #include <raze/math/BitMath.h>
 #include <src/raze/math/BitTestAndReset.h>
 
+raze_disable_warning_msvc(4310)
 
 __RAZE_VX_NAMESPACE_BEGIN
 

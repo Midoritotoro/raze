@@ -69,8 +69,16 @@ struct reduce_add_t:
 constexpr inline auto reduce_add = raze::options::functor<reduce_add_t>;
 
 
+constexpr inline auto add = raze::options::functor<_Configurable_add>;
+constexpr inline auto sub = raze::options::functor<_Configurable_sub>;
+constexpr inline auto mul = raze::options::functor<_Configurable_mul>;
+constexpr inline auto div = raze::options::functor<_Configurable_div>;
+
+
 template <class _DataparType_>
 using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_runtime_abi<_DataparType_::__isa, _DataparType_::__width>>;
+
+
 
 /**
  *  @brief  Constructs a tail mask with the first @p __elements lanes set.

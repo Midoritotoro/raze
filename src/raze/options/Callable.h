@@ -43,8 +43,22 @@ struct callable:
     template <
         vx::simd_mask_type  _Condition_, 
         vx::simd_type       _Alternative_>
-    raze_always_inline constexpr auto operator[](_Condition_ __condition, _Alternative_ __source) const noexcept
-        requires(requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
+    raze_always_inline constexpr auto operator[](
+        _Condition_     __condition,
+        _Alternative_   __source) const noexcept
+            requires(requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
+    {
+        auto __new_traits = base::operator[](or_(if_(__condition), __source));
+        return _Functor_<decltype(__new_traits)>{__new_traits};
+    }
+
+    template <
+        vx::simd_mask_type  _Condition_, 
+        vx::simd_type       _Alternative_>
+    raze_always_inline constexpr auto operator[](
+        _Alternative_   __source,
+        _Condition_     __condition) const noexcept
+            requires(requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
     {
         auto __new_traits = base::operator[](or_(if_(__condition), __source));
         return _Functor_<decltype(__new_traits)>{__new_traits};
@@ -57,13 +71,13 @@ struct callable:
             !decorator<_Type_>) = delete;
 
     template <class ... Args>
-    raze_always_inline constexpr auto behavior(auto __arch, Args&& ... __args) const noexcept {
-        return _Functor_<_OptionsValues_>::deferred_call(__arch, std::forward<Args>(__args)...);
+    raze_always_inline constexpr auto behavior(Args&& ... __args) const noexcept {
+        return _Functor_<_OptionsValues_>::deferred_call(std::forward<Args>(__args)...);
     }
 
     template <class ... Args>
-    raze_always_inline constexpr auto retarget(auto __arch, Args&& ... __args) const noexcept {
-        return _Functor_<_OptionsValues_>::deferred_call(__arch, this->options(), std::forward<Args>(__args)...);
+    raze_always_inline constexpr auto retarget(Args&& ... __args) const noexcept {
+        return _Functor_<_OptionsValues_>::deferred_call(this->options(), std::forward<Args>(__args)...);
     }
 
 protected:

@@ -1,9 +1,7 @@
 #pragma once 
 
 #include <raze/compatibility/Compatibility.h>
-#include <src/raze/vx/arithmetic/Fma.h>
-#include <src/raze/vx/arithmetic/MaskzFma.h>
-#include <src/raze/vx/bitwise/MaskImplementation.h>
+#include <src/raze/vx/hw/x86/arithmetic/Fma.h>
 #include <src/raze/vx/expression/IsWhere.h>
 #include <src/raze/vx/expression/IsWhereZero.h>
 

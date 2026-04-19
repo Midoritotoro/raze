@@ -21,12 +21,11 @@ struct __conditional_callable:
         class               _Type_,
         class ...           _Types_>
     constexpr raze_always_inline auto behavior(
-        auto                __arch, 
         const __Options_&   __options, 
         _Type_              __first,
         _Types_...          __args) const
     {
-        return func_t::deferred_call(__arch, __options, __first, __args...);
+        return func_t::deferred_call(__options, __first, __args...);
     }
 };
 
@@ -79,12 +78,11 @@ struct relative_conditional_callable:
         class               _Type_,
         class ...           _Types_>
     constexpr raze_always_inline auto behavior(
-        auto                __arch, 
         const __Options_&   __options, 
         _Type_              __first,
         _Types_...          __args) const noexcept
     {
-        return base_t::behavior(__arch, __options, __first, __args...);
+        return base_t::behavior(__options, __first, __args...);
     }
 };
 
@@ -131,12 +129,11 @@ struct conditional_callable: __conditional_callable<_Function_, _OptionsValues_,
         class               _Type_,
         class ...           _Types_>
     constexpr raze_always_inline auto behavior(
-        auto                __arch, 
         const __Options_&   __options, 
         _Type_              __first,
         _Types_...          __args) const noexcept
     {
-        return base_t::behavior(__arch, __options, __first, __args...);
+        return base_t::behavior(__options, __first, __args...);
     }
 };
 

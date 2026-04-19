@@ -88,9 +88,8 @@ template <
     size_t N, 
     class Simd,
     class Mask,
-    class WhereExpr, 
-    class WhereZeroExpr, 
-    class SimdOp, 
+    class SimdMaskOp, 
+    class SimdMaskzOp,
     class ScalarOp>
 void test_where_binary(
     const T(&arrA)[N], 
@@ -100,66 +99,43 @@ void test_where_binary(
     const Simd& a,
     const Simd& b,
     const Simd& src,
-    const WhereExpr& w,
-    const WhereZeroExpr& wz, 
-    SimdOp simd_op, 
+    SimdMaskOp simd_mask_op,
+    SimdMaskzOp simd_maskz_op,
     ScalarOp scalar_op) noexcept
 {
     {
-        auto r1 = simd_op(w, b);
-        auto r2 = simd_op(b, w);
+        auto r1 = simd_mask_op(a, b);
+        auto r2 = simd_mask_op(b, a);
 
         for (size_t i = 0; i < N; ++i) {
-            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>, raze::type_traits::bit_or<>,
-                raze::type_traits::bit_xor<>, raze::type_traits::bit_and<>> && std::is_floating_point_v<T>)
-            {
-                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+            using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
 
-                auto expected1 = std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], false));
-                auto expected2 = std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], true));
+            auto expected1 = std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], false)));
+            auto expected2 = std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], true)));
 
-                T extracted1 = r1[i];
-                T extracted2 = r2[i];
+            T extracted1 = r1[i];
+            T extracted2 = r2[i];
 
-                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
-                raze_assert(std::bit_cast<_Reinterpret_type>(extracted2) == expected2);
-            }
-            else {
-                T expected1 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], false);
-                T expected2 = scalar_op(arrA[i], arrB[i], arrSrc[i], m[i], true);
-
-                raze_assert(r1[i] == expected1);
-                raze_assert(r2[i] == expected2);
-            }
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted2) == expected2);
         }
     }
 
     {
-        auto r1 = simd_op(wz, b); 
-        auto r2 = simd_op(b, wz);
+        auto r1 = simd_maskz_op(a, b);
+        auto r2 = simd_maskz_op(b, a);
 
         for (size_t i = 0; i < N; ++i) {
-            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>, raze::type_traits::bit_or<>,
-                raze::type_traits::bit_xor<>, raze::type_traits::bit_and<>> && std::is_floating_point_v<T>)
-            {
-                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+            using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
 
-                auto expected1 = m[i] ? std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], T(0), true, false)) : _Reinterpret_type(0);
-                auto expected2 = m[i] ? std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrB[i], T(0), true, true)) : _Reinterpret_type(0);
+            auto expected1 = m[i] ? std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], arrB[i], T(0), true, false))) : _Reinterpret_type(0);
+            auto expected2 = m[i] ? std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], arrB[i], T(0), true, true))) : _Reinterpret_type(0);
 
-                T extracted1 = r1[i];
-                T extracted2 = r2[i];
+            T extracted1 = r1[i];
+            T extracted2 = r2[i];
 
-                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
-                raze_assert(std::bit_cast<_Reinterpret_type>(extracted2) == expected2);
-            }
-            else {
-                T expected1 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, false) : T(0);
-                T expected2 = m[i] ? scalar_op(arrA[i], arrB[i], T(0), true, true) : T(0);
-
-                raze_assert(r1[i] == expected1);
-                raze_assert(r2[i] == expected2);
-            }
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted2) == expected2);
         }
     }
 }
@@ -188,20 +164,12 @@ void test_where_unary(
         auto r1 = simd_op(w);
         
         for (size_t i = 0; i < N; ++i) {
-            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>,
-                raze::type_traits::bit_not<>> && std::is_floating_point_v<T>)
-            {
-                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+            using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
 
-                auto expected1 = std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], arrSrc[i], m[i], false));
-                T extracted1 = r1[i];
+            auto expected1 = std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], arrSrc[i], m[i], false)));
+            T extracted1 = r1[i];
 
-                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
-            }
-            else {
-                T expected1 = scalar_op(arrA[i], arrSrc[i], m[i], false);
-                raze_assert(r1[i] == expected1);
-            }
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
         }
     }
 
@@ -209,20 +177,12 @@ void test_where_unary(
         auto r1 = simd_op(wz); 
 
         for (size_t i = 0; i < N; ++i) {
-            if constexpr (raze::type_traits::is_any_of_v<std::remove_cvref_t<SimdOp>,
-                raze::type_traits::bit_not<>> && std::is_floating_point_v<T>)
-            {
-                using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+            using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
 
-                auto expected1 = m[i] ? std::bit_cast<_Reinterpret_type>(scalar_op(arrA[i], T(0), true, false)) : _Reinterpret_type(0);
-                T extracted1 = r1[i];
+            auto expected1 = m[i] ? std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], T(0), true, false))) : _Reinterpret_type(0);
+            T extracted1 = r1[i];
 
-                raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
-            }
-            else {
-                T expected1 = m[i] ? scalar_op(arrA[i], T(0), true, false) : T(0);
-                raze_assert(r1[i] == expected1);
-            }
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
         }
     }
 }

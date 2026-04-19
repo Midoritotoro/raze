@@ -14,8 +14,11 @@ struct or_: _Condition_ {
     using alternative_type = _Value_;
     using conditional_type = _Condition_;
 
-    constexpr or_(const _Condition_& __condition, const _Value_& __value) noexcept: 
-        _Condition_(__condition), _alternative(__value) 
+    constexpr or_(
+        const _Condition_& __condition, 
+        const _Value_& __value) noexcept: 
+            _Condition_(__condition), 
+            _alternative(__value) 
     {}
 
     constexpr raze_always_inline _Condition_ base() const {
@@ -35,7 +38,9 @@ struct or_: _Condition_ {
         return _alternative;
     }
 
-    constexpr raze_always_inline auto map_alternative(auto __operation) const noexcept(noexcept(__operation(_alternative))) {
+    constexpr raze_always_inline auto map_alternative(auto __operation) const 
+        noexcept(noexcept(__operation(_alternative)))
+    {
         auto __mapped = __operation(_alternative);
         _Condition_ __condition = *this;
 

@@ -45,17 +45,17 @@ struct __memset_vectorized_internal {
         const auto __stop_at = __bytes_pointer_offset(__destination, __aligned_size);
 
         do {
-            vx::store(__destination, __broadcasted);
+            __broadcasted.copy_to(__destination);
             __advance_bytes(__destination, __block_size);
         } while (__destination != __stop_at);
 
         if (__tail_size == 0)
             return __destination;
 
-        if constexpr (_Simd_::is_native_mask_store_supported_v)
-            vx::store(__destination, vx::where(__broadcasted,
-                vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType))));
-        else
+        //if constexpr (_Simd_::is_native_mask_store_supported_v)
+        //    vx::store(__destination, vx::where(__broadcasted,
+        //        vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType))));
+        //else
             return __memset_scalar(__destination, __value, (__tail_size / sizeof(_ValueType)));
 
         __advance_bytes(__destination, __tail_size);

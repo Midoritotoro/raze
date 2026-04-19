@@ -437,7 +437,7 @@ struct _Mul<arch::ISA::AVX512BW, 512, _Type_> {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Mul<arch::ISA::AVX512F, 512, _Type_>()(__left, __right, __source, __mask);
+			return _Mul<arch::ISA::AVX512F, 512, _Type_>()(__left, __right, __mask, __source);
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_mask_mullo_epi16(__as<__m512i>(__source),
@@ -584,7 +584,7 @@ struct _Mul<arch::ISA::AVX512VLBW, 128, _Type_> {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Mul<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right, __source, __mask);
+			return _Mul<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right, __mask, __source);
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_mask_mullo_epi16(__as<__m256i>(__source),
@@ -617,12 +617,12 @@ struct _Mul<arch::ISA::AVX512VLF, 256, _Type_> {
 				_Mul<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right), __mask);
 		}
 		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_mul_ps(__mask,
+			return __as<_IntrinType_>(_mm256_maskz_mul_ps(__mask,
 				__as<__m256>(__left), __as<__m256>(__right)));
 		}
 		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_mul_pd(__mask,
-				__as<__m256d>(__left), __as<__m128d>(__right)));
+			return __as<_IntrinType_>(_mm256_maskz_mul_pd(__mask,
+				__as<__m256d>(__left), __as<__m256d>(__right)));
 		}
 		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_maskz_mullo_epi32(
@@ -659,7 +659,7 @@ struct _Mul<arch::ISA::AVX512VLF, 256, _Type_> {
 				_Mul<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right), __source, __mask);
 		}
 		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_mul_ps(__as<__m256>(__source),
+			return __as<_IntrinType_>(_mm256_mask_mul_ps(__as<__m256>(__source),
 				__mask, __as<__m256>(__left), __as<__m256>(__right)));
 		}
 		else if constexpr (__is_pd_v<_Type_>) {
@@ -694,12 +694,7 @@ struct _Mul<arch::ISA::AVX512VLBW, 256, _Type_> {
 		_IntrinType_ __left,
 		_IntrinType_ __right) const noexcept
 	{
-		if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mullo_epi16(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else {
-			return _Mul<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right);
-		}
+		return _Mul<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right);
 	}
 
 	template <
@@ -731,11 +726,11 @@ struct _Mul<arch::ISA::AVX512VLBW, 256, _Type_> {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Mul<arch::ISA::AVX512VLF, 128, _Type_>()(__left, __right, __source, __mask);
+			return _Mul<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right, __mask, __source);
 		}
 		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_mullo_epi16(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
+			return __as<_IntrinType_>(_mm256_mask_mullo_epi16(__as<__m256i>(__source),
+				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
 		}
 	}
 };
