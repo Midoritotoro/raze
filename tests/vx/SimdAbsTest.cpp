@@ -24,8 +24,8 @@ struct abs_tests {
                 arr[i] = _Type_(i + 1);
         }
     
-        Simd v = raze::vx::load<Simd>(arr);
-        Simd fbk = raze::vx::load<Simd>(fallback);
+        Simd v; v.copy_from(arr);
+        Simd fbk; fbk.copy_from(fallback);
 
         {
             auto r = raze::math::abs(v);
@@ -37,18 +37,15 @@ struct abs_tests {
         for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
 
-            auto w = raze::vx::where(v, fbk, m);
-            auto wz = raze::vx::where(v, m);
-
             {
-                auto r = raze::math::abs(w);
+                auto r = raze::math::abs[m, fbk](v);
 
                 for (size_t i = 0; i < N; ++i)
                     raze_assert(r[i] == _Type_(m[i] ? raze::math::abs(arr[i]) : fallback[i]));
             }
 
             {
-                auto r = raze::math::abs(wz);
+                auto r = raze::math::abs[m](v);
 
                 for (size_t i = 0; i < N; ++i)
                     raze_assert(r[i] == _Type_(m[i] ? raze::math::abs(arr[i]) : 0));

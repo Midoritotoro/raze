@@ -26,7 +26,7 @@ struct _Maskz_load<arch::ISA::SSE2, 128, _Type_, _IntrinType_> {
 		_AlignmentPolicy_&&	__alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Maskz_assign<arch::ISA::SSE2, 128, _Type_>()(
+		return _Selectz<arch::ISA::SSE2, 128, _Type_>()(
 			_Load<arch::ISA::SSE2, 128, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -46,7 +46,7 @@ struct _Maskz_load<arch::ISA::SSE3, 128, _Type_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Maskz_assign<arch::ISA::SSE3, 128, _Type_>()(
+		return _Selectz<arch::ISA::SSE3, 128, _Type_>()(
 			_Load<arch::ISA::SSE3, 128, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -66,7 +66,7 @@ struct _Maskz_load<arch::ISA::SSE41, 128, _Type_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		return _Maskz_assign<arch::ISA::SSE41, 128, _Type_>()(
+		return _Selectz<arch::ISA::SSE41, 128, _Type_>()(
 			_Load<arch::ISA::SSE41, 128, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -100,7 +100,7 @@ struct _Maskz_load<arch::ISA::AVX, 128, _Type_, _IntrinType_>:
 				_To_vector<arch::ISA::AVX, 128, __m128i, _Type_>()(__mask)));
 
 		else
-			return _Maskz_assign<arch::ISA::AVX, 128, _Type_>()(
+			return _Selectz<arch::ISA::AVX, 128, _Type_>()(
 				_Load<arch::ISA::AVX, 128, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -143,7 +143,7 @@ struct _Maskz_load<arch::ISA::AVX2, 128, _Type_, _IntrinType_>:
 				_To_vector<arch::ISA::AVX2, 128, __m128i, _Type_>()(__mask)));
 
 		else
-			return _Maskz_assign<arch::ISA::AVX2, 128, _Type_>()(
+			return _Selectz<arch::ISA::AVX2, 128, _Type_>()(
 				_Load<arch::ISA::AVX2, 128, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -174,7 +174,7 @@ struct _Maskz_load<arch::ISA::AVX, 256, _Type_, _IntrinType_> {
 				_To_vector<arch::ISA::AVX, 256, __m256i, _Type_>()(__mask)));
 
 		else
-			return _Maskz_assign<arch::ISA::AVX, 256, _Type_>()(
+			return _Selectz<arch::ISA::AVX, 256, _Type_>()(
 				_Load<arch::ISA::AVX, 256, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -217,7 +217,7 @@ struct _Maskz_load<arch::ISA::AVX2, 256, _Type_, _IntrinType_>:
 				_To_vector<arch::ISA::AVX2, 256, __m256i, _Type_>()(__mask)));
 
 		else
-			return _Maskz_assign<arch::ISA::AVX2, 256, _Type_>()(
+			return _Selectz<arch::ISA::AVX2, 256, _Type_>()(
 				_Load<arch::ISA::AVX2, 256, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -272,7 +272,7 @@ struct _Maskz_load<arch::ISA::AVX512F, 512, _Type_, _IntrinType_> {
 					_To_mask<arch::ISA::AVX512F, 512, _Type_>()(__mask), __address));
 		}
 
-		return _Maskz_assign<arch::ISA::AVX512F, 512, _Type_>()(
+		return _Selectz<arch::ISA::AVX512F, 512, _Type_>()(
 			_Load<arch::ISA::AVX512F, 512, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -353,7 +353,7 @@ struct _Maskz_load<arch::ISA::AVX512VLF, 256, _Type_, _IntrinType_>:
 			}
 		}
 
-		return _Maskz_assign<arch::ISA::AVX512VLF, 256, _Type_>()(
+		return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()(
 			_Load<arch::ISA::AVX512VLF, 256, _IntrinType_>()(__address), __mask);
 	}
 };
@@ -434,7 +434,7 @@ struct _Maskz_load<arch::ISA::AVX512VLF, 128, _Type_, _IntrinType_>:
 			}
 		}
 
-		return _Maskz_assign<arch::ISA::AVX512VLF, 128, _Type_>()(
+		return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()(
 			_Load<arch::ISA::AVX512VLF, 128, _IntrinType_>()(__address), __mask);
 	}
 };

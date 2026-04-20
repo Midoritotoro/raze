@@ -80,7 +80,6 @@ struct memory_tests {
             
             for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
                 test_all(make_random_mask<Mask>());
-                test_all(make_random_mask<Mask>());
             }
         }
     }

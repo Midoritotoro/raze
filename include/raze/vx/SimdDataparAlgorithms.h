@@ -14,70 +14,12 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-/**
- *  @brief  Computes the horizontal sum of all lanes in a SIMD vector.
- *
- *  @tparam _DataparType_  SIMD vector type.
- *
- *  @param __datapar  Input SIMD vector whose lanes are to be summed.
- *
- *  @return  The sum of all lanes of @p __datapar. The return type matches
- *           the underlying scalar element type of the vector.
- *
- *  This function performs a horizontal reduction using addition, combining
- *  all lanes of the SIMD vector into a single scalar value.
-*/
-template <class _Options_>
-struct reduce_add_t:
-	raze::options::strict_elementwise_callable<reduce_add_t, _Options_>
-{
-	template <simd_type _Simd_>
-	raze_always_inline __reduce_type<typename _Simd_::value_type> 
-		operator()(const _Simd_& __vector) const noexcept 
-	{
-		return raze::options::__dispatch_call(*this, __vector);
-	}
-
-	template <simd_type _Simd_>
-	static raze_always_inline auto deferred_call(auto, auto __options, const _Simd_& __vector) noexcept {
-		using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-
-		if constexpr (options::concepts::same_as<_Mask_, options::unknown_key>) {
-			return _Reduce_add<_Simd_::__isa, _Simd_::__width,
-				typename _Simd_::value_type>()(__data(__vector));
-		}
-		else {
-			auto __condition = __options[raze::options::condition_key];
-			const auto __mask = __condition.mask(raze::options::as<_Mask_>{});
-
-			if constexpr (!_Mask_::has_alternative) {
-				const auto __masked = _Maskz_assign<_Simd_::__isa, _Simd_::__width,
-					typename _Simd_::value_type>()(__data(__vector), __data(__mask));
-				return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(__masked);
-			}
-			else {
-				return _Reduce_add<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
-					_Blend<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
-						__data(__vector), __data(__condition.alternative()), __data(__mask)));
-			}
-		}
-	}
-
-	using callable_tag_type = reduce_add_t;
-};
-
-constexpr inline auto reduce_add = raze::options::functor<reduce_add_t>;
-
-
 constexpr inline auto add = raze::options::functor<_Configurable_add>;
 constexpr inline auto sub = raze::options::functor<_Configurable_sub>;
 constexpr inline auto mul = raze::options::functor<_Configurable_mul>;
 constexpr inline auto div = raze::options::functor<_Configurable_div>;
 constexpr inline auto vertical_max = raze::options::functor<_Configurable_vertical_max>;
 constexpr inline auto vertical_min = raze::options::functor<_Configurable_vertical_min>;
-constexpr inline auto vmin = vertical_min;
-constexpr inline auto vmax = vertical_max;
-
 constexpr inline auto neg = raze::options::functor<_Configurable_negate>;
 constexpr inline auto abs = raze::options::functor<_Configurable_abs>;
 
@@ -89,11 +31,20 @@ constexpr inline auto bit_shl = raze::options::functor<_Configurable_shl>;
 constexpr inline auto bit_shr = raze::options::functor<_Configurable_shr>;
 constexpr inline auto bit_not = raze::options::functor<_Configurable_not>;
 
+constexpr inline auto horizontal_sum = raze::options::functor<_Configurable_horizontal_sum>;
+constexpr inline auto horizontal_min = raze::options::functor<_Configurable_horizontal_min>;
+constexpr inline auto horizontal_max = raze::options::functor<_Configurable_horizontal_max>;
+
+constexpr inline auto vmin = vertical_min;
+constexpr inline auto vmax = vertical_max;
+constexpr inline auto hsum = horizontal_sum;
+constexpr inline auto hmin = horizontal_min;
+constexpr inline auto hmax = horizontal_max;
+
+
 
 template <class _DataparType_>
 using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_runtime_abi<_DataparType_::__isa, _DataparType_::__width>>;
-
-
 
 /**
  *  @brief  Constructs a tail mask with the first @p __elements lanes set.
@@ -110,55 +61,6 @@ raze_nodiscard raze_always_inline __tail_mask_type<_Simd_>
 		_Simd_::__width, typename _Simd_::value_type>()(__elements));
 }
 
-/**
- *  @brief  Computes the horizontal minimum of all lanes.
- *
- *  @param __datapar  A SIMD vector.
- *
- *  @return  The minimum value among all lanes of @p __datapar.
- *
- *  The reduction order is unspecified. Equivalent to applying @c min()
- *  across all elements of the vector.
- */
-template <simd_type _Simd_>
-raze_nodiscard raze_always_inline typename _Simd_::value_type 
-	horizontal_min(const _Simd_& __vector) noexcept 
-{
-	return _Horizontal_min<_Simd_::__isa, _Simd_::__width,
-		typename _Simd_::value_type>()(__data(__vector));
-}
-
-template <non_memory_where_expression_type _WhereExpression_>
-raze_nodiscard raze_always_inline typename _WhereExpression_::value_type	
-	horizontal_min(const _WhereExpression_& __where) noexcept
-{
-	return __where.__horizontal_min();
-}
-
-/**
- *  @brief  Computes the horizontal maximum of all lanes.
- *
- *  @param __datapar  A SIMD vector.
- *
- *  @return  The maximum value among all lanes of @p __datapar.
- *
- *  The reduction order is unspecified. Equivalent to applying @c max()
- *  across all elements of the vector.
- */
-template <simd_type _Simd_>
-raze_nodiscard raze_always_inline typename _Simd_::value_type
-	horizontal_max(const _Simd_& __vector) noexcept
-{
-	return _Horizontal_max<_Simd_::__isa, _Simd_::__width,
-		typename _Simd_::value_type>()(__data(__vector));
-}
-
-template <non_memory_where_expression_type _WhereExpression_>
-raze_nodiscard raze_always_inline typename _WhereExpression_::value_type	
-	horizontal_max(const _WhereExpression_& __where) noexcept
-{
-	return __where.__horizontal_max();
-}
 
 template <arch::ISA _ISA_>
 struct __zero_upper_at_exit_guard {
@@ -227,7 +129,7 @@ raze_nodiscard raze_always_inline _Simd_ select(
 	const _Simd_&		__second,
 	const _SimdMask_&	__mask) noexcept
 {
-	return _Blend<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
+	return _Select<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>()(
 		__data(__first), __data(__second), __data(__mask));
 }
 
@@ -760,7 +662,7 @@ public:
 		if constexpr (__is_native_compare_returns_number_v<_Simd_>)
 			__result = _accumulator;
 		else
-			__result = vx::reduce_add(_accumulator);
+			__result = vx::hsum(_accumulator);
 
 		_accumulator = 0;
 		return __result;

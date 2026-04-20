@@ -21,14 +21,14 @@ struct reduce_tests {
         Simd fbk;
         fbk.copy_from(fallback);
 
-        raze_assert(raze::vx::reduce_add(v) == std::accumulate(arr, arr + N, 
+        raze_assert(raze::vx::hsum(v) == std::accumulate(arr, arr + N,
             raze::vx::__reduce_type<_Type_>{0}, std::plus{}));
 
         for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
 
             {
-                auto r1 = raze::vx::reduce_add[m, fbk](v);
+                auto r1 = raze::vx::hsum[m, fbk](v);
                 raze::vx::__reduce_type<_Type_> expected = 0;
 
                 for (size_t i = 0; i < N; ++i)
@@ -41,7 +41,7 @@ struct reduce_tests {
             }
 
             {
-                auto r1 = raze::vx::reduce_add[m](v);
+                auto r1 = raze::vx::hsum[m](v);
                 raze::vx::__reduce_type<_Type_> expected = 0;
 
                 for (size_t i = 0; i < N; ++i)

@@ -27,7 +27,7 @@ struct _Mask_store<arch::ISA::SSE2, 128, _Type_> {
 		_AlignmentPolicy_&&	__alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		_Store<arch::ISA::SSE2, 128>()(__address, _Blend<arch::ISA::SSE2, 128, _Type_>()(
+		_Store<arch::ISA::SSE2, 128>()(__address, _Select<arch::ISA::SSE2, 128, _Type_>()(
 			__vector, _Load<arch::ISA::SSE2, 128, _IntrinType_>()(
 				__address, __alignment_policy), __mask), __alignment_policy);
 	}
@@ -51,7 +51,7 @@ struct _Mask_store<arch::ISA::SSE41, 128, _Type_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		_Store<arch::ISA::SSE41, 128>()(__address, _Blend<arch::ISA::SSE41, 128, _Type_>()(
+		_Store<arch::ISA::SSE41, 128>()(__address, _Select<arch::ISA::SSE41, 128, _Type_>()(
 			__vector, _Load<arch::ISA::SSE41, 128, _IntrinType_>()(
 				__address, __alignment_policy), __mask), __alignment_policy);
 	}
@@ -85,7 +85,7 @@ struct _Mask_store<arch::ISA::AVX, 128, _Type_>:
 				__as<__m128>(__vector));
 		}
 		else {
-			_Store<arch::ISA::AVX, 128>()(__address, _Blend<arch::ISA::AVX, 128, _Type_>()(
+			_Store<arch::ISA::AVX, 128>()(__address, _Select<arch::ISA::AVX, 128, _Type_>()(
 				__vector, _Load<arch::ISA::AVX, 128, _IntrinType_>()(
 					__address, __alignment_policy), __mask), __alignment_policy);
 		}
@@ -152,7 +152,7 @@ struct _Mask_store<arch::ISA::AVX, 256, _Type_> {
 				__as<__m256>(__vector));
 
 		else
-			_Store<arch::ISA::AVX, 256>()(__address, _Blend<arch::ISA::AVX, 256, _Type_>()(
+			_Store<arch::ISA::AVX, 256>()(__address, _Select<arch::ISA::AVX, 256, _Type_>()(
 				__vector, _Load<arch::ISA::AVX, 256, _IntrinType_>()(
 					__address, __alignment_policy), __mask), __alignment_policy);
 	}
@@ -194,7 +194,7 @@ struct _Mask_store<arch::ISA::AVX2, 256, _Type_> {
 				__as<__m256>(__vector));
 
 		else
-			_Store<arch::ISA::AVX2, 256>()(__address, _Blend<arch::ISA::AVX2, 256, _Type_>()(
+			_Store<arch::ISA::AVX2, 256>()(__address, _Select<arch::ISA::AVX2, 256, _Type_>()(
 				__vector, _Load<arch::ISA::AVX2, 256, _IntrinType_>()(
 					__address, __alignment_policy), __mask), __alignment_policy);
 	}
@@ -250,7 +250,7 @@ struct _Mask_store<arch::ISA::AVX512F, 512, _Type_> {
 					_Type_>()(__mask), __as<__m512>(__vector));
 		}
 
-		_Store<arch::ISA::AVX512F, 512>()(__address, _Blend<arch::ISA::AVX512F, 512, _Type_>()(__vector, 
+		_Store<arch::ISA::AVX512F, 512>()(__address, _Select<arch::ISA::AVX512F, 512, _Type_>()(__vector,
 			_Load<arch::ISA::AVX512F, 512, _IntrinType_>()(
 				__address, __alignment_policy), __mask), __alignment_policy);
 	}
@@ -339,7 +339,7 @@ struct _Mask_store<arch::ISA::AVX512VLF, 256, _Type_>:
 			}
 		}
 
-		_Store<arch::ISA::AVX512VLF, 256>()(__address, _Blend<arch::ISA::AVX512VLF, 256, _Type_>()(__vector,
+		_Store<arch::ISA::AVX512VLF, 256>()(__address, _Select<arch::ISA::AVX512VLF, 256, _Type_>()(__vector,
 			_Load<arch::ISA::AVX512VLF, 256, _IntrinType_>()(
 				__address, __alignment_policy), __mask), __alignment_policy);
 	}
@@ -400,7 +400,7 @@ struct _Mask_store<arch::ISA::AVX512VLF, 128, _Type_>:
 			}
 		}
 
-		_Store<arch::ISA::AVX512VLF, 128>()(__address, _Blend<arch::ISA::AVX512VLF, 128, _Type_>()(__vector,
+		_Store<arch::ISA::AVX512VLF, 128>()(__address, _Select<arch::ISA::AVX512VLF, 128, _Type_>()(__vector,
 			_Load<arch::ISA::AVX512VLF, 128, _IntrinType_>()(
 				__address, __alignment_policy), __mask), __alignment_policy);
 	}

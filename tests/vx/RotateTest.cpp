@@ -14,7 +14,7 @@ struct rotate_tests {
         alignas(64) _Type_ arr[N];
         std::iota(arr, arr + N, 1);
 
-        Simd v = raze::vx::load<Simd>(arr);
+        Simd v; v.copy_from(arr);
 
         for (size_t sh = 0; sh < N; ++sh) {
             auto rl = raze::vx::rotate_left(v, sh);

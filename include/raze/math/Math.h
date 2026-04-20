@@ -13,269 +13,61 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-template <typename _Type_>
-raze_nodiscard raze_always_inline constexpr _Type_ abs(_Type_ __value) noexcept
-	requires(std::is_arithmetic_v<_Type_>)
-{
-	if constexpr (std::is_unsigned_v<_Type_>)
-		return __value;
-	else
-		return (__value < 0) ? -__value : __value;
-}
+template <class _Options_>
+struct _Abs : vx::_Configurable_abs<_Options_> {
+	using mask_type = raze::options::fetch_t<raze::options::condition_key, _Options_>;
 
-/**
- *  @brief  Per‑lane absolute value.
- *
- *  @param __datapar  SIMD vector whose lanes are transformed.
- *
- *  @return  A SIMD vector where each lane contains the absolute value of the
- *           corresponding lane of @p __datapar.
- */
-template <class _DataparType_>
-raze_nodiscard raze_always_inline _DataparType_ abs(const _DataparType_& __x) noexcept
-	requires(vx::__is_valid_simd_v<_DataparType_>)
-{
-	using _RawDataparType = std::remove_cvref_t<_DataparType_>;
-	return vx::_Abs<_RawDataparType::__isa, _RawDataparType::__width,
-		typename _RawDataparType::value_type>()(vx::__data(__x));
-}
+	template <class _Type_>
+	raze_nodiscard raze_always_inline _Type_ operator()(_Type_ __x) const noexcept
+		requires(std::integral<_Type_> || std::floating_point<_Type_>)
+	{
+		return raze::options::__dispatch_call(*this, __x);
+	}
 
-template <class _WhereExpression_>
-raze_nodiscard raze_always_inline typename _WhereExpression_::datapar_type 
-	abs(const _WhereExpression_& __where) noexcept
-		requires(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>)
-{
-	return __where.__abs();
-}
+	template <vx::simd_type _Simd_>
+	raze_nodiscard raze_always_inline auto operator()(const _Simd_& __x) const noexcept {
+		return raze::options::__dispatch_call(*this, __x);
+	}
 
-template <class _Type_>
-raze_nodiscard raze_always_inline _Type_ fma(
-	_Type_ __x, _Type_ __y, _Type_ __z) noexcept
-		requires(std::is_arithmetic_v<_Type_>)
-{
-	return __fma(__x, __y, __z);
-}
+	template <vx::simd_type _Simd_>
+	static raze_always_inline auto deferred_call(
+		auto            __options,
+		const _Simd_& __x) noexcept -> decltype(vx::_Configurable_abs<_Options_>::deferred_call(__options, __x))
+	{
+		return vx::_Configurable_abs<_Options_>::deferred_call(__options, __x);
+	}
 
-template <class _Simd_>
-raze_nodiscard raze_always_inline _Simd_ fma(
-	const _Simd_& __x, 
-	const _Simd_& __y, 
-	const _Simd_& __z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_>)
-{
-	return __fma(__x, __y, __z);
-}
+	// using vx::_Configurable_abs<_Options_>::operator();
 
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fma(
-	const _Simd_&				__x,
-	const _Simd_&				__y,
-	const _WhereExpression_&	__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fma(__x, __y, __z);
-}
+	template <class _Type_>
+	static raze_always_inline _Type_ deferred_call(
+		auto            __options,
+		const _Type_&	__x) noexcept
+			requires(std::integral<_Type_> || std::floating_point<_Type_>)
+	{
+		const auto __do_abs = [=]() {
+			if constexpr (std::is_unsigned_v<_Type_>)
+				return __x;
+			else
+				return (__x < 0) ? -__x : __x;
+		};
 
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fma(
-	const _Simd_&				__x,
-	const _WhereExpression_&	__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fma(__x, __y, __z);
-}
+		if constexpr (options::concepts::same_as<mask_type, options::unknown_key>) {
+			return __do_abs();
+		}
+		else {
+			auto __condition = __options[raze::options::condition_key];
+            const auto __mask = __condition.mask(raze::options::as<typename mask_type::condition_type>{});
 
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fma(
-	const _WhereExpression_&	__x,
-	const _Simd_&				__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fma(__x, __y, __z);
-}
+            if constexpr (mask_type::has_alternative)
+                return __mask ? __do_abs() : __condition.alternative();
+            else
+                return __mask ? __do_abs() : 0;
+		}
+	}
+};
 
-template <class _Type_>
-raze_nodiscard raze_always_inline _Type_ fms(
-	_Type_ __x, _Type_ __y, _Type_ __z) noexcept
-		requires(std::is_arithmetic_v<_Type_>)
-{
-	return __fms(__x, __y, __z);
-}
-
-
-template <class _Simd_>
-raze_nodiscard raze_always_inline _Simd_ fms(
-	const _Simd_& __x, 
-	const _Simd_& __y, 
-	const _Simd_& __z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_>)
-{
-	return __fms(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fms(
-	const _Simd_&				__x,
-	const _Simd_&				__y,
-	const _WhereExpression_&	__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fms(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fms(
-	const _Simd_&				__x,
-	const _WhereExpression_&	__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fms(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fms(
-	const _WhereExpression_&	__x,
-	const _Simd_&				__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fms(__x, __y, __z);
-}
-
-template <class _Type_>
-raze_nodiscard raze_always_inline _Type_ fnms(
-	_Type_ __x, _Type_ __y, _Type_ __z) noexcept
-		requires(std::is_arithmetic_v<_Type_>)
-{
-	return __fnms(__x, __y, __z);
-}
-
-template <class _Simd_>
-raze_nodiscard raze_always_inline _Simd_ fnms(
-	const _Simd_& __x, 
-	const _Simd_& __y, 
-	const _Simd_& __z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_>)
-{
-	return __fnms(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fnms(
-	const _Simd_&				__x,
-	const _Simd_&				__y,
-	const _WhereExpression_&	__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fnms(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fnms(
-	const _Simd_&				__x,
-	const _WhereExpression_&	__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fnms(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fnms(
-	const _WhereExpression_&	__x,
-	const _Simd_&				__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fnms(__x, __y, __z);
-}
-
-template <class _Type_>
-raze_nodiscard raze_always_inline _Type_ fnma(
-	_Type_ __x, _Type_ __y, _Type_ __z) noexcept
-		requires(std::is_arithmetic_v<_Type_>)
-{
-	return __fnma(__x, __y, __z);
-}
-
-template <class _Simd_>
-raze_nodiscard raze_always_inline _Simd_ fnma(
-	const _Simd_& __x, 
-	const _Simd_& __y, 
-	const _Simd_& __z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_>)
-{
-	return __fnma(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fnma(
-	const _Simd_&				__x,
-	const _Simd_&				__y,
-	const _WhereExpression_&	__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fnma(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fnma(
-	const _Simd_&				__x,
-	const _WhereExpression_&	__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fnma(__x, __y, __z);
-}
-
-template <
-	class _Simd_, 
-	class _WhereExpression_>
-raze_nodiscard raze_always_inline _Simd_ fnma(
-	const _WhereExpression_&	__x,
-	const _Simd_&				__y,
-	const _Simd_&				__z) noexcept
-		requires(vx::__is_valid_simd_v<_Simd_> && 
-			(vx::__is_where_v<_WhereExpression_> || vx::__is_where_zero_v<_WhereExpression_>))
-{
-	return __fnma(__x, __y, __z);
-}
+constexpr inline auto abs = raze::options::functor<_Abs>;
 
 template <class _Type_>
 raze_nodiscard raze_always_inline _Type_ sin(_Type_ __x) noexcept {

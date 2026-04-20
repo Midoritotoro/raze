@@ -36,7 +36,7 @@ struct _Slide_left<arch::ISA::SSE2, 128> {
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
 		if constexpr (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()();
+			return _Zero<arch::ISA::SSE2, 128, _IntrinType_>()();
 
 		else if constexpr (__shift == 0)
 			return __left;
@@ -73,7 +73,7 @@ struct _Slide_left<arch::ISA::SSSE3, 128>:
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
 		if constexpr (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::SSE2, 128, _IntrinType_>()();
+			return _Zero<arch::ISA::SSE2, 128, _IntrinType_>()();
 
 		else if constexpr (__shift == 0)
 			return __left;
@@ -107,7 +107,7 @@ struct _Slide_left<arch::ISA::AVX, 256> {
 		std::integral_constant<uint32, _Shift_> __shift) raze_const_operator noexcept
 	{
 		if constexpr (__shift >= sizeof(_IntrinType_))
-			return _Broadcast_zeros<arch::ISA::AVX, 256, _IntrinType_>()();
+			return _Zero<arch::ISA::AVX, 256, _IntrinType_>()();
 
 		else if constexpr (__shift == 0)
 			return __left;
@@ -155,7 +155,7 @@ struct _Slide_left<arch::ISA::AVX2, 256>:
 			__high_part = _mm256_inserti128_si256(__high_part, _mm256_extracti128_si256(__as<__m256i>(__left), 1), 0);
 		}
 		else {
-			return _Broadcast_zeros<arch::ISA::AVX2, 256, _IntrinType_>()();
+			return _Zero<arch::ISA::AVX2, 256, _IntrinType_>()();
 		}
 
 		if constexpr ((__shift % 16) == 0) 
@@ -188,7 +188,7 @@ struct _Slide_left<arch::ISA::AVX512VLF, 256>:
 			return __left;
 		}
 		else if constexpr (__shift >= sizeof(_IntrinType_)) {
-			return _Broadcast_zeros<arch::ISA::AVX512VLF, 256, _IntrinType_>()();
+			return _Zero<arch::ISA::AVX512VLF, 256, _IntrinType_>()();
 		}
 		else if constexpr ((__shift % 4) == 0) {
 			return __as<_IntrinType_>(_mm256_alignr_epi32(_mm256_setzero_si256(), 
@@ -251,7 +251,7 @@ struct _Slide_left<arch::ISA::AVX512F, 512> {
 				__as<__m512i>(__left), 0x03);
 		}
 		else {
-			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
+			return _Zero<arch::ISA::AVX512F, 512, _IntrinType_>()();
 		}
 
 		if constexpr ((__shift % 4) == 0) {
@@ -317,7 +317,7 @@ struct _Slide_left<arch::ISA::AVX512BW, 512>:
 				__as<__m512i>(__left), 0x03);
 		}
 		else {
-			return _Broadcast_zeros<arch::ISA::AVX512F, 512, _IntrinType_>()();
+			return _Zero<arch::ISA::AVX512F, 512, _IntrinType_>()();
 		}
 
 		if constexpr ((__shift % 4) == 0) {

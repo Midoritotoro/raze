@@ -18,8 +18,8 @@ struct select_tests {
             b_arr[i] = _Type_(200 + i);
         }
 
-        Simd a = raze::vx::load<Simd>(a_arr);
-        Simd b = raze::vx::load<Simd>(b_arr);
+        Simd a; a.copy_from(a_arr);
+        Simd b; b.copy_from(b_arr);
 
         auto test_mask = [&](Mask mask) {
             auto r = raze::vx::select(a, b, mask);

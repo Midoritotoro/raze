@@ -12,6 +12,15 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 struct __decorator 
 {};
 
+template <class _ConditionType_>
+concept condition_type = vx::simd_mask_type<_ConditionType_> || std::is_same_v<_ConditionType_, bool>;
+
+template <
+    class _ConditionType_, 
+    class _AlternativeType_>
+concept alternative_type = (vx::simd_mask_type<_ConditionType_> && vx::simd_type<_AlternativeType_>) ||
+    (std::is_same_v<_ConditionType_, bool> && (std::integral<_AlternativeType_> || std::floating_point<_AlternativeType_>));
+
 template <class _ID_>
 concept decorator = std::derived_from<_ID_, __decorator>;
 
@@ -41,24 +50,24 @@ struct callable:
     }
 
     template <
-        vx::simd_mask_type  _Condition_, 
-        vx::simd_type       _Alternative_>
+        condition_type      _Condition_,
+        class               _Alternative_>
     raze_always_inline constexpr auto operator[](
         _Condition_     __condition,
         _Alternative_   __source) const noexcept
-            requires(requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
+            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
     {
         auto __new_traits = base::operator[](or_(if_(__condition), __source));
         return _Functor_<decltype(__new_traits)>{__new_traits};
     }
 
     template <
-        vx::simd_mask_type  _Condition_, 
-        vx::simd_type       _Alternative_>
+        class               _Alternative_,
+        condition_type      _Condition_>
     raze_always_inline constexpr auto operator[](
         _Alternative_   __source,
         _Condition_     __condition) const noexcept
-            requires(requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
+            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
     {
         auto __new_traits = base::operator[](or_(if_(__condition), __source));
         return _Functor_<decltype(__new_traits)>{__new_traits};

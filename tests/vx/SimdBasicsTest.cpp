@@ -21,7 +21,7 @@ struct basics_tests {
         alignas(64) _Type_ arr[N];
         std::iota(arr, arr + N, 1);
 
-        Simd v3 = raze::vx::load<Simd>(arr);
+        Simd v3; v3.copy_from(arr);
         for (size_t i = 0; i < N; ++i)
             raze_assert(v3[i] == arr[i]);
 

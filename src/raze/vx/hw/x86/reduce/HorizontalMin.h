@@ -41,7 +41,7 @@ struct _Horizontal_min {
 		_MaskType_		__mask) const noexcept
 	{
 		return _Fold<_ISA_, _Width_, _Type_>()(
-			_Selectz<_ISA_, _Width_, _Type_>(__vector, __mask),
+			_Selectz<_ISA_, _Width_, _Type_>()(__vector, __mask),
 			_Vertical_min_wrapper<_ISA_, _Width_, _Type_>{});
 	}
 
@@ -54,7 +54,7 @@ struct _Horizontal_min {
 		_IntrinType_	__source) const noexcept
 	{
 		return _Fold<_ISA_, _Width_, _Type_>()(
-			_Select<_ISA_, _Width_, _Type_>(__vector, __source, __mask),
+			_Select<_ISA_, _Width_, _Type_>()(__vector, __source, __mask),
 			_Vertical_min_wrapper<_ISA_, _Width_, _Type_>{});
 	}
 };

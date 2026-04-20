@@ -10,15 +10,38 @@ void test_scalar_abs_type() {
         raze_assert(r == expected);
     };
 
-    if constexpr (std::is_signed_v<T>) {
-        check(T(0), T(0));
-        check(T(1), T(1));
-        check(T(-1), T(1));
+    auto check_cond = [](T x, T expected, bool cond) {
+        T r = raze::math::abs[cond](x);
+        raze_assert(r == expected);
+    };
 
-        check(T(5), T(5));
-        check(T(-5), T(5));
-        check(T(123), T(123));
-        check(T(-123), T(123));
+    auto check_cond_fbk = [](T x, T expected, bool cond, T fbk) {
+        T r = raze::math::abs[cond, fbk](x);
+        raze_assert(r == expected);
+    };
+
+    std::mt19937_64 rng(0x123456789ABCDEFULL);
+
+    if constexpr (std::is_signed_v<T>) {
+        for (auto i = 0; i < 1000; ++i) {
+            const auto num = T(rng());
+            check(num, std::abs(num));
+        }
+
+        for (auto i = 0; i < 1000; ++i) {
+            const auto num = T(rng());
+            const auto fbk = T(rng());
+            const bool cond = (i % 2) == 0;
+
+            check_cond_fbk(num, cond ? std::abs(num) : fbk, cond, fbk);
+        }
+
+        for (auto i = 0; i < 1000; ++i) {
+            const auto num = T(rng());
+            const bool cond = (i % 2) == 0;
+
+            check_cond_fbk(num, cond ? std::abs(num) : 0, cond, 0);
+        }
     }
 
     if constexpr (std::is_signed_v<T>) {

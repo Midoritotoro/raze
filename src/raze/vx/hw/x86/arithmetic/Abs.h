@@ -354,7 +354,7 @@ struct _Abs<arch::ISA::AVX512BW, 512, _Type_> {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
-			return _Abs<arch::ISA::AVX512F, 512, _Type_>()(__vector, __source, __mask);
+			return _Abs<arch::ISA::AVX512F, 512, _Type_>()(__vector, __mask, __source);
 		}
 		else if constexpr (__is_epi8_v<_Type_>) {
 			return __as<_IntrinType_>(_mm512_mask_abs_epi8(
@@ -387,7 +387,7 @@ struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> {
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_>) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__vector), __mask);
 		}
 		else if constexpr (__is_epi64_v<_Type_>) {
@@ -407,7 +407,7 @@ struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> {
 		_IntrinType_	__source) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_>) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Select<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__vector), __source, __mask);
 		}
 		else if constexpr (__is_epi64_v<_Type_>) {
@@ -417,14 +417,6 @@ struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> {
 		else if constexpr (__is_epi32_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_mask_abs_epi32(
 				__as<__m256i>(__source), __mask, __as<__m256i>(__vector)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_abs_ps(
-				__as<__m256>(__source), __mask, __as<__m256>(__vector)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_abs_pd(
-				__as<__m256d>(__source), __mask, __as<__m256d>(__vector)));
 		}
 	}
 };
@@ -467,7 +459,7 @@ struct _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
-			return _Abs<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __source, __mask);
+			return _Abs<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __mask, __source);
 		}
 		else if constexpr (__is_epi8_v<_Type_>) {
 			return __as<_IntrinType_>(_mm256_mask_abs_epi8(
@@ -500,7 +492,7 @@ struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> {
 		_MaskType_		__mask) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_>) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__vector), __mask);
 		}
 		else if constexpr (__is_epi64_v<_Type_>) {
@@ -520,7 +512,7 @@ struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> {
 		_IntrinType_	__source) const noexcept
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_>) {
+		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Select<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__vector), __source, __mask);
 		}
 		else if constexpr (__is_epi64_v<_Type_>) {
@@ -530,14 +522,6 @@ struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> {
 		else if constexpr (__is_epi32_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_mask_abs_epi32(
 				__as<__m128i>(__source), __mask, __as<__m128i>(__vector)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_abs_ps(
-				__as<__m128>(__source), __mask, __as<__m128>(__vector)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_abs_pd(
-				__as<__m128d>(__source), __mask, __as<__m128d>(__vector)));
 		}
 	}
 };
@@ -580,7 +564,7 @@ struct _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {
 			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
-			return _Abs<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __source, __mask);
+			return _Abs<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __mask, __source);
 		}
 		else if constexpr (__is_epi8_v<_Type_>) {
 			return __as<_IntrinType_>(_mm_mask_abs_epi8(

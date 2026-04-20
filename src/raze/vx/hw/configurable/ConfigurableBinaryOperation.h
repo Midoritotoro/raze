@@ -8,11 +8,9 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <
     template <auto, auto, class> class  _OpFunctor_,
     class ...                           _SupportedOptions_>
-struct _Configurable_binary_operation_base 
-{
+struct _Configurable_binary_operation_base {
     template <class _Options_>
-    struct __impl : public raze::options::strict_elementwise_callable<__impl, _Options_, _SupportedOptions_...>
-    {
+    struct __impl : public raze::options::strict_elementwise_callable<__impl, _Options_, _SupportedOptions_...> {
         template <simd_type _Simd_>
         static constexpr auto __op = _OpFunctor_<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>{};
 

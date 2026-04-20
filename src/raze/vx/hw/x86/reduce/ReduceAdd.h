@@ -453,26 +453,7 @@ struct _Reduce_add<arch::ISA::AVX512VLF, 256, _Type_> {
 	raze_nodiscard raze_always_inline
         __reduce_type<_Type_> operator()(_IntrinType_ __vector) const noexcept
     {
-        if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-            return _mm256_reduce_add_epi64(__as<__m512i>(__vector));
-        }
-        else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-            return _mm512_reduce_add_epi32(__as<__m512i>(__vector));
-        }
-        else if constexpr (__is_ps_v<_Type_>) {
-            return _mm512_reduce_add_ps(__as<__m512>(__vector));
-        }
-        else if constexpr (__is_pd_v<_Type_>) {
-            return _mm512_reduce_add_pd(__as<__m512d>(__vector));
-        }
-        else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-            return _Reduce_add<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector)) +
-                _Reduce_add<arch::ISA::AVX2, 256, _Type_>()(_mm512_extractf64x4_pd(__as<__m512d>(__vector), 1));
-        }
-        else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-            return _Reduce_add<arch::ISA::AVX2, 256, _Type_>()(__as<__m256i>(__vector)) +
-                _Reduce_add<arch::ISA::AVX2, 256, _Type_>()(_mm512_extractf64x4_pd(__as<__m512d>(__vector), 1));
-        }
+        return _Reduce_add<arch::ISA::AVX2, 256, _Type_>()(__vector);
 	}
 
     template <
@@ -482,7 +463,7 @@ struct _Reduce_add<arch::ISA::AVX512VLF, 256, _Type_> {
         _IntrinType_    __vector,
         _MaskType_      __mask) const noexcept
     {
-        return (*this)(_Selectz<arch::ISA::AVX512F, 512, _Type_>()(__vector, __mask));
+        return (*this)(_Selectz<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __mask));
     }
 
     template <
@@ -493,23 +474,101 @@ struct _Reduce_add<arch::ISA::AVX512VLF, 256, _Type_> {
         _MaskType_      __mask,
         _IntrinType_    __source) const noexcept
     {
-        return (*this)(_Select<arch::ISA::AVX512F, 512, _Type_>()(__vector, __source, __mask));
+        return (*this)(_Select<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __source, __mask));
     }
 };
 
 template <class _Type_> 
 struct _Reduce_add<arch::ISA::AVX512VLBW, 256, _Type_> {
+    template <class _IntrinType_>
+	raze_nodiscard raze_always_inline
+        __reduce_type<_Type_> operator()(_IntrinType_ __vector) const noexcept
+    {
+        return _Reduce_add<arch::ISA::AVX512VLF, 256, _Type_>()(__vector);
+	}
 
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) const noexcept
+    {
+        return (*this)(_Selectz<arch::ISA::AVX512VLBW, 256, _Type_>()(__vector, __mask));
+    }
+
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask,
+        _IntrinType_    __source) const noexcept
+    {
+        return (*this)(_Select<arch::ISA::AVX512VLBW, 256, _Type_>()(__vector, __source, __mask));
+    }
 };
 
 template <class _Type_> 
 struct _Reduce_add<arch::ISA::AVX512VLF, 128, _Type_> {
+    template <class _IntrinType_>
+	raze_nodiscard raze_always_inline
+        __reduce_type<_Type_> operator()(_IntrinType_ __vector) const noexcept
+    {
+        return _Reduce_add<arch::ISA::AVX2, 128, _Type_>()(__vector);
+	}
 
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) const noexcept
+    {
+        return (*this)(_Selectz<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __mask));
+    }
+
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask,
+        _IntrinType_    __source) const noexcept
+    {
+        return (*this)(_Select<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __source, __mask));
+    }
 };
 
 template <class _Type_> 
 struct _Reduce_add<arch::ISA::AVX512VLBW, 128, _Type_> {
+    template <class _IntrinType_>
+	raze_nodiscard raze_always_inline
+        __reduce_type<_Type_> operator()(_IntrinType_ __vector) const noexcept
+    {
+        return _Reduce_add<arch::ISA::AVX512VLF, 128, _Type_>()(__vector);
+	}
 
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask) const noexcept
+    {
+        return (*this)(_Selectz<arch::ISA::AVX512VLBW, 128, _Type_>()(__vector, __mask));
+    }
+
+    template <
+        class _IntrinType_,
+        class _MaskType_>
+    raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(
+        _IntrinType_    __vector,
+        _MaskType_      __mask,
+        _IntrinType_    __source) const noexcept
+    {
+        return (*this)(_Select<arch::ISA::AVX512VLBW, 128, _Type_>()(__vector, __source, __mask));
+    }
 };
 
 template <class _Type_> struct _Reduce_add<arch::ISA::AVX512DQ, 512, _Type_> : _Reduce_add<arch::ISA::AVX512F, 512, _Type_> {};

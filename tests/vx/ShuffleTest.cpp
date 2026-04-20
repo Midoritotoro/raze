@@ -13,7 +13,7 @@ void test_shuffle_with_compile_time_pattern() {
     for (std::size_t i = 0; i < N; ++i)
         arr[i] = static_cast<T>(i + 1);
 
-    Simd v = raze::vx::load<Simd>(arr);
+    Simd v; v.copy_from(arr);
 
     {
         [&] <std::size_t... I>(std::index_sequence<I...>) {
