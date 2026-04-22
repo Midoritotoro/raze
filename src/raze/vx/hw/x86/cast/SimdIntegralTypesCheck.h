@@ -31,6 +31,18 @@ template <class _Type_>
 constexpr bool __is_intrin_type_v = type_traits::is_any_of_v<std::remove_cvref_t<_Type_>,
 	__m128, __m128i, __m128d, __m256, __m256i, __m256d, __m512, __m512i, __m512d>;
 
+template <class _IntrinType_>
+concept intrin_type = __is_intrin_type_v<_IntrinType_>;
+
+template <class _Type_>
+concept arithmetic_type = std::is_arithmetic_v<_Type_>;
+
+template <class _MaskType_>
+concept raw_mask_type = intrin_type<_MaskType_> || std::is_integral_v<_MaskType_>;
+
+template <class _Type_>
+concept intrin_or_arithmetic_type = intrin_type<_Type_> || arithmetic_type<_Type_>;
+
 template <typename _Element_>
 constexpr bool __is_epi64_v =  
 	((std::is_signed_v<_Element_> && !std::is_floating_point_v<_Element_>) 

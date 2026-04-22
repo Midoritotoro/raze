@@ -41,10 +41,8 @@ constexpr inline auto hsum = horizontal_sum;
 constexpr inline auto hmin = horizontal_min;
 constexpr inline auto hmax = horizontal_max;
 
-
-
 template <class _DataparType_>
-using __tail_mask_type = simd_mask<typename _DataparType_::value_type, x86_runtime_abi<_DataparType_::__isa, _DataparType_::__width>>;
+using __tail_mask_type = simd_mask<typename _DataparType_::value_type, runtime_abi<_DataparType_::__isa, _DataparType_::__width>>;
 
 /**
  *  @brief  Constructs a tail mask with the first @p __elements lanes set.
@@ -61,7 +59,6 @@ raze_nodiscard raze_always_inline __tail_mask_type<_Simd_>
 		_Simd_::__width, typename _Simd_::value_type>()(__elements));
 }
 
-
 template <arch::ISA _ISA_>
 struct __zero_upper_at_exit_guard {
     __zero_upper_at_exit_guard(const __zero_upper_at_exit_guard&) noexcept = delete;
@@ -71,10 +68,8 @@ struct __zero_upper_at_exit_guard {
 	{}
 
 	~__zero_upper_at_exit_guard() noexcept {
-#if defined(raze_processor_x86)
 		if constexpr (type_traits::__is_zeroupper_required_v<_ISA_>)
 			_mm256_zeroupper();
-#endif
 	}
 };
 

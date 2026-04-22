@@ -28,9 +28,8 @@ template <>
 constexpr inline bool __is_vector_type_supported_v<bool> = false;
 
 template <
-    arch::ISA   _ISA_,
-    typename    _VectorElementType_,
-    uint32      _Width_ = vx::__default_width<_ISA_>>
+    class   _VectorElementType_,
+    uint32  _Width_>
 struct __deduce_simd_vector_type__ {
 private:
     using _Type_ = std::decay_t<_VectorElementType_>;
@@ -40,7 +39,6 @@ private:
     static constexpr bool __is_int  = is_nonbool_integral_v<_Type_> || (std::is_same_v<_Type_, std::nullptr_t> && sizeof(std::nullptr_t) == 4);
     static constexpr bool __is_ptr  = __is_pointer_decay_v<_VectorElementType_>;
     static constexpr bool __use_i   = __is_int || __is_ptr;
-
 public:
     using type =
         std::conditional_t<
@@ -74,10 +72,9 @@ public:
 };
 
 template <
-    arch::ISA   _ISA_,
     typename    _VectorElementType_,
     uint32      _Width_>
-using __deduce_simd_vector_type = typename __deduce_simd_vector_type__<_ISA_, _VectorElementType_, _Width_>::type;
+using __deduce_simd_vector_type = typename __deduce_simd_vector_type__<_VectorElementType_, _Width_>::type;
 
 template <sizetype size>
 using __deduce_simd_shuffle_mask_type_helper = std::conditional_t<size <= 2, uint8,

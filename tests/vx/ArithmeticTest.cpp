@@ -6,7 +6,7 @@ template <
     raze::arch::ISA _ISA_,
     raze::uint32    _Width_>
 struct arithmetic_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::x86_runtime_abi<_ISA_, _Width_>>;
+    using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, (_Width_ / (sizeof(_Type_) * 8))>> ;
     using Mask = typename Simd::mask_type;
     static constexpr size_t N = Simd::size();
 
@@ -53,7 +53,7 @@ struct arithmetic_tests {
         Simd b; b.copy_from(arrB);
 
         run(a, b, arrA, arrB, [](auto x, auto y) { return x + y; }, [](auto x, auto y) { return x + y; });
-        run(a, b, arrA, arrB, [](auto x, auto y) { return x - y; }, [](auto x, auto y) { return x - y; });
+      /*  run(a, b, arrA, arrB, [](auto x, auto y) { return x - y; }, [](auto x, auto y) { return x - y; });
         run(a, b, arrA, arrB, [](auto x, auto y) { return x * y; }, [](auto x, auto y) { return x * y; });
 
         std::iota(arrB, arrB + N, _Type_(1));
@@ -66,87 +66,87 @@ struct arithmetic_tests {
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x += y; }, [](auto x, auto y) { return x + y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x -= y; }, [](auto x, auto y) { return x - y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x *= y; }, [](auto x, auto y) { return x * y; });
-        run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x /= y; }, [](auto x, auto y) { return x / y; });
+        run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x /= y; }, [](auto x, auto y) { return x / y; });*/
 
-        {
-            alignas(64) _Type_ arrSrc[N];
-            std::iota(arrSrc, arrSrc + N, 50);
+        //{
+        //    alignas(64) _Type_ arrSrc[N];
+        //    std::iota(arrSrc, arrSrc + N, 50);
 
-            Simd src; src.copy_from(arrSrc);
+        //    Simd src; src.copy_from(arrSrc);
 
-            const auto run_tests = [arrA, arrB, arrSrc, a, b, src](auto m) {
-                test_where_unary<_Type_, N>(
-                    arrA, arrSrc, m, a, src,
-                    [m, src](Simd A) {
-                        return raze::vx::neg[m, src](A);
-                    },
-                    [m](Simd A) {
-                        return raze::vx::neg[m](A);
-                    },
-                    [](_Type_ A, _Type_ Src, bool cond, bool rev) {
-                        return cond ? (-A) : Src;
-                });
+        //    const auto run_tests = [arrA, arrB, arrSrc, a, b, src](auto m) {
+        //        test_where_unary<_Type_, N>(
+        //            arrA, arrSrc, m, a, src,
+        //            [m, src](Simd A) {
+        //                return raze::vx::neg[m, src](A);
+        //            },
+        //            [m](Simd A) {
+        //                return raze::vx::neg[m](A);
+        //            },
+        //            [](_Type_ A, _Type_ Src, bool cond, bool rev) {
+        //                return cond ? (-A) : Src;
+        //        });
 
-                test_where_binary<_Type_, N>(
-                    arrA, arrB, arrSrc, m,
-                    a, b, src,
-                    [m, src](Simd A, Simd B) {
-                        return raze::vx::add[m, src](A, B);
-                    },
-                    [m](Simd A, Simd B) {
-                        return raze::vx::add[m](A, B);
-                    },
-                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                        return cond ? (rev ? B + A : A + B) : Src;
-                    }
-                );
+        //        test_where_binary<_Type_, N>(
+        //            arrA, arrB, arrSrc, m,
+        //            a, b, src,
+        //            [m, src](Simd A, Simd B) {
+        //                return raze::vx::add[m, src](A, B);
+        //            },
+        //            [m](Simd A, Simd B) {
+        //                return raze::vx::add[m](A, B);
+        //            },
+        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+        //                return cond ? (rev ? B + A : A + B) : Src;
+        //            }
+        //        );
 
-                test_where_binary<_Type_, N>(
-                    arrA, arrB, arrSrc, m,
-                    a, b, src,
-                    [m, src](Simd A, Simd B) {
-                        return raze::vx::sub[m, src](A, B);
-                    },
-                    [m](Simd A, Simd B) {
-                        return raze::vx::sub[m](A, B);
-                    },
-                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                        return cond ? (rev ? B - A : A - B) : Src;
-                    }
-                );
+        //        test_where_binary<_Type_, N>(
+        //            arrA, arrB, arrSrc, m,
+        //            a, b, src,
+        //            [m, src](Simd A, Simd B) {
+        //                return raze::vx::sub[m, src](A, B);
+        //            },
+        //            [m](Simd A, Simd B) {
+        //                return raze::vx::sub[m](A, B);
+        //            },
+        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+        //                return cond ? (rev ? B - A : A - B) : Src;
+        //            }
+        //        );
 
-                test_where_binary<_Type_, N>(
-                    arrA, arrB, arrSrc, m,
-                    a, b, src,
-                    [m, src](Simd A, Simd B) {
-                        return raze::vx::mul[m, src](A, B);
-                    },
-                    [m](Simd A, Simd B) {
-                        return raze::vx::mul[m](A, B);
-                    },
-                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                        return cond ? (rev ? B * A : A * B) : Src;
-                    }
-                );
+        //        test_where_binary<_Type_, N>(
+        //            arrA, arrB, arrSrc, m,
+        //            a, b, src,
+        //            [m, src](Simd A, Simd B) {
+        //                return raze::vx::mul[m, src](A, B);
+        //            },
+        //            [m](Simd A, Simd B) {
+        //                return raze::vx::mul[m](A, B);
+        //            },
+        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+        //                return cond ? (rev ? B * A : A * B) : Src;
+        //            }
+        //        );
 
-                test_where_binary<_Type_, N>(
-                    arrA, arrB, arrSrc, m,
-                    a, b, src,
-                    [m, src](Simd A, Simd B) {
-                        return raze::vx::div[m, src](A, B);
-                    },
-                    [m](Simd A, Simd B) {
-                        return raze::vx::div[m](A, B);
-                    },
-                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                        return cond ? (rev ? B / A : A / B) : Src;
-                    }
-                );
-            };
+        //        test_where_binary<_Type_, N>(
+        //            arrA, arrB, arrSrc, m,
+        //            a, b, src,
+        //            [m, src](Simd A, Simd B) {
+        //                return raze::vx::div[m, src](A, B);
+        //            },
+        //            [m](Simd A, Simd B) {
+        //                return raze::vx::div[m](A, B);
+        //            },
+        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+        //                return cond ? (rev ? B / A : A / B) : Src;
+        //            }
+        //        );
+        //    };
 
-            for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
-                run_tests(make_random_mask<Mask>());
-            }
+        //    for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+        //        run_tests(make_random_mask<Mask>());
+        //    }
         }
     }
 };

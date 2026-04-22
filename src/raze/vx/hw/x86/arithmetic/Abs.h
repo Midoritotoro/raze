@@ -4,19 +4,31 @@
 #include <src/raze/vx/hw/x86/merge/Select.h>
 
 
-__RAZE_VX_NAMESPACE_BEGIN 
+__RAZE_VX_NAMESPACE_BEGIN
 
 template <
-	arch::ISA	_ISA_,
-	uint32		_Width_,
-	class		_Type_>
+	arch::ISA		_ISA_,
+	uint32			_Width_,
+	arithmetic_type	_Type_>
 struct _Abs;
 
-template <class _Type_>
-struct _Abs<arch::ISA::SSE2, 128, _Type_> {
-	template <class _IntrinType_>
+struct _Scalar_abs {
+	template <arithmetic_type _Type_>
+	raze_nodiscard raze_always_inline _Type_ operator()(_Type_ __x) const noexcept
+		requires(std::is_arithmetic_v<_Type_>)
+	{
+		if constexpr (std::is_unsigned_v<_Type_>)
+			return __x;
+
+		return (__x < 0) ? -__x : __x;
+	}
+};
+
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::SSE2, 128, _Type_>: _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline 
-		_IntrinType_ operator()(_IntrinType_ __vector) const noexcept 
+		_IntrinType_ operator()(_IntrinType_ __vector) const noexcept
 	{
 		if constexpr (std::is_unsigned_v<_Type_>) {
 			return __vector;
@@ -53,35 +65,33 @@ struct _Abs<arch::ISA::SSE2, 128, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Selectz<arch::ISA::SSE2, 128, _Type_>()((*this)(__vector), __mask);
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Select<arch::ISA::SSE2, 128, _Type_>()((*this)(__vector), __source, __mask);
 	}
 };
 
-template <class _Type_> struct _Abs<arch::ISA::SSE3, 128, _Type_> : _Abs<arch::ISA::SSE2, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::SSSE3, 128, _Type_> : _Abs<arch::ISA::SSE3, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::SSE3, 128, _Type_> : _Abs<arch::ISA::SSE2, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::SSSE3, 128, _Type_> : _Abs<arch::ISA::SSE3, 128, _Type_> {};
 
-template <class _Type_> 
-struct _Abs<arch::ISA::SSE41, 128, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::SSE41, 128, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -89,32 +99,30 @@ struct _Abs<arch::ISA::SSE41, 128, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Selectz<arch::ISA::SSE41, 128, _Type_>()((*this)(__vector), __mask);
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Select<arch::ISA::SSE41, 128, _Type_>()((*this)(__vector), __source, __mask);
 	}
 };
 
-template <class _Type_> 
-struct _Abs<arch::ISA::AVX, 256, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX, 256, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -143,33 +151,31 @@ struct _Abs<arch::ISA::AVX, 256, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Selectz<arch::ISA::AVX, 256, _Type_>()((*this)(__vector), __mask);
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Select<arch::ISA::AVX, 256, _Type_>()((*this)(__vector), __source, __mask);
 	}
 };
 
 
-template <class _Type_>
-struct _Abs<arch::ISA::AVX2, 256, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX2, 256, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_ 
 		operator()(_IntrinType_ __vector) const noexcept 
 	{
@@ -197,32 +203,30 @@ struct _Abs<arch::ISA::AVX2, 256, _Type_> {
 	}
 	
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Selectz<arch::ISA::AVX2, 256, _Type_>()((*this)(__vector), __mask);
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		return _Select<arch::ISA::AVX2, 256, _Type_>()((*this)(__vector), __source, __mask);
 	}
 };
 
-template <class _Type_>
-struct _Abs<arch::ISA::AVX512F, 512, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX512F, 512, _Type_>: _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_ 
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -254,12 +258,11 @@ struct _Abs<arch::ISA::AVX512F, 512, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_>) {
 			return _Selectz<arch::ISA::AVX512F, 512, _Type_>()((*this)(__vector), __mask);
@@ -279,13 +282,12 @@ struct _Abs<arch::ISA::AVX512F, 512, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_>) {
 			return _Select<arch::ISA::AVX512F, 512, _Type_>()((*this)(__vector), __source, __mask);
@@ -309,9 +311,9 @@ struct _Abs<arch::ISA::AVX512F, 512, _Type_> {
 	}
 };
 
-template <class _Type_>
-struct _Abs<arch::ISA::AVX512BW, 512, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX512BW, 512, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_ 
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -326,12 +328,11 @@ struct _Abs<arch::ISA::AVX512BW, 512, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
 			return _Abs<arch::ISA::AVX512F, 512, _Type_>()(__vector, __mask);
@@ -345,13 +346,12 @@ struct _Abs<arch::ISA::AVX512BW, 512, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
 			return _Abs<arch::ISA::AVX512F, 512, _Type_>()(__vector, __mask, __source);
@@ -367,9 +367,9 @@ struct _Abs<arch::ISA::AVX512BW, 512, _Type_> {
 	}
 };
 
-template <class _Type_> 
-struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_ 
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -380,12 +380,11 @@ struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__vector), __mask);
@@ -399,13 +398,12 @@ struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Select<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__vector), __source, __mask);
@@ -421,9 +419,9 @@ struct _Abs<arch::ISA::AVX512VLF, 256, _Type_> {
 	}
 };
 
-template <class _Type_> 
-struct _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX512VLBW, 256, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_ 
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -431,12 +429,11 @@ struct _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
 			return _Abs<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __mask);
@@ -450,13 +447,12 @@ struct _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
 			return _Abs<arch::ISA::AVX512VLF, 256, _Type_>()(__vector, __mask, __source);
@@ -472,9 +468,9 @@ struct _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {
 	}
 };
 
-template <class _Type_>
-struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -485,12 +481,11 @@ struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__vector), __mask);
@@ -504,13 +499,12 @@ struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4 || std::is_unsigned_v<_Type_> || std::is_floating_point_v<_Type_>) {
 			return _Select<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__vector), __source, __mask);
@@ -526,9 +520,9 @@ struct _Abs<arch::ISA::AVX512VLF, 128, _Type_> {
 	}
 };
 
-template <class _Type_> 
-struct _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {
-	template <class _IntrinType_>
+template <arithmetic_type _Type_>
+struct _Abs<arch::ISA::AVX512VLBW, 128, _Type_> : _Scalar_abs {
+	template <intrin_type _IntrinType_>
 	raze_nodiscard raze_always_inline _IntrinType_ 
 		operator()(_IntrinType_ __vector) const noexcept
 	{
@@ -536,12 +530,11 @@ struct _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
 			return _Abs<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __mask);
@@ -555,13 +548,12 @@ struct _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {
 	}
 
 	template <
-		class _IntrinType_,
-		class _MaskType_>
+		intrin_type		_IntrinType_,
+		raw_mask_type	_MaskType_>
 	raze_nodiscard raze_always_inline _IntrinType_ operator()(
 		_IntrinType_	__vector,
 		_MaskType_		__mask,
 		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
 	{
 		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4 || std::is_unsigned_v<_Type_>) {
 			return _Abs<arch::ISA::AVX512VLF, 128, _Type_>()(__vector, __mask, __source);
@@ -577,33 +569,33 @@ struct _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {
 	}
 };
 
-template <class _Type_> struct _Abs<arch::ISA::SSE42, 128, _Type_>: _Abs<arch::ISA::SSE41, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX, 128, _Type_>: _Abs<arch::ISA::SSE42, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX2, 128, _Type_> : _Abs<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::FMA3, 128, _Type_> : _Abs<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX2FMA3, 128, _Type_> : _Abs<arch::ISA::AVX2, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::SSE42, 128, _Type_>: _Abs<arch::ISA::SSE41, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX, 128, _Type_>: _Abs<arch::ISA::SSE42, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX2, 128, _Type_> : _Abs<arch::ISA::AVX, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::FMA3, 128, _Type_> : _Abs<arch::ISA::AVX, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX2FMA3, 128, _Type_> : _Abs<arch::ISA::AVX2, 128, _Type_> {};
 
-template <class _Type_> struct _Abs<arch::ISA::AVX512DQ, 512, _Type_>: _Abs<arch::ISA::AVX512F, 512, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512BWDQ, 512, _Type_>: _Abs<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMI, 512, _Type_>: _Abs<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMI2, 512, _Type_>: _Abs<arch::ISA::AVX512VBMI, 512, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMIDQ, 512, _Type_>: _Abs<arch::ISA::AVX512BWDQ, 512, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMI2DQ, 512, _Type_>: _Abs<arch::ISA::AVX512VBMIDQ, 512, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512DQ, 512, _Type_>: _Abs<arch::ISA::AVX512F, 512, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512BWDQ, 512, _Type_>: _Abs<arch::ISA::AVX512BW, 512, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMI, 512, _Type_>: _Abs<arch::ISA::AVX512BW, 512, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMI2, 512, _Type_>: _Abs<arch::ISA::AVX512VBMI, 512, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMIDQ, 512, _Type_>: _Abs<arch::ISA::AVX512BWDQ, 512, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMI2DQ, 512, _Type_>: _Abs<arch::ISA::AVX512VBMIDQ, 512, _Type_> {};
 
-template <class _Type_> struct _Abs<arch::ISA::FMA3, 256, _Type_> : _Abs<arch::ISA::AVX, 256, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX2FMA3, 256, _Type_> : _Abs<arch::ISA::AVX2, 256, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VLDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VLF, 256, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VLBWDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMIVL, 256, _Type_>: _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMI2VL, 256, _Type_>: _Abs<arch::ISA::AVX512VBMIVL, 256, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMIVLDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VLBWDQ, 256, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMI2VLDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::FMA3, 256, _Type_> : _Abs<arch::ISA::AVX, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX2FMA3, 256, _Type_> : _Abs<arch::ISA::AVX2, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VLDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VLF, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VLBWDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMIVL, 256, _Type_>: _Abs<arch::ISA::AVX512VLBW, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMI2VL, 256, _Type_>: _Abs<arch::ISA::AVX512VBMIVL, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMIVLDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VLBWDQ, 256, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMI2VLDQ, 256, _Type_>: _Abs<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> {};
 
-template <class _Type_> struct _Abs<arch::ISA::AVX512VLDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VLF, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VLBWDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMIVL, 128, _Type_>: _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMI2VL, 128, _Type_>: _Abs<arch::ISA::AVX512VBMIVL, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMIVLDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VLBWDQ, 128, _Type_> {};
-template <class _Type_> struct _Abs<arch::ISA::AVX512VBMI2VLDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VLDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VLF, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VLBWDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMIVL, 128, _Type_>: _Abs<arch::ISA::AVX512VLBW, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMI2VL, 128, _Type_>: _Abs<arch::ISA::AVX512VBMIVL, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMIVLDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VLBWDQ, 128, _Type_> {};
+template <arithmetic_type _Type_> struct _Abs<arch::ISA::AVX512VBMI2VLDQ, 128, _Type_>: _Abs<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> {};
 
 __RAZE_VX_NAMESPACE_END
