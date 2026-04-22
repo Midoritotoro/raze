@@ -67,15 +67,15 @@ struct aligned_option : raze::options::exact_option<aligned> {};
 template <
     class _Type_,
     class _Abi_>
-class simd {
+class raze_aligned_type(64) simd {
     static_assert(type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>, "Unsupported element type. ");
 public:
     static constexpr auto __isa = _Abi_::isa;
     static constexpr auto __width = (_Abi_::size * sizeof(_Type_) * 8);
 
     static constexpr std::size_t __bytes = _Abi_::size * sizeof(_Type_);
-    static constexpr bool __is_pow2 = (_Abi_::size > 0) && ((_Abi_::size & (_Abi_::size - 1)) == 0);
-    static constexpr bool __use_native = (__bytes == 16 || __bytes == 32 || __bytes == 64) && __is_pow2;
+    static constexpr bool __use_native = (__bytes == 16 && __has_sse2_support_v<__isa>) || 
+        (__bytes == 32 && __has_avx_support_v<__isa>) || (__bytes == 64 && __has_avx512f_support_v<__isa>);
 
     using storage_type  = std::conditional_t<__use_native, type_traits::__deduce_simd_vector_type<_Type_, __width>, _Simd_fallback_tuple_type<_Type_, _Abi_>>;
     using reference     = _Simd_element_reference<simd>;
@@ -489,10 +489,6 @@ public:
         return size();
     }
 
-    //raze_always_inline operator vector_type() const noexcept {
-    //    return _storage;
-    //}
-
     /**
      *  @brief  Loads a SIMD vector from memory.
      *
@@ -502,7 +498,7 @@ public:
     */
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_from(_Iterator_ __first) noexcept {
-        __apply([&] <class _Chunk, class _It> (_Chunk& __chunk, _It& __current) noexcept {
+        __for_each_chunk([&] <class _Chunk, class _It> (_Chunk& __chunk, _It& __current) raze_always_inline_lambda {
             __chunk = _Load<__isa, _Chunk>()(__current);
             algorithm::__advance_bytes(__current, sizeof(_Chunk));
         }, std::to_address(__first));
@@ -510,7 +506,7 @@ public:
 
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_from(_Iterator_ __first, decltype(aligned)) noexcept {
-        __apply([&] <class _Chunk, class _It> (_Chunk& __chunk, _It& __current) noexcept {
+        __for_each_chunk([&] <class _Chunk, class _It> (_Chunk& __chunk, _It& __current) raze_always_inline_lambda {
             __chunk = _Load<__isa, _Chunk>()(__current, aligned_policy{});
             algorithm::__advance_bytes(__current, sizeof(_Chunk));
         }, std::to_address(__first));
@@ -563,21 +559,21 @@ public:
      *
      *  Stores all lanes to @p __first.
     */
-    //template <any_iterator_or_pointer _Iterator_>
-    //raze_always_inline void copy_to(_Iterator_ __first) const noexcept {
-    //    __apply([&] <class _Chunk, class _It> (const _Chunk& __chunk, _It& __current) noexcept {
-    //        _Store<__isa, __width>()(__current, __chunk);
-    //        algorithm::__advance_bytes(__current, sizeof(_Chunk));
-    //    }, std::to_address(__first));
-    //}
+    template <any_iterator_or_pointer _Iterator_>
+    raze_always_inline void copy_to(_Iterator_ __first) const noexcept {
+        __for_each_chunk([&] <class _Chunk, class _It> (const _Chunk& __chunk, _It& __current) raze_always_inline_lambda {
+            _Store<__isa>()(__current, __chunk);
+            algorithm::__advance_bytes(__current, sizeof(_Chunk));
+        }, std::to_address(__first));
+    }
 
-    //template <any_iterator_or_pointer _Iterator_>
-    //raze_always_inline void copy_to(_Iterator_ __first, decltype(aligned)) const noexcept {
-    //    __apply([&] <class _Chunk, class _It> (const _Chunk& __chunk, _It& __current) noexcept {
-    //        _Store<__isa, __width>()(__current, __chunk, aligned_policy{});
-    //        algorithm::__advance_bytes(__current, sizeof(_Chunk));
-    //    }, std::to_address(__first));
-    //}
+    template <any_iterator_or_pointer _Iterator_>
+    raze_always_inline void copy_to(_Iterator_ __first, decltype(aligned)) const noexcept {
+        __for_each_chunk([&] <class _Chunk, class _It> (const _Chunk& __chunk, _It& __current) raze_always_inline_lambda {
+            _Store<__isa>()(__current, __chunk, aligned_policy{});
+            algorithm::__advance_bytes(__current, sizeof(_Chunk));
+        }, std::to_address(__first));
+    }
 
    /* template <
         any_iterator_or_pointer _Iterator_,
@@ -596,7 +592,7 @@ private:
     template <
         class       _Function_,
         class ...   _Args_>
-    raze_always_inline void __apply(
+    raze_always_inline void __for_each_chunk(
         _Function_&&    __function, 
         _Args_&& ...    __args) noexcept
     {
@@ -605,8 +601,23 @@ private:
         }
         else {
             __execute_n_times<__simd_tuple_size<storage_type>::value>(
-                _storage, std::forward<_Function_>(__function),
-                (__args)...);
+                _storage, std::forward<_Function_>(__function), (__args)...);
+        }
+    }
+
+    template <
+        class       _Function_,
+        class ...   _Args_>
+    raze_always_inline void __for_each_chunk(
+        _Function_&&    __function, 
+        _Args_&& ...    __args) const noexcept
+    {
+        if constexpr (__use_native) {
+            __function(_storage, (__args)...);
+        }
+        else {
+            __execute_n_times<__simd_tuple_size<storage_type>::value>(
+                _storage, std::forward<_Function_>(__function), (__args)...);
         }
     }
 

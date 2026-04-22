@@ -202,6 +202,9 @@ template <arch::ISA _ISA_>
 constexpr inline bool __has_sse42_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::SSE42);
 
 template <arch::ISA _ISA_>
+constexpr inline bool __has_avx_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX);
+
+template <arch::ISA _ISA_>
 constexpr inline bool __has_avx2_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX2);
 
 template <arch::ISA _ISA_> 

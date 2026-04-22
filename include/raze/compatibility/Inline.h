@@ -19,11 +19,22 @@
 #  if defined(raze_cpp_msvc)
 #    define raze_always_inline __forceinline
 #  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
-#    define raze_always_inline inline __attribute__((always_inline))
+#    define raze_always_inline inline __attribute__((__always_inline__))
 #  else 
 #    define raze_always_inline inline
 #  endif // defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 #endif // !defined(raze_always_inline)
+
+
+#if !defined(raze_always_inline_lambda)
+#  if defined(raze_cpp_msvc)
+#    define raze_always_inline_lambda [[msvc::forceinline]]
+#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
+#    define raze_always_inline_lambda __attribute__((__always_inline__))
+#  else 
+#    define raze_always_inline_lambda
+#  endif // defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+#endif // !defined(raze_always_inline_lambda)
 
 
 #if !defined(raze_constexpr_cxx20)

@@ -3,6 +3,7 @@
 #include <raze/compatibility/Compatibility.h>
 #include <raze/arch/CpuFeature.h>
 #include <src/raze/vx/hw/Cast.h>
+#include <raze/vx/SimdConfig.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -56,6 +57,7 @@ template <sizetype _Elements_>
 struct x86_abi {
 	static constexpr auto dynamic = false;
 	static constexpr auto size = _Elements_;
+	static constexpr auto isa = __best_isa_compile_time();
 };
 
 #if defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
