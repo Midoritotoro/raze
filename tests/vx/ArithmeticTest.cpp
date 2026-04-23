@@ -6,7 +6,7 @@ template <
     raze::arch::ISA _ISA_,
     raze::uint32    _Width_>
 struct arithmetic_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, (_Width_ / (sizeof(_Type_) * 8))>> ;
+    using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, (_Width_ / (sizeof(_Type_) * 8)) + 1>> ;
     using Mask = typename Simd::mask_type;
     static constexpr size_t N = Simd::size();
 
@@ -53,7 +53,8 @@ struct arithmetic_tests {
         Simd b; b.copy_from(arrB);
 
         run(a, b, arrA, arrB, [](auto x, auto y) { return x + y; }, [](auto x, auto y) { return x + y; });
-      /*  run(a, b, arrA, arrB, [](auto x, auto y) { return x - y; }, [](auto x, auto y) { return x - y; });
+        run(a, b, arrA, arrB, [](auto x, auto y) { return x - y; }, [](auto x, auto y) { return x - y; });
+        /*
         run(a, b, arrA, arrB, [](auto x, auto y) { return x * y; }, [](auto x, auto y) { return x * y; });
 
         std::iota(arrB, arrB + N, _Type_(1));
@@ -62,9 +63,10 @@ struct arithmetic_tests {
         run(a, b, arrA, arrB, [](auto x, auto y) { return x / y; }, [](auto x, auto y) { return x / y; });
 
         run_unary(a, arrA, [](auto x) { return -x; }, [](auto x) { return -x; });
-
-        run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x += y; }, [](auto x, auto y) { return x + y; });
-        run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x -= y; }, [](auto x, auto y) { return x - y; });
+        */
+         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x += y; }, [](auto x, auto y) { return x + y; });
+         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x -= y; }, [](auto x, auto y) { return x - y; });
+        /*
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x *= y; }, [](auto x, auto y) { return x * y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x /= y; }, [](auto x, auto y) { return x / y; });*/
 
@@ -147,7 +149,7 @@ struct arithmetic_tests {
         //    for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
         //        run_tests(make_random_mask<Mask>());
         //    }
-        }
+        //}
     }
 };
 

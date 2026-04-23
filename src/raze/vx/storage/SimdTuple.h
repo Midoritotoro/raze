@@ -2,6 +2,7 @@
 
 
 #include <src/raze/type_traits/TypeTraits.h>
+#include <src/raze/vx/hw/Access.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -21,6 +22,9 @@ struct _Simd_tuple_node {
     _Simd_tuple_node(_Simd_tuple_node&&) noexcept = default;
 
     ~_Simd_tuple_node() = default;
+
+    _Simd_tuple_node& operator=(const _Simd_tuple_node&) noexcept = default;
+    _Simd_tuple_node& operator=(_Simd_tuple_node&&) noexcept = default;
 
     template <
         class _NewHead_, 
@@ -71,6 +75,21 @@ constexpr const auto& __get(const _Simd_tuple_node<_Head_, _Tail_>& __node) noex
 }
 
 template <
+    std::size_t _Index_,
+    class       _Type_>
+constexpr const auto& __get(const _Type_& __value) noexcept {
+    return __value;
+}
+
+
+template <
+    std::size_t _Index_,
+    class       _Type_>
+constexpr auto& __get(_Type_& __value) noexcept {
+    return __value;
+}
+
+template <
     class   _Type_,
     class   _Abi_,
     int     _Remaining_>
@@ -115,21 +134,82 @@ template <
     class _Abi_>
 using _Simd_fallback_tuple_type = typename __build_tuple<_Type_, _Abi_, _Abi_::size>::type;
 
+template <class _T_> 
+struct __is_simd_tuple: 
+    std::false_type 
+{};
+
 template <
-    sizetype    _N_,
-    class       _Tuple_,
-    class       _Function_,
-    class ...   _Args_>
-raze_always_inline void __execute_n_times(
-    _Tuple_&        __tuple,
-    _Function_&&    __function,
-    _Args_&& ...    __args) noexcept 
+    class _H_,
+    class _T_> 
+struct __is_simd_tuple<_Simd_tuple_node<_H_, _T_>>: 
+    std::true_type 
+{};
+
+template <> 
+struct __is_simd_tuple<_Simd_tuple_nil>:
+    std::true_type 
+{};
+
+template <
+    class _Type_, 
+    class _Tuple_, 
+    class _Func_>
+raze_always_inline void __visit_chunk_by_index(
+    _Tuple_&        __tuple, 
+    int32           __index, 
+    _Func_&&        __function) noexcept 
+        requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
 {
-    [&] <sizetype ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
-        ([&](auto __current) raze_always_inline_lambda {
-            __function(__get<__current>(__tuple), std::forward<_Args_>(__args)...);
-        }(std::integral_constant<std::size_t, __I>{}), ...);
-    }(std::make_integer_sequence<sizetype, _N_>{});
+    [&] <std::size_t... __I> (std::index_sequence<__I...>) raze_always_inline_lambda {
+        auto __current = __index;
+
+        ([&]() raze_always_inline_lambda {
+            using _Chunk = std::decay_t<decltype(__get<__I>(__tuple))>;
+            constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(_Type_);
+
+            if (__current < __chunk_size) {
+                __function(__get<__I>(__tuple), __current);
+                return true;
+            }
+
+            __current -= __chunk_size;
+            return false;
+        }() || ... );
+    }(std::make_index_sequence<__simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value>{});
+}
+
+template <
+    arch::ISA   _ISA_,
+    class       _Type_,
+    class       _Tuple_>
+raze_always_inline _Type_ __extract_element(
+    const _Tuple_&  __tuple, 
+    int32           __index) noexcept 
+        requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
+{
+    _Type_ __result {};
+
+    __visit_chunk_by_index<_Type_>(__tuple, __index, [&](const auto& __chunk, int32 __lane) raze_always_inline_lambda {
+        __result = _Extract<_ISA_, _Type_>()(__chunk, __lane);
+    });
+
+    return __result;
+}
+
+template <
+    arch::ISA _ISA_,
+    class _Type_, 
+    class _Tuple_>
+raze_always_inline void __insert_element(
+    _Tuple_&        __tuple, 
+    int32           __index,
+    _Type_          __value) noexcept
+        requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
+{
+    __visit_chunk_by_index<_Type_>(__tuple, __index, [&](auto& __chunk, int32 __lane) raze_always_inline_lambda {
+        __chunk = _Insert<_ISA_, _Type_>()(__chunk, __lane, __value);
+    });
 }
 
 template <
@@ -138,13 +218,14 @@ template <
     class       _Function_,
     class ...   _Args_>
 raze_always_inline void __execute_n_times(
-    const _Tuple_&  __tuple,
+    _Tuple_&        __x,
     _Function_&&    __function,
-    _Args_&& ...    __args) noexcept 
+    _Args_&& ...    __args) noexcept
+        requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
 {
     [&] <sizetype ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
         ([&](auto __current) raze_always_inline_lambda {
-            __function(__get<__current>(__tuple), std::forward<_Args_>(__args)...);
+            __function(__get<__current>(__x), __get<__current>(std::forward<_Args_>(__args))...);
         }(std::integral_constant<std::size_t, __I>{}), ...);
     }(std::make_integer_sequence<sizetype, _N_>{});
 }

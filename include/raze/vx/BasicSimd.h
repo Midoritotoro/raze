@@ -182,55 +182,61 @@ public:
     //    return *this;
     //}
 
-    /**
-     * @brief Element-wise logical left shift.
-     *
-     * @param shift  Number of bits to shift.
-     *
-     * Semantics:
-     * 
-     *  Logical shift for all element types.
-     *  If `shift >= bit_width(value_type)`, the result is zero.
-    */
-    raze_always_inline friend simd operator<<(
-        const simd& __left,
-        uint32      __shift) noexcept
-    {
-        return _Left_shift<__isa, __width, _Type_>()(__data(__left), __shift);
-    }
+    ///**
+    // * @brief Element-wise logical left shift.
+    // *
+    // * @param shift  Number of bits to shift.
+    // *
+    // * Semantics:
+    // * 
+    // *  Logical shift for all element types.
+    // *  If `shift >= bit_width(value_type)`, the result is zero.
+    //*/
+    //raze_always_inline friend simd operator<<(
+    //    const simd& __left,
+    //    uint32      __shift) noexcept
+    //{
+    //    return _Left_shift<__isa, __width, _Type_>()(__data(__left), __shift);
+    //}
 
-    /**
-     * @brief Element-wise right shift.
-     *
-     * @param shift  Number of bits to shift.
-     *
-     * Semantics:
-     * 
-     *  Unsigned types: logical shift.
-     * 
-     *  Signed types: arithmetic (sign-extending) shift.
-     * 
-     *  If `shift >= bit_width(value_type)`, the result is zero or
-     *  sign-extended depending on type.
-    */
-    raze_always_inline friend simd operator>>(
-        const simd& __left,
-        uint32      __shift) noexcept
-    {
-        return _Right_shift<__isa, __width, _Type_>()(__data(__left), __shift);
-    }
+    ///**
+    // * @brief Element-wise right shift.
+    // *
+    // * @param shift  Number of bits to shift.
+    // *
+    // * Semantics:
+    // * 
+    // *  Unsigned types: logical shift.
+    // * 
+    // *  Signed types: arithmetic (sign-extending) shift.
+    // * 
+    // *  If `shift >= bit_width(value_type)`, the result is zero or
+    // *  sign-extended depending on type.
+    //*/
+    //raze_always_inline friend simd operator>>(
+    //    const simd& __left,
+    //    uint32      __shift) noexcept
+    //{
+    //    return _Right_shift<__isa, __width, _Type_>()(__data(__left), __shift);
+    //}
 
     /**
      * @brief Element-wise subtraction.
     */
     template <class _RightType_>
     raze_always_inline friend simd operator-(
-        const simd&         __left,
-        const _RightType_&  __right) noexcept 
+        const simd&         __x,
+        const _RightType_&  __y) noexcept 
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Sub<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
+        simd __result = __x;
+
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, _Chunk& __value) raze_always_inline_lambda {
+            __chunk = _Sub<simd::__isa, value_type>()(__chunk, __value);
+        }, static_cast<simd>(__y)._storage);
+
+        return __result;
     }
 
     /**
@@ -238,152 +244,158 @@ public:
     */
     template <class _RightType_>
     raze_always_inline friend simd operator+(
-        const simd&         __left,
-        const _RightType_&  __right) noexcept 
+        const simd&         __x,
+        const _RightType_&  __y) noexcept 
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        return _Add<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
+        simd __result = __x;
+
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, _Chunk& __value) raze_always_inline_lambda {
+            __chunk = _Add<simd::__isa, value_type>()(__chunk, __value);
+        }, static_cast<simd>(__y)._storage);
+
+        return __result;
     }
 
-    /**
-     * @brief Element-wise multiplication.
-    */
-    template <class _RightType_>
-    raze_always_inline friend simd operator*(
-        const simd&         __left, 
-        const _RightType_&  __right) noexcept 
-            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
-                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
-    {
-        return _Mul<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
-    }
+    ///**
+    // * @brief Element-wise multiplication.
+    //*/
+    //template <class _RightType_>
+    //raze_always_inline friend simd operator*(
+    //    const simd&         __left, 
+    //    const _RightType_&  __right) noexcept 
+    //        requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
+    //            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+    //{
+    //    return _Mul<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
+    //}
 
-    /**
-     * @brief Element-wise division.
-    */
-    template <
-        class _LeftType_,
-        class _RightType_>
-    raze_always_inline friend simd operator/(
-        const _LeftType_&   __left,
-        const _RightType_&  __right) noexcept requires(
-            (std::is_same_v<std::remove_cvref_t<_LeftType_>, simd> && (
-                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type> ||
-                std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)) ||
-            (std::is_same_v<std::remove_cvref_t<_RightType_>, simd> && (
-                std::is_convertible_v<std::remove_cvref_t<_LeftType_>, value_type> ||
-                std::is_same_v<std::remove_cvref_t<_LeftType_>, simd>)))
-    {
-        return _Div<__isa, __width, _Type_>()(__data(simd(__left)), __data(simd(__right)));
-    }
+    ///**
+    // * @brief Element-wise division.
+    //*/
+    //template <
+    //    class _LeftType_,
+    //    class _RightType_>
+    //raze_always_inline friend simd operator/(
+    //    const _LeftType_&   __left,
+    //    const _RightType_&  __right) noexcept requires(
+    //        (std::is_same_v<std::remove_cvref_t<_LeftType_>, simd> && (
+    //            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type> ||
+    //            std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)) ||
+    //        (std::is_same_v<std::remove_cvref_t<_RightType_>, simd> && (
+    //            std::is_convertible_v<std::remove_cvref_t<_LeftType_>, value_type> ||
+    //            std::is_same_v<std::remove_cvref_t<_LeftType_>, simd>)))
+    //{
+    //    return _Div<__isa, __width, _Type_>()(__data(simd(__left)), __data(simd(__right)));
+    //}
 
-    /**
-     * @brief Bitwise AND.
-    */
-    raze_always_inline friend simd operator&(
-        const simd& __left,
-        const simd& __right) noexcept
-    {
-        return _And<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    ///**
+    // * @brief Bitwise AND.
+    //*/
+    //raze_always_inline friend simd operator&(
+    //    const simd& __left,
+    //    const simd& __right) noexcept
+    //{
+    //    return _And<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    /**
-     * @brief Bitwise OR.
-    */
-    raze_always_inline friend simd operator|(
-        const simd& __left, 
-        const simd& __right) noexcept
-    {
-        return _Or<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    ///**
+    // * @brief Bitwise OR.
+    //*/
+    //raze_always_inline friend simd operator|(
+    //    const simd& __left, 
+    //    const simd& __right) noexcept
+    //{
+    //    return _Or<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    /**
-     * @brief Bitwise XOR.
-    */
-    raze_always_inline friend simd operator^(
-        const simd& __left, 
-        const simd& __right) noexcept 
-    {
-        return _Xor<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    ///**
+    // * @brief Bitwise XOR.
+    //*/
+    //raze_always_inline friend simd operator^(
+    //    const simd& __left, 
+    //    const simd& __right) noexcept 
+    //{
+    //    return _Xor<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    /**
-     * @brief Bitwise NOT.
-    */
-    raze_always_inline simd operator~() const noexcept {
-        return _Not<__isa, __width, _Type_>()(_storage);
-    }
+    ///**
+    // * @brief Bitwise NOT.
+    //*/
+    //raze_always_inline simd operator~() const noexcept {
+    //    return _Not<__isa, __width, _Type_>()(_storage);
+    //}
 
-    /**
-     * @brief Element-wise equality comparison.
-     * @return A SIMD mask with one boolean per lane.
-    */
-    raze_always_inline friend mask_type operator==(
-        const simd& __left,
-        const simd& __right) noexcept 
-    {
-        return _Equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    ///**
+    // * @brief Element-wise equality comparison.
+    // * @return A SIMD mask with one boolean per lane.
+    //*/
+    //raze_always_inline friend mask_type operator==(
+    //    const simd& __left,
+    //    const simd& __right) noexcept 
+    //{
+    //    return _Equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    /**
-     * @brief Element-wise inequality comparison.
-     * @return A SIMD mask with one boolean per lane.
-    */
-    raze_always_inline friend mask_type operator!=(
-        const simd& __left, 
-        const simd& __right) noexcept 
-    {
-        return _Not_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    ///**
+    // * @brief Element-wise inequality comparison.
+    // * @return A SIMD mask with one boolean per lane.
+    //*/
+    //raze_always_inline friend mask_type operator!=(
+    //    const simd& __left, 
+    //    const simd& __right) noexcept 
+    //{
+    //    return _Not_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    raze_always_inline friend mask_type operator<(
-        const simd& __left, 
-        const simd& __right) noexcept 
-    {
-        return _Less<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    //raze_always_inline friend mask_type operator<(
+    //    const simd& __left, 
+    //    const simd& __right) noexcept 
+    //{
+    //    return _Less<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    raze_always_inline friend mask_type operator<=(
-        const simd& __left,
-        const simd& __right) noexcept
-    {
-        return _Less_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    //raze_always_inline friend mask_type operator<=(
+    //    const simd& __left,
+    //    const simd& __right) noexcept
+    //{
+    //    return _Less_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    raze_always_inline friend mask_type operator>(
-        const simd& __left,
-        const simd& __right) noexcept 
-    {
-        return _Greater<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    //raze_always_inline friend mask_type operator>(
+    //    const simd& __left,
+    //    const simd& __right) noexcept 
+    //{
+    //    return _Greater<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    raze_always_inline friend mask_type operator>=(
-        const simd& __left, 
-        const simd& __right) noexcept
-    {
-        return _Greater_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    }
+    //raze_always_inline friend mask_type operator>=(
+    //    const simd& __left, 
+    //    const simd& __right) noexcept
+    //{
+    //    return _Greater_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
+    //}
 
-    raze_always_inline simd& operator>>=(uint32 __shift) noexcept {
-        return *this = (*this >> __shift);
-    }
+    //raze_always_inline simd& operator>>=(uint32 __shift) noexcept {
+    //    return *this = (*this >> __shift);
+    //}
 
-    raze_always_inline simd& operator<<=(uint32 __shift) noexcept {
-        return *this = (*this << __shift);
-    }
+    //raze_always_inline simd& operator<<=(uint32 __shift) noexcept {
+    //    return *this = (*this << __shift);
+    //}
 
-    raze_always_inline simd& operator&=(const simd& __other) noexcept {
-        return *this = (*this & __other);
-    }
+    //raze_always_inline simd& operator&=(const simd& __other) noexcept {
+    //    return *this = (*this & __other);
+    //}
 
-    raze_always_inline simd& operator|=(const simd& __other) noexcept {
-        return *this = (*this | __other);
-    }
+    //raze_always_inline simd& operator|=(const simd& __other) noexcept {
+    //    return *this = (*this | __other);
+    //}
 
-    raze_always_inline simd& operator^=(const simd& __other) noexcept {
-        return *this = (*this ^ __other);
-    }
+    //raze_always_inline simd& operator^=(const simd& __other) noexcept {
+    //    return *this = (*this ^ __other);
+    //}
 
     raze_always_inline simd& operator+=(const simd& __other) noexcept {
         return *this = (*this + __other);
@@ -393,76 +405,76 @@ public:
         return *this = (*this - __other);
     }
 
-    raze_always_inline simd& operator*=(const simd& __other) noexcept {
-        return *this = (*this * __other);
-    }
+    //raze_always_inline simd& operator*=(const simd& __other) noexcept {
+    //    return *this = (*this * __other);
+    //}
 
-    raze_always_inline simd& operator/=(const simd& __other) noexcept {
-        return *this = (*this / __other);
-    }
+    //raze_always_inline simd& operator/=(const simd& __other) noexcept {
+    //    return *this = (*this / __other);
+    //}
 
     raze_always_inline simd& operator=(const simd& __other) noexcept {
         _storage = __other._storage;
         return *this;
     }
 
-    /**
-     * @brief Returns the vector unchanged.
-    */
-    raze_always_inline simd operator+() const noexcept {
-        return _storage;
-    }
+    ///**
+    // * @brief Returns the vector unchanged.
+    //*/
+    //raze_always_inline simd operator+() const noexcept {
+    //    return _storage;
+    //}
+
+    ///**
+    // * @brief Element-wise negation.
+    //*/
+    //raze_always_inline simd operator-() const noexcept {
+    //    return _Negate<__isa, __width, _Type_>()(_storage);
+    //}
+
+    ///**
+    // * @brief Post-increment: returns the old value, increments each lane by 1.
+    //*/
+    //raze_nodiscard raze_always_inline simd operator++(int) noexcept {
+    //    simd __self = *this;
+    //    *this += simd(1);
+    //    return __self;
+    //}
+
+    ///**
+    // * @brief Pre-increment: increments each lane by 1.
+    //*/
+    //raze_always_inline simd& operator++() noexcept {
+    //    return *this += simd(1);
+    //}
+
+    ///**
+    // * @brief Post-decrement: returns the old value, decrements each lane by 1.
+    //*/
+    //raze_always_inline simd operator--(int) noexcept {
+    //    simd __self = *this;
+    //    *this -= simd(1);
+    //    return __self;
+    //}
+
+    ///**
+    // * @brief Pre-decrement: decrements each lane by 1.
+    //*/
+    //raze_always_inline simd& operator--() noexcept {
+    //    return *this -= simd(1);
+    //}
 
     /**
-     * @brief Element-wise negation.
-    */
-    raze_always_inline simd operator-() const noexcept {
-        return _Negate<__isa, __width, _Type_>()(_storage);
-    }
-
-    /**
-     * @brief Post-increment: returns the old value, increments each lane by 1.
-    */
-    raze_nodiscard raze_always_inline simd operator++(int) noexcept {
-        simd __self = *this;
-        *this += simd(1);
-        return __self;
-    }
-
-    /**
-     * @brief Pre-increment: increments each lane by 1.
-    */
-    raze_always_inline simd& operator++() noexcept {
-        return *this += simd(1);
-    }
-
-    /**
-     * @brief Post-decrement: returns the old value, decrements each lane by 1.
-    */
-    raze_always_inline simd operator--(int) noexcept {
-        simd __self = *this;
-        *this -= simd(1);
-        return __self;
-    }
-
-    /**
-     * @brief Pre-decrement: decrements each lane by 1.
-    */
-    raze_always_inline simd& operator--() noexcept {
-        return *this -= simd(1);
-    }
-
-    /**
-     * @brief Returns the value of lane `i`.
+     * @brief returns the value of lane `i`.
      *
-     * @param i  Index in range [0, size()).
+     * @param i  index in range [0, size()).
     */
     raze_nodiscard raze_always_inline _Type_ operator[](int32 __i) const noexcept {
         return __extract(__i);
     }
 
     /**
-     * @brief Returns a proxy reference to lane `i`, allowing modification.
+     * @brief returns a proxy reference to lane `i`, allowing modification.
     */
     raze_nodiscard raze_always_inline reference operator[](int32 __i) noexcept {
         return reference(*this, __i);
@@ -560,7 +572,7 @@ public:
      *  Stores all lanes to @p __first.
     */
     template <any_iterator_or_pointer _Iterator_>
-    raze_always_inline void copy_to(_Iterator_ __first) const noexcept {
+    raze_always_inline void copy_to(_Iterator_ __first) noexcept {
         __for_each_chunk([&] <class _Chunk, class _It> (const _Chunk& __chunk, _It& __current) raze_always_inline_lambda {
             _Store<__isa>()(__current, __chunk);
             algorithm::__advance_bytes(__current, sizeof(_Chunk));
@@ -568,7 +580,7 @@ public:
     }
 
     template <any_iterator_or_pointer _Iterator_>
-    raze_always_inline void copy_to(_Iterator_ __first, decltype(aligned)) const noexcept {
+    raze_always_inline void copy_to(_Iterator_ __first, decltype(aligned)) noexcept {
         __for_each_chunk([&] <class _Chunk, class _It> (const _Chunk& __chunk, _It& __current) raze_always_inline_lambda {
             _Store<__isa>()(__current, __chunk, aligned_policy{});
             algorithm::__advance_bytes(__current, sizeof(_Chunk));
@@ -589,35 +601,29 @@ public:
         _Mask_store<__isa, __width, _Type_>()(std::to_address(__first), __data(__mask), _storage, aligned_policy{});
     }*/
 private:
-    template <
-        class       _Function_,
-        class ...   _Args_>
+    template <class _Func_, class... _Extras_>
     raze_always_inline void __for_each_chunk(
-        _Function_&&    __function, 
-        _Args_&& ...    __args) noexcept
+        _Func_&&        __function, 
+        _Extras_&&...   __extras) noexcept
     {
         if constexpr (__use_native) {
-            __function(_storage, (__args)...);
-        }
-        else {
+            __function(_storage, __extras...);
+        } else {
             __execute_n_times<__simd_tuple_size<storage_type>::value>(
-                _storage, std::forward<_Function_>(__function), (__args)...);
+                _storage, std::forward<_Func_>(__function), __extras...);
         }
     }
 
-    template <
-        class       _Function_,
-        class ...   _Args_>
+    template <class _Func_, class... _Extras_>
     raze_always_inline void __for_each_chunk(
-        _Function_&&    __function, 
-        _Args_&& ...    __args) const noexcept
+        _Func_&&        __function, 
+        _Extras_&&...   __extras) const noexcept
     {
         if constexpr (__use_native) {
-            __function(_storage, (__args)...);
-        }
-        else {
+            __function(_storage, __extras...);
+        } else {
             __execute_n_times<__simd_tuple_size<storage_type>::value>(
-                _storage, std::forward<_Function_>(__function), (__args)...);
+                _storage, std::forward<_Func_>(__function), __extras...);
         }
     }
 
@@ -625,12 +631,23 @@ private:
         int32       __position,
         value_type  __value) noexcept
     {
-        _Insert<__isa, __width>()(_storage, __position, __value);
+        if constexpr (__use_native) {
+            _Insert<__isa, __width>()(_storage, __position, __value);
+        }
+        else {
+            __insert_element<__isa, _Type_>(_storage, __position, __value);
+        }
     }
 
     raze_nodiscard raze_always_inline _Type_ __extract(int32 __i) const noexcept {
         raze_debug_assert(__i >= 0 && __i < size());
-        return _Extract<__isa, __width, _Type_>()(_storage, __i);
+
+        if constexpr (__use_native) {
+            return _Extract<__isa, _Type_>()(_storage, __i);
+        }
+        else {
+            return __extract_element<__isa, _Type_>(_storage, __i);
+        }
     }
 
     friend _Simd_element_reference;
