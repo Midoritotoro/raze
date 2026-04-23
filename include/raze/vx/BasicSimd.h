@@ -140,9 +140,9 @@ public:
      *
      * @param value  The scalar value to broadcast into all lanes.
     */
-    /*simd(value_type __value) noexcept {
+    simd(value_type __value) noexcept {
         fill(__value);
-    }*/
+    }
 
     ~simd() noexcept
     {}
@@ -159,28 +159,39 @@ public:
     //    _storage = simd_cast<vector_type>(__other);
     //}
 
-    ///**
-    // * @brief Returns a SIMD vector with all lanes set to zero.
-    //*/
-    //raze_nodiscard static raze_always_inline simd zero() noexcept {
-    //    return _Zero<__isa, __width, vector_type>()();
-    //}
+    /**
+     * @brief Returns a SIMD vector with all lanes set to zero.
+    */
+    raze_nodiscard static raze_always_inline simd zero() noexcept {
+        simd __result {};
 
-    ///**
-    // * @brief Returns a SIMD vector with all lanes set to `value`.
-    //*/
-    //raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
-    //    return _Broadcast<__isa, __width, vector_type>()(__value);
-    //}
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
+            __chunk = _Zero<__isa, _Chunk>()();
+        });
 
-    ///**
-    // * @brief Fills all lanes with `value`.
-    // * @return Reference to `*this`.
-    //*/
-    //raze_always_inline simd& fill(value_type __value) noexcept {
-    //    _storage = _Broadcast<__isa, __width, vector_type>()(__value);
-    //    return *this;
-    //}
+        return __result;
+    }
+
+    /**
+     * @brief Returns a SIMD vector with all lanes set to `value`.
+    */
+    raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
+        simd __result {};
+
+        __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk, _Tp __value) raze_always_inline_lambda {
+            __chunk = _Broadcast<__isa, _Chunk>()(__value);
+        }, __value);
+
+        return __result;
+    }
+
+    /**
+     * @brief Fills all lanes with `value`.
+     * @return Reference to `*this`.
+    */
+    raze_always_inline simd& fill(value_type __value) noexcept {
+        return *this = broadcast(__value);
+    }
 
     ///**
     // * @brief Element-wise logical left shift.
@@ -277,24 +288,47 @@ public:
         return __result;
     }
 
-    ///**
-    // * @brief Element-wise division.
-    //*/
-    //template <
-    //    class _LeftType_,
-    //    class _RightType_>
-    //raze_always_inline friend simd operator/(
-    //    const _LeftType_&   __left,
-    //    const _RightType_&  __right) noexcept requires(
-    //        (std::is_same_v<std::remove_cvref_t<_LeftType_>, simd> && (
-    //            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type> ||
-    //            std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)) ||
-    //        (std::is_same_v<std::remove_cvref_t<_RightType_>, simd> && (
-    //            std::is_convertible_v<std::remove_cvref_t<_LeftType_>, value_type> ||
-    //            std::is_same_v<std::remove_cvref_t<_LeftType_>, simd>)))
-    //{
-    //    return _Div<__isa, __width, _Type_>()(__data(simd(__left)), __data(simd(__right)));
-    //}
+    /**
+     * @brief Element-wise division.
+    */
+    template <
+        class _LeftType_,
+        class _RightType_>
+    raze_always_inline friend simd operator/(
+        const _LeftType_&   __x,
+        const _RightType_&  __y) noexcept requires(
+            (std::is_same_v<std::remove_cvref_t<_LeftType_>, simd> && (
+                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type> ||
+                std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)) ||
+            (std::is_same_v<std::remove_cvref_t<_RightType_>, simd> && (
+                std::is_convertible_v<std::remove_cvref_t<_LeftType_>, value_type> ||
+                std::is_same_v<std::remove_cvref_t<_LeftType_>, simd>)))
+    {
+        if constexpr (std::is_same_v<std::remove_cvref_t<_RightType_>, simd>) {
+            simd __result = simd(__x);
+
+            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk1, _Chunk& __chunk2) raze_always_inline_lambda {
+                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(typename simd::value_type);
+                using _Chunk_simd = simd<typename simd::value_type, resize_abi_t<typename simd::abi_type, __chunk_size>>;
+
+                __chunk1 = _Div<simd::__isa, value_type>()(__data(_Chunk_simd(__chunk1)), __chunk2);
+            }, __y._storage);
+
+            return __result;
+        }
+        else {
+            simd __result = simd(__x);
+
+            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk1, _Chunk& __chunk2) raze_always_inline_lambda {
+                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(typename simd::value_type);
+                using _Chunk_simd = simd<typename simd::value_type, resize_abi_t<typename simd::abi_type, __chunk_size>>;
+
+                __chunk1 = _Div<simd::__isa, value_type>()(__data(_Chunk_simd(__chunk1)), __data(_Chunk_simd(__chunk2)));
+            }, __y);
+
+            return __result;
+        }
+    }
 
     ///**
     // * @brief Bitwise AND.
@@ -638,7 +672,7 @@ private:
         value_type  __value) noexcept
     {
         if constexpr (__use_native) {
-            _Insert<__isa, __width>()(_storage, __position, __value);
+            _Insert<__isa>()(_storage, __position, __value);
         }
         else {
             __insert_element<__isa, _Type_>(_storage, __position, __value);

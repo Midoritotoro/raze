@@ -11,9 +11,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-	arch::ISA	_ISA_,
-	uint32		_Width_>
+template <arch::ISA	_ISA_>
 struct _Insert {
 	template <
 		intrin_or_arithmetic_type	_Tp_,
@@ -29,10 +27,10 @@ struct _Insert {
 		else {
 			constexpr auto __mask = __simd_make_insert_mask<_Tp_, typename IntegerForSizeof<_Type_>::Unsigned>();
 
-			const auto __broadcasted = _Broadcast<_ISA_, _Width_, _Tp_>()(__value);
+			const auto __broadcasted = _Broadcast<_ISA_, _Tp_>()(__value);
 			const auto __insert_mask = _Load<_ISA_, _Tp_>()(__mask.__array + __mask.__offset - __index);
 
-			__vector = _Select<_ISA_, _Width_, _Type_>()(__broadcasted, __vector, __insert_mask);
+			__vector = _Select<_ISA_, sizeof(_Tp_) * 8, _Type_>()(__broadcasted, __vector, __insert_mask);
 		}
 	}
 };

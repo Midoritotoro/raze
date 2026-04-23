@@ -208,7 +208,7 @@ raze_always_inline void __insert_element(
         requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
 {
     __visit_chunk_by_index<_Type_>(__tuple, __index, [&](auto& __chunk, int32 __lane) raze_always_inline_lambda {
-        __chunk = _Insert<_ISA_, _Type_>()(__chunk, __lane, __value);
+        _Insert<_ISA_>()(__chunk, __lane, __value);
     });
 }
 

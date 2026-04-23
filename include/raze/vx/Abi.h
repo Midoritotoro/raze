@@ -64,4 +64,16 @@ struct x86_abi {
   using default_abi = x86_abi<4>;
 #endif // defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
 
+template <
+	class		_Abi_, 
+	sizetype	_Elements_>
+class resize_abi {
+	using type = std::conditional_t<_Abi_::dynamic, runtime_abi<_Abi_::isa, _Elements_>, x86_abi<_Elements_>>;
+};
+
+template <
+	class		_Abi_,
+	sizetype	_Elements_>
+using resize_abi_t = typename resize_abi<_Abi_, _Elements_>::type;
+
 __RAZE_VX_NAMESPACE_END

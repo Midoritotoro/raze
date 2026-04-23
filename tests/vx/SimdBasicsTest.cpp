@@ -5,13 +5,13 @@ template <
     class           _Type_,
     raze::arch::ISA _ISA_,
     raze::uint32    _Width_>
-struct basics_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::x86_runtime_abi<_ISA_, _Width_>>;
-    using Mask = typename Simd::mask_type;
-    using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
-    static constexpr size_t N = Simd::size();
+struct variable_length_basics_tests {
+    template <raze::uint32 _N_>
+    void test_size() const {
+        using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _N_>>;
+        constexpr size_t N = _N_;
+        constexpr size_t PAD = 4;
 
-    void operator()() {
         Simd v1;
         Simd v2(5);
 
@@ -42,9 +42,19 @@ struct basics_tests {
         v[0] = 99;
         raze_assert(v[0] == 99);
     }
+
+    void operator()() const {
+        test_size<(_Width_ / (sizeof(_Type_) * 8))>();
+        test_size<1>();
+        test_size<7>();
+        test_size<17>();
+        test_size<31>();
+        test_size<64>();
+        test_size<94>();
+    }
 };
 
 int main() {
-    test_all<basics_tests>();
+    test_all<variable_length_basics_tests>();
     return 0;
 }
