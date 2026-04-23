@@ -258,18 +258,24 @@ public:
         return __result;
     }
 
-    ///**
-    // * @brief Element-wise multiplication.
-    //*/
-    //template <class _RightType_>
-    //raze_always_inline friend simd operator*(
-    //    const simd&         __left, 
-    //    const _RightType_&  __right) noexcept 
-    //        requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
-    //            std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
-    //{
-    //    return _Mul<__isa, __width, _Type_>()(__data(__left), __data(simd(__right)));
-    //}
+    /**
+     * @brief Element-wise multiplication.
+    */
+    template <class _RightType_>
+    raze_always_inline friend simd operator*(
+        const simd&         __x, 
+        const _RightType_&  __y) noexcept 
+            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
+                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+    {
+        simd __result = __x;
+
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk, _Chunk & __value) raze_always_inline_lambda {
+            __chunk = _Mul<simd::__isa, value_type>()(__chunk, __value);
+        }, static_cast<simd>(__y)._storage);
+
+        return __result;
+    }
 
     ///**
     // * @brief Element-wise division.
@@ -405,9 +411,9 @@ public:
         return *this = (*this - __other);
     }
 
-    //raze_always_inline simd& operator*=(const simd& __other) noexcept {
-    //    return *this = (*this * __other);
-    //}
+    raze_always_inline simd& operator*=(const simd& __other) noexcept {
+        return *this = (*this * __other);
+    }
 
     //raze_always_inline simd& operator/=(const simd& __other) noexcept {
     //    return *this = (*this / __other);
