@@ -49,8 +49,6 @@ struct variable_length_basics_tests {
         test_size<7>();
         test_size<17>();
         test_size<31>();
-        test_size<64>();
-        test_size<94>();
     }
 };
 

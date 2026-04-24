@@ -99,10 +99,7 @@ struct _Sub {
 
 		}
 
-		if constexpr (intrin_type<_Tp_>)
-			return _Selectz<_ISA_, (sizeof(_Tp_) * 8), _Type_>()((*this)(__x, __y), __mask);
-		else
-			return __mask ? __x - __y : 0;
+		return _Selectz<_ISA_, _Type_>()((*this)(__x, __y), __mask);
 	}
 
 	template <
@@ -144,10 +141,7 @@ struct _Sub {
 			}
 		}
 
-		if constexpr (intrin_type<_Tp_>)
-			return _Select<_ISA_, (sizeof(_Tp_) * 8), _Type_>()((*this)(__x, __y), __src, __mask);
-		else
-			return __mask ? __x - __y : __src;
+		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
 	}
 };
 

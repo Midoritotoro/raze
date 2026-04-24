@@ -74,7 +74,7 @@ struct _Mul {
 					const auto __multiplied_even = _mm_mullo_epi16(__as<__m128i>(__x), __as<__m128i>(__y));
 					const auto __multiplied_odd = _mm_slli_epi16(_mm_mullo_epi16(__left_odd, __right_odd), 8);
 
-					return __as<_Tp_>(_Select<_ISA_, sizeof(_Tp_) * 8, _Type_>()(__multiplied_even, __multiplied_odd, _mm_set1_epi32(0x00FF00FF)));
+					return __as<_Tp_>(_Select<_ISA_,  _Type_>()(__multiplied_even, __multiplied_odd, _mm_set1_epi32(0x00FF00FF)));
 				}
 			}
 		}
@@ -226,10 +226,7 @@ struct _Mul {
 			}
 		}
 
-		if constexpr (intrin_type<_Tp_>)
-			return _Selectz<_ISA_, sizeof(_Tp_) * 8, _Type_>()((*this)(__x, __y), __mask);
-		else
-			return __mask ? __x * __y : 0;
+		return _Selectz<_ISA_, _Type_>()((*this)(__x, __y), __mask);
 	}
 
 	template <
@@ -284,10 +281,7 @@ struct _Mul {
 			}
 		}
 
-		if constexpr (intrin_type<_Tp_>)
-			return _Select<_ISA_, sizeof(_Tp_) * 8, _Type_>()((*this)(__x, __y), __src, __mask);
-		else
-			return __mask ? __x * __y : __src;
+		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
 	}
 };
 

@@ -1,275 +1,68 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/mask/ToMask.h>
-#include <src/raze/vx/hw/x86/compare/Greater.h>
+#include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/compare/Less.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <
-    arch::ISA	_ISA_,
-    uint32		_Width_,
-    class		_Type_>
-struct _Less_equal;
-
-template <class _Type_>
-struct _Less_equal<arch::ISA::SSE2, 128, _Type_> {
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        if constexpr (__is_pd_v<_Type_>)
-            return __as<_IntrinType_>(_mm_cmple_pd(__as<__m128d>(__left), __as<__m128d>(__right)));
-
-        else if constexpr (__is_ps_v<_Type_>)
-            return __as<_IntrinType_>(_mm_cmple_ps(__as<__m128>(__left),  __as<__m128>(__right)));
-
-        else
-            return _Not<arch::ISA::SSE2, 128, _Type_>()(_Greater<arch::ISA::SSE2, 128, _Type_>()(__left, __right));
-    }
-};
-
-template <class _Type_> 
-struct _Less_equal<arch::ISA::AVX, 256, _Type_> {
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        return _Not<arch::ISA::AVX, 256, _Type_>()(
-            _Greater<arch::ISA::AVX, 256, _Type_>()(__left, __right));
-    }
-};
-
-template <class _Type_>
-struct _Less_equal<arch::ISA::AVX2, 256, _Type_> {
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        return _Not<arch::ISA::AVX2, 256, _Type_>()(
-            _Greater<arch::ISA::AVX2, 256, _Type_>()(__left, __right));
-    }
-};
-
-template <class _Type_>
-struct _Less_equal<arch::ISA::AVX512F, 512, _Type_> {
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        if constexpr (__is_epi64_v<_Type_>) {
-            return _mm512_cmple_epi64_mask(__as<__m512i>(__left), __as<__m512i>(__right));
+	arch::ISA	    _ISA_,
+	arithmetic_type	_Type_>
+struct _Less_equal {
+	template <intrin_or_arithmetic_type _Tp_>
+	raze_nodiscard raze_always_inline auto operator()(_Tp_ __x, _Tp_ __y) const noexcept {
+		if constexpr (sizeof(_Tp_) == 16) {
+            if constexpr (__has_avx512vl_support_v<_ISA_>) {
+                if constexpr (__is_pd_v<_Type_>) return _mm_cmp_pd_mask(__as<__m128d>(__x), __as<__m128d>(__y), _CMP_LE_OQ);
+                else if constexpr (__is_ps_v<_Type_>) return _mm_cmp_ps_mask(__as<__m128>(__x), __as<__m128>(__y), _CMP_LE_OQ);
+                else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return _mm_cmple_epi64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return _mm_cmple_epi32_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+                    if constexpr (__is_epi16_v<_Type_>) return _mm_cmple_epi16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                    else if constexpr (__is_epu16_v<_Type_>) return _mm_cmple_epu16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                    else if constexpr (__is_epi8_v<_Type_>) return _mm_cmple_epi8_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                    else if constexpr (__is_epu8_v<_Type_>) return _mm_cmple_epu8_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                }
+            }
+            else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_cmple_ps(__as<__m128>(__x), __as<__m128>(__y)));
+            else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_cmple_pd(__as<__m128d>(__x), __as<__m128d>(__y)));
         }
-        else if constexpr (__is_epu64_v<_Type_>) {
-            return _mm512_cmple_epu64_mask(__as<__m512i>(__left), __as<__m512i>(__right));
+        else if constexpr (sizeof(_Tp_) == 32) {
+            if constexpr (__has_avx512vl_support_v<_ISA_>) {
+                if constexpr (__is_pd_v<_Type_>) return _mm256_cmp_pd_mask(__as<__m256d>(__x), __as<__m256d>(__y), _CMP_LE_OQ);
+                else if constexpr (__is_ps_v<_Type_>) return _mm256_cmp_ps_mask(__as<__m256>(__x), __as<__m256>(__y), _CMP_LE_OQ);
+                else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return _mm256_cmple_epi64_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return _mm256_cmple_epi32_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+                    if constexpr (__is_epi16_v<_Type_>) return _mm256_cmple_epi16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                    else if constexpr (__is_epu16_v<_Type_>) return _mm256_cmple_epu16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                    else if constexpr (__is_epi8_v<_Type_>) return _mm256_cmple_epi8_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                    else if constexpr (__is_epu8_v<_Type_>) return _mm256_cmple_epu8_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                }
+            }
+            else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_cmp_ps(__as<__m128>(__x), __as<__m128>(__y), _CMP_LE_OQ));
+            else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_cmp_pd(__as<__m128d>(__x), __as<__m128d>(__y), _CMP_LE_OQ));
         }
-        else if constexpr (__is_epi32_v<_Type_>) {
-            return _mm512_cmple_epi32_mask(__as<__m512i>(__left), __as<__m512i>(__right));
-        }
-        else if constexpr (__is_epu32_v<_Type_>) {
-            return _mm512_cmple_epu32_mask(__as<__m512i>(__left), __as<__m512i>(__right));
-        }
-        else if constexpr (__is_pd_v<_Type_>) {
-            return _mm512_cmple_pd_mask(__as<__m512d>(__left), __as<__m512d>(__right));
-        }
-        else if constexpr (__is_ps_v<_Type_>) {
-            return _mm512_cmple_ps_mask(__as<__m512>(__left), __as<__m512>(__right));
+        else if constexpr (sizeof(_Tp_) == 64) {
+            if constexpr (__is_pd_v<_Type_>) return _mm512_cmple_pd_mask(__as<__m512d>(__x), __as<__m512d>(__y));
+            else if constexpr (__is_ps_v<_Type_>) return _mm512_cmple_ps_mask(__as<__m512>(__x), __as<__m512>(__y));
+            else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return _mm512_cmple_epi64_mask(__as<__m512i>(__x), __as<__m512i>(__y));
+            else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return _mm512_cmple_epi32_mask(__as<__m512i>(__x), __as<__m512i>(__y));
+            else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+                if constexpr (__is_epi16_v<_Type_>) return _mm512_cmple_epi16_mask(__as<__m512i>(__x), __as<__m512i>(__y));
+                else if constexpr (__is_epu16_v<_Type_>) return _mm512_cmple_epu16_mask(__as<__m512i>(__x), __as<__m512i>(__y));
+                else if constexpr (__is_epi8_v<_Type_>) return _mm512_cmple_epi8_mask(__as<__m512i>(__x), __as<__m512i>(__y));
+                else if constexpr (__is_epu8_v<_Type_>) return _mm512_cmple_epu8_mask(__as<__m512i>(__x), __as<__m512i>(__y));
+            }
         }
         else {
-            const auto __compared_low = _Less_equal<arch::ISA::AVX2, 256, _Type_>()(
-                __as<__m256i>(__left), __as<__m256i>(__right));
-
-            const auto __compared_high = _Less_equal<arch::ISA::AVX2, 256, _Type_>()(
-                _mm512_extracti64x4_epi64(__as<__m512i>(__left), 1),
-                _mm512_extracti64x4_epi64(__as<__m512i>(__right), 1));
-
-            return __as<_IntrinType_>(_mm512_inserti64x4(
-                __as<__m512i>(__compared_low), __compared_high, 1));
+            if constexpr (arithmetic_type<_Tp_>)
+                return __x <= __y;
+            else
+                return _Not<_ISA_, _Type_>()(_Less<_ISA_, _Type_>()(__y, __x));
         }
-    }
+	}
 };
-
-template <class _Type_> 
-struct _Less_equal<arch::ISA::AVX512BW, 512, _Type_>:
-    _Less_equal<arch::ISA::AVX512F, 512, _Type_> 
-{
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        if constexpr (__is_epi8_v<_Type_>)
-            return _mm512_cmple_epi8_mask(__as<__m512i>(__left), __as<__m512i>(__right));
-
-        else if constexpr (__is_epu8_v<_Type_>)
-            return _mm512_cmple_epu8_mask(__as<__m512i>(__left), __as<__m512i>(__right));
-
-        else if constexpr (__is_epi16_v<_Type_>)
-            return _mm512_cmple_epi16_mask(__as<__m512i>(__left), __as<__m512i>(__right));
-
-        else if constexpr (__is_epu16_v<_Type_>)
-            return _mm512_cmple_epu16_mask(__as<__m512i>(__left), __as<__m512i>(__right));
-
-        else
-            return _Less_equal<arch::ISA::AVX512F, 512, _Type_>()(__left, __right);
-    }
-};
-
-template <class _Type_> 
-struct _Less_equal<arch::ISA::AVX512VLF, 256, _Type_>: 
-    _Less_equal<arch::ISA::AVX2, 256, _Type_> 
-{
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        if constexpr (__is_epi64_v<_Type_>) {
-            return _mm256_cmple_epi64_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-        }
-        else if constexpr (__is_epu64_v<_Type_>) {
-            return _mm256_cmple_epu64_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-        }
-        else if constexpr (__is_epi32_v<_Type_>) {
-            return _mm256_cmple_epi32_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-        }
-        else if constexpr (__is_epu32_v<_Type_>) {
-            return _mm256_cmple_epu32_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-        }
-        else if constexpr (__is_pd_v<_Type_>) {
-            return _mm256_cmp_pd_mask(__as<__m256d>(__left), __as<__m256d>(__right), _CMP_LE_OQ);
-        }
-        else if constexpr (__is_ps_v<_Type_>) {
-            return _mm256_cmp_ps_mask(__as<__m256>(__left), __as<__m256>(__right), _CMP_LE_OQ);
-        }
-        else {
-            return _Less_equal<arch::ISA::AVX2, 256, _Type_>()(__left, __right);
-        }
-    }
-};
-
-
-template <class _Type_> 
-struct _Less_equal<arch::ISA::AVX512VLBW, 256, _Type_>:
-    _Less_equal<arch::ISA::AVX512VLF, 256, _Type_>
-{
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        if constexpr (__is_epi8_v<_Type_>)
-            return _mm256_cmple_epi8_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-
-        else if constexpr (__is_epu8_v<_Type_>)
-            return _mm256_cmple_epu8_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-
-        else if constexpr (__is_epi16_v<_Type_>)
-            return _mm256_cmple_epi16_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-
-        else if constexpr (__is_epu16_v<_Type_>)
-            return _mm256_cmple_epu16_mask(__as<__m256i>(__left), __as<__m256i>(__right));
-        
-        else
-            return _Less_equal<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right);
-    }
-};
-
-template <class _Type_>
-struct _Less_equal<arch::ISA::AVX512VLF, 128, _Type_> :
-    _Less_equal<arch::ISA::AVX2, 128, _Type_>
-{
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        if constexpr (__is_epi64_v<_Type_>) {
-            return _mm_cmple_epi64_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-        }
-        else if constexpr (__is_epu64_v<_Type_>) {
-            return _mm_cmple_epu64_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-        }
-        else if constexpr (__is_epi32_v<_Type_>) {
-            return _mm_cmple_epi32_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-        }
-        else if constexpr (__is_epu32_v<_Type_>) {
-            return _mm_cmple_epu32_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-        }
-        else if constexpr (__is_pd_v<_Type_>) {
-            return _mm_cmp_pd_mask(__as<__m128d>(__left), __as<__m128d>(__right), _CMP_LE_OQ);
-        }
-        else if constexpr (__is_ps_v<_Type_>) {
-            return _mm_cmp_ps_mask(__as<__m128>(__left), __as<__m128>(__right), _CMP_LE_OQ);
-        }
-        else {
-            return _Less_equal<arch::ISA::AVX2, 128, _Type_>()(__left, __right);
-        }
-    }
-};
-
-
-template <class _Type_>
-struct _Less_equal<arch::ISA::AVX512VLBW, 128, _Type_> :
-    _Less_equal<arch::ISA::AVX512VLF, 128, _Type_>
-{
-    template <class _IntrinType_>
-    raze_nodiscard raze_always_inline auto operator()(
-        _IntrinType_ __left,
-        _IntrinType_ __right) const noexcept
-    {
-        if constexpr (__is_epi8_v<_Type_>)
-            return _mm_cmple_epi8_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-
-        else if constexpr (__is_epu8_v<_Type_>)
-            return _mm_cmple_epu8_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-
-        else if constexpr (__is_epi16_v<_Type_>)
-            return _mm_cmple_epi16_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-         
-        else if constexpr (__is_epu16_v<_Type_>)
-            return _mm_cmple_epu16_mask(__as<__m128i>(__left), __as<__m128i>(__right));
-
-        else
-            return _Less_equal<arch::ISA::AVX512VLF, 128, _Type_>()(__left, __right);
-    }
-};
-
-
-template <class _Type_> struct _Less_equal<arch::ISA::SSE3, 128, _Type_> : _Less_equal<arch::ISA::SSE2, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::SSSE3, 128, _Type_> : _Less_equal<arch::ISA::SSE3, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::SSE41, 128, _Type_> : _Less_equal<arch::ISA::SSSE3, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::SSE42, 128, _Type_> : _Less_equal<arch::ISA::SSE41, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX, 128, _Type_> : _Less_equal<arch::ISA::SSE42, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX2, 128, _Type_> : _Less_equal<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::FMA3, 128, _Type_> : _Less_equal<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX2FMA3, 128, _Type_> : _Less_equal<arch::ISA::AVX, 128, _Type_> {};
-
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512DQ, 512, _Type_> : _Less_equal<arch::ISA::AVX512F, 512, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512BWDQ, 512, _Type_> : _Less_equal<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMI, 512, _Type_> : _Less_equal<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMI2, 512, _Type_> : _Less_equal<arch::ISA::AVX512VBMI, 512, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMIDQ, 512, _Type_> : _Less_equal<arch::ISA::AVX512BWDQ, 512, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMI2DQ, 512, _Type_> : _Less_equal<arch::ISA::AVX512VBMIDQ, 512, _Type_> {};
-
-template <class _Type_> struct _Less_equal<arch::ISA::FMA3, 256, _Type_> : _Less_equal<arch::ISA::AVX, 256, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX2FMA3, 256, _Type_> : _Less_equal<arch::ISA::AVX, 256, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VLDQ, 256, _Type_> : _Less_equal<arch::ISA::AVX512VLF, 256, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VLBWDQ, 256, _Type_> : _Less_equal<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMIVL, 256, _Type_> : _Less_equal<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMI2VL, 256, _Type_> : _Less_equal<arch::ISA::AVX512VBMIVL, 256, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> : _Less_equal<arch::ISA::AVX512VLBWDQ, 256, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMI2VLDQ, 256, _Type_> : _Less_equal<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> {};
-
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VLDQ, 128, _Type_> : _Less_equal<arch::ISA::AVX512VLF, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VLBWDQ, 128, _Type_> : _Less_equal<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMIVL, 128, _Type_> : _Less_equal<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMI2VL, 128, _Type_> : _Less_equal<arch::ISA::AVX512VBMIVL, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> : _Less_equal<arch::ISA::AVX512VLBWDQ, 128, _Type_> {};
-template <class _Type_> struct _Less_equal<arch::ISA::AVX512VBMI2VLDQ, 128, _Type_> : _Less_equal<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> {};
 
 __RAZE_VX_NAMESPACE_END

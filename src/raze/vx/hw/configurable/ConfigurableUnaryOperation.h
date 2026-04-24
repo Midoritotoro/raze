@@ -6,13 +6,13 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <
-    template <auto, auto, class> class  _OpFunctor_,
-    class ...                           _SupportedOptions_>
+    template <auto, class> class    _OpFunctor_,
+    class ...                       _SupportedOptions_>
 struct _Configurable_unary_operation_base {
     template <class _Options_>
     struct __impl: public raze::options::strict_elementwise_callable<__impl, _Options_, _SupportedOptions_...> {
         template <simd_type _Simd_>
-        static constexpr auto __op = _OpFunctor_<_Simd_::__isa, _Simd_::__width, typename _Simd_::value_type>{};
+        static constexpr auto __op = _OpFunctor_<_Simd_::__isa, typename _Simd_::value_type>{};
 
         template <simd_type _Simd_>
         using op_return_type = decltype(__op<_Simd_>(std::declval<typename _Simd_::vector_type>()));
@@ -52,9 +52,9 @@ struct _Configurable_unary_operation_base {
 
 
 template <
-    template <auto, auto, class> class  _OpFunctor_,
-    class                               _Options_,
-    class ...                           _SupportedOptions_>
+    template <auto, class> class    _OpFunctor_,
+    class                           _Options_,
+    class ...                       _SupportedOptions_>
 using __configurable_unary_operation_type = typename _Configurable_unary_operation_base<_OpFunctor_, _SupportedOptions_...>::template __impl<_Options_>;
 
 __RAZE_VX_NAMESPACE_END

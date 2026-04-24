@@ -449,9 +449,9 @@ public:
         return *this = (*this * __other);
     }
 
-    //raze_always_inline simd& operator/=(const simd& __other) noexcept {
-    //    return *this = (*this / __other);
-    //}
+    raze_always_inline simd& operator/=(const simd& __other) noexcept {
+        return *this = (*this / __other);
+    }
 
     raze_always_inline simd& operator=(const simd& __other) noexcept {
         _storage = __other._storage;
