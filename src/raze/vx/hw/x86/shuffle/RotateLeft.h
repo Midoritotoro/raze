@@ -26,10 +26,10 @@ struct _Rotate_left<arch::ISA::SSE2, 128, _Type_> {
 		constexpr auto __length = sizeof(_IntrinType_) / sizeof(_Type_);
 		alignas(sizeof(_IntrinType_)) _Type_ __array[__length * 2];
 
-		_Store<arch::ISA::SSE2, 128>()(__array, __left, __aligned_policy{}); 
-		_Store<arch::ISA::SSE2, 128>()(__array + __length, __left, __aligned_policy{});
+		_Store<arch::ISA::SSE2>()(__array, __left, __aligned_policy{}); 
+		_Store<arch::ISA::SSE2>()(__array + __length, __left, __aligned_policy{});
 
-		return _Load<arch::ISA::SSE2, 128, _IntrinType_>()(__array + __elements, __aligned_policy{});
+		return _Load<arch::ISA::SSE2, _IntrinType_>()(__array + __elements, __aligned_policy{});
 	}
 
 	template <

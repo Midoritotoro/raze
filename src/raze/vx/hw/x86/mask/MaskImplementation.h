@@ -28,7 +28,7 @@ template <class _DataparType_>
 __simd_nodiscard_inline auto __data(const _DataparType_& __datapar) noexcept
 	requires(__is_valid_simd_v<_DataparType_>)
 {
-	return static_cast<typename _DataparType_::vector_type>(__datapar);
+	return static_cast<typename _DataparType_::storage_type>(__datapar);
 }
 
 template <

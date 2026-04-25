@@ -160,32 +160,6 @@ struct __unwrapped_vector_t<_VectorType_, true, false> {
 template <class _VectorType_>
 using __unwrapped_vector_type = typename __unwrapped_vector_t<_VectorType_>::type;
 
-template <
-    class _RebindType_,
-    class _VectorType_,
-    bool _IsSimd_	= __is_valid_simd_v<_VectorType_>,
-    bool _IsIntrin_ = __is_intrin_type_v<_VectorType_>>
-struct __rebind_vector_element_t;
-
-template <
-    arch::ISA	_ToISA_,
-    class       _RebindType_,
-    class       _VectorType_,
-    bool        _IsSimd_	= __is_valid_simd_v<_VectorType_>,
-    bool        _IsIntrin_	= __is_intrin_type_v<_VectorType_>>
-struct __rebind_vector_generation_t;
-
-template <
-    class _RebindType_,
-    class _VectorType_>
-using __rebind_vector_element_type = typename __rebind_vector_element_t<_RebindType_, _VectorType_>::type;
-
-template <
-    arch::ISA	_ToISA_,
-    class       _RebindType_,
-    class       _VectorType_>
-using __rebind_vector_generation_type = typename __rebind_vector_generation_t<_ToISA_, _RebindType_, _VectorType_>::type;
-
 template <arch::ISA _ISA_>
 constexpr inline bool __has_sse2_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::SSE2);
 

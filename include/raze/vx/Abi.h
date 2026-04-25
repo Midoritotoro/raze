@@ -67,7 +67,7 @@ struct x86_abi {
 template <
 	class		_Abi_, 
 	sizetype	_Elements_>
-class resize_abi {
+struct resize_abi {
 	using type = std::conditional_t<_Abi_::dynamic, runtime_abi<_Abi_::isa, _Elements_>, x86_abi<_Elements_>>;
 };
 

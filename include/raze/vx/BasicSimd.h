@@ -72,6 +72,7 @@ class raze_aligned_type(64) simd {
 public:
     static constexpr auto __isa = _Abi_::isa;
     static constexpr auto __width = (_Abi_::size * sizeof(_Type_) * 8);
+    static constexpr auto __size = _Abi_::size;
 
     static constexpr std::size_t __bytes = _Abi_::size * sizeof(_Type_);
     static constexpr bool __use_native = (__bytes == 16 && __has_sse2_support_v<__isa>) || 
@@ -140,24 +141,20 @@ public:
      *
      * @param value  The scalar value to broadcast into all lanes.
     */
-    simd(value_type __value) noexcept {
+    explicit(false) simd(value_type __value) noexcept {
         fill(__value);
     }
 
     ~simd() noexcept
     {}
 
-    ///**
-    // * @brief Constructs a SIMD vector from another SIMD or intrinsic vector.
-    // *
-    // * @tparam _VectorType_  A valid intrinsic type or another `simd` type.
-    //*/
-    //template <class _VectorType_>
-    //simd(const _VectorType_& __other) noexcept
-    //    requires(__is_intrin_type_v<_VectorType_> || __is_valid_simd_v<_VectorType_>) 
-    //{
-    //    _storage = simd_cast<vector_type>(__other);
-    //}
+    simd(const simd& __other) noexcept  {
+        _storage = __other._storage;
+    }
+
+    simd(const storage_type& __storage) noexcept {
+        _storage = __storage;
+    }
 
     /**
      * @brief Returns a SIMD vector with all lanes set to zero.
@@ -307,11 +304,11 @@ public:
         if constexpr (std::is_same_v<std::remove_cvref_t<_RightType_>, simd>) {
             simd __result = simd(__x);
 
-            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk1, _Chunk& __chunk2) raze_always_inline_lambda {
+            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk1, const _Chunk& __chunk2) raze_always_inline_lambda {
                 constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(typename simd::value_type);
                 using _Chunk_simd = simd<typename simd::value_type, resize_abi_t<typename simd::abi_type, __chunk_size>>;
 
-                __chunk1 = _Div<simd::__isa, value_type>()(__data(_Chunk_simd(__chunk1)), __chunk2);
+                __chunk1 = _Div<simd::__isa, value_type>()(__chunk1, __chunk2);
             }, __y._storage);
 
             return __result;
@@ -319,11 +316,11 @@ public:
         else {
             simd __result = simd(__x);
 
-            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk1, _Chunk& __chunk2) raze_always_inline_lambda {
+            __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk1, const _Tp& __chunk2) raze_always_inline_lambda {
                 constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(typename simd::value_type);
                 using _Chunk_simd = simd<typename simd::value_type, resize_abi_t<typename simd::abi_type, __chunk_size>>;
 
-                __chunk1 = _Div<simd::__isa, value_type>()(__data(_Chunk_simd(__chunk1)), __data(_Chunk_simd(__chunk2)));
+                __chunk1 = _Div<simd::__isa, value_type>()(__chunk1, __chunk2);
             }, __y);
 
             return __result;
@@ -539,6 +536,10 @@ public:
     */
     raze_nodiscard static raze_always_inline constexpr int length() noexcept {
         return size();
+    }
+
+    raze_always_inline operator storage_type() const noexcept {
+        return _storage;
     }
 
     /**

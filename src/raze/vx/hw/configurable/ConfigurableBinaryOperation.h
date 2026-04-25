@@ -5,9 +5,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-    template <auto, class> class    _OpFunctor_,
-    class ...                       _SupportedOptions_>
+template <template <auto, class> class _OpFunctor_, class ... _SupportedOptions_>
 struct _Configurable_binary_operation_base {
     template <class _Options_>
     struct __impl : public raze::options::strict_elementwise_callable<__impl, _Options_, _SupportedOptions_...> {
@@ -94,10 +92,7 @@ struct _Configurable_binary_operation_base {
 };
 
 
-template <
-    template <auto, class> class    _OpFunctor_,
-    class                           _Options_,
-    class ...                       _SupportedOptions_>
+template <template <auto, class> class  _OpFunctor_, class _Options_, class ... _SupportedOptions_>
 using __configurable_binary_operation_type = typename _Configurable_binary_operation_base<_OpFunctor_, _SupportedOptions_...>::template __impl<_Options_>;
 
 __RAZE_VX_NAMESPACE_END
