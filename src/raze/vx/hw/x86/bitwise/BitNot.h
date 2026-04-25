@@ -18,7 +18,7 @@ struct _Not {
 			return _Ternarylogic<_ISA_, _Type_>()(__x, __x, __x, std::integral_constant<uint8, 0x55>{});
 		else if constexpr (arithmetic_type<_Tp_>) {
 			using _Unsigned = typename IntegerForSizeof<_Tp_>::Unsigned;
-			return ~__x;
+			return math::bit_cast<_Tp_>(_Unsigned(~math::bit_cast<_Unsigned>(__x)));
 		}
 		else
 			return _Xor<_ISA_, _Type_>()(__x, _Equal<_ISA_, int32>()(__x, __x));
@@ -30,7 +30,7 @@ struct _Not {
 			return _Ternarylogic<_ISA_, _Type_>()(__x, __x, __x, std::integral_constant<uint8, 0x55>{}, __mask);
 		else if constexpr (arithmetic_type<_Tp_>) {
 			using _Unsigned = typename IntegerForSizeof<_Tp_>::Unsigned;
-			return __mask ? ~__x : 0;
+			return __mask ? math::bit_cast<_Tp_>(_Unsigned(~math::bit_cast<_Unsigned>(__x))) : 0;
 		}
 		else
 			return _Xor<_ISA_, _Type_>()(__x, _Equal<_ISA_, int32>()(__x, __x), __mask);
@@ -42,7 +42,7 @@ struct _Not {
 			return _Ternarylogic<_ISA_, _Type_>()(__x, __x, __x, std::integral_constant<uint8, 0x55>{}, __mask, __src);
 		else if constexpr (arithmetic_type<_Tp_>) {
 			using _Unsigned = typename IntegerForSizeof<_Tp_>::Unsigned;
-			return __mask ? ~__x : __src;
+			return __mask ? math::bit_cast<_Tp_>(_Unsigned(~math::bit_cast<_Unsigned>(__x))) : __src;
 		}
 		else
 			return _Xor<_ISA_, _Type_>()(__x, _Equal<_ISA_, int32>()(__x, __x), __mask, __src);

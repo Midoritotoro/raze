@@ -179,6 +179,11 @@ template <arch::ISA _ISA_>
 constexpr inline bool __has_avx_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX);
 
 template <arch::ISA _ISA_>
+constexpr inline bool __has_fma3_support = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::FMA3) 
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX2FMA3)
+    || static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX512F);
+
+template <arch::ISA _ISA_>
 constexpr inline bool __has_avx2_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX2);
 
 template <arch::ISA _ISA_> 

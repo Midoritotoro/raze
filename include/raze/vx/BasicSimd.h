@@ -190,43 +190,49 @@ public:
         return *this = broadcast(__value);
     }
 
-    ///**
-    // * @brief Element-wise logical left shift.
-    // *
-    // * @param shift  Number of bits to shift.
-    // *
-    // * Semantics:
-    // * 
-    // *  Logical shift for all element types.
-    // *  If `shift >= bit_width(value_type)`, the result is zero.
-    //*/
-    //raze_always_inline friend simd operator<<(
-    //    const simd& __left,
-    //    uint32      __shift) noexcept
-    //{
-    //    return _Left_shift<__isa, __width, _Type_>()(__data(__left), __shift);
-    //}
+    /**
+     * @brief Element-wise logical left shift.
+     *
+     * @param shift  Number of bits to shift.
+     *
+     * Semantics:
+     * 
+     *  Logical shift for all element types.
+     *  If `shift >= bit_width(value_type)`, the result is zero.
+    */
+    raze_always_inline friend simd operator<<(const simd& __x, uint32 __shift) noexcept {
+        simd __result = __x;
 
-    ///**
-    // * @brief Element-wise right shift.
-    // *
-    // * @param shift  Number of bits to shift.
-    // *
-    // * Semantics:
-    // * 
-    // *  Unsigned types: logical shift.
-    // * 
-    // *  Signed types: arithmetic (sign-extending) shift.
-    // * 
-    // *  If `shift >= bit_width(value_type)`, the result is zero or
-    // *  sign-extended depending on type.
-    //*/
-    //raze_always_inline friend simd operator>>(
-    //    const simd& __left,
-    //    uint32      __shift) noexcept
-    //{
-    //    return _Right_shift<__isa, __width, _Type_>()(__data(__left), __shift);
-    //}
+        __result.__for_each_chunk([&] <class _Chunk, class _Sh> (_Chunk& __chunk, _Sh __sh) raze_always_inline_lambda {
+            __chunk = _Left_shift<simd::__isa, value_type>()(__chunk, __sh);
+        }, __shift);
+
+        return __result;
+    }
+
+    /**
+     * @brief Element-wise right shift.
+     *
+     * @param shift  Number of bits to shift.
+     *
+     * Semantics:
+     * 
+     *  Unsigned types: logical shift.
+     * 
+     *  Signed types: arithmetic (sign-extending) shift.
+     * 
+     *  If `shift >= bit_width(value_type)`, the result is zero or
+     *  sign-extended depending on type.
+    */
+    raze_always_inline friend simd operator>>(const simd& __x, uint32 __shift) noexcept {
+        simd __result = __x;
+
+        __result.__for_each_chunk([&] <class _Chunk, class _Sh> (_Chunk& __chunk, _Sh __sh) raze_always_inline_lambda {
+            __chunk = _Right_shift<simd::__isa, value_type>()(__chunk, __sh);
+        }, __shift);
+
+        return __result;
+    }
 
     /**
      * @brief Element-wise subtraction.
@@ -240,7 +246,7 @@ public:
     {
         simd __result = __x;
 
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, _Chunk& __value) raze_always_inline_lambda {
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
             __chunk = _Sub<simd::__isa, value_type>()(__chunk, __value);
         }, static_cast<simd>(__y)._storage);
 
@@ -259,7 +265,7 @@ public:
     {
         simd __result = __x;
 
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, _Chunk& __value) raze_always_inline_lambda {
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
             __chunk = _Add<simd::__isa, value_type>()(__chunk, __value);
         }, static_cast<simd>(__y)._storage);
 
@@ -278,7 +284,7 @@ public:
     {
         simd __result = __x;
 
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk, _Chunk & __value) raze_always_inline_lambda {
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk, const _Chunk & __value) raze_always_inline_lambda {
             __chunk = _Mul<simd::__isa, value_type>()(__chunk, __value);
         }, static_cast<simd>(__y)._storage);
 
@@ -305,8 +311,8 @@ public:
             simd __result = simd(__x);
 
             __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk1, const _Chunk& __chunk2) raze_always_inline_lambda {
-                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(typename simd::value_type);
-                using _Chunk_simd = simd<typename simd::value_type, resize_abi_t<typename simd::abi_type, __chunk_size>>;
+                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(value_type);
+                using _Chunk_simd = simd<value_type, resize_abi_t<abi_type, __chunk_size>>;
 
                 __chunk1 = _Div<simd::__isa, value_type>()(__chunk1, __chunk2);
             }, __y._storage);
@@ -317,8 +323,8 @@ public:
             simd __result = simd(__x);
 
             __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk1, const _Tp& __chunk2) raze_always_inline_lambda {
-                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(typename simd::value_type);
-                using _Chunk_simd = simd<typename simd::value_type, resize_abi_t<typename simd::abi_type, __chunk_size>>;
+                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(value_type);
+                using _Chunk_simd = simd<value_type, resize_abi_t<abi_type, __chunk_size>>;
 
                 __chunk1 = _Div<simd::__isa, value_type>()(__chunk1, __chunk2);
             }, __y);
@@ -327,42 +333,57 @@ public:
         }
     }
 
-    ///**
-    // * @brief Bitwise AND.
-    //*/
-    //raze_always_inline friend simd operator&(
-    //    const simd& __left,
-    //    const simd& __right) noexcept
-    //{
-    //    return _And<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    //}
+    /**
+     * @brief Bitwise AND.
+    */
+    raze_always_inline friend simd operator&(const simd& __x, const simd& __y) noexcept {
+        simd __result = __x;
 
-    ///**
-    // * @brief Bitwise OR.
-    //*/
-    //raze_always_inline friend simd operator|(
-    //    const simd& __left, 
-    //    const simd& __right) noexcept
-    //{
-    //    return _Or<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    //}
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
+            __chunk = _And<simd::__isa, value_type>()(__chunk, __value);
+        }, __y._storage);
 
-    ///**
-    // * @brief Bitwise XOR.
-    //*/
-    //raze_always_inline friend simd operator^(
-    //    const simd& __left, 
-    //    const simd& __right) noexcept 
-    //{
-    //    return _Xor<__isa, __width, _Type_>()(__data(__left), __data(__right));
-    //}
+        return __result;
+    }
 
-    ///**
-    // * @brief Bitwise NOT.
-    //*/
-    //raze_always_inline simd operator~() const noexcept {
-    //    return _Not<__isa, __width, _Type_>()(_storage);
-    //}
+    /**
+     * @brief Bitwise OR.
+    */
+    raze_always_inline friend simd operator|(const simd& __x,  const simd& __y) noexcept {
+        simd __result = __x;
+
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
+            __chunk = _Or<simd::__isa, value_type>()(__chunk, __value);
+        }, __y._storage);
+
+        return __result;
+    }
+
+    /**
+     * @brief Bitwise XOR.
+    */
+    raze_always_inline friend simd operator^(const simd& __x, const simd& __y) noexcept {
+        simd __result = __x;
+
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
+            __chunk = _Xor<simd::__isa, value_type>()(__chunk, __value);
+        }, __y._storage);
+
+        return __result;
+    }
+
+    /**
+     * @brief Bitwise NOT.
+    */
+    raze_always_inline simd operator~() const noexcept {
+        simd __result = *this;
+
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
+            __chunk = _Not<__isa, value_type>()(__chunk);
+        });
+        
+        return __result;
+    }
 
     ///**
     // * @brief Element-wise equality comparison.
@@ -414,25 +435,25 @@ public:
     //    return _Greater_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
     //}
 
-    //raze_always_inline simd& operator>>=(uint32 __shift) noexcept {
-    //    return *this = (*this >> __shift);
-    //}
+    raze_always_inline simd& operator>>=(uint32 __shift) noexcept {
+        return *this = (*this >> __shift);
+    }
 
-    //raze_always_inline simd& operator<<=(uint32 __shift) noexcept {
-    //    return *this = (*this << __shift);
-    //}
+    raze_always_inline simd& operator<<=(uint32 __shift) noexcept {
+        return *this = (*this << __shift);
+    }
 
-    //raze_always_inline simd& operator&=(const simd& __other) noexcept {
-    //    return *this = (*this & __other);
-    //}
+    raze_always_inline simd& operator&=(const simd& __other) noexcept {
+        return *this = (*this & __other);
+    }
 
-    //raze_always_inline simd& operator|=(const simd& __other) noexcept {
-    //    return *this = (*this | __other);
-    //}
+    raze_always_inline simd& operator|=(const simd& __other) noexcept {
+        return *this = (*this | __other);
+    }
 
-    //raze_always_inline simd& operator^=(const simd& __other) noexcept {
-    //    return *this = (*this ^ __other);
-    //}
+    raze_always_inline simd& operator^=(const simd& __other) noexcept {
+        return *this = (*this ^ __other);
+    }
 
     raze_always_inline simd& operator+=(const simd& __other) noexcept {
         return *this = (*this + __other);
@@ -455,51 +476,57 @@ public:
         return *this;
     }
 
-    ///**
-    // * @brief Returns the vector unchanged.
-    //*/
-    //raze_always_inline simd operator+() const noexcept {
-    //    return _storage;
-    //}
+    /**
+     * @brief Returns the vector unchanged.
+    */
+    raze_always_inline simd operator+() const noexcept {
+        return _storage;
+    }
 
-    ///**
-    // * @brief Element-wise negation.
-    //*/
-    //raze_always_inline simd operator-() const noexcept {
-    //    return _Negate<__isa, __width, _Type_>()(_storage);
-    //}
+    /**
+     * @brief Element-wise negation.
+    */
+    raze_always_inline simd operator-() const noexcept {
+        simd __result = *this;
 
-    ///**
-    // * @brief Post-increment: returns the old value, increments each lane by 1.
-    //*/
-    //raze_nodiscard raze_always_inline simd operator++(int) noexcept {
-    //    simd __self = *this;
-    //    *this += simd(1);
-    //    return __self;
-    //}
+        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
+            __chunk = _Negate<__isa, value_type>()(__chunk);
+        });
+        
+        return __result;
+    }
 
-    ///**
-    // * @brief Pre-increment: increments each lane by 1.
-    //*/
-    //raze_always_inline simd& operator++() noexcept {
-    //    return *this += simd(1);
-    //}
+    /**
+     * @brief Post-increment: returns the old value, increments each lane by 1.
+    */
+    raze_nodiscard raze_always_inline simd operator++(int) noexcept {
+        simd __self = *this;
+        *this += simd(1);
+        return __self;
+    }
 
-    ///**
-    // * @brief Post-decrement: returns the old value, decrements each lane by 1.
-    //*/
-    //raze_always_inline simd operator--(int) noexcept {
-    //    simd __self = *this;
-    //    *this -= simd(1);
-    //    return __self;
-    //}
+    /**
+     * @brief Pre-increment: increments each lane by 1.
+    */
+    raze_always_inline simd& operator++() noexcept {
+        return *this += simd(1);
+    }
 
-    ///**
-    // * @brief Pre-decrement: decrements each lane by 1.
-    //*/
-    //raze_always_inline simd& operator--() noexcept {
-    //    return *this -= simd(1);
-    //}
+    /**
+     * @brief Post-decrement: returns the old value, decrements each lane by 1.
+    */
+    raze_always_inline simd operator--(int) noexcept {
+        simd __self = *this;
+        *this -= simd(1);
+        return __self;
+    }
+
+    /**
+     * @brief Pre-decrement: decrements each lane by 1.
+    */
+    raze_always_inline simd& operator--() noexcept {
+        return *this -= simd(1);
+    }
 
     /**
      * @brief returns the value of lane `i`.

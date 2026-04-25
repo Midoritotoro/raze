@@ -12,6 +12,8 @@ template <
 struct _And {
 	template <intrin_or_arithmetic_type _Tp_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) const noexcept {
+		using _Unsigned = typename IntegerForSizeof<_Type_>::Unsigned;
+
 		if constexpr (std::is_same_v<_Tp_, __m128d>) return _mm_and_pd(__x, __y);
 		else if constexpr (std::is_same_v<_Tp_, __m128i>) return _mm_and_si128(__x, __y);
 		else if constexpr (std::is_same_v<_Tp_, __m128>) return _mm_and_ps(__x, __y);
@@ -21,7 +23,7 @@ struct _And {
 		else if constexpr (std::is_same_v<_Tp_, __m512d>) return _mm512_and_pd(__x, __y);
 		else if constexpr (std::is_same_v<_Tp_, __m512i>) return _mm512_and_si512(__x, __y);
 		else if constexpr (std::is_same_v<_Tp_, __m512>) return _mm512_and_ps(__x, __y);
-		else return (~__x & __y);
+		else return math::bit_cast<_Tp_>(_Unsigned(math::bit_cast<_Unsigned>(__x) & math::bit_cast<_Unsigned>(__y)));
 	}
 
 	template <

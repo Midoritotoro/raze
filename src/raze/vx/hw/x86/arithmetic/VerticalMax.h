@@ -6,770 +6,157 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-	arch::ISA		_ISA_,
-	uint32			_Width_,
-	arithmetic_type	_Type_>
-struct _Vertical_max;
+template <arch::ISA _ISA_, arithmetic_type _Type_>
+struct _Vertical_max {
+	template <intrin_or_arithmetic_type _Tp_>
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) const noexcept {
+		if constexpr (sizeof(_Tp_) == 16) {
+			if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_max_epi16(__as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm_max_epu8(__as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_max_ps(__as<__m128>(__x), __as<__m128>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_max_pd(__as<__m128d>(__x), __as<__m128d>(__y)));
+			else if constexpr (__has_sse41_support_v<_ISA_>) {
+				if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_max_epi32(__as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_max_epu32(__as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_max_epu16(__as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_max_epi8(__as<__m128i>(__x), __as<__m128i>(__y)));
+			}
+			else if constexpr (__has_avx512vl_support_v<_ISA_>) {
+				if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_max_epi64(__as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_max_epu64(__as<__m128i>(__x), __as<__m128i>(__y)));
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 32) {
+			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_max_ps(__as<__m256>(__x), __as<__m256>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_max_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
+			else if constexpr (__has_avx2_support_v<_ISA_>) {
+				if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_max_epi32(__as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_max_epu32(__as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_max_epi16(__as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_max_epu16(__as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_max_epi8(__as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_max_epu8(__as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_max_ps(__as<__m256>(__x), __as<__m256>(__y)));
+				else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_max_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
+			}
+			else if constexpr (__has_avx512vl_support_v<_ISA_>) {
+				if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_max_epi64(__as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_max_epu64(__as<__m256i>(__x), __as<__m256i>(__y)));
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm512_max_epi64(__as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_max_epu64(__as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_max_epi32(__as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_max_epu32(__as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_max_ps(__as<__m512>(__x), __as<__m512>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_max_pd(__as<__m512d>(__x), __as<__m512d>(__y)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_max_epi8(__as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_max_epu8(__as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_max_epi16(__as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_max_epu16(__as<__m512i>(__x), __as<__m512i>(__y)));
+			}
+		}
 
-template <arithmetic_type _Type_>
-struct _Vertical_max<arch::ISA::SSE2, 128, _Type_> {
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epi16(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epu8(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_ps(__as<__m128>(__left), __as<__m128>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_pd(__as<__m128d>(__left), __as<__m128d>(__right)));
-		}
-		else {
-			const auto __mask = _Greater<arch::ISA::SSE2, 128, _Type_>()(__left, __right);
-			return _Select<arch::ISA::SSE2, 128, _Type_>()(__left, __right, __mask);
-		}
+		return _Select<_ISA_, _Type_>()(__x, __y, _Greater<_ISA_, _Type_>()(__x, __y));
 	}
 
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		return _Selectz<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __right), __mask);
+	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) const noexcept {
+		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epi64(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epu64(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epi32(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epu32(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_ps(__mask, __as<__m128>(__x), __as<__m128>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_pd(__mask, __as<__m128d>(__x), __as<__m128d>(__y)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epi16(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epu16(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epi8(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm_maskz_max_epu8(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epi64(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epu64(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epi32(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epu32(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_ps(__mask, __as<__m256>(__x), __as<__m256>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_pd(__mask, __as<__m256d>(__x), __as<__m256d>(__y)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epi16(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epu16(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epi8(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_maskz_max_epu8(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epi64(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epu64(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epi32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epu32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_ps(__mask, __as<__m512>(__x), __as<__m512>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_pd(__mask, __as<__m512d>(__x), __as<__m512d>(__y)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epi16(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epu16(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epi8(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_maskz_max_epu8(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			}
+		}
+
+		return _Selectz<_ISA_, _Type_>()((*this)(__x, __y), __mask);
 	}
 
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		return _Select<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __right), __source, __mask);
-	}
-};
+	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask, _Tp_ __src) const noexcept {
+		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epu64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epu32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mask_max_ps(__as<__m128>(__src), __mask, __as<__m128>(__x), __as<__m128>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mask_max_pd(__as<__m128d>(__src), __mask, __as<__m128d>(__x), __as<__m128d>(__y)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epi16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epu16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epi8(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm_mask_max_epu8(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epu64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epu32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_ps(__as<__m256>(__src), __mask, __as<__m256>(__x), __as<__m256>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_pd(__as<__m256d>(__src), __mask, __as<__m256d>(__x), __as<__m256d>(__y)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epi16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epu16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epi8(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_mask_max_epu8(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epi64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epu64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epu32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_ps(__as<__m512>(__src), __mask, __as<__m512>(__x), __as<__m512>(__y)));
+			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_pd(__as<__m512d>(__src), __mask, __as<__m512d>(__x), __as<__m512d>(__y)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epi16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epu16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epi8(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_mask_max_epu8(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			}
+		}
 
-template <arithmetic_type _Type_> 
-struct _Vertical_max<arch::ISA::SSE41, 128, _Type_>:
-	_Vertical_max<arch::ISA::SSSE3, 128, _Type_> 
-{
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epi32(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epu32(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epu16(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epi8(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else {
-			return _Vertical_max<arch::ISA::SSE2, 128, _Type_>()(__left, __right);
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		return _Selectz<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __right), __mask);
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		return _Select<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __right), __source, __mask);
-	}
-};
-
-template <arithmetic_type _Type_> 
-struct _Vertical_max<arch::ISA::AVX, 256, _Type_> {
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_ps(__as<__m256>(__left), __as<__m256>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_pd(__as<__m256d>(__left), __as<__m256d>(__right)));
-		}
-		else {
-			const auto __mask = _Greater<arch::ISA::AVX, 256, _Type_>()(__left, __right);
-			return _Select<arch::ISA::AVX, 256, _Type_>()(__left, __right, __mask);
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		return _Selectz<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __right), __mask);
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		return _Select<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __right), __source, __mask);
-	}
-};
-
-template <arithmetic_type _Type_>
-struct _Vertical_max<arch::ISA::AVX2, 256, _Type_> {
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epi32(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epu32(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epi16(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epu16(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epi8(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epu8(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_ps(__as<__m256>(__left), __as<__m256>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_pd(__as<__m256d>(__left), __as<__m256d>(__right)));
-		}
-		else {
-			const auto __mask = _Greater<arch::ISA::AVX2, 256, _Type_>()(__left, __right);
-			return _Select<arch::ISA::AVX2, 256, _Type_>()(__left, __right, __mask);
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		return _Selectz<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __right), __mask);
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		return _Select<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __right), __source, __mask);
+		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
 	}
 };
-
-template <arithmetic_type _Type_>
-struct _Vertical_max<arch::ISA::AVX512F, 512, _Type_> {
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epi64(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epu64(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epi32(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epu32(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_ps(__as<__m512>(__left), __as<__m512>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_pd(__as<__m512d>(__left), __as<__m512d>(__right)));
-		}
-		else {
-			const auto __mask = _Greater<arch::ISA::AVX512F, 512, _Type_>()(__left, __right);
-			return _Select<arch::ISA::AVX512F, 512, _Type_>()(__left, __right, __mask);
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Selectz<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epi64(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epu64(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epi32(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epu32(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_ps(__mask,
-				__as<__m512>(__left), __as<__m512>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_pd(__mask,
-				__as<__m512d>(__left), __as<__m512d>(__right)));
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Select<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __right), __source, __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epi64(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epu64(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epi32(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epu32(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_ps(__as<__m512>(__source),
-				__mask, __as<__m512>(__left), __as<__m512>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_pd(__as<__m512>(__source),
-				__mask, __as<__m512>(__left), __as<__m512>(__right)));
-		}
-	}
-};
-
-template <arithmetic_type _Type_>
-struct _Vertical_max<arch::ISA::AVX512BW, 512, _Type_>:
-	_Vertical_max<arch::ISA::AVX512F, 512, _Type_> 
-{
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epi8(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epu8(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epi16(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_max_epu16(__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else {
-			return _Vertical_max<arch::ISA::AVX512F, 512, _Type_>()(__left, __right);
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
-			return _Selectz<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epi16(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epu16(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epi8(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_max_epu8(__mask,
-				__as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
-			return _Select<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __right), __source, __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epi16(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epu16(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epi8(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_max_epu8(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), __as<__m512i>(__right)));
-		}
-	}
-};
-
-template <arithmetic_type _Type_> 
-struct _Vertical_max<arch::ISA::AVX512VLF, 256, _Type_>: 
-	_Vertical_max<arch::ISA::AVX2, 256, _Type_> 
-{
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epi64(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_max_epu64(__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else {
-			return _Vertical_max<arch::ISA::AVX2, 256, _Type_>()(__left, __right);
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epi64(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epu64(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epi32(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epu32(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_ps(__mask,
-				__as<__m256>(__left), __as<__m256>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_pd(__mask,
-				__as<__m256d>(__left), __as<__m256d>(__right)));
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Select<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __right), __source, __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epi64(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epu64(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epi32(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epu32(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_ps(__as<__m256>(__source),
-				__mask, __as<__m256>(__left), __as<__m256>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_pd(__as<__m256d>(__source),
-				__mask, __as<__m256d>(__left), __as<__m256d>(__right)));
-		}
-	}
-};
-
-template <arithmetic_type _Type_> 
-struct _Vertical_max<arch::ISA::AVX512VLF, 128, _Type_>: 
-	_Vertical_max<arch::ISA::SSE42, 128, _Type_> 
-{
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epi64(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_max_epu64(__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else {
-			return _Vertical_max<arch::ISA::SSE42, 128, _Type_>()(__left, __right);
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epi64(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epu64(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epi32(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epu32(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_ps(__mask,
-				__as<__m128>(__left), __as<__m128>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_pd(__mask,
-				__as<__m128d>(__left), __as<__m128d>(__right)));
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) < 4) {
-			return _Select<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __right), __source, __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epi64(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epu64(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epi32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epi32(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epu32(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_ps_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_ps(__as<__m128>(__source),
-				__mask, __as<__m128>(__left), __as<__m128>(__right)));
-		}
-		else if constexpr (__is_pd_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_pd(__as<__m128d>(__source),
-				__mask, __as<__m128d>(__left), __as<__m128d>(__right)));
-		}
-	}
-};
-
-template <arithmetic_type _Type_> 
-struct _Vertical_max<arch::ISA::AVX512VLBW, 128, _Type_> {
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		return _Vertical_max<arch::ISA::AVX512VLF, 128, _Type_>()(__left, __right);
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
-			return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epi16(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epu16(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epi8(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_max_epu8(__mask,
-				__as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
-			return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epi16(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epu16(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epi8(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_max_epu8(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), __as<__m128i>(__right)));
-		}
-	}
-};
-
-template <arithmetic_type _Type_> 
-struct _Vertical_max<arch::ISA::AVX512VLBW, 256, _Type_> {
-	template <intrin_type _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_ __left,
-		_IntrinType_ __right) const noexcept
-	{
-		return _Vertical_max<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __right);
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
-			return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epi16(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epu16(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epi8(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_max_epu8(__mask,
-				__as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-	}
-
-	template <
-		intrin_type _IntrinType_,
-		raw_mask_type _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		_IntrinType_	__right,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || sizeof(_Type_) >= 4) {
-			return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __right), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epi16(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epu16(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epi8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epi8(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-		else if constexpr (__is_epu8_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_max_epu8(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), __as<__m256i>(__right)));
-		}
-	}
-};
-
-
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::SSE3, 128, _Type_> : _Vertical_max<arch::ISA::SSE2, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::SSSE3, 128, _Type_> : _Vertical_max<arch::ISA::SSE3, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::SSE42, 128, _Type_> : _Vertical_max<arch::ISA::SSE41, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX, 128, _Type_> : _Vertical_max<arch::ISA::SSE42, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX2, 128, _Type_> : _Vertical_max<arch::ISA::AVX, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::FMA3, 128, _Type_> : _Vertical_max<arch::ISA::AVX, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX2FMA3, 128, _Type_> : _Vertical_max<arch::ISA::AVX2, 128, _Type_> {};
-
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512DQ, 512, _Type_> : _Vertical_max<arch::ISA::AVX512F, 512, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512BWDQ, 512, _Type_> : _Vertical_max<arch::ISA::AVX512BW, 512, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMI, 512, _Type_> : _Vertical_max<arch::ISA::AVX512BW, 512, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMI2, 512, _Type_> : _Vertical_max<arch::ISA::AVX512VBMI, 512, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMIDQ, 512, _Type_> : _Vertical_max<arch::ISA::AVX512BWDQ, 512, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMI2DQ, 512, _Type_> : _Vertical_max<arch::ISA::AVX512VBMIDQ, 512, _Type_> {};
-
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::FMA3, 256, _Type_> : _Vertical_max<arch::ISA::AVX, 256, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX2FMA3, 256, _Type_> : _Vertical_max<arch::ISA::AVX2, 256, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VLDQ, 256, _Type_> : _Vertical_max<arch::ISA::AVX512VLF, 256, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VLBWDQ, 256, _Type_> : _Vertical_max<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMIVL, 256, _Type_> : _Vertical_max<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMI2VL, 256, _Type_> : _Vertical_max<arch::ISA::AVX512VBMIVL, 256, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> : _Vertical_max<arch::ISA::AVX512VLBWDQ, 256, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMI2VLDQ, 256, _Type_> : _Vertical_max<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> {};
-
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VLDQ, 128, _Type_> : _Vertical_max<arch::ISA::AVX512VLF, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VLBWDQ, 128, _Type_> : _Vertical_max<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMIVL, 128, _Type_> : _Vertical_max<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMI2VL, 128, _Type_> : _Vertical_max<arch::ISA::AVX512VBMIVL, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> : _Vertical_max<arch::ISA::AVX512VLBWDQ, 128, _Type_> {};
-template <arithmetic_type _Type_> struct _Vertical_max<arch::ISA::AVX512VBMI2VLDQ, 128, _Type_> : _Vertical_max<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> {};
 
 __RAZE_VX_NAMESPACE_END

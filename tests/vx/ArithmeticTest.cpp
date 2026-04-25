@@ -6,11 +6,7 @@ template <
     raze::arch::ISA _ISA_,
     raze::uint32    _Width_>
 struct arithmetic_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, (_Width_ / (sizeof(_Type_) * 8)) + 7>>;
-    using Mask = typename Simd::mask_type;
-    static constexpr size_t N = Simd::size();
-
-    template<class SimdOp, class ScalarOp>
+    template<raze::sizetype N, class Simd, class SimdOp, class ScalarOp>
     static void run(const Simd& a, const Simd& b,
         const _Type_(&A)[N], const _Type_(&B)[N],
         SimdOp sop, ScalarOp sc)
@@ -20,7 +16,7 @@ struct arithmetic_tests {
             raze_assert(r[i] == _Type_(sc(A[i], B[i])));
     }
 
-    template<class SimdOp, class ScalarOp>
+    template<raze::sizetype N, class Simd, class SimdOp, class ScalarOp>
     static void run_unary(const Simd& a,
         const _Type_(&A)[N],
         SimdOp sop, ScalarOp sc)
@@ -30,7 +26,7 @@ struct arithmetic_tests {
             raze_assert(r[i] == _Type_(sc(A[i])));
     }
 
-    template<class SimdOp, class ScalarOp>
+    template<raze::sizetype N, class Simd, class SimdOp, class ScalarOp>
     static void run_assign(const Simd& a0, const Simd& b,
         const _Type_(&A)[N], const _Type_(&B)[N],
         SimdOp sop, ScalarOp sc)
@@ -41,7 +37,11 @@ struct arithmetic_tests {
             raze_assert(a[i] == _Type_(sc(A[i], B[i])));
     }
 
-    void operator()() {
+    template <raze::sizetype N>
+    void test_size() {
+        using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, N>>;
+        using Mask = typename Simd::mask_type;
+
         alignas(64) _Type_ arrA[N], arrB[N];
 
         std::iota(arrA, arrA + N, _Type_(1));
@@ -60,9 +60,9 @@ struct arithmetic_tests {
         b.copy_from(arrB); 
 
         run(a, b, arrA, arrB, [](auto x, auto y) { return x / y; }, [](auto x, auto y) { return x / y; });
-        /*
+        
         run_unary(a, arrA, [](auto x) { return -x; }, [](auto x) { return -x; });
-        */
+        
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x += y; }, [](auto x, auto y) { return x + y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x -= y; }, [](auto x, auto y) { return x - y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y) { x *= y; }, [](auto x, auto y) { return x * y; });
@@ -148,6 +148,14 @@ struct arithmetic_tests {
         //        run_tests(make_random_mask<Mask>());
         //    }
         //}
+    }
+
+    void operator()() {
+        test_size<(_Width_ / (sizeof(_Type_) * 8))>();
+        test_size<1>();
+        test_size<7>();
+        test_size<17>();
+        test_size<31>();
     }
 };
 

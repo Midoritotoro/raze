@@ -5,567 +5,108 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-	arch::ISA	_ISA_,
-	uint32		_Width_,
-	class		_Type_>
-struct _Left_shift;
-
-template <class _Type_>
-struct _Left_shift<arch::ISA::SSE2, 128, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_sll_epi64(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+template <arch::ISA	_ISA_, arithmetic_type _Type_>
+struct _Left_shift {
+	template <intrin_or_arithmetic_type _Tp_>
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, uint32 __shift) const noexcept {
+		if constexpr (sizeof(_Tp_) == 16) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm_sll_epi64(__as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_sll_epi32(__as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm_sll_epi16(__as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) return __as<_Tp_>(_mm_sll_epi16(
+				_mm_and_si128(__as<__m128i>(__x), _mm_set1_epi8(0xFFu >> __shift)), _mm_cvtsi32_si128(__shift)));
 		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_sll_epi32(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
+		else if constexpr (sizeof(_Tp_) == 32) {
+			if constexpr (__has_avx2_support_v<_ISA_>) {
+				if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_sll_epi64(__as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+				else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_sll_epi32(__as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+				else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_sll_epi16(__as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+				else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_sll_epi16(
+					_mm256_and_si256(__as<__m256i>(__x), _mm256_set1_epi8(0xFFu >> __shift)), _mm_cvtsi32_si128(__shift)));
+			}
+			else {
+				const auto __low = _Left_shift<arch::ISA::SSE42, _Type_>()(__as<__m128i>(__x), __shift);
+				const auto __high = _Left_shift<arch::ISA::SSE42, _Type_>()(_mm256_extractf128_si256(__as<__m256i>(__x), 1), __shift);
+
+				return __as<_Tp_>(_mm256_insertf128_si256(__as<__m256i>(__low), __high, 1));
+			}
 		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_sll_epi16(
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm_and_si128(__as<__m128i>(__left), _mm_set1_epi8(0xFFu >> __shift));
-			return __as<_IntrinType_>(_mm_sll_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
-		}
-	}
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_sll_epi64(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_sll_epi32(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_sll_epi16(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+				else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_sll_epi16(
+					_mm512_and_si512(__as<__m512i>(__x), _mm512_set1_epi8(0xFFull >> __shift)), _mm_cvtsi32_si128(__shift)));
+			}
+			else {
+				const auto __low = __as<__m256i>(__x);
+				const auto __high = _mm512_extracti64x4_epi64(__as<__m512i>(__x), 1);
 
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Selectz<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __shift), __mask);
-	}
+				const auto __low_shifted = _Left_shift<arch::ISA::AVX2, _Type_>()(__low, __shift);
+				const auto __high_shifted = _Left_shift<arch::ISA::AVX2, _Type_>()(__high, __shift);
 
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Select<arch::ISA::SSE2, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
-	}
-};
-
-template <class _Type_> struct _Left_shift<arch::ISA::SSE3, 128, _Type_> : _Left_shift<arch::ISA::SSE2, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::SSSE3, 128, _Type_> : _Left_shift<arch::ISA::SSE3, 128, _Type_> {};
-
-template <class _Type_> 
-struct _Left_shift<arch::ISA::SSE41, 128, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		return _Left_shift<arch::ISA::SSE2, 128, _Type_>()(__left, __shift);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Selectz<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __shift), __mask);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Select<arch::ISA::SSE41, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
-	}
-};
-
-template <class _Type_>
-struct _Left_shift<arch::ISA::AVX, 256, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		const auto __low = _Left_shift<arch::ISA::SSE42, 128, _Type_>()(
-			__as<__m128i>(__left), __shift);
-		const auto __high = _Left_shift<arch::ISA::SSE42, 128, _Type_>()(
-			_mm256_extractf128_si256(__as<__m256i>(__left), 1), __shift);
-
-		return __as<_IntrinType_>(_mm256_insertf128_si256(
-			__as<__m256i>(__low), __high, 1));
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Selectz<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __shift), __mask);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Select<arch::ISA::AVX, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
-	}
-};
-
-template <class _Type_>
-struct _Left_shift<arch::ISA::AVX2, 256, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_sll_epi64(
-				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_sll_epi32(
-				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_sll_epi16(
-				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm256_and_si256(__as<__m256i>(__left), _mm256_set1_epi8(0xFFu >> __shift));
-			return __as<_IntrinType_>(_mm256_sll_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
-		}
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Selectz<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __shift), __mask);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		return _Select<arch::ISA::AVX2, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
-	}
-};
-
-template <class _Type_>
-struct _Left_shift<arch::ISA::AVX512F, 512, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_sll_epi64(
-				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_sll_epi32(
-				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+				return __as<_Tp_>(_mm512_inserti64x4(__as<__m512i>(__low_shifted), __high_shifted, 1));
+			}
 		}
 		else {
-			const auto __low = __as<__m256i>(__left);
-			const auto __high = _mm512_extracti64x4_epi64(__as<__m512i>(__left), 1);
-
-			const auto __low_shifted = _Left_shift<arch::ISA::AVX2, 256, _Type_>()(__low, __shift);
-			const auto __high_shifted = _Left_shift<arch::ISA::AVX2, 256, _Type_>()(__high, __shift);
-
-			return __as<_IntrinType_>(_mm512_inserti64x4(__as<__m512i>(__low_shifted), __high_shifted, 1));
+			return (__shift < sizeof(_Tp_) * 8) ? (__x << __shift) : 0;
 		}
 	}
 
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
-			return _Selectz<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __shift), __mask);
+	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, uint32 __shift, _Mask_ __mask) const noexcept {
+		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm_maskz_sll_epi64(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_maskz_sll_epi32(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm_maskz_sll_epi16(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			}
 		}
-		else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_sll_epi64(__mask,
-				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_sll_epi64(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_sll_epi32(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_sll_epi16(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+			}
 		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_sll_epi32(__mask,
-				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
-		} 
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_maskz_sll_epi64(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_sll_epi32(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_sll_epi16(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			}
+		}
+
+		return _Selectz<_ISA_, _Type_>()((*this)(__x, __shift), __mask);
 	}
 
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
-			return _Select<arch::ISA::AVX512F, 512, _Type_>()((*this)(__left, __shift), __source, __mask);
+	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, uint32 __shift, _Mask_ __mask, _Tp_ __src) const noexcept {
+		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm_mask_sll_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_sll_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm_mask_sll_epi16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+			}
 		}
-		else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_sll_epi64(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
+		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_mask_sll_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mask_sll_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_mask_sll_epi16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+			}
 		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_sll_epi32(__as<__m512i>(__source),
-				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
-		} 
-	}
-};
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_mask_sll_epi64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_sll_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_mask_sll_epi16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
+			}
+		}
 
-template <class _Type_> 
-struct _Left_shift<arch::ISA::AVX512BW, 512, _Type_>:
-	_Left_shift<arch::ISA::AVX512F, 512, _Type_> 
-{
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm512_and_si512(__as<__m512i>(__left), _mm512_set1_epi8(0xFFull >> __shift));
-			return __as<_IntrinType_>(_mm512_sll_epi16(__and_mask, _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_sll_epi16(
-				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else {
-			return _Left_shift<arch::ISA::AVX512F, 512, _Type_>()(__left, __shift);
-		}
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Selectz<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_maskz_sll_epi16(__mask,
-				__as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) >= 4)) {
-			return _Select<arch::ISA::AVX512BW, 512, _Type_>()((*this)(__left, __shift), __source, __mask);
-		}
-		else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-			const auto __and_mask = _mm512_and_si512(__as<__m512i>(__left), _mm512_set1_epi8(0xFFull >> __shift));
-			return __as<_IntrinType_>(_mm512_mask_sll_epi16(__as<__m512i>(__source),
-				__mask, __and_mask, _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm512_mask_sll_epi16(__as<__m512i>(__source), 
-				__mask, __as<__m512i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
+		return _Select<_ISA_, _Type_>()((*this)(__x, __shift), __src, __mask);
 	}
 };
-
-template <class _Type_> 
-struct _Left_shift<arch::ISA::AVX512VLF, 256, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		return _Left_shift<arch::ISA::AVX2, 256, _Type_>()(__left, __shift);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
-			return _Selectz<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_sll_epi64(__mask,
-				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_sll_epi32(__mask,
-				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		} 
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
-			return _Select<arch::ISA::AVX512VLF, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_sll_epi64(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_sll_epi32(__as<__m256i>(__source),
-				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		} 
-	}
-};
-
-template <class _Type_> 
-struct _Left_shift<arch::ISA::AVX512VLBW, 256, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		return _Left_shift<arch::ISA::AVX512VLF, 256, _Type_>()(__left, __shift);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Selectz<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_maskz_sll_epi16(__mask,
-				__as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Select<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm256_mask_sll_epi16(__as<__m256i>(__source), 
-				__mask, __as<__m256i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-	}
-};
-
-template <class _Type_> 
-struct _Left_shift<arch::ISA::AVX512VLF, 128, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		return _Left_shift<arch::ISA::AVX2, 128, _Type_>()(__left, __shift);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
-			return _Selectz<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_sll_epi64(__mask,
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_sll_epi32(__mask,
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
-		} 
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) < 4)) {
-			return _Select<arch::ISA::AVX512VLF, 128, _Type_>()((*this)(__left, __shift), __source, __mask);
-		}
-		else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_sll_epi64(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-		else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_sll_epi32(__as<__m128i>(__source),
-				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
-		} 
-	}
-};
-
-template <class _Type_> 
-struct _Left_shift<arch::ISA::AVX512VLBW, 128, _Type_> {
-	template <class _IntrinType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift) const noexcept
-	{
-		return _Left_shift<arch::ISA::AVX512VLF, 128, _Type_>()(__left, __shift);
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Selectz<arch::ISA::AVX512VLBW, 128, _Type_>()((*this)(__left, __shift), __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_maskz_sll_epi16(__mask,
-				__as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-	}
-
-	template <
-		class _IntrinType_,
-		class _MaskType_>
-	raze_nodiscard raze_always_inline _IntrinType_ operator()(
-		_IntrinType_	__left,
-		uint32			__shift,
-		_MaskType_		__mask,
-		_IntrinType_	__source) const noexcept
-			requires(__is_intrin_type_v<_MaskType_> || std::is_integral_v<_MaskType_>)
-	{
-		if constexpr (__is_intrin_type_v<_MaskType_> || (sizeof(_Type_) != 2)) {
-			return _Select<arch::ISA::AVX512VLBW, 256, _Type_>()((*this)(__left, __shift), __source, __mask);
-		}
-		else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-			return __as<_IntrinType_>(_mm_mask_sll_epi16(__as<__m128i>(__source), 
-				__mask, __as<__m128i>(__left), _mm_cvtsi32_si128(__shift)));
-		}
-	}
-};
-
-template <class _Type_> struct _Left_shift<arch::ISA::SSE42, 128, _Type_> : _Left_shift<arch::ISA::SSE41, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX, 128, _Type_> : _Left_shift<arch::ISA::SSE42, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::FMA3, 128, _Type_> : _Left_shift<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX2, 128, _Type_> : _Left_shift<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX2FMA3, 128, _Type_> : _Left_shift<arch::ISA::AVX2, 128, _Type_> {};
-
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512DQ, 512, _Type_> : _Left_shift<arch::ISA::AVX512F, 512, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512BWDQ, 512, _Type_> : _Left_shift<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMI, 512, _Type_> : _Left_shift<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMI2, 512, _Type_> : _Left_shift<arch::ISA::AVX512VBMI, 512, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMIDQ, 512, _Type_> : _Left_shift<arch::ISA::AVX512BWDQ, 512, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMI2DQ, 512, _Type_> : _Left_shift<arch::ISA::AVX512VBMIDQ, 512, _Type_> {};
-
-template <class _Type_> struct _Left_shift<arch::ISA::FMA3, 256, _Type_> : _Left_shift<arch::ISA::AVX, 256, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX2FMA3, 256, _Type_> : _Left_shift<arch::ISA::AVX2, 256, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VLDQ, 256, _Type_> : _Left_shift<arch::ISA::AVX512VLF, 256, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VLBWDQ, 256, _Type_> : _Left_shift<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMIVL, 256, _Type_> : _Left_shift<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMI2VL, 256, _Type_> : _Left_shift<arch::ISA::AVX512VBMIVL, 256, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> : _Left_shift<arch::ISA::AVX512VLBWDQ, 256, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMI2VLDQ, 256, _Type_> : _Left_shift<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> {};
-
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VLDQ, 128, _Type_> : _Left_shift<arch::ISA::AVX512VLF, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VLBWDQ, 128, _Type_> : _Left_shift<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMIVL, 128, _Type_> : _Left_shift<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMI2VL, 128, _Type_> : _Left_shift<arch::ISA::AVX512VBMIVL, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> : _Left_shift<arch::ISA::AVX512VLBWDQ, 128, _Type_> {};
-template <class _Type_> struct _Left_shift<arch::ISA::AVX512VBMI2VLDQ, 128, _Type_> : _Left_shift<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> {};
 
 __RAZE_VX_NAMESPACE_END
