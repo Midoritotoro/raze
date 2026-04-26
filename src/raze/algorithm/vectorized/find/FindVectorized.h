@@ -30,10 +30,10 @@ struct __find_vectorized_internal {
         const void*                 __last,
         typename _Simd_::value_type __value) raze_const_operator noexcept
     {
-        const auto __guard = vx::make_guard<_Simd_>();
+      /*  const auto __guard = vx::make_guard<_Simd_>();
 
         const auto __comparand = _Simd_(__value);
-        const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
+        const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);*/
 
         /*do {
             const auto __loaded = vx::load[vx::to<_Simd_>](__first);
@@ -57,9 +57,9 @@ struct __find_vectorized_internal {
             if (vx::any_of(__mask))
                 return static_cast<const _ValueType*>(__first) + vx::find_first_set(__mask);
         }
-        else */{
+        else */ // {
             __last = __find_scalar(__first, __last, __value);
-        }
+       //   }
 
         return static_cast<const _ValueType*>(__last);
     }

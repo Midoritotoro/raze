@@ -1,7 +1,5 @@
 ﻿#pragma once 
 
-#include <src/raze/vx/hw/Arithmetic.h>
-
 #include <src/raze/vx/hw/Compare.h>
 #include <src/raze/vx/hw/Shuffle.h>
 
@@ -10,20 +8,15 @@
 
 #include <raze/vx/BasicSimdMask.h>
 #include <raze/vx/SimdCast.h>
-
 #include <src/raze/vx/hw/Memory.h>
-#include <src/raze/vx/hw/Bitwise.h>
 
 #include <src/raze/vx/reference/SimdElementReference.h>
 #include <src/raze/vx/reference/SimdBoolReference.h>
 #include <src/raze/vx/reference/BitReference.h>
 
 #include <raze/vx/Abi.h>
-#include <raze/options/Options.h>
-
 #include <src/raze/vx/Storage.h>
-#include <src/raze/algorithm/AdvanceBytes.h>
-
+#include <raze/vx/SimdDataparAlgorithms.h>
 
 
 raze_disable_warning_msvc(26495)
@@ -244,13 +237,7 @@ public:
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _Sub<simd::__isa, value_type>()(__chunk, __value);
-        }, static_cast<simd>(__y)._storage);
-
-        return __result;
+        return sub(__x, __y);
     }
 
     /**
@@ -263,13 +250,7 @@ public:
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _Add<simd::__isa, value_type>()(__chunk, __value);
-        }, static_cast<simd>(__y)._storage);
-
-        return __result;
+        return add(__x, __y);
     }
 
     /**
@@ -282,13 +263,7 @@ public:
             requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
                 std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
     {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk, const _Chunk & __value) raze_always_inline_lambda {
-            __chunk = _Mul<simd::__isa, value_type>()(__chunk, __value);
-        }, static_cast<simd>(__y)._storage);
-
-        return __result;
+        return mul(__x, __y);
     }
 
     /**
@@ -307,30 +282,7 @@ public:
                 std::is_convertible_v<std::remove_cvref_t<_LeftType_>, value_type> ||
                 std::is_same_v<std::remove_cvref_t<_LeftType_>, simd>)))
     {
-        if constexpr (std::is_same_v<std::remove_cvref_t<_RightType_>, simd>) {
-            simd __result = simd(__x);
-
-            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk1, const _Chunk& __chunk2) raze_always_inline_lambda {
-                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(value_type);
-                using _Chunk_simd = simd<value_type, resize_abi_t<abi_type, __chunk_size>>;
-
-                __chunk1 = _Div<simd::__isa, value_type>()(__chunk1, __chunk2);
-            }, __y._storage);
-
-            return __result;
-        }
-        else {
-            simd __result = simd(__x);
-
-            __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk1, const _Tp& __chunk2) raze_always_inline_lambda {
-                constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(value_type);
-                using _Chunk_simd = simd<value_type, resize_abi_t<abi_type, __chunk_size>>;
-
-                __chunk1 = _Div<simd::__isa, value_type>()(__chunk1, __chunk2);
-            }, __y);
-
-            return __result;
-        }
+        return div(__x, __y);
     }
 
     /**
@@ -668,7 +620,7 @@ public:
     raze_always_inline void copy_to(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) const noexcept {
         _Mask_store<__isa, __width, _Type_>()(std::to_address(__first), __data(__mask), _storage, aligned_policy{});
     }*/
-private:
+
     template <class _Func_, class... _Extras_>
     raze_always_inline void __for_each_chunk(
         _Func_&&        __function, 
@@ -694,7 +646,7 @@ private:
                 _storage, std::forward<_Func_>(__function), __extras...);
         }
     }
-
+private:
     raze_always_inline void __insert(
         int32       __position,
         value_type  __value) noexcept

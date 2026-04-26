@@ -89,12 +89,12 @@ struct _Maskz_load<arch::ISA::AVX, 128, _Type_, _IntrinType_>:
 		_AlignmentPolicy_&& __alignment_policy = _AlignmentPolicy_{}) raze_const_operator noexcept
 			requires(std::is_integral_v<_MaskType_> || __is_intrin_type_v<_MaskType_>)
 	{
-		if constexpr (__is_ps_v<_Type_>)
+		if constexpr (sizeof(_Type_) == 4)
 			return __as<_IntrinType_>(_mm_maskload_ps(
 				reinterpret_cast<const float*>(__address),
 				_To_vector<arch::ISA::AVX, 128, __m128i, _Type_>()(__mask)));
 
-		else if constexpr (__is_pd_v<_Type_>)
+		else if constexpr (sizeof(_Type_) == 8)
 			return __as<_IntrinType_>(_mm_maskload_pd(
 				reinterpret_cast<const double*>(__address),
 				_To_vector<arch::ISA::AVX, 128, __m128i, _Type_>()(__mask)));

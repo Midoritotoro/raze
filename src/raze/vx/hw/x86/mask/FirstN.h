@@ -1,6 +1,8 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/mask/MaskTypeSelector.h>
+#include <src/raze/vx/hw/x86/memory/Load.h>
+#include <src/raze/vx/hw/x86/memory/Store.h>
 #include <raze/algorithm/minmax/Min.h>
 #include <array>
 
@@ -8,7 +10,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype _VectorLength_>
-consteval auto __generate_first_n_table() noexcept {
+consteval auto __first_n_ktable() noexcept {
     using _MaskType = __mmask_for_elements_t<_VectorLength_>;
     auto __table = std::array<_MaskType, _VectorLength_ + 1>{};
 
@@ -27,206 +29,35 @@ consteval auto __generate_first_n_table() noexcept {
     return __table;
 }
 
-template <
-	arch::ISA	_ISA_,
-	uint32		_Width_,
-	class		_Type_>
-struct _First_n;
+template <sizetype _VectorLength_>
+consteval auto __first_n_vtable() noexcept {
+    using _MaskType = __mmask_for_elements_t<_VectorLength_>;
+    auto __table = std::array<_MaskType, _VectorLength_ * 2>{};
 
-template <class _Type_>
-struct _First_n<arch::ISA::SSE2, 128, _Type_> {
-	raze_nodiscard raze_always_inline 
-		auto operator()(uint32 __elements) const noexcept
-	{
-		alignas(16) static constexpr uint32 __first_n_mask[8] =  { ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0 };
-        const auto __bytes = __elements * sizeof(_Type_);
+    for (auto __i = 0; __i < _VectorLength_; ++__i)
+        __table[__i] = ~_MaskType(0);
 
-		return _mm_load_si128(reinterpret_cast<const __m128i*>(
-			reinterpret_cast<const uint8*>(__first_n_mask) + (16 - __bytes)));
-	}
-};
+    for (auto __i = _VectorLength_; __i < _VectorLength_ * 2; ++__i)
+        __table[__i] = 0;
 
-template <class _Type_>
-struct _First_n<arch::ISA::AVX, 256, _Type_> {
-    raze_nodiscard raze_always_inline
-		auto operator()(uint32 __elements) const noexcept
-	{
-		alignas(32) static constexpr uint32 __first_n_mask[16] = 
-			{ ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0, 0, 0, 0, 0 };
-        const auto __bytes = __elements * sizeof(_Type_);
+    return __table;
+}
 
-		return _mm256_load_si256(reinterpret_cast<const __m256i*>(
-			reinterpret_cast<const uint8*>(__first_n_mask) + (32 - __bytes)));
-	}
-};
+template <arch::ISA	_ISA_, intrin_or_arithmetic_type _Tp_, arithmetic_type _Type_>
+struct _First_n {
+    raze_nodiscard raze_always_inline auto operator()(uint32 __elements) const noexcept {
+        constexpr auto __length = sizeof(_Tp_) / sizeof(_Type_);
+        constexpr auto __kmask = (__has_avx512f_support_v<_ISA_> && sizeof(_Type_) >= 4) || (__has_avx512bw_support_v<_ISA_>);
 
-template <class _Type_>
-struct _First_n<arch::ISA::AVX2, 256, _Type_> {
-	raze_nodiscard raze_always_inline
-		auto operator()(uint32 __elements) const noexcept
-	{
-		alignas(32) static constexpr uint32 __first_n_mask[16] = 
-			{ ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0, 0, 0, 0, 0 };
-        const auto __bytes = __elements * sizeof(_Type_);
-
-		return _mm256_load_si256(reinterpret_cast<const __m256i*>(
-			reinterpret_cast<const uint8*>(__first_n_mask) + (32 - __bytes)));
-	}
-};
-
-template <class _Type_>
-struct _First_n<arch::ISA::AVX512F, 512, _Type_> {
-    raze_nodiscard raze_always_inline
-        auto operator()(uint32 __elements) const noexcept
-    {
-        constexpr auto __length = sizeof(__m512i) / sizeof(_Type_);
-
-        if constexpr (sizeof(_Type_) >= 4) {
-            using _MaskType = __mmask_for_elements_t<__length>;
-            constexpr auto __table = __generate_first_n_table<__length>();
-            return __table[__elements];
-        } 
+        if constexpr (__kmask) {
+            constexpr auto __ktable = __first_n_ktable<__length>();
+            return __ktable[__elements];
+        }
         else {
-            const auto __bytes = __elements * sizeof(_Type_);
-
-            alignas(64) static constexpr uint32 __first_n_mask[32] = {
-                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
-                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
-                0, 0, 0, 0, 0, 0, 0, 0,
-                0, 0, 0, 0, 0, 0, 0, 0
-            };
-
-            return _mm512_load_si512(reinterpret_cast<const uint8*>(__first_n_mask) + (64 - __bytes));
+            constexpr auto __vtable = __first_n_vtable<__length>();
+            return _Load<_ISA_, _Tp_>()(algorithm::__bytes_pointer_offset(__vtable.data(), 64 - (__elements * sizeof(_Type_))));
         }
     }
 };
-
-template <class _Type_>
-struct _First_n<arch::ISA::AVX512BW, 512, _Type_> :
-    _First_n<arch::ISA::AVX512F, 512, _Type_>
-{
-    raze_nodiscard raze_always_inline
-        auto operator()(uint32 __elements) const noexcept
-    {
-        constexpr auto __length = sizeof(__m512i) / sizeof(_Type_);
-        using _MaskType = __mmask_for_elements_t<__length>;
-        constexpr auto __table = __generate_first_n_table<__length>();
-        return __table[__elements];
-    }
-};
-
-template <class _Type_>
-struct _First_n<arch::ISA::AVX512VLF, 256, _Type_> :
-    _First_n<arch::ISA::AVX2, 256, _Type_>
-{
-    raze_nodiscard raze_always_inline
-        auto operator()(uint32 __elements) const noexcept 
-    {
-        constexpr auto __length = sizeof(__m256i) / sizeof(_Type_);
-
-        if constexpr (sizeof(_Type_) >= 4) {
-            using _MaskType = __mmask_for_elements_t<__length>;
-            constexpr auto __table = __generate_first_n_table<__length>();
-            return __table[__elements];
-        } 
-        else {
-            const auto __bytes = __elements * sizeof(_Type_);
-
-            alignas(32) static constexpr uint32 __first_n_mask[16] = {
-                ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u, ~0u,
-                0, 0, 0, 0, 0, 0, 0, 0
-            };
-
-            return _mm256_load_si256(reinterpret_cast<const __m256i*>(
-                reinterpret_cast<const uint8*>(__first_n_mask) + (32 - __bytes)));
-        }
-    }
-};
-
-template <class _Type_>
-struct _First_n<arch::ISA::AVX512VLBW, 256, _Type_> :
-    _First_n<arch::ISA::AVX512VLF, 256, _Type_>
-{
-    raze_nodiscard raze_always_inline
-        auto operator()(uint32 __elements) const noexcept
-    {
-        constexpr auto __length = sizeof(__m256i) / sizeof(_Type_);
-        using _MaskType = __mmask_for_elements_t<__length>;
-        constexpr auto __table = __generate_first_n_table<__length>();
-        return __table[__elements];
-    }
-};
-
-template <class _Type_>
-struct _First_n<arch::ISA::AVX512VLF, 128, _Type_> :
-    _First_n<arch::ISA::AVX2, 128, _Type_>
-{
-    raze_nodiscard raze_always_inline
-        auto operator()(uint32 __elements) const noexcept
-    {
-        constexpr auto __length = sizeof(__m128i) / sizeof(_Type_);
-
-        if constexpr (sizeof(_Type_) >= 4) {
-            using _MaskType = __mmask_for_elements_t<__length>;
-            constexpr auto __table = __generate_first_n_table<__length>();
-            return __table[__elements];
-        } else {
-            const auto __bytes = __elements * sizeof(_Type_);
-
-            alignas(16) static constexpr uint32 __first_n_mask[8] = {
-                ~0u, ~0u, ~0u, ~0u, 0, 0, 0, 0
-            };
-
-            return _mm_load_si128(reinterpret_cast<const __m128i*>(
-                reinterpret_cast<const uint8*>(__first_n_mask) + (16 - __bytes)));
-        }
-    }
-};
-
-template <class _Type_>
-struct _First_n<arch::ISA::AVX512VLBW, 128, _Type_> :
-    _First_n<arch::ISA::AVX512VLF, 128, _Type_>
-{
-    raze_nodiscard raze_always_inline
-        auto operator()(uint32 __elements) const noexcept 
-    {
-        constexpr auto __length = sizeof(__m128i) / sizeof(_Type_);
-        using _MaskType = __mmask_for_elements_t<__length>;
-        constexpr auto __table = __generate_first_n_table<__length>();
-        return __table[__elements];
-    }
-};
-
-template <class _Type_> struct _First_n<arch::ISA::SSE3, 128, _Type_> : _First_n<arch::ISA::SSE2, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::SSSE3, 128, _Type_> : _First_n<arch::ISA::SSE3, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::SSE41, 128, _Type_> : _First_n<arch::ISA::SSSE3, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::SSE42, 128, _Type_> : _First_n<arch::ISA::SSE41, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX, 128, _Type_> : _First_n<arch::ISA::SSE42, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX2, 128, _Type_> : _First_n<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::FMA3, 128, _Type_> : _First_n<arch::ISA::AVX, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX2FMA3, 128, _Type_> : _First_n<arch::ISA::AVX2, 128, _Type_> {};
-
-template <class _Type_> struct _First_n<arch::ISA::AVX512DQ, 512, _Type_> : _First_n<arch::ISA::AVX512F, 512, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512BWDQ, 512, _Type_> : _First_n<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMI, 512, _Type_> : _First_n<arch::ISA::AVX512BW, 512, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMI2, 512, _Type_> : _First_n<arch::ISA::AVX512VBMI, 512, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMIDQ, 512, _Type_> : _First_n<arch::ISA::AVX512BWDQ, 512, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMI2DQ, 512, _Type_> : _First_n<arch::ISA::AVX512VBMIDQ, 512, _Type_> {};
-
-template <class _Type_> struct _First_n<arch::ISA::FMA3, 256, _Type_> : _First_n<arch::ISA::AVX, 256, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX2FMA3, 256, _Type_> : _First_n<arch::ISA::AVX2, 256, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VLDQ, 256, _Type_> : _First_n<arch::ISA::AVX512VLF, 256, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VLBWDQ, 256, _Type_> : _First_n<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMIVL, 256, _Type_> : _First_n<arch::ISA::AVX512VLBW, 256, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMI2VL, 256, _Type_> : _First_n<arch::ISA::AVX512VBMIVL, 256, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> : _First_n<arch::ISA::AVX512VLBWDQ, 256, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMI2VLDQ, 256, _Type_> : _First_n<arch::ISA::AVX512VBMIVLDQ, 256, _Type_> {};
-
-template <class _Type_> struct _First_n<arch::ISA::AVX512VLDQ, 128, _Type_> : _First_n<arch::ISA::AVX512VLF, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VLBWDQ, 128, _Type_> : _First_n<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMIVL, 128, _Type_> : _First_n<arch::ISA::AVX512VLBW, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMI2VL, 128, _Type_> : _First_n<arch::ISA::AVX512VBMIVL, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> : _First_n<arch::ISA::AVX512VLBWDQ, 128, _Type_> {};
-template <class _Type_> struct _First_n<arch::ISA::AVX512VBMI2VLDQ, 128, _Type_> : _First_n<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> {};
 
 __RAZE_VX_NAMESPACE_END

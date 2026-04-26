@@ -5,9 +5,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-    arch::ISA                   _ISA_,
-    intrin_or_arithmetic_type   _Type_>
+template <arch::ISA _ISA_, intrin_or_arithmetic_type _Type_>
 struct _Load {
     static raze_always_inline _Type_ __load_aligned(const void* __memory) noexcept {
         if constexpr (std::is_same_v<_Type_, __m128i>) return _mm_load_si128(static_cast<const __m128i*>(__memory));

@@ -66,27 +66,19 @@ public:
 		return __operations::__count_set(_bits);
 	}
 
-	raze_nodiscard raze_always_inline int32 
-		__count_trailing_zero_bits() const noexcept
-	{
+	raze_nodiscard raze_always_inline int32 __count_trailing_zero_bits() const noexcept {
 		return __operations::__count_trailing_zero_bits(_bits);
 	}
 
-	raze_nodiscard raze_always_inline int32
-		__count_leading_zero_bits() const noexcept
-	{
+	raze_nodiscard raze_always_inline int32 __count_leading_zero_bits() const noexcept {
 		return __operations::__count_leading_zero_bits(_bits);
 	}
 
-	raze_nodiscard raze_always_inline int32 
-		__count_trailing_one_bits() const noexcept 
-	{
+	raze_nodiscard raze_always_inline int32 __count_trailing_one_bits() const noexcept {
 		return __operations::__count_trailing_one_bits(_bits);
 	}
 
-	raze_nodiscard raze_always_inline int32 
-		__count_leading_one_bits() const noexcept 
-	{
+	raze_nodiscard raze_always_inline int32 __count_leading_one_bits() const noexcept {
 		return __operations::__count_leading_one_bits(_bits);
 	}
 

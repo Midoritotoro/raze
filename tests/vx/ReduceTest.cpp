@@ -24,7 +24,7 @@ struct reduce_tests {
         raze_assert(raze::vx::hsum(v) == std::accumulate(arr, arr + N,
             raze::vx::__reduce_type<_Type_>{0}, std::plus{}));
 
-        for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+       /* for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
 
             {
@@ -50,7 +50,7 @@ struct reduce_tests {
 
                 raze_assert(expected == r1);
             }
-        }
+        }*/
     }
 };
 

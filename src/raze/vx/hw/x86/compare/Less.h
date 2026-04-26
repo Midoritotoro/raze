@@ -12,27 +12,23 @@ template <
 struct _Less {
 	template <intrin_or_arithmetic_type _Tp_>
 	raze_nodiscard raze_always_inline auto operator()(_Tp_ __x, _Tp_ __y) const noexcept {
+        constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
+        constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
+        constexpr auto __sse41 = __has_sse41_support_v<_ISA_>;
+        constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
+
 		if constexpr (sizeof(_Tp_) == 16) {
-            if constexpr (__has_avx512vl_support_v<_ISA_>) {
-                if constexpr (__is_pd_v<_Type_>) return _mm_cmp_pd_mask(__as<__m128d>(__x), __as<__m128d>(__y), _CMP_LT_OQ);
-                else if constexpr (__is_ps_v<_Type_>) return _mm_cmp_ps_mask(__as<__m128>(__x), __as<__m128>(__y), _CMP_LT_OQ);
-                else if constexpr (__is_epi64_v<_Type_>) return _mm_cmplt_epi64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                else if constexpr (__is_epu64_v<_Type_>) return _mm_cmplt_epu64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                else if constexpr (__is_epi32_v<_Type_>) return _mm_cmplt_epi32_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                else if constexpr (__is_epu32_v<_Type_>) return _mm_cmplt_epu32_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                else if constexpr (__has_avx512bw_support_v<_ISA_>) {
-                    if constexpr (__is_epi16_v<_Type_>) return _mm_cmplt_epi16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                    else if constexpr (__is_epu16_v<_Type_>) return _mm_cmplt_epu16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                    else if constexpr (__is_epi8_v<_Type_>) return _mm_cmplt_epi8_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                    else if constexpr (__is_epu8_v<_Type_>) return _mm_cmplt_epu8_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                }
+            if constexpr (__is_pd_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm_cmp_pd_mask(__as<__m128d>(__x), __as<__m128d>(__y), _CMP_LT_OQ);
+                else return __as<_Tp_>(_mm_cmplt_pd(__as<__m128d>(__x), __as<__m128d>(__y)));
             }
-            else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_cmplt_ps(__as<__m128>(__x), __as<__m128>(__y)));
-            else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_cmplt_pd(__as<__m128d>(__x), __as<__m128d>(__y)));
+            else if constexpr (__is_ps_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm_cmp_ps_mask(__as<__m128>(__x), __as<__m128>(__y), _CMP_LT_OQ);
+                else return __as<_Tp_>(_mm_cmplt_ps(__as<__m128>(__x), __as<__m128>(__y)));
+            }
             else if constexpr (__is_epi64_v<_Type_>) {
-                if constexpr (__has_sse41_support_v<_ISA_>) {
-                    return __as<_Tp_>(_mm_cmpgt_epi64(__as<__m128i>(__y), __as<__m128i>(__x)));
-                }
+                if constexpr (__avx512vl) return _mm_cmplt_epi64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else if constexpr (__sse41) return __as<_Tp_>(_mm_cmpgt_epi64(__as<__m128i>(__y), __as<__m128i>(__x)));
                 else {
                     const auto __difference64 = _mm_sub_epi64(__as<__m128i>(__x), __as<__m128i>(__y));
 
@@ -45,7 +41,8 @@ struct _Less {
                 }
             }
             else if constexpr (__is_epu64_v<_Type_>) {
-                if constexpr (__has_sse41_support_v<_ISA_>) {
+                if constexpr (__avx512vl) return _mm_cmplt_epi64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else if constexpr (__sse41) {
                     const auto __sign_64bit = _mm_set1_epi64x(0x8000000000000000);
 
                     const auto __left_signed = _mm_xor_si128(__as<__m128i>(__x), __sign_64bit);
@@ -68,55 +65,82 @@ struct _Less {
                     return __as<_Tp_>(_mm_shuffle_epi32(_mm_or_si128(__bigger, __equal_bigger), 0xF5));
                 }
             }
-            else if constexpr (__is_epi32_v<_Type_>)  return __as<_Tp_>(_mm_cmplt_epi32(__as<__m128i>(__x), __as<__m128i>(__y)));
+            else if constexpr (__is_epi32_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm_cmplt_epi32_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else return __as<_Tp_>(_mm_cmplt_epi32(__as<__m128i>(__x), __as<__m128i>(__y)));
+            }
             else if constexpr (__is_epu32_v<_Type_>) {
-                const auto __sign = _mm_set1_epi32(0x80000000);
+                if constexpr (__avx512vl) return _mm_cmplt_epu32_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else {
+                    const auto __sign = _mm_set1_epi32(0x80000000);
 
-                const auto __signed_left = _mm_xor_si128(__as<__m128i>(__x), __sign);
-                const auto __signed_right = _mm_xor_si128(__as<__m128i>(__y), __sign);
+                    const auto __signed_left = _mm_xor_si128(__as<__m128i>(__x), __sign);
+                    const auto __signed_right = _mm_xor_si128(__as<__m128i>(__y), __sign);
 
-                return __as<_Tp_>(_mm_cmplt_epi32(__signed_left, __signed_right));
+                    return __as<_Tp_>(_mm_cmplt_epi32(__signed_left, __signed_right));
+                }
             }
-            else if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_cmplt_epi16(__as<__m128i>(__x), __as<__m128i>(__y)));
+            else if constexpr (__is_epi16_v<_Type_>) {
+                if constexpr (__avx512vl && __avx512bw) return _mm_cmplt_epi16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else return __as<_Tp_>(_mm_cmplt_epi16(__as<__m128i>(__x), __as<__m128i>(__y)));
+            }
             else if constexpr (__is_epu16_v<_Type_>) {
-                const auto __substracted = _mm_subs_epu16(__as<__m128i>(__y), __as<__m128i>(__x));
-                return _Not<arch::ISA::SSE2, _Type_>()(__as<_Tp_>(_mm_cmpeq_epi16(__substracted, _mm_setzero_si128())));
+                if constexpr (__avx512vl && __avx512bw) return _mm_cmplt_epu16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else return _Not<arch::ISA::SSE2, _Type_>()(__as<_Tp_>(_mm_cmpeq_epi16(
+                    _mm_subs_epu16(__as<__m128i>(__y), __as<__m128i>(__x)), _mm_setzero_si128())));
             }
-            else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_cmplt_epi8(__as<__m128i>(__x), __as<__m128i>(__y)));
+            else if constexpr (__is_epi8_v<_Type_>) {
+                if constexpr (__avx512vl && __avx512bw) return _mm_cmplt_epi8_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else return __as<_Tp_>(_mm_cmplt_epi8(__as<__m128i>(__x), __as<__m128i>(__y)));
+            }
             else if constexpr (__is_epu8_v<_Type_>) {
-                const auto __substracted = _mm_subs_epu8(__as<__m128i>(__y), __as<__m128i>(__x));
-                return _Not<arch::ISA::SSE2, _Type_>()(__as<_Tp_>(_mm_cmpeq_epi8(__substracted, _mm_setzero_si128())));
+                if constexpr (__avx512vl && __avx512bw) return _mm_cmplt_epu8_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                else return _Not<arch::ISA::SSE2, _Type_>()(__as<_Tp_>(_mm_cmpeq_epi8(
+                    _mm_subs_epu8(__as<__m128i>(__y), __as<__m128i>(__x)), _mm_setzero_si128())));
             }
         }
         else if constexpr (sizeof(_Tp_) == 32) {
-            if constexpr (__has_avx512vl_support_v<_ISA_>) {
-                if constexpr (__is_pd_v<_Type_>) return _mm256_cmp_pd_mask(__as<__m256d>(__x), __as<__m256d>(__y), _CMP_LT_OQ);
-                else if constexpr (__is_ps_v<_Type_>) return _mm256_cmp_ps_mask(__as<__m256>(__x), __as<__m256>(__y), _CMP_LT_OQ);
-                else if constexpr (__is_epi64_v<_Type_>) return _mm256_cmplt_epi64_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                else if constexpr (__is_epu64_v<_Type_>) return _mm256_cmplt_epu64_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                else if constexpr (__is_epi32_v<_Type_>) return _mm256_cmplt_epi32_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                else if constexpr (__is_epu32_v<_Type_>) return _mm256_cmplt_epu32_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                else if constexpr (__has_avx512bw_support_v<_ISA_>) {
-                    if constexpr (__is_epi16_v<_Type_>) return _mm256_cmplt_epi16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                    else if constexpr (__is_epu16_v<_Type_>) return _mm256_cmplt_epu16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                    else if constexpr (__is_epi8_v<_Type_>) return _mm256_cmplt_epi8_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                    else if constexpr (__is_epu8_v<_Type_>) return _mm256_cmplt_epu8_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                }
+            auto __fallback_avx = [=]() raze_always_inline_lambda {
+                const auto __low = _Less<arch::ISA::SSE42, _Type_>()(__as<__m128i>(__x), __as<__m128i>(__y));
+                const auto __high = _Less<arch::ISA::SSE42, _Type_>()(_mm256_extractf128_si256(__as<__m256i>(__x), 1),
+                    _mm256_extractf128_si256(__as<__m256i>(__y), 1));
+
+                return __as<_Tp_>(_mm256_insertf128_si256(__as<__m256i>(__low), __high, 1));
+            };
+
+            if constexpr (__is_pd_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm256_cmp_pd_mask(__as<__m256d>(__x), __as<__m256d>(__y), _CMP_LT_OQ);
+                else return __as<_Tp_>(_mm256_cmp_pd(__as<__m256d>(__x), __as<__m256d>(__y), _CMP_LT_OQ));
             }
-            else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_cmp_ps(__as<__m256>(__x), __as<__m256>(__y), _CMP_LT_OQ));
-            else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_cmp_pd(__as<__m256d>(__x), __as<__m256d>(__y), _CMP_LT_OQ));
-            else if constexpr (__has_avx2_support_v<_ISA_>) {
-                if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_cmpgt_epi64(__as<__m256i>(__y), __as<__m256i>(__x)));
-                else if constexpr (__is_epu64_v<_Type_>) {
+            else if constexpr (__is_ps_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm256_cmp_ps_mask(__as<__m256>(__x), __as<__m256>(__y), _CMP_LT_OQ);
+                else return __as<_Tp_>(_mm256_cmp_ps(__as<__m256>(__x), __as<__m256>(__y), _CMP_LT_OQ));
+            }
+            else if constexpr (__is_epi64_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm256_cmplt_epi64_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) return __as<_Tp_>(_mm256_cmpgt_epi64(__as<__m256i>(__y), __as<__m256i>(__x)));
+                else return __fallback_avx();
+            }
+            else if constexpr (__is_epu64_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm256_cmplt_epu64_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) {
                     const auto __sign_64bit = _mm256_set1_epi64x(0x8000000000000000);
 
-                    const auto __left_signed  = _mm256_xor_si256(__as<__m256i>(__x), __sign_64bit);
+                    const auto __left_signed = _mm256_xor_si256(__as<__m256i>(__x), __sign_64bit);
                     const auto __right_signed = _mm256_xor_si256(__as<__m256i>(__y), __sign_64bit);
 
                     return __as<_Tp_>(_mm256_cmpgt_epi64(__right_signed, __left_signed));
                 }
-                else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_cmpgt_epi32(__as<__m256i>(__y), __as<__m256i>(__x)));
-                else if constexpr (__is_epu32_v<_Type_>) {
+                else return __fallback_avx();
+            }
+            else if constexpr (__is_epi32_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm256_cmplt_epi32_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) return __as<_Tp_>(_mm256_cmpgt_epi32(__as<__m256i>(__y), __as<__m256i>(__x)));
+                else return __fallback_avx();
+            }
+            else if constexpr (__is_epu32_v<_Type_>) {
+                if constexpr (__avx512vl) return _mm256_cmplt_epu32_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) {
                     const auto __sign_32bit = _mm256_set1_epi32(0x80000000);
 
                     const auto __left_signed = _mm256_xor_si256(__as<__m256i>(__x), __sign_32bit);
@@ -124,31 +148,41 @@ struct _Less {
 
                     return __as<_Tp_>(_mm256_cmpgt_epi32(__right_signed, __left_signed));
                 }
-                else if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_cmpgt_epi16(__as<__m256i>(__y), __as<__m256i>(__x)));
-                else if constexpr (__is_epu16_v<_Type_>) {
+                else return __fallback_avx();
+            }
+            else if constexpr (__is_epi16_v<_Type_>) {
+                if constexpr (__avx512vl && __avx512bw) return _mm256_cmplt_epi16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) return __as<_Tp_>(_mm256_cmpgt_epi16(__as<__m256i>(__y), __as<__m256i>(__x)));
+                else return __fallback_avx();
+            }
+            else if constexpr (__is_epu16_v<_Type_>) {
+                if constexpr (__avx512vl && __avx512bw) return _mm256_cmplt_epu16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) {
                     const auto __sign_16bit = _mm256_set1_epi16(0x8000);
 
-                    const auto __left_signed    = _mm256_xor_si256(__as<__m256i>(__x), __sign_16bit);
-                    const auto __right_signed   = _mm256_xor_si256(__as<__m256i>(__y), __sign_16bit);
+                    const auto __left_signed = _mm256_xor_si256(__as<__m256i>(__x), __sign_16bit);
+                    const auto __right_signed = _mm256_xor_si256(__as<__m256i>(__y), __sign_16bit);
 
                     return __as<_Tp_>(_mm256_cmpgt_epi16(__right_signed, __left_signed));
                 }
-                else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_cmpgt_epi8(__as<__m256i>(__y), __as<__m256i>(__x)));
-                else if constexpr (__is_epu8_v<_Type_>) {
-                    const auto __sign_8bit   = _mm256_set1_epi8(0x80);
+                else return __fallback_avx();
+            }
+            else if constexpr (__is_epi8_v<_Type_>) {
+                if constexpr (__avx512vl && __avx512bw) return _mm256_cmplt_epi8_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) return __as<_Tp_>(_mm256_cmpgt_epi8(__as<__m256i>(__y), __as<__m256i>(__x)));
+                else return __fallback_avx();
+            }
+            else if constexpr (__is_epu8_v<_Type_>) {
+                if constexpr (__avx512vl && __avx512bw) return _mm256_cmplt_epu8_mask(__as<__m256i>(__x), __as<__m256i>(__y));
+                else if constexpr (__avx2) {
+                    const auto __sign_8bit = _mm256_set1_epi8(0x80);
 
-                    const auto __left_signed    = _mm256_xor_si256(__as<__m256i>(__x), __sign_8bit);
-                    const auto __right_signed   = _mm256_xor_si256(__as<__m256i>(__y), __sign_8bit);
+                    const auto __left_signed = _mm256_xor_si256(__as<__m256i>(__x), __sign_8bit);
+                    const auto __right_signed = _mm256_xor_si256(__as<__m256i>(__y), __sign_8bit);
 
                     return __as<_Tp_>(_mm256_cmpgt_epi8(__right_signed, __left_signed));
                 }
-            }
-            else {
-                const auto __low = _Less<arch::ISA::SSE42, _Type_>()(__as<__m128i>(__x), __as<__m128i>(__y));
-                const auto __high = _Less<arch::ISA::SSE42, _Type_>()(_mm256_extractf128_si256(__as<__m256i>(__x), 1),
-                    _mm256_extractf128_si256(__as<__m256i>(__y), 1));
-
-                return __as<_Tp_>(_mm256_insertf128_si256(__as<__m256i>(__low), __high, 1));
+                else return __fallback_avx();
             }
         }
         else if constexpr (sizeof(_Tp_) == 64) {

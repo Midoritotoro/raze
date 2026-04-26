@@ -36,6 +36,9 @@ concept non_memory_where_expression_type = any_where_expression_type<_WhereExpre
 template <class _Simd_>
 concept simd_type = __is_valid_simd_v<_Simd_>;
 
+template <class _Type_>
+concept simd_or_arithmetic_type = simd_type<_Type_> || arithmetic_type<_Type_>;
+
 template <class _SimdMask_>
 concept simd_mask_type = __is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>;
 
