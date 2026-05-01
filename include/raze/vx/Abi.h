@@ -1,9 +1,8 @@
 #pragma once 
 
-#include <raze/compatibility/Compatibility.h>
 #include <raze/arch/CpuFeature.h>
 #include <src/raze/vx/hw/Cast.h>
-#include <raze/vx/SimdConfig.h>
+#include <raze/vx/Config.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

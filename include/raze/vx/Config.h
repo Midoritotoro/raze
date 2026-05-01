@@ -308,6 +308,4 @@ constexpr arch::ISA __best_isa_compile_time() noexcept {
 #endif
 }
 
-
-
 __RAZE_VX_NAMESPACE_END

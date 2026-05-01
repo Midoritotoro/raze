@@ -485,4 +485,8 @@ template <class _Type_> struct _Mask_store<arch::ISA::AVX512VBMI2VL, 128, _Type_
 template <class _Type_> struct _Mask_store<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> : _Mask_store<arch::ISA::AVX512VLBWDQ, 128, _Type_> {};
 template <class _Type_> struct _Mask_store<arch::ISA::AVX512VBMI2VLDQ, 128, _Type_> : _Mask_store<arch::ISA::AVX512VBMIVLDQ, 128, _Type_> {};
 
+
+template <arch::ISA  _ISA_, arithmetic_type _Type_>
+inline constexpr bool __is_native_mask_store_supported_v = (__has_avx_support_v<_ISA_> && sizeof(_Type_) >= 4) || __has_avx512bw_support_v<_ISA_>;
+
 __RAZE_VX_NAMESPACE_END

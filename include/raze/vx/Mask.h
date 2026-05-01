@@ -47,11 +47,6 @@ public:
 		_mask(static_cast<mask_type>(__mask))
 	{}
 
-	template <uint64 _Bits_>
-	simd_mask(const std::bitset<_Bits_>& __bitset) noexcept:
-		_mask(__from_bitset(__bitset)) 
-	{}
-	
 	template <
 		class _ForwardIterator_,
 		class _AlignmentPolicy_ = __unaligned_policy>

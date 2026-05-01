@@ -37,13 +37,19 @@ struct _Load {
 
     template <class _AlignmentPolicy_ = __unaligned_policy>
     raze_nodiscard raze_static_operator raze_always_inline _Type_ operator()(
-        const void* __memory, 
-        _AlignmentPolicy_&& = _AlignmentPolicy_{}) raze_const_operator noexcept 
+        const void* __memory, _AlignmentPolicy_&& = _AlignmentPolicy_{}) raze_const_operator noexcept 
     {
         if constexpr (std::remove_cvref_t<_AlignmentPolicy_>::__alignment)
             return __load_aligned(__memory);
         else
             return __load_unaligned(__memory);
+    }
+
+    template <class _AlignmentPolicy_ = __unaligned_policy>
+    raze_nodiscard raze_static_operator raze_always_inline _Type_ operator()(
+        const void* __memory, _AlignmentPolicy_&& = _AlignmentPolicy_{}) raze_const_operator noexcept
+    {
+
     }
 };
 

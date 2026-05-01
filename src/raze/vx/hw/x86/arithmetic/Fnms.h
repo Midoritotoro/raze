@@ -19,7 +19,7 @@ struct _Fnms {
 			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_fnmsub_pd(__as<__m256d>(__x), __as<__m256d>(__y), __as<__m256d>(__z)));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_fnmsub_ps(__as<__m256>(__x), __as<__m256>(__y), __as<__m256>(__z)));
 		}
-		if constexpr (sizeof(_Tp_) == 64) {
+		else if constexpr (sizeof(_Tp_) == 64) {
 			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_fnmsub_pd(__as<__m512d>(__x), __as<__m512d>(__y), __as<__m512d>(__z)));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_fnmsub_ps(__as<__m512>(__x), __as<__m512>(__y), __as<__m512>(__z)));
 		}

@@ -3,7 +3,7 @@
 #include <src/raze/vx/hw/Cast.h>
 #include <src/raze/type_traits/SimdTypeCheck.h>
 #include <raze/vx/Abi.h>
-#include <raze/vx/Concepts.h>
+#include <src/raze/vx/Concepts.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

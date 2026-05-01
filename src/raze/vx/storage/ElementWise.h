@@ -1,56 +1,9 @@
 #pragma once 
 
-
-#include <src/raze/type_traits/TypeTraits.h>
-#include <src/raze/vx/hw/Access.h>
+#include <src/raze/vx/storage/Size.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
-
-struct _Simd_tuple_nil 
-{};
-
-template <
-    class _Head_, 
-    class _Tail_ = _Simd_tuple_nil>
-struct _Simd_tuple_node {
-    _Head_ _head;
-    _Tail_ _tail;
-
-    _Simd_tuple_node() noexcept = default;
-    _Simd_tuple_node(const _Simd_tuple_node&) noexcept = default;
-    _Simd_tuple_node(_Simd_tuple_node&&) noexcept = default;
-
-    ~_Simd_tuple_node() = default;
-
-    _Simd_tuple_node& operator=(const _Simd_tuple_node&) noexcept = default;
-    _Simd_tuple_node& operator=(_Simd_tuple_node&&) noexcept = default;
-
-    template <
-        class _NewHead_, 
-        class _NewTail_>
-    _Simd_tuple_node(
-        _NewHead_&& __head, 
-        _NewTail_&& __tail) noexcept: 
-            _head(std::forward<_NewHead_>(__head)), 
-            _tail(std::forward<_NewTail_>(__tail))
-    {}
-};
-
-template <class _Type_>
-struct __simd_tuple_size;
-
-template <>
-struct __simd_tuple_size<_Simd_tuple_nil>: 
-    std::integral_constant<std::size_t, 0> 
-{};
-
-template <
-    class _Head_, 
-    class _Tail_>
-struct __simd_tuple_size<_Simd_tuple_node<_Head_, _Tail_>>: 
-    std::integral_constant<std::size_t, 1 + __simd_tuple_size<_Tail_>::value> 
-{};
 
 template <
     std::size_t _Index_, 
@@ -89,67 +42,6 @@ constexpr auto& __get(_Type_& __value) noexcept {
     return __value;
 }
 
-template <
-    class   _Type_,
-    class   _Abi_,
-    int     _Remaining_>
-struct best_chunk {
-    static constexpr auto __total_bytes = _Remaining_ * sizeof(_Type_);
-    
-    static constexpr int __max_isa_width = 
-        __has_avx512f_support_v<_Abi_::isa> ? 512 :
-        __has_avx_support_v<_Abi_::isa> ? 256 :
-        __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
-
-    static constexpr int __data_width = 
-        (__total_bytes >= 64) ? 512 :
-        (__total_bytes >= 32) ? 256 :
-        (__total_bytes >= 16) ? 128 : 0;
-
-    static constexpr int __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
-    
-    using type = std::conditional_t<(__width == 0), _Type_, type_traits::__deduce_simd_vector_type<_Type_, __width>>;
-};
-
-template <
-    class   _Type_, 
-    class   _Abi_,
-    int     _Remaining_>
-struct __build_tuple {
-    using chunk_type = typename best_chunk<_Type_, _Abi_, _Remaining_>::type;
-
-    static constexpr auto __chunk_elems = sizeof(chunk_type) / sizeof(_Type_);
-    static constexpr auto __next = (_Remaining_ > __chunk_elems) ? (_Remaining_ - __chunk_elems) : 0;
-    
-    using type = _Simd_tuple_node<chunk_type, typename __build_tuple<_Type_, _Abi_, __next>::type>;
-};
-
-template <class _Type_, class _Abi_> 
-struct __build_tuple<_Type_, _Abi_, 0> {
-    using type = _Simd_tuple_nil; 
-};
-
-template <
-    class _Type_, 
-    class _Abi_>
-using _Simd_fallback_tuple_type = typename __build_tuple<_Type_, _Abi_, _Abi_::size>::type;
-
-template <class _T_> 
-struct __is_simd_tuple: 
-    std::false_type 
-{};
-
-template <
-    class _H_,
-    class _T_> 
-struct __is_simd_tuple<_Simd_tuple_node<_H_, _T_>>: 
-    std::true_type 
-{};
-
-template <> 
-struct __is_simd_tuple<_Simd_tuple_nil>:
-    std::true_type 
-{};
 
 template <
     class _Type_, 
