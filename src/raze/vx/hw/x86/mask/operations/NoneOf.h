@@ -6,12 +6,10 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, intrin_type _Intrin_, arithmetic_type _Type_>
+template <arch::ISA _ISA_, arithmetic_type _Type_>
 struct _None_of {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_always_inline bool operator()(_Tp_ __x) const noexcept {
-		constexpr auto __size = sizeof(_Intrin_) / sizeof(_Type_);
-
 		if constexpr (intrin_type<_Tp_>) {
 			if constexpr (sizeof(_Tp_) == 16) {
 				if constexpr (__has_sse41_support_v<_ISA_>) return _mm_testz_si128(__as<__m128i>(__x), __as<__m128i>(__x));

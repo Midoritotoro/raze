@@ -27,9 +27,10 @@ struct variable_length_mask_tests {
         {
             Mask t(true);
             Mask f(false);
-
-            // raze_assert(raze::vx::all_of(t));
-            // raze_assert(raze::vx::none_of(f));
+            
+            raze_assert(raze::vx::any_of(t));
+            raze_assert(raze::vx::all_of(t));
+            raze_assert(raze::vx::none_of(f));
         }
 
       /*  {
@@ -217,14 +218,11 @@ struct variable_length_mask_tests {
     }
 
     void operator()() const {
-        test_size<_Width_ / (sizeof(_Type_) * 8)>();
-        //test_size<1>();
-        //test_size<3>();
-        //test_size<7>();
-        //test_size<16>();
-        //test_size<31>();
-        //test_size<64>();
-        //test_size<94>();
+        test_size<(_Width_ / (sizeof(_Type_) * 8))>();
+        test_size<1>();
+        test_size<7>();
+        test_size<17>();
+        test_size<31>();
     }
 };
 

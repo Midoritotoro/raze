@@ -12,6 +12,8 @@ struct _Mask_broadcast {
 	raze_nodiscard raze_static_operator raze_always_inline _Mask_ operator()(bool __v) raze_const_operator noexcept {
 		if constexpr (intrin_type<_Mask_>)
 			return __v ? _Broadcast<_ISA_, _Mask_>()(-1) : _Zero<_ISA_, _Mask_>()();
+		else if constexpr (std::is_same_v<_Mask_, bool>)
+			return __v;
 		else
 			return _First_n<_ISA_, _Size_, _Mask_, _Type_>()(_Size_ * i32(__v));
 	}

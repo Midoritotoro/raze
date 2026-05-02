@@ -31,7 +31,7 @@ public:
 
 	simd_mask(bool __value) noexcept {
 		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-			__chunk = _Mask_broadcast<_Abi_::isa, _Abi_::size, _Chunk, value_type>()(__value);
+			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::mask_type, value_type>()(__value);
 		});
 	}
 
@@ -83,6 +83,10 @@ public:
 	//friend raze_always_inline simd_mask operator<<(const simd_mask& __x, u32 __elements) noexcept {
 	//	return slide_left(__x, __elements);
 	//}
+
+	raze_nodiscard raze_always_inline static constexpr auto size() noexcept {
+		return abi_type::size;
+	}
 
 	template <u32 _Elements_>
 	raze_always_inline simd_mask& operator<<=(std::integral_constant<u32, _Elements_> __elements) noexcept {
@@ -152,6 +156,36 @@ public:
 
 	explicit raze_always_inline operator storage_type() const noexcept {
 		return _storage;
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) noexcept {
+		_storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
+		_storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) noexcept {
+		return _storage.__for_each_chunk_any_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
+		return _storage.__for_each_chunk_any_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) noexcept {
+		return _storage.__for_each_chunk_all_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
+		return _storage.__for_each_chunk_all_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
 	}
 private:
 	storage_type _storage;

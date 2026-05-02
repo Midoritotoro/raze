@@ -6,15 +6,13 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, intrin_type _Intrin_, arithmetic_type _Type_>
+template <arch::ISA _ISA_, u64 _Size_, arithmetic_type _Type_>
 struct _All_of {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_always_inline bool operator()(_Tp_ __x) const noexcept {
-		constexpr auto __size = sizeof(_Intrin_) / sizeof(_Type_);
-
 		if constexpr (intrin_type<_Tp_>) {
 			if constexpr (sizeof(_Tp_) == 16) {
-				if constexpr (__has_sse41_support_v<_ISA_>) return _mm_testc_si128(__as<__m128i>(__x), __as<__m128i>(_Equal<_ISA_, i64>()(__x, __x)));
+				if constexpr (__has_sse41_support_v<_ISA_>) return _mm_testc_si128(__as<__m128i>(__x), _All_ones<_ISA_, __m128i>()());
 				else {
 					const auto __all_ones = _Equal<arch::ISA::SSE2, i32>()(__x, __x);
 					const auto __compared = _Equal<arch::ISA::SSE2, i32>()(__x, __all_ones);
@@ -30,10 +28,10 @@ struct _All_of {
 			}
 		}
 		else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
-			raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(_Tp_) * 8) == __size)
-				? math::__maximum_integral_limit<_Tp_>() : _Tp_(((_Tp_(1) << __size) - 1));
+			raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(_Tp_) * 8) == _Size_)
+				? math::__maximum_integral_limit<_Tp_>() : _Tp_(((_Tp_(1) << _Size_) - 1));
 
-			if constexpr (__size < 8 && __has_avx512dq_support_v<_ISA_>)
+			if constexpr (_Size_ < 8 && __has_avx512dq_support_v<_ISA_>)
 				return _ktestc_mask8_u8(__x, _cvtu32_mask8(__max_for_bits));
 
 			else if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)

@@ -11,7 +11,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype _VectorLength_>
 consteval auto __first_n_ktable() noexcept {
-    using _MaskType = typename __mask_type<_VectorLength_>::type;
+    using _MaskType = __mmask_for_elements_t<_VectorLength_>;
     auto __table = std::array<_MaskType, _VectorLength_ + 1>{};
 
     for (auto __i = 0; __i <= _VectorLength_; ++__i) {

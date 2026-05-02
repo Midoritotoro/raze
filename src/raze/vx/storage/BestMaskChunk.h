@@ -4,47 +4,81 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <i32 _N_>
-struct __mask_type;
+template <u64 _N_>
+using __mmask_for_elements_helper = std::conditional_t<_N_ <= 8, __mmask8,
+    std::conditional_t<_N_ <= 16, __mmask16,
+        std::conditional_t<_N_ <= 32, __mmask32,
+            std::conditional_t<_N_ <= 64, __mmask64, void>>>>;
 
-template <> struct __mask_type<2>  { using type = __mmask8;  };
-template <> struct __mask_type<4>  { using type = __mmask8;  };
-template <> struct __mask_type<8>  { using type = __mmask8;  };
-template <> struct __mask_type<16> { using type = __mmask16; };
-template <> struct __mask_type<32> { using type = __mmask32; };
-template <> struct __mask_type<64> { using type = __mmask64; };
+template <u64 _N_>
+using __mmask_for_elements_t = __mmask_for_elements_helper<_N_>;
+
+template <class _Type_, class _Abi_, u64 _Elements_, raw_mask_type _Mask_>
+struct _Mask_wrapper {
+    using mask_type = _Mask_;
+    using abi_type = _Abi_;
+    using value_type = _Type_;
+
+    static constexpr auto size = _Elements_;
+
+    _Mask_wrapper(mask_type __mask) noexcept : _data(__mask) {}
+
+    _Mask_wrapper() noexcept = default;
+    _Mask_wrapper(const _Mask_wrapper&) noexcept = default;
+    _Mask_wrapper(_Mask_wrapper&&) noexcept = default;
+
+    ~_Mask_wrapper() = default;
+
+    _Mask_wrapper& operator=(const _Mask_wrapper&) noexcept = default;
+    _Mask_wrapper& operator=(_Mask_wrapper&&) noexcept = default;
+
+    raze_nodiscard raze_always_inline mask_type data() const noexcept {
+        return _data;
+    }
+
+    raze_nodiscard raze_always_inline mask_type& data() noexcept {
+        return _data;
+    }
+
+    raze_nodiscard raze_always_inline operator mask_type() const noexcept {
+        return _data;
+    }
+
+    raze_nodiscard raze_always_inline operator mask_type&() noexcept {
+        return _data;
+    }
+private:
+    mask_type _data;
+};
 
 template <class _Type_, class _Abi_, i32 _Remaining_>
 struct best_mask_chunk {
-    static constexpr auto __max_isa_width = __has_avx512f_support_v<_Abi_::isa> ? 512 :
-        __has_avx_support_v<_Abi_::isa> ? 256 : __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
+    static constexpr auto __use_kmask = __has_avx512f_support_v<_Abi_::isa> && (sizeof(_Type_) >= 4 || __has_avx512bw_support_v<_Abi_::isa>);
+    static constexpr auto __max_isa_width = __has_avx512f_support_v<_Abi_::isa> ? 512 : __has_avx_support_v<_Abi_::isa> ? 256 : __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
 
     static constexpr auto __bytes = _Remaining_ * sizeof(_Type_);
-    static constexpr auto __width = (__bytes >= 64 && __max_isa_width >= 512) ? 512 :
-        (__bytes >= 32 && __max_isa_width >= 256) ? 256 :
-        (__bytes >= 16 && __max_isa_width >= 128) ? 128 : 0;
+    static constexpr auto __data_width = (__bytes >= 64) ? 512 :  (__bytes >= 32) ? 256 : (__bytes >= 16) ? 128 : 0;
+    
+    static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
+    static constexpr auto __fits = (__width != 0);
 
-    static constexpr auto __elems = (__width == 0) ? 1 : (__width / 8) / sizeof(_Type_);
-    static constexpr auto __use_kmask = __has_avx512f_support_v<_Abi_::isa> && __elems <= 64;
+    static constexpr auto __elems_in_vector = (__width == 0) ? _Remaining_ : (__width / 8) / sizeof(_Type_);
 
-    static constexpr auto __mask_bits = (__elems <= 2) ? 2 :
-        (__elems <= 4) ? 4 : (__elems <= 8) ? 8 :
-        (__elems <= 16) ? 16 : (__elems <= 32) ? 32 : 64;
+    static constexpr auto elements_count = __fits ? __elems_in_vector : 1;
 
-    using type = std::conditional_t<__use_kmask, typename __mask_type<__mask_bits>::type,
-        typename best_chunk<_Type_, _Abi_, _Remaining_>::type>;
+    using type = std::conditional_t<__use_kmask && __fits, _Mask_wrapper<_Type_, _Abi_, elements_count, __mmask_for_elements_t<__elems_in_vector>>,
+        std::conditional_t<__fits, _Mask_wrapper<_Type_, _Abi_, elements_count, typename best_chunk<
+            typename IntegerForSizeof<_Type_>::Unsigned, _Abi_, _Remaining_>::type>, _Mask_wrapper<_Type_, _Abi_, elements_count, bool>>>;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>
 struct __build_mask_tuple {
-    using __chunk = typename best_mask_chunk<_Type_, _Abi_, _Remaining_>::type;
+    using __chunk_info = best_mask_chunk<_Type_, _Abi_, _Remaining_>;
+    using __chunk = typename __chunk_info::type;
 
-    static constexpr auto __elems = std::is_integral_v<__chunk> ? (__has_avx512f_support_v<_Abi_::isa>
-        ? ((sizeof(__chunk) == 1) ? 8 : (sizeof(__chunk) == 2) ? 16 :
-            (sizeof(__chunk) == 4) ? 32 : 64) : sizeof(__chunk) * 8)
-        : sizeof(__chunk) / sizeof(_Type_);
-
+    static constexpr auto __elems = __chunk_info::elements_count;
     static constexpr auto __next = (_Remaining_ > __elems) ? _Remaining_ - __elems : 0;
+
     using type = _Simd_tuple_node<__chunk, typename __build_mask_tuple<_Type_, _Abi_, __next>::type>;
 };
 

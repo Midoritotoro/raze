@@ -7,6 +7,7 @@
 #include <src/raze/vx/hw/Shuffle.h>
 #include <src/raze/vx/hw/Arithmetic.h>
 #include <src/raze/vx/hw/Bitwise.h>
+#include <src/raze/vx/hw/Mask.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -36,5 +37,10 @@ constexpr inline auto vmax = vertical_max;
 //constexpr inline auto hsum = horizontal_sum;
 //constexpr inline auto hmin = horizontal_min;
 //constexpr inline auto hmax = horizontal_max;
+
+constexpr inline auto all_of = raze::options::functor<_Configurable_all_of>;
+constexpr inline auto none_of = raze::options::functor<_Configurable_none_of>;
+constexpr inline auto any_of = raze::options::functor<_Configurable_any_of>;
+constexpr inline auto some_of = raze::options::functor<_Configurable_some_of>;
 
 __RAZE_VX_NAMESPACE_END

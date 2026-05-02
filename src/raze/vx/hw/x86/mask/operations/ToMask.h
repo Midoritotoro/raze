@@ -9,8 +9,8 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <arch::ISA	_ISA_, arithmetic_type _Type_>
 struct _To_mask {
 	template <intrin_type _Tp_>
-	raze_nodiscard raze_always_inline typename __mask_type<sizeof(_Tp_) / sizeof(_Type_)>::type operator()(_Tp_ __x) const noexcept {
-        using _MaskType = typename __mask_type<sizeof(_Tp_) / sizeof(_Type_)>::type;
+	raze_nodiscard raze_always_inline __mmask_for_elements_t<sizeof(_Tp_) / sizeof(_Type_)> operator()(_Tp_ __x) const noexcept {
+        using _MaskType = __mmask_for_elements_t<sizeof(_Tp_) / sizeof(_Type_)>;
 
         constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
         constexpr auto __avx512dq = __has_avx512dq_support_v<_ISA_>;

@@ -66,7 +66,7 @@ struct _To_vector {
         }
         else if constexpr (sizeof(_Vector_) == 32) {
             auto __fallback_avx = [=] () raze_always_inline_lambda {
-                using _MaskType = typename __mask_type<0x20 / sizeof(_Type_)>::type;
+                using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_Type_)>;
                 using _HalfType = IntegerForSize<__constexpr_max<(sizeof(_MaskType) >> 1), 1>()>::Unsigned;
 
                 constexpr auto __maximum = math::__maximum_integral_limit<_HalfType>();
@@ -143,7 +143,7 @@ struct _To_vector {
                 else if constexpr (sizeof(_Type_) == 1) return __as<_Vector_>(_mm512_movm_epi8(__mask));
             }
             else {
-                using _MaskType = typename __mask_type<0x40 / sizeof(_Type_)>::type;
+                using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_Type_)>;
                 using _HalfType = IntegerForSize<__constexpr_max<(sizeof(_MaskType) >> 1), 1>()>::Unsigned;
 
                 constexpr auto __maximum = math::__maximum_integral_limit<_HalfType>();

@@ -16,7 +16,7 @@ class _Mask_storage {
 public:
     using abi_type = _Abi_;
     using tuple_type = std::conditional_t<__use_native, typename best_mask_chunk<
-        _Type_, _Abi_, _Abi_::size>::type, _Simd_vector_tuple_type<_Type_, _Abi_>>;
+        _Type_, _Abi_, _Abi_::size>::type, _Simd_mask_tuple_type<_Type_, _Abi_>>;
 
     _Mask_storage() noexcept = default;
     _Mask_storage(const _Mask_storage&) noexcept = default;
@@ -48,8 +48,23 @@ public:
         if constexpr (__use_native)
             __f(_data, std::forward<_Args_>(__args)...);
         else
-            __execute_n_times<__simd_tuple_size<tuple_type>::value>(
-                _data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+            __for_each_tuple(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    }
+
+    template <class _Function_, class ... _Args_>
+    raze_always_inline auto __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) noexcept {
+        if constexpr (__use_native)
+            return __f(_data, std::forward<_Args_>(__args)...);
+        else
+            return __for_each_tuple_all_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    }
+
+    template <class _Function_, class ... _Args_>
+    raze_always_inline auto __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) noexcept {
+        if constexpr (__use_native)
+            return __f(_data, std::forward<_Args_>(__args)...);
+        else
+            return __for_each_tuple_any_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
@@ -57,8 +72,23 @@ public:
         if constexpr (__use_native)
             __f(_data, std::forward<_Args_>(__args)...);
         else
-            __execute_n_times<__simd_tuple_size<tuple_type>::value>(
-                _data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+            __for_each_tuple(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    }
+
+    template <class _Function_, class ... _Args_>
+    raze_always_inline auto __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
+        if constexpr (__use_native)
+            return __f(_data, std::forward<_Args_>(__args)...);
+        else
+            return __for_each_tuple_all_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    }
+
+    template <class _Function_, class ... _Args_>
+    raze_always_inline auto __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
+        if constexpr (__use_native)
+            return __f(_data, std::forward<_Args_>(__args)...);
+        else
+            return __for_each_tuple_any_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 private:
     tuple_type _data;
