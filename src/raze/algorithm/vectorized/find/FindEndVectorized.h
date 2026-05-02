@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -54,7 +54,7 @@ struct __find_end_vectorized_internal {
 
 		const auto __sub_bytes = sizeof(_ValueType) * __sub_length;
 		const auto __main_bytes = __aligned_size + __tail_size;
-		const auto __last_offset = int64(__sub_bytes);
+		const auto __last_offset = i64(__sub_bytes);
 
 		auto __main_last = __bytes_pointer_offset(__main_first, __aligned_size + __tail_size);
 		const auto __cached_last = __main_last;

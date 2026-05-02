@@ -18,7 +18,7 @@ struct _Insert {
 		arithmetic_type				_Type_>
 	raze_static_operator raze_always_inline void operator()(
 		_Tp_&	__vector,
-		uint8	__index,
+		u8	__index,
 		_Type_	__value) raze_const_operator noexcept
 	{
 		if constexpr (arithmetic_type<_Tp_>) {

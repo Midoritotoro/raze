@@ -84,34 +84,34 @@ public:
             __data(_vector), __data(_mask), __data(_source));
     }
 
-    template <uint8 _TernaryMask_>
+    template <u8 _TernaryMask_>
     raze_nodiscard static raze_always_inline auto __ternarylogic(
         const datapar_type&                             __x,
         const datapar_type&                             __y,
         const _Const_where&                             __z,
-        std::integral_constant<uint8, _TernaryMask_>    __imm8) noexcept
+        std::integral_constant<u8, _TernaryMask_>    __imm8) noexcept
     {
         return _Mask_ternarylogic<__isa, __width, value_type>()(__data(__x), __data(__y), 
             __data(__z._vector), __imm8, __data(__z._mask), __data(__z._source));
     }
 
-    template <uint8 _TernaryMask_>
+    template <u8 _TernaryMask_>
     raze_nodiscard static raze_always_inline auto __ternarylogic(
         const datapar_type&                             __x,
         const _Const_where&                             __y,
         const datapar_type&                             __z,
-        std::integral_constant<uint8, _TernaryMask_>    __imm8) noexcept
+        std::integral_constant<u8, _TernaryMask_>    __imm8) noexcept
     {
         return _Mask_ternarylogic<__isa, __width, value_type>()(__data(__x), __data(__y._vector),
             __data(__z), __imm8, __data(__y._mask), __data(__y._source));
     }
 
-    template <uint8 _TernaryMask_>
+    template <u8 _TernaryMask_>
     raze_nodiscard static raze_always_inline auto __ternarylogic(
         const _Const_where&                             __x,
         const datapar_type&                             __y,
         const datapar_type&                             __z,
-        std::integral_constant<uint8, _TernaryMask_>    __imm8) noexcept
+        std::integral_constant<u8, _TernaryMask_>    __imm8) noexcept
     {
         return _Mask_ternarylogic<__isa, __width, value_type>()(__data(__x._vector), __data(__y),
             __data(__z), __imm8, __data(__x._mask), __data(__x._source));
@@ -262,7 +262,7 @@ public:
 
     raze_always_inline friend datapar_type operator<<(
         const _Const_where& __left,
-        uint32              __shift) noexcept
+        u32              __shift) noexcept
     {
         return _Mask_left_shift<__isa, __width, value_type>()(
             __data(__left._vector), __shift, __data(_mask), __data(_source));
@@ -270,13 +270,13 @@ public:
 
     raze_always_inline friend datapar_type operator>>(
         const _Const_where& __left,
-        uint32              __shift) noexcept
+        u32              __shift) noexcept
     {
         return _Mask_right_shift<__isa, __width, value_type>()(
             __data(__left._vector), __shift, __data(_mask), __data(_source));
     }
 
-    raze_nodiscard raze_always_inline value_type operator[](int32 __i) const noexcept {
+    raze_nodiscard raze_always_inline value_type operator[](i32 __i) const noexcept {
         return _mask[__i] ? _vector[__i] : _source[__i];
     }
 

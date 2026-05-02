@@ -1,30 +1,30 @@
 #pragma once 
 
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 #include <src/raze/math/MathConstants.h>
 #include <src/raze/math/SinTables.h>
 
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-constexpr raze_always_inline float __sin(float __x) noexcept {
+constexpr raze_always_inline f32 __sin(f32 __x) noexcept {
     constexpr auto __sine_table_size = 256;
 
     const auto __si = int(__x * (0.5f * __sine_table_size / M_PI)) & (__sine_table_size - 1);
     const auto  __ci = int(__si + __sine_table_size / 4) & (__sine_table_size - 1);
 
-    const auto __d = float(__x - __si * (2.0f * M_PI / __sine_table_size));
+    const auto __d = f32(__x - __si * (2.0f * M_PI / __sine_table_size));
 
-    return float(__sine_table[__si] + (__sine_table[__ci] - 0.5f * __sine_table[__si] * __d) * __d);
+    return f32(__sine_table[__si] + (__sine_table[__ci] - 0.5f * __sine_table[__si] * __d) * __d);
 }
 
-constexpr raze_always_inline double __sin(double __x) noexcept {
+constexpr raze_always_inline f64 __sin(f64 __x) noexcept {
     constexpr auto __sine_table_size = 256;
 
     const auto __si = int(__x * (0.5 * __sine_table_size / M_PI)) & (__sine_table_size - 1);
     const auto  __ci = int(__si + __sine_table_size / 4) & (__sine_table_size - 1);
 
-    const auto __d = float(__x - __si * (2.0 * M_PI / __sine_table_size));
+    const auto __d = f32(__x - __si * (2.0 * M_PI / __sine_table_size));
 
     return __sine_table[__si] + (__sine_table[__ci] - 0.5 * __sine_table[__si] * __d) * __d;
 }
@@ -35,7 +35,7 @@ raze_always_inline _Simd_ __sin(const _Simd_& __x) noexcept
 {
     using _ValueType = typename _Simd_::value_type; 
 
-    if constexpr (std::is_same_v<_ValueType, float>) {
+    if constexpr (std::is_same_v<_ValueType, f32>) {
         const auto __x2 = __x * __x;
 
         _Simd_ __y = -0x1.9CC000p-13f;      // -1/7!
@@ -44,7 +44,7 @@ raze_always_inline _Simd_ __sin(const _Simd_& __x) noexcept
 
         return __y * (__x2 * __x) + __x;
     }
-    else if constexpr (std::is_same_v<_ValueType, double>) {
+    else if constexpr (std::is_same_v<_ValueType, f64>) {
         const auto __x2 = __x * __x;
 
         _Simd_ __y = -0x1.ACF0000000000p-41;        // -1/15!

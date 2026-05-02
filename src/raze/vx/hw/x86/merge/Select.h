@@ -2,7 +2,7 @@
 
 #include <src/raze/vx/hw/Cast.h>
 #include <src/raze/vx/hw/x86/bitwise/Ternarylogic.h>
-#include <src/raze/vx/hw/x86/mask/ToVector.h>
+#include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN 
@@ -78,7 +78,7 @@ struct _Select {
 		if constexpr (arithmetic_type<_Tp_>)
 			return __mask ? __x : __y;
 		else
-			return _Ternarylogic<_ISA_, _Type_>()(_To_vector<_ISA_, _Type_, _Tp_>(__mask), __x, __y, std::integral_constant<uint8, 0xca>{});
+			return _Ternarylogic<_ISA_, _Type_>()(_To_vector<_ISA_, _Type_, _Tp_>(__mask), __x, __y, std::integral_constant<u8, 0xca>{});
 	}
 };
 

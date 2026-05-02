@@ -11,17 +11,17 @@ constexpr raze_always_inline _Type_ clear_left_most_set(const _Type_ __value) {
 }
 
 template <typename _IntegralType_>
-constexpr raze_always_inline int count_trailing_zero_bits(_IntegralType_ __value) noexcept {
+constexpr raze_always_inline i32 count_trailing_zero_bits(_IntegralType_ __value) noexcept {
     return __count_trailing_zero_bits(__value);
 }
 
 template <typename _IntegralType_>
-constexpr raze_always_inline int count_leading_zero_bits(_IntegralType_ __value) noexcept {
+constexpr raze_always_inline i32 count_leading_zero_bits(_IntegralType_ __value) noexcept {
     return __count_leading_zero_bits(__value);
 }
  
 template <typename _IntegralType_>
-constexpr raze_always_inline int population_count(_IntegralType_ __value) noexcept {
+constexpr raze_always_inline i32 population_count(_IntegralType_ __value) noexcept {
     return __population_count(__value);
 }
 

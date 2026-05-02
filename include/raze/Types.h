@@ -20,34 +20,34 @@ using ushort    = unsigned short;
 using uint      = unsigned int;
 using ulong     = unsigned long;
 
-using int8      = signed char;			
-using uint8     = unsigned char;		
+using i8      = signed char;			
+using u8     = unsigned char;		
 
-using int16     = short;			
-using uint16    = unsigned short;		
+using i16     = short;			
+using u16    = unsigned short;		
 
-using int32     = int;					
-using uint32    = unsigned int;		
+using i32     = int;					
+using u32    = unsigned int;		
 
-using int64     = long long;		
-using uint64    = unsigned long long;
+using i64     = long long;		
+using u64    = unsigned long long;
 
-using longlong  = int64;
-using ulonglong = uint64;
+using longlong  = i64;
+using ulonglong = u64;
 
 using ulong32   = unsigned long;
 using long32    = long;
 
-using float32 = float;
-using float64 = double;
+using f32 = float;
+using f64 = double;
 
 template <int>      struct IntegerForSize;
 
-template <>         struct IntegerForSize<1> { typedef uint8  Unsigned; typedef int8  Signed; };
-template <>         struct IntegerForSize<2> { typedef uint16 Unsigned; typedef int16 Signed; };
+template <>         struct IntegerForSize<1> { typedef u8  Unsigned; typedef i8  Signed; };
+template <>         struct IntegerForSize<2> { typedef u16 Unsigned; typedef i16 Signed; };
 
-template <>         struct IntegerForSize<4> { typedef uint32 Unsigned; typedef int32 Signed; };
-template <>         struct IntegerForSize<8> { typedef uint64 Unsigned; typedef int64 Signed; };
+template <>         struct IntegerForSize<4> { typedef u32 Unsigned; typedef i32 Signed; };
+template <>         struct IntegerForSize<8> { typedef u64 Unsigned; typedef i64 Signed; };
 
 template <class T>  struct IntegerForSizeof : IntegerForSize<sizeof(T)> { };
 
@@ -60,17 +60,17 @@ using ptrdiff       = IntegerForSizeof<void*>::Signed;
 using intptr        = ptrdiff;
 using sizetype      = IntegerForSizeof<std::size_t>::Unsigned;
 
-using byte_t        = uint8;
-using sbyte_t       = int8;
+using byte_t        = u8;
+using sbyte_t       = i8;
 
-using word_t        = uint16;
-using sword_t       = int16;
+using word_t        = u16;
+using sword_t       = i16;
 
-using dword_t       = ulong32;
-using sdword_t      = long32;
+using dword_t       = u32;
+using sdword_t      = i32;
 
-using qword_t       = uint64;
-using sqword_t      = int64;
+using qword_t       = u64;
+using sqword_t      = i64;
 
 #if defined(raze_os_windows) 
   using system_bool_t = BOOL;

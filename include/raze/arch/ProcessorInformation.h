@@ -9,14 +9,14 @@ __RAZE_ARCH_NAMESPACE_BEGIN
 
 class ProcessorInformation {
 public:
-    raze_nodiscard raze_always_inline static uint32 hardware_concurrency() noexcept {
+    raze_nodiscard raze_always_inline static u32 hardware_concurrency() noexcept {
         return _processor_information_internal._logical_processors;
     }
 private:
     class ProcessorInformationInternal
     {
     public:
-        uint32 _logical_processors = 0;
+        u32 _logical_processors = 0;
 
         ProcessorInformationInternal() noexcept {
 #if defined(raze_os_win)
@@ -26,8 +26,8 @@ private:
             constexpr auto __length = 44;
 #  endif
 
-            uint8 __buffer[__length];
-            uint8* __information_buffer = reinterpret_cast<uint8*>(&__buffer);
+            u8 __buffer[__length];
+            u8* __information_buffer = reinterpret_cast<u8*>(&__buffer);
             
             dword_t __buffer_length = __length;
 
@@ -38,7 +38,7 @@ private:
                 const auto __information  = reinterpret_cast<PSYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX>(__information_buffer);
                 const auto __information_size = __information->Size;
 
-                for (int16 __current = 0; __current != __information->Processor.GroupCount; ++__current)
+                for (i16 __current = 0; __current != __information->Processor.GroupCount; ++__current)
                     _logical_processors += math::population_count(__information->Processor.GroupMask[__current].Mask);
 
                 __information_buffer += __information_size;

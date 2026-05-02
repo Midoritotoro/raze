@@ -88,7 +88,7 @@ struct _Div {
 				return _mm_set_epi64x(__left_1 / __y, __left_0 / __y);
 			}
 			else if constexpr (__is_epi32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<int32>(__y);
+				const auto __divisor_information = _Divisor<i32>(__y);
 				const auto __low_product = _mm_mul_epu32(__as<__m128i>(__x), __divisor_information.multiplier());
 
 				const auto __low_product_shifted = _mm_srli_epi64(__low_product, 32);
@@ -118,7 +118,7 @@ struct _Div {
 				return __as<_Tp_>(_mm_xor_si128(__quotient_value, __divisor_information.sign()));
 			}
 			else if constexpr (__is_epu32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<uint32>(__y);
+				const auto __divisor_information = _Divisor<u32>(__y);
 
 				const auto __low_product = _mm_mul_epu32(__as<__m128i>(__x), __divisor_information.multiplier());
 				const auto __low_product_shifted = _mm_srli_epi64(__low_product, 32);
@@ -137,7 +137,7 @@ struct _Div {
 				return __as<_Tp_>(_mm_srl_epi32(__biased_value, __divisor_information.shift2()));
 			}
 			else if constexpr (__is_epi16_v<_Type_>) {
-				const auto __divisor_information = _Divisor<int16>(__y);
+				const auto __divisor_information = _Divisor<i16>(__y);
 
 				const auto __high_half_product = _mm_mulhi_epi16(__as<__m128i>(__x), __divisor_information.multiplier());
 				const auto __sum_with_left_value = _mm_add_epi16(__high_half_product, __as<__m128i>(__x));
@@ -150,7 +150,7 @@ struct _Div {
 				return __as<_Tp_>(_mm_xor_si128(__adjusted_value, __divisor_information.sign()));
 			}
 			else if constexpr (__is_epu16_v<_Type_>) {
-				const auto __divisor_information = _Divisor<uint16>(__y);
+				const auto __divisor_information = _Divisor<u16>(__y);
 
 				const auto __high_half_product = _mm_mulhi_epu16(__as<__m128i>(__x), __divisor_information.multiplier());
 				const auto __difference_value = _mm_sub_epi16(__as<__m128i>(__x), __high_half_product);
@@ -164,8 +164,8 @@ struct _Div {
 				const auto __sign = _mm_cmpgt_epi8(_mm_setzero_si128(), __as<__m128i>(__x));
 				const auto __mask = _mm_set1_epi32(0x00FF00FF);
 
-				const auto __low = _Div<_ISA_, int16>()(_mm_unpacklo_epi8(__as<__m128i>(__x), __sign), __y);
-				const auto __high = _Div<_ISA_, int16>()(_mm_unpackhi_epi8(__as<__m128i>(__x), __sign), __y);
+				const auto __low = _Div<_ISA_, i16>()(_mm_unpacklo_epi8(__as<__m128i>(__x), __sign), __y);
+				const auto __high = _Div<_ISA_, i16>()(_mm_unpackhi_epi8(__as<__m128i>(__x), __sign), __y);
 
 				return __as<_Tp_>(_mm_packus_epi16(_mm_and_si128(__low, __mask), _mm_and_si128(__high, __mask)));
 			}
@@ -175,8 +175,8 @@ struct _Div {
 				const auto __low_part = _mm_unpacklo_epi8(__as<__m128i>(__x), _mm_setzero_si128());
 				const auto __high_part = _mm_unpackhi_epi8(__as<__m128i>(__x), _mm_setzero_si128());
 
-				const auto __low = _Div<_ISA_, uint16>()(__low_part, __y);
-				const auto __high = _Div<_ISA_, uint16>()(__high_part, __y);
+				const auto __low = _Div<_ISA_, u16>()(__low_part, __y);
+				const auto __high = _Div<_ISA_, u16>()(__high_part, __y);
 
 				return __as<_Tp_>(_mm_packus_epi16(_mm_and_si128(__low, __mask), _mm_and_si128(__high, __mask)));
 			}
@@ -186,7 +186,7 @@ struct _Div {
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_div_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
 			else if constexpr (__has_avx2_support_v<_ISA_>) {
 				if constexpr (__is_epi32_v<_Type_>) {
-					const auto __divisor_information = _Divisor<int32>(__y);
+					const auto __divisor_information = _Divisor<i32>(__y);
 
 					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
 					const auto __sign_broadcast = _mm256_broadcastq_epi64(__divisor_information.sign());
@@ -210,7 +210,7 @@ struct _Div {
 					return __as<_Tp_>(_mm256_xor_si256(__adjusted_value, __sign_broadcast));
 				}
 				else if constexpr (__is_epu32_v<_Type_>) {
-					const auto __divisor_information = _Divisor<uint32>(__y);
+					const auto __divisor_information = _Divisor<u32>(__y);
 
 					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
 					const auto __low_half_product = _mm256_mul_epu32(__as<__m256i>(__x), __multiplier_broadcast);
@@ -228,7 +228,7 @@ struct _Div {
 					return __as<_Tp_>(_mm256_srl_epi32(__biased_value, __divisor_information.shift2()));
 				}
 				else if constexpr (__is_epi16_v<_Type_>) {
-					const auto __divisor_information = _Divisor<int16>(__y);
+					const auto __divisor_information = _Divisor<i16>(__y);
 
 					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
 					const auto __sign_broadcast = _mm256_broadcastq_epi64(__divisor_information.sign());
@@ -245,7 +245,7 @@ struct _Div {
 					return __as<_Tp_>(_mm256_xor_si256(__adjusted_value, __sign_broadcast));
 				}
 				else if constexpr (__is_epu16_v<_Type_>) {
-					const auto __divisor_information = _Divisor<uint16>(__y);
+					const auto __divisor_information = _Divisor<u16>(__y);
 
 					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
 					const auto __high_half_product = _mm256_mulhi_epu16(__as<__m256i>(__x), __multiplier_broadcast);
@@ -269,8 +269,8 @@ struct _Div {
 					const auto __low = _mm256_unpacklo_epi8(__shuffled_low, __sign_low);
 					const auto __high = _mm256_unpackhi_epi8(__shuffled_high, __sign_high);
 
-					const auto __divided_low = _Div<arch::ISA::AVX2, int16>()(__low, __y);
-					const auto __divided_high = _Div<arch::ISA::AVX2, int16>()(__high, __y);
+					const auto __divided_low = _Div<arch::ISA::AVX2, i16>()(__low, __y);
+					const auto __divided_high = _Div<arch::ISA::AVX2, i16>()(__high, __y);
 
 					const auto __low_mask = _mm256_and_si256(__divided_low, __and_mask);
 					const auto __high_mask = _mm256_and_si256(__divided_high, __and_mask);
@@ -287,8 +287,8 @@ struct _Div {
 					const auto __low = _mm256_unpacklo_epi8(__shuffled_low, __zeros);
 					const auto __high = _mm256_unpackhi_epi8(__shuffled_high, __zeros);
 
-					const auto __divided_low = _Div<arch::ISA::AVX2, int16>()(__low, __y);
-					const auto __divided_high = _Div<arch::ISA::AVX2, int16>()(__high, __y);
+					const auto __divided_low = _Div<arch::ISA::AVX2, i16>()(__low, __y);
+					const auto __divided_high = _Div<arch::ISA::AVX2, i16>()(__high, __y);
 
 					const auto __low_mask = _mm256_and_si256(__divided_low, __and_mask);
 					const auto __high_mask = _mm256_and_si256(__divided_high, __and_mask);
@@ -299,7 +299,7 @@ struct _Div {
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
 			if constexpr (__is_epi32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<int32>(__y);
+				const auto __divisor_information = _Divisor<i32>(__y);
 
 				const auto __multiplier_broadcast = _mm512_broadcast_i32x4(__divisor_information.multiplier());
 				const auto __sign_broadcast = _mm512_broadcast_i32x4(__divisor_information.sign());
@@ -322,7 +322,7 @@ struct _Div {
 				return __as<_Tp_>(_mm512_xor_si512(__adjusted_value, __sign_broadcast));
 			}
 			else if constexpr (__is_epu32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<uint32>(__y);
+				const auto __divisor_information = _Divisor<u32>(__y);
 
 				const auto __multiplier_broadcast = _mm512_broadcast_i32x4(__divisor_information.multiplier());
 				const auto __low_half_product = _mm512_mul_epu32(__as<__m512i>(__x), __multiplier_broadcast);

@@ -20,7 +20,7 @@ struct __thread_type {
     dword_t __id = 0;
 };
 
-enum class __thread_result: uint8 {
+enum class __thread_result: u8 {
     __error,
     __success
 };
@@ -49,7 +49,7 @@ __thread_result __wait_for_thread(void* __handle) noexcept {
     return __thread_result::__success;
 }
 
-int __thread_priority(void* __handle) noexcept {
+i32 __thread_priority(void* __handle) noexcept {
     return GetThreadPriority(__handle);
 }
 
@@ -60,7 +60,7 @@ void __current_thread_sleep(dword_t __milliseconds) noexcept {
 template <
     class           _Tuple_,
     sizetype ...    _Indices_>
-uint32 raze_stdcall __thread_task_invoke(void* __raw) noexcept {
+u32 raze_stdcall __thread_task_invoke(void* __raw) noexcept {
     const std::unique_ptr<_Tuple_> __args(static_cast<_Tuple_*>(__raw));
 
     _Tuple_& __tuple = *__args.get();
@@ -99,7 +99,7 @@ __thread_type raze_stdcall __create_thread(
     __result.__handle = reinterpret_cast<HANDLE>(
         _beginthreadex(
             nullptr, __stack_size, __invoker, __decay_copied.get(), __creation,
-            reinterpret_cast<uint32*>(&__thread_id)
+            reinterpret_cast<u32*>(&__thread_id)
         )
     );
 #else
@@ -144,7 +144,7 @@ dword_t raze_stdcall __terminate_thread(void* __handle) noexcept {
 
 void raze_stdcall __set_thread_priority(
     void*   __handle,
-    int     __priority) noexcept 
+    i32    __priority) noexcept 
 {
     if (!SetThreadPriority(__handle, __priority)) {
         raze_assert_log(false, "raze::concurrency::__set_thread_priority: Failed to set thread priority.");

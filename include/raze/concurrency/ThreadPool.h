@@ -20,7 +20,7 @@ public:
 	_ThreadPoolExecutor(_Task_& task) noexcept;
 
 	void submit() noexcept;
-	void submitForChunks(uint32 submissions) noexcept;
+	void submitForChunks(u32 submissions) noexcept;
 
 	template <class _Task_> 
 	void createTask(_Task_& task) noexcept;
@@ -44,8 +44,8 @@ void _ThreadPoolExecutor::submit() noexcept {
 	implementation::__submit(_work);
 }
 
-void _ThreadPoolExecutor::submitForChunks(uint32 __submissions) noexcept {
-	for (auto __current = uint32(0); __current < __submissions; ++__current)
+void _ThreadPoolExecutor::submitForChunks(u32 __submissions) noexcept {
+	for (auto __current = u32(0); __current < __submissions; ++__current)
 		implementation::__submit(_work);
 }
 

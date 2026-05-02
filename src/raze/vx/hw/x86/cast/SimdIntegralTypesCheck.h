@@ -11,9 +11,9 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <
-    int32 __first_,
-    int32 _Second_>
-static constexpr int32 __constexpr_max() noexcept {
+    i32 __first_,
+    i32 _Second_>
+static constexpr i32 __constexpr_max() noexcept {
     return (__first_ > _Second_) ? __first_ : _Second_;
 }
 
@@ -24,7 +24,7 @@ class simd;
 
 template <
 	arch::ISA	_ISA_, 
-	uint32		_Width_> 
+	u32		_Width_> 
 constexpr bool __is_width_for_generation_v = __vector_default_size<_ISA_> >= _Width_;
 
 template <class _Type_>
@@ -80,10 +80,10 @@ template <typename _Element_>
 constexpr bool __is_epu8_v  = sizeof(_Element_) == 1 && std::is_unsigned_v<_Element_> && !std::is_floating_point_v<_Element_>;
 
 template <typename _Element_>
-constexpr bool __is_pd_v    = sizeof(_Element_) == 8 && type_traits::is_any_of_v<_Element_, double, long double>;
+constexpr bool __is_pd_v    = sizeof(_Element_) == 8 && type_traits::is_any_of_v<_Element_, f64, long double>;
 
 template <typename _Element_>
-constexpr bool __is_ps_v    = sizeof(_Element_) == 4 && std::is_same_v<_Element_, float>;
+constexpr bool __is_ps_v    = sizeof(_Element_) == 4 && std::is_same_v<_Element_, f32>;
 
 #if !defined(__verify_simd_width) 
 #  define __verify_simd_width(_Generation_, _Width_) \
@@ -127,8 +127,8 @@ struct __vector_element_t {
 template <class _VectorType_>
 struct __vector_element_t<_VectorType_, false, true> {
     using type = std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128i, __m256i, __m512i>, int, 
-		std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128d, __m256d, __m512d>, double, 
-			std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128, __m256, __m512>, float, void>>>;
+		std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128d, __m256d, __m512d>, f64, 
+			std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128, __m256, __m512>, f32, void>>>;
 };
 
 template <class _VectorType_>

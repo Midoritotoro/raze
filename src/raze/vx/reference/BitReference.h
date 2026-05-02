@@ -15,7 +15,7 @@ public:
 
 	using value_type = bool;
 
-	_Bit_reference(_Type_& __value, int32 __i) noexcept :
+	_Bit_reference(_Type_& __value, i32 __i) noexcept :
 		_reference(__value),
 		_index(__i)
 	{}
@@ -68,12 +68,12 @@ public:
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Bit_reference operator>>=(int32 __shift) && noexcept {
+	raze_always_inline _Bit_reference operator>>=(i32 __shift) && noexcept {
 		__write(__read() >> __shift);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Bit_reference operator<<=(int32 __shift) && noexcept {
+	raze_always_inline _Bit_reference operator<<=(i32 __shift) && noexcept {
 		__write(__read() << __shift);
 		return { _reference, _index };
 	}
@@ -142,7 +142,7 @@ private:
 	}
 
 	_Type_& _reference;
-	int32 _index = 0;
+	i32 _index = 0;
 };
 
 __RAZE_VX_NAMESPACE_END

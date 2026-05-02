@@ -1,13 +1,13 @@
 #pragma once 
 
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 #include <src/raze/math/MathConstants.h>
 #include <src/raze/math/SinTables.h>
 
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-constexpr raze_always_inline float __cos(float __x) noexcept {
+constexpr raze_always_inline f32 __cos(f32 __x) noexcept {
     constexpr auto __sine_table_size = 256;
 
     const auto __ci = int(__x * (0.5f * __sine_table_size / M_PI)) & (__sine_table_size - 1);
@@ -18,7 +18,7 @@ constexpr raze_always_inline float __cos(float __x) noexcept {
     return __sine_table[__si] - (__sine_table[__ci] + 0.5f * __sine_table[__si] * __d) * __d;
 }
 
-constexpr raze_always_inline double __cos(double __x) noexcept {
+constexpr raze_always_inline f64 __cos(f64 __x) noexcept {
     constexpr auto __sine_table_size = 256;
 
     const auto __ci = int(__x * (0.5 * __sine_table_size / M_PI)) & (__sine_table_size - 1);
@@ -35,7 +35,7 @@ raze_always_inline _Simd_ __cos(const _Simd_& __x) noexcept
 {
     using _ValueType = typename _Simd_::value_type;
 
-    if constexpr (std::is_same_v<_ValueType, float>) {
+    if constexpr (std::is_same_v<_ValueType, f32>) {
         const auto __x2 = __x * __x;
 
         _Simd_ __y = 0x1.ap-16f;            //  1/8!
@@ -44,7 +44,7 @@ raze_always_inline _Simd_ __cos(const _Simd_& __x) noexcept
 
         return __y * (__x2 * __x2) - .5f * __x2 + 1.f;
     }
-    else if constexpr (std::is_same_v<_ValueType, double>) {
+    else if constexpr (std::is_same_v<_ValueType, f64>) {
         const auto __x2 = __x * __x;
 
         _Simd_ __y = 0x1.AC00000000000p-45;         //  1/16!

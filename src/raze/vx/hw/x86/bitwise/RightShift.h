@@ -8,7 +8,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <arch::ISA	_ISA_, arithmetic_type _Type_>
 struct _Right_shift {
 	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, uint32 __shift) const noexcept {
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, u32 __shift) const noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_>) {
 				if constexpr (__has_avx512vl_support_v<_ISA_>) return __as<_Tp_>(_mm_sra_epi64(__as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
@@ -22,7 +22,7 @@ struct _Right_shift {
 						__low_shifted = _mm_srl_epi64(__as<__m128i>(__x), __shift_vector);
 					}
 					else {
-						const auto __shift_vector = _mm_cvtsi32_si128(static_cast<int32>(__shift) - 32);
+						const auto __shift_vector = _mm_cvtsi32_si128(static_cast<i32>(__shift) - 32);
 						__high_shifted = _mm_srai_epi32(__as<__m128i>(__x), 31);
 						__low_shifted = _mm_srli_epi64(_mm_sra_epi32(__as<__m128i>(__x), __shift_vector), 32);
 					}
@@ -135,7 +135,7 @@ struct _Right_shift {
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, uint32 __shift, _Mask_ __mask) const noexcept {
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, u32 __shift, _Mask_ __mask) const noexcept {
 		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_maskz_sra_epi64(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_maskz_srl_epi64(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
@@ -171,7 +171,7 @@ struct _Right_shift {
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, uint32 __shift, _Mask_ __mask, _Tp_ __src) const noexcept {
+	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, u32 __shift, _Mask_ __mask, _Tp_ __src) const noexcept {
 		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_mask_sra_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_mask_srl_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));

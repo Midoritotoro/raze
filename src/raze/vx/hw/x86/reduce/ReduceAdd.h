@@ -17,10 +17,10 @@ struct _Reduce_add {
             if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 #if defined(raze_processor_x86_32)
                 return static_cast<_ReduceType>(_mm_cvtsi128_si32(__as<__m128i>(__x)) +
-                    _Extract<arch::ISA::SSE2, int32>()(__x, 2));
+                    _Extract<arch::ISA::SSE2, i32>()(__x, 2));
 #else 
                 return static_cast<_ReduceType>(_mm_cvtsi128_si64(__as<__m128i>(__x)) +
-                    _Extract<arch::ISA::SSE2, int64>()(__x, 1));
+                    _Extract<arch::ISA::SSE2, i64>()(__x, 1));
 #endif // defined(raze_processor_x86_32)
             }
             else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
@@ -69,10 +69,10 @@ struct _Reduce_add {
                 const auto __first_reduce = _mm_sad_epu8(__as<__m128i>(__x), _mm_setzero_si128());
 #if defined(raze_processor_x86_32)
                 return static_cast<_ReduceType>(_mm_cvtsi128_si32(__first_reduce)
-                    + _Extract<arch::ISA::SSE2, int32>()(__first_reduce, 2));
+                    + _Extract<arch::ISA::SSE2, i32>()(__first_reduce, 2));
 #else
                 return static_cast<_ReduceType>(_mm_cvtsi128_si64(__as<__m128i>(__first_reduce))
-                    + _Extract<arch::ISA::SSE2, int64>()(__first_reduce, 1));
+                    + _Extract<arch::ISA::SSE2, i64>()(__first_reduce, 1));
 #endif // defined(raze_processor_x86_32)
             }
             else if constexpr (__is_ps_v<_Type_>) {
@@ -134,7 +134,7 @@ struct _Reduce_add {
                     const auto __high64 = _mm256_extracti128_si256(__reduce1, 1);
 
                     const auto __reduce8 = _mm_add_epi64(__low64, __high64);
-                    return _Reduce_add<arch::ISA::SSSE3, int64>()(__reduce8);
+                    return _Reduce_add<arch::ISA::SSSE3, i64>()(__reduce8);
                 }
             }
             else {

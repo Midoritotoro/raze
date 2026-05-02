@@ -1,17 +1,17 @@
 #pragma once 
 
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 #include <src/raze/math/MathConstants.h>
 #include <src/raze/math/SinTables.h>
 
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-constexpr raze_always_inline float __cotan(float __x) noexcept {
+constexpr raze_always_inline f32 __cotan(f32 __x) noexcept {
 
 }
 
-constexpr raze_always_inline double __cotan(double __x) noexcept {
+constexpr raze_always_inline f64 __cotan(f64 __x) noexcept {
 
 }
 
@@ -21,10 +21,10 @@ raze_always_inline _Simd_ __cotan(const _Simd_& __x) noexcept
 {
     using _ValueType = typename _Simd_::value_type;
 
-    if constexpr (std::is_same_v<_ValueType, float>) {
+    if constexpr (std::is_same_v<_ValueType, f32>) {
 
     }
-    else if constexpr (std::is_same_v<_ValueType, double>) {
+    else if constexpr (std::is_same_v<_ValueType, f64>) {
 
     }
 }

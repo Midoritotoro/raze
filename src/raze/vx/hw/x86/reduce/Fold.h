@@ -7,7 +7,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <
     arch::ISA	_ISA_,
-    uint32		_Width_,
+    u32		_Width_,
     class		_Type_>
 struct _Fold;
 

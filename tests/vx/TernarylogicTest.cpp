@@ -1,5 +1,5 @@
 #include <tests/vx/SimdTestTools.h>
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 
 template<class Simd, class Mask, class T, size_t N, raze::uint8 _TernaryMask_>
 void __test_ternarylogic_single_mask() {

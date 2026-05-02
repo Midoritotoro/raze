@@ -9,24 +9,24 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <arch::ISA _ISA_, intrin_type _Intrin_, arithmetic_type _Type_>
 struct _All_of {
 	template <raw_mask_type _Tp_>
-	raze_nodisard raze_always_inline bool operator()(_Tp_ __x) const noexcept {
+	raze_nodiscard raze_always_inline bool operator()(_Tp_ __x) const noexcept {
 		constexpr auto __size = sizeof(_Intrin_) / sizeof(_Type_);
 
 		if constexpr (intrin_type<_Tp_>) {
 			if constexpr (sizeof(_Tp_) == 16) {
-				if constexpr (__has_sse41_support_v<_ISA_>) return _mm_testc_si128(__as<__m128i>(__vector), __as<__m128i>(_Equal<_ISA_, int64>()(__vector, __vector)));
+				if constexpr (__has_sse41_support_v<_ISA_>) return _mm_testc_si128(__as<__m128i>(__x), __as<__m128i>(_Equal<_ISA_, i64>()(__x, __x)));
 				else {
-					const auto __all_ones = _Equal<arch::ISA::SSE2, int32>()(__vector, __vector);
-					const auto __compared = _Equal<arch::ISA::SSE2, int32>()(__vector, __all_ones);
+					const auto __all_ones = _Equal<arch::ISA::SSE2, i32>()(__x, __x);
+					const auto __compared = _Equal<arch::ISA::SSE2, i32>()(__x, __all_ones);
 
-					return _To_bitmask<arch::ISA::SSE2, int32>()(__compared) == 0xF;
+					return _To_bitmask<arch::ISA::SSE2, i32>()(__compared) == 0xF;
 				}
 			}
 			else if constexpr (sizeof(_Tp_) == 32) {
-				return _mm256_testc_si256(__as<__m256i>(__vector), _All_ones<_ISA_, __m256i>()());
+				return _mm256_testc_si256(__as<__m256i>(__x), _All_ones<_ISA_, __m256i>()());
 			}
 			else if constexpr (sizeof(_Tp_) == 64) {
-				return _Equal<_ISA_, int32>()(__x, _All_ones<_ISA_, _Tp_>()()) == 0xFFFF;
+				return _Equal<_ISA_, i32>()(__x, _All_ones<_ISA_, _Tp_>()()) == 0xFFFF;
 			}
 		}
 		else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
@@ -34,25 +34,25 @@ struct _All_of {
 				? math::__maximum_integral_limit<_Tp_>() : _Tp_(((_Tp_(1) << __size) - 1));
 
 			if constexpr (__size < 8 && __has_avx512dq_support_v<_ISA_>)
-				return _ktestc_mask8_u8(__mask, _cvtu32_mask8(__max_for_bits));
+				return _ktestc_mask8_u8(__x, _cvtu32_mask8(__max_for_bits));
 
 			else if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)
-				return _kortestc_mask8_u8(__mask, __mask);
+				return _kortestc_mask8_u8(__x, __x);
 
 			else if constexpr (sizeof(_Tp_) == 2 && __has_avx512f_support_v<_ISA_>)
-				return _kortestc_mask16_u8(__mask, __mask);
+				return _kortestc_mask16_u8(__x, __x);
 
 			else if constexpr (sizeof(_Tp_) == 4 && __has_avx512bw_support_v<_ISA_>)
-				return _kortestc_mask32_u8(__mask, __mask);
+				return _kortestc_mask32_u8(__x, __x);
 
 			else if constexpr (sizeof(_Tp_) == 8 && __has_avx512bw_support_v<_ISA_>)
-				return _kortestc_mask64_u8(__mask, __mask);
+				return _kortestc_mask64_u8(__x, __x);
 
 			else
-				return (__mask == __max_for_bits);
+				return (__x == __max_for_bits);
 		}
 		else {
-			return __mask;
+			return __x;
 		}
 	}
 };

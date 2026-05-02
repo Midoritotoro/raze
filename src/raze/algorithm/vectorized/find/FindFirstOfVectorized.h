@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -64,7 +64,7 @@ private:
 		return __find_first_of_scalar<_ValueType>(__first1, __last1, __first2, __last2);
 	}
 
-	template <uint64 ... _Indices_>
+	template <u64 ... _Indices_>
 	raze_nodiscard static __raze_simd_algorithm_inline const _ValueType* __find_first_of_small_size(
 		sizetype	__aligned_size,
 		sizetype	__tail_size,

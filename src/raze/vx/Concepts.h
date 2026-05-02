@@ -1,8 +1,7 @@
 #pragma once 
 
 #include <raze/vx/Abi.h>
-#include <raze/vx/SimdBitmask.h>
-#include <raze/vx/BasicSimdMask.h>
+#include <raze/vx/Mask.h>
 #include <src/raze/vx/expression/IsConstWhere.h>
 #include <src/raze/vx/expression/IsWhere.h>
 #include <src/raze/vx/expression/IsConstWhereZero.h>
@@ -40,7 +39,10 @@ template <class _Type_>
 concept simd_or_arithmetic_type = simd_type<_Type_> || arithmetic_type<_Type_>;
 
 template <class _SimdMask_>
-concept simd_mask_type = __is_simd_mask_v<_SimdMask_> || __is_simd_mask_bits_v<_SimdMask_>;
+concept simd_mask_type = __is_simd_mask_v<_SimdMask_>;
+
+template <class _SimdOrMask_>
+concept simd_or_mask_type = simd_mask_type<_SimdOrMask_> || simd_type<_SimdOrMask_>;
 
 template <class _AlignmentPolicy_>
 concept alignment_policy_type = requires {

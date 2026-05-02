@@ -9,8 +9,8 @@ template <
     sizetype _HorizontalSize_,
     sizetype _Alignment_>
 struct _Compress_tables {
-    alignas(_Alignment_) uint8 __size[_VerticalSize_];
-    alignas(_Alignment_) uint8 __shuffle[_VerticalSize_][_HorizontalSize_];
+    alignas(_Alignment_) u8 __size[_VerticalSize_];
+    alignas(_Alignment_) u8 __shuffle[_VerticalSize_][_HorizontalSize_];
 };
 
 template <
@@ -18,30 +18,30 @@ template <
     sizetype _HorizontalSize_,
     sizetype _Alignment_>
 constexpr auto __make_compress_tables(
-    const uint32 __multiplier,
-    const uint32 __element_group_stride) noexcept
+    const u32 __multiplier,
+    const u32 __element_group_stride) noexcept
 {
     auto __result = _Compress_tables<_VerticalSize_, _HorizontalSize_, _Alignment_>();
 
-    for (auto __vertical_index = uint32(0); __vertical_index != _VerticalSize_; ++__vertical_index) {
-        auto __active_group_count = uint32(0);
+    for (auto __vertical_index = u32(0); __vertical_index != _VerticalSize_; ++__vertical_index) {
+        auto __active_group_count = u32(0);
 
-        for (auto __horizontal_index = uint32(0); __horizontal_index != _HorizontalSize_ / __element_group_stride; ++__horizontal_index) {
+        for (auto __horizontal_index = u32(0); __horizontal_index != _HorizontalSize_ / __element_group_stride; ++__horizontal_index) {
             if ((__vertical_index & (1 << __horizontal_index)) == 0) {
-                for (auto __element_offset = uint32(0); __element_offset != __element_group_stride; ++__element_offset)
+                for (auto __element_offset = u32(0); __element_offset != __element_group_stride; ++__element_offset)
                     __result.__shuffle[__vertical_index][__active_group_count * __element_group_stride + __element_offset] =
-                        static_cast<uint8>(__horizontal_index * __element_group_stride + __element_offset);
+                        static_cast<u8>(__horizontal_index * __element_group_stride + __element_offset);
 
                 ++__active_group_count;
             }
         }
 
-        __result.__size[__vertical_index] = static_cast<uint8>(__active_group_count * __multiplier);
+        __result.__size[__vertical_index] = static_cast<u8>(__active_group_count * __multiplier);
 
         for (; __active_group_count != _HorizontalSize_ / __element_group_stride; ++__active_group_count)
-            for (auto __element_offset = uint32(0); __element_offset != __element_group_stride; ++__element_offset)
+            for (auto __element_offset = u32(0); __element_offset != __element_group_stride; ++__element_offset)
                 __result.__shuffle[__vertical_index][__active_group_count * __element_group_stride + __element_offset] =
-                    static_cast<uint8>(__active_group_count * __element_group_stride + __element_offset);
+                    static_cast<u8>(__active_group_count * __element_group_stride + __element_offset);
     }
 
     return __result;

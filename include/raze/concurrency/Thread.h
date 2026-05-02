@@ -137,7 +137,7 @@ public:
      *        доступных на текущей системе.
      * @return Количество аппаратных потоков.
      */
-    raze_nodiscard raze_always_inline static uint32 hardware_concurrency() noexcept;
+    raze_nodiscard raze_always_inline static u32 hardware_concurrency() noexcept;
 
     /**
      * @brief Возвращает системный дескриптор потока.
@@ -257,7 +257,7 @@ bool thread::is_current_thread() const noexcept {
     return (concurrency::__current_thread_id() == _id.id());
 }
 
-uint32 thread::hardware_concurrency() noexcept {
+u32 thread::hardware_concurrency() noexcept {
     return arch::ProcessorInformation::hardware_concurrency();
 }
 

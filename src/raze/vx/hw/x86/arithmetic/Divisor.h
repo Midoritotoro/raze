@@ -12,18 +12,18 @@ template <class	_Type_>
 class _Divisor;
 
 template <>
-class _Divisor<int32> {
+class _Divisor<i32> {
 public:
 	_Divisor() noexcept = default;
 
-	_Divisor(int32 __divisor) noexcept {
+	_Divisor(i32 __divisor) noexcept {
 		__from_divisor(__divisor);
 	}
 
 	_Divisor(
-		int32 __multiplier,
-		int32 __shift,
-		int32 __sign) noexcept
+		i32 __multiplier,
+		i32 __shift,
+		i32 __sign) noexcept
 	{
 		__init(__multiplier, __shift, __sign);
 	}
@@ -40,20 +40,20 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(int32 __divisor) noexcept {
-		auto __shift = int32(0), __multiplier = int32(0);
+	raze_always_inline void __from_divisor(i32 __divisor) noexcept {
+		auto __shift = i32(0), __multiplier = i32(0);
 		const auto __absolute_divisor = std::abs(__divisor);
 
-		if (static_cast<uint32>(__divisor) == 0x80000000u) {
+		if (static_cast<u32>(__divisor) == 0x80000000u) {
 			__multiplier = 0x80000001;
 			__shift = 30;
 		}
 		else if (__absolute_divisor > 1) {
 			ulong32 __leading_zeros;
-			_BitScanReverse(&__leading_zeros, static_cast<uint32>(__absolute_divisor - 1));
+			_BitScanReverse(&__leading_zeros, static_cast<u32>(__absolute_divisor - 1));
 
 			__shift = __leading_zeros;
-			__multiplier = int32((int64(1) << (32 + __shift)) / __absolute_divisor - ((int64(1) << 32) - 1));
+			__multiplier = i32((i64(1) << (32 + __shift)) / __absolute_divisor - ((i64(1) << 32) - 1));
 		}
 		else {
 			__multiplier = 1;
@@ -67,9 +67,9 @@ private:
 	}
 
 	raze_always_inline void __init(
-		int32 __multiplier,
-		int32 __shift,
-		int32 __sign) noexcept 
+		i32 __multiplier,
+		i32 __shift,
+		i32 __sign) noexcept 
 	{
 		_multiplier = _mm_set1_epi32(__multiplier);
 		_sign		= _mm_set1_epi32(__sign);
@@ -82,18 +82,18 @@ private:
 };
 
 template <>
-class _Divisor<uint32> {
+class _Divisor<u32> {
 public:
 	_Divisor() noexcept = default;
 
-	_Divisor(uint32 __divisor) noexcept {
+	_Divisor(u32 __divisor) noexcept {
 		__from_divisor(__divisor);
 	}
 
 	_Divisor(
-		uint32 __multiplier,
-		int32 __shift1,
-		int32 __shift2) noexcept
+		u32 __multiplier,
+		i32 __shift1,
+		i32 __shift2) noexcept
 	{
 		__init(__multiplier, __shift1, __shift2);
 	}
@@ -110,10 +110,10 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(uint32 __divisor) noexcept {
-		auto __shift1		= uint32(0);
-		auto __shift2		= uint32(0);
-		auto __multiplier	= uint32(0);
+	raze_always_inline void __from_divisor(u32 __divisor) noexcept {
+		auto __shift1		= u32(0);
+		auto __shift2		= u32(0);
+		auto __multiplier	= u32(0);
 
 		switch (__divisor) {
 			case 0:
@@ -131,10 +131,10 @@ private:
 			default:
 				{
 					ulong32 __leading_zeros;
-					_BitScanReverse(&__leading_zeros, static_cast<uint32>(__divisor - 1u));
+					_BitScanReverse(&__leading_zeros, static_cast<u32>(__divisor - 1u));
 					++__leading_zeros;
 
-					__multiplier = 1 + uint32((uint64(uint32(
+					__multiplier = 1 + u32((u64(u32(
 						__leading_zeros < 32 ? 1 << __leading_zeros : 0) - __divisor) << 32) / __divisor);
 
 					__shift1 = 1; 
@@ -146,11 +146,11 @@ private:
 	}
 
 	raze_always_inline void __init(
-		uint32 __multiplier,
-		int32 __shift1,
-		int32 __shift2) noexcept
+		u32 __multiplier,
+		i32 __shift1,
+		i32 __shift2) noexcept
 	{
-		_multiplier = _mm_set1_epi32(static_cast<int32>(__multiplier));
+		_multiplier = _mm_set1_epi32(static_cast<i32>(__multiplier));
 		_shift1		= _mm_set_epi32(0, 0, 0, __shift1);
 		_shift2		= _mm_set_epi32(0, 0, 0, __shift2);
 	}
@@ -161,18 +161,18 @@ private:
 };
 
 template <>
-class _Divisor<int16> {
+class _Divisor<i16> {
 public:
 	_Divisor() noexcept = default;
 
-	_Divisor(int16 __divisor) noexcept {
+	_Divisor(i16 __divisor) noexcept {
 		__from_divisor(__divisor);
 	}
 
 	_Divisor(
-		int16 __multiplier,
-		int16 __shift,
-		int16 __sign) noexcept
+		i16 __multiplier,
+		i16 __shift,
+		i16 __sign) noexcept
 	{
 		__init(__multiplier, __shift, __sign);
 	}
@@ -189,20 +189,20 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(int16 __divisor) noexcept {
-		auto __shift = int16(0), __multiplier = int16(0);
+	raze_always_inline void __from_divisor(i16 __divisor) noexcept {
+		auto __shift = i16(0), __multiplier = i16(0);
 		const auto __absolute_divisor = std::abs(__divisor);
 
-		if (static_cast<int16>(__divisor) == 0x8000u) {
-			__multiplier = int16(0x8001);
+		if (static_cast<i16>(__divisor) == 0x8000u) {
+			__multiplier = i16(0x8001);
 			__shift = 14;
 		}
 		else if (__absolute_divisor > 1) {
 			ulong32 __leading_zeros;
-			_BitScanReverse(&__leading_zeros, static_cast<uint16>(__absolute_divisor - 1));
+			_BitScanReverse(&__leading_zeros, static_cast<u16>(__absolute_divisor - 1));
 
 			__shift = __leading_zeros;
-			__multiplier = int32((int32(1) << (16 + __shift)) / __absolute_divisor - ((int64(1) << 16) - 1));
+			__multiplier = i32((i32(1) << (16 + __shift)) / __absolute_divisor - ((i64(1) << 16) - 1));
 		}
 		else {
 			__multiplier = 1;
@@ -216,9 +216,9 @@ private:
 	}
 
 	raze_always_inline void __init(
-		int16 __multiplier,
-		int16 __shift,
-		int16 __sign) noexcept
+		i16 __multiplier,
+		i16 __shift,
+		i16 __sign) noexcept
 	{
 		_multiplier = _mm_set1_epi16(__multiplier);
 		_sign		= _mm_set1_epi32(__sign);
@@ -231,18 +231,18 @@ private:
 };
 
 template <>
-class _Divisor<uint16> {
+class _Divisor<u16> {
 public:
 	_Divisor() noexcept = default;
 
-	_Divisor(uint16 __divisor) noexcept {
+	_Divisor(u16 __divisor) noexcept {
 		__from_divisor(__divisor);
 	}
 
 	_Divisor(
-		uint16 __multiplier,
-		int32  __shift1,
-		int32  __shift2) noexcept
+		u16 __multiplier,
+		i32  __shift1,
+		i32  __shift2) noexcept
 	{
 		__init(__multiplier, __shift1, __shift2);
 	}
@@ -259,10 +259,10 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(uint16 __divisor) noexcept {
-		auto __shift1		= uint16(0);
-		auto __shift2		= uint16(0);
-		auto __multiplier	= uint16(0);
+	raze_always_inline void __from_divisor(u16 __divisor) noexcept {
+		auto __shift1		= u16(0);
+		auto __shift2		= u16(0);
+		auto __multiplier	= u16(0);
 
 		switch (__divisor) {
 			case 0:
@@ -278,12 +278,12 @@ private:
 			default:
 				{
 					ulong32 __leading_zeros;
-					_BitScanReverse(&__leading_zeros, static_cast<uint16>(__divisor - 1u));
+					_BitScanReverse(&__leading_zeros, static_cast<u16>(__divisor - 1u));
 					++__leading_zeros;
 
-					const auto __power = uint16(1 << __leading_zeros);
+					const auto __power = u16(1 << __leading_zeros);
 
-					__multiplier = 1u + uint16((uint32(__power - __divisor) << 16) / __divisor);
+					__multiplier = 1u + u16((u32(__power - __divisor) << 16) / __divisor);
 					__shift1 = 1; 
 					__shift2 = __leading_zeros - 1;
 				}
@@ -293,11 +293,11 @@ private:
 	}
 
 	raze_always_inline void __init(
-		uint32 __multiplier,
-		int32 __shift1,
-		int32 __shift2) noexcept
+		u32 __multiplier,
+		i32 __shift1,
+		i32 __shift2) noexcept
 	{
-		_multiplier = _mm_set1_epi16(static_cast<int16>(__multiplier));
+		_multiplier = _mm_set1_epi16(static_cast<i16>(__multiplier));
 		_shift1		= _mm_setr_epi32(__shift1, 0, 0, 0);
 		_shift2		= _mm_setr_epi32(__shift2, 0, 0, 0);
 	}

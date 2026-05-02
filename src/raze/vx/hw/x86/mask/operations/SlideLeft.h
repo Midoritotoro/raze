@@ -12,16 +12,16 @@ struct _Mask_slide_left {
 	static constexpr auto __size = sizeof(_Intrin_) / sizeof(_Type_);
 
 	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, int32 __shift) raze_const_operator noexcept {
+	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, i32 __shift) raze_const_operator noexcept {
 		if constexpr (intrin_type<_Tp_>)
 			return _Slide_left<_ISA_, _Type_>()(__x, __shift);
 		else
 			return (__shift >= __size) ? 0 : __x >> __shift;
 	}
 
-	template <raw_mask_type _Tp_, int32 _Shift_>
+	template <raw_mask_type _Tp_, i32 _Shift_>
 	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x,
-		std::integral_constant<int32, _Shift_> __shift) raze_const_operator noexcept
+		std::integral_constant<i32, _Shift_> __shift) raze_const_operator noexcept
 	{
 		raze_maybe_unused_attribute constexpr auto __all_mask = ((sizeof(_Tp_) * 8) == __size)
 			? math::__maximum_integral_limit<_Tp_>() : _Tp_(((_Tp_(1) << __size) - 1));

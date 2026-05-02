@@ -4,6 +4,7 @@
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/bitwise/BitAnd.h>
+#  include <src/raze/vx/hw/x86/mask/operations/MaskAnd.h>
 #endif // defined(raze_processor_x86)
 
 
@@ -11,30 +12,32 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
 struct _Configurable_and: raze::options::strict_elementwise_callable<_Configurable_and, _Options_> {
-    template <simd_type _Simd_>
-    raze_nodiscard raze_always_inline _Simd_ operator()(const _Simd_& __x, const _Simd_& __y) const noexcept {
+    template <simd_or_mask_type _Type_>
+    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, const _Type_& __y) const noexcept {
         return raze::options::__dispatch_call(*this, __x, __y);
     }
 
-    template <simd_type _Simd_>
-    raze_nodiscard raze_always_inline _Simd_ operator()(const _Simd_& __x, typename _Simd_::value_type __y) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, _Simd_(__y));
+    template <simd_or_mask_type _Type_>
+    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, typename _Type_::value_type __y) const noexcept {
+        return raze::options::__dispatch_call(*this, __x, _Type_(__y));
     }
         
-    template <simd_type _Simd_>
-    raze_nodiscard raze_always_inline _Simd_ operator()(typename _Simd_::value_type __x, const _Simd_& __y) const noexcept {
-        return raze::options::__dispatch_call(*this, _Simd_(__x), __y);
+    template <simd_or_mask_type _Type_>
+    raze_nodiscard raze_always_inline _Type_ operator()(typename _Type_::value_type __x, const _Type_& __y) const noexcept {
+        return raze::options::__dispatch_call(*this, _Type_(__x), __y);
     }
 
-    template <simd_type _Simd_>
-    static raze_always_inline auto deferred_call(auto __options, const _Simd_& __x, const _Simd_& __y) noexcept {
+    template <simd_or_mask_type _Type_>
+    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Type_& __y) noexcept {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+        using _Value_ = typename _Type_::value_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = _And<_Simd_::__isa, typename _Simd_::value_type>()(__chunk, std::forward<_Args>(__args)...);
+            using _Op = std::conditional_t<simd_type<_Type_>, _And<_Type_::__isa, _Value_>, _Mask_and<_Type_::__isa, _Value_>>;
+            __chunk = _Op()(__chunk, std::forward<_Args>(__args)...);
         };
 
-        _Simd_ __result = __x;
+        _Type_ __result = __x;
 
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
             auto __condition = __options[raze::options::condition_key];

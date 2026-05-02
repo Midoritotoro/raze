@@ -13,7 +13,7 @@ struct _Extract {
     template <intrin_or_arithmetic_type _Tp_>
     raze_nodiscard raze_static_operator raze_always_inline _Element_ operator()(
         _Tp_    __vector,
-        uint8	__index) raze_const_operator noexcept
+        u8	__index) raze_const_operator noexcept
     {
         if constexpr (arithmetic_type<_Tp_>) {
             return __vector;

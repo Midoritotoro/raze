@@ -23,8 +23,8 @@ public:
 	using element_type = _Type_;
 	using abi_type = _Abi_;
 
-	static constexpr uint8 __divisor = __bitmask_bits_per_element_v<__isa, __width, element_type>;
-	static constexpr uint8 __used_bits = (__width / 8) / sizeof(element_type) * __divisor;
+	static constexpr u8 __divisor = __bitmask_bits_per_element_v<__isa, __width, element_type>;
+	static constexpr u8 __used_bits = (__width / 8) / sizeof(element_type) * __divisor;
 
 	using mask_type = __mmask_for_elements_t<__used_bits>;
 
@@ -35,7 +35,7 @@ public:
 		_mask = __mask;
 	}
 
-	constexpr raze_always_inline int32 __count_trailing_zero_bits() const noexcept {
+	constexpr raze_always_inline i32 __count_trailing_zero_bits() const noexcept {
 		if constexpr (__used_bits < 8)
 			return math::__ctz_n_bits<__used_bits>(__to_gpr<__isa>(_mask)) / __divisor;
 
@@ -46,7 +46,7 @@ public:
 			return math::__bsf_ctz(__to_gpr<__isa>(_mask)) / __divisor;
 	}
 
-	constexpr raze_always_inline int32 __count_leading_zero_bits() const noexcept {
+	constexpr raze_always_inline i32 __count_leading_zero_bits() const noexcept {
 		constexpr auto __unused_bits = raze_sizeof_in_bits(mask_type) - __bit_width();
 
 		if constexpr (__has_avx2_support_v<__isa>)
@@ -55,15 +55,15 @@ public:
 			return (math::__bsr_clz(__to_gpr<__isa>(_mask)) - __unused_bits) / __divisor;
 	}
 
-	constexpr raze_always_inline int32 __count_set() const noexcept {
+	constexpr raze_always_inline i32 __count_set() const noexcept {
 		return math::__popcnt_n_bits<__bit_width()>(__to_gpr<__isa>(_mask)) / __divisor;
 	}
 
-	static constexpr raze_always_inline int32 __bit_width() noexcept {
+	static constexpr raze_always_inline i32 __bit_width() noexcept {
 		return __used_bits;
 	}
 
-	static constexpr raze_always_inline int32 __elements() noexcept {
+	static constexpr raze_always_inline i32 __elements() noexcept {
 		return __used_bits / __divisor;
 	}
 private:

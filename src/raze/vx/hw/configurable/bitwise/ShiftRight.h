@@ -3,7 +3,7 @@
 #include <raze/options/Options.h>
 
 #if defined(raze_processor_x86)
-#  include <src/raze/vx/hw/x86/bitwise/ShiftRight.h>
+#  include <src/raze/vx/hw/x86/bitwise/RightShift.h>
 #endif // defined(raze_processor_x86)
 
 
@@ -12,12 +12,12 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <class _Options_>
 struct _Configurable_shr: raze::options::strict_elementwise_callable<_Configurable_shr, _Options_> {
     template <simd_type _Simd_>
-    raze_nodiscard raze_always_inline _Simd_ operator()(const _Simd_& __x, uint32 __shift) const noexcept {
+    raze_nodiscard raze_always_inline _Simd_ operator()(const _Simd_& __x, u32 __shift) const noexcept {
         return raze::options::__dispatch_call(*this, __x, __shift);
     }
 
     template <simd_type _Simd_>
-    static raze_always_inline auto deferred_call(auto __options, const _Simd_& __x, uint32 __shift) noexcept {
+    static raze_always_inline auto deferred_call(auto __options, const _Simd_& __x, u32 __shift) noexcept {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {

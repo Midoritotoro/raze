@@ -1,9 +1,9 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/mask/MaskTypeSelector.h>
 #include <src/raze/vx/hw/x86/memory/Load.h>
 #include <src/raze/vx/hw/x86/memory/Store.h>
 #include <raze/algorithm/minmax/Min.h>
+#include <src/raze/algorithm/AdvanceBytes.h>
 #include <array>
 
 
@@ -11,7 +11,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype _VectorLength_>
 consteval auto __first_n_ktable() noexcept {
-    using _MaskType = __mmask_for_elements_t<_VectorLength_>;
+    using _MaskType = typename __mask_type<_VectorLength_>::type;
     auto __table = std::array<_MaskType, _VectorLength_ + 1>{};
 
     for (auto __i = 0; __i <= _VectorLength_; ++__i) {
@@ -29,9 +29,9 @@ consteval auto __first_n_ktable() noexcept {
     return __table;
 }
 
-template <sizetype _VectorLength_>
+template <sizetype _VectorLength_, arithmetic_type _Type_>
 consteval auto __first_n_vtable() noexcept {
-    using _MaskType = __mmask_for_elements_t<_VectorLength_>;
+    using _MaskType = typename IntegerForSizeof<_Type_>::Unsigned;
     auto __table = std::array<_MaskType, _VectorLength_ * 2>{};
 
     for (auto __i = 0; __i < _VectorLength_; ++__i)
@@ -43,18 +43,17 @@ consteval auto __first_n_vtable() noexcept {
     return __table;
 }
 
-template <arch::ISA	_ISA_, intrin_or_arithmetic_type _Tp_, arithmetic_type _Type_>
+template <arch::ISA	_ISA_, u32 _Size_, intrin_or_arithmetic_type _Tp_, arithmetic_type _Type_>
 struct _First_n {
-    raze_nodiscard raze_always_inline auto operator()(uint32 __elements) const noexcept {
-        constexpr auto __length = sizeof(_Tp_) / sizeof(_Type_);
+    raze_nodiscard raze_always_inline auto operator()(u32 __elements) const noexcept {
         constexpr auto __kmask = (__has_avx512f_support_v<_ISA_> && sizeof(_Type_) >= 4) || (__has_avx512bw_support_v<_ISA_>);
 
         if constexpr (__kmask) {
-            constexpr auto __ktable = __first_n_ktable<__length>();
+            constexpr auto __ktable = __first_n_ktable<_Size_>();
             return __ktable[__elements];
         }
         else {
-            constexpr auto __vtable = __first_n_vtable<__length>();
+            constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();
             return _Load<_ISA_, _Tp_>()(algorithm::__bytes_pointer_offset(__vtable.data(), 64 - (__elements * sizeof(_Type_))));
         }
     }

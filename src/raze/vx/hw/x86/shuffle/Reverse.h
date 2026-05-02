@@ -5,18 +5,18 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <uint64 ... _Size_>
+template <u64 ... _Size_>
 constexpr auto __reverse_integer_sequence(std::index_sequence<_Size_...>) noexcept {
-	return std::integer_sequence<uint64, (sizeof...(_Size_) - 1 - _Size_)...>{};
+	return std::integer_sequence<u64, (sizeof...(_Size_) - 1 - _Size_)...>{};
 }
 
-template <uint64 _Size_>
-using make_reverse_integer_sequence = decltype(__reverse_integer_sequence(std::make_integer_sequence<uint64, _Size_>{}));
+template <u64 _Size_>
+using make_reverse_integer_sequence = decltype(__reverse_integer_sequence(std::make_integer_sequence<u64, _Size_>{}));
 
 
 template <
 	arch::ISA	_ISA_,
-	uint32		_Width_,
+	u32		_Width_,
 	class		_Type_>
 struct _Reverse {
 	template <class _IntrinType_>

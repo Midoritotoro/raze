@@ -1,12 +1,14 @@
 #pragma once 
 
+#include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/vx/hw/x86/bitwise/BitAnd.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, intrin_type _Intrin_, arithmetic_type _Type_>
-struct _Mask_bit_and {
+template <arch::ISA _ISA_, arithmetic_type _Type_>
+struct _Mask_and {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) raze_const_operator noexcept {
 		if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)
@@ -23,6 +25,11 @@ struct _Mask_bit_and {
 
 		else
 			return _And<_ISA_, _Type_>()(__x, __y);
+	}
+
+	template <raw_mask_type _Tp_, raw_mask_type _Mask_>
+	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) raze_const_operator noexcept {
+		return (*this)((*this)(__x, __y), __mask);
 	}
 };
 

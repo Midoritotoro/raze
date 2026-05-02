@@ -8,5 +8,3 @@
 #include <src/raze/vx/hw/x86/bitwise/LeftShift.h>
 #include <src/raze/vx/hw/x86/bitwise/RightShift.h>
 #include <src/raze/vx/hw/x86/bitwise/Ternarylogic.h>
-#include <src/raze/vx/hw/x86/bitwise/TestAllOnes.h>
-#include <src/raze/vx/hw/x86/bitwise/Testz.h>

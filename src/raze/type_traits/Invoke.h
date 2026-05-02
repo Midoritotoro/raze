@@ -6,7 +6,7 @@
 
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
 
-enum class __invoker_strategy : uint8 {
+enum class __invoker_strategy : u8 {
     __functor,                              // invoke(_FunctorObject, _Args...);
 
     __ptr_to_member_function_with_obj,      // invoke(&_ObjectType::_MemberFunction, _Object, _Args...);

@@ -26,8 +26,8 @@ raze_declare_const_function raze_always_inline bool __memcmp2(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded    = *reinterpret_cast<const uint16*>(__first);
-    const auto __second_loaded   = *reinterpret_cast<const uint16*>(__second);
+    const auto __first_loaded    = *reinterpret_cast<const u16*>(__first);
+    const auto __second_loaded   = *reinterpret_cast<const u16*>(__second);
 
     return __first_loaded == __second_loaded;
 }
@@ -36,8 +36,8 @@ raze_declare_const_function raze_always_inline bool __memcmp3(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded   = *reinterpret_cast<const uint32*>(__first);
-    const auto __second_loaded  = *reinterpret_cast<const uint32*>(__second);
+    const auto __first_loaded   = *reinterpret_cast<const u32*>(__first);
+    const auto __second_loaded  = *reinterpret_cast<const u32*>(__second);
 
     return (__first_loaded & 0x00ffffff) == (__second_loaded & 0x00ffffff);
 }
@@ -46,8 +46,8 @@ raze_declare_const_function raze_always_inline bool __memcmp4(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded   = *reinterpret_cast<const uint32*>(__first);
-    const auto __second_loaded  = *reinterpret_cast<const uint32*>(__second);
+    const auto __first_loaded   = *reinterpret_cast<const u32*>(__first);
+    const auto __second_loaded  = *reinterpret_cast<const u32*>(__second);
 
     return __first_loaded == __second_loaded;
 }
@@ -56,8 +56,8 @@ raze_declare_const_function raze_always_inline bool __memcmp5(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded   = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_loaded  = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_loaded   = *reinterpret_cast<const u64*>(__first);
+    const auto __second_loaded  = *reinterpret_cast<const u64*>(__second);
 
     return ((__first_loaded ^ __second_loaded) & 0x000000fffffffffflu) == 0;
 }
@@ -66,8 +66,8 @@ raze_declare_const_function raze_always_inline bool __memcmp6(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded   = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_loaded  = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_loaded   = *reinterpret_cast<const u64*>(__first);
+    const auto __second_loaded  = *reinterpret_cast<const u64*>(__second);
 
     return ((__first_loaded ^ __second_loaded) & 0x0000fffffffffffflu) == 0;
 }
@@ -76,8 +76,8 @@ raze_declare_const_function raze_always_inline bool __memcmp7(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded   = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_loaded  = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_loaded   = *reinterpret_cast<const u64*>(__first);
+    const auto __second_loaded  = *reinterpret_cast<const u64*>(__second);
 
     return ((__first_loaded ^ __second_loaded) & 0x00fffffffffffffflu) == 0;
 }
@@ -86,8 +86,8 @@ raze_declare_const_function raze_always_inline bool __memcmp8(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded   = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_loaded  = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_loaded   = *reinterpret_cast<const u64*>(__first);
+    const auto __second_loaded  = *reinterpret_cast<const u64*>(__second);
 
     return __first_loaded == __second_loaded;
 }
@@ -96,8 +96,8 @@ raze_declare_const_function raze_always_inline bool __memcmp9(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_loaded   = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_loaded  = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_loaded   = *reinterpret_cast<const u64*>(__first);
+    const auto __second_loaded  = *reinterpret_cast<const u64*>(__second);
 
     return (__first_loaded == __second_loaded) & (static_cast<const char*>(__first)[8] == static_cast<const char*>(__second)[8]);
 }
@@ -106,11 +106,11 @@ raze_declare_const_function raze_always_inline bool __memcmp10(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_qword    = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_qword   = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_qword    = *reinterpret_cast<const u64*>(__first);
+    const auto __second_qword   = *reinterpret_cast<const u64*>(__second);
 
-    const auto __first_word     = *reinterpret_cast<const uint16*>(static_cast<const char*>(__first) + 8);
-    const auto __second_word    = *reinterpret_cast<const uint16*>(static_cast<const char*>(__second) + 8);
+    const auto __first_word     = *reinterpret_cast<const u16*>(static_cast<const char*>(__first) + 8);
+    const auto __second_word    = *reinterpret_cast<const u16*>(static_cast<const char*>(__second) + 8);
 
     return (__first_qword == __second_qword) & (__first_word == __second_word);
 }
@@ -119,11 +119,11 @@ raze_declare_const_function raze_always_inline bool __memcmp11(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_qword    = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_qword   = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_qword    = *reinterpret_cast<const u64*>(__first);
+    const auto __second_qword   = *reinterpret_cast<const u64*>(__second);
 
-    const auto __first_dword    = *reinterpret_cast<const uint32*>(static_cast<const char*>(__first) + 8);
-    const auto __second_dword   = *reinterpret_cast<const uint32*>(static_cast<const char*>(__second) + 8);
+    const auto __first_dword    = *reinterpret_cast<const u32*>(static_cast<const char*>(__first) + 8);
+    const auto __second_dword   = *reinterpret_cast<const u32*>(static_cast<const char*>(__second) + 8);
 
     return (__first_qword == __second_qword) & ((__first_dword & 0x00ffffff) == (__second_dword & 0x00ffffff));
 }
@@ -132,11 +132,11 @@ raze_declare_const_function raze_always_inline bool __memcmp12(
     const void* __first,
     const void* __second) noexcept
 {
-    const auto __first_qword    = *reinterpret_cast<const uint64*>(__first);
-    const auto __second_qword   = *reinterpret_cast<const uint64*>(__second);
+    const auto __first_qword    = *reinterpret_cast<const u64*>(__first);
+    const auto __second_qword   = *reinterpret_cast<const u64*>(__second);
 
-    const auto __first_dword    = *reinterpret_cast<const uint32*>(static_cast<const char*>(__first) + 8);
-    const auto __second_dword   = *reinterpret_cast<const uint32*>(static_cast<const char*>(__second) + 8);
+    const auto __first_dword    = *reinterpret_cast<const u32*>(static_cast<const char*>(__first) + 8);
+    const auto __second_dword   = *reinterpret_cast<const u32*>(static_cast<const char*>(__second) + 8);
 
     return (__first_qword == __second_qword) & (__first_dword == __second_dword);
 }

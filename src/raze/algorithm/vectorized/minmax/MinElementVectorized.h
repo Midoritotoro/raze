@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 
 
@@ -47,11 +47,11 @@ struct __min_element_vectorized_internal {
         auto __current_values_min = __current_values;
 
         constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
-        constexpr auto __max_portion_size = raze::algorithm::max(static_cast<uint64>(__integer_max)
-            + 1, static_cast<uint64>(__integer_max)) * sizeof(_Simd_);
+        constexpr auto __max_portion_size = raze::algorithm::max(static_cast<u64>(__integer_max)
+            + 1, static_cast<u64>(__integer_max)) * sizeof(_Simd_);
 
         constexpr auto __has_portion_max_value = 
-            (math::__maximum_integral_limit<uint64>() != __max_portion_size);
+            (math::__maximum_integral_limit<u64>() != __max_portion_size);
         auto __aligned_portion_size = raze::algorithm::min(__max_portion_size, __aligned_size);
 
         auto __portion_begin = __min_element;

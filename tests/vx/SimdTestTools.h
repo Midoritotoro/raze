@@ -186,30 +186,30 @@ void test_where_unary(
 }
 
 template <
-    template <class, raze::arch::ISA, raze::uint32> class _Function_,
+    template <class, raze::arch::ISA, raze::u32> class _Function_,
     raze::arch::ISA  _ISA_,
-    raze::uint32 _Width_>
+    raze::u32 _Width_>
 void __test_all_helper() {
     if (!raze::arch::ProcessorFeatures::isSupported<_ISA_>())
         return;
 
-    raze::type_traits::invoke(_Function_<raze::int8, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::uint8, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::i8, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::u8, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<raze::int16, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::uint16, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::i16, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::u16, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<raze::int32, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::uint32, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::i32, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::u32, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<raze::int64, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::uint64, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::i64, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::u64, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<float, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<double, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::f32, _ISA_, _Width_>());
+    raze::type_traits::invoke(_Function_<raze::f64, _ISA_, _Width_>());
 }
 
-template <template <class, raze::arch::ISA, raze::uint32> class _Function_>
+template <template <class, raze::arch::ISA, raze::u32> class _Function_>
 void test_all() { 
     __test_all_helper<_Function_, raze::arch::ISA::SSE2, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::SSE3, 128>();

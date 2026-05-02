@@ -27,18 +27,16 @@ constexpr inline bool __is_vector_type_supported_v =
 template <>
 constexpr inline bool __is_vector_type_supported_v<bool> = false;
 
-template <
-    class   _VectorElementType_,
-    uint32  _Width_>
+template <class _VectorElementType_, u32 _Width_>
 struct __deduce_simd_vector_type__ {
 private:
     using _Type_ = std::decay_t<_VectorElementType_>;
 
-    static constexpr bool __is_fp64 = is_any_of_v<_Type_, double, long double> || (std::is_same_v<_Type_, std::nullptr_t> && sizeof(std::nullptr_t) == 8);
-    static constexpr bool __is_fp32 = std::is_same_v<_Type_, float>;
-    static constexpr bool __is_int  = is_nonbool_integral_v<_Type_> || (std::is_same_v<_Type_, std::nullptr_t> && sizeof(std::nullptr_t) == 4);
+    static constexpr bool __is_fp64 = is_any_of_v<_Type_, f64, long double> || (std::is_same_v<_Type_, std::nullptr_t> && sizeof(std::nullptr_t) == 8);
+    static constexpr bool __is_fp32 = std::is_same_v<_Type_, f32>;
+    static constexpr bool __is_i32 = is_nonbool_integral_v<_Type_> || (std::is_same_v<_Type_, std::nullptr_t> && sizeof(std::nullptr_t) == 4);
     static constexpr bool __is_ptr  = __is_pointer_decay_v<_VectorElementType_>;
-    static constexpr bool __use_i   = __is_int || __is_ptr;
+    static constexpr bool __use_i   = __is_i32 || __is_ptr;
 public:
     using type =
         std::conditional_t<
@@ -71,29 +69,22 @@ public:
         void>>>;
 };
 
-template <
-    typename    _VectorElementType_,
-    uint32      _Width_>
+template <typename _VectorElementType_, u32 _Width_>
 using __deduce_simd_vector_type = typename __deduce_simd_vector_type__<_VectorElementType_, _Width_>::type;
 
 template <sizetype size>
-using __deduce_simd_shuffle_mask_type_helper = std::conditional_t<size <= 2, uint8,
-		std::conditional_t<size <= 4, uint8,
-			std::conditional_t<size <= 8, uint32,
-				std::conditional_t<size <= 16, uint64, void>>>>;
+using __deduce_simd_shuffle_mask_type_helper = std::conditional_t<size <= 2, u8,
+		std::conditional_t<size <= 4, u8,
+			std::conditional_t<size <= 8, u32,
+				std::conditional_t<size <= 16, u64, void>>>>;
 
-template <
-	arch::ISA	_ISA_,
-	typename	_Element_,
-    uint32      _Width_>
+template <arch::ISA	_ISA_, class _Element_, u32 _Width_>
 using __deduce_simd_shuffle_mask_type = __deduce_simd_shuffle_mask_type_helper<(_Width_ / sizeof(_Element_))>;
 
 template <arch::ISA _ISA_> 
 constexpr bool __is_zeroupper_required_v = arch::__is_ymm_v<_ISA_> || arch::__is_zmm_v<_ISA_>;
 
-template <
-    arch::ISA _SimdGenerationFirst_,
-    arch::ISA _SimdGenerationSecond_>
-constexpr bool __is_simd_feature_superior_v = (static_cast<uint8>(_SimdGenerationFirst_) > static_cast<uint8>(_SimdGenerationSecond_));
+template <arch::ISA _SimdGenerationFirst_, arch::ISA _SimdGenerationSecond_>
+constexpr bool __is_simd_feature_superior_v = (static_cast<u8>(_SimdGenerationFirst_) > static_cast<u8>(_SimdGenerationSecond_));
 
 __RAZE_TYPE_TRAITS_NAMESPACE_END

@@ -10,7 +10,7 @@ class _Simd_element_reference {
 public:
 	using value_type = typename _Simd_::value_type;
 
-	_Simd_element_reference(_Simd_& __simd, int32 __i) noexcept:
+	_Simd_element_reference(_Simd_& __simd, i32 __i) noexcept:
 		_reference(__simd),
 		_index(__i)
 	{
@@ -65,12 +65,12 @@ public:
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator>>=(int32 __shift) && noexcept {
+	raze_always_inline _Simd_element_reference operator>>=(i32 __shift) && noexcept {
 		__write(__read() >> __shift);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator<<=(int32 __shift) && noexcept {
+	raze_always_inline _Simd_element_reference operator<<=(i32 __shift) && noexcept {
 		__write(__read() << __shift);
 		return { _reference, _index };
 	}
@@ -136,7 +136,7 @@ private:
 	}
 
 	_Simd_& _reference;
-	int32 _index = 0;
+	i32 _index = 0;
 };
 
 __RAZE_VX_NAMESPACE_END

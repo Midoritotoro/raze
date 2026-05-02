@@ -7,7 +7,6 @@
 #include <src/raze/vx/hw/Access.h>
 
 #include <raze/vx/Mask.h>
-#include <raze/vx/SimdCast.h>
 #include <src/raze/vx/hw/Memory.h>
 
 #include <src/raze/vx/reference/SimdElementReference.h>
@@ -54,7 +53,7 @@ struct aligned_option : raze::options::exact_option<aligned> {};
  * - All operations are performed element-wise.
  *
  * ## Template Parameters
- * @tparam _Type_  The scalar element type (e.g., int32_t, float, double).
+ * @tparam _Type_  The scalar element type (e.g., i32, f32, f64).
  * @tparam _Abi_   ABI descriptor specifying ISA and register width.
 */
 template <
@@ -76,49 +75,6 @@ public:
     using value_type    = _Type_;
     using mask_type     = simd_mask<_Type_, _Abi_>;
     using abi_type      = _Abi_;
-
-    /**
-     * @brief Indicates whether the current ISA/ABI supports native masked loads.
-     *
-     * This constant evaluates to `true` when the backend provides a hardware
-     * implementation of masked loads for the given ISA, register width, and
-     * element size. A “native” masked load means that the operation can be
-     * performed directly using a dedicated instruction (e.g., AVX‑512
-     * `vmaskload*`, `vpmaskmov*`) without requiring emulation.
-     *
-     * When `false`, masked loads are emulated using a combination of:
-     * 
-     * - an unmasked load, and
-     * 
-     * - a mask‑controlled blend operation.
-     *
-     * Native support is important for performance and for correctly handling
-     * partial vectors (“tail elements”).
-    */
-    static constexpr inline bool is_native_mask_load_supported_v = __is_native_mask_load_supported_v<__isa, __width, value_type>;
-
-    /**
-     * @brief Indicates whether the current ISA/ABI supports native masked stores.
-     *
-     * This constant evaluates to `true` when the backend provides a hardware
-     * instruction for masked stores for the given ISA, register width, and
-     * element size. Native masked stores (e.g., AVX‑512 `vmaskstore*`,
-     * `vpmaskmov*`) allow writing only selected lanes to memory without
-     * additional blending or temporary buffers.
-     *
-     * When `false`, masked stores are emulated using:
-     * 
-     * - a load of the destination memory,
-     * 
-     * - a mask‑controlled blend with the source vector,
-     * 
-     * - a full unmasked store.
-     *
-     * Native support enables efficient and safe handling of tail elements,
-     * avoids unnecessary memory traffic, and improves performance in
-     * algorithms that rely on partial‑vector writes.
-    */
-    static constexpr inline bool is_native_mask_store_supported_v = __is_native_mask_store_supported_v<__isa, __width, value_type>;
 
     /**
      * @brief Constructs an uninitialized SIMD vector.
@@ -193,7 +149,7 @@ public:
      *  Logical shift for all element types.
      *  If `shift >= bit_width(value_type)`, the result is zero.
     */
-    raze_always_inline friend simd operator<<(const simd& __x, uint32 __shift) noexcept {
+    raze_always_inline friend simd operator<<(const simd& __x, u32 __shift) noexcept {
         simd __result = __x;
 
         __result.__for_each_chunk([&] <class _Chunk, class _Sh> (_Chunk& __chunk, _Sh __sh) raze_always_inline_lambda {
@@ -217,7 +173,7 @@ public:
      *  If `shift >= bit_width(value_type)`, the result is zero or
      *  sign-extended depending on type.
     */
-    raze_always_inline friend simd operator>>(const simd& __x, uint32 __shift) noexcept {
+    raze_always_inline friend simd operator>>(const simd& __x, u32 __shift) noexcept {
         simd __result = __x;
 
         __result.__for_each_chunk([&] <class _Chunk, class _Sh> (_Chunk& __chunk, _Sh __sh) raze_always_inline_lambda {
@@ -387,11 +343,11 @@ public:
     //    return _Greater_equal<__isa, __width, _Type_>()(__data(__left), __data(__right));
     //}
 
-    raze_always_inline simd& operator>>=(uint32 __shift) noexcept {
+    raze_always_inline simd& operator>>=(u32 __shift) noexcept {
         return *this = (*this >> __shift);
     }
 
-    raze_always_inline simd& operator<<=(uint32 __shift) noexcept {
+    raze_always_inline simd& operator<<=(u32 __shift) noexcept {
         return *this = (*this << __shift);
     }
 
@@ -485,35 +441,35 @@ public:
      *
      * @param i  index in range [0, size()).
     */
-    raze_nodiscard raze_always_inline _Type_ operator[](int32 __i) const noexcept {
+    raze_nodiscard raze_always_inline _Type_ operator[](i32 __i) const noexcept {
         return __extract(__i);
     }
 
     /**
      * @brief returns a proxy reference to lane `i`, allowing modification.
     */
-    raze_nodiscard raze_always_inline reference operator[](int32 __i) noexcept {
+    raze_nodiscard raze_always_inline reference operator[](i32 __i) noexcept {
         return reference(*this, __i);
     }
 
     /**
      * @brief Returns the SIMD register width in bits.
     */
-    raze_nodiscard static raze_always_inline constexpr int width() noexcept {
+    raze_nodiscard static raze_always_inline constexpr i32 width() noexcept {
         return __width;
     }
 
     /**
      * @brief Returns the number of lanes in the vector.
     */
-    raze_nodiscard static raze_always_inline constexpr int size() noexcept {
+    raze_nodiscard static raze_always_inline constexpr i32 size() noexcept {
         return abi_type::size;
     }
 
     /**
      * @brief Alias for size().
     */
-    raze_nodiscard static raze_always_inline constexpr int length() noexcept {
+    raze_nodiscard static raze_always_inline constexpr i32 length() noexcept {
         return size();
     }
 
@@ -621,34 +577,18 @@ public:
         _Mask_store<__isa, __width, _Type_>()(std::to_address(__first), __data(__mask), _storage, aligned_policy{});
     }*/
 
-    template <class _Func_, class... _Extras_>
-    raze_always_inline void __for_each_chunk(
-        _Func_&&        __function, 
-        _Extras_&&...   __extras) noexcept
-    {
-        if constexpr (__use_native) {
-            __function(_storage, __extras...);
-        } else {
-            __execute_n_times<__simd_tuple_size<storage_type>::value>(
-                _storage, std::forward<_Func_>(__function), __extras...);
-        }
+    template <class _Function_, class ... _Args_>
+    raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) noexcept {
+        _storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
-    template <class _Func_, class... _Extras_>
-    raze_always_inline void __for_each_chunk(
-        _Func_&&        __function, 
-        _Extras_&&...   __extras) const noexcept
-    {
-        if constexpr (__use_native) {
-            __function(_storage, __extras...);
-        } else {
-            __execute_n_times<__simd_tuple_size<storage_type>::value>(
-                _storage, std::forward<_Func_>(__function), __extras...);
-        }
+    template <class _Function_, class ... _Args_>
+    raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
+        _storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 private:
     raze_always_inline void __insert(
-        int32       __position,
+        i32       __position,
         value_type  __value) noexcept
     {
         if constexpr (__use_native) {
@@ -659,7 +599,7 @@ private:
         }
     }
 
-    raze_nodiscard raze_always_inline _Type_ __extract(int32 __i) const noexcept {
+    raze_nodiscard raze_always_inline _Type_ __extract(i32 __i) const noexcept {
         raze_debug_assert(__i >= 0 && __i < size());
 
         if constexpr (__use_native) {

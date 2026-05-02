@@ -96,8 +96,8 @@ concept ternary_mask_expression_type =
 
 
 template <ternary_mask_expression_type _Expression_>
-raze_nodiscard consteval uint8 __as_ternary_mask() noexcept {
-    auto __imm = uint8(0);
+raze_nodiscard consteval u8 __as_ternary_mask() noexcept {
+    auto __imm = u8(0);
 
     for (auto __mask = 0; __mask < 8; ++__mask) {
         const auto __a = static_cast<bool>(__mask & 1);

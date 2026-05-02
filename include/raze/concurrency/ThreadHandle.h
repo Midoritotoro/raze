@@ -7,7 +7,7 @@
 __RAZE_CONCURRENCY_NAMESPACE_BEGIN
 
 #if defined(raze_os_windows)
-	enum Priority: int32 {
+	enum Priority: i32 {
 		IdlePriority = THREAD_PRIORITY_IDLE,
 
 		LowestPriority = THREAD_PRIORITY_LOWEST,

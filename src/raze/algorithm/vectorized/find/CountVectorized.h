@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 
 
@@ -38,7 +38,7 @@ struct __count_vectorized_internal {
         const auto __guard = vx::make_guard<_Simd_>();
         const auto __comparand = _Simd_(__value);
 
-        auto __result = uint64(0);
+        auto __result = u64(0);
         auto __counter = vx::simd_counter<_Simd_>();
 
         constexpr auto __max_portion_size = vx::simd_counter<_Simd_>::portion_size();

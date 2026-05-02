@@ -37,7 +37,7 @@ __RAZE_MATH_NAMESPACE_BEGIN
 #endif // defined (raze_processor_x86)
 
 template <std::unsigned_integral _IntegralType_>
-constexpr raze_always_inline int __bit_hacks_clz(_IntegralType_ __value) noexcept {
+constexpr raze_always_inline i32 __bit_hacks_clz(_IntegralType_ __value) noexcept {
 	if constexpr (sizeof(_IntegralType_) == 8) {
         __value = __value | (__value >> 1);
         __value = __value | (__value >> 2);
@@ -82,7 +82,7 @@ constexpr raze_always_inline int __bit_hacks_clz(_IntegralType_ __value) noexcep
 #if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
 
 template <std::unsigned_integral _IntegralType_>
-raze_always_inline int __bsr_clz(_IntegralType_ __value) noexcept {
+raze_always_inline i32 __bsr_clz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
     auto __index = ulong(0);
 
@@ -103,21 +103,21 @@ raze_always_inline int __bsr_clz(_IntegralType_ __value) noexcept {
 #if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
 
 template <std::unsigned_integral _IntegralType_>
-raze_always_inline int __lzcnt_clz(_IntegralType_ __value) noexcept {
+raze_always_inline i32 __lzcnt_clz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
 
     if      constexpr (__digits == 64)
-        return static_cast<int>(__raze_lzcnt_u64(static_cast<uint64>(__value)));
+        return static_cast<int>(__raze_lzcnt_u64(static_cast<u64>(__value)));
     else if constexpr (__digits == 32)
-        return static_cast<int>(__raze_lzcnt_u32(static_cast<uint32>(__value)));
+        return static_cast<int>(__raze_lzcnt_u32(static_cast<u32>(__value)));
     else
-        return static_cast<int>(__raze_lzcnt_u16(static_cast<uint16>(__value))) - (16 - __digits);
+        return static_cast<int>(__raze_lzcnt_u16(static_cast<u16>(__value))) - (16 - __digits);
 }
 
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
 
 template <std::unsigned_integral _IntegralType_>
-constexpr raze_always_inline int __count_leading_zero_bits(_IntegralType_ __value) noexcept {
+constexpr raze_always_inline i32 __count_leading_zero_bits(_IntegralType_ __value) noexcept {
 #if defined(raze_processor_x86) && !defined(raze_processor_arm)
     if (!type_traits::is_constant_evaluated()) {
         if (arch::ProcessorFeatures::AVX2())
@@ -135,7 +135,7 @@ constexpr raze_always_inline int __count_leading_zero_bits(_IntegralType_ __valu
 template <sizetype _Bits_>
 struct __clz_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
-    constexpr raze_always_inline int operator()(_IntegralType_ __value) const noexcept {
+    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
         constexpr auto __max_for_n_bits = _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
         constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
 
@@ -148,7 +148,7 @@ struct __clz_n_bits_implementation {
 template <>
 struct __clz_n_bits_implementation<2> {
     template <std::unsigned_integral _IntegralType_>
-    constexpr raze_always_inline int operator()(_IntegralType_ __value) const noexcept {
+    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
         __value = __value | (__value >> 1);
         return __popcnt_n_bits<2>(static_cast<_IntegralType_>(~__value));
     }
@@ -157,7 +157,7 @@ struct __clz_n_bits_implementation<2> {
 template <>
 struct __clz_n_bits_implementation<4> {
     template <std::unsigned_integral _IntegralType_>
-    constexpr raze_always_inline int operator()(_IntegralType_ __value) const noexcept {
+    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
         __value = __value | (__value >> 1);
         __value = __value | (__value >> 2);
 
@@ -168,7 +168,7 @@ struct __clz_n_bits_implementation<4> {
 template <
     sizetype _Bits_, 
     std::unsigned_integral _IntegralType_>
-constexpr raze_always_inline int __clz_n_bits(_IntegralType_ __value) noexcept {
+constexpr raze_always_inline i32 __clz_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);
 

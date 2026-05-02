@@ -1,5 +1,5 @@
 #include <tests/vx/SimdTestTools.h>
-#include <raze/vx/SimdDataparAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 
 
 template <typename _Simd_>

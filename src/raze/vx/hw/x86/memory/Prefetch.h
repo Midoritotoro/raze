@@ -5,7 +5,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-enum class __prefetch_level: int32 {
+enum class __prefetch_level: i32 {
 	NTA = _MM_HINT_NTA,
 	L1 = _MM_HINT_T0,
 	L2 = _MM_HINT_T1,

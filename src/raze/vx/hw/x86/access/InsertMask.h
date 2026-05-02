@@ -10,7 +10,7 @@ template <
     class _Type_>
 struct _Insert_mask {
     _Type_  __array[(sizeof(_VectorType_) / sizeof(_Type_)) << 1];
-    int32   __offset = 0;
+    i32   __offset = 0;
 };
 
 template <
