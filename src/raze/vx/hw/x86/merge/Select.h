@@ -78,7 +78,7 @@ struct _Select {
 		if constexpr (arithmetic_type<_Tp_>)
 			return __mask ? __x : __y;
 		else
-			return _Ternarylogic<_ISA_, _Type_>()(_To_vector<_ISA_, _Type_, _Tp_>(__mask), __x, __y, std::integral_constant<u8, 0xca>{});
+			return _Ternarylogic<_ISA_, _Type_>()(_To_vector<_ISA_, _Tp_, _Type_>()(__mask), __x, __y, std::integral_constant<u8, 0xca>{});
 	}
 };
 

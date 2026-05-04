@@ -31,11 +31,8 @@ struct _Configurable_andnot: raze::options::strict_elementwise_callable<_Configu
     static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Type_& __y) noexcept {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
         using _Value_ = typename _Type_::value_type;
-
-        auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk & __chunk, _Args&&... __args) raze_always_inline_lambda {
-            using _Op = std::conditional_t<simd_type<_Type_>, _Andnot<_Type_::__isa, _Value_>, _Mask_andnot<_Type_::__isa, _Value_>>;
-            __chunk = _Op()(__chunk, std::forward<_Args>(__args)...);
-        };
+        using _Abi_ = typename _Type_::abi_type;
+        using _Op = std::conditional_t<simd_type<_Type_>, _Andnot<_Abi_::isa, _Value_>, _Mask_andnot<_Abi_::isa, _Value_>>;
 
         _Type_ __result = __x;
 
@@ -44,12 +41,18 @@ struct _Configurable_andnot: raze::options::strict_elementwise_callable<_Configu
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
             if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __data(__y), __data(__mask), __data(__condition.alternative()));
+                __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __y, const auto& __mask, const auto& __src) raze_always_inline_lambda {
+                    __chunk = _Op()(__chunk.data(), __y.data(), __mask.data(), __src.data());
+                }, __y.__storage(), __mask.__storage(), __condition.alternative().__storage());
             else
-                __result.__for_each_chunk(__chunk_op, __data(__y), __data(__mask));
+                __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __y, const auto& __mask) raze_always_inline_lambda {
+                    __chunk = _Op()(__chunk.data(), __y.data(), __mask.data());
+                }, __y.__storage(), __mask.__storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __data(__y));
+            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __y) raze_always_inline_lambda {
+                __chunk = _Op()(__chunk.data(), __y.data());
+            }, __y.__storage());
         }
 
         return __result;

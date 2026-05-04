@@ -13,14 +13,8 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA	_ISA_>
 struct _Insert {
-	template <
-		intrin_or_arithmetic_type	_Tp_,
-		arithmetic_type				_Type_>
-	raze_static_operator raze_always_inline void operator()(
-		_Tp_&	__vector,
-		u8	__index,
-		_Type_	__value) raze_const_operator noexcept
-	{
+	template <intrin_or_arithmetic_type	_Tp_, arithmetic_type _Type_>
+	raze_static_operator raze_always_inline void operator()(_Tp_& __vector, u8 __index, _Type_	__value) raze_const_operator noexcept {
 		if constexpr (arithmetic_type<_Tp_>) {
 			__vector = __value;
 		}

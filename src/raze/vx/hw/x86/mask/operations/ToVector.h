@@ -18,7 +18,9 @@ struct _To_vector {
         constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
         constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
         
-        if constexpr (sizeof(_Vector_) == 16) {
+        if constexpr (intrin_type<_Mask_>)
+            return __as<_Vector_>(__mask);
+        else if constexpr (sizeof(_Vector_) == 16) {
             if constexpr (sizeof(_Type_) == 8) {
                 if constexpr (__avx512vl) {
                     if constexpr (__avx512dq) return __as<_Vector_>(_mm_movm_epi64(__mask));

@@ -22,21 +22,24 @@ struct _Configurable_any_of: raze::options::strict_elementwise_callable<_Configu
         using _Value_ = typename _Type_::value_type;
         using _Abi_ = typename _Type_::abi_type;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args> (const _Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            return _Any_of<_Abi_::isa, _Value_>()(__chunk.data(), std::forward<_Args>(__args)...);
-        };
-
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
             auto __condition = __options[raze::options::condition_key];
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
+
             if constexpr (_Mask_::has_alternative)
-                return __x.__for_each_chunk_any_of(__chunk_op, __data(__mask), __data(__condition.alternative()));
+                return __x.__for_each_chunk_any_of([&] <class _Chunk> (const _Chunk& __chunk, const auto& __mask, const auto& __src) raze_always_inline_lambda {
+                    return _Any_of<_Abi_::isa, _Value_>()(__chunk.data(), __mask.data(), __src.data());
+                }, __mask.__storage(), __condition.alternative().__storage());
             else
-                return __x.__for_each_chunk_any_of(__chunk_op, __data(__mask));
+                return __x.__for_each_chunk_any_of([&] <class _Chunk> (const _Chunk& __chunk, const auto& __mask) raze_always_inline_lambda {
+                    return _Any_of<_Abi_::isa, _Value_>()(__chunk.data(), __mask.data());
+                }, __mask.__storage());
         }
         else {
-            return __x.__for_each_chunk_any_of(__chunk_op);
+            return __x.__for_each_chunk_any_of([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
+                return _Any_of<_Abi_::isa, _Value_>()(__chunk.data());
+            });
         }
     }
 

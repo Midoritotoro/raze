@@ -27,7 +27,7 @@ constexpr auto& __get(_Type_& __value) noexcept {
     return __value;
 }
 
-template <class _Type_, class _Tuple_, class _Function_>
+template <class _Tuple_, class _Function_>
 raze_always_inline void __visit_chunk_by_index(_Tuple_& __tuple, i32 __index, _Function_&& __f) noexcept
     requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
 {
@@ -36,14 +36,13 @@ raze_always_inline void __visit_chunk_by_index(_Tuple_& __tuple, i32 __index, _F
 
         ([&] () raze_always_inline_lambda {
             using _Chunk = std::decay_t<decltype(__get<__I>(__tuple))>;
-            constexpr auto __chunk_size = sizeof(_Chunk) / sizeof(_Type_);
 
-            if (__current < __chunk_size) {
+            if (__current < _Chunk::size) {
                 __f(__get<__I>(__tuple), __current);
                 return true;
             }
 
-            __current -= __chunk_size;
+            __current -= _Chunk::size;
             return false;
         }() || ... );
     }(std::make_index_sequence<__simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value>{});
@@ -55,7 +54,7 @@ raze_always_inline _Type_ __extract_element(const _Tuple_& __tuple, i32 __index)
 {
     _Type_ __result {};
 
-    __visit_chunk_by_index<_Type_>(__tuple, __index, [&] (const auto& __chunk, i32 __lane) raze_always_inline_lambda {
+    __visit_chunk_by_index(__tuple, __index, [&] (const auto& __chunk, i32 __lane) raze_always_inline_lambda {
         __result = _Extract<_ISA_, _Type_>()(__chunk, __lane);
     });
 
@@ -66,7 +65,7 @@ template <arch::ISA _ISA_, class _Type_, class _Tuple_>
 raze_always_inline void __insert_element(_Tuple_& __tuple, i32 __index, _Type_ __value) noexcept
     requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
 {
-    __visit_chunk_by_index<_Type_>(__tuple, __index, [&] (auto& __chunk, i32 __lane) raze_always_inline_lambda {
+    __visit_chunk_by_index(__tuple, __index, [&] (auto& __chunk, i32 __lane) raze_always_inline_lambda {
         _Insert<_ISA_>()(__chunk, __lane, __value);
     });
 }

@@ -46,6 +46,11 @@ struct _None_of {
 			return !__x;
 		}
 	}
+
+	template <wrapped_type _Type_>
+	raze_nodiscard raze_always_inline bool operator()(const _Type_& __x) const noexcept {
+		return (*this)(__x.data());
+	}
 };
 
 __RAZE_VX_NAMESPACE_END

@@ -18,7 +18,9 @@ struct _To_mask {
         constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
         constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
 
-		if constexpr (sizeof(_Tp_) == 16) {
+        if constexpr (std::is_integral_v<_Tp_>)
+            return __x;
+		else if constexpr (sizeof(_Tp_) == 16) {
             if constexpr (sizeof(_Type_) == 8) {
                 if constexpr (__avx512vl) {
                     if constexpr (__avx512dq) return _mm_movepi64_mask(__as<__m128i>(__x));
@@ -43,7 +45,7 @@ struct _To_mask {
             }
 		}
         else if constexpr (sizeof(_Tp_) == 32) {
-            auto __fallback_avx = [=] () raze_always_inline_lambda {
+            auto __fallback_avx = [&] () raze_always_inline_lambda {
                 constexpr auto __half_bits = (sizeof(_Tp_) / sizeof(_Type_)) >> 1;
 
                 const auto __low = _To_mask<arch::ISA::SSE42, _Type_>()(__as<__m256i>(__x));
@@ -78,7 +80,7 @@ struct _To_mask {
             }
         }
         else if constexpr (sizeof(_Tp_) == 64) {
-            auto __fallback_avx512f = []() raze_always_inline_lambda{
+            auto __fallback_avx512f = [&]() raze_always_inline_lambda{
                 constexpr auto __half_bits = (sizeof(_Tp_) / sizeof(_Type_)) >> 1;
 
                 const auto __low = _To_mask<arch::ISA::AVX2, _Type_>()(__as<__m256i>(__x));

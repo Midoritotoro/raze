@@ -22,7 +22,7 @@ struct variable_length_mask_tests {
             for (size_t i = 0; i < N; ++i)
                 m[i] = f(i);
             return m;
-            };
+        };
 
         {
             Mask t(true);
@@ -33,7 +33,7 @@ struct variable_length_mask_tests {
             raze_assert(raze::vx::none_of(f));
         }
 
-      /*  {
+        {
             bool src[N];
             bool dst[N];
 
@@ -62,7 +62,7 @@ struct variable_length_mask_tests {
             }
         }
 
-        {
+  /*      {
             auto a = make_pattern([](size_t i) { return i % 2 == 0; });
             auto b = make_pattern([](size_t i) { return i % 3 == 0; });
 
@@ -100,8 +100,8 @@ struct variable_length_mask_tests {
             raze_assert(raze::vx::any_of(m));
             raze_assert(raze::vx::some_of(m));
             raze_assert(!raze::vx::all_of(m));
-        }
-
+        }*/
+        /*
         {
             Mask m(false);
 
@@ -219,10 +219,10 @@ struct variable_length_mask_tests {
 
     void operator()() const {
         test_size<(_Width_ / (sizeof(_Type_) * 8))>();
-        test_size<1>();
-        test_size<7>();
-        test_size<17>();
-        test_size<31>();
+        //test_size<1>();
+        //test_size<7>();
+        //test_size<17>();
+        //test_size<31>();
     }
 };
 

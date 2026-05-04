@@ -4,6 +4,44 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <class _Type_, class _Abi_, u64 _Elements_, intrin_or_arithmetic_type _Intrin_>
+struct _Vector_wrapper {
+    using vector_type = _Intrin_;
+    using abi_type = _Abi_;
+    using value_type = _Type_;
+
+    static constexpr auto size = _Elements_;
+
+    _Vector_wrapper(_Intrin_ __vector) noexcept : _data(__vector) {}
+
+    _Vector_wrapper() noexcept = default;
+    _Vector_wrapper(const _Vector_wrapper&) noexcept = default;
+    _Vector_wrapper(_Vector_wrapper&&) noexcept = default;
+
+    ~_Vector_wrapper() = default;
+
+    _Vector_wrapper& operator=(const _Vector_wrapper&) noexcept = default;
+    _Vector_wrapper& operator=(_Vector_wrapper&&) noexcept = default;
+
+    raze_nodiscard raze_always_inline vector_type data() const noexcept {
+        return _data;
+    }
+
+    raze_nodiscard raze_always_inline vector_type& data() noexcept {
+        return _data;
+    }
+
+    raze_nodiscard raze_always_inline operator vector_type() const noexcept {
+        return _data;
+    }
+
+    raze_nodiscard raze_always_inline operator vector_type&() noexcept {
+        return _data;
+    }
+private:
+    vector_type _data;
+};
+
 template <class _Type_, class _Abi_, i32 _Remaining_>
 struct best_chunk {
     static constexpr auto __total_bytes = _Remaining_ * sizeof(_Type_);
@@ -15,7 +53,8 @@ struct best_chunk {
         (__total_bytes >= 32) ? 256 : (__total_bytes >= 16) ? 128 : 0;
 
     static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
-    using type = std::conditional_t<(__width == 0), _Type_, type_traits::__deduce_simd_vector_type<_Type_, __width>>;
+    using type = std::conditional_t<(__width == 0), _Vector_wrapper<_Type_, _Abi_, 1, _Type_>,
+        _Vector_wrapper<_Type_, _Abi_, _Remaining_, type_traits::__deduce_simd_vector_type<_Type_, __width>>>;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>

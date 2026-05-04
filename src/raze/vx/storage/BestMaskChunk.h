@@ -67,8 +67,8 @@ struct best_mask_chunk {
     static constexpr auto elements_count = __fits ? __elems_in_vector : 1;
 
     using type = std::conditional_t<__use_kmask && __fits, _Mask_wrapper<_Type_, _Abi_, elements_count, __mmask_for_elements_t<__elems_in_vector>>,
-        std::conditional_t<__fits, _Mask_wrapper<_Type_, _Abi_, elements_count, typename best_chunk<
-            typename IntegerForSizeof<_Type_>::Unsigned, _Abi_, _Remaining_>::type>, _Mask_wrapper<_Type_, _Abi_, elements_count, bool>>>;
+        std::conditional_t<__fits, _Mask_wrapper<_Type_, _Abi_, elements_count, typename typename best_chunk<
+            typename IntegerForSizeof<_Type_>::Unsigned, _Abi_, _Remaining_>::type::vector_type>, _Mask_wrapper<_Type_, _Abi_, elements_count, bool>>>;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>
