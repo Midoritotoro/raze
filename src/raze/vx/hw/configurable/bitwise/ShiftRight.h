@@ -19,9 +19,11 @@ struct _Configurable_shr: raze::options::strict_elementwise_callable<_Configurab
     template <simd_type _Simd_>
     static raze_always_inline auto deferred_call(auto __options, const _Simd_& __x, u32 __shift) noexcept {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+        using _Abi_ = typename _Simd_::abi_type;
+        using _Value_ = typename _Simd_::value_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = _Shift_right<_Simd_::__isa, typename _Simd_::value_type>()(__chunk, std::forward<_Args>(__args)...);
+            __chunk = _Right_shift<_Abi_::isa, _Value_>()(__chunk, std::forward<_Args>(__args)...);
         };
 
         _Simd_ __result = __x;
@@ -31,9 +33,9 @@ struct _Configurable_shr: raze::options::strict_elementwise_callable<_Configurab
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
             if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __shift, __data(__mask), __data(__condition.alternative()));
+                __result.__for_each_chunk(__chunk_op, __shift, __mask.__storage().storage(), __condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __shift, __data(__mask));
+                __result.__for_each_chunk(__chunk_op, __shift, __mask.__storage().storage());
         }
         else {
             __result.__for_each_chunk(__chunk_op);

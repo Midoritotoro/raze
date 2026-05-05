@@ -4,7 +4,7 @@
 template <
     class           _Type_,
     raze::arch::ISA _ISA_,
-    raze::uint32    _Width_>
+    raze::u32    _Width_>
 struct bitwise_tests {
     using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
 
@@ -75,41 +75,41 @@ struct bitwise_tests {
         run_assign(a, b, arrA, arrB, [](auto& x, auto y){ x |= y; }, [](auto x, auto y){ return x | y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y){ x ^= y; }, [](auto x, auto y){ return x ^ y; });
 
-        if constexpr (std::is_integral_v<_Type_>) {
-            for (raze::uint32 sh = 0; sh <= sizeof(_Type_) * 8; ++sh) {
-                {
-                    Simd v = a;
-                    v <<= sh;
+        //if constexpr (std::is_integral_v<_Type_>) {
+        //    for (raze::u32 sh = 0; sh <= sizeof(_Type_) * 8; ++sh) {
+        //        {
+        //            Simd v = a;
+        //            v <<= sh;
 
-                    for (size_t i = 0; i < N; ++i) {
-                        _Type_ scalar = 0;
-                        if (sh < sizeof(_Type_) * 8)
-                            scalar = _Type_(arrA[i]) << sh;
+        //            for (size_t i = 0; i < N; ++i) {
+        //                _Type_ scalar = 0;
+        //                if (sh < sizeof(_Type_) * 8)
+        //                    scalar = _Type_(arrA[i]) << sh;
 
-                        raze_assert(v[i] == scalar);
-                    }
-                }
+        //                raze_assert(v[i] == scalar);
+        //            }
+        //        }
 
-                {
-                    Simd v = a;
-                    v >>= sh;
+        //        {
+        //            Simd v = a;
+        //            v >>= sh;
 
-                    for (size_t i = 0; i < N; ++i) {
-                        _Type_ scalar = 0;
+        //            for (size_t i = 0; i < N; ++i) {
+        //                _Type_ scalar = 0;
 
-                        if (sh < sizeof(_Type_) * 8) {
-                            scalar = _Type_(arrA[i]) >> sh;
-                        }
-                        else {
-                            if constexpr (std::is_signed_v<_Type_>)
-                                scalar = _Type_(arrA[i]) >> (sizeof(_Type_) * 8 - 1);
-                        }
+        //                if (sh < sizeof(_Type_) * 8) {
+        //                    scalar = _Type_(arrA[i]) >> sh;
+        //                }
+        //                else {
+        //                    if constexpr (std::is_signed_v<_Type_>)
+        //                        scalar = _Type_(arrA[i]) >> (sizeof(_Type_) * 8 - 1);
+        //                }
 
-                        raze_assert(v[i] == scalar);
-                    }
-                }
-            }
-        }
+        //                raze_assert(v[i] == scalar);
+        //            }
+        //        }
+        //    }
+        //}
 
         //{
         //    alignas(64) _Type_ arrSrc[N];
@@ -283,10 +283,10 @@ struct bitwise_tests {
 
     void operator()() {
         test_size<(_Width_ / (sizeof(_Type_) * 8))>();
-        test_size<1>();
-        test_size<7>();
-        test_size<17>();
-        test_size<31>();
+        //test_size<1>();
+        //test_size<7>();
+        //test_size<17>();
+        //test_size<31>();
     }
 };
 

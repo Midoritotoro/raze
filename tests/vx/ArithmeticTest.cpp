@@ -4,7 +4,7 @@
 template <
     class _Type_,
     raze::arch::ISA _ISA_,
-    raze::uint32    _Width_>
+    raze::u32    _Width_>
 struct arithmetic_tests {
     template<raze::sizetype N, class Simd, class SimdOp, class ScalarOp>
     static void run(const Simd& a, const Simd& b,

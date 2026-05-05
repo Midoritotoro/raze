@@ -4,7 +4,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Type_, class _Abi_, u64 _Elements_, intrin_or_arithmetic_type _Intrin_>
+template <class _Type_, class _Abi_, u64 _Elements_, intrin_type _Intrin_>
 struct _Vector_wrapper {
     using vector_type = _Intrin_;
     using abi_type = _Abi_;
@@ -37,7 +37,7 @@ private:
 template <class _Type_, class _Abi_, i32 _Remaining_>
 struct best_chunk {
     static constexpr auto __total_bytes = _Remaining_ * sizeof(_Type_);
-    
+
     static constexpr auto __max_isa_width = __has_avx512f_support_v<_Abi_::isa> ? 512 :
         __has_avx_support_v<_Abi_::isa> ? 256 : __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
 
@@ -45,8 +45,11 @@ struct best_chunk {
         (__total_bytes >= 32) ? 256 : (__total_bytes >= 16) ? 128 : 0;
 
     static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
-    using type = std::conditional_t<(__width == 0), _Vector_wrapper<_Type_, _Abi_, 1, _Type_>,
-        _Vector_wrapper<_Type_, _Abi_, _Remaining_, type_traits::__deduce_simd_vector_type<_Type_, __width>>>;
+
+    using _DeducedIntrin = type_traits::__deduce_simd_vector_type<_Type_, __width>;
+
+    using type = std::conditional_t<__width != 0 && intrin_type<_DeducedIntrin>,
+        _Vector_wrapper<_Type_, _Abi_, _Remaining_, _DeducedIntrin>, _Type_>; 
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>

@@ -49,7 +49,7 @@ struct best_mask_chunk {
     static constexpr auto __max_isa_width = __has_avx512f_support_v<_Abi_::isa> ? 512 : __has_avx_support_v<_Abi_::isa> ? 256 : __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
 
     static constexpr auto __bytes = _Remaining_ * sizeof(_Type_);
-    static constexpr auto __data_width = (__bytes >= 64) ? 512 :  (__bytes >= 32) ? 256 : (__bytes >= 16) ? 128 : 0;
+    static constexpr auto __data_width = (__bytes >= 64) ? 512 : (__bytes >= 32) ? 256 : (__bytes >= 16) ? 128 : 0;
     
     static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
     static constexpr auto __fits = (__width != 0);
@@ -58,9 +58,18 @@ struct best_mask_chunk {
 
     static constexpr auto elements_count = __fits ? __elems_in_vector : 1;
 
-    using type = std::conditional_t<__use_kmask && __fits, _Mask_wrapper<_Type_, _Abi_, elements_count, __mmask_for_elements_t<__elems_in_vector>>,
-        std::conditional_t<__fits, _Mask_wrapper<_Type_, _Abi_, elements_count, typename typename best_chunk<
-            typename IntegerForSizeof<_Type_>::Unsigned, _Abi_, _Remaining_>::type::vector_type>, _Mask_wrapper<_Type_, _Abi_, elements_count, bool>>>;
+    using _ChunkType = typename best_chunk<typename IntegerForSizeof<_Type_>::Unsigned, _Abi_, _Remaining_>::type;
+    
+    template<typename T>
+    struct __vector_type_or_bool { using type = bool; };
+    template<typename T> requires requires { typename T::vector_type; }
+    struct __vector_type_or_bool<T> { using type = typename T::vector_type; };
+
+    using _MaskIntrin = std::conditional_t<__use_kmask && __fits,
+        __mmask_for_elements_t<__elems_in_vector>,
+        typename __vector_type_or_bool<_ChunkType>::type>;
+
+    using type = _Mask_wrapper<_Type_, _Abi_, elements_count, _MaskIntrin>;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>

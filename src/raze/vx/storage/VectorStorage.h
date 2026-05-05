@@ -16,8 +16,9 @@ class _Vector_storage {
 
 public:
     using abi_type = _Abi_;
-    using tuple_type = std::conditional_t<__use_native, typename best_chunk<_Type_, _Abi_, _Abi_::size>::type, _Simd_vector_tuple_type<_Type_, _Abi_>>;
-
+    using tuple_type = std::conditional_t<__use_native, typename best_chunk<
+        _Type_, _Abi_, _Abi_::size>::type, _Simd_vector_tuple_type<_Type_, _Abi_>>;
+    
     _Vector_storage() noexcept = default;
     _Vector_storage(const _Vector_storage&) noexcept = default;
     _Vector_storage(_Vector_storage&&) noexcept = default;
@@ -81,6 +82,28 @@ public:
             return __f(_data, std::forward<_Args_>(__args)...);
         else
             return __for_each_tuple_any_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    }
+
+    raze_always_inline void __insert(i32 __i, _Type_ __value) noexcept {
+        raze_debug_assert(__i >= 0 && __i < _Abi_::size);
+
+        if constexpr (__use_native) _Insert<_Abi_::isa>()(__storage_unwrap(_data), __i, __value);
+        else __visit_chunk_by_index(_data, __i, [&](auto& __chunk, i32 __lane) raze_always_inline_lambda {
+            _Insert<_Abi_::isa>()(__storage_unwrap(__chunk), __lane, __value);
+        });
+    }
+
+    raze_nodiscard raze_always_inline _Type_ __extract(i32 __i) const noexcept {
+        raze_debug_assert(__i >= 0 && __i < _Abi_::size);
+        _Type_ __result{};
+
+        if constexpr (__use_native) __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(_data), __i);
+        else __visit_chunk_by_index(_data, __i, [&](const auto& __chunk, i32 __lane) raze_always_inline_lambda {
+            __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(__chunk), __lane);
+        });
+
+        return __result;
+
     }
 private:
     tuple_type _data;

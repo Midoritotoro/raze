@@ -240,8 +240,8 @@ public:
         simd __result = __x;
 
         __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _And<simd::__isa, value_type>()(__chunk, __value);
-        }, __y._storage);
+            __chunk = _And<simd::__isa, value_type>()(__storage_unwrap(__chunk), __storage_unwrap(__value));
+        }, __y._storage.storage());
 
         return __result;
     }
@@ -253,8 +253,8 @@ public:
         simd __result = __x;
 
         __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _Or<simd::__isa, value_type>()(__chunk, __value);
-        }, __y._storage);
+            __chunk = _Or<simd::__isa, value_type>()(__storage_unwrap(__chunk), __storage_unwrap(__value));
+        }, __y._storage.storage());
 
         return __result;
     }
@@ -266,8 +266,8 @@ public:
         simd __result = __x;
 
         __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _Xor<simd::__isa, value_type>()(__chunk, __value);
-        }, __y._storage);
+            __chunk = _Xor<simd::__isa, value_type>()(__storage_unwrap(__chunk), __storage_unwrap(__value));
+        }, __y._storage.storage());
 
         return __result;
     }
@@ -279,9 +279,9 @@ public:
         simd __result = *this;
 
         __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            __chunk = _Not<__isa, value_type>()(__chunk);
+            __chunk = _Not<simd::__isa, value_type>()(__storage_unwrap(__chunk));
         });
-        
+
         return __result;
     }
 
@@ -312,7 +312,7 @@ public:
             _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
         {
             __mask_chunk = _Not_equal<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage, __y._storage);
+        }, __x._storage.storage(), __y._storage.storage());
 
         return __mask;
     }
@@ -324,7 +324,7 @@ public:
             _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
         {
             __mask_chunk = _Less<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage, __y._storage);
+        }, __x._storage.storage(), __y._storage.storage());
 
         return __mask;
     }
@@ -336,7 +336,7 @@ public:
             _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
         {
             __mask_chunk = _Less_equal<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage, __y._storage);
+        }, __x._storage.storage(), __y._storage.storage());
 
         return __mask;
     }
@@ -348,7 +348,7 @@ public:
             _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
         {
             __mask_chunk = _Greater<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage, __y._storage);
+        }, __x._storage.storage(), __y._storage.storage());
 
         return __mask;
     }
@@ -360,7 +360,7 @@ public:
             _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
         {
             __mask_chunk = _Greater_equal<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage, __y._storage);
+        }, __x._storage.storage(), __y._storage.storage());
 
         return __mask;
     }
@@ -521,16 +521,18 @@ public:
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_from(_Iterator_ __first) noexcept {
         __for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            __chunk = _Load<__isa, _Chunk>()(std::to_address(__first));
-            __first += sizeof(_Chunk) / sizeof(value_type);
+            auto __chunk_data = __storage_unwrap(__chunk);
+            __chunk = _Load<__isa, decltype(__chunk_data)>()(std::to_address(__first));
+            __first += _Chunk::size;
         });
     }
 
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_from(_Iterator_ __first, decltype(aligned)) noexcept {
         __for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            __chunk = _Load<__isa, _Chunk>()(std::to_address(__first), aligned_policy{});
-            __first += sizeof(_Chunk) / sizeof(value_type);
+            auto __chunk_data = __storage_unwrap(__chunk);
+            __chunk = _Load<__isa, decltype(__chunk_data)>()(std::to_address(__first), aligned_policy{});
+            __first += _Chunk::size;
         });
     }
 
@@ -622,12 +624,11 @@ public:
     }
 private:
     raze_always_inline void __insert(i32 __position, value_type __value) noexcept {
-        __insert_element<__isa, _Type_>(_storage, __position, __value);
+        _storage.__insert(__position, __value);
     }
 
     raze_nodiscard raze_always_inline _Type_ __extract(i32 __i) const noexcept {
-        raze_debug_assert(__i >= 0 && __i < size());
-        return __extract_element<__isa, _Type_>(_storage, __i);
+        return _storage.__extract(__i);
     }
 
     friend _Simd_element_reference;

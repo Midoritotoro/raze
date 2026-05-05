@@ -48,28 +48,6 @@ raze_always_inline void __visit_chunk_by_index(_Tuple_& __tuple, i32 __index, _F
     }(std::make_index_sequence<__simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value>{});
 }
 
-template <arch::ISA _ISA_, class _Type_, class _Tuple_>
-raze_always_inline _Type_ __extract_element(const _Tuple_& __tuple, i32 __index) noexcept 
-    requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
-{
-    _Type_ __result {};
-
-    __visit_chunk_by_index(__tuple, __index, [&] (const auto& __chunk, i32 __lane) raze_always_inline_lambda {
-        __result = _Extract<_ISA_, _Type_>()(__chunk, __lane);
-    });
-
-    return __result;
-}
-
-template <arch::ISA _ISA_, class _Type_, class _Tuple_>
-raze_always_inline void __insert_element(_Tuple_& __tuple, i32 __index, _Type_ __value) noexcept
-    requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
-{
-    __visit_chunk_by_index(__tuple, __index, [&] (auto& __chunk, i32 __lane) raze_always_inline_lambda {
-        _Insert<_ISA_>()(__chunk, __lane, __value);
-    });
-}
-
 template <class _Tuple_, class _Function_, class ... _Args_>
 raze_always_inline void __for_each_tuple(_Tuple_& __tuple, _Function_&& __f, _Args_&& ... __args) noexcept
     requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
