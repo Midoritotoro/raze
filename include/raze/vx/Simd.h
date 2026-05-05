@@ -1,14 +1,6 @@
 ﻿#pragma once 
 
-#include <src/raze/vx/hw/Compare.h>
-#include <src/raze/vx/hw/Shuffle.h>
-
-#include <src/raze/utility/Assert.h>
-#include <src/raze/vx/hw/Access.h>
-
 #include <raze/vx/Mask.h>
-#include <src/raze/vx/hw/Memory.h>
-
 #include <src/raze/vx/reference/SimdElementReference.h>
 
 #include <raze/vx/Abi.h>
@@ -237,52 +229,28 @@ public:
      * @brief Bitwise AND.
     */
     raze_always_inline friend simd operator&(const simd& __x, const simd& __y) noexcept {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _And<simd::__isa, value_type>()(__storage_unwrap(__chunk), __storage_unwrap(__value));
-        }, __y._storage.storage());
-
-        return __result;
+        return bit_and(__x, __y);
     }
 
     /**
      * @brief Bitwise OR.
     */
     raze_always_inline friend simd operator|(const simd& __x,  const simd& __y) noexcept {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _Or<simd::__isa, value_type>()(__storage_unwrap(__chunk), __storage_unwrap(__value));
-        }, __y._storage.storage());
-
-        return __result;
+        return bit_or(__x, __y);
     }
 
     /**
      * @brief Bitwise XOR.
     */
     raze_always_inline friend simd operator^(const simd& __x, const simd& __y) noexcept {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const _Chunk& __value) raze_always_inline_lambda {
-            __chunk = _Xor<simd::__isa, value_type>()(__storage_unwrap(__chunk), __storage_unwrap(__value));
-        }, __y._storage.storage());
-
-        return __result;
+        return bit_xor(__x, __y);
     }
 
     /**
      * @brief Bitwise NOT.
     */
     raze_always_inline simd operator~() const noexcept {
-        simd __result = *this;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            __chunk = _Not<simd::__isa, value_type>()(__storage_unwrap(__chunk));
-        });
-
-        return __result;
+        return bit_not(*this);
     }
 
     /**
@@ -290,15 +258,7 @@ public:
      * @return A SIMD mask with one boolean per lane.
     */
     raze_always_inline friend mask_type operator==(const simd& __x, const simd& __y) noexcept {
-        mask_type __mask;
-
-        __mask.__for_each_chunk([&] <class _MaskChunk, class _SimdChunk> (
-            _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
-        {
-            __mask_chunk = _Equal<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage.storage(), __y._storage.storage());
-
-        return __mask;
+        return is_equal(__x, __y);
     }
 
     /**
@@ -306,63 +266,23 @@ public:
      * @return A SIMD mask with one boolean per lane.
     */
     raze_always_inline friend mask_type operator!=(const simd& __x, const simd& __y) noexcept {
-        mask_type __mask;
-
-        __mask.__for_each_chunk([&] <class _MaskChunk, class _SimdChunk> (
-            _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
-        {
-            __mask_chunk = _Not_equal<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage.storage(), __y._storage.storage());
-
-        return __mask;
+        return is_not_equal(__x, __y);
     }
 
     raze_always_inline friend mask_type operator<(const simd& __x, const simd& __y) noexcept {
-        mask_type __mask;
-
-        __mask.__for_each_chunk([&] <class _MaskChunk, class _SimdChunk> (
-            _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
-        {
-            __mask_chunk = _Less<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage.storage(), __y._storage.storage());
-
-        return __mask;
+        return is_less(__x, __y);
     }
 
     raze_always_inline friend mask_type operator<=(const simd& __x, const simd& __y) noexcept {
-        mask_type __mask;
-
-        __mask.__for_each_chunk([&] <class _MaskChunk, class _SimdChunk> (
-            _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
-        {
-            __mask_chunk = _Less_equal<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage.storage(), __y._storage.storage());
-
-        return __mask;
+        return is_less_equal(__x, __y);
     }
 
     raze_always_inline friend mask_type operator>(const simd& __x, const simd& __y) noexcept {
-        mask_type __mask;
-
-        __mask.__for_each_chunk([&] <class _MaskChunk, class _SimdChunk> (
-            _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
-        {
-            __mask_chunk = _Greater<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage.storage(), __y._storage.storage());
-
-        return __mask;
+        return is_greater(__x, __y);
     }
 
     raze_always_inline friend mask_type operator>=(const simd& __x, const simd& __y) noexcept {
-        mask_type __mask;
-
-        __mask.__for_each_chunk([&] <class _MaskChunk, class _SimdChunk> (
-            _MaskChunk& __mask_chunk, const _SimdChunk& __simd_chunk_x, const _SimdChunk& __simd_chunk_y) raze_always_inline_lambda
-        {
-            __mask_chunk = _Greater_equal<abi_type::isa, value_type>()(__simd_chunk_x, __simd_chunk_y);
-        }, __x._storage.storage(), __y._storage.storage());
-
-        return __mask;
+        return is_greater_equal(__x, __y);
     }
 
     raze_always_inline simd& operator>>=(u32 __shift) noexcept {
@@ -417,13 +337,7 @@ public:
      * @brief Element-wise negation.
     */
     raze_always_inline simd operator-() const noexcept {
-        simd __result = *this;
-
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            __chunk = _Negate<__isa, value_type>()(__chunk);
-        });
-        
-        return __result;
+        return neg(*this);
     }
 
     /**

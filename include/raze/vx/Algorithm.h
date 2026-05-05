@@ -43,4 +43,12 @@ constexpr inline auto none_of = raze::options::functor<_Configurable_none_of>;
 constexpr inline auto any_of = raze::options::functor<_Configurable_any_of>;
 constexpr inline auto some_of = raze::options::functor<_Configurable_some_of>;
 
+
+constexpr inline auto is_less = raze::options::functor<_Configurable_is_less>;
+constexpr inline auto is_greater = raze::options::functor<_Configurable_is_greater>;
+constexpr inline auto is_less_equal = raze::options::functor<_Configurable_is_less_equal>;
+constexpr inline auto is_greater_equal = raze::options::functor<_Configurable_is_greater_equal>;
+constexpr inline auto is_equal = raze::options::functor<_Configurable_is_equal>;
+constexpr inline auto is_not_equal = raze::options::functor<_Configurable_is_not_equal>;
+
 __RAZE_VX_NAMESPACE_END

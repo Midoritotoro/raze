@@ -9,7 +9,6 @@
 #include <src/raze/type_traits/ContainerComparison.h>
 #include <src/raze/type_traits/IntegralProperties.h>
 
-#include <src/raze/type_traits/SwapSafety.h>
 #include <src/raze/type_traits/TypeCheck.h>
 
 #include <src/raze/type_traits/FunctionPass.h>
@@ -19,6 +18,4 @@
 #include <src/raze/type_traits/SimdTypeCheck.h>
 
 #include <src/raze/type_traits/IsVirtualBaseOf.h>
-#include <src/raze/type_traits/OperatorWrappers.h>
 
-#include <src/raze/type_traits/Invoke.h>
