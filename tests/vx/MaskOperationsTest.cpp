@@ -62,7 +62,7 @@ struct variable_length_mask_tests {
             }
         }
 
-  /*      {
+        {
             auto a = make_pattern([](size_t i) { return i % 2 == 0; });
             auto b = make_pattern([](size_t i) { return i % 3 == 0; });
 
@@ -82,25 +82,25 @@ struct variable_length_mask_tests {
             }
         }
 
-        {
-            Mask t(true);
-            Mask f(false);
+        //{
+        //    Mask t(true);
+        //    Mask f(false);
 
-            raze_assert(raze::vx::all_of(t));
-            raze_assert(!raze::vx::none_of(t));
-            raze_assert(!raze::vx::some_of(t));
+        //    raze_assert(raze::vx::all_of(t));
+        //    raze_assert(!raze::vx::none_of(t));
+        //    raze_assert(!raze::vx::some_of(t));
 
-            raze_assert(raze::vx::none_of(f));
-            raze_assert(!raze::vx::any_of(f));
-            raze_assert(raze::vx::some_of(f));
+        //    raze_assert(raze::vx::none_of(f));
+        //    raze_assert(!raze::vx::any_of(f));
+        //    raze_assert(raze::vx::some_of(f));
 
-            Mask m(false);
-            if (N) m[0] = true;
+        //    Mask m(false);
+        //    if (N) m[0] = true;
 
-            raze_assert(raze::vx::any_of(m));
-            raze_assert(raze::vx::some_of(m));
-            raze_assert(!raze::vx::all_of(m));
-        }*/
+        //    raze_assert(raze::vx::any_of(m));
+        //    raze_assert(raze::vx::some_of(m));
+        //    raze_assert(!raze::vx::all_of(m));
+        //}
         /*
         {
             Mask m(false);

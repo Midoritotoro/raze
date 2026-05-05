@@ -180,14 +180,6 @@ public:
 		return !(__x != __y);
 	}
 
-	raze_nodiscard explicit raze_always_inline operator storage_type() const noexcept {
-		return _storage;
-	}
-
-	raze_nodiscard explicit raze_always_inline operator storage_type&() noexcept {
-		return _storage;
-	}
-
 	raze_nodiscard raze_always_inline storage_type __storage() const noexcept {
 		return _storage;
 	}

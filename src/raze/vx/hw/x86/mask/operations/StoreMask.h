@@ -4,6 +4,7 @@
 #include <src/raze/vx/hw/x86/arithmetic/Negate.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
+#include <src/raze/math/BitTest.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -24,9 +25,8 @@ struct _Store_mask {
 			_Store<_ISA_>()(__mem, _Negate<_ISA_, byte>()(_To_vector<_ISA_, 
 				type_traits::__deduce_simd_vector_type<_Signed, _Size_ * 8>, byte>()(__mask)), __policy);
 		else {
-			//using _StoreType = typename IntegerForSize<_Size_>::Unsigned;
-			//auto __vec = _Negate<_ISA_, byte>()(_To_vector<_ISA_, __m128i, byte>()(__mask));
-			//*reinterpret_cast<_StoreType*>(__mem) = _Extract<_ISA_, _StoreType>()(__vec, 0);
+			for (auto __i = 0; __i < _Size_; ++__i)
+				*__mem++ = static_cast<bool>(math::__bit_test(__mask, __i));
 		}
 	}
 };

@@ -30,14 +30,6 @@ public:
     _Mask_storage& operator=(const _Mask_storage&) noexcept = default;
     _Mask_storage& operator=(_Mask_storage&&) noexcept = default;
 
-    raze_always_inline operator tuple_type() const noexcept {
-        return _data;
-    }
-
-    raze_always_inline operator tuple_type&() noexcept {
-        return _data;
-    }
-
     raze_always_inline tuple_type storage() const noexcept {
         return _data;
     }

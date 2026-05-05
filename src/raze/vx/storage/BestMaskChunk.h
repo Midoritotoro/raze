@@ -39,14 +39,6 @@ struct _Mask_wrapper {
     raze_nodiscard raze_always_inline mask_type& data() noexcept {
         return _data;
     }
-
-    raze_nodiscard raze_always_inline operator mask_type() const noexcept {
-        return _data;
-    }
-
-    raze_nodiscard raze_always_inline operator mask_type&() noexcept {
-        return _data;
-    }
 private:
     mask_type _data;
 };

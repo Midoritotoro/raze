@@ -53,4 +53,16 @@ struct __is_simd_tuple<_Simd_tuple_nil>:
 template <class _Type_>
 concept wrapped_type = requires(const _Type_& __x_with_data) { __x_with_data.data(); };
 
+template <class _Type_>
+raze_always_inline auto __storage_unwrap(const _Type_& __x) noexcept {
+    if constexpr (wrapped_type<_Type_>) return __x.data();
+    else return __x;
+}
+
+template <class _Type_>
+raze_always_inline auto __storage_unwrap(_Type_& __x) noexcept {
+    if constexpr (wrapped_type<_Type_>) return __x.data();
+    else return __x;
+}
+
 __RAZE_VX_NAMESPACE_END

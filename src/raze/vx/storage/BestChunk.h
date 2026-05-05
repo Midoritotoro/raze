@@ -30,14 +30,6 @@ struct _Vector_wrapper {
     raze_nodiscard raze_always_inline vector_type& data() noexcept {
         return _data;
     }
-
-    raze_nodiscard raze_always_inline operator vector_type() const noexcept {
-        return _data;
-    }
-
-    raze_nodiscard raze_always_inline operator vector_type&() noexcept {
-        return _data;
-    }
 private:
     vector_type _data;
 };

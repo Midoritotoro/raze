@@ -22,27 +22,25 @@ struct _Configurable_not: raze::options::strict_elementwise_callable<_Configurab
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
         using _Value_ = typename _Type_::value_type;
         using _Abi_ = typename _Type_::abi_type;
-        using _Op = std::conditional_t<simd_type<_Type_>, _Not<_Abi_::isa, _Value_>, _Mask_not<_Abi_::isa, _Value_>>;
 
+        using _Op = std::conditional_t<simd_type<_Type_>, _Not<_Abi_::isa, _Value_>, _Mask_not<_Abi_::isa, _Value_>>;
         _Type_ __result = __x;
+
+        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
+            __chunk = _Op()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+        };
 
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
             auto __condition = __options[raze::options::condition_key];
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
             if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const auto& __mask, const auto& __src) raze_always_inline_lambda {
-                    __chunk = _Op()(__chunk.data(), __mask.data(), __src.data());
-                }, __mask.__storage(), __condition.alternative().__storage());
+                __result.__for_each_chunk(__chunk_op, __mask.__storage().storage(), __condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk, const auto& __mask) raze_always_inline_lambda {
-                    __chunk = _Op()(__chunk.data(), __mask.data());
-                }, __mask.__storage());
+                __result.__for_each_chunk(__chunk_op, __mask.__storage().storage());
         }
         else {
-            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-                __chunk = _Op()(__chunk.data());
-            });
+            __result.__for_each_chunk(__chunk_op);
         }
 
         return __result;

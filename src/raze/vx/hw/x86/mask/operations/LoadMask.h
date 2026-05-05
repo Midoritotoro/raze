@@ -4,7 +4,7 @@
 #include <src/raze/vx/hw/x86/arithmetic/Negate.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
 #include <src/raze/vx/hw/x86/access/Insert.h>
-
+#include <src/raze/math/BitTestAndSet.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -24,11 +24,13 @@ struct _Load_mask {
 			return _To_mask<_ISA_, byte>()(_Negate<_ISA_, byte>()(_Load<_ISA_, 
 				type_traits::__deduce_simd_vector_type<_Signed, _Size_ * 8>>()(__mem, __policy)));
 		else {
-			using _LoadType = typename IntegerForSize<_Size_>::Unsigned;
-			__m128i __vec;
-			_LoadType __loaded = *reinterpret_cast<const _LoadType*>(__mem);
-			_Insert<_ISA_>()(__vec, 0, __loaded);
-			return _To_mask<_ISA_, byte>()(__vec)& ((1u << _Size_) - 1);
+			_Mask_ __mask = 0;
+
+			for (auto __i = 0; __i < _Size_; ++__i)
+				if (*__mem++)
+					math::__bit_test_and_set(__mask, __i);
+
+			return __mask;
 		}
 	}
 };

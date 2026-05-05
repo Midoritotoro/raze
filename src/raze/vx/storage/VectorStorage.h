@@ -16,8 +16,7 @@ class _Vector_storage {
 
 public:
     using abi_type = _Abi_;
-    using tuple_type = std::conditional_t<__use_native, type_traits::__deduce_simd_vector_type<_Type_, 
-        (_Abi_::size * sizeof(_Type_) * 8)>, _Simd_vector_tuple_type<_Type_, _Abi_>>;
+    using tuple_type = std::conditional_t<__use_native, typename best_chunk<_Type_, _Abi_, _Abi_::size>::type, _Simd_vector_tuple_type<_Type_, _Abi_>>;
 
     _Vector_storage() noexcept = default;
     _Vector_storage(const _Vector_storage&) noexcept = default;
@@ -27,14 +26,6 @@ public:
 
     _Vector_storage& operator=(const _Vector_storage&) noexcept = default;
     _Vector_storage& operator=(_Vector_storage&&) noexcept = default;
-
-    raze_always_inline operator tuple_type() const noexcept {
-        return _data;
-    }
-
-    raze_always_inline operator tuple_type&() noexcept {
-        return _data;
-    }
 
     raze_always_inline tuple_type storage() const noexcept {
         return _data;
