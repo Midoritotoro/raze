@@ -22,11 +22,11 @@ struct compare_tests {
         Simd a; a.copy_from(arrA);
         Simd b; b.copy_from(arrB);
 
-        //{
-        //    auto m = (a == a);
-        //    for (size_t i = 0; i < N; ++i)
-        //        raze_assert(m[i] == true);
-        //}
+        {
+            auto m = (a == a);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == true);
+        }
 
         {
             auto m = (a != b);
@@ -34,29 +34,29 @@ struct compare_tests {
                 raze_assert(m[i] == (arrA[i] != arrB[i]));
         }
 
-        //{
-        //    auto m = (a < b);
-        //    for (size_t i = 0; i < N; ++i)
-        //        raze_assert(m[i] == (arrA[i] < arrB[i]));
-        //}
+        {
+            auto m = (a < b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] < arrB[i]));
+        }
 
-        //{
-        //    auto m = (a > b);
-        //    for (size_t i = 0; i < N; ++i)
-        //        raze_assert(m[i] == (arrA[i] > arrB[i]));
-        //}
+        {
+            auto m = (a > b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] > arrB[i]));
+        }
 
-        //{
-        //    auto m = (a <= b);
-        //    for (size_t i = 0; i < N; ++i)
-        //        raze_assert(m[i] == (arrA[i] <= arrB[i]));
-        //}
+        {
+            auto m = (a <= b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] <= arrB[i]));
+        }
 
-        //{
-        //    auto m = (a >= b);
-        //    for (size_t i = 0; i < N; ++i)
-        //        raze_assert(m[i] == (arrA[i] >= arrB[i]));
-        //}
+        {
+            auto m = (a >= b);
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(m[i] == (arrA[i] >= arrB[i]));
+        }
     }
 
     void operator()() {

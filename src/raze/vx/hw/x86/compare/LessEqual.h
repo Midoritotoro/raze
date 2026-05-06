@@ -31,7 +31,7 @@ struct _Less_equal {
                 else if constexpr (__is_epu64_v<_Type_>) return _mm_cmple_epu64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
                 else if constexpr (__is_epi32_v<_Type_>) return _mm_cmple_epi32_mask(__as<__m128i>(__x), __as<__m128i>(__y));
                 else if constexpr (__is_epu32_v<_Type_>) return _mm_cmple_epu32_mask(__as<__m128i>(__x), __as<__m128i>(__y));
-                if constexpr (__avx512bw) {
+                else if constexpr (__avx512bw) {
                     if constexpr (__is_epi16_v<_Type_>) return _mm_cmple_epi16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
                     else if constexpr (__is_epu16_v<_Type_>) return _mm_cmple_epu16_mask(__as<__m128i>(__x), __as<__m128i>(__y));
                     else if constexpr (__is_epi8_v<_Type_>) return _mm_cmple_epi8_mask(__as<__m128i>(__x), __as<__m128i>(__y));
@@ -53,7 +53,7 @@ struct _Less_equal {
                 else if constexpr (__is_epu64_v<_Type_>) return _mm256_cmple_epu64_mask(__as<__m256i>(__x), __as<__m256i>(__y));
                 else if constexpr (__is_epi32_v<_Type_>) return _mm256_cmple_epi32_mask(__as<__m256i>(__x), __as<__m256i>(__y));
                 else if constexpr (__is_epu32_v<_Type_>) return _mm256_cmple_epu32_mask(__as<__m256i>(__x), __as<__m256i>(__y));
-                if constexpr (__avx512bw) {
+                else if constexpr (__avx512bw) {
                     if constexpr (__is_epi16_v<_Type_>) return _mm256_cmple_epi16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
                     else if constexpr (__is_epu16_v<_Type_>) return _mm256_cmple_epu16_mask(__as<__m256i>(__x), __as<__m256i>(__y));
                     else if constexpr (__is_epi8_v<_Type_>) return _mm256_cmple_epi8_mask(__as<__m256i>(__x), __as<__m256i>(__y));
@@ -68,19 +68,16 @@ struct _Less_equal {
             else if constexpr (__is_epu64_v<_Type_>) return _mm512_cmple_epu64_mask(__as<__m512i>(__x), __as<__m512i>(__y));
             else if constexpr (__is_epi32_v<_Type_>) return _mm512_cmple_epi32_mask(__as<__m512i>(__x), __as<__m512i>(__y));
             else if constexpr (__is_epu32_v<_Type_>) return _mm512_cmple_epu32_mask(__as<__m512i>(__x), __as<__m512i>(__y));
-            else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+            else if constexpr (__avx512bw) {
                 if constexpr (__is_epi16_v<_Type_>) return _mm512_cmple_epi16_mask(__as<__m512i>(__x), __as<__m512i>(__y));
                 else if constexpr (__is_epu16_v<_Type_>) return _mm512_cmple_epu16_mask(__as<__m512i>(__x), __as<__m512i>(__y));
                 else if constexpr (__is_epi8_v<_Type_>) return _mm512_cmple_epi8_mask(__as<__m512i>(__x), __as<__m512i>(__y));
                 else if constexpr (__is_epu8_v<_Type_>) return _mm512_cmple_epu8_mask(__as<__m512i>(__x), __as<__m512i>(__y));
             }
         }
-        else {
-            if constexpr (arithmetic_type<_Tp_>)
-                return __x <= __y;
-            else
-                return _Not<_ISA_, _Type_>()(_Less<_ISA_, _Type_>()(__y, __x));
-        }
+        
+        if constexpr (arithmetic_type<_Tp_>) return __x <= __y;
+        else return _Not<_ISA_, _Type_>()(_Less<_ISA_, _Type_>()(__y, __x));
 	}
 };
 

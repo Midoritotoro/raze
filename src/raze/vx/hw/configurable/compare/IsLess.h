@@ -47,12 +47,7 @@ struct _Configurable_is_less: raze::options::strict_elementwise_callable<_Config
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
             auto __condition = __options[raze::options::condition_key];
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
-
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage(),
-                    __mask.__storage().storage(), __condition.alternative().__storage().storage());
-            else
-                __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage(), __mask.__storage().storage());
+            __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage(), __mask.__storage().storage());
         }
         else {
             __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage());
