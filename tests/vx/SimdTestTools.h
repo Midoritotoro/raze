@@ -193,20 +193,20 @@ void __test_all_helper() {
     if (!raze::arch::ProcessorFeatures::isSupported<_ISA_>())
         return;
 
-    raze::type_traits::invoke(_Function_<raze::i8, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::u8, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i8, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::u8, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<raze::i16, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::u16, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i16, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::u16, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<raze::i32, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::u32, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i32, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::u32, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<raze::i64, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::u64, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i64, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::u64, _ISA_, _Width_>());
 
-    raze::type_traits::invoke(_Function_<raze::f32, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::f64, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::f32, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::f64, _ISA_, _Width_>());
 }
 
 template <template <class, raze::arch::ISA, raze::u32> class _Function_>

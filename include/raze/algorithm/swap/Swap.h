@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <src/raze/algorithm/AlgorithmDebug.h>
-#include <src/raze/type_traits/SwapSafety.h>
 
 #include <src/raze/algorithm/vectorized/swap/SwapRangesVectorized.h>
 #include <src/raze/algorithm/MsvcIteratorUnwrap.h>

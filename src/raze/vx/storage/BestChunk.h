@@ -4,15 +4,16 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Type_, class _Abi_, u64 _Elements_, intrin_type _Intrin_>
+template <class _Type_, class _Abi_, u64 _Elements_, class _Intrin_>
 struct _Vector_wrapper {
-    using vector_type = _Intrin_;
+    using unwrapped_type = _Intrin_;
     using abi_type = _Abi_;
     using value_type = _Type_;
 
     static constexpr auto size = _Elements_;
 
-    _Vector_wrapper(_Intrin_ __vector) noexcept : _data(__vector) {}
+    template <intrin_type _OtherIntrin_> requires (sizeof(_Intrin_) == sizeof(_OtherIntrin_))
+    _Vector_wrapper(_OtherIntrin_ __vector) noexcept : _data(__as<_Intrin_>(__vector)) {}
 
     _Vector_wrapper() noexcept = default;
     _Vector_wrapper(const _Vector_wrapper&) noexcept = default;
@@ -23,21 +24,50 @@ struct _Vector_wrapper {
     _Vector_wrapper& operator=(const _Vector_wrapper&) noexcept = default;
     _Vector_wrapper& operator=(_Vector_wrapper&&) noexcept = default;
 
-    raze_nodiscard raze_always_inline vector_type data() const noexcept {
+    raze_nodiscard raze_always_inline unwrapped_type data() const noexcept {
         return _data;
     }
 
-    raze_nodiscard raze_always_inline vector_type& data() noexcept {
+    raze_nodiscard raze_always_inline unwrapped_type& data() noexcept {
         return _data;
     }
 private:
-    vector_type _data;
+    unwrapped_type _data;
+};
+
+template <class _Type_, class _Abi_>
+struct _Scalar_wrapper {
+    using unwrapped_type = _Type_;
+    using abi_type = _Abi_;
+    using value_type = _Type_;
+
+    static constexpr auto size = 1;
+
+    _Scalar_wrapper(_Type_ __v) noexcept : _data(__v) {}
+
+    _Scalar_wrapper() noexcept = default;
+    _Scalar_wrapper(const _Scalar_wrapper&) noexcept = default;
+    _Scalar_wrapper(_Scalar_wrapper&&) noexcept = default;
+
+    ~_Scalar_wrapper() = default;
+
+    _Scalar_wrapper& operator=(const _Scalar_wrapper&) noexcept = default;
+    _Scalar_wrapper& operator=(_Scalar_wrapper&&) noexcept = default;
+
+    raze_nodiscard raze_always_inline unwrapped_type data() const noexcept {
+        return _data;
+    }
+
+    raze_nodiscard raze_always_inline unwrapped_type& data() noexcept {
+        return _data;
+    }
+private:
+    unwrapped_type _data;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>
 struct best_chunk {
     static constexpr auto __total_bytes = _Remaining_ * sizeof(_Type_);
-
     static constexpr auto __max_isa_width = __has_avx512f_support_v<_Abi_::isa> ? 512 :
         __has_avx_support_v<_Abi_::isa> ? 256 : __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
 
@@ -45,11 +75,11 @@ struct best_chunk {
         (__total_bytes >= 32) ? 256 : (__total_bytes >= 16) ? 128 : 0;
 
     static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
+    static constexpr auto __length = __width / (sizeof(_Type_) * 8);
 
-    using _DeducedIntrin = type_traits::__deduce_simd_vector_type<_Type_, __width>;
-
-    using type = std::conditional_t<__width != 0 && intrin_type<_DeducedIntrin>,
-        _Vector_wrapper<_Type_, _Abi_, _Remaining_, _DeducedIntrin>, _Type_>; 
+    using _deduced_type = type_traits::__deduce_simd_vector_type<_Type_, __width>;
+    using type = std::conditional_t<__width != 0 && intrin_type<_deduced_type>,
+        _Vector_wrapper<_Type_, _Abi_, __length, _deduced_type>, _Scalar_wrapper<_Type_, _Abi_>>;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>

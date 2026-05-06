@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raze/vx/.h>
+#include <raze/vx/Algorithm.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 
 

@@ -72,15 +72,6 @@ public:
 template <typename _VectorElementType_, u32 _Width_>
 using __deduce_simd_vector_type = typename __deduce_simd_vector_type__<_VectorElementType_, _Width_>::type;
 
-template <sizetype size>
-using __deduce_simd_shuffle_mask_type_helper = std::conditional_t<size <= 2, u8,
-		std::conditional_t<size <= 4, u8,
-			std::conditional_t<size <= 8, u32,
-				std::conditional_t<size <= 16, u64, void>>>>;
-
-template <arch::ISA	_ISA_, class _Element_, u32 _Width_>
-using __deduce_simd_shuffle_mask_type = __deduce_simd_shuffle_mask_type_helper<(_Width_ / sizeof(_Element_))>;
-
 template <arch::ISA _ISA_> 
 constexpr bool __is_zeroupper_required_v = arch::__is_ymm_v<_ISA_> || arch::__is_zmm_v<_ISA_>;
 

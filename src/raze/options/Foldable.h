@@ -1,7 +1,6 @@
 #pragma once
 
-#include <src/raze/type_traits/Invoke.h>
-
+#include <src/raze/type_traits/TypeTraits.h>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
@@ -23,9 +22,9 @@ struct foldable {
         foldable&&                          __x, 
         foldable<_Function_, _OtherType_>&& __y) noexcept
     {
-        using _ReturnType = decltype(raze::type_traits::invoke(__x._function, __x._value, __y._value));
+        using _ReturnType = decltype(std::invoke(__x._function, __x._value, __y._value));
         return foldable<_Function_, std::decay_t<_ReturnType>>{__x._function,
-            raze::type_traits::invoke(__x._function, __x._value, __y._value)};
+            std::invoke(__x._function, __x._value, __y._value)};
     }
 
     template <class _OtherType_>
@@ -33,9 +32,9 @@ struct foldable {
         foldable&&                          __x, 
         foldable<_Function_, _OtherType_>&& __y) noexcept 
     {
-        using _ReturnType = decltype(raze::type_traits::invoke(__x._function, __x._value, __y._value));
+        using _ReturnType = decltype(std::invoke(__x._function, __x._value, __y._value));
         return foldable<_Function_, std::decay_t<_ReturnType>>{__x._function,
-            raze::type_traits::invoke(__x._function, __x._value, __y._value)};
+            std::invoke(__x._function, __x._value, __y._value)};
     }
 };
 

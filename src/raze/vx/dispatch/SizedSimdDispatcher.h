@@ -68,8 +68,7 @@ public:
 //                std::forward<_Args_>(__args)...);
 //        }
 
-        return type_traits::invoke(
-            type_traits::__pass_function(__fallback), std::forward<_Args_>(__args)...);
+        return std::invoke(type_traits::__pass_function(__fallback), std::forward<_Args_>(__args)...);
 // #endif
     }
 };

@@ -41,7 +41,7 @@ struct _Configurable_is_greater: raze::options::strict_elementwise_callable<_Con
         simd_mask<_Value_, _Abi_> __result {};
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Greater<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+            __chunk = _Greater<_Abi_::isa, _Value_>()(__storage_unwrap<_Args_>(__args)...);
         };
 
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
@@ -49,12 +49,13 @@ struct _Configurable_is_greater: raze::options::strict_elementwise_callable<_Con
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
             if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage(), __condition.alternative().__storage().storage());
+                __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage(),
+                    __mask.__storage().storage(), __condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage());
+                __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage(), __mask.__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __y.__storage().storage());
+            __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage());
         }
 
         return __result;

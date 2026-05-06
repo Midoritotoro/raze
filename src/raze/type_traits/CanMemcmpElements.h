@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <src/raze/type_traits/IteratorCategory.h>
-#include <src/raze/type_traits/OperatorWrappers.h>
 
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
 
@@ -50,12 +49,6 @@ constexpr bool __can_memcmp_elements_with_pred_v<_FirstElement_, _SecondElement_
 	__copy_iterator_category<_SecondElement_*, _ThirdElement_*>::BitcopyConstructible && 
 	__can_memcmp_elements_v<std::remove_cv_t<_ThirdElement_>, std::remove_cv_t<_ThirdElement_>
 >;
-
-template <
-	class _FirstElement_,
-	class _SecondElement_>
-constexpr bool __can_memcmp_elements_with_pred_v<_FirstElement_, _SecondElement_, type_traits::equal_to<>> =
-	__can_memcmp_elements_v<_FirstElement_, _SecondElement_>;
 
 #if raze_has_cxx20
 template <

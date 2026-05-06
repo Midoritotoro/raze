@@ -436,8 +436,9 @@ public:
     raze_always_inline void copy_from(_Iterator_ __first) noexcept {
         __for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
             auto __chunk_data = __storage_unwrap(__chunk);
-            __chunk = _Load<__isa, decltype(__chunk_data)>()(std::to_address(__first));
-            __first += _Chunk::size;
+            auto __mem = std::to_address(__first);
+            __chunk = _Load<__isa, decltype(__chunk_data)>()(__mem);
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
         });
     }
 
@@ -445,8 +446,9 @@ public:
     raze_always_inline void copy_from(_Iterator_ __first, decltype(aligned)) noexcept {
         __for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
             auto __chunk_data = __storage_unwrap(__chunk);
-            __chunk = _Load<__isa, decltype(__chunk_data)>()(std::to_address(__first), aligned_policy{});
-            __first += _Chunk::size;
+            auto __mem = std::to_address(__first);
+            __chunk = _Load<__isa, decltype(__chunk_data)>()(__mem, aligned_policy{});
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
         });
     }
 

@@ -8,7 +8,6 @@
 #include <raze/compatibility/FunctionAttributes.h>
 
 #include <raze/compatibility/Nodiscard.h>
-#include <src/raze/type_traits/Invoke.h>
 
 
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
@@ -25,9 +24,9 @@ struct __function_reference {
 
     template <class ... _Args_>
     constexpr decltype(auto) operator()(_Args_&& ... __values) 
-        noexcept(type_traits::is_nothrow_invocable_v<_Function_&, _Args_...>)
+        noexcept(std::is_nothrow_invocable_v<_Function_&, _Args_...>)
     {
-        return type_traits::invoke(_function, std::forward<_Args_>(__values)...);
+        return std::invoke(_function, std::forward<_Args_>(__values)...);
     }
 };
 
