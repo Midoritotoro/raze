@@ -12,16 +12,16 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
 struct _Configurable_ternarylogic: raze::options::strict_elementwise_callable<_Configurable_ternarylogic, _Options_> {
-    template <simd_or_mask_type _Type_, class _Ct_, _Ct_ _Op_>
+    template <simd_or_mask_type _Type_, u8 _Op_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, 
-        const _Type_& __y, const _Type_& __z, std::integral_constant<_Ct_, _Op_> __op) const noexcept
+        const _Type_& __y, const _Type_& __z, std::integral_constant<u8, _Op_> __op) const noexcept
     {
-        return raze::options::__dispatch_call(*this, __x, __y, __z);
+        return raze::options::__dispatch_call(*this, __x, __y, __z, __op);
     }
 
-    template <simd_or_mask_type _Type_, class _Ct_, _Ct_ _Op_>
+    template <simd_or_mask_type _Type_, u8 _Op_>
     static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, 
-        const _Type_& __y, const _Type_& __z, std::integral_constant<_Ct_, _Op_> __op) noexcept
+        const _Type_& __y, const _Type_& __z, std::integral_constant<u8, _Op_> __op) noexcept
     {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
         using _Value_ = typename _Type_::value_type;

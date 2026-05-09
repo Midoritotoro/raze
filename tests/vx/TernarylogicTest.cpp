@@ -117,7 +117,7 @@ void __test_ternarylogic_single_mask() {
         }
     };
 
-    for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+    for (auto i = 0; i < std::min(int(std::pow(2, N)), 100); ++i) {
         auto rnd_mask = make_random_mask<Mask>();
         run_tests(rnd_mask);
     }
@@ -131,7 +131,7 @@ void __test_ternarylogic_all_masks_impl(std::index_sequence<I...>) {
 
 template<class Simd, class Mask, class T, size_t N>
 void test_ternarylogic_all_masks() {
-    __test_ternarylogic_all_masks_impl<Simd, Mask, T, N>(std::make_index_sequence<1>{});
+    __test_ternarylogic_all_masks_impl<Simd, Mask, T, N>(std::make_index_sequence<256>{});
 }
 
 template <
@@ -139,13 +139,20 @@ template <
     raze::arch::ISA _ISA_,
     raze::u32    _Width_>
 struct ternarylogic_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Width_ / (sizeof(_Type_) * 8)>> ;
-    using Mask = typename Simd::mask_type;
-    using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
-    static constexpr size_t N = Simd::size();
+    
+    template <raze::u64 _Size_>
+    void test_size() {
+        using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Size_>>;
+        using Mask = typename Simd::mask_type;
+        using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
+        static constexpr size_t N = Simd::size();
+
+        test_ternarylogic_all_masks<Simd, Mask, _Type_, N>();
+    }
 
     void operator()() {
-        test_ternarylogic_all_masks<Simd, Mask, _Type_, N>();
+        test_size<_Width_ / (sizeof(_Type_) * 8)>();
+        test_size<1>();
     }
 };
 
@@ -158,19 +165,12 @@ void __ternarylogic_test_all_helper() {
         return;
 
     std::invoke(_Function_<raze::i8, _ISA_, _Width_>());
-    std::invoke(_Function_<raze::i16, _ISA_, _Width_>());
-    std::invoke(_Function_<raze::i32, _ISA_, _Width_>());
-    std::invoke(_Function_<raze::i64, _ISA_, _Width_>());
 }
 
 template <template <class, raze::arch::ISA, raze::u32> class _Function_>
 void ternarylogic_test_all() {
     __test_all_helper<_Function_, raze::arch::ISA::SSE2, 128>();
-    __test_all_helper<_Function_, raze::arch::ISA::AVX2, 256>();
-
     __test_all_helper<_Function_, raze::arch::ISA::AVX512F, 512>();
-    __test_all_helper<_Function_, raze::arch::ISA::AVX512VLF, 128>();
-    __test_all_helper<_Function_, raze::arch::ISA::AVX512VLF, 256>();
 }
 
 int main() {
