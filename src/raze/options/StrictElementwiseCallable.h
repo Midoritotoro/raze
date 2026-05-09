@@ -89,10 +89,8 @@ constexpr raze_always_inline auto __dispatch_call(
 {
     using _ReturnType = decltype(__callable(std::forward<_Args_>(__args)...));
 
-    if constexpr (std::is_void_v<_ReturnType>)
-        __callable.behavior(__callable.options(), std::forward<_Args_>(__args)...);
-    else
-        return __callable.behavior(__callable.options(), std::forward<_Args_>(__args)...);
+    if constexpr (std::is_void_v<_ReturnType>) __callable.behavior(__callable.options(), std::forward<_Args_>(__args)...);
+    else return __callable.behavior(__callable.options(), std::forward<_Args_>(__args)...);
 }
 
 

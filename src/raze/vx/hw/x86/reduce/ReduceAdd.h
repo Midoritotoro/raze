@@ -102,7 +102,7 @@ struct _Reduce_add {
                     const auto __reduce = _mm_add_epi64(__low64, __high64);
                     return _Reduce_add<arch::ISA::SSSE3, _Type_>()(__reduce);
                 }
-                if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
+                else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
                     const auto __zeros = _mm256_setzero_si256();
 
                     const auto __reduce4 = _mm256_hadd_epi32(__as<__m256i>(__x), __zeros);
@@ -136,6 +136,24 @@ struct _Reduce_add {
                     const auto __reduce8 = _mm_add_epi64(__low64, __high64);
                     return _Reduce_add<arch::ISA::SSSE3, i64>()(__reduce8);
                 }
+                else if constexpr (__is_pd_v<_Type_>) {
+                    const auto __low64 = __as<__m128d>(__x);
+                    const auto __high64 = _mm256_extractf128_pd(__as<__m256d>(__x), 1);
+
+                    const auto __reduce = _mm_add_pd(__low64, __high64);
+                    return _Reduce_add<arch::ISA::SSSE3, _Type_>()(__reduce);
+                }
+                else if constexpr (__is_ps_v<_Type_>) {
+                    const auto __zeros = _mm256_setzero_ps();
+
+                    const auto __reduce4 = _mm256_hadd_ps(__as<__m256>(__x), __zeros);
+                    const auto __reduce5 = __as<__m256>(_mm256_permute4x64_epi64(__as<__m256i>(__reduce4), 0xD8));
+
+                    const auto __reduce6 = _mm256_hadd_ps(__reduce5, __zeros);
+                    const auto __reduce7 = _mm256_hadd_ps(__reduce6, __zeros);
+
+                    return static_cast<_ReduceType>(_mm_cvtss_f32(__as<__m128>(__reduce7)));
+                }
             }
             else {
                 const auto __low = __as<__m128>(__x);
@@ -162,12 +180,12 @@ struct _Reduce_add {
 
     template <intrin_or_arithmetic_type	_Tp_, raw_mask_type	_Mask_>
     raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
-        return _Selectz<_ISA_, _Type_>()(__x, __mask);
+        return (*this)(_Selectz<_ISA_, _Type_>()(__x, __mask));
     }
 
     template <intrin_or_arithmetic_type	_Tp_, raw_mask_type	_Mask_>
     raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(_Tp_ __x, _Mask_ __mask, _Tp_ __src) const noexcept {
-        return _Select<_ISA_, _Type_>()(__x, __src, __mask);
+        return (*this)(_Select<_ISA_, _Type_>()(__x, __src, __mask));
     }
 };
 

@@ -4,13 +4,14 @@
 template <
     class           _Type_,
     raze::arch::ISA _ISA_,
-    raze::uint32    _Width_>
+    raze::u32    _Width_>
 struct horizontal_minmax_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::x86_runtime_abi<_ISA_, _Width_>>;
-    using Mask = typename Simd::mask_type;
-    static constexpr size_t N = Simd::size();
+    template <raze::u64 _Size_>
+    void test_size() {
+        using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Size_>>;
+        using Mask = typename Simd::mask_type;
+        static constexpr size_t N = Simd::size();
 
-    void operator()() {
         alignas(64) _Type_ arr[N], fallback[N];
 
         std::iota(fallback, fallback + N, 1);
@@ -21,8 +22,16 @@ struct horizontal_minmax_tests {
         Simd v; v.copy_from(arr);
         Simd fbk; fbk.copy_from(fallback);
 
-        raze_assert(raze::vx::horizontal_min(v) == (*std::min_element(arr, arr + N)));
-        raze_assert(raze::vx::horizontal_max(v) == (*std::max_element(arr, arr + N)));
+        {
+            auto hmin = raze::vx::horizontal_min(v);
+            auto expected = (*std::min_element(arr, arr + N));
+            raze_assert(hmin == expected);
+        }
+        {
+            auto hmax = raze::vx::horizontal_max(v);
+            auto expected = (*std::max_element(arr, arr + N));
+            raze_assert(hmax == expected);
+        }
 
         for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
@@ -60,6 +69,13 @@ struct horizontal_minmax_tests {
                 raze_assert(rmaxwz == expected_max);
             }
         }
+    }
+
+    void operator()() {
+        test_size<_Width_ / (sizeof(_Type_) * 8)>();
+        test_size<1>();
+        test_size<7>();
+        test_size<17>();
     }
 };
 

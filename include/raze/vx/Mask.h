@@ -29,14 +29,19 @@ public:
 	using value_type = _Type_;
 	using abi_type = _Abi_;
 
-	simd_mask() = default;
+	simd_mask() noexcept {
+		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk) raze_always_inline_lambda {
+			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(false);
+		});
+	}
+
 	simd_mask(const simd_mask&) = default;
 	simd_mask(simd_mask&&) = default;
 	~simd_mask() = default;
 
 	simd_mask(bool __value) noexcept {
 		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::mask_type, value_type>()(__value);
+			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(__value);
 		});
 	}
 
@@ -58,7 +63,7 @@ public:
 			auto __current = reinterpret_cast<const bool*>(std::to_address(__first));
 
 			__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-				__chunk = _Load_mask<abi_type::isa, _Chunk::size, typename _Chunk::mask_type, value_type>()(__current, __alignment_policy);
+				__chunk = _Load_mask<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(__current, __alignment_policy);
 				algorithm::__advance_bytes(__current, _Chunk::size * sizeof(value_type));
 			});
 		}
@@ -88,7 +93,7 @@ public:
 	}
 
 	raze_always_inline bool operator[](i32 __index) const noexcept {
-		return reference_type(*this, __index);
+		return __extract(__index);
 	}
 
 	raze_always_inline auto operator[](i32 __index) noexcept {

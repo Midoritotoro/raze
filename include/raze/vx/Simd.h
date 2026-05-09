@@ -96,7 +96,8 @@ public:
         simd __result {};
 
         __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            __chunk = _Zero<__isa, _Chunk>()();
+            using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
+            __chunk = _Zero<__isa, _StorageType>()();
         });
 
         return __result;
@@ -109,7 +110,8 @@ public:
         simd __result {};
         
         __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk, _Tp __value) raze_always_inline_lambda {
-            __chunk = _Broadcast<__isa, _Chunk>()(__value);
+            using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
+            __chunk = _Broadcast<__isa, _StorageType>()(__value);
         }, __value);
 
         return __result;
@@ -134,13 +136,7 @@ public:
      *  If `shift >= bit_width(value_type)`, the result is zero.
     */
     raze_always_inline friend simd operator<<(const simd& __x, u32 __shift) noexcept {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk, class _Sh> (_Chunk& __chunk, _Sh __sh) raze_always_inline_lambda {
-            __chunk = _Left_shift<simd::__isa, value_type>()(__chunk, __sh);
-        }, __shift);
-
-        return __result;
+        return bit_shl(__x, __shift);
     }
 
     /**
@@ -158,13 +154,7 @@ public:
      *  sign-extended depending on type.
     */
     raze_always_inline friend simd operator>>(const simd& __x, u32 __shift) noexcept {
-        simd __result = __x;
-
-        __result.__for_each_chunk([&] <class _Chunk, class _Sh> (_Chunk& __chunk, _Sh __sh) raze_always_inline_lambda {
-            __chunk = _Right_shift<simd::__isa, value_type>()(__chunk, __sh);
-        }, __shift);
-
-        return __result;
+        return bit_shr(__x, __shift);
     }
 
     /**
@@ -501,18 +491,22 @@ public:
     */
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_to(_Iterator_ __first) noexcept {
-        __for_each_chunk([&] <class _Chunk, class _It> (const _Chunk& __chunk, auto& __current) raze_always_inline_lambda {
-            _Store<__isa>()(__current, __chunk);
-            algorithm::__advance_bytes(__current, sizeof(_Chunk));
-        }, std::to_address(__first));
+        __for_each_chunk([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            _Store<__isa>()(__mem, __chunk_data);
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        });
     }
 
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_to(_Iterator_ __first, decltype(aligned)) noexcept {
-        __for_each_chunk([&] <class _Chunk, class _It> (const _Chunk& __chunk, auto& __current) raze_always_inline_lambda {
-            _Store<__isa>()(__current, __chunk, aligned_policy{});
-            algorithm::__advance_bytes(__current, sizeof(_Chunk));
-        }, std::to_address(__first));
+        __for_each_chunk([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            _Store<__isa>()(__mem, __chunk_data, aligned_policy{});
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        });
     }
 
    /* template <

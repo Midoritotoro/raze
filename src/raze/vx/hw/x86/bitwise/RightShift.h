@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/merge/Selectz.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -167,7 +167,7 @@ struct _Right_shift {
 			}
 		}
 
-		return _Selectz<_ISA_, _Type_>()((*this)(__x, __shift), __mask);
+		return _Select<_ISA_, _Type_>()((*this)(__x, __shift), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>

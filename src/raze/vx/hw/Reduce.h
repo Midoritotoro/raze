@@ -2,9 +2,10 @@
 
 #include <raze/compatibility/Compatibility.h>
 
-#if defined(raze_processor_x86)
-#  include <src/raze/vx/hw/x86/Reduce.h>
-#endif
+#include <src/raze/vx/hw/configurable/reduce/HorizontalSum.h>
+#include <src/raze/vx/hw/configurable/reduce/HorizontalMin.h>
+#include <src/raze/vx/hw/configurable/reduce/HorizontalMax.h>
+
 
 __RAZE_VX_NAMESPACE_BEGIN
 

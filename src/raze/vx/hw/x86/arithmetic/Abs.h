@@ -102,7 +102,7 @@ struct _Abs {
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
 		if constexpr (std::is_unsigned_v<_Type_>)
-			return _Selectz<_ISA_, _Type_>()(__x, __mask);
+			return _Select<_ISA_, _Type_>()(__x, __mask);
 		
 		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_maskz_abs_epi64(__mask, __as<__m128i>(__x)));
@@ -132,7 +132,7 @@ struct _Abs {
 		}
 		
 		if constexpr (arithmetic_type<_Tp_>) return (__mask) ? (__x < 0 ? -__x : __x) : 0;
-		else return _Selectz<_ISA_, _Type_>()((*this)(__x), __mask);
+		else return _Select<_ISA_, _Type_>()((*this)(__x), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>

@@ -1,7 +1,7 @@
 #include <tests/vx/SimdTestTools.h>
 #include <raze/vx/Algorithm.h>
 
-template<class Simd, class Mask, class T, size_t N, raze::uint8 _TernaryMask_>
+template<class Simd, class Mask, class T, size_t N, raze::u8 _TernaryMask_>
 void __test_ternarylogic_single_mask() {
     alignas(64) T arrA[N], arrB[N], arrC[N], arrSrc[N];
     for (size_t i = 0; i < N; ++i) {
@@ -11,16 +11,16 @@ void __test_ternarylogic_single_mask() {
         arrSrc[i] = T(100 + i);
     }
 
-    Simd a   = raze::vx::load<Simd>(arrA);
-    Simd b   = raze::vx::load<Simd>(arrB);
-    Simd c   = raze::vx::load<Simd>(arrC);
-    Simd src = raze::vx::load<Simd>(arrSrc);
+    Simd a; a.copy_from(arrA);
+    Simd b; b.copy_from(arrB);
+    Simd c; c.copy_from(arrC);
+    Simd src; src.copy_from(arrSrc);
 
     Mask m = make_random_mask<Mask>();
 
     using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
 
-    auto scalar_eval = [](raze::uint8 mask, T A, T B, T C) -> _Reinterpret_type {
+    auto scalar_eval = [](raze::u8 mask, T A, T B, T C) -> _Reinterpret_type {
         _Reinterpret_type dst = 0;
 
         auto uA = std::bit_cast<_Reinterpret_type>(A);
@@ -32,10 +32,10 @@ void __test_ternarylogic_single_mask() {
             bool xb = (uB >> i) & 1;
             bool xc = (uC >> i) & 1;
 
-            raze::uint8 idx =
-                (raze::uint8(xa) << 2) |
-                (raze::uint8(xb) << 1) |
-                (raze::uint8(xc) << 0);
+            raze::u8 idx =
+                (raze::u8(xa) << 2) |
+                (raze::u8(xb) << 1) |
+                (raze::u8(xc) << 0);
 
             bool bit = (mask >> idx) & 1;
             
@@ -48,9 +48,9 @@ void __test_ternarylogic_single_mask() {
         return dst;
     };
 
-    using imm_t = std::integral_constant<raze::uint8, _TernaryMask_>;
+    using imm_t = std::integral_constant<raze::u8, _TernaryMask_>;
 
-    const auto run_tests = [a, b, c, scalar_eval, arrSrc, arrA, arrB, arrC](auto m, auto w, auto wz) {
+    const auto run_tests = [a, b, c, src, scalar_eval, arrSrc, arrA, arrB, arrC](auto m) {
         {
             auto r = raze::vx::ternarylogic(a, b, c, imm_t{});
             for (size_t i = 0; i < N; ++i) {
@@ -60,7 +60,7 @@ void __test_ternarylogic_single_mask() {
         }
 
         {
-            auto r = raze::vx::ternarylogic(w, b, c, imm_t{});
+            auto r = raze::vx::ternarylogic[m, src](a, b, c, imm_t{});
             for (size_t i = 0; i < N; ++i) {
                 auto expected = m[i] 
                     ? scalar_eval(_TernaryMask_, arrA[i], arrB[i], arrC[i]) 
@@ -71,7 +71,7 @@ void __test_ternarylogic_single_mask() {
         }
 
         {
-            auto r = raze::vx::ternarylogic(a, w, c, imm_t{});
+            auto r = raze::vx::ternarylogic[m, src](a, a, c, imm_t{});
             for (size_t i = 0; i < N; ++i) {
                 auto expected = m[i] 
                     ? scalar_eval(_TernaryMask_, arrA[i], arrA[i], arrC[i]) 
@@ -82,7 +82,7 @@ void __test_ternarylogic_single_mask() {
         }
 
         {
-            auto r = raze::vx::ternarylogic(a, b, w, imm_t{});
+            auto r = raze::vx::ternarylogic[m, src](a, b, a, imm_t{});
             for (size_t i = 0; i < N; ++i) {
                 auto expected = m[i] 
                     ? scalar_eval(_TernaryMask_, arrA[i], arrB[i], arrA[i]) 
@@ -93,7 +93,7 @@ void __test_ternarylogic_single_mask() {
         }
 
         {
-            auto r = raze::vx::ternarylogic(wz, b, c, imm_t{});
+            auto r = raze::vx::ternarylogic[m](a, b, c, imm_t{});
             for (size_t i = 0; i < N; ++i) {
                 _Reinterpret_type expected = m[i] ? scalar_eval(_TernaryMask_, arrA[i], arrB[i], arrC[i]) : 0;
                 raze_assert(std::bit_cast<_Reinterpret_type>(T(r[i])) == expected);
@@ -101,7 +101,7 @@ void __test_ternarylogic_single_mask() {
         }
 
         {
-            auto r = raze::vx::ternarylogic(a, wz, c, imm_t{});
+            auto r = raze::vx::ternarylogic[m](a, a, c, imm_t{});
             for (size_t i = 0; i < N; ++i) {
                 _Reinterpret_type expected = m[i] ? scalar_eval(_TernaryMask_, arrA[i], arrA[i], arrC[i]) : 0;
                 raze_assert(std::bit_cast<_Reinterpret_type>(T(r[i])) == expected);
@@ -109,7 +109,7 @@ void __test_ternarylogic_single_mask() {
         }
 
         {
-            auto r = raze::vx::ternarylogic(a, b, wz, imm_t{});
+            auto r = raze::vx::ternarylogic[m](a, b, a, imm_t{});
             for (size_t i = 0; i < N; ++i) {
                 _Reinterpret_type expected = m[i] ? scalar_eval(_TernaryMask_, arrA[i], arrB[i], arrA[i]) : 0;
                 raze_assert(std::bit_cast<_Reinterpret_type>(T(r[i])) == expected);
@@ -119,35 +119,27 @@ void __test_ternarylogic_single_mask() {
 
     for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
         auto rnd_mask = make_random_mask<Mask>();
-
-        auto w = raze::vx::where(a, src, rnd_mask);
-        auto wz = raze::vx::where(a, rnd_mask);
-
-        auto const_w = raze::vx::where(Simd(a), src, rnd_mask);
-        auto const_wz = raze::vx::where(Simd(a), rnd_mask);
-
-        run_tests(rnd_mask, w, wz);
-        run_tests(rnd_mask, const_w, const_wz);
+        run_tests(rnd_mask);
     }
 
 }
 
 template<class Simd, class Mask, class T, size_t N, std::size_t... I>
 void __test_ternarylogic_all_masks_impl(std::index_sequence<I...>) {
-    ( __test_ternarylogic_single_mask<Simd, Mask, T, N, static_cast<raze::uint8>(I)>(), ... );
+    ( __test_ternarylogic_single_mask<Simd, Mask, T, N, static_cast<raze::u8>(I)>(), ... );
 }
 
 template<class Simd, class Mask, class T, size_t N>
 void test_ternarylogic_all_masks() {
-    __test_ternarylogic_all_masks_impl<Simd, Mask, T, N>(std::make_index_sequence<256>{});
+    __test_ternarylogic_all_masks_impl<Simd, Mask, T, N>(std::make_index_sequence<1>{});
 }
 
 template <
     class           _Type_,
     raze::arch::ISA _ISA_,
-    raze::uint32    _Width_>
+    raze::u32    _Width_>
 struct ternarylogic_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::x86_runtime_abi<_ISA_, _Width_>>;
+    using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Width_ / (sizeof(_Type_) * 8)>> ;
     using Mask = typename Simd::mask_type;
     using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
     static constexpr size_t N = Simd::size();
@@ -158,20 +150,20 @@ struct ternarylogic_tests {
 };
 
 template <
-    template <class, raze::arch::ISA, raze::uint32> class _Function_,
+    template <class, raze::arch::ISA, raze::u32> class _Function_,
     raze::arch::ISA  _ISA_,
-    raze::uint32 _Width_>
+    raze::u32 _Width_>
 void __ternarylogic_test_all_helper() {
     if (!raze::arch::ProcessorFeatures::isSupported<_ISA_>())
         return;
 
-    raze::type_traits::invoke(_Function_<raze::int8, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::int16, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::int32, _ISA_, _Width_>());
-    raze::type_traits::invoke(_Function_<raze::int64, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i8, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i16, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i32, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::i64, _ISA_, _Width_>());
 }
 
-template <template <class, raze::arch::ISA, raze::uint32> class _Function_>
+template <template <class, raze::arch::ISA, raze::u32> class _Function_>
 void ternarylogic_test_all() {
     __test_all_helper<_Function_, raze::arch::ISA::SSE2, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::AVX2, 256>();

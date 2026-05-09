@@ -7,7 +7,7 @@ template <class Mask>
 Mask make_alternating_mask() {
     Mask m;
 
-    for (size_t i = 0; i < Mask::elements(); ++i)
+    for (size_t i = 0; i < Mask::size(); ++i)
         m[i] = (i % 2) == 0;
 
     return m;
@@ -18,7 +18,7 @@ Mask make_random_mask() {
     Mask m;
     std::mt19937_64 rng(0x123456789ABCDEFULL);
 
-    for (size_t i = 0; i < Mask::elements(); ++i)
+    for (size_t i = 0; i < Mask::size(); ++i)
         m[i] = (rng() & 1) != 0;
 
     return m;

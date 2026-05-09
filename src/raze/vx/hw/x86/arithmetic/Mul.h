@@ -1,7 +1,7 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/cast/As.h>
-#include <src/raze/vx/hw/x86/merge/Selectz.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -226,7 +226,7 @@ struct _Mul {
 			}
 		}
 
-		return _Selectz<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
 	}
 
 	template <
@@ -236,7 +236,7 @@ struct _Mul {
 		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_> && std::is_integral_v<_Mask_>) {
 			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mask_mul_ps(__as<__m128>(__src), __mask, __as<__m128>(__x), __as<__m128>(__y)));
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mask_mul_pd(__as<__m128d>(__src), __mask, __as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(__as<__m128i>(__src), _mm_mask_mullo_epi32(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_mullo_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
 			else if constexpr (__has_avx512dq_support_v<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
 				return __as<_Tp_>(_mm_mask_mullo_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
 			}
@@ -272,7 +272,7 @@ struct _Mul {
 		else if constexpr (sizeof(_Tp_) == 64 && std::is_integral_v<_Mask_>) {
 			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_mul_ps(__as<__m512>(__src), __mask, __as<__m512>(__x), __as<__m512>(__y)));
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_mul_pd(__as<__m512d>(__src), __mask, __as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_mullo_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_mullo_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
 			else if constexpr (__has_avx512dq_support_v<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
 				return __as<_Tp_>(_mm512_mask_mullo_epi64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
 			}

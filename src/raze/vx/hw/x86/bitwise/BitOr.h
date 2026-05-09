@@ -63,7 +63,7 @@ struct _Or {
 			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_maskz_or_epi32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
 		}
 
-		return _Selectz<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
 	}
 };
 

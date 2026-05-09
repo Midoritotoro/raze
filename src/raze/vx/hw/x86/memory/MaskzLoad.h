@@ -77,7 +77,7 @@ struct _Maskz_load {
 		if (arithmetic_type<_Tp_>)
 			return __mask ? *static_cast<const _Tp_*>(__mem) : 0;
 		else
-			return _Selectz<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
+			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
 	}
 
 	template <raw_mask_type _Mask_>
@@ -107,7 +107,7 @@ struct _Maskz_load {
 		if (arithmetic_type<_Tp_>)
 			return __mask ? *static_cast<const _Tp_*>(__mem) : 0;
 		else
-			return _Selectz<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
+			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
 	}
 
 	template <raw_mask_type _Mask_, class _AlignPolicy_ = __unaligned_policy>

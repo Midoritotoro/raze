@@ -24,7 +24,7 @@ struct _Configurable_any_of: raze::options::strict_elementwise_callable<_Configu
         using _Abi_ = typename _Type_::abi_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (const _Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            return _Any_of<_Abi_::isa, _Chunk::size, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+            return _Any_of<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
         };
 
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {

@@ -65,15 +65,10 @@ struct best_mask_chunk {
     static constexpr auto elements_count = __fits ? __elems_in_vector : 1;
 
     using _ChunkType = typename best_chunk<typename IntegerForSizeof<_Type_>::Unsigned, _Abi_, _Remaining_>::type;
-    
-    template <class T>
-    struct __vector_type_or_bool { using type = bool; };
-    template <class T> requires requires { typename T::unwrapped_type; }
-    struct __vector_type_or_bool<T> { using type = typename T::unwrapped_type; };
 
     using _MaskIntrin = std::conditional_t<__use_kmask && __fits,
         __mmask_for_elements_t<__elems_in_vector>,
-        typename __vector_type_or_bool<_ChunkType>::type>;
+        std::conditional_t<__fits, typename _ChunkType::unwrapped_type, bool>>;
 
     using type = _Mask_wrapper<_Type_, _Abi_, elements_count, _MaskIntrin>;
 };
@@ -96,5 +91,6 @@ struct __build_mask_tuple<_Type_, _Abi_, 0> {
 
 template <class _Type_, class _Abi_>
 using _Simd_mask_tuple_type = typename __build_mask_tuple<_Type_, _Abi_, _Abi_::size>::type;
+
 
 __RAZE_VX_NAMESPACE_END

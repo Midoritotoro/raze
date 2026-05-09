@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/compare/Greater.h>
+#include <src/raze/vx/hw/x86/compare/Less.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 
 
@@ -59,7 +59,7 @@ struct _Vertical_min {
 			}
 		}
 
-		return _Select<_ISA_, _Type_>()(__x, __y, _Greater<_ISA_, _Type_>()(__x, __y));
+		return _Select<_ISA_, _Type_>()(__x, __y, _Less<_ISA_, _Type_>()(__x, __y));
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -107,7 +107,7 @@ struct _Vertical_min {
 			}
 		}
 
-		return _Selectz<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>

@@ -23,7 +23,7 @@ struct _Horizontal_max {
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_always_inline _Type_ operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
-		return _Fold<_ISA_, _Type_>()(_Selectz<_ISA_, _Type_>()(__x, __mask), _Vmax_wrapper<_ISA_, _Type_>{});
+		return _Fold<_ISA_, _Type_>()(_Select<_ISA_, _Type_>()(__x, __mask), _Vmax_wrapper<_ISA_, _Type_>{});
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>

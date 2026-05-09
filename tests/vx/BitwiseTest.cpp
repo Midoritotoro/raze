@@ -75,218 +75,214 @@ struct bitwise_tests {
         run_assign(a, b, arrA, arrB, [](auto& x, auto y){ x |= y; }, [](auto x, auto y){ return x | y; });
         run_assign(a, b, arrA, arrB, [](auto& x, auto y){ x ^= y; }, [](auto x, auto y){ return x ^ y; });
 
-        //if constexpr (std::is_integral_v<_Type_>) {
-        //    for (raze::u32 sh = 0; sh <= sizeof(_Type_) * 8; ++sh) {
-        //        {
-        //            Simd v = a;
-        //            v <<= sh;
+        if constexpr (std::is_integral_v<_Type_>) {
+            for (raze::u32 sh = 0; sh <= sizeof(_Type_) * 8; ++sh) {
+                {
+                    Simd v = a;
+                    v <<= sh;
 
-        //            for (size_t i = 0; i < N; ++i) {
-        //                _Type_ scalar = 0;
-        //                if (sh < sizeof(_Type_) * 8)
-        //                    scalar = _Type_(arrA[i]) << sh;
+                    for (size_t i = 0; i < N; ++i) {
+                        _Type_ scalar = 0;
+                        if (sh < sizeof(_Type_) * 8)
+                            scalar = _Type_(arrA[i]) << sh;
 
-        //                raze_assert(v[i] == scalar);
-        //            }
-        //        }
+                        raze_assert(v[i] == scalar);
+                    }
+                }
 
-        //        {
-        //            Simd v = a;
-        //            v >>= sh;
+                {
+                    Simd v = a;
+                    v >>= sh;
 
-        //            for (size_t i = 0; i < N; ++i) {
-        //                _Type_ scalar = 0;
+                    for (size_t i = 0; i < N; ++i) {
+                        _Type_ scalar = 0;
 
-        //                if (sh < sizeof(_Type_) * 8) {
-        //                    scalar = _Type_(arrA[i]) >> sh;
-        //                }
-        //                else {
-        //                    if constexpr (std::is_signed_v<_Type_>)
-        //                        scalar = _Type_(arrA[i]) >> (sizeof(_Type_) * 8 - 1);
-        //                }
+                        if (sh < sizeof(_Type_) * 8) {
+                            scalar = _Type_(arrA[i]) >> sh;
+                        }
+                        else {
+                            if constexpr (std::is_signed_v<_Type_>)
+                                scalar = _Type_(arrA[i]) >> (sizeof(_Type_) * 8 - 1);
+                        }
 
-        //                raze_assert(v[i] == scalar);
-        //            }
-        //        }
-        //    }
-        //}
+                        raze_assert(v[i] == scalar);
+                    }
+                }
+            }
+        }
 
-        //{
-        //    alignas(64) _Type_ arrSrc[N];
-        //    std::iota(arrSrc, arrSrc + N, 50);
+        {
+            alignas(64) _Type_ arrSrc[N];
+            std::iota(arrSrc, arrSrc + N, 50);
 
-        //    Simd src; src.copy_from(arrSrc);
+            Simd src; src.copy_from(arrSrc);
 
-        //    const auto run_tests = [arrA, arrB, arrSrc, a, b, src](auto m) {
-        //        test_where_unary<_Type_, N>(
-        //            arrA, arrSrc, m, a, src,
-        //            [m, src](Simd A) {
-        //                return raze::vx::bit_not[m, src](A);
-        //            },
-        //            [m](Simd A) {
-        //                return raze::vx::bit_not[m](A);
-        //            },
-        //            [](_Type_ A, _Type_ Src, bool cond, bool rev) {
-        //                if constexpr (std::is_floating_point_v<_Type_>)
-        //                    return cond ? std::bit_cast<_Type_>(~std::bit_cast<U>(A)) : Src;
-        //                else
-        //                    return cond ? (~A) : Src;
-        //            });
+            const auto run_tests = [arrA, arrB, arrSrc, a, b, src](auto m) {
+                test_where_unary<_Type_, N>(
+                    arrA, arrSrc, m, a, src,
+                    [m, src](Simd A) {
+                        return raze::vx::bit_not[m, src](A);
+                    },
+                    [m](Simd A) {
+                        return raze::vx::bit_not[m](A);
+                    },
+                    [](_Type_ A, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>(~std::bit_cast<U>(A)) : Src;
+                        else
+                            return cond ? (~A) : Src;
+                    });
 
-        //        test_where_binary<_Type_, N>(
-        //            arrA, arrB, arrSrc, m,
-        //            a, b, src,
-        //            [m, src](Simd A, Simd B) {
-        //                return raze::vx::bit_and[m, src](A, B);
-        //            },
-        //            [m](Simd A, Simd B) {
-        //                return raze::vx::bit_and[m](A, B);
-        //            },
-        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-        //                if constexpr (std::is_floating_point_v<_Type_>)
-        //                    return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
-        //                        & std::bit_cast<U>(A))) : Src;
-        //                else
-        //                    return cond ? (A & B) : Src;
-        //            }
-        //        );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src,
+                    [m, src](Simd A, Simd B) {
+                        return raze::vx::bit_and[m, src](A, B);
+                    },
+                    [m](Simd A, Simd B) {
+                        return raze::vx::bit_and[m](A, B);
+                    },
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
+                                & std::bit_cast<U>(A))) : Src;
+                        else
+                            return cond ? (A & B) : Src;
+                    }
+                );
 
-        //        test_where_binary<_Type_, N>(
-        //            arrA, arrB, arrSrc, m,
-        //            a, b, src,
-        //            [m, src](Simd A, Simd B) {
-        //                return raze::vx::bit_or[m, src](A, B);
-        //            },
-        //            [m](Simd A, Simd B) {
-        //                return raze::vx::bit_or[m](A, B);
-        //            },
-        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-        //                if constexpr (std::is_floating_point_v<_Type_>)
-        //                    return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
-        //                        | std::bit_cast<U>(A))) : Src;
-        //                else
-        //                    return cond ? (A | B) : Src;
-        //            }
-        //        );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src,
+                    [m, src](Simd A, Simd B) {
+                        return raze::vx::bit_or[m, src](A, B);
+                    },
+                    [m](Simd A, Simd B) {
+                        return raze::vx::bit_or[m](A, B);
+                    },
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
+                                | std::bit_cast<U>(A))) : Src;
+                        else
+                            return cond ? (A | B) : Src;
+                    }
+                );
 
-        //        test_where_binary<_Type_, N>(
-        //            arrA, arrB, arrSrc, m,
-        //            a, b, src,
-        //            [m, src](Simd A, Simd B) {
-        //                return raze::vx::bit_xor[m, src](A, B);
-        //            },
-        //            [m](Simd A, Simd B) {
-        //                return raze::vx::bit_xor[m](A, B);
-        //            },
-        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-        //                if constexpr (std::is_floating_point_v<_Type_>)
-        //                    return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
-        //                        ^ std::bit_cast<U>(A))) : Src;
-        //                else
-        //                    return cond ? (A ^ B) : Src;
-        //            }
-        //        );
+                test_where_binary<_Type_, N>(
+                    arrA, arrB, arrSrc, m,
+                    a, b, src,
+                    [m, src](Simd A, Simd B) {
+                        return raze::vx::bit_xor[m, src](A, B);
+                    },
+                    [m](Simd A, Simd B) {
+                        return raze::vx::bit_xor[m](A, B);
+                    },
+                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                        if constexpr (std::is_floating_point_v<_Type_>)
+                            return cond ? std::bit_cast<_Type_>((std::bit_cast<U>(B)
+                                ^ std::bit_cast<U>(A))) : Src;
+                        else
+                            return cond ? (A ^ B) : Src;
+                    }
+                );
 
-        //        if constexpr (std::is_integral_v<_Type_>) {
-        //            for (auto sh = 0; sh < N; ++sh) {
-        //                test_where_unary<_Type_, N>(
-        //                    arrA, arrSrc, m,
-        //                    a, src,
-        //                    [m, src, sh](Simd A) {
-        //                        return raze::vx::bit_shl[m, src](A, sh);
-        //                    },
-        //                    [m, sh](Simd A) {
-        //                        return raze::vx::bit_shl[m](A, sh);
-        //                    },
-        //                    [sh](_Type_ A, _Type_ Src, bool cond, bool rev) {
-        //                        if (!cond)
-        //                            return Src;
+                if constexpr (std::is_integral_v<_Type_>) {
+                    for (auto sh = 0; sh < N; ++sh) {
+                        test_where_unary<_Type_, N>(
+                            arrA, arrSrc, m,
+                            a, src,
+                            [m, src, sh](Simd A) {
+                                return raze::vx::bit_shl[m, src](A, sh);
+                            },
+                            [m, sh](Simd A) {
+                                return raze::vx::bit_shl[m](A, sh);
+                            },
+                            [sh](_Type_ A, _Type_ Src, bool cond, bool rev) {
+                                if (!cond)
+                                    return Src;
 
-        //                        _Type_ scalar = 0;
+                                _Type_ scalar = 0;
 
-        //                        if (sh < sizeof(_Type_) * 8)
-        //                            scalar = A << sh;
+                                if (sh < sizeof(_Type_) * 8)
+                                    scalar = A << sh;
 
-        //                        return scalar;
-        //                    }
-        //                );
+                                return scalar;
+                            }
+                        );
 
-        //                test_where_unary<_Type_, N>(
-        //                    arrA, arrSrc, m,
-        //                    a, src,
-        //                    [m, src, sh](Simd A) {
-        //                        return raze::vx::bit_shr[m, src](A, sh);
-        //                    },
-        //                    [m, sh](Simd A) {
-        //                        return raze::vx::bit_shr[m](A, sh);
-        //                    },
-        //                    [sh](_Type_ A, _Type_ Src, bool cond, bool rev) {
-        //                        if (!cond)
-        //                            return Src;
+                        test_where_unary<_Type_, N>(
+                            arrA, arrSrc, m,
+                            a, src,
+                            [m, src, sh](Simd A) {
+                                return raze::vx::bit_shr[m, src](A, sh);
+                            },
+                            [m, sh](Simd A) {
+                                return raze::vx::bit_shr[m](A, sh);
+                            },
+                            [sh](_Type_ A, _Type_ Src, bool cond, bool rev) {
+                                if (!cond)
+                                    return Src;
 
-        //                        _Type_ scalar = 0;
+                                _Type_ scalar = 0;
 
-        //                        if (sh < sizeof(_Type_) * 8) {
-        //                            scalar = A >> sh;
-        //                        }
-        //                        else {
-        //                            if constexpr (std::is_signed_v<_Type_>)
-        //                                scalar = A >> (sizeof(_Type_) * 8 - 1);
-        //                        }
+                                if (sh < sizeof(_Type_) * 8) {
+                                    scalar = A >> sh;
+                                }
+                                else {
+                                    if constexpr (std::is_signed_v<_Type_>)
+                                        scalar = A >> (sizeof(_Type_) * 8 - 1);
+                                }
 
-        //                        return scalar;
-        //                    }
-        //                );
-        //            }
-        //        }
+                                return scalar;
+                            }
+                        );
+                    }
+                }
 
-        //        /*test_where_binary<_Type_, N>(
-        //            arrA, arrB, arrSrc, m,
-        //            a, b, src,
-        //            [m, src](Simd A, Simd B) {
-        //                return raze::vx::bit_shl[m, src](A, B);
-        //            },
-        //            [m](Simd A, Simd B) {
-        //                return raze::vx::bit_shl[m](A, B);
-        //            },
-        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-        //                constexpr size_t bits = sizeof(_Type_) * 8;
-        //                U v = std::bit_cast<U>(A);
-        //                U s = std::bit_cast<U>(B) % bits;
-        //                return cond ? std::bit_cast<_Type_>(v << s) : Src;
-        //            }
-        //        );
+                //test_where_binary<_Type_, N>(
+                //    arrA, arrB, arrSrc, m,
+                //    a, b, src,
+                //    [m, src](Simd A, Simd B) {
+                //        return raze::vx::bit_shl[m, src](A, B);
+                //    },
+                //    [m](Simd A, Simd B) {
+                //        return raze::vx::bit_shl[m](A, B);
+                //    },
+                //    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                //        constexpr size_t bits = sizeof(_Type_) * 8;
+                //        U v = std::bit_cast<U>(A);
+                //        U s = std::bit_cast<U>(B) % bits;
+                //        return cond ? std::bit_cast<_Type_>(v << s) : Src;
+                //    }
+                //);
 
-        //        test_where_binary<_Type_, N>(
-        //            arrA, arrB, arrSrc, m,
-        //            a, b, src,
-        //            [m, src](Simd A, Simd B) {
-        //                return raze::vx::bit_shr[m, src](A, B);
-        //            },
-        //            [m](Simd A, Simd B) {
-        //                return raze::vx::bit_shr[m](A, B);
-        //            },
-        //            [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-        //                constexpr size_t bits = sizeof(_Type_) * 8;
-        //                U v = std::bit_cast<U>(A);
-        //                U s = std::bit_cast<U>(B) % bits;
-        //                return cond ? std::bit_cast<_Type_>(v >> s) : Src;
-        //            }
-        //        );*/
-        //    };
+                //test_where_binary<_Type_, N>(
+                //    arrA, arrB, arrSrc, m,
+                //    a, b, src,
+                //    [m, src](Simd A, Simd B) {
+                //        return raze::vx::bit_shr[m, src](A, B);
+                //    },
+                //    [m](Simd A, Simd B) {
+                //        return raze::vx::bit_shr[m](A, B);
+                //    },
+                //    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
+                //        constexpr size_t bits = sizeof(_Type_) * 8;
+                //        U v = std::bit_cast<U>(A);
+                //        U s = std::bit_cast<U>(B) % bits;
+                //        return cond ? std::bit_cast<_Type_>(v >> s) : Src;
+                //    }
+                //);
+            };
 
-        //    for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
-        //        run_tests(make_random_mask<Mask>());
-        //    }
-        //}
+            for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+                run_tests(make_random_mask<Mask>());
+            }
+        }
     }
 
     void operator()() {
         test_size<(_Width_ / (sizeof(_Type_) * 8))>();
-        //test_size<1>();
-        //test_size<7>();
-        //test_size<17>();
-        //test_size<31>();
     }
 };
 

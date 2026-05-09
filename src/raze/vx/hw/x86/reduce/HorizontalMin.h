@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/x86/arithmetic/VerticalMin.h>
 #include <src/raze/vx/hw/x86/reduce/Fold.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -23,7 +24,7 @@ struct _Horizontal_min {
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_always_inline _Type_ operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
-		return _Fold<_ISA_, _Type_>()(_Selectz<_ISA_, _Type_>()(__x, __mask), _Vmin_wrapper<_ISA_, _Type_>{});
+		return _Fold<_ISA_, _Type_>()(_Select<_ISA_, _Type_>()(__x, __mask), _Vmin_wrapper<_ISA_, _Type_>{});
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>

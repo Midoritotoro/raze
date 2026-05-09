@@ -39,7 +39,7 @@ struct _Less {
                 }
             }
             else if constexpr (__is_epu64_v<_Type_>) {
-                if constexpr (__avx512vl) return _mm_cmplt_epi64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
+                if constexpr (__avx512vl) return _mm_cmplt_epu64_mask(__as<__m128i>(__x), __as<__m128i>(__y));
                 else if constexpr (__sse41) {
                     const auto __sign_64bit = _mm_set1_epi64x(0x8000000000000000);
 

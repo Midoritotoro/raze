@@ -23,7 +23,7 @@ struct _Configurable_shr: raze::options::strict_elementwise_callable<_Configurab
         using _Value_ = typename _Simd_::value_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = _Right_shift<_Abi_::isa, _Value_>()(__chunk, std::forward<_Args>(__args)...);
+            __chunk = _Right_shift<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args>(__args)...);
         };
 
         _Simd_ __result = __x;
@@ -38,7 +38,7 @@ struct _Configurable_shr: raze::options::strict_elementwise_callable<_Configurab
                 __result.__for_each_chunk(__chunk_op, __shift, __mask.__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op);
+            __result.__for_each_chunk(__chunk_op, __shift);
         }
 
         return __result;

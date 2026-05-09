@@ -11,10 +11,10 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 struct _Ternarylogic_emulated {
-    template <class _Tp_, u8 _TernaryMask_, class _Or_, class _Xor_,
+    template <class _Tp_, class _Ct_, _Ct_ _Op_, class _Or_, class _Xor_,
         class _And_, class _Andnot_, class _Not_, class _Zero_>
     raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Tp_ __z,
-        std::integral_constant<u8, _TernaryMask_> __imm8, _Or_ __or, _Xor_ __xor, _And_ __and,
+        std::integral_constant<_Ct_, _Op_> __imm8, _Or_ __or, _Xor_ __xor, _And_ __and,
         _Andnot_ __andnot, _Not_ __not, _Zero_ __zero) raze_const_operator noexcept
     {
         if constexpr (__imm8 == 0x00) return __zero();
@@ -290,23 +290,23 @@ struct _Ternarylogic_emulated {
         if constexpr (__imm8 == 0xff) return __not(__zero());
     }
 
-    template <class _Tp_, u8 _TernaryMask_, raw_mask_type _Mask_, class _Select_, class _Or_,
+    template <class _Tp_, class _Ct_, _Ct_ _Op_, raw_mask_type _Mask_, class _Select_, class _Or_,
         class _Xor_, class _And_, class _Andnot_, class _Not_, class _Zero_>
     raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Tp_ __z,
-        std::integral_constant<u8, _TernaryMask_> __imm8, _Mask_ __mask, _Select_ __select, _Or_ __or, 
+        std::integral_constant<_Ct_, _Op_> __imm8, _Mask_ __mask, _Select_ __select, _Or_ __or,
         _Xor_ __xor, _And_ __and, _Andnot_ __andnot, _Not_ __not, _Zero_ __zero) raze_const_operator noexcept
     {
-        return __select((*this)(__x, __y, __z, __imm8), __mask);
+        return __select((*this)(__x, __y, __z, __imm8, __or, __xor, __and, __andnot, __not, __zero), __mask);
     }
 
 
-    template <class _Tp_, u8 _TernaryMask_, raw_mask_type _Mask_, class _Select_, class _Or_,
+    template <class _Tp_, class _Ct_, _Ct_ _Op_, raw_mask_type _Mask_, class _Select_, class _Or_,
         class _Xor_, class _And_, class _Andnot_, class _Not_, class _Zero_>
     raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Tp_ __z,
-        std::integral_constant<u8, _TernaryMask_> __imm8, _Mask_ __mask, _Select_ __select, _Tp_ __src, _Or_ __or,
+        std::integral_constant<_Ct_, _Op_> __imm8, _Mask_ __mask, _Select_ __select, _Tp_ __src, _Or_ __or,
         _Xor_ __xor, _And_ __and, _Andnot_ __andnot, _Not_ __not, _Zero_ __zero) raze_const_operator noexcept
     {
-        return __select((*this)(__x, __y, __z, __imm8), __src, __mask);
+        return __select((*this)(__x, __y, __z, __imm8, __or, __xor, __and, __andnot, __not, __zero), __src, __mask);
     }
 };
 

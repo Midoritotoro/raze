@@ -7,6 +7,7 @@
 #include <src/raze/vx/hw/configurable/bitwise/Not.h>
 #include <src/raze/vx/hw/configurable/bitwise/ShiftLeft.h>
 #include <src/raze/vx/hw/configurable/bitwise/ShiftRight.h>
+#include <src/raze/vx/hw/configurable/bitwise/Ternarylogic.h>
 
 
 #if defined(raze_processor_x86)

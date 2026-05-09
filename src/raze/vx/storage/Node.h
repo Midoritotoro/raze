@@ -59,7 +59,7 @@ raze_always_inline auto __storage_unwrap(const _Type_& __x) noexcept {
 }
 
 template <class _Type_>
-raze_always_inline auto __storage_unwrap(_Type_& __x) noexcept {
+raze_always_inline auto& __storage_unwrap(_Type_& __x) noexcept {
     if constexpr (wrapped_type<_Type_>) return __x.data();
     else return __x;
 }

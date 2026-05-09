@@ -88,16 +88,18 @@ public:
     }
 
     raze_always_inline void __insert(i32 __i, bool __v) noexcept {
+        using _Signed = typename IntegerForSizeof<_Type_>::Signed;
+
         if constexpr (__use_native) {
-            if constexpr (intrin_type<tuple_type>) _Insert<_Abi_::isa>()(_data, __i, -__v);
-            else if constexpr (std::is_same_v<std::remove_cvref_t<tuple_type>, bool>) _data = __v;
-            else __v ? math::__bit_test_and_set(_data, __i) : math::__bit_test_and_reset(_data, __i);
+            if constexpr (intrin_type<typename tuple_type::unwrapped_type>) _Insert<_Abi_::isa>()(__storage_unwrap(_data), __i, _Signed(-_Signed(__v)));
+            else if constexpr (std::is_same_v<std::remove_cvref_t<typename tuple_type::unwrapped_type>, bool>) _data = __v;
+            else __v ? math::__bit_test_and_set(__storage_unwrap(_data), __i) : math::__bit_test_and_reset(__storage_unwrap(_data), __i);
         }
         else {
             __visit_chunk_by_index(_data, __i, [&] <class _Chunk> (_Chunk & __chunk, i32 __lane) raze_always_inline_lambda {
-                if constexpr (intrin_type<_Chunk>) _Insert<_Abi_::isa>()(__chunk, __lane, -__v);
-                else if constexpr (std::is_same_v<std::remove_cvref_t<_Chunk>, bool>) __chunk = __v;
-                else __v ? math::__bit_test_and_set(__chunk, __lane) : math::__bit_test_and_reset(__chunk, __lane);
+                if constexpr (intrin_type<typename _Chunk::unwrapped_type>) _Insert<_Abi_::isa>()(__storage_unwrap(__chunk), __lane, _Signed(-_Signed(__v)));
+                else if constexpr (std::is_same_v<std::remove_cvref_t<typename _Chunk::unwrapped_type>, bool>) __chunk = __v;
+                else __v ? math::__bit_test_and_set(__storage_unwrap(__chunk), __lane) : math::__bit_test_and_reset(__storage_unwrap(__chunk), __lane);
             });
         }
     }
@@ -105,7 +107,7 @@ public:
     raze_always_inline bool __extract(i32 __i) const noexcept {
         if constexpr (__use_native) {
             if constexpr (intrin_type<typename tuple_type::unwrapped_type>) return bool(-_Extract<_Abi_::isa, _Type_>()(__storage_unwrap(_data), __i));
-            else if constexpr (std::is_same_v<std::remove_cvref_t<tuple_type>, bool>) return __storage_unwrap(_data);
+            else if constexpr (std::is_same_v<std::remove_cvref_t<typename tuple_type::unwrapped_type>, bool>) return __storage_unwrap(_data);
             else return math::__bit_test(__storage_unwrap(_data), __i);
         }
         else {
@@ -113,7 +115,7 @@ public:
 
             __visit_chunk_by_index(_data, __i, [&] <class _Chunk> (const _Chunk & __chunk, i32 __lane) raze_always_inline_lambda {
                 if constexpr (intrin_type<typename _Chunk::unwrapped_type>) __result = bool(-_Extract<_Abi_::isa, _Type_>()(__storage_unwrap(__chunk), __lane));
-                else if constexpr (std::is_same_v<std::remove_cvref_t<_Chunk>, bool>) __result = __storage_unwrap(__chunk);
+                else if constexpr (std::is_same_v<std::remove_cvref_t<typename _Chunk::unwrapped_type>, bool>) __result = __storage_unwrap(__chunk);
                 else __result = math::__bit_test(__storage_unwrap(__chunk), __lane);
             });
 

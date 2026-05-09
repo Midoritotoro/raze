@@ -15,9 +15,9 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA _ISA_, arithmetic_type _Type_>
 struct _Ternarylogic {
-    template <intrin_or_arithmetic_type _Tp_, u8 _TernaryMask_>
+    template <intrin_or_arithmetic_type _Tp_, class _Ct_, _Ct_ _Op_>
     raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(
-        _Tp_ __x, _Tp_ __y,  _Tp_ __z, std::integral_constant<u8, _TernaryMask_> __imm8) raze_const_operator noexcept
+        _Tp_ __x, _Tp_ __y,  _Tp_ __z, std::integral_constant<_Ct_, _Op_> __imm8) raze_const_operator noexcept
     {
         if constexpr (__has_avx512f_support_v<_ISA_> && intrin_type<_Tp_>) {
             if constexpr (sizeof(_Tp_) == 64)  return __as<_Tp_>(_mm512_ternarylogic_epi32(__as<__m512i>(__x), __as<__m512i>(__y), __as<__m512i>(__z), __imm8));
@@ -29,9 +29,9 @@ struct _Ternarylogic {
             _And<_ISA_, _Type_>(), _Andnot<_ISA_, _Type_>(), _Not<_ISA_, _Type_>(), _Zero<_ISA_, _Tp_>());
     }
 
-    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, u8 _TernaryMask_>
+    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, class _Ct_, _Ct_ _Op_>
     raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y,  _Tp_ __z, 
-        std::integral_constant<u8, _TernaryMask_> __imm8,  _Mask_ __mask) const noexcept
+        std::integral_constant<_Ct_, _Op_> __imm8,  _Mask_ __mask) const noexcept
     {
         if constexpr (__has_avx512f_support_v<_ISA_> && std::is_integral_v<_Mask_> && intrin_type<_Tp_>) {
             if constexpr (sizeof(_Tp_) == 64) {
@@ -48,13 +48,13 @@ struct _Ternarylogic {
             }
         }
        
-        return _Selectz<_ISA_, _Type_>()((*this)(__x, __y, __z, __imm8), __mask);
+        return _Select<_ISA_, _Type_>()((*this)(__x, __y, __z, __imm8), __mask);
     }
 
 
-    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, u8 _TernaryMask_>
+    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, class _Ct_, _Ct_ _Op_>
     raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y,  _Tp_ __z, 
-        std::integral_constant<u8, _TernaryMask_> __imm8,  _Mask_ __mask, _Tp_ __src) const noexcept
+        std::integral_constant<_Ct_, _Op_> __imm8,  _Mask_ __mask, _Tp_ __src) const noexcept
     {
         return _Select<_ISA_, _Type_>()((*this)(__x, __y, __z, __imm8), __src, __mask);
     }
