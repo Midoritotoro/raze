@@ -4,7 +4,7 @@
 template <
     class           _Type_,
     raze::arch::ISA _ISA_,
-    raze::uint32    _Width_>
+    raze::u32    _Width_>
 struct vertical_minmax_tests {
     template <raze::sizetype N>
     void test_size() {
@@ -35,58 +35,41 @@ struct vertical_minmax_tests {
             }
         }
 
-        /*for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+        for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
             auto m = make_random_mask<Mask>();
 
-            auto wz = raze::vx::where(a, m);
-            auto w = raze::vx::where(a, fbk, m);
-
-            auto const_wz = raze::vx::where(Simd(a), m);
-            auto const_w = raze::vx::where(Simd(a), fbk, m);
-
-
             {
-                auto wz_min = raze::vx::vertical_min(b, wz);
-                auto wz_max = raze::vx::vertical_max(b, wz);
-
-                auto constwz_min = raze::vx::vertical_min(b, const_wz);
-                auto constwz_max = raze::vx::vertical_max(b, const_wz);
-                
-                raze_assert(raze::vx::all_of(constwz_min == wz_min));
-                raze_assert(raze::vx::all_of(constwz_max == wz_max));
+                auto vmin = raze::vx::vertical_min[m](a, b);
+                auto vmax = raze::vx::vertical_max[m](a, b);
 
                 for (size_t i = 0; i < N; ++i) {
                     if (m[i])
-                        raze_assert(wz_min[i] == std::min(arrB[i], arrA[i]) &&
-                            wz_max[i] == std::max(arrB[i], arrA[i]));
+                        raze_assert(vmin[i] == std::min(arrB[i], arrA[i]) &&
+                            vmax[i] == std::max(arrB[i], arrA[i]));
                     else
-                        raze_assert(wz_min[i] == _Type_(0) && wz_max[i] == _Type_(0));
+                        raze_assert(vmin[i] == _Type_(0) && vmax[i] == _Type_(0));
                 }
             }
 
             {
-                auto w_min = raze::vx::vertical_min(w, b);
-                auto w_max = raze::vx::vertical_max(w, b);
-
-                auto constw_min = raze::vx::vertical_min(b, const_w);
-                auto constw_max = raze::vx::vertical_max(b, const_w);
-
-                raze_assert(raze::vx::all_of(constw_min == w_min));
-                raze_assert(raze::vx::all_of(constw_max == w_max));
+                auto vmin = raze::vx::vertical_min[m, fbk](a, b);
+                auto vmax = raze::vx::vertical_max[m, fbk](a, b);
 
                 for (size_t i = 0; i < N; ++i) {
                     if (m[i])
-                        raze_assert(w_min[i] == std::min(arrB[i], arrA[i]) &&
-                            w_max[i] == std::max(arrB[i], arrA[i]));
+                        raze_assert(vmin[i] == std::min(arrB[i], arrA[i]) &&
+                            vmax[i] == std::max(arrB[i], arrA[i]));
                     else
-                        raze_assert(w_min[i] == fallback[i] && w_max[i] == fallback[i]);
+                        raze_assert(vmin[i] == fallback[i] && vmax[i] == fallback[i]);
                 }
             }
-        }*/
+        }
     }
 
     void operator()() {
         test_size<_Width_ / (sizeof(_Type_) * 8)>();
+        test_size<_Width_ / (sizeof(_Type_) * 8) + 1>();
+        test_size<1>();
     }
 };
 

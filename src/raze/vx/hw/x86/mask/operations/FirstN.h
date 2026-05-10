@@ -4,6 +4,7 @@
 #include <src/raze/vx/hw/x86/memory/Store.h>
 #include <raze/algorithm/minmax/Min.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
+#include <src/raze/vx/hw/x86/mask/operations/ToK.h>
 #include <array>
 
 
@@ -43,14 +44,22 @@ consteval auto __first_n_vtable() noexcept {
     return __table;
 }
 
-template <arch::ISA	_ISA_, u32 _Size_, intrin_or_arithmetic_type _Tp_, arithmetic_type _Type_>
+template <arch::ISA	_ISA_, u32 _Size_, raw_mask_type _Tp_, arithmetic_type _Type_>
 struct _First_n {
     raze_nodiscard raze_always_inline auto operator()(u32 __elements) const noexcept {
         constexpr auto __kmask = (__has_avx512f_support_v<_ISA_> && sizeof(_Type_) >= 4) || (__has_avx512bw_support_v<_ISA_>);
 
-        if constexpr (__kmask) {
+        if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
+            return __elements != 0;
+        }
+        else if constexpr (__kmask) {
+#if 0
             constexpr auto __ktable = __first_n_ktable<_Size_>();
             return __ktable[__elements];
+#else
+           
+            return __to_k<_ISA_>(_Tp_((math::__maximum_integral_limit<_Tp_>()) >> (_Size_ - __elements)));
+#endif
         }
         else {
             constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();

@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/mask/ToMask.h>
+#include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
