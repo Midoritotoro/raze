@@ -4,9 +4,8 @@
 #include <src/raze/vx/hw/x86/mask/operations/MaskAnd.h>
 #include <src/raze/vx/hw/x86/mask/operations/MaskOr.h>
 #include <src/raze/vx/hw/x86/mask/operations/MaskNot.h>
+#include <src/raze/vx/hw/x86/mask/operations/FirstN.h>
 #include <src/raze/vx/hw/x86/mask/operations/BitLeftShift.h>
-
-
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -18,12 +17,14 @@ struct _Is_contiguous {
 			return __mask != 0;
 		}
 		else if constexpr (std::is_integral_v<_Tp_>) {
+			constexpr auto __first_n_table = __first_n_ktable<_Size_>();
+
 			const auto __size = __k - __n + 1;
+			auto __x = _Tp_(0);
 
-			_Tp_ __x = _Tp_((math::__maximum_integral_limit<_Tp_>()) >> (_Size_ - __size));
-			__x = _Mask_lshift<_ISA_, _Size_, _Type_>()(__x, __n);
+			if (__size >= sizeof(_Tp_) * 8) __x = math::__maximum_integral_limit<_Tp_>();
+			else __x = _Mask_lshift<_ISA_, _Size_, _Type_>()(__first_n_table[__size], __n);
 
-			__x = _Mask_or<_ISA_, _Type_>()(__x, _Mask_and<_ISA_, _Type_>()(_Tp_(_Mask_not<_ISA_, _Type_>()(__x)), _Tp_(_Tp_(0) - (__size >= _Size_))));
 			return _Mask_and<_ISA_, _Type_>()(__mask, __x) == __x;
 		}
 		else {

@@ -123,7 +123,7 @@ raze_always_inline i32 __bsf_ctz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
     constexpr auto __max    = std::numeric_limits<_IntegralType_>::max();
 
-    auto __index = ulong(0);
+    auto __index = ulong(__digits);
 
     if constexpr (__digits == 64) {
         if (!_BitScanForward64(&__index, __value))

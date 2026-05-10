@@ -53,13 +53,8 @@ struct _First_n {
             return __elements != 0;
         }
         else if constexpr (__kmask) {
-#if 0
             constexpr auto __ktable = __first_n_ktable<_Size_>();
             return __ktable[__elements];
-#else
-           
-            return __to_k<_ISA_>(_Tp_((math::__maximum_integral_limit<_Tp_>()) >> (_Size_ - __elements)));
-#endif
         }
         else {
             constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();
