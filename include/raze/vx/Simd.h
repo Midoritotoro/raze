@@ -13,9 +13,6 @@ raze_disable_warning_msvc(26495)
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Iterator_>
-concept any_iterator_or_pointer = std::input_or_output_iterator<_Iterator_> || std::is_pointer_v<_Iterator_>;
-
 using aligned_policy    = __aligned_policy;
 using unaligned_policy  = __unaligned_policy;
 
@@ -23,10 +20,6 @@ template <bool _Alignment_>
 struct alignment_policy {
     static constexpr bool __alignment = _Alignment_;
 };
-
-struct aligned_mode {};
-constexpr inline auto aligned = raze::options::flag(aligned_mode{});
-struct aligned_option : raze::options::exact_option<aligned> {};
 
 /**
  * @class simd
@@ -66,7 +59,7 @@ public:
      * The contents of the vector are unspecified. Use `fill()` or `broadcast()`
      * to initialize all lanes explicitly.
     */
-    simd() noexcept
+    raze_always_inline simd() noexcept
     {}
 
     /**
@@ -74,18 +67,18 @@ public:
      *
      * @param value  The scalar value to broadcast into all lanes.
     */
-    explicit(false) simd(value_type __value) noexcept {
+    raze_always_inline explicit(false) simd(value_type __value) noexcept {
         fill(__value);
     }
 
     ~simd() noexcept
     {}
 
-    simd(const simd& __other) noexcept  {
+    raze_always_inline simd(const simd& __other) noexcept  {
         _storage = __other._storage;
     }
 
-    simd(const storage_type& __storage) noexcept {
+    raze_always_inline simd(const storage_type& __storage) noexcept {
         _storage = __storage;
     }
 
@@ -157,9 +150,6 @@ public:
         return bit_shr(__x, __shift);
     }
 
-    /**
-     * @brief Element-wise subtraction.
-    */
     template <class _RightType_>
     raze_always_inline friend simd operator-(
         const simd&         __x,
@@ -170,9 +160,6 @@ public:
         return sub(__x, __y);
     }
 
-    /**
-     * @brief Element-wise addition.
-    */
     template <class _RightType_>
     raze_always_inline friend simd operator+(
         const simd&         __x,
@@ -183,9 +170,6 @@ public:
         return add(__x, __y);
     }
 
-    /**
-     * @brief Element-wise multiplication.
-    */
     template <class _RightType_>
     raze_always_inline friend simd operator*(
         const simd&         __x, 
@@ -196,9 +180,6 @@ public:
         return mul(__x, __y);
     }
 
-    /**
-     * @brief Element-wise division.
-    */
     template <
         class _LeftType_,
         class _RightType_>
@@ -215,46 +196,26 @@ public:
         return div(__x, __y);
     }
 
-    /**
-     * @brief Bitwise AND.
-    */
     raze_always_inline friend simd operator&(const simd& __x, const simd& __y) noexcept {
         return bit_and(__x, __y);
     }
 
-    /**
-     * @brief Bitwise OR.
-    */
     raze_always_inline friend simd operator|(const simd& __x,  const simd& __y) noexcept {
         return bit_or(__x, __y);
     }
 
-    /**
-     * @brief Bitwise XOR.
-    */
     raze_always_inline friend simd operator^(const simd& __x, const simd& __y) noexcept {
         return bit_xor(__x, __y);
     }
 
-    /**
-     * @brief Bitwise NOT.
-    */
     raze_always_inline simd operator~() const noexcept {
         return bit_not(*this);
     }
 
-    /**
-     * @brief Element-wise equality comparison.
-     * @return A SIMD mask with one boolean per lane.
-    */
     raze_always_inline friend mask_type operator==(const simd& __x, const simd& __y) noexcept {
         return is_equal(__x, __y);
     }
 
-    /**
-     * @brief Element-wise inequality comparison.
-     * @return A SIMD mask with one boolean per lane.
-    */
     raze_always_inline friend mask_type operator!=(const simd& __x, const simd& __y) noexcept {
         return is_not_equal(__x, __y);
     }
@@ -316,85 +277,46 @@ public:
         return *this;
     }
 
-    /**
-     * @brief Returns the vector unchanged.
-    */
     raze_always_inline simd operator+() const noexcept {
         return _storage;
     }
 
-    /**
-     * @brief Element-wise negation.
-    */
     raze_always_inline simd operator-() const noexcept {
         return neg(*this);
     }
 
-    /**
-     * @brief Post-increment: returns the old value, increments each lane by 1.
-    */
     raze_nodiscard raze_always_inline simd operator++(int) noexcept {
         simd __self = *this;
         *this += simd(1);
         return __self;
     }
 
-    /**
-     * @brief Pre-increment: increments each lane by 1.
-    */
     raze_always_inline simd& operator++() noexcept {
         return *this += simd(1);
     }
 
-    /**
-     * @brief Post-decrement: returns the old value, decrements each lane by 1.
-    */
     raze_always_inline simd operator--(int) noexcept {
         simd __self = *this;
         *this -= simd(1);
         return __self;
     }
 
-    /**
-     * @brief Pre-decrement: decrements each lane by 1.
-    */
     raze_always_inline simd& operator--() noexcept {
         return *this -= simd(1);
     }
 
-    /**
-     * @brief returns the value of lane `i`.
-     *
-     * @param i  index in range [0, size()).
-    */
     raze_nodiscard raze_always_inline _Type_ operator[](i32 __i) const noexcept {
         return __extract(__i);
     }
 
-    /**
-     * @brief returns a proxy reference to lane `i`, allowing modification.
-    */
     raze_nodiscard raze_always_inline reference operator[](i32 __i) noexcept {
         return reference(*this, __i);
     }
 
-    /**
-     * @brief Returns the SIMD register width in bits.
-    */
-    raze_nodiscard static raze_always_inline constexpr i32 width() noexcept {
-        return __width;
-    }
-
-    /**
-     * @brief Returns the number of lanes in the vector.
-    */
     raze_nodiscard static raze_always_inline constexpr i32 size() noexcept {
         return abi_type::size;
     }
 
-    /**
-     * @brief Alias for size().
-    */
     raze_nodiscard static raze_always_inline constexpr i32 length() noexcept {
         return size();
     }
@@ -415,13 +337,6 @@ public:
         return _storage;
     }
 
-    /**
-     *  @brief  Loads a SIMD vector from memory.
-     *
-     *  @param __first  Pointer to the source memory.
-     *
-     *  Performs an unconditional load of the entire vector.
-    */
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_from(_Iterator_ __first) noexcept {
         __for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
@@ -442,53 +357,46 @@ public:
         });
     }
 
-    //template <
-    //    any_iterator_or_pointer _Iterator_,
-    //    simd_mask_type          _Mask_>
-    //raze_always_inline void copy_from(
-    //    _Iterator_      __first, 
-    //    const _Mask_&   __mask, 
-    //    const simd&     __source) noexcept 
-    //{
-    //    _storage = _Mask_load<__isa, __width, _Type_>()(
-    //        std::to_address(__first), __data(__mask), __data(__source));
-    //}
+    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
+    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, const simd& __source) noexcept {
+        __for_each_chunk([&] <class _Chunk, class _Source, class _Mask> (_Chunk& __chunk, const _Source& __src_chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            __chunk = _Mask_load<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __storage_unwrap(__src_chunk));
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        }, __mask.__storage().storage(), __source.__storage().storage());
+    }
 
-    //template <
-    //    any_iterator_or_pointer _Iterator_,
-    //    simd_mask_type          _Mask_>
-    //raze_always_inline void copy_from(
-    //    _Iterator_      __first, 
-    //    const _Mask_&   __mask, 
-    //    const simd&     __source, 
-    //    decltype(aligned)) noexcept
-    //{
-    //    _storage = _Mask_load<__isa, __width, _Type_>()(
-    //        std::to_address(__first), __data(__mask), __data(__source), aligned_policy{});
-    //}
+    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
+    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, const simd& __source, decltype(aligned)) noexcept {
+        __for_each_chunk([&] <class _Chunk, class _Source, class _Mask> (_Chunk& __chunk, const _Source& __src_chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            __chunk = _Mask_load<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __storage_unwrap(__src_chunk), aligned_policy{});
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        }, __mask.__storage().storage(), __source.__storage().storage());
+    }
 
-    //template <
-    //    any_iterator_or_pointer _Iterator_,
-    //    simd_mask_type          _Mask_>
-    //raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask) noexcept {
-    //    
-    //}
+    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
+    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask) noexcept {
+        __for_each_chunk([&] <class _Chunk, class _Mask> (_Chunk& __chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            __chunk = _Maskz_load<__isa, typename _Chunk::unwrapped_type, value_type>()(__mem, __storage_unwrap(__mask_chunk), aligned_policy{});
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        }, __mask.__storage().storage());
+    }
 
-    //template <
-    //    any_iterator_or_pointer _Iterator_,
-    //    simd_mask_type          _Mask_>
-    //raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) noexcept {
-    //    _storage = _Maskz_load<__isa, __width, _Type_, vector_type>()(
-    //        std::to_address(__first), __data(__mask), aligned_policy{});
-    //}
+    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
+    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) noexcept {
+        __for_each_chunk([&] <class _Chunk, class _Mask> (_Chunk& __chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            __chunk = _Maskz_load<__isa, typename _Chunk::unwrapped_type, value_type>()(__mem, __storage_unwrap(__mask_chunk), aligned_policy{});
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        }, __mask.__storage().storage());
+    }
 
-    /**
-     *  @brief  Stores a SIMD vector to memory.
-     *
-     *  @param __first  Pointer to the destination memory.
-     *
-     *  Stores all lanes to @p __first.
-    */
     template <any_iterator_or_pointer _Iterator_>
     raze_always_inline void copy_to(_Iterator_ __first) noexcept {
         __for_each_chunk([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
@@ -509,19 +417,25 @@ public:
         });
     }
 
-   /* template <
-        any_iterator_or_pointer _Iterator_,
-        simd_mask_type          _Mask_>
+    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
     raze_always_inline void copy_to(_Iterator_ __first, const _Mask_& __mask) const noexcept {
-        _Mask_store<__isa, __width, _Type_>()(std::to_address(__first), __data(__mask), _storage);
+        __for_each_chunk([&] <class _Chunk, class _MaskChunk> (const _Chunk& __chunk, const _MaskChunk& __mask_chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            _Mask_store<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __chunk_data);
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        }, __mask.__storage().storage());
     }
 
-    template <
-        any_iterator_or_pointer _Iterator_,
-        simd_mask_type          _Mask_>
+    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
     raze_always_inline void copy_to(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) const noexcept {
-        _Mask_store<__isa, __width, _Type_>()(std::to_address(__first), __data(__mask), _storage, aligned_policy{});
-    }*/
+        __for_each_chunk([&] <class _Chunk, class _MaskChunk> (const _Chunk& __chunk, const _MaskChunk& __mask_chunk) raze_always_inline_lambda {
+            auto __chunk_data = __storage_unwrap(__chunk);
+            auto __mem = std::to_address(__first);
+            _Mask_store<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __chunk_data, aligned_policy{});
+            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
+        }, __mask.__storage().storage());
+    }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) noexcept {

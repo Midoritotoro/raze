@@ -1,0 +1,61 @@
+#pragma once 
+
+#include <raze/options/Options.h>
+#include <src/raze/vx/Concepts.h>
+
+#if defined(raze_processor_x86)
+#  include <src/raze/vx/hw/x86/memory/Store.h>
+#  include <src/raze/vx/hw/x86/memory/MaskStore.h>
+#  include <src/raze/vx/hw/x86/merge/Select.h>
+#endif // defined(raze_processor_x86)
+
+
+__RAZE_VX_NAMESPACE_BEGIN
+
+template <class _Options_>
+struct _Configurable_store {
+    template <any_iterator_or_pointer _Mem_, simd_type _Type_>
+    raze_nodiscard raze_always_inline bool operator()(_Mem_ __it, const _Type_& __x) const noexcept {
+        return raze::options::__dispatch_call(*this, __it, __x);
+    }
+
+    template <any_iterator_or_pointer _Mem_, simd_type _Type_>
+    static raze_always_inline auto deferred_call(auto __options, _Mem_ __it, const _Type_& __x) noexcept {
+        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+        using _Value_ = typename _Type_::value_type;
+        using _Abi_ = typename _Type_::abi_type;
+
+        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
+            auto __condition = __options[raze::options::condition_key];
+            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+
+            if constexpr (_Mask_::has_alternative)
+                return __x.__for_each_chunk([&] <class _Chunk, class _MaskChunk, class _SourceChunk> (
+                    _Chunk& __chunk, const _MaskChunk& __mchunk, const _SourceChunk& __src_chunk) raze_always_inline_lambda
+                {
+                    auto __mem = std::to_address(__it);
+                    _Store<_Abi_::isa, _Value_>()(__mem, _Select<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap(__src_chunk), __storage_unwrap(__mchunk)));
+                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
+                }, __mask.__storage().storage(), __condition.alternative().__storage().storage());
+            else
+                return __x.__for_each_chunk([&] <class _Chunk, class _MaskChunk> (
+                    _Chunk& __chunk, const _MaskChunk& __mchunk) raze_always_inline_lambda 
+                {
+                    auto __mem = std::to_address(__it);
+                    _Mask_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__mchunk), __storage_unwrap(__chunk));
+                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
+                }, __mask.__storage().storage());
+        }
+        else {
+            return __x.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
+                auto __mem = std::to_address(__it);
+                _Store<_Abi_::isa>()(__mem, __storage_unwrap(__chunk));
+                algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
+            });
+        }
+    }
+
+    using callable_tag_type = _Configurable_store;
+};
+
+__RAZE_VX_NAMESPACE_END

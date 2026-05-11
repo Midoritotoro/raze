@@ -5,6 +5,9 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <class _Iterator_>
+concept any_iterator_or_pointer = std::input_or_output_iterator<_Iterator_> || std::is_pointer_v<_Iterator_>;
+
 template <arch::ISA _ISA_, intrin_or_arithmetic_type _Type_>
 struct _Load {
     static raze_always_inline _Type_ __load(const void* __mem) noexcept {

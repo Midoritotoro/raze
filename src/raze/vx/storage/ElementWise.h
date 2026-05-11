@@ -81,5 +81,39 @@ raze_always_inline bool __for_each_tuple_any_of(_Tuple_& __tuple, _Function_&& _
     }(std::make_integer_sequence<sizetype, __simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value>{});
 }
 
+template <class _Tuple_, class _Function_, class ... _Args_>
+raze_always_inline void __for_each_tuple_reverse(_Tuple_& __tuple, _Function_&& __f, _Args_&& ... __args) noexcept
+    requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
+{
+    constexpr sizetype __N = __simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value;
+    [&] <u64 ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
+        ([&] (auto __current) raze_always_inline_lambda {
+            __f(__get<__current>(__tuple), __get<__current>(std::forward<_Args_>(__args))...);
+        }(std::integral_constant<std::size_t, __N - 1 - __I>{}), ...);
+    }(std::make_integer_sequence<sizetype, __N>{});
+}
 
+template <class _Tuple_, class _Function_, class ... _Args_>
+raze_always_inline bool __for_each_tuple_all_of_reverse(_Tuple_& __tuple, _Function_&& __f, _Args_&& ... __args) noexcept
+    requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
+{
+    constexpr sizetype __N = __simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value;
+    return [&] <u64 ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
+        return ([&] (auto __current) raze_always_inline_lambda {
+            return __f(__get<__current>(__tuple), __get<__current>(std::forward<_Args_>(__args))...);
+        }(std::integral_constant<std::size_t, __N - 1 - __I>{}) && ...);
+    }(std::make_integer_sequence<sizetype, __N>{});
+}
+
+template <class _Tuple_, class _Function_, class ... _Args_>
+raze_always_inline bool __for_each_tuple_any_of_reverse(_Tuple_& __tuple, _Function_&& __f, _Args_&& ... __args) noexcept
+    requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)
+{
+    constexpr sizetype __N = __simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value;
+    return [&] <u64 ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
+        return ([&] (auto __current) raze_always_inline_lambda {
+            return __f(__get<__current>(__tuple), __get<__current>(std::forward<_Args_>(__args))...);
+        }(std::integral_constant<std::size_t, __N - 1 - __I>{}) || ...);
+    }(std::make_integer_sequence<sizetype, __N>{});
+}
 __RAZE_VX_NAMESPACE_END

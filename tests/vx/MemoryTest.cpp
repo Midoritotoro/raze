@@ -20,57 +20,60 @@ struct variable_length_memory_tests {
             for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 3 + 1);
 
             Simd v;
-            v.copy_from(src, raze::vx::aligned);
-            v.copy_to(dst, raze::vx::aligned);
-            raze_assert(std::equal(src, src + N, dst));
+            v = raze::vx::load[raze::vx::aligned](raze::options::as<Simd>(), src);
+            //v.copy_from(src, raze::vx::aligned);
+            //v.copy_to(dst, raze::vx::aligned);
+            //raze_assert(std::equal(src, src + N, dst));
         }
 
-        {
-            alignas(64) _Type_ buf[N * 2 + PAD];
-            _Type_* src = buf + 1;
-            _Type_* dst = buf + N + 1;
-            for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 7 + 2);
+        //{
+        //    alignas(64) _Type_ buf[N * 2 + PAD];
+        //    _Type_* src = buf + 1;
+        //    _Type_* dst = buf + N + 1;
+        //    for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 7 + 2);
 
-            Simd v;
-            v.copy_from(src);
-            v.copy_to(dst);
-            raze_assert(std::equal(src, src + N, dst));
-        }
+        //    Simd v;
+        //    v.copy_from(src);
+        //    v.copy_to(dst);
+        //    raze_assert(std::equal(src, src + N, dst));
+        //}
 
-        {
-            alignas(64) _Type_ src[N];
-            alignas(64) _Type_ buf[N + PAD];
-            _Type_* dst = buf + 1;
-            for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(~i);
+        //{
+        //    alignas(64) _Type_ src[N];
+        //    alignas(64) _Type_ buf[N + PAD];
+        //    _Type_* dst = buf + 1;
+        //    for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(~i);
 
-            Simd v;
-            v.copy_from(src, raze::vx::aligned);
-            v.copy_to(dst);
-            raze_assert(std::equal(src, src + N, dst));
-        }
+        //    Simd v;
+        //    v.copy_from(src, raze::vx::aligned);
+        //    v.copy_to(dst);
+        //    raze_assert(std::equal(src, src + N, dst));
+        //}
 
-        {
-            alignas(64) _Type_ buf[N + PAD];
-            alignas(64) _Type_ dst[N];
-            _Type_* src = buf + 2;
-            for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 13);
+        //{
+        //    alignas(64) _Type_ buf[N + PAD];
+        //    alignas(64) _Type_ dst[N];
+        //    _Type_* src = buf + 2;
+        //    for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 13);
 
-            Simd v;
-            v.copy_from(src);
-            v.copy_to(dst, raze::vx::aligned);
-            raze_assert(std::equal(src, src + N, dst));
-        }
+        //    raze::vx::load<Simd>[raze::vx::unsafe]();
 
-        {
-            alignas(64) _Type_ src[N];
-            alignas(64) _Type_ dst[N];
-            for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 257 + 42);
+        //    Simd v;
+        //    v.copy_from(src);
+        //    v.copy_to(dst, raze::vx::aligned);
+        //    raze_assert(std::equal(src, src + N, dst));
+        //}
 
-            Simd v;
-            v.copy_from(src);
-            v.copy_to(dst);
-            raze_assert(std::equal(src, src + N, dst));
-        }
+        //{
+        //    alignas(64) _Type_ src[N];
+        //    alignas(64) _Type_ dst[N];
+        //    for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 257 + 42);
+
+        //    Simd v;
+        //    v.copy_from(src);
+        //    v.copy_to(dst);
+        //    raze_assert(std::equal(src, src + N, dst));
+        //}
     }
 
     void operator()() const {

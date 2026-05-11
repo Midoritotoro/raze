@@ -7,4 +7,7 @@
 #include <src/raze/vx/hw/configurable/mask/IsContiguous.h>
 #include <src/raze/vx/hw/configurable/mask/CountSet.h>
 #include <src/raze/vx/hw/configurable/mask/FindFirstSet.h>
+#include <src/raze/vx/hw/configurable/mask/FindFirstNotSet.h>
+#include <src/raze/vx/hw/configurable/mask/FindLastSet.h>
+#include <src/raze/vx/hw/configurable/mask/FindLastNotSet.h>
 

@@ -20,7 +20,7 @@ concept __compatible_mask = (sizeof(typename _FirstMaskType_::element_type) == s
 	(_FirstMaskType_::__isa == _SecondMaskType_::__isa) && (_FirstMaskType_::__width == _SecondMaskType_::__width);
 
 template <class _Type_, class _Abi_>
-class simd_mask {
+class raze_aligned_type(64) simd_mask {
 	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
 public:
 	using storage_type = _Mask_storage<_Type_, _Abi_>;
@@ -199,8 +199,18 @@ public:
 	}
 
 	template <class _Function_, class ... _Args_>
+	raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
+		_storage.__for_each_chunk_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
 	raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
 		_storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
+		_storage.__for_each_chunk_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
 	}
 
 	template <class _Function_, class ... _Args_>
@@ -209,8 +219,18 @@ public:
 	}
 
 	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
+		return _storage.__for_each_chunk_any_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
 	raze_always_inline bool __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
 		return _storage.__for_each_chunk_any_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
+		return _storage.__for_each_chunk_any_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
 	}
 
 	template <class _Function_, class ... _Args_>
@@ -219,8 +239,18 @@ public:
 	}
 
 	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
+		return _storage.__for_each_chunk_all_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
 	raze_always_inline bool __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
 		return _storage.__for_each_chunk_all_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	}
+
+	template <class _Function_, class ... _Args_>
+	raze_always_inline bool __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
+		return _storage.__for_each_chunk_all_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
 	}
 
 	raze_always_inline void __insert(i32 __i, bool __v) noexcept {

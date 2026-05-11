@@ -29,7 +29,7 @@ struct variable_length_mask_tests {
 
             raze_assert(raze::vx::count_set(m) == 0);
             raze_assert(raze::vx::find_first_set(m) == N);
-            //raze_assert(raze::vx::find_last_set(m) == N);
+            raze_assert(raze::vx::find_last_set(m) == N);
         }
 
         {
@@ -37,7 +37,7 @@ struct variable_length_mask_tests {
 
             raze_assert(raze::vx::count_set(m) == N);
             raze_assert(raze::vx::find_first_set(m) == 0);
-            //raze_assert(raze::vx::find_last_set(m) == 0);
+            raze_assert(raze::vx::find_last_set(m) == 0);
         }
 
         for (size_t i = 0; i < N; ++i) {
@@ -46,7 +46,7 @@ struct variable_length_mask_tests {
 
             raze_assert(raze::vx::count_set(m) == 1);
             raze_assert(raze::vx::find_first_set(m) == i);
-            //raze_assert(raze::vx::find_last_set(m) == (N - i - 1));
+            raze_assert(raze::vx::find_last_set(m) == (N - i - 1));
         }
 
         {
@@ -57,31 +57,31 @@ struct variable_length_mask_tests {
             raze_assert(raze::vx::count_set(m) == expected);
             raze_assert(raze::vx::find_first_set(m) == 0);
 
-            //size_t last = (N % 2 == 0 ? 1 : N - 1);
-            //raze_assert(raze::vx::find_last_set(m) == last);
+            size_t last = (N == 1 ? 0 : N % 2 == 0 ? 1 : 0);
+            raze_assert(raze::vx::find_last_set(m) == last);
         }
 
-        //{
-        //    Mask m(false);
+        {
+            Mask m(false);
 
-        //    raze_assert(raze::vx::find_first_not_set(m) == 0);
-        //    raze_assert(raze::vx::find_last_not_set(m) == 0);
-        //}
+            raze_assert(raze::vx::find_first_not_set(m) == 0);
+            raze_assert(raze::vx::find_last_not_set(m) == 0);
+        }
 
-        //{
-        //    Mask m(true);
+        {
+            Mask m(true);
 
-        //    raze_assert(raze::vx::find_first_not_set(m) == N);
-        //    raze_assert(raze::vx::find_last_not_set(m) == N);
-        //}
+            raze_assert(raze::vx::find_first_not_set(m) == N);
+            raze_assert(raze::vx::find_last_not_set(m) == N);
+        }
 
-        //for (size_t i = 0; i < N; ++i) {
-        //    Mask m(true);
-        //    m[i] = false;
+        for (size_t i = 0; i < N; ++i) {
+            Mask m(true);
+            m[i] = false;
 
-        //    raze_assert(raze::vx::find_first_not_set(m) == i);
-        //    raze_assert(raze::vx::find_last_not_set(m) == (N - i - 1));
-        //}
+            raze_assert(raze::vx::find_first_not_set(m) == i);
+            raze_assert(raze::vx::find_last_not_set(m) == (N - i - 1));
+        }
     }
 
     void operator()() const {

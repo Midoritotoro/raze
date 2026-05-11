@@ -22,4 +22,8 @@ concept alignment_policy_type = requires {
 	{ std::remove_cvref_t<_AlignmentPolicy_>::__alignment } -> std::convertible_to<bool>;
 };
 
+struct aligned_mode {};
+constexpr inline auto aligned = raze::options::flag(aligned_mode{});
+struct aligned_option : raze::options::exact_option<aligned> {};
+
 __RAZE_VX_NAMESPACE_END

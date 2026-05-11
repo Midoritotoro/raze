@@ -42,23 +42,12 @@ constexpr raze_always_inline i32 __bit_hacks_ctz_u32(u32 __value) noexcept {
     auto __result   = u32(32);
     __value         &= -signed(__value);
 
-    if (__value)
-        --__result;
-
-    if (__value & 0x0000FFFF)
-        __result -= 16;
-
-    if (__value & 0x00FF00FF)
-        __result -= 8;
-
-    if (__value & 0x0F0F0F0F)
-        __result -= 4;
-
-    if (__value & 0x33333333)
-        __result -= 2;
-
-    if (__value & 0x55555555)
-        __result -= 1;
+    if (__value) --__result;
+    if (__value & 0x0000FFFF) __result -= 16;
+    if (__value & 0x00FF00FF) __result -= 8;
+    if (__value & 0x0F0F0F0F) __result -= 4;
+    if (__value & 0x33333333) __result -= 2;
+    if (__value & 0x55555555) __result -= 1;
 
     return __result;
 }
@@ -67,8 +56,7 @@ template <std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline i32 __bit_hacks_ctz(_IntegralType_ __value) noexcept {
     if constexpr (sizeof(_IntegralType_) == 8) {
         const auto __low = static_cast<u32>(__value);
-        return __low
-            ? __bit_hacks_ctz_u32(__low)
+        return __low ? __bit_hacks_ctz_u32(__low)
             : 32 + __bit_hacks_ctz_u32(static_cast<u32>(__value >> 32));
     }
     else if constexpr (sizeof(_IntegralType_) == 4) {
@@ -78,20 +66,11 @@ constexpr raze_always_inline i32 __bit_hacks_ctz(_IntegralType_ __value) noexcep
         auto __result   = u32(16);
         __value         &= u16(-signed(__value));
         
-        if (__value)
-            --__result;
-
-        if (__value & 0x000000FF)
-            __result -= 8;
-
-        if (__value & 0x00000F0F)
-            __result -= 4;
-
-        if (__value & 0x00003333)
-            __result -= 2;
-
-        if (__value & 0x00005555)
-            __result -= 1;
+        if (__value) --__result;
+        if (__value & 0x000000FF) __result -= 8;
+        if (__value & 0x00000F0F) __result -= 4;
+        if (__value & 0x00003333) __result -= 2;
+        if (__value & 0x00005555) __result -= 1;
 
         return __result;
     }
@@ -99,17 +78,10 @@ constexpr raze_always_inline i32 __bit_hacks_ctz(_IntegralType_ __value) noexcep
         auto __result   = u32(8);
         __value         &= u8(-signed(__value));
 
-        if (__value)
-            --__result;
-
-        if (__value & 0x0000000F)
-            __result -= 4;
-
-        if (__value & 0x00000033)
-            __result -= 2;
-
-        if (__value & 0x00000055)
-            __result -= 1;
+        if (__value) --__result;
+        if (__value & 0x0000000F) __result -= 4;
+        if (__value & 0x00000033) __result -= 2;
+        if (__value & 0x00000055) __result -= 1;
 
         return __result;
     }
@@ -126,16 +98,13 @@ raze_always_inline i32 __bsf_ctz(_IntegralType_ __value) noexcept {
     auto __index = ulong(__digits);
 
     if constexpr (__digits == 64) {
-        if (!_BitScanForward64(&__index, __value))
-            return __digits;
+        if (!_BitScanForward64(&__index, __value)) return __digits;
     }
     else if constexpr (__digits == 32) {
-        if (!_BitScanForward(&__index, __value))
-            return __digits;
+        if (!_BitScanForward(&__index, __value)) return __digits;
     }
     else if constexpr (__digits < 32) {
-        if (!_BitScanForward(&__index, static_cast<u32>(__value | ~__max)))
-            return __digits;
+        if (!_BitScanForward(&__index, static_cast<u32>(__value | ~__max))) return __digits;
     }
 
     return __index;
@@ -146,12 +115,9 @@ raze_always_inline i32 __tzcnt_ctz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
     constexpr auto __max    = std::numeric_limits<_IntegralType_>::max();
 
-    if      constexpr (__digits == 64)
-        return __raze_tzcnt_u64(__value);
-    else if constexpr (__digits == 32)
-        return __raze_tzcnt_u32(__value);
-    else if constexpr (__digits < 32)
-        return __raze_tzcnt_u32(static_cast<u32>(__value | ~__max));
+    if constexpr (__digits == 64) return __raze_tzcnt_u64(__value);
+    else if constexpr (__digits == 32) return __raze_tzcnt_u32(__value);
+    else if constexpr (__digits < 32) return __raze_tzcnt_u32(static_cast<u32>(__value | ~__max));
 }
 
 #endif // defined(raze_processor_x86)
@@ -191,14 +157,13 @@ template <>
 struct __ctz_n_bits_implementation<2> {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
+        __value &= 0x03;
+
         auto __result   = u32(2);
         __value         &= u8(-signed(__value));
 
-        if (__value)
-            --__result;
-
-        if (__value & 0x00000055)
-            __result -= 1;
+        if (__value) --__result;
+        if (__value & 0x00000055) __result -= 1;
 
         return __result;
     }
@@ -209,25 +174,20 @@ template <>
 struct __ctz_n_bits_implementation<4> {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
+        __value &= 0xF;
+
         auto __result   = u32(4);
         __value         &= u8(-signed(__value));
 
-        if (__value)
-            --__result;
-
-        if (__value & 0x00000033)
-            __result -= 2;
-
-        if (__value & 0x00000055)
-            __result -= 1;
+        if (__value) --__result;
+        if (__value & 0x00000033) __result -= 2;
+        if (__value & 0x00000055) __result -= 1;
 
         return __result;
     }
 };
 
-template <
-    sizetype _Bits_, 
-    std::unsigned_integral _IntegralType_>
+template <sizetype _Bits_, std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline i32 __ctz_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);

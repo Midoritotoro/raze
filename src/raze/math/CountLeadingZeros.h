@@ -149,6 +149,7 @@ template <>
 struct __clz_n_bits_implementation<2> {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
+        __value &= 0x03;
         __value = __value | (__value >> 1);
         return __popcnt_n_bits<2>(static_cast<_IntegralType_>(~__value));
     }
@@ -158,6 +159,8 @@ template <>
 struct __clz_n_bits_implementation<4> {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
+        __value &= 0xF;
+
         __value = __value | (__value >> 1);
         __value = __value | (__value >> 2);
 
