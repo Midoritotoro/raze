@@ -17,17 +17,17 @@ struct _Mask_store {
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_static_operator raze_always_inline void __store(void* __mem, _Mask_ __mask, _Tp_ __x) raze_const_operator noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return _mm_mask_store_epi64(__mem, __mask, __as<__m128i>(__x));
-			if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return _mm_mask_store_epi32(__mem, __mask, __as<__m128i>(__x));
-			else if constexpr (__is_ps_v<_Type_>) return _mm_mask_store_ps(__mem, __mask, __as<__m128>(__x));
-			else if constexpr (__is_pd_v<_Type_>) return _mm_mask_store_pd(__mem, __mask, __as<__m128d>(__x));
+			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return _mm_mask_store_epi64(__mem, __mask, __as<__m128i>(__x));
+			if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return _mm_mask_store_epi32(__mem, __mask, __as<__m128i>(__x));
+			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return _mm_mask_store_ps(__mem, __mask, __as<__m128>(__x));
+			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return _mm_mask_store_pd(__mem, __mask, __as<__m128d>(__x));
 			else return __storeu(__mem, __mask, __x);
 		}
 		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return _mm256_mask_store_epi64(__mem, __mask, __as<__m256i>(__x));
-			if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return _mm256_mask_store_epi32(__mem, __mask, __as<__m256i>(__x));
-			else if constexpr (__is_ps_v<_Type_>) return _mm256_mask_store_ps(__mem, __mask, __as<__m256>(__x));
-			else if constexpr (__is_pd_v<_Type_>) return _mm256_mask_store_pd(__mem, __mask, __as<__m256d>(__x));
+			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return _mm256_mask_store_epi64(__mem, __mask, __as<__m256i>(__x));
+			if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return _mm256_mask_store_epi32(__mem, __mask, __as<__m256i>(__x));
+			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return _mm256_mask_store_ps(__mem, __mask, __as<__m256>(__x));
+			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return _mm256_mask_store_pd(__mem, __mask, __as<__m256d>(__x));
 			else return __storeu(__mem, __mask, __x);
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
@@ -39,7 +39,7 @@ struct _Mask_store {
 		}
 
 		if constexpr (arithmetic_type<_Tp_>) { if (__mask) *static_cast<_Tp_*>(__mem) = __x; }
-		else { _Store<_ISA_>()(_Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask)); }
+		else { _Store<_ISA_>()(__mem, _Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask), __aligned_policy{}); }
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -104,14 +104,14 @@ struct _Mask_store {
 		}
 
 		if constexpr (arithmetic_type<_Tp_>) { if (__mask) *static_cast<_Tp_*>(__mem) = __x; }
-		else { _Store<_ISA_>()(_Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask)); }
+		else { _Store<_ISA_>()(__mem, _Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask)); }
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, class _AligntPolicy_ = __unaligned_policy>
 	raze_static_operator raze_always_inline void operator()(void* __mem, 
 		_Mask_ __mask, _Tp_ __x, _AligntPolicy_&& __policy = _AligntPolicy_{}) raze_const_operator noexcept
 	{
-		if constexpr (__is_aligned_v<_ISA_>) __store(__mem, __mask, __x);
+		if constexpr (__is_aligned_v<_AligntPolicy_>) __store(__mem, __mask, __x);
 		else __storeu(__mem, __mask, __x);
 	}
 };

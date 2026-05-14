@@ -46,12 +46,15 @@ public:
     static constexpr auto __isa = _Abi_::isa;
     static constexpr auto __width = (_Abi_::size * sizeof(_Type_) * 8);
     static constexpr auto __size = _Abi_::size;
+    static constexpr auto __has_scalar_chunks = (_Abi_::size & (_Abi_::size - 1)) != 0;
 
     using storage_type  = _Vector_storage<_Type_, _Abi_>;
     using reference     = _Simd_element_reference<simd>;
     using value_type    = _Type_;
     using mask_type     = simd_mask<_Type_, _Abi_>;
     using abi_type      = _Abi_;
+
+    
 
     /**
      * @brief Constructs an uninitialized SIMD vector.
@@ -335,106 +338,6 @@ public:
 
     raze_nodiscard raze_always_inline storage_type& __storage() noexcept {
         return _storage;
-    }
-
-    template <any_iterator_or_pointer _Iterator_>
-    raze_always_inline void copy_from(_Iterator_ __first) noexcept {
-        __for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            __chunk = _Load<__isa, decltype(__chunk_data)>()(__mem);
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        });
-    }
-
-    template <any_iterator_or_pointer _Iterator_>
-    raze_always_inline void copy_from(_Iterator_ __first, decltype(aligned)) noexcept {
-        __for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            __chunk = _Load<__isa, decltype(__chunk_data)>()(__mem, aligned_policy{});
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        });
-    }
-
-    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
-    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, const simd& __source) noexcept {
-        __for_each_chunk([&] <class _Chunk, class _Source, class _Mask> (_Chunk& __chunk, const _Source& __src_chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            __chunk = _Mask_load<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __storage_unwrap(__src_chunk));
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        }, __mask.__storage().storage(), __source.__storage().storage());
-    }
-
-    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
-    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, const simd& __source, decltype(aligned)) noexcept {
-        __for_each_chunk([&] <class _Chunk, class _Source, class _Mask> (_Chunk& __chunk, const _Source& __src_chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            __chunk = _Mask_load<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __storage_unwrap(__src_chunk), aligned_policy{});
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        }, __mask.__storage().storage(), __source.__storage().storage());
-    }
-
-    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
-    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask) noexcept {
-        __for_each_chunk([&] <class _Chunk, class _Mask> (_Chunk& __chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            __chunk = _Maskz_load<__isa, typename _Chunk::unwrapped_type, value_type>()(__mem, __storage_unwrap(__mask_chunk), aligned_policy{});
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        }, __mask.__storage().storage());
-    }
-
-    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
-    raze_always_inline void copy_from(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) noexcept {
-        __for_each_chunk([&] <class _Chunk, class _Mask> (_Chunk& __chunk, const _Mask& __mask_chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            __chunk = _Maskz_load<__isa, typename _Chunk::unwrapped_type, value_type>()(__mem, __storage_unwrap(__mask_chunk), aligned_policy{});
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        }, __mask.__storage().storage());
-    }
-
-    template <any_iterator_or_pointer _Iterator_>
-    raze_always_inline void copy_to(_Iterator_ __first) noexcept {
-        __for_each_chunk([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            _Store<__isa>()(__mem, __chunk_data);
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        });
-    }
-
-    template <any_iterator_or_pointer _Iterator_>
-    raze_always_inline void copy_to(_Iterator_ __first, decltype(aligned)) noexcept {
-        __for_each_chunk([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            _Store<__isa>()(__mem, __chunk_data, aligned_policy{});
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        });
-    }
-
-    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
-    raze_always_inline void copy_to(_Iterator_ __first, const _Mask_& __mask) const noexcept {
-        __for_each_chunk([&] <class _Chunk, class _MaskChunk> (const _Chunk& __chunk, const _MaskChunk& __mask_chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            _Mask_store<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __chunk_data);
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        }, __mask.__storage().storage());
-    }
-
-    template <any_iterator_or_pointer _Iterator_, simd_mask_type _Mask_>
-    raze_always_inline void copy_to(_Iterator_ __first, const _Mask_& __mask, decltype(aligned)) const noexcept {
-        __for_each_chunk([&] <class _Chunk, class _MaskChunk> (const _Chunk& __chunk, const _MaskChunk& __mask_chunk) raze_always_inline_lambda {
-            auto __chunk_data = __storage_unwrap(__chunk);
-            auto __mem = std::to_address(__first);
-            _Mask_store<__isa, value_type>()(__mem, __storage_unwrap(__mask_chunk), __chunk_data, aligned_policy{});
-            algorithm::__seek_possibly_wrapped_iterator(__first, algorithm::__bytes_pointer_offset(__mem, sizeof(value_type) * _Chunk::size));
-        }, __mask.__storage().storage());
     }
 
     template <class _Function_, class ... _Args_>

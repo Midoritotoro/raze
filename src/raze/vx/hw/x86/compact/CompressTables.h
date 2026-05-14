@@ -4,23 +4,14 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-    sizetype _VerticalSize_,
-    sizetype _HorizontalSize_,
-    sizetype _Alignment_>
+template <sizetype _VerticalSize_, sizetype _HorizontalSize_, sizetype _Alignment_>
 struct _Compress_tables {
     alignas(_Alignment_) u8 __size[_VerticalSize_];
     alignas(_Alignment_) u8 __shuffle[_VerticalSize_][_HorizontalSize_];
 };
 
-template <
-    sizetype _VerticalSize_,
-    sizetype _HorizontalSize_,
-    sizetype _Alignment_>
-constexpr auto __make_compress_tables(
-    const u32 __multiplier,
-    const u32 __element_group_stride) noexcept
-{
+template <sizetype _VerticalSize_, sizetype _HorizontalSize_, sizetype _Alignment_>
+constexpr auto __make_compress_tables(u32 __multiplier, u32 __element_group_stride) noexcept {
     auto __result = _Compress_tables<_VerticalSize_, _HorizontalSize_, _Alignment_>();
 
     for (auto __vertical_index = u32(0); __vertical_index != _VerticalSize_; ++__vertical_index) {
@@ -53,17 +44,10 @@ constexpr auto __tables_sse = [] {
     return _Compress_tables<1, 1, 16>();
 }();
 
-template <>
-constexpr auto __tables_sse<1>  = __make_compress_tables<256, 8, 16>(1, 1);
-
-template <>
-constexpr auto __tables_sse<2>  = __make_compress_tables<256, 16, 16>(2, 2);
-
-template <>
-constexpr auto __tables_sse<4>  = __make_compress_tables<16, 16, 16>(4, 4);
-
-template <>
-constexpr auto __tables_sse<8>  = __make_compress_tables<4, 16, 16>(8, 8);
+template <> constexpr auto __tables_sse<1>  = __make_compress_tables<256, 8, 16>(1, 1);
+template <> constexpr auto __tables_sse<2>  = __make_compress_tables<256, 16, 16>(2, 2);
+template <> constexpr auto __tables_sse<4>  = __make_compress_tables<16, 16, 16>(4, 4);
+template <> constexpr auto __tables_sse<8>  = __make_compress_tables<4, 16, 16>(8, 8);
 
 template <sizetype _Size_>
 constexpr auto __tables_avx = [] { 
@@ -71,10 +55,7 @@ constexpr auto __tables_avx = [] {
     return _Compress_tables<1, 1, 16>();
 }();
 
-template <>
-constexpr auto __tables_avx<4> = __make_compress_tables<256, 8, 16>(4, 1);
-
-template <>
-constexpr auto __tables_avx<8> = __make_compress_tables<16, 8, 16>(8, 2);
+template <> constexpr auto __tables_avx<4> = __make_compress_tables<256, 8, 16>(4, 1);
+template <> constexpr auto __tables_avx<8> = __make_compress_tables<16, 8, 16>(8, 2);
 
 __RAZE_VX_NAMESPACE_END

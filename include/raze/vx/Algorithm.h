@@ -11,6 +11,7 @@
 #include <src/raze/vx/hw/Merge.h>
 #include <src/raze/vx/hw/Memory.h>
 #include <src/raze/vx/AsTernaryMask.h>
+#include <src/raze/vx/hw/Shape.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -51,8 +52,12 @@ constexpr inline auto is_equal = raze::options::functor<_Configurable_is_equal>;
 constexpr inline auto is_not_equal = raze::options::functor<_Configurable_is_not_equal>;
 constexpr inline auto select = raze::options::functor<_Configurable_select>;
 constexpr inline auto ternarylogic = raze::options::functor<_Configurable_ternarylogic>;
-constexpr inline auto load = raze::options::functor<_Configurable_load>;
-// constexpr inline auto store = raze::options::functor<_Configurable_store>;
+template <simd_type _Simd_> constexpr inline auto load = __load<_Simd_>;
+constexpr inline auto store = __store;
+// constexpr inline auto compress = raze::options::functor<_Configurable_compress>;
+// constexpr inline auto compress_store = raze::options::functor<_Configurable_compress_store>;
+constexpr inline auto concat = raze::options::functor<_Configurable_concat>;
+// constexpr inline auto split = raze::options::functor<_Configurable_split>:
 constexpr inline auto vmin = vertical_min;
 constexpr inline auto vmax = vertical_max;
 constexpr inline auto hsum = horizontal_sum;

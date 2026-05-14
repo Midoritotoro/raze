@@ -74,7 +74,7 @@ struct _Maskz_load {
 			}
 		}
 		
-		if (arithmetic_type<_Tp_>)
+		if constexpr  (arithmetic_type<_Tp_>)
 			return __mask ? *static_cast<const _Tp_*>(__mem) : 0;
 		else
 			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
@@ -83,17 +83,17 @@ struct _Maskz_load {
 	template <raw_mask_type _Mask_>
 	raze_nodiscard static raze_always_inline _Tp_ __load(const void* __mem, _Mask_ __mask) noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm_maskz_load_epi64(__mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_maskz_load_epi32(__mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_maskz_load_pd(__mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_maskz_load_ps(__mask, __mem));
+			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_maskz_load_epi64(__mask, __mem));
+			else if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_maskz_load_epi32(__mask, __mem));
+			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm_maskz_load_pd(__mask, __mem));
+			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm_maskz_load_ps(__mask, __mem));
 			else return __loadu(__mem, __mask);
 		}
 		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_load_epi64(__mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_load_epi32(__mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_maskz_load_pd(__mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_maskz_load_ps(__mask, __mem));
+			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm256_maskz_load_epi64(__mask, __mem));
+			else if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm256_maskz_load_epi32(__mask, __mem));
+			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm256_maskz_load_pd(__mask, __mem));
+			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm256_maskz_load_ps(__mask, __mem));
 			else return __loadu(__mem, __mask);
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
@@ -104,7 +104,7 @@ struct _Maskz_load {
 			else return __loadu(__mem, __mask);
 		}
 
-		if (arithmetic_type<_Tp_>)
+		if constexpr (arithmetic_type<_Tp_>)
 			return __mask ? *static_cast<const _Tp_*>(__mem) : 0;
 		else
 			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);

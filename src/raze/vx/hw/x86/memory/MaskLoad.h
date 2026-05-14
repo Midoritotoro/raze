@@ -44,7 +44,7 @@ struct _Mask_load {
 			}
 		}
 		
-		if (arithmetic_type<_Tp_>)
+		if constexpr (arithmetic_type<_Tp_>)
 			return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
 		else
 			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __src, __mask);
@@ -52,29 +52,29 @@ struct _Mask_load {
 
 	template <raw_mask_type _Mask_, intrin_or_arithmetic_type _Tp_>
 	raze_nodiscard static raze_always_inline _Tp_ __load(const void* __mem, _Mask_ __mask, _Tp_ __src) noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && __avx512vl) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm_mask_load_epi64(__as<__m128i>(__src), __mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_load_epi32(__as<__m128i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mask_load_pd(__as<__m128d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mask_load_ps(__as<__m128>(__src), __mask, __mem));
-			else if constexpr (__avx512bw) return __loadu(__mem, __mask, __src);
+		if constexpr (sizeof(_Tp_) == 16) {
+			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_mask_load_epi64(__as<__m128i>(__src), __mask, __mem));
+			else if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_mask_load_epi32(__as<__m128i>(__src), __mask, __mem));
+			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm_mask_load_pd(__as<__m128d>(__src), __mask, __mem));
+			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm_mask_load_ps(__as<__m128>(__src), __mask, __mem));
+			else return __loadu(__mem, __mask, __src);
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && __avx512vl) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_mask_load_epi64(__as<__m256i>(__src), __mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mask_load_epi32(__as<__m256i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_mask_load_pd(__as<__m256d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_mask_load_ps(__as<__m256>(__src), __mask, __mem));
-			else if constexpr (__avx512bw) return __loadu(__mem, __mask, __src);
+		else if constexpr (sizeof(_Tp_) == 32) {
+			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm256_mask_load_epi64(__as<__m256i>(__src), __mask, __mem));
+			else if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm256_mask_load_epi32(__as<__m256i>(__src), __mask, __mem));
+			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm256_mask_load_pd(__as<__m256d>(__src), __mask, __mem));
+			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm256_mask_load_ps(__as<__m256>(__src), __mask, __mem));
+			else return __loadu(__mem, __mask, __src);
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
 			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_epi64(__as<__m512i>(__src), __mask, __mem));
 			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_epi32(__as<__m512i>(__src), __mask, __mem));
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_pd(__as<__m512d>(__src), __mask, __mem));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_ps(__as<__m512>(__src), __mask, __mem));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) return __loadu(__mem, __mask, __src);
+			else return __loadu(__mem, __mask, __src);
 		}
 
-		if (arithmetic_type<_Tp_>)
+		if constexpr (arithmetic_type<_Tp_>)
 			return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
 		else
 			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __src, __mask);

@@ -2,6 +2,6 @@
 
 #include <raze/compatibility/Compatibility.h>
 
-#if defined(raze_processor_x86)
-#  include <src/raze/vx/hw/x86/Shape.h>
-#endif
+#include <src/raze/vx/hw/configurable/shape/Concat.h>
+#include <src/raze/vx/hw/configurable/shape/Split.h>
+
