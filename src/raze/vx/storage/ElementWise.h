@@ -116,4 +116,6 @@ raze_always_inline bool __for_each_tuple_any_of_reverse(_Tuple_& __tuple, _Funct
         }(std::integral_constant<std::size_t, __N - 1 - __I>{}) || ...);
     }(std::make_integer_sequence<sizetype, __N>{});
 }
+
+
 __RAZE_VX_NAMESPACE_END

@@ -349,6 +349,11 @@ public:
     raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
         _storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
+
+    template <sizetype _I_>
+    raze_always_inline auto __get() const noexcept {
+        return __get<_I_>(_storage.storage());
+    }
 private:
     raze_always_inline void __insert(i32 __position, value_type __value) noexcept {
         _storage.__insert(__position, __value);

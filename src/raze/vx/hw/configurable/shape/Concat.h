@@ -55,15 +55,33 @@ struct _Configurable_concat: raze::options::strict_elementwise_callable<_Configu
         using _Abi_ = typename _Concatenated_::abi_type;
 
         _Concatenated_ __result;
+        
+        /*using _Tup = std::tuple<_Types_...>;
+        _Tup __tup = std::make_tuple(__xs...);
 
-        if constexpr (effective_concatenation_available<_Types_...>) {
-            __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-                __chunk = [&] () raze_always_inline_lambda {
-                    // ...
-                };
-            });
+        using _BestWrappedChunk = typename best_chunk<_Value_, _Abi_, _Abi_::size>::type;
+        using _BestChunk = typename _BestWrappedChunk::unwrapped_type;*/
+
+        /*if constexpr (effective_concatenation_available<_Types_...>) {
+            (([&] <u64 ... __I1> () raze_always_inline_lambda {
+                auto __current_tuple = std::get<__I1>(__tup);
+                using _SimdType = decltype(__current_tuple);
+
+                constexpr auto __size1 = _SimdType::size();
+                constexpr auto __chunks_count = __simd_tuple_size<typename typename _SimdType::storage_type::tuple_type>::value;
+
+                _BestChunk __src;
+
+                [&] <u64 ... __I2> (std::integer_sequence<sizetype, __I2...>) raze_always_inline_lambda {
+                    ([&](auto __current) raze_always_inline_lambda {
+                        auto& __chunk = __get<__current>(__result);
+                        auto __temp_chunk = __get<__current % __chunks_count>(__current_tuple);
+                        __chunk.template insert<__current>(__temp_chunk.data());
+                    }(std::integral_constant<std::size_t, __I2>{}), ...);
+                }(std::make_integer_sequence<sizetype, __chunks_count>{});
+            }(std::make_index_sequence<std::tuple_size_v<_Tup>>{})));
         }
-        else {
+        else*/ {
             alignas(64) _Value_ __arr[_Abi_::size];
             _Value_* __ptr = __arr;
 

@@ -29,4 +29,27 @@ struct _Insert {
 	}
 };
 
+template <arch::ISA _ISA_>
+struct _Insert_vector {
+	template <intrin_type _Tp_, sizetype _I_, intrin_type _Type_>
+	raze_static_operator raze_always_inline void operator()(_Tp_& __vector, std::integral_constant<sizetype, _I_> __index, _Type_ __value) raze_const_operator noexcept {
+		if constexpr (sizeof(_Tp_) == sizeof(_Type_)) {
+			__vector = __as<_Tp_>(__value);
+		}
+		else if constexpr (sizeof(_Tp_) == 32) {
+			if constexpr (sizeof(_Tp_) == 16) {
+				__vector = _mm256_inserti128_si256(__as<__m256i>(__vector), __as<__m128i>(__value), __index);
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (sizeof(_Tp_) == 16) {
+				__vector = _mm512_inserti32x4(__as<__m512i>(__vector), __as<__m128i>(__value), __index);
+			}
+			else if constexpr (sizeof(_Tp_) == 32) {
+				__vector = _mm512_inserti32x8(__as<__m512i>(__vector), __as<__m256i>(__value), __index);
+			}
+		}
+	}
+};
+
 __RAZE_VX_NAMESPACE_END

@@ -45,8 +45,8 @@ struct concat_tests {
 
     void operator()() {
         run_for_n<_Width_ / (sizeof(_Type_) * 8)>();
-        //run_for_n<_Width_ / (sizeof(_Type_) * 8) + 1>();
-        //run_for_n<1>();
+        run_for_n<_Width_ / (sizeof(_Type_) * 8) + 1>();
+        run_for_n<1>();
     }
 };
 
