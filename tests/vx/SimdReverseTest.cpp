@@ -4,14 +4,14 @@
 template <
     class           _Type_,
     raze::arch::ISA _ISA_,
-    raze::uint32    _Width_>
+    raze::u32    _Width_>
 struct reverse_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::x86_runtime_abi<_ISA_, _Width_>>;
-    using Mask = typename Simd::mask_type;
-    using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
-    static constexpr size_t N = Simd::size();
+    template <raze::sizetype _Size_>
+    void test_size() {
+        using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Size_>>;
+        using Mask = typename Simd::mask_type;
+        static constexpr size_t N = Simd::size();
 
-    void operator()() {
         alignas(64) _Type_ arr[N];
 
         for (size_t i = 0; i < N; ++i)
@@ -22,6 +22,10 @@ struct reverse_tests {
 
         for (size_t i = 0; i < N; ++i)
             raze_assert(r[i] == arr[N - 1 - i]);
+    }
+
+    void operator()() {
+        test_size<_Width_ / (sizeof(_Type_) * 8)>();
     }
 };
 

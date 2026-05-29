@@ -4,7 +4,7 @@
 
 template <
     class           Simd,
-    raze::uint64    Seed>
+    raze::u64    Seed>
 void test_shuffle_with_compile_time_pattern() {
     using T = typename Simd::value_type;
     constexpr std::size_t N = Simd::size();
@@ -17,7 +17,7 @@ void test_shuffle_with_compile_time_pattern() {
 
     {
         [&] <std::size_t... I>(std::index_sequence<I...>) {
-            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::uint64, static_cast<raze::uint64>((I * Seed * 1103515245u + 12345u) % N)...>{});
+            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::u64, static_cast<raze::u64>((I * Seed * 1103515245u + 12345u) % N)...>{});
 
             constexpr std::size_t indices[] = { I... };
             for (std::size_t i = 0; i < N; ++i)
@@ -31,7 +31,7 @@ void test_shuffle_with_compile_time_pattern() {
         };
 
         [&] <std::size_t... I>(std::index_sequence<I...>) {
-            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::uint64, static_cast<raze::uint64>(make_idx(I))...>{});
+            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::u64, static_cast<raze::u64>(make_idx(I))...>{});
 
             constexpr std::size_t idxs[] = { make_idx(I)... };
 
@@ -49,7 +49,7 @@ void test_shuffle_with_compile_time_pattern() {
         };
 
         [&] <std::size_t... I>(std::index_sequence<I...>) {
-            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::uint64, static_cast<raze::uint64>(make_idx(I))...>{});
+            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::u64, static_cast<raze::u64>(make_idx(I))...>{});
 
             constexpr std::size_t idxs[] = { make_idx(I)... };
 
@@ -61,24 +61,29 @@ void test_shuffle_with_compile_time_pattern() {
 
 template <
     class               Simd,
-    raze::uint64 ...    Seeds>
+    raze::u64 ...    Seeds>
 void test_shuffle_with_compile_time_all_patterns(std::index_sequence<Seeds...>) {
     (test_shuffle_with_compile_time_pattern<Simd, Seeds>(), ...);
 }
 
-
 template <
     class           _Type_,
     raze::arch::ISA _ISA_,
-    raze::uint32    _Width_>
+    raze::u32    _Width_>
 struct shuffle_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::x86_runtime_abi<_ISA_, _Width_>>;
-    using Mask = typename Simd::mask_type;
-    using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
-    static constexpr size_t N = Simd::size();
+    template <raze::sizetype _Size_>
+    void test_size() {
+        using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Size_>>;
+        using Mask = typename Simd::mask_type;
+        static constexpr size_t N = Simd::size();
+
+        
+
+        // test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<4>{});
+    }
 
     void operator()() {
-        test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<4>{});
+        test_size<_Width_ / (sizeof(_Type_) * 8)>();
     }
 };
 

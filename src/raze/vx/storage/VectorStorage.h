@@ -28,6 +28,15 @@ public:
     _Vector_storage& operator=(const _Vector_storage&) noexcept = default;
     _Vector_storage& operator=(_Vector_storage&&) noexcept = default;
 
+    raze_nodiscard static constexpr bool is_native() noexcept {
+        return __use_native;
+    }
+
+    raze_nodiscard static constexpr bool chunks_count() noexcept {
+        if constexpr (is_native()) return 1;
+        else return __simd_tuple_size<tuple_type>::value;
+    }
+
     raze_always_inline tuple_type storage() const noexcept {
         return _data;
     }

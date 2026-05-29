@@ -9,6 +9,7 @@ struct _Vector_wrapper {
     using unwrapped_type = _Intrin_;
     using abi_type = _Abi_;
     using value_type = _Type_;
+    using as_simd = simd<_Type_, resize_abi<_Abi_, _Elements_>>;
 
     static constexpr auto size = _Elements_;
 
@@ -56,6 +57,7 @@ struct _Scalar_wrapper {
     using unwrapped_type = _Type_;
     using abi_type = _Abi_;
     using value_type = _Type_;
+    using as_simd = simd<_Type_, resize_abi<_Abi_, 1>>;
 
     static constexpr auto size = 1;
 
@@ -69,6 +71,7 @@ struct _Scalar_wrapper {
 
     _Scalar_wrapper& operator=(const _Scalar_wrapper&) noexcept = default;
     _Scalar_wrapper& operator=(_Scalar_wrapper&&) noexcept = default;
+
 
     raze_nodiscard raze_always_inline unwrapped_type data() const noexcept {
         return _data;

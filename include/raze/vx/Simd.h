@@ -350,9 +350,17 @@ public:
         _storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
+    raze_nodiscard static constexpr bool is_native() noexcept {
+        return storage_type::is_native();
+    }
+
     template <sizetype _I_>
     raze_always_inline auto __get() const noexcept {
         return __get<_I_>(_storage.storage());
+    }
+
+    static constexpr auto __chunks_count() noexcept {
+        return _storage.chunks_count();
     }
 private:
     raze_always_inline void __insert(i32 __position, value_type __value) noexcept {
