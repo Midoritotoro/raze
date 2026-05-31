@@ -32,9 +32,9 @@ public:
         return __use_native;
     }
 
-    raze_nodiscard static constexpr bool chunks_count() noexcept {
+    raze_nodiscard static constexpr auto chunks_count() noexcept {
         if constexpr (is_native()) return 1;
-        else return __simd_tuple_size<tuple_type>::value;
+        else return __simd_tuple_size<std::remove_cvref_t<tuple_type>>::value;
     }
 
     raze_always_inline tuple_type storage() const noexcept {

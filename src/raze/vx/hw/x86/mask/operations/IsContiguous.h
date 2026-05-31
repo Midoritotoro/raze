@@ -28,7 +28,9 @@ struct _Is_contiguous {
 			return (__mask & __x) == __x;
 #else
 			if constexpr (_Size_ == 64) return _tzcnt_u64((~__mask) >> __n) >= __len;
-			else return (((~__mask) >> __n) & ((1ull << __len) - 1)) == 0;
+			else if constexpr (__has_avx2_support_v<_ISA_>) return _bzhi_u64((~__mask) >> __n, __len) == 0;
+			else return (((~__mask) >> __n) & ((1ull << __len) - 1)) == 0; // Compilers usually turn this code into bzhi,
+			// but for compatibility with MSVC Runtime Dispatch, this is implemented manually
 #endif
 		}
 		else {

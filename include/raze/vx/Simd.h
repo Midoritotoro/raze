@@ -347,11 +347,11 @@ public:
 
     template <sizetype _I_>
     raze_always_inline auto __get() const noexcept {
-        return __get<_I_>(_storage.storage());
+        return raze::vx::__get<_I_>(_storage.storage());
     }
 
     static constexpr auto __chunks_count() noexcept {
-        return _storage.chunks_count();
+        return storage_type::chunks_count();
     }
 private:
     raze_always_inline void __insert(i32 __position, value_type __value) noexcept {

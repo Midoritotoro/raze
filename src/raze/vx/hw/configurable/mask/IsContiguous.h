@@ -34,24 +34,34 @@ struct _Configurable_is_contiguous: raze::options::strict_elementwise_callable<_
                 return _Is_contiguous<_Abi_::isa, _Chunk::size, _Value_>()(__storage_unwrap(__chunk), __n, __k);
             });
         }
+        else if constexpr (_Type_::__chunks_count() == 2) {
+            auto __chunk1 = __x.template __get<0>();
+            auto __chunk2 = __x.template __get<1>();
+
+            using _Ch1 = decltype(__chunk1);
+            using _Ch2 = decltype(__chunk2);
+
+            return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(__storage_unwrap(__chunk1), __n, __k)
+                && (__k > _Ch1::size) && _Is_contiguous<_Abi_::isa, _Ch2::size, _Value_>()(__storage_unwrap(__chunk2), __n - _Ch1::size, __k - _Ch1::size);
+        }
         else {
-            i32 base = 0;
-
-            return __x.__for_each_chunk_all_of(
-                [&]<class _Chunk>(const _Chunk & chunk) {
-
-                constexpr i32 C = _Chunk::size;
-
-                const i32 begin = (std::max)(__n - base, 0);
-                const i32 end = (std::min)(__k - base, C);
-
-                base += C;
-
-                if (begin >= end)
+            return __x.__for_each_chunk_all_of([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
+                if (__n >= _Chunk::size) {
+                    __n -= _Chunk::size;
+                    __k -= _Chunk::size;
                     return true;
+                }
 
-                return _Is_contiguous<_Abi_::isa, C, _Value_>()(
-                    __storage_unwrap(chunk), begin,  end);
+                if (__k <= 0) return true;
+
+                const auto __begin = __n;
+                const auto __end = __k < _Chunk::size ? __k : _Chunk::size;
+
+                __n = 0;
+                __k -= _Chunk::size;
+
+                return _Is_contiguous<_Abi_::isa, _Chunk::size, _Value_>()(
+                    __storage_unwrap(__chunk), __begin, __end);
             });
         }
     }

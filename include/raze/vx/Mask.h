@@ -30,8 +30,8 @@ public:
 	using abi_type = _Abi_;
 
 	simd_mask() noexcept {
-		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk) raze_always_inline_lambda {
-			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(false);
+		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
+			__chunk = _Mask_zero<abi_type::isa, typename _Chunk::unwrapped_type>()();
 		});
 	}
 
@@ -199,6 +199,11 @@ public:
 
 	raze_nodiscard raze_always_inline static constexpr auto __chunks_count() noexcept {
 		return storage_type::chunks_count();
+	}
+
+	template <sizetype _I_>
+	raze_always_inline auto __get() const noexcept {
+		return raze::vx::__get<_I_>(_storage.storage());
 	}
 
 	template <class _Function_, class ... _Args_>

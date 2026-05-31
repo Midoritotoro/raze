@@ -21,7 +21,7 @@ struct _Mask_broadcast {
 
 template <arch::ISA _ISA_, raw_mask_type _Mask_>
 struct _Mask_zero {
-	raze_nodiscard raze_static_operator raze_always_inline _Mask_ operator()(bool __v) raze_const_operator noexcept {
+	raze_nodiscard raze_static_operator raze_always_inline _Mask_ operator()() raze_const_operator noexcept {
 		if constexpr (intrin_type<_Mask_>) return _Zero<_ISA_, _Mask_>()();
 		else return 0;
 	}

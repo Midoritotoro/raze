@@ -96,6 +96,8 @@ struct variable_length_mask_tests {
     void operator()() const {
        //test_size<(_Width_ / (sizeof(_Type_) * 8))>();
         test_size<(_Width_ / (sizeof(_Type_) * 8)) + 1>();
+        test_size<(_Width_ / (sizeof(_Type_) * 8)) + 33>();
+
         //test_size<1>();
     }
 };
