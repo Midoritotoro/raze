@@ -139,7 +139,7 @@ public:
 
     }
 private:
-    tuple_type _data;
+    raze_no_unique_address tuple_type _data;
 };
 
 __RAZE_VX_NAMESPACE_END

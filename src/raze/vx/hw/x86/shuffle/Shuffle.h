@@ -73,14 +73,16 @@ raze_nodiscard raze_always_inline _Intrin_ __shuffle_fallback(
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, class _Pattern_>
 raze_always_inline _Intrin_ __shuffle_native(_Intrin_ __x, _Pattern_ __p) noexcept {
-	alignas(64) constexpr auto __indices = _Pattern_::template to_array<typename IntegerForSizeof<_Type_>::Unsigned>();
+	alignas(64) static constexpr auto __indices = _Pattern_::template to_array<typename IntegerForSizeof<_Type_>::Unsigned>();
+	alignas(64) static constexpr auto __expanded_16_8 = __expand_16bit_shuffle_to_8bit_shuffle<sizeof(_Intrin_)>(_Pattern_::get());
+	alignas(64) static constexpr auto __expanded_64_32 = __expand_64bit_shuffle_to_32bit_shuffle<sizeof(_Intrin_)>(_Pattern_::get());
 
-	constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
-	constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-	constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-	constexpr auto __avx512f = __has_avx512f_support_v<_ISA_>;
-	constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-	constexpr auto __avx512vbmi = __has_avx512vbmi_support_v<_ISA_>;
+	static constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
+	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
+	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
+	static constexpr auto __avx512f = __has_avx512f_support_v<_ISA_>;
+	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
+	static constexpr auto __avx512vbmi = __has_avx512vbmi_support_v<_ISA_>;
 
 	if constexpr (sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {
@@ -114,9 +116,7 @@ raze_always_inline _Intrin_ __shuffle_native(_Intrin_ __x, _Pattern_ __p) noexce
 				return __as<_Intrin_>(__combined);
 			}
 			else if constexpr (__ssse3) {
-				constexpr auto __pshufb_indices = __expand_16bit_shuffle_to_8bit_shuffle<sizeof(_Intrin_)>(_Pattern_::get());
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x),
-					_Load<_ISA_, __m128i>()(__pshufb_indices.__array, __aligned_policy{})));
+				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), _Load<_ISA_, __m128i>()(__expanded_16_8.__array, __aligned_policy{})));
 			}
 		}
 		else if constexpr (__ssse3 && sizeof(_Type_) == 1) {
@@ -126,17 +126,34 @@ raze_always_inline _Intrin_ __shuffle_native(_Intrin_ __x, _Pattern_ __p) noexce
 	}
 	else if constexpr (sizeof(_Intrin_) == 32) {
 		if constexpr (sizeof(_Type_) == 8 && __avx2) {
-			alignas(sizeof(_Intrin_)) constexpr auto __expanded = __expand_64bit_shuffle_to_32bit_shuffle<sizeof(_Intrin_)>(_Pattern_::get());
-			return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), _Load<_ISA_, __m256i>()(__expanded.__array, __aligned_policy{})));
+			return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), _Load<_ISA_, __m256i>()(__expanded_64_32.__array, __aligned_policy{})));
 		}
 		else if constexpr (sizeof(_Type_) == 4 && __avx2) {
 			return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x),
 				_Load<_ISA_, __m256i>()(__indices.data(), __aligned_policy{})));
 		}
 		else if constexpr (sizeof(_Type_) == 2 && __avx2) {
-		
+			if constexpr (__avx512vbmi && __avx512vl) {
+				return __as<_Intrin_>(_mm256_permutexvar_epi8(_Load<_ISA_, __m256i>()(__expanded_16_8.__array, __aligned_policy{}), __as<__m256i>(__x)));
+			}
+			else if constexpr (__avx512bw && __avx512vl) {
+				return __as<_Intrin_>(_mm256_permutexvar_epi16(_Load<_ISA_, __m256i>()(__indices.data(), __aligned_policy{}), __as<__m256i>(__x)));
+			}
+			else if constexpr (!__across_halfs(__p)) {
+				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), _Load<_ISA_, __m256i>()(__expanded_16_8.__array, __aligned_policy{})));
+			}
+		}
+		else if constexpr (sizeof(_Type_) == 1 && __avx2) {
+			if constexpr (__avx512vbmi && __avx512vl) {
+				return __as<_Intrin_>(_mm256_permutexvar_epi8(_Load<_ISA_, __m256i>()(__indices.data(), __aligned_policy{}), __as<__m256i>(__x)));
+			}
+			else if constexpr (!__across_halfs(__p)) {
+				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), _Load<_ISA_, __m256i>()(__expanded_16_8.__array, __aligned_policy{})));
+			}
 		}
 	}
+	
+		
 	
 	return __shuffle_fallback<_ISA_, _Type_>(__x, _Pattern_::get());
 }

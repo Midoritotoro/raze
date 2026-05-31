@@ -30,6 +30,15 @@ public:
     _Mask_storage& operator=(const _Mask_storage&) noexcept = default;
     _Mask_storage& operator=(_Mask_storage&&) noexcept = default;
 
+    raze_nodiscard static constexpr bool is_native() noexcept {
+        return __use_native;
+    }
+
+    raze_nodiscard static constexpr bool chunks_count() noexcept {
+        if constexpr (is_native()) return 1;
+        else return __simd_tuple_size<tuple_type>::value;
+    }
+
     raze_always_inline tuple_type storage() const noexcept {
         return _data;
     }
@@ -146,7 +155,7 @@ public:
         }
     }
 private:
-    tuple_type _data;
+    raze_no_unique_address tuple_type _data;
 };
 
 __RAZE_VX_NAMESPACE_END

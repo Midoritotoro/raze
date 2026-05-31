@@ -6,6 +6,7 @@
 #include <src/raze/vx/hw/x86/mask/operations/MaskNot.h>
 #include <src/raze/vx/hw/x86/mask/operations/FirstN.h>
 #include <src/raze/vx/hw/x86/mask/operations/BitLeftShift.h>
+#include <src/raze/vx/hw/x86/mask/operations/BitRightShift.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -14,18 +15,21 @@ struct _Is_contiguous {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_always_inline bool operator()(_Tp_ __mask, i32 __n, i32 __k) const noexcept {
 		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-			return __mask != 0;
+			return (__k <= __n) ? true : __mask != 0;
 		}
 		else if constexpr (std::is_integral_v<_Tp_>) {
-			constexpr auto __first_n_table = __first_n_ktable<_Size_>();
-
-			const auto __size = __k - __n + 1;
-			auto __x = _Tp_(0);
-
-			if (__size >= sizeof(_Tp_) * 8) __x = math::__maximum_integral_limit<_Tp_>();
-			else __x = _Mask_lshift<_ISA_, _Size_, _Type_>()(__first_n_table[__size], __n);
-
-			return _Mask_and<_ISA_, _Type_>()(__mask, __x) == __x;
+			auto __len = __k - __n;
+			
+#if 0
+			u32 __is_valid = static_cast<u32>(__len > 0);
+			u32 __shift = (_Size_ - __len) & -__is_valid;
+			auto __x = (__max_for_bits<_Size_, _Tp_>() >> __shift) & -__is_valid;
+			__x <<= __n;
+			return (__mask & __x) == __x;
+#else
+			if constexpr (_Size_ == 64) return _tzcnt_u64((~__mask) >> __n) >= __len;
+			else return (((~__mask) >> __n) & ((1ull << __len) - 1)) == 0;
+#endif
 		}
 		else {
 			return _Is_contiguous()(_To_mask<_ISA_, _Type_>()(__mask), __n, __k);

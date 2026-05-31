@@ -192,7 +192,11 @@ template <arch::ISA _ISA_>
 constexpr inline bool __has_avx512vbmi_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI)
     || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIDQ)
     || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVL);
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVL) 
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
+    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
 
 template <arch::ISA _ISA_>
 constexpr inline bool __has_avx512vbmi2_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2)

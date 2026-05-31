@@ -13,8 +13,12 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <class _Simd_>
 concept index_simd_type = simd_type<_Simd_> && std::is_unsigned_v<typename _Simd_::value_type>;
 
+struct across_chunks_mode {};
+constexpr auto across_chunks = raze::options::flag(across_chunks_mode{});
+struct across_chunks_option : raze::options::exact_option<across_chunks> {};
+
 template <class _Options_>
-struct _Configurable_shuffle: raze::options::strict_elementwise_callable<_Configurable_shuffle, _Options_> {
+struct _Configurable_shuffle: raze::options::strict_elementwise_callable<_Configurable_shuffle, _Options_, across_chunks_option> {
     //template <simd_type _Type_, index_simd_type _Index_>
     //raze_nodiscard raze_always_inline _Type_ operator()(
     //    const _Type_& __x, const _Index_& __index) const noexcept

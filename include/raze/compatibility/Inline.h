@@ -53,3 +53,11 @@
 #    define raze_clang_constexpr_cxx20 
 #  endif // defined(raze_cpp_clang)
 #endif // !defined(raze_clang_constexpr_cxx20)
+
+#if !defined(raze_no_unique_address)
+#  if defined(raze_cpp_msvc)
+#    define raze_no_unique_address [[msvc::no_unique_address]]
+#  else
+#    define raze_no_unique_address [[no_unique_address]]
+#  endif // defined(raze_cpp_msvc)
+#endif // !defined(raze_no_unique_address)

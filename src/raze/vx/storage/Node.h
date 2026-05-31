@@ -13,8 +13,8 @@ template <
     class _Head_, 
     class _Tail_ = _Simd_tuple_nil>
 struct _Simd_tuple_node {
-    _Head_ _head;
-    _Tail_ _tail;
+    raze_no_unique_address _Head_ _head;
+    raze_no_unique_address _Tail_ _tail;
 
     _Simd_tuple_node() noexcept = default;
     _Simd_tuple_node(const _Simd_tuple_node&) noexcept = default;

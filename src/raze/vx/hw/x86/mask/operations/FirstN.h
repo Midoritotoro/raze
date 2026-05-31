@@ -63,4 +63,11 @@ struct _First_n {
     }
 };
 
+
+template <sizetype _Bits_, class _Type_>
+consteval auto __max_for_bits() noexcept {
+    static constexpr auto __table = __first_n_ktable<raze_sizeof_in_bits(_Type_)>();
+    return static_cast<_Type_>(__table[_Bits_]);
+}
+
 __RAZE_VX_NAMESPACE_END

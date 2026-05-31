@@ -140,7 +140,7 @@ constexpr raze_always_inline i32 __count_trailing_zero_bits(_IntegralType_ __val
     }
 }
 
-template <sizetype _Bits_> 
+template <arch::ISA _ISA_, sizetype _Bits_> 
 struct __ctz_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
@@ -148,51 +148,53 @@ struct __ctz_n_bits_implementation {
         constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
 
         using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
-        return __count_trailing_zero_bits(static_cast<_UintForBits>(__value & __max_for_n_bits));
+
+        if constexpr (vx::__has_avx2_support_v<_ISA_>) return __tzcnt_ctz(static_cast<_UintForBits>(__value & __max_for_n_bits));
+        else return __bsf_ctz(static_cast<_UintForBits>(__value & __max_for_n_bits));
     }
 };
 
+//
+//template <>
+//struct __ctz_n_bits_implementation<2> {
+//    template <std::unsigned_integral _IntegralType_>
+//    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
+//        __value &= 0x03;
+//
+//        auto __result   = u32(2);
+//        __value         &= u8(-signed(__value));
+//
+//        if (__value) --__result;
+//        if (__value & 0x00000055) __result -= 1;
+//
+//        return __result;
+//    }
+//};
+//
+//
+//template <> 
+//struct __ctz_n_bits_implementation<4> {
+//    template <std::unsigned_integral _IntegralType_>
+//    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
+//        __value &= 0xF;
+//
+//        auto __result   = u32(4);
+//        __value         &= u8(-signed(__value));
+//
+//        if (__value) --__result;
+//        if (__value & 0x00000033) __result -= 2;
+//        if (__value & 0x00000055) __result -= 1;
+//
+//        return __result;
+//    }
+//};
 
-template <>
-struct __ctz_n_bits_implementation<2> {
-    template <std::unsigned_integral _IntegralType_>
-    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
-        __value &= 0x03;
-
-        auto __result   = u32(2);
-        __value         &= u8(-signed(__value));
-
-        if (__value) --__result;
-        if (__value & 0x00000055) __result -= 1;
-
-        return __result;
-    }
-};
-
-
-template <> 
-struct __ctz_n_bits_implementation<4> {
-    template <std::unsigned_integral _IntegralType_>
-    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
-        __value &= 0xF;
-
-        auto __result   = u32(4);
-        __value         &= u8(-signed(__value));
-
-        if (__value) --__result;
-        if (__value & 0x00000033) __result -= 2;
-        if (__value & 0x00000055) __result -= 1;
-
-        return __result;
-    }
-};
-
-template <sizetype _Bits_, std::unsigned_integral _IntegralType_>
+template <arch::ISA _ISA_, sizetype _Bits_, std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline i32 __ctz_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);
 
-    return __ctz_n_bits_implementation<_Bits_>()(__value);
+    return __ctz_n_bits_implementation<_ISA_, _Bits_>()(__value);
 }
 
 __RAZE_MATH_NAMESPACE_END

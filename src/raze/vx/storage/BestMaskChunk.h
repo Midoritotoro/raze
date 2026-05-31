@@ -43,7 +43,7 @@ struct _Mask_wrapper {
         return _data;
     }
 private:
-    unwrapped_type _data;
+    raze_no_unique_address unwrapped_type _data;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>

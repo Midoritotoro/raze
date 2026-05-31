@@ -40,7 +40,7 @@ struct alignment_policy {
  * @tparam _Abi_   ABI descriptor specifying ISA and register width.
 */
 template <class _Type_, class _Abi_>
-class raze_aligned_type(64) simd {
+class simd {
     static_assert(type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>, "Unsupported element type. ");
 public:
     static constexpr auto __isa = _Abi_::isa;
@@ -54,16 +54,19 @@ public:
     using mask_type     = simd_mask<_Type_, _Abi_>;
     using abi_type      = _Abi_;
 
-    
-
     /**
      * @brief Constructs an uninitialized SIMD vector.
      *
      * The contents of the vector are unspecified. Use `fill()` or `broadcast()`
      * to initialize all lanes explicitly.
     */
-    raze_always_inline simd() noexcept
-    {}
+    simd() noexcept = default;
+    ~simd() noexcept  = default;
+    simd(const simd&) noexcept = default;
+    simd(simd&&) noexcept = default;
+    simd& operator=(const simd&) noexcept = default;
+    simd& operator=(simd&&) noexcept = default;
+
 
     /**
      * @brief Constructs a SIMD vector by broadcasting a scalar value.
@@ -72,13 +75,6 @@ public:
     */
     raze_always_inline explicit(false) simd(value_type __value) noexcept {
         fill(__value);
-    }
-
-    ~simd() noexcept
-    {}
-
-    raze_always_inline simd(const simd& __other) noexcept  {
-        _storage = __other._storage;
     }
 
     raze_always_inline simd(const storage_type& __storage) noexcept {
@@ -275,11 +271,6 @@ public:
         return *this = (*this / __other);
     }
 
-    raze_always_inline simd& operator=(const simd& __other) noexcept {
-        _storage = __other._storage;
-        return *this;
-    }
-
     raze_always_inline simd operator+() const noexcept {
         return _storage;
     }
@@ -372,7 +363,7 @@ private:
     }
 
     friend _Simd_element_reference;
-    storage_type _storage;
+    raze_no_unique_address storage_type _storage;
 };
 
 __RAZE_VX_NAMESPACE_END
