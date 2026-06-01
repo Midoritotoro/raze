@@ -13,11 +13,11 @@ template <
 __simd_nodiscard_inline_constexpr _UnwrappedForwardIterator_ __max_element_unchecked(
 	_UnwrappedForwardIterator_	__first_unwrapped,
 	_UnwrappedForwardIterator_	__last_unwrapped,
-	_Predicate_					__predicate) noexcept(type_traits::is_nothrow_invocable_v<_Predicate_,
-		type_traits::iterator_value_type<_UnwrappedForwardIterator_>,
-		type_traits::iterator_value_type<_UnwrappedForwardIterator_>>)
+	_Predicate_					__predicate) noexcept(std::is_nothrow_invocable_v<_Predicate_,
+		std::iter_value_t<_UnwrappedForwardIterator_>,
+		std::iter_value_t<_UnwrappedForwardIterator_>>)
 {
-	using _ValueType = type_traits::iterator_value_type<_UnwrappedForwardIterator_>;
+	using _ValueType = std::iter_value_t<_UnwrappedForwardIterator_>;
 
 	if (__first_unwrapped == __last_unwrapped)
 		return __last_unwrapped;
@@ -48,9 +48,9 @@ __simd_nodiscard_inline_constexpr _UnwrappedForwardIterator_ __max_element_unche
 template <class _UnwrappedForwardIterator_>
 __simd_nodiscard_inline_constexpr _UnwrappedForwardIterator_ __max_element_unchecked(
 	_UnwrappedForwardIterator_ __first_unwrapped,
-	_UnwrappedForwardIterator_ __last_unwrapped) noexcept(type_traits::is_nothrow_invocable_v<type_traits::less<>,
-		type_traits::iterator_value_type<_UnwrappedForwardIterator_>,
-		type_traits::iterator_value_type<_UnwrappedForwardIterator_>>)
+	_UnwrappedForwardIterator_ __last_unwrapped) noexcept(std::is_nothrow_invocable_v<type_traits::less<>,
+		std::iter_value_t<_UnwrappedForwardIterator_>,
+		std::iter_value_t<_UnwrappedForwardIterator_>>)
 {
 	return raze::algorithm::__max_element_unchecked(__first_unwrapped, __last_unwrapped, type_traits::less<>{});
 }

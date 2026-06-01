@@ -31,8 +31,8 @@ __simd_inline_constexpr _OutputIterator_ copy_if(
     _InputIterator_     __last,
     _OutputIterator_    __destination,
     _Predicate_         __predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
-			_Predicate_, type_traits::iterator_value_type<_InputIterator_>>)
+		std::is_nothrow_invocable_v<
+			_Predicate_, std::iter_value_t<_InputIterator_>>)
 {
     __verify_range(__first, __last);
 
@@ -69,8 +69,8 @@ _OutputIterator_ copy_if(
     _InputIterator_     __last,
     _OutputIterator_    __destination,
     _Predicate_         __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
-            _Predicate_, type_traits::iterator_value_type<_InputIterator_>>)
+        std::is_nothrow_invocable_v<
+            _Predicate_, std::iter_value_t<_InputIterator_>>)
 {
     return raze::algorithm::copy_if(__first, __last, __destination, type_traits::__pass_function(__predicate));
 }

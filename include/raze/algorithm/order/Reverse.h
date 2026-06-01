@@ -14,7 +14,7 @@ __simd_inline_constexpr void reverse(
     _BidirectionalIterator_ __last) noexcept
 {
     using _BidirectionalUnwrappedIterator_ = __unwrapped_iterator_type<_BidirectionalIterator_>;
-    using _ValueType = type_traits::iterator_value_type<_BidirectionalUnwrappedIterator_>;
+    using _ValueType = std::iter_value_t<_BidirectionalUnwrappedIterator_>;
 
     __verify_range(__first, __last);
 

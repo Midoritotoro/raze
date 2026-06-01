@@ -19,7 +19,7 @@ __simd_nodiscard_inline constexpr bool __is_comparable(const _Type_& __value) no
         return true;
     } 
     else {
-        using _ElementType_ = type_traits::iterator_value_type<_InputIterator_>;
+        using _ElementType_ = std::iter_value_t<_InputIterator_>;
         static_assert(std::is_integral_v<_ElementType_> && std::is_integral_v<_Type_>);
 
         if constexpr (std::is_same_v<_ElementType_, bool>) {

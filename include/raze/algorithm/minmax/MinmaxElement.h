@@ -13,9 +13,9 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline std::pair<_ForwardIterato
     _ForwardIterator_   __first,
     _ForwardIterator_   __last,
     _Predicate_         __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<_Predicate_,
-        type_traits::iterator_value_type<_ForwardIterator_>,
-        type_traits::iterator_value_type<_ForwardIterator_>>)
+        std::is_nothrow_invocable_v<_Predicate_,
+        std::iter_value_t<_ForwardIterator_>,
+        std::iter_value_t<_ForwardIterator_>>)
 {
     __verify_range(__first, __last);
 
@@ -36,9 +36,9 @@ template <class _ForwardIterator_>
 raze_nodiscard raze_constexpr_cxx20 raze_always_inline std::pair<_ForwardIterator_, _ForwardIterator_> minmax_element(
     _ForwardIterator_ __first,
     _ForwardIterator_ __last) noexcept(
-        type_traits::is_nothrow_invocable_v<type_traits::less<>,
-        type_traits::iterator_value_type<_ForwardIterator_>,
-        type_traits::iterator_value_type<_ForwardIterator_>>)
+        std::is_nothrow_invocable_v<type_traits::less<>,
+        std::iter_value_t<_ForwardIterator_>,
+        std::iter_value_t<_ForwardIterator_>>)
 {
     return raze::algorithm::minmax_element(__first, __last, type_traits::less<>{});
 }

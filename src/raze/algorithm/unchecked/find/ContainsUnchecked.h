@@ -13,7 +13,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <
 	class _UnwrappedIterator_,
-	class _Type_ = type_traits::iterator_value_type<_UnwrappedIterator_>>
+	class _Type_ = std::iter_value_t<_UnwrappedIterator_>>
 __simd_nodiscard_inline_constexpr bool __contains_unchecked(
 	_UnwrappedIterator_									__first_unwrapped,
 	_UnwrappedIterator_									__last_unwrapped,

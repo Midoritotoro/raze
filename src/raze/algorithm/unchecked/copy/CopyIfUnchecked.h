@@ -18,8 +18,8 @@ __simd_inline_constexpr _OutputIterator_ __copy_if_unchecked(
     _InputIterator_     __last_unwrapped,
     _OutputIterator_    __destination_unwrapped,
     _Predicate_         __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
-            _Predicate_, type_traits::iterator_value_type<_InputIterator_>>)
+        std::is_nothrow_invocable_v<
+            _Predicate_, std::iter_value_t<_InputIterator_>>)
 {
     for (; __first_unwrapped != __last_unwrapped; ++__first_unwrapped)
         if (__predicate(*__first_unwrapped))

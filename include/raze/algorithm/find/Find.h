@@ -11,7 +11,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <
 	class _Iterator_,
-	class _Type_ = type_traits::iterator_value_type<_Iterator_>>
+	class _Type_ = std::iter_value_t<_Iterator_>>
 __simd_nodiscard_inline_constexpr _Iterator_ find(
 	_Iterator_											__first,
 	_Iterator_											__last,
@@ -32,8 +32,8 @@ __simd_nodiscard_inline_constexpr _InputIterator_ find_if_not(
 	_InputIterator_	__first, 
 	_InputIterator_	__last, 
 	_Predicate_		__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
-			_Predicate_, type_traits::iterator_value_type<_InputIterator_>>)
+		std::is_nothrow_invocable_v<
+			_Predicate_, std::iter_value_t<_InputIterator_>>)
 {
 	__verify_range(__first, __last);
 
@@ -50,8 +50,8 @@ __simd_nodiscard_inline_constexpr _InputIterator_ find_if(
 	_InputIterator_	__first,
 	_InputIterator_	__last,
 	_Predicate_		__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
-			_Predicate_, type_traits::iterator_value_type<_InputIterator_>>)
+		std::is_nothrow_invocable_v<
+			_Predicate_, std::iter_value_t<_InputIterator_>>)
 {
 	__verify_range(__first, __last);
 
@@ -64,7 +64,7 @@ __simd_nodiscard_inline_constexpr _InputIterator_ find_if(
 template <
 	class _ExecutionPolicy_,
 	class _Iterator_,
-	class _Type_ = type_traits::iterator_value_type<_Iterator_>,
+	class _Type_ = std::iter_value_t<_Iterator_>,
 	concurrency::enable_if_execution_policy<_ExecutionPolicy_> = 0>
 raze_nodiscard _Iterator_ find(
 	_ExecutionPolicy_&&,

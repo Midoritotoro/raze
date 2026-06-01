@@ -18,9 +18,6 @@ struct _Configurable_is_contiguous: raze::options::strict_elementwise_callable<_
         return raze::options::__dispatch_call(*this, __x, __n, __k);
     }
 
-    // 16 8
-    // 17 20
-    //  
     template <simd_mask_type _Type_>
     static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, i32 __n, i32 __k) noexcept {
         static_assert(raze::options::concepts::same_as<raze::options::fetch_t<raze::options::condition_key, _Options_>,
@@ -35,34 +32,39 @@ struct _Configurable_is_contiguous: raze::options::strict_elementwise_callable<_
             });
         }
         else if constexpr (_Type_::__chunks_count() == 2) {
-            auto __chunk1 = __x.template __get<0>();
-            auto __chunk2 = __x.template __get<1>();
+            auto __ch1 = __x.template __get<0>();
+            auto __ch2 = __x.template __get<1>();
 
-            using _Ch1 = decltype(__chunk1);
-            using _Ch2 = decltype(__chunk2);
+            using _Ch1 = decltype(__ch1);
+            using _Ch2 = decltype(__ch2);
 
-            return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(__storage_unwrap(__chunk1), __n, __k)
-                && (__k > _Ch1::size) && _Is_contiguous<_Abi_::isa, _Ch2::size, _Value_>()(__storage_unwrap(__chunk2), __n - _Ch1::size, __k - _Ch1::size);
+            if (__k <= _Ch1::size) return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(__storage_unwrap(__ch1), __n, __k);
+            return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(__storage_unwrap(__ch1), __n, __k) &&
+                _Is_contiguous<_Abi_::isa, _Ch2::size, _Value_>()(__storage_unwrap(__ch2), 0, __k - _Ch1::size);
         }
         else {
-            return __x.__for_each_chunk_all_of([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-                if (__n >= _Chunk::size) {
-                    __n -= _Chunk::size;
-                    __k -= _Chunk::size;
-                    return true;
-                }
+            return [&] <sizetype ... __I> (std::integer_sequence<size_t, __I...>) raze_always_inline_lambda {
+                return ([&] (auto __i) raze_always_inline_lambda {
+                    auto __ch = __x.template __get<__i>();
+                    constexpr auto __size = decltype(__ch)::size;
 
-                if (__k <= 0) return true;
+                    if (__n >= __size) {
+                        __n -= __size;
+                        __k -= __size;
+                        return true;
+                    }
 
-                const auto __begin = __n;
-                const auto __end = __k < _Chunk::size ? __k : _Chunk::size;
+                    if (__k <= 0) return true;
+                    
+                    const auto __end = __k < __size ? __k : __size;
+                    const auto __r = _Is_contiguous<_Abi_::isa, __size, _Value_>()(__storage_unwrap(__ch), __n, __end);
 
-                __n = 0;
-                __k -= _Chunk::size;
+                    __n = 0;
+                    __k -= __size;
 
-                return _Is_contiguous<_Abi_::isa, _Chunk::size, _Value_>()(
-                    __storage_unwrap(__chunk), __begin, __end);
-            });
+                    return __r;
+                }(std::integral_constant<sizetype, __I>{}) && ...);
+            }(std::make_integer_sequence<sizetype, _Type_::__chunks_count()>{});
         }
     }
 

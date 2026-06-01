@@ -16,10 +16,10 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline _FirstForwardIterator_ fi
 	_SecondForwardIterator_	__first2,
 	_SecondForwardIterator_	__last2, 
 	_Predicate_				__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstForwardIterator_>,
-			type_traits::iterator_value_type<_SecondForwardIterator_>>)
+			std::iter_value_t<_FirstForwardIterator_>,
+			std::iter_value_t<_SecondForwardIterator_>>)
 {
 	__verify_range(__first1, __last1);
 	__verify_range(__first2, __last2);
@@ -39,10 +39,10 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline _FirstForwardIterator_ fi
 	_FirstForwardIterator_	__last1,
 	_SecondForwardIterator_	__first2,
 	_SecondForwardIterator_	__last2) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			type_traits::equal_to<>,
-			type_traits::iterator_value_type<_FirstForwardIterator_>,
-			type_traits::iterator_value_type<_SecondForwardIterator_>>)
+			std::iter_value_t<_FirstForwardIterator_>,
+			std::iter_value_t<_SecondForwardIterator_>>)
 {
 	return raze::algorithm::find_first_of(__first1, __last1, __first2, __last2, type_traits::equal_to<>{});
 }
@@ -60,10 +60,10 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline _FirstForwardIterator_ fi
 	_SecondForwardIterator_	__first2,
 	_SecondForwardIterator_	__last2, 
 	_Predicate_				__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstForwardIterator_>,
-			type_traits::iterator_value_type<_SecondForwardIterator_>>)
+			std::iter_value_t<_FirstForwardIterator_>,
+			std::iter_value_t<_SecondForwardIterator_>>)
 {
 	return raze::algorithm::find_first_of(__first1, __last1, __first2, __last2, type_traits::__pass_function(__predicate));
 }
@@ -79,10 +79,10 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline _FirstForwardIterator_ fi
 	_FirstForwardIterator_	__last1,
 	_SecondForwardIterator_	__first2,
 	_SecondForwardIterator_	__last2) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			type_traits::equal_to<>,
-			type_traits::iterator_value_type<_FirstForwardIterator_>,
-			type_traits::iterator_value_type<_SecondForwardIterator_>>)
+			std::iter_value_t<_FirstForwardIterator_>,
+			std::iter_value_t<_SecondForwardIterator_>>)
 {
 	return raze::algorithm::find_first_of(__first1, __last1, __first2, __last2);
 }

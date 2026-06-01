@@ -16,12 +16,12 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline _UnwrappedFirstForwardIte
 	_UnwrappedSecondForwardIterator_	__first2_unwrapped,
 	_UnwrappedSecondForwardIterator_	__last2_unwrapped,
 	_Predicate_							__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_UnwrappedFirstForwardIterator_>,
-			type_traits::iterator_value_type<_UnwrappedSecondForwardIterator_>>)
+			std::iter_value_t<_UnwrappedFirstForwardIterator_>,
+			std::iter_value_t<_UnwrappedSecondForwardIterator_>>)
 {
-	using _ValueType = type_traits::iterator_value_type<_UnwrappedFirstForwardIterator_>;
+	using _ValueType = std::iter_value_t<_UnwrappedFirstForwardIterator_>;
 
 	if constexpr (type_traits::__is_vectorized_search_algorithm_safe_v<
 		_UnwrappedFirstForwardIterator_, _UnwrappedSecondForwardIterator_, _Predicate_>)

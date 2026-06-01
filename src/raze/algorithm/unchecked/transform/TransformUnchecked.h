@@ -20,7 +20,7 @@ __simd_nodiscard_inline_constexpr _UnwrappedOutputIterator_ __transform_unchecke
     _UnwrappedOutputIterator_   __destination_unwrapped,
     _UnaryFunction_&&           __function) noexcept
 {
-    using _ValueType = type_traits::iterator_value_type<_UnwrappedInputIterator_>;
+    using _ValueType = std::iter_value_t<_UnwrappedInputIterator_>;
 
     constexpr auto __is_vectorizable = 
         type_traits::__is_vectorized_find_algorithm_safe_v<_UnwrappedInputIterator_, _ValueType>;
@@ -58,7 +58,7 @@ __simd_nodiscard_inline_constexpr _UnwrappedOutputIterator_ __transform_unchecke
     _UnwrappedOutputIterator_       __destination_unwrapped,
     _BinaryFunction_&&              __function) noexcept
 {
-    using _ValueType = type_traits::iterator_value_type<_UnwrappedFirstInputIterator_>;
+    using _ValueType = std::iter_value_t<_UnwrappedFirstInputIterator_>;
 
     constexpr auto __is_vectorizable =
         type_traits::__is_vectorized_find_algorithm_safe_v<_UnwrappedFirstInputIterator_, _ValueType> && 

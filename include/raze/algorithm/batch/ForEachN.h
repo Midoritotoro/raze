@@ -14,8 +14,8 @@ __simd_inline_constexpr _UnaryFunction_ for_each_n(
 	_InputIterator_	__first,
 	_SizeType_		__count,
 	_UnaryFunction_	__function) noexcept(
-		type_traits::is_nothrow_invocable_v<_UnaryFunction_,
-			type_traits::iterator_value_type<_InputIterator_>>)
+		std::is_nothrow_invocable_v<_UnaryFunction_,
+			std::iter_value_t<_InputIterator_>>)
 {
 	__for_each_n_unchecked(__unwrap_iterator(__first), __count, type_traits::__pass_function(__function));
 	return __function;
@@ -32,8 +32,8 @@ raze_always_inline void for_each_n(
 	_InputIterator_	__first,
 	_SizeType_		__count,
 	_UnaryFunction_	__function) noexcept(
-		type_traits::is_nothrow_invocable_v<_UnaryFunction_,
-			type_traits::iterator_value_type<_InputIterator_>>)
+		std::is_nothrow_invocable_v<_UnaryFunction_,
+			std::iter_value_t<_InputIterator_>>)
 {
 	return raze::algorithm::for_each_n(__first, __count, type_traits::__pass_function(__function));
 }

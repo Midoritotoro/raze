@@ -25,10 +25,10 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedBidirectionalIterator_ __find_e
 	_SecondUnwrappedBidirectionalIterator_	__first2_unwrapped,
 	_SecondUnwrappedBidirectionalIterator_	__last2_unwrapped,
 	_Predicate_								__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstUnwrappedBidirectionalIterator_>,
-			type_traits::iterator_value_type<_SecondUnwrappedBidirectionalIterator_>>)
+			std::iter_value_t<_FirstUnwrappedBidirectionalIterator_>,
+			std::iter_value_t<_SecondUnwrappedBidirectionalIterator_>>)
 {
 	for (auto __candidate_unwrapped = __last1_unwrapped;; --__candidate_unwrapped) {
 		auto __next1_unwrapped = __candidate_unwrapped;
@@ -62,12 +62,12 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedRandomAccessIterator_ __find_en
 	_SecondUnwrappedRandomAccessIterator_	__first2_unwrapped,
 	_SecondUnwrappedRandomAccessIterator_	__last2_unwrapped,
 	_Predicate_								__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstUnwrappedRandomAccessIterator_>,
-			type_traits::iterator_value_type<_SecondUnwrappedRandomAccessIterator_>>)
+			std::iter_value_t<_FirstUnwrappedRandomAccessIterator_>,
+			std::iter_value_t<_SecondUnwrappedRandomAccessIterator_>>)
 {
-	using _ValueType = type_traits::iterator_value_type<_FirstUnwrappedRandomAccessIterator_>;
+	using _ValueType = std::iter_value_t<_FirstUnwrappedRandomAccessIterator_>;
 
 	const auto __first_range_length = __iterators_difference(__first1_unwrapped, __last1_unwrapped);
 	const auto __second_range_length = __iterators_difference(__first2_unwrapped, __last2_unwrapped);
@@ -111,10 +111,10 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __find_end_unc
 	_SecondUnwrappedForwardIterator_	__first2_unwrapped,
 	_SecondUnwrappedForwardIterator_	__last2_unwrapped,
 	_Predicate_							__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstUnwrappedForwardIterator_>,
-			type_traits::iterator_value_type<_SecondUnwrappedForwardIterator_>>)
+			std::iter_value_t<_FirstUnwrappedForwardIterator_>,
+			std::iter_value_t<_SecondUnwrappedForwardIterator_>>)
 {
 	auto __result_unwrapped = __last1_unwrapped;
 
@@ -156,10 +156,10 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __find_end_unc
 	_SecondUnwrappedForwardIterator_	__first2_unwrapped,
 	_SecondUnwrappedForwardIterator_	__last2_unwrapped,
 	_Predicate_							__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstUnwrappedForwardIterator_>,
-			type_traits::iterator_value_type<_FirstUnwrappedForwardIterator_>>)
+			std::iter_value_t<_FirstUnwrappedForwardIterator_>,
+			std::iter_value_t<_FirstUnwrappedForwardIterator_>>)
 {
 	constexpr auto __is_random_access = type_traits::is_iterator_random_ranges_v<_FirstUnwrappedForwardIterator_> &&
 		type_traits::is_iterator_random_ranges_v<_SecondUnwrappedForwardIterator_>;

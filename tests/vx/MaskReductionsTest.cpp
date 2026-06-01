@@ -24,35 +24,35 @@ struct variable_length_mask_tests {
             return m;
             };
 
-        //{
-        //    Mask t(true);
-        //    Mask f(false);
+        {
+            Mask t(true);
+            Mask f(false);
 
-        //    raze_assert(raze::vx::any_of(t));
-        //    raze_assert(raze::vx::all_of(t));
-        //    raze_assert(raze::vx::none_of(f));
-        //}
+            raze_assert(raze::vx::any_of(t));
+            raze_assert(raze::vx::all_of(t));
+            raze_assert(raze::vx::none_of(f));
+        }
 
 
-        //{
-        //    Mask t(true);
-        //    Mask f(false);
+        {
+            Mask t(true);
+            Mask f(false);
 
-        //    raze_assert(raze::vx::all_of(t));
-        //    raze_assert(!raze::vx::none_of(t));
-        //    raze_assert(!raze::vx::some_of(t));
+            raze_assert(raze::vx::all_of(t));
+            raze_assert(!raze::vx::none_of(t));
+            raze_assert(!raze::vx::some_of(t));
 
-        //    raze_assert(raze::vx::none_of(f));
-        //    raze_assert(!raze::vx::any_of(f));
-        //    raze_assert(!raze::vx::some_of(f));
+            raze_assert(raze::vx::none_of(f));
+            raze_assert(!raze::vx::any_of(f));
+            raze_assert(!raze::vx::some_of(f));
 
-        //    Mask m(false);
-        //    m[0] = true;
+            Mask m(false);
+            m[0] = true;
 
-        //    raze_assert(raze::vx::any_of(m));
-        //    N == 1 ? raze_assert(!raze::vx::some_of(m)) : raze_assert(raze::vx::some_of(m));
-        //    N == 1 ? raze_assert(raze::vx::all_of(m)) : raze_assert(!raze::vx::all_of(m));
-        //}
+            raze_assert(raze::vx::any_of(m));
+            N == 1 ? raze_assert(!raze::vx::some_of(m)) : raze_assert(raze::vx::some_of(m));
+            N == 1 ? raze_assert(raze::vx::all_of(m)) : raze_assert(!raze::vx::all_of(m));
+        }
 
         {
             Mask m(false);
@@ -94,11 +94,9 @@ struct variable_length_mask_tests {
     }
 
     void operator()() const {
-       //test_size<(_Width_ / (sizeof(_Type_) * 8))>();
+        test_size<(_Width_ / (sizeof(_Type_) * 8))>();
         test_size<(_Width_ / (sizeof(_Type_) * 8)) + 1>();
-        test_size<(_Width_ / (sizeof(_Type_) * 8)) + 33>();
-
-        //test_size<1>();
+        test_size<1>();
     }
 };
 

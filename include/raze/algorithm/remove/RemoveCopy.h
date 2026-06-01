@@ -11,7 +11,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <
 	class _InputIterator_,
 	class _OutputIterator_,
-	class _Type_ = type_traits::iterator_value_type<_InputIterator_>>
+	class _Type_ = std::iter_value_t<_InputIterator_>>
 __simd_nodiscard_inline_constexpr _OutputIterator_ remove_copy(
 	_InputIterator_										__first,
 	_InputIterator_										__last,

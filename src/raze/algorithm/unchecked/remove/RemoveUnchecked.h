@@ -13,7 +13,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <
 	class _UnwrappedInputIterator_,
-	class _Type_ = type_traits::iterator_value_type<_UnwrappedInputIterator_>>
+	class _Type_ = std::iter_value_t<_UnwrappedInputIterator_>>
 __simd_nodiscard_inline_constexpr _UnwrappedInputIterator_ __remove_unchecked(
 	_UnwrappedInputIterator_							__first_unwrapped,
 	_UnwrappedInputIterator_							__last_unwrapped,
@@ -27,7 +27,7 @@ __simd_nodiscard_inline_constexpr _UnwrappedInputIterator_ __remove_unchecked(
 #endif // raze_has_cxx20
 		{
 			const auto __first_address = std::to_address(__first_unwrapped);
-			const auto __position = __remove_vectorized<type_traits::iterator_value_type<_UnwrappedInputIterator_>>(
+			const auto __position = __remove_vectorized<std::iter_value_t<_UnwrappedInputIterator_>>(
 				__first_address, std::to_address(__last_unwrapped), __value);
 
 			if constexpr (std::is_pointer_v<_UnwrappedInputIterator_>)

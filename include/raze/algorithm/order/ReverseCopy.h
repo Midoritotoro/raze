@@ -19,7 +19,7 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline void reverse_copy(
     using _FirstBidirectionalUnwrappedIterator_     = __unwrapped_iterator_type<_FirstBidirectionalIterator_>;
     using _SecondBidirectionalUnwrappedIterator_    = __unwrapped_iterator_type<_SecondBidirectionalIterator_>;
 
-    using _FirstBidirectionalIteratorValueType_     = type_traits::iterator_value_type<_FirstBidirectionalUnwrappedIterator_>;
+    using _FirstBidirectionalIteratorValueType_     = std::iter_value_t<_FirstBidirectionalUnwrappedIterator_>;
 
     __verify_range(__first, __last);
     memory::__check_intersection(__first, __last, __destination);

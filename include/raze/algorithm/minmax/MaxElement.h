@@ -13,9 +13,9 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline _ForwardIterator_ max_ele
     _ForwardIterator_   __first,
     _ForwardIterator_   __last,
     _Predicate_         __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<_Predicate_,
-            type_traits::iterator_value_type<_ForwardIterator_>, 
-            type_traits::iterator_value_type<_ForwardIterator_>>)
+        std::is_nothrow_invocable_v<_Predicate_,
+            std::iter_value_t<_ForwardIterator_>, 
+            std::iter_value_t<_ForwardIterator_>>)
 {
     __verify_range(__first, __last);
     __seek_possibly_wrapped_iterator(__first, __max_element_unchecked(
@@ -29,9 +29,9 @@ template <class _ForwardIterator_>
 raze_nodiscard raze_constexpr_cxx20 raze_always_inline _ForwardIterator_ max_element(
     _ForwardIterator_ __first, 
     _ForwardIterator_ __last) noexcept(
-        type_traits::is_nothrow_invocable_v<type_traits::less<>,
-            type_traits::iterator_value_type<_ForwardIterator_>, 
-            type_traits::iterator_value_type<_ForwardIterator_>>)
+        std::is_nothrow_invocable_v<type_traits::less<>,
+            std::iter_value_t<_ForwardIterator_>, 
+            std::iter_value_t<_ForwardIterator_>>)
 {
     return raze::algorithm::max_element(__first, __last, type_traits::less<>{});
 }

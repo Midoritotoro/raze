@@ -15,10 +15,10 @@ __simd_nodiscard_inline_constexpr bool equal(
 	_FirstIterator_		__last1,
 	_SecondIterator_	__first2,
 	_Predicate_			__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	__verify_range(__first1, __last1);
 	return __equal_unchecked(__unwrap_iterator(__first1), __unwrap_iterator(__last1),
@@ -35,10 +35,10 @@ __simd_nodiscard_inline_constexpr bool equal(
 	_SecondIterator_	__first2,
 	_SecondIterator_	__last2,
 	_Predicate_			__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	__verify_range(__first1, __last1);
 	__verify_range(__first2, __last2);
@@ -54,10 +54,10 @@ __simd_nodiscard_inline_constexpr bool equal(
 	_FirstIterator_		__first1,
 	_FirstIterator_		__last1,
 	_SecondIterator_	__first2) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			type_traits::equal_to<>,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	return raze::algorithm::equal(__first1, __last1, __first2, type_traits::equal_to<>{});
 }
@@ -70,10 +70,10 @@ __simd_nodiscard_inline_constexpr bool equal(
 	_FirstIterator_		__last1,
 	_SecondIterator_	__first2,
 	_SecondIterator_	__last2) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			type_traits::equal_to<>,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	return raze::algorithm::equal(__first1, __last1, __first2, __last2, type_traits::equal_to<>{});
 }
@@ -90,10 +90,10 @@ __simd_nodiscard_inline_constexpr bool equal(
 	_FirstIterator_		__last1,
 	_SecondIterator_	__first2,
 	_Predicate_			__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	return raze::algorithm::equal(__first1, __last1, __first2, type_traits::__pass_function(__predicate));
 }
@@ -111,10 +111,10 @@ __simd_nodiscard_inline_constexpr bool equal(
 	_SecondIterator_	__first2,
 	_SecondIterator_	__last2,
 	_Predicate_			__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	return raze::algorithm::equal(__first1, __last1, __first2, __last2, type_traits::__pass_function(__predicate));
 }
@@ -129,10 +129,10 @@ __simd_nodiscard_inline_constexpr bool equal(
 	_FirstIterator_		__first1,
 	_FirstIterator_		__last1,
 	_SecondIterator_	__first2) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			type_traits::equal_to<>,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	return raze::algorithm::equal(__first1, __last1, __first2);
 }
@@ -149,10 +149,10 @@ __simd_nodiscard_inline_constexpr  bool equal(
 	_FirstIterator_		__last1,
 	_SecondIterator_	__first2,
 	_SecondIterator_	__last2) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			type_traits::equal_to<>,
-			type_traits::iterator_value_type<_FirstIterator_>,
-			type_traits::iterator_value_type<_SecondIterator_>>)
+			std::iter_value_t<_FirstIterator_>,
+			std::iter_value_t<_SecondIterator_>>)
 {
 	return raze::algorithm::equal(__first1, __last1, __first2, __last2);
 }

@@ -94,24 +94,24 @@ public:
     }
 };
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint8, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint16, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint32, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint64, FindInBegin);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInBegin);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInBegin);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInBegin);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInBegin);
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInBegin);
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInBegin);
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint8, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint16, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint32, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint64, FindInMiddle);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInMiddle);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInMiddle);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInMiddle);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInMiddle);
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInMiddle);
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInMiddle);
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint8, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint16, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint32, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::uint64, FindInEnd);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInEnd);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInEnd);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInEnd);
+RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInEnd);
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInEnd);
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInEnd);
 

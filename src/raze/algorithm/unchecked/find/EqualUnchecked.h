@@ -20,10 +20,10 @@ __simd_nodiscard_inline_constexpr bool __equal_unchecked(
 	_FirstUnwrappedIterator_	__last1_unwrapped,
 	_SecondUnwrappedIterator_	__first2_unwrapped,
 	_Predicate_					__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_, 
-			type_traits::iterator_value_type<_FirstUnwrappedIterator_>,
-			type_traits::iterator_value_type<_SecondUnwrappedIterator_>>)
+			std::iter_value_t<_FirstUnwrappedIterator_>,
+			std::iter_value_t<_SecondUnwrappedIterator_>>)
 {
 	using _DifferenceType = type_traits::iterator_difference_type<_FirstUnwrappedIterator_>;
 
@@ -40,7 +40,7 @@ __simd_nodiscard_inline_constexpr bool __equal_unchecked(
 			if (type_traits::is_constant_evaluated() == false)
 #endif // raze_has_cxx20
 			{
-				return __equal_vectorized<type_traits::iterator_value_type<_FirstUnwrappedIterator_>>(
+				return __equal_vectorized<std::iter_value_t<_FirstUnwrappedIterator_>>(
 					std::to_address(__first1_unwrapped), std::to_address(__first2_unwrapped), __size);
 			}
 		}
@@ -70,10 +70,10 @@ __simd_nodiscard_inline_constexpr bool __equal_unchecked(
 	_SecondUnwrappedIterator_	__first2_Unwrapped,
 	_SecondUnwrappedIterator_	__last2_Unwrapped,
 	_Predicate_					__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstUnwrappedIterator_>,
-			type_traits::iterator_value_type<_FirstUnwrappedIterator_>>)
+			std::iter_value_t<_FirstUnwrappedIterator_>,
+			std::iter_value_t<_FirstUnwrappedIterator_>>)
 {
 	using _DifferenceType = type_traits::iterator_difference_type<_FirstUnwrappedIterator_>;
 
@@ -93,7 +93,7 @@ __simd_nodiscard_inline_constexpr bool __equal_unchecked(
 			if (type_traits::is_constant_evaluated() == false)
 #endif // raze_has_cxx20
 			{
-				return __equal_vectorized<type_traits::iterator_value_type<_FirstUnwrappedIterator_>>(
+				return __equal_vectorized<std::iter_value_t<_FirstUnwrappedIterator_>>(
 					std::to_address(__first1_unwrapped), std::to_address(__first2_Unwrapped), __size);
 			}
 		}

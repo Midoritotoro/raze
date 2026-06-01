@@ -13,10 +13,10 @@ __simd_nodiscard_inline_constexpr _ForwardIterator_ adjacent_find(
     _ForwardIterator_   __first,
     _ForwardIterator_   __last,
     _BinaryPredicate_   __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
+        std::is_nothrow_invocable_v<
             _BinaryPredicate_, 
-            type_traits::iterator_value_type<_ForwardIterator_>, 
-            type_traits::iterator_value_type<_ForwardIterator_>>)
+            std::iter_value_t<_ForwardIterator_>, 
+            std::iter_value_t<_ForwardIterator_>>)
 {
     __verify_range(__first, __last);
 
@@ -56,10 +56,10 @@ __simd_nodiscard_inline _ForwardIterator_ adjacent_find(
     _ForwardIterator_ __first, 
     _ForwardIterator_ __last,
     _BinaryPredicate_ __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
+        std::is_nothrow_invocable_v<
             _BinaryPredicate_, 
-            type_traits::iterator_value_type<_ForwardIterator_>, 
-            type_traits::iterator_value_type<_ForwardIterator_>>)
+            std::iter_value_t<_ForwardIterator_>, 
+            std::iter_value_t<_ForwardIterator_>>)
 {
     return raze::algorithm::adjacent_find(__first, __last, type_traits::__pass_function(__predicate));
 }

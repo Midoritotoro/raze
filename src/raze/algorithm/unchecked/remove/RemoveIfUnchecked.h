@@ -15,8 +15,8 @@ __simd_nodiscard_inline_constexpr _UnwrappedIterator_ __remove_if_unchecked(
 	_UnwrappedIterator_			__first_unwrapped,
 	_UnwrappedIterator_			__last_unwrapped,
 	_UnaryPredicate_			__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<_UnaryPredicate_,
-			type_traits::iterator_value_type<_UnwrappedIterator_>>)
+		std::is_nothrow_invocable_v<_UnaryPredicate_,
+			std::iter_value_t<_UnwrappedIterator_>>)
 {
 	for (; __first_unwrapped != __last_unwrapped; ++__first_unwrapped)
 		if (__predicate(*__first_unwrapped))

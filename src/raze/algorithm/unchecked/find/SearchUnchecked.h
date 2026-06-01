@@ -27,10 +27,10 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __search_unche
     _DifferenceType_                    __first_range_length,
     _DifferenceType_                    __second_range_length,
     _Predicate_                         __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
+        std::is_nothrow_invocable_v<
             _Predicate_,
-            type_traits::iterator_value_type<_FirstUnwrappedForwardIterator_>,
-            type_traits::iterator_value_type<_SecondUnwrappedForwardIterator_>>)
+            std::iter_value_t<_FirstUnwrappedForwardIterator_>,
+            std::iter_value_t<_SecondUnwrappedForwardIterator_>>)
 {
     const auto __max_position = static_cast<_DifferenceType_>(__first_range_length - __second_range_length + 1);
     const auto& __first = *__first2_unwrapped;
@@ -74,10 +74,10 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __search_unche
 	_SecondUnwrappedForwardIterator_	__first2_unwrapped,
 	_SecondUnwrappedForwardIterator_	__last2_unwrapped,
 	_Predicate_							__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstUnwrappedForwardIterator_>,
-			type_traits::iterator_value_type<_SecondUnwrappedForwardIterator_>>)
+			std::iter_value_t<_FirstUnwrappedForwardIterator_>,
+			std::iter_value_t<_SecondUnwrappedForwardIterator_>>)
 {
 	for (;; ++__first1_unwrapped) {
 		auto __current_first = __first1_unwrapped;
@@ -107,12 +107,12 @@ __simd_nodiscard_inline_constexpr _FirstUnwrappedForwardIterator_ __search_unche
 	_SecondUnwrappedForwardIterator_	__first2_unwrapped,
 	_SecondUnwrappedForwardIterator_	__last2_unwrapped,
 	_Predicate_							__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
+		std::is_nothrow_invocable_v<
 			_Predicate_,
-			type_traits::iterator_value_type<_FirstUnwrappedForwardIterator_>,
-			type_traits::iterator_value_type<_SecondUnwrappedForwardIterator_>>)
+			std::iter_value_t<_FirstUnwrappedForwardIterator_>,
+			std::iter_value_t<_SecondUnwrappedForwardIterator_>>)
 {
-	using _ValueType = type_traits::iterator_value_type<_FirstUnwrappedForwardIterator_>;
+	using _ValueType = std::iter_value_t<_FirstUnwrappedForwardIterator_>;
 
 	constexpr auto __is_random = type_traits::is_iterator_random_ranges_v<_FirstUnwrappedForwardIterator_> &&
 		type_traits::is_iterator_random_ranges_v<_SecondUnwrappedForwardIterator_>;

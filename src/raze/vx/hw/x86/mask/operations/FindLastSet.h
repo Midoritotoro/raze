@@ -14,9 +14,9 @@ struct _Find_last_set {
 			return !__x;
 		}
 		else {
-			if constexpr (_Size_ <= 8) return math::__clz_n_bits<_Size_>(__to_gpr<_ISA_>(_To_mask<_ISA_, _Type_>()(__x)));
-			else if constexpr (__has_avx2_support_v<_ISA_>) return math::__lzcnt_clz(__to_gpr<_ISA_>(_To_mask<_ISA_, _Type_>()(__x)));
-			else return math::__bsr_clz(__to_gpr<_ISA_>(_To_mask<_ISA_, _Type_>()(__x)));
+			if constexpr (_Size_ <= 8) return math::__clz_n_bits<_Size_>(_To_mask<_ISA_, _Type_>()(__x));
+			else if constexpr (__has_avx2_support_v<_ISA_>) return math::__lzcnt_clz(_To_mask<_ISA_, _Type_>()(__x));
+			else return math::__bsr_clz(_To_mask<_ISA_, _Type_>()(__x));
 		}
 	}
 };

@@ -24,20 +24,14 @@ struct __find_vectorized_internal {
     using _ValueType = typename _Simd_::value_type;
 
     __raze_simd_algorithm_inline raze_static_operator const typename _Simd_::value_type* operator()(
-        sizetype                    __aligned_size,
-        sizetype                    __tail_size,
-        const void*                 __first,
-        const void*                 __last,
-        typename _Simd_::value_type __value) raze_const_operator noexcept
+        sizetype __aligned_size, sizetype __tail_size, const void* __first,
+        const void* __last, typename _Simd_::value_type __value) raze_const_operator noexcept
     {
-      /*  const auto __guard = vx::make_guard<_Simd_>();
+        const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);
 
-        const auto __comparand = _Simd_(__value);
-        const auto __stop_at = __bytes_pointer_offset(__first, __aligned_size);*/
-
-        /*do {
-            const auto __loaded = vx::load[vx::to<_Simd_>](__first);
-            const auto __mask = __comparand == __loaded;
+        do {
+            const auto __loaded = vx::load<_Simd_>(__first);
+            const auto __mask = __value == __loaded;
 
             if (vx::any_of(__mask))
                 return static_cast<const _ValueType*>(__first) + vx::find_first_set(__mask);
@@ -46,21 +40,9 @@ struct __find_vectorized_internal {
         } while (__first != __stop_at);
 
         if (__tail_size == 0)
-            return static_cast<const _ValueType*>(__last);*/
+            return static_cast<const _ValueType*>(__last);
 
-       /* if constexpr (_Simd_::is_native_mask_load_supported_v) {
-            const auto __tail_mask = vx::first_n<_Simd_>(__tail_size / sizeof(_ValueType));
-            const auto __loaded = vx::load(vx::where(__first, __tail_mask));
-
-            const auto __mask = (__comparand == __loaded) & __tail_mask;
-
-            if (vx::any_of(__mask))
-                return static_cast<const _ValueType*>(__first) + vx::find_first_set(__mask);
-        }
-        else */ // {
-            __last = __find_scalar(__first, __last, __value);
-       //   }
-
+        __last = __find_scalar(__first, __last, __value);
         return static_cast<const _ValueType*>(__last);
     }
 };

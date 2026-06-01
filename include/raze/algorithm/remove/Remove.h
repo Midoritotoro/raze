@@ -10,7 +10,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <
 	class _InputIterator_,
-	class _Type_ = type_traits::iterator_value_type<_InputIterator_>>
+	class _Type_ = std::iter_value_t<_InputIterator_>>
 raze_nodiscard raze_always_inline raze_constexpr_cxx20 _InputIterator_ remove(
 	_InputIterator_										__first,
 	_InputIterator_										__last,
@@ -31,8 +31,8 @@ raze_nodiscard raze_always_inline raze_constexpr_cxx20 _Iterator_ remove_if(
 	_Iterator_			__first,
 	_Iterator_			__last,
 	_UnaryPredicate_	__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<_UnaryPredicate_,
-			type_traits::iterator_value_type<_Iterator_>>)
+		std::is_nothrow_invocable_v<_UnaryPredicate_,
+			std::iter_value_t<_Iterator_>>)
 {
 	__verify_range(__first, __last);
 
@@ -66,8 +66,8 @@ raze_nodiscard raze_always_inline raze_constexpr_cxx20 _Iterator_ remove_if(
 	_Iterator_			__first,
 	_Iterator_			__last,
 	_UnaryPredicate_	__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<_UnaryPredicate_,
-			type_traits::iterator_value_type<_Iterator_>>)
+		std::is_nothrow_invocable_v<_UnaryPredicate_,
+			std::iter_value_t<_Iterator_>>)
 {
 	return raze::algorithm::remove_if(__first, __last, type_traits::__pass_function(__predicate));
 }

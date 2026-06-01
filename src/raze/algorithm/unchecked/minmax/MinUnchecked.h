@@ -11,12 +11,12 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <
 	class _UnwrappedInputIterator_,
 	class _BinaryPredicate_>
-__simd_nodiscard_inline_constexpr type_traits::iterator_value_type<_UnwrappedInputIterator_> __min_unchecked(
+__simd_nodiscard_inline_constexpr std::iter_value_t<_UnwrappedInputIterator_> __min_unchecked(
 	_UnwrappedInputIterator_	__first_unwrapped,
 	_UnwrappedInputIterator_	__last_unwrapped,
 	_BinaryPredicate_			__predicate) noexcept
 {
-	using _ValueType	= type_traits::iterator_value_type<_UnwrappedInputIterator_>;
+	using _ValueType	= std::iter_value_t<_UnwrappedInputIterator_>;
 
 	auto __minimum = *__first_unwrapped;
 
@@ -28,11 +28,11 @@ __simd_nodiscard_inline_constexpr type_traits::iterator_value_type<_UnwrappedInp
 }
 
 template <class _UnwrappedInputIterator_>
-__simd_nodiscard_inline_constexpr type_traits::iterator_value_type<_UnwrappedInputIterator_> __min_unchecked(
+__simd_nodiscard_inline_constexpr std::iter_value_t<_UnwrappedInputIterator_> __min_unchecked(
 	_UnwrappedInputIterator_ __first_unwrapped,
 	_UnwrappedInputIterator_ __last_unwrapped) noexcept
 {
-	using _ValueType = type_traits::iterator_value_type<_UnwrappedInputIterator_>;
+	using _ValueType = std::iter_value_t<_UnwrappedInputIterator_>;
 
 	if constexpr (type_traits::__is_vectorized_find_algorithm_safe_v<_UnwrappedInputIterator_, _ValueType>) {
 #if raze_has_cxx20

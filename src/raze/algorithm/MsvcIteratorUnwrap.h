@@ -107,7 +107,7 @@ raze_nodiscard constexpr decltype(auto) __unwrap_iterator_bytes_offset(
         (type_traits::__is_iterator_unwrappable_for_offset_v<_Iterator_> == false ||
             type_traits::__is_iterator_unwrappable_for_offset_v<_Iterator_>))
 {
-    using _ValueType = type_traits::iterator_value_type<__unwrapped_iterator_type<_Iterator_>>;
+    using _ValueType = std::iter_value_t<__unwrapped_iterator_type<_Iterator_>>;
 
     if constexpr (std::is_pointer_v<std::decay_t<_Iterator_>>)
         return __iterator + 0;

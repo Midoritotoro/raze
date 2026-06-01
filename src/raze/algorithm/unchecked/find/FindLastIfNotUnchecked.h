@@ -15,8 +15,8 @@ __simd_nodiscard_inline_constexpr _InputUnwrappedIterator_ __find_last_if_not_un
 	_InputUnwrappedIterator_	__first_unwrapped,
 	_InputUnwrappedIterator_	__last_unwrapped,
 	_Predicate_					__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
-			_Predicate_, type_traits::iterator_value_type<_InputUnwrappedIterator_>>)
+		std::is_nothrow_invocable_v<
+			_Predicate_, std::iter_value_t<_InputUnwrappedIterator_>>)
 {
 	const auto __cached_last = __last_unwrapped;
 

@@ -54,10 +54,10 @@ public:
 
 	template <class _ForwardIterator_, class _AlignmentPolicy_ = __unaligned_policy>
 	raze_always_inline void copy_from(_ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
-		requires(std::convertible_to<type_traits::iterator_value_type<_ForwardIterator_>, bool>)
+		requires(std::convertible_to<std::iter_value_t<_ForwardIterator_>, bool>)
 	{
 		using _ItType = algorithm::__unwrapped_iterator_type<_ForwardIterator_>;
-		using _ItValueType = type_traits::iterator_value_type<_ItType>;
+		using _ItValueType = std::iter_value_t<_ItType>;
 
 		if constexpr (sizeof(_ItValueType) == 1 && type_traits::is_iterator_contiguous_v<_ItType>) {
 			auto __current = reinterpret_cast<const bool*>(std::to_address(__first));
@@ -76,7 +76,7 @@ public:
 	template <class _OutputIterator_, class _AlignmentPolicy_ = __unaligned_policy>
 	raze_always_inline void copy_to(_OutputIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept {
 		using _ItType = algorithm::__unwrapped_iterator_type<_OutputIterator_>;
-		using _ItValueType = type_traits::iterator_value_type<_ItType>;
+		using _ItValueType = std::iter_value_t<_ItType>;
 
 		if constexpr (sizeof(_ItValueType) == 1 && type_traits::is_iterator_contiguous_v<_ItType>) {
 			auto __current = reinterpret_cast<bool*>(std::to_address(__first));

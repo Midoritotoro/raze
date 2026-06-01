@@ -11,7 +11,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <
     class _UnwrappedForwardIterator_,
-    class _Type_ = type_traits::iterator_value_type<_UnwrappedForwardIterator_>>
+    class _Type_ = std::iter_value_t<_UnwrappedForwardIterator_>>
 __simd_inline_constexpr void __replace_unchecked(
     _UnwrappedForwardIterator_                          __first_unwrapped,
     _UnwrappedForwardIterator_                          __last_unwrapped,

@@ -12,7 +12,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <
     class _ForwardIterator_,
-    class _Type_ = type_traits::iterator_value_type<_ForwardIterator_>>
+    class _Type_ = std::iter_value_t<_ForwardIterator_>>
 raze_constexpr_cxx20 raze_always_inline void replace(
     _ForwardIterator_                                   __first,
     _ForwardIterator_                                   __last,
@@ -26,13 +26,13 @@ raze_constexpr_cxx20 raze_always_inline void replace(
 template <
     class _ForwardIterator_,
     class _UnaryPredicate_,
-    class _Type_ = type_traits::iterator_value_type<_ForwardIterator_>>
+    class _Type_ = std::iter_value_t<_ForwardIterator_>>
 raze_constexpr_cxx20 raze_always_inline void replace_if(
     _ForwardIterator_                                   __first,
     _ForwardIterator_                                   __last,
     _UnaryPredicate_                                    __predicate,
     const typename std::type_identity<_Type_>::type&    __new_value) noexcept(
-        type_traits::is_nothrow_invocable_v<_UnaryPredicate_, _Type_>)
+        std::is_nothrow_invocable_v<_UnaryPredicate_, _Type_>)
 {
     __verify_range(__first, __last);
     __replace_if_unchecked(__unwrap_iterator(__first), __unwrap_iterator(__last),
@@ -43,7 +43,7 @@ raze_constexpr_cxx20 raze_always_inline void replace_if(
 template <
     class _ExecutionPolicy_,
     class _ForwardIterator_,
-    class _Type_ = type_traits::iterator_value_type<_ForwardIterator_>,
+    class _Type_ = std::iter_value_t<_ForwardIterator_>,
     concurrency::enable_if_execution_policy<_ExecutionPolicy_> = 0>
 raze_constexpr_cxx20 raze_always_inline void replace(
     _ExecutionPolicy_&&,
@@ -59,7 +59,7 @@ template <
     class _ExecutionPolicy_,
     class _ForwardIterator_,
     class _UnaryPredicate_,
-    class _Type_ = type_traits::iterator_value_type<_ForwardIterator_>,
+    class _Type_ = std::iter_value_t<_ForwardIterator_>,
     concurrency::enable_if_execution_policy<_ExecutionPolicy_> = 0>
 raze_constexpr_cxx20 raze_always_inline void replace_if(
     _ExecutionPolicy_&&,
@@ -67,7 +67,7 @@ raze_constexpr_cxx20 raze_always_inline void replace_if(
     _ForwardIterator_                                   __last,
     _UnaryPredicate_                                    __predicate,
     const typename std::type_identity<_Type_>::type&    __new_value) noexcept(
-        type_traits::is_nothrow_invocable_v<_UnaryPredicate_, _Type_>)
+        std::is_nothrow_invocable_v<_UnaryPredicate_, _Type_>)
 {
     return raze::algorithm::replace_if(__first, __last, type_traits::__pass_function(__predicate), __new_value);
 }

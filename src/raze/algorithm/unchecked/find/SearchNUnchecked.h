@@ -18,8 +18,8 @@ __simd_nodiscard_inline_constexpr _ForwardUnwrappedIterator_ __search_n_unchecke
     _DifferenceType_            __count, 
     const _Type_&               __value,
     _BinaryPredicate_           __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<_BinaryPredicate_,
-        type_traits::iterator_value_type<_ForwardUnwrappedIterator_>, _Type_>)
+        std::is_nothrow_invocable_v<_BinaryPredicate_,
+        std::iter_value_t<_ForwardUnwrappedIterator_>, _Type_>)
 {
     if (__count <= 0)
         return __first_unwrapped;

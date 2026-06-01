@@ -11,8 +11,8 @@ __simd_inline_constexpr bool any_of(
     _InputIterator_ __first,
     _InputIterator_ __last,
     _Predicate_     __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
-		    _Predicate_, type_traits::iterator_value_type<_InputIterator_>>)
+        std::is_nothrow_invocable_v<
+		    _Predicate_, std::iter_value_t<_InputIterator_>>)
 {
     return (raze::algorithm::find_if(__first, __last, type_traits::__pass_function(__predicate)) != __last);
 }
@@ -27,8 +27,8 @@ raze_nodiscard raze_constexpr_cxx20 raze_always_inline bool any_of(
     _InputIterator_ __first,
     _InputIterator_ __last,
     _Predicate_     __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
-            _Predicate_, type_traits::iterator_value_type<_InputIterator_>>)
+        std::is_nothrow_invocable_v<
+            _Predicate_, std::iter_value_t<_InputIterator_>>)
 {
     return raze::algorithm::any_of(__first, __last, type_traits::__pass_function(__predicate));
 }

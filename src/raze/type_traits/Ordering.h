@@ -51,12 +51,11 @@ concept can_partial_order = requires(
     std::partial_order(__left, __right);
 };
 
-
 struct synthetic_three_way {
     template <
         class _FirstType_,
         class _SecondType_>
-    raze_nodiscard raze_static_operator constexpr auto operator()(
+    constexpr auto operator()(
         const _FirstType_& __left,
         const _SecondType_& __right)
             requires requires {

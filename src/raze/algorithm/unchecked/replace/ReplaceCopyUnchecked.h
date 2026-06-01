@@ -13,7 +13,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <
     class _UnwrappedInputIterator_,
     class _UnwrappedOutputIterator_,
-    class _Type_ = type_traits::iterator_value_type<_UnwrappedInputIterator_>>
+    class _Type_ = std::iter_value_t<_UnwrappedInputIterator_>>
 __simd_inline_constexpr void __replace_copy_unchecked(
     _UnwrappedInputIterator_                            __first_unwrapped,
     _UnwrappedInputIterator_                            __last_unwrapped,

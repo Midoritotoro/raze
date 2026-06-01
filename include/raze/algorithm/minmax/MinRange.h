@@ -7,7 +7,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _InputIterator_>
-__simd_nodiscard_inline type_traits::iterator_value_type<_InputIterator_> min_range(
+__simd_nodiscard_inline std::iter_value_t<_InputIterator_> min_range(
 	_InputIterator_ __first,
 	_InputIterator_ __last) noexcept
 {
@@ -18,7 +18,7 @@ __simd_nodiscard_inline type_traits::iterator_value_type<_InputIterator_> min_ra
 template <
 	class _InputIterator_,
 	class _Predicate_>
-__simd_nodiscard_inline type_traits::iterator_value_type<_InputIterator_> min_range(
+__simd_nodiscard_inline std::iter_value_t<_InputIterator_> min_range(
 	_InputIterator_ __first,
 	_InputIterator_ __last,
 	_Predicate_		__predicate) noexcept

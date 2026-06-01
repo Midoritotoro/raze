@@ -35,7 +35,7 @@
 #  define RAZE_BENCHMARK_UNIT_OF_MEASUREMENT benchmark::kNanosecond
 #endif // RAZE_BENCHMARK_UNIT_OF_MEASUREMENT
 
-enum SizeForBenchmark : raze::uint32 {
+enum SizeForBenchmark : raze::u32 {
     Four        = 4,
     Five        = 5,
     Six         = 6,
@@ -152,10 +152,10 @@ RAZE_ADD_SPECIALIZATION_TO_FIXED_REVERSED_CHAR_ARRAY(FixedReversedArray, wchar_t
 
 
 RAZE_FIXED_INTEGER_ARRAY(FixedIntegerArray);
-RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint8);
-RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint16);
-RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint32);
-RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::uint64);
+RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::u8);
+RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::u16);
+RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::u32);
+RAZE_ADD_SPECIALIZATION_TO_FIXED_INTEGER_ARRAY(FixedIntegerArray, raze::u64);
 
 #if !defined(RAZE_ADD_BENCHMARK)
 #  define RAZE_ADD_BENCHMARK(benchFirst, benchSecond)                   \

@@ -13,12 +13,12 @@ __simd_nodiscard_inline_constexpr _ForwardIteratorUnwrapped_ __adjacent_find_unc
     _ForwardIteratorUnwrapped_  __first_unwrapped,
     _ForwardIteratorUnwrapped_  __last_unwrapped,
     _BinaryPredicate_           __predicate) noexcept(
-        type_traits::is_nothrow_invocable_v<
+        std::is_nothrow_invocable_v<
             _BinaryPredicate_, 
-            type_traits::iterator_value_type<_ForwardIteratorUnwrapped_>,
-            type_traits::iterator_value_type<_ForwardIteratorUnwrapped_>>)
+            std::iter_value_t<_ForwardIteratorUnwrapped_>,
+            std::iter_value_t<_ForwardIteratorUnwrapped_>>)
 {
-    using _Type = type_traits::iterator_value_type<_ForwardIteratorUnwrapped_>;
+    using _Type = std::iter_value_t<_ForwardIteratorUnwrapped_>;
 
 	if constexpr (type_traits::__is_vectorized_find_algorithm_safe_v<_ForwardIteratorUnwrapped_, _Type>
         && type_traits::is_any_of_v<_BinaryPredicate_, type_traits::equal_to<>, std::equal_to<>>) 

@@ -17,7 +17,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <
     class _ForwardIterator_,
     class _SizeType_,
-    class _Type_ = type_traits::iterator_value_type<_ForwardIterator_>>
+    class _Type_ = std::iter_value_t<_ForwardIterator_>>
 __simd_inline_constexpr _ForwardIterator_ fill_n(
     _ForwardIterator_                                   __first,
     _SizeType_                                          __count,

@@ -80,7 +80,7 @@ constexpr inline type_traits::iterator_difference_type<_ContiguousIterator_> __i
     const auto __first_address  = std::to_address(__first);
     const auto __second_address = std::to_address(__last);
 
-    using _IteratorValueType_ = type_traits::iterator_value_type<_ContiguousIterator_>;
+    using _IteratorValueType_ = std::iter_value_t<_ContiguousIterator_>;
 
     const auto __first_iterator_address = const_cast<const _IteratorValueType_*>(
         reinterpret_cast<const volatile _IteratorValueType_*>(__first_address));

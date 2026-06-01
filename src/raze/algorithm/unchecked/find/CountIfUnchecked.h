@@ -14,8 +14,8 @@ __simd_nodiscard_inline_constexpr type_traits::iterator_difference_type<_Unwrapp
 	_UnwrappedInputIterator_	__first_unwrapped,
 	_UnwrappedInputIterator_	__last_unwrapped,
 	_Predicate_ 				__predicate) noexcept(
-		type_traits::is_nothrow_invocable_v<
-		_Predicate_, type_traits::iterator_value_type<_UnwrappedInputIterator_>>)
+		std::is_nothrow_invocable_v<
+		_Predicate_, std::iter_value_t<_UnwrappedInputIterator_>>)
 {
 	using _DifferenceType = type_traits::iterator_difference_type<_UnwrappedInputIterator_>;
 

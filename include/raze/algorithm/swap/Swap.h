@@ -99,7 +99,7 @@ constexpr _FirstForwardIterator_ swap_ranges(
 	_FirstForwardIterator_	__last1,
 	_SecondForwardIterator_ __first2) noexcept
 {
-	using _ValueType_ = type_traits::iterator_value_type<_FirstForwardIterator_>;
+	using _ValueType_ = std::iter_value_t<_FirstForwardIterator_>;
 	__verify_range(__first1, __last1);
 
 	const auto __first1_unwrapped	= __unwrap_iterator(__first1);

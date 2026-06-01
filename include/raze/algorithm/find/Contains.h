@@ -8,7 +8,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <
 	class _Iterator_,
-	class _Type_ = type_traits::iterator_value_type<_Iterator_>>
+	class _Type_ = std::iter_value_t<_Iterator_>>
 __simd_nodiscard_inline_constexpr bool contains(
 	_Iterator_											__first,
 	_Iterator_											__last,
@@ -21,7 +21,7 @@ __simd_nodiscard_inline_constexpr bool contains(
 template <
 	class _ExecutionPolicy_,
 	class _Iterator_,
-	class _Type_ = type_traits::iterator_value_type<_Iterator_>,
+	class _Type_ = std::iter_value_t<_Iterator_>,
 	concurrency::enable_if_execution_policy<_ExecutionPolicy_> = 0>
 __simd_nodiscard_inline_constexpr bool contains(
 	_ExecutionPolicy_&&,
