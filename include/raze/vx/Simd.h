@@ -307,6 +307,11 @@ public:
         return reference(*this, __i);
     }
 
+    template <sizetype _I_>
+    raze_nodiscard raze_always_inline _Type_ operator[](std::integral_constant<sizetype, _I_> __i) const noexcept {
+        return __extract(__i);
+    }
+
     raze_nodiscard static raze_always_inline constexpr i32 size() noexcept {
         return abi_type::size;
     }
@@ -359,6 +364,11 @@ private:
     }
 
     raze_nodiscard raze_always_inline _Type_ __extract(i32 __i) const noexcept {
+        return _storage.__extract(__i);
+    }
+
+    template <sizetype _I_>
+    raze_nodiscard raze_always_inline _Type_ __extract(std::integral_constant<sizetype, _I_> __i) const noexcept {
         return _storage.__extract(__i);
     }
 

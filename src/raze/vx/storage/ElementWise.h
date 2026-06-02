@@ -48,6 +48,28 @@ raze_always_inline void __visit_chunk_by_index(_Tuple_& __tuple, i32 __index, _F
     }(std::make_index_sequence<__simd_tuple_size<std::remove_cvref_t<_Tuple_>>::value>{});
 }
 
+struct __chunk_visitor {
+    template <std::size_t _Idx, sizetype _CurrentI, class _Tuple, class _Func>
+    static raze_always_inline void visit(_Tuple& __t, _Func&& __func) noexcept {
+        using _TupleType = std::remove_cvref_t<_Tuple>;
+        constexpr std::size_t __size = __simd_tuple_size<_TupleType>::value;
+
+        if constexpr (_Idx < __size) {
+            using _Chunk = std::decay_t<decltype(__get<_Idx>(__t))>;
+
+            if constexpr (_CurrentI < _Chunk::size) __func(__get<_Idx>(__t), std::integral_constant<sizetype, _CurrentI>{});
+            else visit<_Idx + 1, _CurrentI - _Chunk::size>(__t, std::forward<_Func>(__func));
+        }
+    }
+};
+
+template <class _Tuple_, sizetype _I_, class _Function_>
+raze_always_inline void __visit_chunk_by_index(_Tuple_& __tuple, 
+    std::integral_constant<sizetype, _I_> __i, _Function_&& __f) noexcept 
+{
+    __chunk_visitor::template visit<0, __i>(__tuple, std::forward<_Function_>(__f));
+}
+
 template <class _Tuple_, class _Function_, class ... _Args_>
 raze_always_inline void __for_each_tuple(_Tuple_& __tuple, _Function_&& __f, _Args_&& ... __args) noexcept
     requires(__is_simd_tuple<std::remove_cvref_t<_Tuple_>>::value)

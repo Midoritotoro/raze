@@ -136,7 +136,19 @@ public:
         });
 
         return __result;
+    }
 
+    template <sizetype _I_>
+    raze_nodiscard raze_always_inline _Type_ __extract(std::integral_constant<sizetype, _I_> __i) const noexcept {
+        static_assert(__i >= 0 && __i < _Abi_::size);
+        _Type_ __result{};
+
+        if constexpr (__use_native) __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(_data), __i);
+        else __visit_chunk_by_index(_data, __i, [&](const auto& __chunk, auto __current) raze_always_inline_lambda{
+            __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(__chunk), __current);
+        });
+
+        return __result;
     }
 private:
     raze_no_unique_address tuple_type _data;

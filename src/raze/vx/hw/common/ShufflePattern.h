@@ -26,12 +26,17 @@ struct _Shuffle_pattern {
 		return std::integer_sequence<size_t, _Indices_...>{};
 	}
 
-	template <size_t _I_>
-	static constexpr sizetype at() noexcept {
+	template <sizetype _I_>
+	static constexpr auto __at() noexcept {
 		return std::get<_I_>(std::make_tuple(_Indices_...));
 	}
 
-	constexpr sizetype operator[](sizetype __i) const noexcept {
+	template <sizetype _I_>
+	static constexpr std::integral_constant<sizetype, __at<_I_>()> at() noexcept {
+		return {};
+	}
+
+	constexpr auto operator[](sizetype __i) const noexcept {
 		return to_array<sizetype>()[__i];
 	}
 
