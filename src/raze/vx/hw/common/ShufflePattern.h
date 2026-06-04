@@ -184,8 +184,29 @@ struct _Shuffle_pattern {
         requires(sizeof...(_Indices_) == sizeof...(_OtherIndices_))
     {
         return __make_mask2<_OtherIndices_...>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a >= __b; },
+            [] (sizetype __a, sizetype __b) constexpr noexcept { return __a >= __b; },
             std::make_index_sequence<sizeof...(_Indices_)>{});
+    }
+
+    template <sizetype _Divisor_>
+    constexpr auto operator%(std::integral_constant<sizetype, _Divisor_> __divisor) const noexcept {
+        return [=] <sizetype... __I>(std::index_sequence<__I...>) {
+            return _Shuffle_pattern<_Simd_, (__at<__I>() % __divisor)...>{};
+        } (std::make_index_sequence<sizeof...(_Indices_)>{});
+    }
+
+    template <sizetype _Divisor_>
+    constexpr auto operator/(std::integral_constant<sizetype, _Divisor_> __divisor) const noexcept {
+        return [=] <sizetype... __I>(std::index_sequence<__I...>) {
+            return _Shuffle_pattern<_Simd_, (__at<__I>() / __divisor)...>{};
+        } (std::make_index_sequence<sizeof...(_Indices_)>{});
+    }
+
+    template <sizetype _Offset_>
+    constexpr auto offset(std::integral_constant<sizetype, _Offset_> __offset) const noexcept {
+        return [=] <sizetype... __I>(std::index_sequence<__I...>) {
+            return _Shuffle_pattern<_Simd_, (__at<__I + __offset>())...>{};
+        } (std::make_index_sequence<size() - __offset>{});
     }
 };
 

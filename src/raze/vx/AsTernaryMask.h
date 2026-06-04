@@ -28,27 +28,21 @@ constexpr _A_t A;
 constexpr _B_t B;
 constexpr _C_t C;
 
-template <
-    class _Left_, 
-    class _Right_>
+template <class _Left_, class _Right_>
 struct _And_t {
     raze_nodiscard static constexpr bool __eval(bool __a, bool __b, bool __c) noexcept {
         return _Left_::__eval(__a, __b, __c) & _Right_::__eval(__a, __b, __c);
     } 
 };
 
-template <
-    class _Left_,
-    class _Right_>
+template <class _Left_, class _Right_>
 struct _Or_t {
     raze_nodiscard static constexpr bool __eval(bool __a, bool __b, bool __c) noexcept {
         return _Left_::eval(__a, __b, __c) | _Right_::eval(__a, __b, __c);
     }
 };
 
-template <
-    class _Left_,
-    class _Right_>
+template <class _Left_, class _Right_>
 struct _Xor_t {
     raze_nodiscard static constexpr bool __eval(bool __a, bool __b, bool __c) noexcept {
         return _Left_::__eval(__a, __b, __c) ^ _Right_::__eval(__a, __b, __c);
@@ -62,23 +56,17 @@ struct _Not_t {
     }
 };
 
-template <
-    class _Left_,
-    class _Right_>
+template <class _Left_, class _Right_>
 constexpr _And_t<_Left_, _Right_> operator&(_Left_, _Right_) noexcept {
     return {}; 
 }
 
-template <
-    class _Left_,
-    class _Right_>
+template <class _Left_, class _Right_>
 constexpr _Or_t<_Left_, _Right_> operator|(_Left_, _Right_) noexcept {
     return {}; 
 }
 
-template <
-    class _Left_,
-    class _Right_>
+template <class _Left_, class _Right_>
 constexpr _Xor_t<_Left_, _Right_> operator^(_Left_, _Right_) noexcept {
     return {}; 
 }
