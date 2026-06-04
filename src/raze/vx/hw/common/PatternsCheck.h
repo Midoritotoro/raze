@@ -192,21 +192,73 @@ consteval bool __can_widen_shuffle(_Pattern_ __p) noexcept
 }
 
 template <class _Pattern_>
-consteval auto __widen_shuffle_pattern(_Pattern_ __p) noexcept {
-	constexpr auto __size = _Pattern_::size() / 2;
+consteval bool __is_low_half(_Pattern_ __p) noexcept {
+	for (auto __i = 0; __i < __p.size(); ++__i)
+		if (__p[__i] >= (__p.size() / 2))
+			return false;
 
-	std::array<sizetype, __size> __r {};
-
-	for (auto __i = 0; __i < __size; ++__i)
-		__r[__i] = __p[__i * 2] / 2;
-
-	return __r;
+	return true;
 }
 
-template <std::unsigned_integral _OutType_, class _Pattern_>
-consteval _OutType_ __to_pshufd_mask(_Pattern_ __p) noexcept {
+template <class _Pattern_>
+consteval bool __is_high_half(_Pattern_ __p) noexcept {
+	for (auto __i = 0; __i < __p.size(); ++__i)
+		if (__p[__i] < (__p.size() / 2))
+			return false;
+
+	return true;
+}
+
+template <class _Pattern_>
+consteval bool __is_dup_low(_Pattern_ __p) noexcept {
+	constexpr auto __n = _Pattern_::size();
+
+	if ((__n & 1) != 0)
+		return false;
+
+	constexpr auto __h = __n / 2;
+
+	for (auto __i = 0; __i < __h; ++__i) {
+		if (__p[__i] >= __h)
+			return false;
+
+		if (__p[__i + __h] != __p[__i])
+			return false;
+	}
+
+	return true;
+}
+
+template <class _Pattern_>
+consteval bool __is_dup_high(_Pattern_ __p) noexcept {
+	constexpr auto __n = _Pattern_::size();
+
+	if ((__n & 1) != 0)
+		return false;
+
+	constexpr auto __h = __n / 2;
+
+	for (auto __i = 0; __i < __h; ++__i) {
+		if (__p[__i] < __h || __p[__i] >= __n)
+			return false;
+
+		if (__p[__i + __h] != __p[__i])
+			return false;
+	}
+
+	return true;
+}
+
+template <class _Pattern_>
+consteval u8 __to_pshufd_mask(_Pattern_ __p) noexcept {
 	return ((__p[0] & 0x03) | ((__p[1] & 0x03) << 2)
 		| ((__p[2] & 0x03) << 4) | ((__p[3] & 0x03) << 6));
+}
+
+template <class _Pattern_>
+consteval u8 __shufpd_to_pshufd_mask(_Pattern_ __p) noexcept {
+	return ((2 * (__p[0] & 0x03)) | ((2 * (__p[0] & 0x03) + 1) << 2)
+		| ((2 * (__p[1] & 0x03) << 4) | ((2 * (__p[1] & 0x03) + 1) << 6)));
 }
 
 template <simd_type _Simd_, auto _Fn_, sizetype ... _Indices_>
@@ -219,6 +271,9 @@ using make_shuffle_pattern = decltype(__make_shuffle_pattern_impl<_Simd_, _Fn_>(
 		std::make_integer_sequence<sizetype, _Simd_::size()>{}));
 
 inline constexpr sizetype __shuffle_zero = std::numeric_limits<sizetype>::max();
+
+template <simd_type _Simd_, sizetype ... _Indices_>
+using make_pattern = _Shuffle_pattern<_Simd_, _Indices_...>;
 
 template <simd_type _Simd_>
 using make_reversed_pattern = make_shuffle_pattern<_Simd_,

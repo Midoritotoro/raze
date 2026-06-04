@@ -6,14 +6,27 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Element_>
-raze_always_inline _Element_ __extract_first() noexcept {
+template <arch::ISA _ISA_, arithmetic_type _Element_, intrin_type _Intrin_>
+raze_always_inline _Element_ __extract_first(_Intrin_ __x) noexcept {
 	if constexpr (__is_epi64_v<_Element_> || __is_epu64_v<_Element_>) {
 #if defined(raze_processor_x86_64)
-		return _mm_cvtsi128_si64x(__as<__m128i>(__))
+		return _mm_cvtsi128_si64x(__as<__m128i>(__x));
+#endif // defined(raze_processor_x86_64)
 	}
 	else if constexpr (__is_epi32_v<_Element_> || __is_epu32_v<_Element_>) {
-
+		return _mm_cvtsi128_si32(__as<__m128i>(__x));
+	}
+	else if constexpr (__is_epi16_v<_Element_> || __is_epu16_v<_Element_>) {
+		return _mm_cvtsi128_si32(__as<__m128i>(__x)) & 0xFFFF;
+	}
+	else if constexpr (__is_epi8_v<_Element_> || __is_epu8_v<_Element_>) {
+		return _mm_cvtsi128_si32(__as<__m128i>(__x)) & 0xFF;
+	}
+	else if constexpr (__is_pd_v<_Element_>) {
+		return _mm_cvtsd_f64(__as<__m128d>(__x));
+	}
+	else if constexpr (__is_ps_v<_Element_>) {
+		return _mm_cvtss_f32(__as<__m128d>(__x));
 	}
 }
 
@@ -43,11 +56,15 @@ struct _Extract {
 		if constexpr (arithmetic_type<_Tp_>) {
 			return __vector;
 		}
-		else if constexpr (sizeof(_Tp_) == 16) {
+		else if constexpr (__index == 0) {
+			return __extract_first<_ISA_, _Element_>(__vector);
+		}
+		/*else if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (sizeof(_Element_) == 8) {
 			
 			}
-		}
+		}*/
+		return {};
 	}
 };
 

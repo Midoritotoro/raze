@@ -2,34 +2,10 @@
 
 #include <src/raze/vx/hw/common/PatternsCheck.h>
 #include <src/raze/vx/hw/x86/cast/As.h>
-
+#include <src/raze/vx/hw/x86/merge/Select.h>
+#include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
-
-template <class _Type_, u64 _Length_, u64 _Alignment_>
-struct _Aligned_constexpr_array {
-	alignas(_Alignment_) _Type_ __array[_Length_];
-};
-
-template <u64 _Alignment_, std::unsigned_integral _From_, std::unsigned_integral _To_, u64 ... _Indices_>
-constexpr auto __expand_shuffle(std::integer_sequence<u64, _Indices_...>) noexcept
-	requires(sizeof(_From_) >= sizeof(_To_)) 
-{
-	constexpr auto __length = sizeof...(_Indices_);
-	constexpr u64 __indices[] = { _Indices_... };
-
-	constexpr auto __n = sizeof(_From_) / sizeof(_To_);
-	_Aligned_constexpr_array<_To_, __length * __n, _Alignment_> __result{};
-
-	for (auto __i = 0; __i < __length; ++__i) {
-		__result.__array[__i * __n] = static_cast<u8>(__indices[__i] * __n);
-		if constexpr (__n > 1) __result.__array[(__i * __n) + 1] = static_cast<u8>((__indices[__i] * __n) + 1);
-		if constexpr (__n > 2) __result.__array[(__i * __n) + 2] = static_cast<u8>((__indices[__i] * __n) + 2);
-		if constexpr (__n > 3) __result.__array[(__i * __n) + 3] = static_cast<u8>((__indices[__i] * __n) + 3);
-	}
-
-	return __result;
-}
 
 template <arch::ISA _ISA_, class _Type_,
 	intrin_type _Intrin_, sizetype ...	_Indices_>
@@ -54,10 +30,6 @@ raze_nodiscard raze_always_inline _Intrin_ __shuffle_fallback(
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, class _Pattern_>
 raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p) noexcept {
-	alignas(64) static constexpr auto __indices = _Pattern_::template to_array<typename IntegerForSizeof<_Type_>::Unsigned>();
-	alignas(64) static constexpr auto __expanded_16_8 = __expand_16bit_shuffle_to_8bit_shuffle<sizeof(_Intrin_)>(_Pattern_::get());
-	alignas(64) static constexpr auto __expanded_64_32 = __expand_64bit_shuffle_to_32bit_shuffle<sizeof(_Intrin_)>(_Pattern_::get());
-
 	static constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
 	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
 	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
@@ -65,42 +37,65 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
 	static constexpr auto __avx512vbmi = __has_avx512vbmi_support_v<_ISA_>;
 
+#if __has_builtin(__builtin_shufflevector)
+	return [&] <class _Type_, _Type_ ... __Is>(std::integer_sequence<_Type_, __Is...>) raze_always_inline_lambda {
+		return __builtin_shufflevector(__x, __x, __Is...);
+	}(__p.get());
+#else
+
 	if constexpr (sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {
-			if constexpr (__indices[0] == 0) {
-				if constexpr (__indices[1] == 0) return __as<_Intrin_>(_mm_unpacklo_pd(__as<__m128d>(__x), __as<__m128d>(__x)));
-				else return __x;
-			}
-			else {
-				if constexpr (__indices[1] == 0) return __as<_Intrin_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 0x01));
-				else return __as<_Intrin_>(_mm_unpackhi_pd(__as<__m128d>(__x), __as<__m128d>(__x)));
-			}
+			return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), __shufpd_to_pshufd_mask(__p)));
 		}
 		else if constexpr (sizeof(_Type_) == 4) {
-			return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), __to_pshufd_mask<u8>(__p)));
+			return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), __to_pshufd_mask(__p)));
 		}
 		else if constexpr (sizeof(_Type_) == 2) {
+			constexpr auto __low_shuf = __to_pshufd_mask(__p);
+			constexpr auto __high_shuf = (__p[4] & 0x03) | ((__p[5] & 0x03) << 2) | ((__p[6] & 0x03) << 4) | ((__p[7] & 0x03) << 6);
+
 			if constexpr (!__across_halfs(__p)) {
-				constexpr auto __low_shuf = (__indices[0] & 0x03) | ((__indices[1] & 0x03) << 2)
-					| ((__indices[2] & 0x03) << 4) | ((__indices[3] & 0x03) << 6);
-
-				constexpr auto __high_shuf = (__indices[4] & 0x03) | ((__indices[5] & 0x03) << 2)
-					| ((__indices[6] & 0x03) << 4) | ((__indices[7] & 0x03) << 6);
-
 				auto __shuffled = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
 				return __as<_Intrin_>(_mm_shufflehi_epi16(__shuffled, __high_shuf));
 			}
 			else if constexpr (__ssse3) {
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), _Load<_ISA_, __m128i>()(__expanded_16_8.__array, __aligned_policy{})));
+				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __p.template expand<u16, u8>().template as_native<__m128i>()));
+			}
+			else if constexpr (__is_dup_low(__p)) {
+				const auto __low = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
+				return __as<_Intrin_>(_mm_unpacklo_epi64(__low, __low));
+			}
+			else if constexpr (__is_dup_high(__p)) {
+				const auto __high = _mm_shufflehi_epi16(__as<__m128i>(__x), __high_shuf);
+				return __as<_Intrin_>(_mm_unpackhi_epi64(__high, __high));
+			}
+			else if constexpr (__is_low_half(__p)) {
+				const auto __low1 = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
+				const auto __low2 = _mm_shufflelo_epi16(__as<__m128i>(__x), __high_shuf);
+				return __as<_Intrin_>(_mm_unpacklo_epi64(__low1, __low2));
+			}
+			else if constexpr (__is_high_half(__p)) {
+				const auto __high1 = _mm_shufflehi_epi16(__as<__m128i>(__x), __low_shuf);
+				const auto __high2 = _mm_shufflehi_epi16(__as<__m128i>(__x), __high_shuf);
+				return __as<_Intrin_>(_mm_unpacklo_epi64(__high1, __high2));
+			}
+			else {
+				const auto __low1 = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
+				const auto __low2 = _mm_shufflelo_epi16(__as<__m128i>(__x), __high_shuf);
+				const auto __high1 = _mm_shufflehi_epi16(__as<__m128i>(__x), __low_shuf);
+				const auto __high2 = _mm_shufflehi_epi16(__as<__m128i>(__x), __high_shuf);
+
+				const auto __low = _mm_unpacklo_epi64(__low1, __low2);
+				const auto __high = _mm_unpackhi_epi64(__high1, __high2);
+
+				return _Select<_ISA_, _Type_>()(__low, __high, _To_mask<_ISA_, _Type_>()(__p < std::integral_constant<sizetype, 4>{}));
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 1) {
 			if constexpr (__can_widen_shuffle(__p) && !__across_halfs(__p)) {
-				constexpr auto __widen = __widen_shuffle_pattern(__p);
+				constexpr auto __widen = __p.widen();
 
-				constexpr auto __low_shuf = (__widen[0] & 0x03) | ((__widen[1] & 0x03) << 2)
-					| ((__widen[2] & 0x03) << 4) | ((__widen[3] & 0x03) << 6);
-
+				constexpr auto __low_shuf = __to_pshufd_mask(__widen);
 				constexpr auto __high_shuf = (__widen[4] & 0x03) | ((__widen[5] & 0x03) << 2)
 					| ((__widen[6] & 0x03) << 4) | ((__widen[7] & 0x03) << 6);
 
@@ -108,8 +103,7 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 				return __as<_Intrin_>(_mm_shufflehi_epi16(__shuffled, __high_shuf));
 			}
 			else if constexpr (__ssse3) {
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x),
-					_Load<_ISA_, __m128i>()(__indices.data(), __aligned_policy{})));
+				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __p.template as_native<__m128i>()));
 			}
 		}
 	}
@@ -172,8 +166,9 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 			}
 		}
 	}
+#endif // __has_builtin(__builtin_shufflevector)
 	
-	return __shuffle_fallback<_ISA_, _Type_>(__x, _Pattern_::get());
+	return __shuffle_fallback<_ISA_, _Type_>(__x, __p.get());
 }
 
 template <class _Pattern_>
@@ -187,6 +182,20 @@ raze_always_inline typename _Pattern_::vector_type __generic_shuffle_native_size
 		__chunk = __generic_shuffle_native<_Abi_::isa, _Value_>(__storage_unwrap(__chunk), __p);
 	});
 	return __result;
+}
+
+template <class _Pattern_>
+raze_always_inline typename _Pattern_::vector_type __generic_shuffle(const typename _Pattern_::vector_type& __x, _Pattern_ __p) noexcept {
+	using _Simd_ = typename _Pattern_::vector_type;
+	using _Abi_ = typename _Simd_::abi_type;
+	using _Value_ = typename _Simd_::value_type;
+
+	if constexpr (__is_identity(__p)) {
+		return __x;
+	}
+	else {
+
+	}
 }
 
 __RAZE_VX_NAMESPACE_END 

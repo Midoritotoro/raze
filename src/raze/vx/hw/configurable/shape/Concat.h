@@ -13,9 +13,6 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <simd_type _Simd_>
-using abi_t = typename _Simd_::abi_type;
-
-template <simd_type _Simd_>
 constexpr auto __has_scalar_chunks_v = _Simd_::__has_scalar_chunks;
 
 template <class ... _Types_>

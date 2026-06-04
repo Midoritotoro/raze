@@ -22,6 +22,9 @@ concept alignment_policy_type = requires {
 	{ std::remove_cvref_t<_AlignmentPolicy_>::__alignment } -> std::convertible_to<bool>;
 };
 
+template <simd_type _Simd_>
+using abi_t = typename _Simd_::abi_type;
+
 struct aligned_mode {};
 constexpr inline auto aligned = raze::options::flag(aligned_mode{});
 struct aligned_option : raze::options::exact_option<aligned> {};

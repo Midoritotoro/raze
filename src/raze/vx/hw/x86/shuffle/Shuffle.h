@@ -5,10 +5,7 @@
 #include <src/raze/vx/hw/x86/shuffle/RotateRight.h>
 #include <src/raze/vx/hw/x86/shuffle/SlideLeft.h>
 #include <src/raze/vx/hw/x86/shuffle/SlideRight.h>
-#include <src/raze/vx/hw/x86/access/Extract.h>
-#include <src/raze/vx/hw/x86/construct/Broadcast.h>
-#include <src/raze/vx/hw/x86/shuffle/GenericShuffle.h>
-
+#include <src/raze/vx/hw/x86/shuffle/BroadcastElement.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -18,7 +15,10 @@ raze_always_inline typename _Pattern_::vector_type __shuffle(const typename _Pat
 	using _Abi_ = typename _Simd_::abi_type;
 	using _Value_ = typename _Simd_::value_type;
 	
-	if constexpr (__is_reverse(__p)) {
+	if constexpr (__is_identity(__p)) {
+		return __x;
+	}
+	else if constexpr (__is_reverse(__p)) {
 		if constexpr (sizeof(_Simd_::is_native())) {
 			return __generic_shuffle_native_size(__x, __p);
 		}
@@ -41,7 +41,7 @@ raze_always_inline typename _Pattern_::vector_type __shuffle(const typename _Pat
 		}
 	}
 	else if constexpr (__is_broadcast(__p)) {
-		return __x[__p.at<0>()];
+		return __broadcast_element<_Abi_::isa, _Value_>(__x, __p.at<0>());
 	}
 	else if constexpr (__is_slide_left(__p)) {
 
