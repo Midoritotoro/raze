@@ -4,6 +4,8 @@
 #include <src/raze/vx/hw/x86/cast/As.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
+#include <src/raze/vx/hw/x86/memory/Load.h>
+#include <src/raze/vx/hw/x86/memory/Store.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -26,6 +28,19 @@ raze_nodiscard raze_always_inline _Intrin_ __shuffle_fallback(
 		__result_array[__i] = __values_array[__indices_array[__i]];
 
 	return _Load<_ISA_, _Intrin_>()(__result_array, __aligned_policy{});
+}
+
+template <class _Pattern_>
+raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle_scalar_fallback(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+	pattern_vector_t<_Pattern_> __temp = __x;
+	
+	[&] <sizetype ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
+		([&] (auto __i) raze_always_inline_lambda {
+			__temp[__i] = __x[__p.at<__i>()];
+		}(std::integral_constant<sizetype, __I>{}), ...);
+	}(__p.get());
+
+	return __temp;
 }
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, class _Pattern_>
@@ -108,39 +123,64 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 		}
 	}
 	else if constexpr (sizeof(_Intrin_) == 32) {
-		if constexpr (sizeof(_Type_) == 8 && __avx2) {
-			return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __to_pshufd_mask<u8>(__p)));
+		if constexpr (sizeof(_Type_) == 8) {
+			constexpr auto __mask = ((__p[0] & 0x03) << 0) | ((__p[1] & 0x03) << 1) | ((__p[2] & 0x03) << 2) | ((__p[3] & 0x03) << 3);
+
+			if constexpr (!__across_halfs(__p)) {
+				return __as<_Intrin_>(_mm256_permute_pd(__as<__m256d>(__x), __mask));
+			}
+			else if constexpr (__avx2) return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __to_pshufd_mask(__p)));
+			else if constexpr (__is_low_half(__p)) {
+				const auto __broadcasted_low_lane = _mm256_permute2f128_pd(__as<__m256d>(__x), __as<__m256d>(__x), 0);
+				return __as<_Intrin_>(_mm256_permute_pd(__broadcasted_low_lane, __mask));
+			}
+			else if constexpr (__is_high_half(__p)) {
+				const auto __broadcasted_high_lane = _mm256_permute2f128_pd(__as<__m256d>(__x), __as<__m256d>(__x), 0x11);
+				return __as<_Intrin_>(_mm256_permute_pd(__broadcasted_high_lane, __mask));
+			}
+			else {
+				constexpr auto __blend_mask = __p != _Shuffle_pattern<pattern_vector_t<_Pattern_>, 0, 0, 1, 1>{};
+				const auto __swapped_lanes = _mm256_permute2f128_pd(__as<__m256d>(__x), __as<__m256d>(__x), 0x01);
+
+				const auto __first = _mm256_permute_pd(__as<__m256d>(__x), __mask);
+				const auto __second = _mm256_permute_pd(__swapped_lanes, __mask);
+				
+				return __as<_Intrin_>(_mm256_blend_pd(__first, __second, __blend_mask));
+			}
 		}
-		else if constexpr (sizeof(_Type_) == 4 && __avx2) {
-			/*if constexpr (!__across_halfs(__p))
-				return __as<_Intrin_>(_mm256_shuffle_ps(__as<__m256>(__x), __as<__m256>(__x), __p.template to_index_mask<u8>()));
-			else if constexpr (__can_widen_shuffle(__p))
-				return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __widen_shuffle_pattern(__p)));
-			else*/
-				return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x),
-					_Load<_ISA_, __m256i>()(__indices.data(), __aligned_policy{})));
+		else if constexpr (sizeof(_Type_) == 4) {
+			if constexpr (!__across_halfs(__p))
+				return __as<_Intrin_>(_mm256_shuffle_ps(__as<__m256>(__x), __as<__m256>(__x), __to_pshufd_mask(__p)));
+			else if constexpr (__can_widen_shuffle(__p) && __avx2)
+				return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __to_pshufd_mask(__p.widen())));
+			else if constexpr (__avx2)
+				return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), __p.template expand<u64, u32>().template as_native<__m256i>()));
+			/*else {
+
+			}*/
+
 		}
 		else if constexpr (sizeof(_Type_) == 2 && __avx2) {
 			if constexpr (__avx512vbmi && __avx512vl) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi8(_Load<_ISA_, __m256i>()(__expanded_16_8.__array, __aligned_policy{}), __as<__m256i>(__x)));
+				return __as<_Intrin_>(_mm256_permutexvar_epi8(__p.expand<u16, u8>.template as_native<__m256i>(), __as<__m256i>(__x)));
 			}
 			else if constexpr (__avx512bw && __avx512vl) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi16(_Load<_ISA_, __m256i>()(__indices.data(), __aligned_policy{}), __as<__m256i>(__x)));
+				return __as<_Intrin_>(_mm256_permutexvar_epi16(__p.template as_native<__m256i>(), __as<__m256i>(__x)));
 			}
 			else if constexpr (!__across_halfs(__p)) {
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), _Load<_ISA_, __m256i>()(__expanded_16_8.__array, __aligned_policy{})));
+				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p.expand<u16, u8>.template as_native<__m256i>()));
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 1 && __avx2) {
 			if constexpr (__avx512vbmi && __avx512vl) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi8(_Load<_ISA_, __m256i>()(__indices.data(), __aligned_policy{}), __as<__m256i>(__x)));
+				return __as<_Intrin_>(_mm256_permutexvar_epi8(__p.expand<u16, u8>.template as_native<__m256i>(), __as<__m256i>(__x)));
 			}
 			else if constexpr (!__across_halfs(__p)) {
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), _Load<_ISA_, __m256i>()(__expanded_16_8.__array, __aligned_policy{})));
+				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p));
 			}
 		}
 	}
-	else if constexpr (sizeof(_Intrin_) == 64) {
+	/*else if constexpr (sizeof(_Intrin_) == 64) {
 		if constexpr (sizeof(_Type_) == 8) {
 			return __as<_Intrin_>(_mm512_permutevar_epi32(_Load<_ISA_, __m512i>()(
 				__expanded_64_32.__array, __aligned_policy{}), __as<__m512i>(__x)));
@@ -165,37 +205,29 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 				return __as<_Intrin_>(_mm512_shuffle_epi8(__as<__m512i>(__x), _Load<_ISA_, __m512i>()(__expanded_16_8.__array, __aligned_policy{})));
 			}
 		}
-	}
+	}*/
 #endif // __has_builtin(__builtin_shufflevector)
 	
 	return __shuffle_fallback<_ISA_, _Type_>(__x, __p.get());
 }
 
 template <class _Pattern_>
-raze_always_inline typename _Pattern_::vector_type __generic_shuffle_native_size(const typename _Pattern_::vector_type& __x, _Pattern_ __p) noexcept {
-	using _Simd_ = typename _Pattern_::vector_type;
-	using _Abi_ = typename _Simd_::abi_type;
-	using _Value_ = typename _Simd_::value_type;
+raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle_native_size(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+	using _Simd_ = pattern_vector_t<_Pattern_>;
 
 	_Simd_ __result = __x;
 	__result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-		__chunk = __generic_shuffle_native<_Abi_::isa, _Value_>(__storage_unwrap(__chunk), __p);
+		__chunk = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__chunk), __p);
 	});
+
 	return __result;
 }
 
 template <class _Pattern_>
-raze_always_inline typename _Pattern_::vector_type __generic_shuffle(const typename _Pattern_::vector_type& __x, _Pattern_ __p) noexcept {
-	using _Simd_ = typename _Pattern_::vector_type;
-	using _Abi_ = typename _Simd_::abi_type;
-	using _Value_ = typename _Simd_::value_type;
-
-	if constexpr (__is_identity(__p)) {
-		return __x;
-	}
-	else {
-
-	}
+raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+	if constexpr (__is_identity(__p)) return __x;
+	else if constexpr (pattern_vector_t<_Pattern_>::is_native()) return __generic_shuffle_native_size(__x, __p);
+	else return __generic_shuffle_scalar_fallback(__x, __p);
 }
 
 __RAZE_VX_NAMESPACE_END 

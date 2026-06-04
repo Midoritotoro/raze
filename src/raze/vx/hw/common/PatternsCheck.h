@@ -250,6 +250,40 @@ consteval bool __is_dup_high(_Pattern_ __p) noexcept {
 }
 
 template <class _Pattern_>
+consteval bool __is_dup_low_identity(_Pattern_ __p) noexcept {
+	constexpr auto __n = _Pattern_::size();
+
+	if ((__n & 1) != 0)
+		return false;
+
+	constexpr auto __h = __n / 2;
+
+	for (auto __i = 0; __i < __h; ++__i) {
+		if (__p[__i] >= __h || __p[__i] != __i) return false;
+		if (__p[__i + __h] != __p[__i]) return false;
+	}
+
+	return true;
+}
+
+template <class _Pattern_>
+consteval bool __is_dup_high_identity(_Pattern_ __p) noexcept {
+	constexpr auto __n = _Pattern_::size();
+
+	if ((__n & 1) != 0)
+		return false;
+
+	constexpr auto __h = __n / 2;
+
+	for (auto __i = 0; __i < __h; ++__i) {
+		if (__p[__i] < __h || __p[__i] >= __n || __p[__i] != __i) return false;
+		if (__p[__i + __h] != __p[__i]) return false;
+	}
+
+	return true;
+}
+
+template <class _Pattern_>
 consteval u8 __to_pshufd_mask(_Pattern_ __p) noexcept {
 	return ((__p[0] & 0x03) | ((__p[1] & 0x03) << 2)
 		| ((__p[2] & 0x03) << 4) | ((__p[3] & 0x03) << 6));
