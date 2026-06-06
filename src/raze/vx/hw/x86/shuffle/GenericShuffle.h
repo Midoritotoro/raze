@@ -174,7 +174,7 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 				auto __split = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0);
 				
 				if constexpr (!__is_dup_low_identity(__p))
-					__split = _mm256_permute_ps(__as<__m256>(__x), __to_pshufd_mask(__p));
+					__split = _mm256_permute_ps(__split, __to_pshufd_mask(__p));
 
 				return __as<_Intrin_>(__split);
 			}
@@ -185,7 +185,7 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 				auto __split = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0x11);
 
 				if constexpr (!__is_dup_low_identity(__p))
-					__split = _mm256_permute_ps(__as<__m256>(__x), __mask);
+					__split = _mm256_permute_ps(__split, __mask);
 
 				return __as<_Intrin_>(__split);
 			}

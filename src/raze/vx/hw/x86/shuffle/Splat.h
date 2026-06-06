@@ -27,7 +27,7 @@ raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_co
 		else if constexpr (sizeof(_Type_) == 4) {
 			return __as<_Tp_>(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__i)));
 		}
-		else if constexpr (sizeof(_Type_) == 2 && __has_avx2_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Type_) == 2 && __has_avx2_support_v<_ISA_> && __i == 0) {
 			return __as<_Tp_>(_mm_broadcastw_epi16(__as<__m128i>(__x)));
 		}
 		else if constexpr (sizeof(_Type_) == 1) {

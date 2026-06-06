@@ -89,21 +89,19 @@ struct _Extract {
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
+			const auto __mask = _kshiftli_mask16(1, __index);
+
 			if constexpr (__is_pd_v<_Element_>) {
-				return _mm512_cvtsd_f64(_mm512_maskz_compress_pd(
-					static_cast<u8>(u8(1) << __index), __as<__m512d>(__x)));
+				return _mm512_cvtsd_f64(_mm512_maskz_compress_pd(__mask, __as<__m512d>(__x)));
 			}
 			else if constexpr (__is_ps_v<_Element_>) {
-				return _mm512_cvtss_f32(_mm512_maskz_compress_ps(
-					static_cast<u8>(u8(1) << __index), __as<__m512>(__x)));
+				return _mm512_cvtss_f32(_mm512_maskz_compress_ps(__mask, __as<__m512>(__x)));
 			}
 			else if constexpr (__is_epi32_v<_Element_> || __is_epu32_v<_Element_>) {
-				return _mm_cvtsi128_si32(__as<__m128i>(_mm512_maskz_compress_epi32(
-					static_cast<u8>(u8(1) << __index), __as<__m512i>(__x))));
+				return _mm512_cvtsi512_si32(_mm512_maskz_compress_epi32(__mask, __as<__m512i>(__x)));
 			}
 			else if constexpr (__is_epi64_v<_Element_> || __is_epu64_v<_Element_>) {
-				return _mm_cvtsi128_si64(__as<__m128i>(_mm512_maskz_compress_epi64(
-					static_cast<u8>(u8(1) << __index), __as<__m512i>(__x))));
+				return _mm_cvtsi128_si64(__as<__m128i>(_mm512_maskz_compress_epi64(__mask, __as<__m512i>(__x))));
 			}
 		}
 
