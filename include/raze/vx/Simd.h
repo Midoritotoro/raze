@@ -308,6 +308,11 @@ public:
     }
 
     template <sizetype _I_>
+    raze_nodiscard raze_always_inline reference operator[](std::integral_constant<sizetype, _I_> __i) noexcept {
+        return reference(*this, _I_);
+    }
+
+    template <sizetype _I_>
     raze_nodiscard raze_always_inline _Type_ operator[](std::integral_constant<sizetype, _I_> __i) const noexcept {
         return __extract(__i);
     }
@@ -351,7 +356,12 @@ public:
     }
 
     template <sizetype _I_>
-    raze_always_inline auto __get() const noexcept {
+    raze_always_inline auto& __get() noexcept {
+        return raze::vx::__get<_I_>(_storage.storage());
+    }
+
+    template <sizetype _I_>
+    raze_always_inline const auto& __get() const noexcept {
         return raze::vx::__get<_I_>(_storage.storage());
     }
 

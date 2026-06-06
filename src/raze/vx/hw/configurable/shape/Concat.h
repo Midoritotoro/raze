@@ -12,25 +12,12 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <simd_type _Simd_>
-constexpr auto __has_scalar_chunks_v = _Simd_::__has_scalar_chunks;
-
-template <class ... _Types_>
-concept same_abi_isa = ((abi_t<_Types_>::isa == abi_t<std::tuple_element_t<0, std::tuple<_Types_...>>>::isa) && ...);
-
 template <class _Type_, class ... _Types_>
 using concatenated_simd = simd<typename _Type_::value_type, resize_abi_t<typename _Type_::abi_type,
     abi_t<_Type_>::size + (abi_t<_Types_>::size + ...)>>;
 
-template <class ... _Types_>
-concept has_any_scalar_chunks = (__has_scalar_chunks_v<_Types_> || ...);
-
-//template <class _Simd_>
-//concept can_upcast_to_native_register = simd_type<_Simd_> && ();
-
 template <class ... _Types_> 
 concept effective_concatenation_available = same_abi_isa<_Types_...> && !has_any_scalar_chunks<_Types_...>;
-
 
 // concat(tuple(__m512i, __m128i), tuple(__m512i, __m128i)) = tuple(__m512i, __m512i, __m256i) - cast __m128i to zmm, insert lower 3/4 of second tuple zmm, concat higher 128-bit second zmm with xmm
 // concat(tuple(__m512i, __m128i), tuple(__m128i, __m256i)) = tuple(__m512i, __m512i) - just insert two regs(xmm, ymm) into casted __m128i to __m512i

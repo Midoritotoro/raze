@@ -52,12 +52,6 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
 	static constexpr auto __avx512vbmi = __has_avx512vbmi_support_v<_ISA_>;
 
-#if __has_builtin(__builtin_shufflevector)
-	return [&] <class _Type_, _Type_ ... __Is>(std::integer_sequence<_Type_, __Is...>) raze_always_inline_lambda {
-		return __builtin_shufflevector(__x, __x, __Is...);
-	}(__p.get());
-#else
-
 	if constexpr (sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {
 			return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), __shufpd_to_pshufd_mask(__p)));
@@ -157,7 +151,7 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 			else if constexpr (__can_widen_shuffle(__p) && __avx2)
 				return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __to_pshufd_mask(__p.widen())));
 			else if constexpr (__avx2)
-				return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), __p.template expand<u64, u32>().template as_native<__m256i>()));
+				return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), __p.template as_native<__m256i>()));
 			else if constexpr (__is_dup_low(__p)) {
 				auto __split = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0);
 				
@@ -287,9 +281,14 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 				return __as<_Intrin_>(_mm512_permutexvar_epi8(__p.template as_native<__m512i>(), __as<__m512i>(__x)));
 		}
 	}
-#endif // __has_builtin(__builtin_shufflevector)
-	
+
+#if __has_builtin(__builtin_shufflevector)
+	return[&] <class _Type_, _Type_ ... __Is>(std::integer_sequence<_Type_, __Is...>) raze_always_inline_lambda {
+		return __builtin_shufflevector(__x, __x, __Is...);
+	}(__p.get());
+#else
 	return __shuffle_fallback<_ISA_, _Type_>(__x, __p.get());
+#endif // __has_builtin(__builtin_shufflevector)
 }
 
 template <class _Pattern_>

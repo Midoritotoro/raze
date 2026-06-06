@@ -6,7 +6,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Value_, intrin_type _Intrin_, class _Pattern_>
+template <arch::ISA _ISA_, arithmetic_type _Value_, intrin_or_arithmetic_type _Intrin_, class _Pattern_>
 raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexcept {
 	if constexpr (!__has_ssse3_support_v<_ISA_> && sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Value_) == 2) {
@@ -51,7 +51,7 @@ raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexce
 			//  vpshufb        
 			//  vextracti64x4  
 			//  vpshufb       
-			//  vinserti64x4   
+			//  vshufi64x2   
 			//
 			// WITHOUT temp:
 			//	vpshufb        
@@ -61,7 +61,7 @@ raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexce
 			//  vmovdqu  
 			//  vextracti64x4     
 			//  vpshufb   
-			//	vinserti64x4
+			//	vshufi64x2
 
 			const auto __z = __as<__m512i>(__x);
 
@@ -71,11 +71,12 @@ raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexce
 			const auto __low = _mm256_shuffle_epi8(__low_half, __native);
 			const auto __high = _mm256_shuffle_epi8(__high_half, __native);
 
-			return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__high), __low, 1));
+			return __as<_Intrin_>(_mm512_shuffle_i64x2(__as<__m512i>(__high), __as<__m512i>(__low), 0x11));
 		}
 	}
-
-	return __generic_shuffle_native<_ISA_, _Value_>(__x, __p);
+		
+	if constexpr (arithmetic_type<_Intrin_>) return __x;
+	else return __generic_shuffle_native<_ISA_, _Value_>(__x, __p);
 }
 
 template <class _Pattern_>
@@ -91,30 +92,47 @@ raze_always_inline pattern_vector_t<_Pattern_> __reverse_native_size(const patte
 }
 
 template <class _Pattern_>
-raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __reverse(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __reverse(pattern_vector_t<_Pattern_> __x, _Pattern_ __p) noexcept {
 	using _Simd_ = pattern_vector_t<_Pattern_>;
 	using _Value_ = typename _Simd_::value_type;
 
-	if constexpr (_Simd_::is_native()) {
-		return __reverse_native_size(__x, _Pattern_{});
+	if constexpr (native<_Simd_>) {
+		return __reverse_native_size(__x, __p);
+	}
+	else if constexpr (trivially_chunk_swappable<_Simd_>) {
+		[&] <sizetype... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
+			([&](auto __i) raze_always_inline_lambda {
+				auto& __c1 = __x.template __get<__i>();
+				auto& __c2 = __x.template __get<_Simd_::__chunks_count() - __i - 1>();
+
+				auto __c1_in = __storage_unwrap(__c1);
+				auto __c2_in = __storage_unwrap(__c2);
+
+				using _Chunk1 = std::remove_cvref_t<decltype(__c1)>;
+				using _Chunk2 = std::remove_cvref_t<decltype(__c2)>;
+
+				const auto __r1 = __reverse_native<abi_t<_Simd_>::isa, _Value_>(
+					__c2_in, make_reversed_pattern<typename _Chunk2::as_simd>{});
+
+				const auto __r2 = __reverse_native<abi_t<_Simd_>::isa, _Value_>(
+					__c1_in, make_reversed_pattern<typename _Chunk1::as_simd>{});
+
+				__c1 = __r1;
+				__c2 = __r2;
+			}(std::integral_constant<sizetype, _Indices_>{}), ...);
+		}(std::make_integer_sequence<sizetype, _Simd_::__chunks_count() / 2>{});
 	}
 	else {
-		_Simd_ __result;
-
-		[&] <sizetype ... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
+		[&] <sizetype... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
 			([&](auto __i) raze_always_inline_lambda {
-				auto& __chunk1 = __x.template __get<__i>();
-				auto& __chunk2 = __x.template __get<_Pattern_::size() - __i - 1>();
-
-				std::remove_cvref_t<decltype(__chunk1)> __chunk1_temp = __chunk1;
-
-				__chunk1 = __reverse_native<abi_t<_Simd_>::isa, _Value_>(__storage_unwrap(__chunk2), make_reversed_pattern<typename decltype(__chunk2)::as_simd>{});
-				__chunk2 = __reverse_native<abi_t<_Simd_>::isa, _Value_>(__storage_unwrap(__chunk1_temp), make_reversed_pattern<typename decltype(__chunk1_temp)::as_simd>{});
-				}(std::integral_constant<sizetype, _Indices_>{}), ...);
-		}(std::make_integer_sequence<sizetype, _Simd_::__chunks_count()>{});
-
-		return __result;
+				const _Value_ __temp = __x[__i];
+				__x[__i] = __x[_Simd_::size() - 1 - __i];
+				__x[_Simd_::size() - 1 - __i] = __temp;
+			}(std::integral_constant<sizetype, _Indices_>{}), ...);
+		}(std::make_integer_sequence<sizetype, _Simd_::size() / 2>{});
 	}
+
+	return __x;
 }
 
 __RAZE_VX_NAMESPACE_END

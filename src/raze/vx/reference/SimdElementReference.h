@@ -26,6 +26,16 @@ public:
 		return { _reference, _index };
 	}
 
+	raze_always_inline _Simd_element_reference operator=(_Simd_element_reference&& __ref) && noexcept {
+		__write(__ref);
+		return { _reference, _index };
+	}
+
+	raze_always_inline _Simd_element_reference operator=(const _Simd_element_reference& __ref) && noexcept {
+		__write(__ref);
+		return { _reference, _index };
+	}
+
 	raze_always_inline value_type operator++(int) && noexcept {
 		auto __value = __read();
 		const auto __old_value = __value;

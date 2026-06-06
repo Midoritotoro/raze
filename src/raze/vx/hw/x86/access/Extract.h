@@ -51,20 +51,63 @@ struct _Extract {
 
 	template <intrin_or_arithmetic_type _Tp_, sizetype _I_>
 	raze_nodiscard raze_static_operator raze_always_inline _Element_ operator()(
-		_Tp_ __vector, std::integral_constant<sizetype, _I_> __index) raze_const_operator noexcept
+		_Tp_ __x, std::integral_constant<sizetype, _I_> __index) raze_const_operator noexcept
 	{
 		if constexpr (arithmetic_type<_Tp_>) {
-			return __vector;
+			return __x;
 		}
 		else if constexpr (__index == 0) {
-			return __extract_first<_ISA_, _Element_>(__vector);
+			return __extract_first<_ISA_, _Element_>(__x);
 		}
-		/*else if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (sizeof(_Element_) == 8) {
-			
+		else if constexpr (sizeof(_Tp_) == 16) {
+			if constexpr (sizeof(_Element_) == 8 && std::is_integral_v<_Element_> && __has_sse41_support_v<_ISA_>) {
+				return _mm_extract_epi64(__as<__m128i>(__x), __index);
 			}
-		}*/
-		return {};
+			else if constexpr (sizeof(_Element_) == 4 && __has_sse41_support_v<_ISA_>) {
+				if constexpr (std::is_floating_point_v<_Element_>) return _mm_extract_ps(__as<__m128>(__x), __index);
+				else return _mm_extract_epi32(__as<__m128i>(__x), __index);
+			}
+			else if constexpr (sizeof(_Element_) == 2) {
+				return _mm_extract_epi16(__as<__m128i>(__x), __index);
+			}
+			else if constexpr (sizeof(_Element_) == 1) {
+				return _mm_extract_epi8(__as<__m128i>(__x), __index);
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 32) {
+			if constexpr (sizeof(_Element_) == 8 && std::is_integral_v<_Element_>) {
+				return _mm256_extract_epi64(__as<__m256i>(__x), __index);
+			}
+			else if constexpr (sizeof(_Element_) == 4 && std::is_integral_v<_Element_>) {
+				return _mm256_extract_epi32(__as<__m256i>(__x), __index);
+			}
+			else if constexpr (sizeof(_Element_) == 2 && __has_avx2_support_v<_ISA_>) {
+				return _mm256_extract_epi16(__as<__m256i>(__x), __index);
+			}
+			else if constexpr (sizeof(_Element_) == 1 && __has_avx2_support_v<_ISA_>) {
+				return _mm256_extract_epi8(__as<__m256i>(__x), __index);
+			}
+		}
+		else if constexpr (sizeof(_Tp_) == 64) {
+			if constexpr (__is_pd_v<_Element_>) {
+				return _mm512_cvtsd_f64(_mm512_maskz_compress_pd(
+					static_cast<u8>(u8(1) << __index), __as<__m512d>(__x)));
+			}
+			else if constexpr (__is_ps_v<_Element_>) {
+				return _mm512_cvtss_f32(_mm512_maskz_compress_ps(
+					static_cast<u8>(u8(1) << __index), __as<__m512>(__x)));
+			}
+			else if constexpr (__is_epi32_v<_Element_> || __is_epu32_v<_Element_>) {
+				return _mm_cvtsi128_si32(__as<__m128i>(_mm512_maskz_compress_epi32(
+					static_cast<u8>(u8(1) << __index), __as<__m512i>(__x))));
+			}
+			else if constexpr (__is_epi64_v<_Element_> || __is_epu64_v<_Element_>) {
+				return _mm_cvtsi128_si64(__as<__m128i>(_mm512_maskz_compress_epi64(
+					static_cast<u8>(u8(1) << __index), __as<__m512i>(__x))));
+			}
+		}
+
+		return _Extract()(__x, __index.value);
 	}
 };
 

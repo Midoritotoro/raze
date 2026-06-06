@@ -32,7 +32,7 @@ struct _Configurable_reverse: raze::options::strict_elementwise_callable<_Config
 
     template <simd_type _Type_>
     raze_nodiscard static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        return __reverse(__x);
+        return __reverse(__x, make_reversed_pattern<_Type_>{});
     }
 
     using callable_tag_type = _Configurable_reverse;

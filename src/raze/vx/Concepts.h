@@ -25,6 +25,21 @@ concept alignment_policy_type = requires {
 template <simd_type _Simd_>
 using abi_t = typename _Simd_::abi_type;
 
+template <simd_type _Simd_>
+constexpr auto __has_scalar_chunks_v = _Simd_::__has_scalar_chunks;
+
+template <class ... _Types_>
+concept has_any_scalar_chunks = (__has_scalar_chunks_v<_Types_> || ...);
+
+template <class ... _Types_>
+concept same_abi_isa = ((abi_t<_Types_>::isa == abi_t<std::tuple_element_t<0, std::tuple<_Types_...>>>::isa) && ...);
+
+template <class _Simd_>
+concept trivially_chunk_swappable = simd_type<_Simd_> && _Simd_::size() && (_Simd_::size() & (_Simd_::size() - 1)) == 0;
+
+template <class _Simd_>
+concept native = simd_type<_Simd_> && _Simd_::is_native();
+
 struct aligned_mode {};
 constexpr inline auto aligned = raze::options::flag(aligned_mode{});
 struct aligned_option : raze::options::exact_option<aligned> {};

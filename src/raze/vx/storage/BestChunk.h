@@ -9,12 +9,13 @@ struct _Vector_wrapper {
     using unwrapped_type = _Intrin_;
     using abi_type = _Abi_;
     using value_type = _Type_;
-    using as_simd = simd<_Type_, resize_abi<_Abi_, _Elements_>>;
+    using as_simd = simd<_Type_, resize_abi_t<_Abi_, _Elements_>>;
 
     static constexpr auto size = _Elements_;
 
     template <intrin_type _OtherIntrin_> requires (sizeof(_Intrin_) == sizeof(_OtherIntrin_))
-    _Vector_wrapper(_OtherIntrin_ __vector) noexcept : _data(__as<_Intrin_>(__vector)) {}
+    _Vector_wrapper(_OtherIntrin_ __vector) noexcept : _data(__as<_Intrin_>(__vector))
+    {}
 
     _Vector_wrapper() noexcept = default;
     _Vector_wrapper(const _Vector_wrapper&) noexcept = default;
@@ -25,11 +26,11 @@ struct _Vector_wrapper {
     _Vector_wrapper& operator=(const _Vector_wrapper&) noexcept = default;
     _Vector_wrapper& operator=(_Vector_wrapper&&) noexcept = default;
 
-    template <intrin_type _OtherIntrin_> requires (sizeof(_Intrin_) == sizeof(_OtherIntrin_))
-        raze_always_inline _Vector_wrapper& operator=(_OtherIntrin_ __vector) noexcept {
-        _data = __as<_Intrin_>(__vector);
-        return *this;
-    }
+    //template <intrin_type _OtherIntrin_> requires (sizeof(_Intrin_) == sizeof(_OtherIntrin_))
+    //raze_always_inline _Vector_wrapper& operator=(_OtherIntrin_ __vector) noexcept {
+    //    _data = __as<_Intrin_>(__vector);
+    //    return *this;
+    //}
 
     template <sizetype _I_, intrin_type _OtherIntrin_>
     raze_always_inline void insert(_OtherIntrin_ __intrin) noexcept {
@@ -57,7 +58,7 @@ struct _Scalar_wrapper {
     using unwrapped_type = _Type_;
     using abi_type = _Abi_;
     using value_type = _Type_;
-    using as_simd = simd<_Type_, resize_abi<_Abi_, 1>>;
+    using as_simd = simd<_Type_, resize_abi_t<_Abi_, 1>>;
 
     static constexpr auto size = 1;
 
