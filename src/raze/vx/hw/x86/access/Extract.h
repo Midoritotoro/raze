@@ -6,6 +6,11 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <sizetype _I_>
+consteval auto __broadcast_pshufd_index(std::integral_constant<sizetype, _I_> __i) noexcept {
+	return (__i & 0x03) | (__i << 2) | (__i << 4) | (__i << 6);
+}
+
 template <arch::ISA _ISA_, arithmetic_type _Element_, intrin_type _Intrin_>
 raze_always_inline _Element_ __extract_first(_Intrin_ __x) noexcept {
 	if constexpr (__is_epi64_v<_Element_> || __is_epu64_v<_Element_>) {
@@ -63,9 +68,10 @@ struct _Extract {
 			if constexpr (sizeof(_Element_) == 8 && std::is_integral_v<_Element_> && __has_sse41_support_v<_ISA_>) {
 				return _mm_extract_epi64(__as<__m128i>(__x), __index);
 			}
-			else if constexpr (sizeof(_Element_) == 4 && __has_sse41_support_v<_ISA_>) {
-				if constexpr (std::is_floating_point_v<_Element_>) return _mm_extract_ps(__as<__m128>(__x), __index);
-				else return _mm_extract_epi32(__as<__m128i>(__x), __index);
+			else if constexpr (sizeof(_Element_) == 4) {
+				if constexpr(__has_sse41_support_v<_ISA_> && !std::is_floating_point_v<_Element_>) return _mm_extract_epi32(__as<__m128i>(__x), __index);
+				else if constexpr (std::is_floating_point_v<_Element_>) return _mm_cvtss_f32(__as<__m128>(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__index))));
+				else if constexpr (std::is_floating_point_v<_Element_>) return _mm_cvtsi128_si32(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__index)));
 			}
 			else if constexpr (sizeof(_Element_) == 2) {
 				return _mm_extract_epi16(__as<__m128i>(__x), __index);

@@ -9,11 +9,6 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <sizetype _I_>
-consteval auto __broadcast_pshufd_index(std::integral_constant<sizetype, _I_> __i) noexcept {
-	return (__i & 0x03) | (__i << 2) | (__i << 4) | (__i << 6);
-}
-
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_, sizetype _I_>
 raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_constant<sizetype, _I_> __i) noexcept
 	requires(__i >= 0 && __i < (sizeof(_Tp_) / sizeof(_Type_)))
