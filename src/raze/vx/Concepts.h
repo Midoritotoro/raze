@@ -35,7 +35,7 @@ template <class ... _Types_>
 concept same_abi_isa = ((abi_t<_Types_>::isa == abi_t<std::tuple_element_t<0, std::tuple<_Types_...>>>::isa) && ...);
 
 template <class _Simd_>
-concept trivially_chunk_swappable = simd_type<_Simd_> && _Simd_::size() && (_Simd_::size() & (_Simd_::size() - 1)) == 0;
+concept trivially_chunk_swappable = simd_type<_Simd_> && (_Simd_::size() != 0 && (_Simd_::size() & (_Simd_::size() - 1)) == 0);
 
 template <class _Simd_>
 concept native = simd_type<_Simd_> && _Simd_::is_native();

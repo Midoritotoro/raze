@@ -5,7 +5,7 @@
 #include <src/raze/vx/hw/x86/shuffle/RotateRight.h>
 #include <src/raze/vx/hw/x86/shuffle/SlideLeft.h>
 #include <src/raze/vx/hw/x86/shuffle/SlideRight.h>
-#include <src/raze/vx/hw/x86/shuffle/BroadcastElement.h>
+#include <src/raze/vx/hw/x86/shuffle/Splat.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -18,8 +18,8 @@ raze_always_inline typename _Pattern_::vector_type __shuffle(const typename _Pat
 	if constexpr (__is_reverse(__p)) {
 		return __reverse(__x, __p);
 	}
-	else if constexpr (__is_broadcast(__p)) {
-		return __broadcast_element(__x, __p);
+	else if constexpr (__is_splat(__p)) {
+		return __splat(__x, __p);
 	}
 	/*else if constexpr (__is_slide_left(__p)) {
 

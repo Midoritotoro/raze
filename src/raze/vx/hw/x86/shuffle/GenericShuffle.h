@@ -4,8 +4,8 @@
 #include <src/raze/vx/hw/x86/cast/As.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
-#include <src/raze/vx/hw/x86/memory/Load.h>
-#include <src/raze/vx/hw/x86/memory/Store.h>
+#include <src/raze/vx/hw/configurable/memory/Load.h>
+#include <src/raze/vx/hw/configurable/memory/Store.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -32,6 +32,7 @@ raze_nodiscard raze_always_inline _Intrin_ __shuffle_fallback(
 
 template <class _Pattern_>
 raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle_scalar_fallback(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+#if 0
 	pattern_vector_t<_Pattern_> __temp = __x;
 	
 	[&] <sizetype ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
@@ -41,6 +42,23 @@ raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle_scalar_fallback
 	}(__p.get());
 
 	return __temp;
+#else
+	using _Simd_ = pattern_vector_t<_Pattern_>;
+
+	alignas(64) typename _Simd_::value_type __dst[_Simd_::size()];
+	alignas(64) typename _Simd_::value_type __src[_Simd_::size()];
+
+	vx::__store[vx::aligned](__dst, __x);
+	vx::__store[vx::aligned](__src, __x);
+
+	[&] <sizetype ... __I> (std::integer_sequence<sizetype, __I...>) raze_always_inline_lambda {
+		([&](auto __i) raze_always_inline_lambda{
+			__dst[__i] = __src[__p.at<__i>()];
+		}(std::integral_constant<sizetype, __I>{}), ...);
+	}(__p.get());
+
+	return vx::__load<_Simd_>[vx::aligned](__dst);
+#endif
 }
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, class _Pattern_>

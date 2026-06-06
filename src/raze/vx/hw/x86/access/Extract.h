@@ -26,7 +26,7 @@ raze_always_inline _Element_ __extract_first(_Intrin_ __x) noexcept {
 		return _mm_cvtsd_f64(__as<__m128d>(__x));
 	}
 	else if constexpr (__is_ps_v<_Element_>) {
-		return _mm_cvtss_f32(__as<__m128d>(__x));
+		return _mm_cvtss_f32(__as<__m128>(__x));
 	}
 }
 

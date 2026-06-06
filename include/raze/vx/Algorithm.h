@@ -59,6 +59,7 @@ constexpr inline auto store = __store;
 constexpr inline auto concat = raze::options::functor<_Configurable_concat>;
 // constexpr inline auto split = raze::options::functor<_Configurable_split>;
 constexpr inline auto reverse = raze::options::functor<_Configurable_reverse>;
+template <sizetype _Index_> constexpr inline auto splat = __splat_impl<_Index_>;
 constexpr inline auto shuffle = raze::options::functor<_Configurable_shuffle>;
 constexpr inline auto vmin = vertical_min;
 constexpr inline auto vmax = vertical_max;

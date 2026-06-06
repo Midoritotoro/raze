@@ -24,7 +24,7 @@ consteval bool __is_identity(_Pattern_ __p) noexcept {
 }
 
 template <class _Pattern_>
-consteval bool __is_broadcast(_Pattern_ __p) noexcept {
+consteval bool __is_splat(_Pattern_ __p) noexcept {
 	const auto __v = __p[0];
 
 	for (auto __i = 1; __i < _Pattern_::size(); ++__i)
@@ -326,7 +326,7 @@ using make_rotate_right_pattern = make_shuffle_pattern<_Simd_,
 	[] (sizetype __i) { return (__i + _Simd_::size() - (_Shift_ % _Simd_::size())) % _Simd_::size(); }>;
 
 template <simd_type _Simd_, sizetype _Index_>
-using make_broadcast_pattern = make_shuffle_pattern<_Simd_, [] (sizetype) { return _Index_; }>;
+using make_splat_pattern = make_shuffle_pattern<_Simd_, [] (sizetype) { return _Index_; }>;
 
 template <simd_type _Simd_, sizetype _Shift_>
 using make_slide_left_pattern = make_shuffle_pattern<_Simd_,

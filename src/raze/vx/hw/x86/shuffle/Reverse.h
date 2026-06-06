@@ -121,18 +121,12 @@ raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __reverse(pattern_
 				__c2 = __r2;
 			}(std::integral_constant<sizetype, _Indices_>{}), ...);
 		}(std::make_integer_sequence<sizetype, _Simd_::__chunks_count() / 2>{});
+
+		return __x;
 	}
 	else {
-		[&] <sizetype... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
-			([&](auto __i) raze_always_inline_lambda {
-				const _Value_ __temp = __x[__i];
-				__x[__i] = __x[_Simd_::size() - 1 - __i];
-				__x[_Simd_::size() - 1 - __i] = __temp;
-			}(std::integral_constant<sizetype, _Indices_>{}), ...);
-		}(std::make_integer_sequence<sizetype, _Simd_::size() / 2>{});
+		return __generic_shuffle(__x, __p);
 	}
-
-	return __x;
 }
 
 __RAZE_VX_NAMESPACE_END
