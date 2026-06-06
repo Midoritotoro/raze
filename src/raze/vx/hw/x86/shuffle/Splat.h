@@ -13,74 +13,68 @@ template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_, sizetype _I
 raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_constant<sizetype, _I_> __i) noexcept
 	requires(__i >= 0 && __i < (sizeof(_Tp_) / sizeof(_Type_)))
 {
+	constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
+
 	if constexpr (sizeof(_Tp_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {
 			if constexpr (__i == 0) return __as<_Tp_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 0));
 			else return __as<_Tp_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 0x03));
-
 		}
-		else if constexpr (sizeof(_Type_) == 4) {
-			return __as<_Tp_>(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__i)));
-		}
-		else if constexpr (sizeof(_Type_) == 2 && __has_avx2_support_v<_ISA_> && __i == 0) {
-			return __as<_Tp_>(_mm_broadcastw_epi16(__as<__m128i>(__x)));
-		}
+		else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__i)));
+		else if constexpr (sizeof(_Type_) == 2 && __has_avx2_support_v<_ISA_> && __i == 0) return __as<_Tp_>(_mm_broadcastw_epi16(__as<__m128i>(__x)));
 		else if constexpr (sizeof(_Type_) == 1) {
-			if constexpr (__has_avx2_support_v<_ISA_> && __i == 0) {
-				return __as<_Tp_>(_mm_broadcastb_epi8(__as<__m128i>(__x)));
-			}
-			else {
+			if constexpr (__has_avx2_support_v<_ISA_> && __i == 0) return __as<_Tp_>(_mm_broadcastb_epi8(__as<__m128i>(__x)));
+			else if constexpr (!__has_ssse3_support_v<_ISA_>) {
 				__m128i __combined;
 
 				if constexpr (__i < 8) __combined = _mm_unpacklo_epi8(__as<__m128i>(__x), __as<__m128i>(__x));
 				else __combined = _mm_unpackhi_epi8(__as<__m128i>(__x), __as<__m128i>(__x));
 
-				return __generic_shuffle_native<_ISA_, i16, _Tp_>(__combined, make_splat_pattern<
-					simd<i16, runtime_abi<_ISA_, 8>>, __i % 8>{});
+				return __generic_shuffle_native<_ISA_, i16, _Tp_>(__combined, make_splat_pattern<simd<i16, runtime_abi<_ISA_, 8>>, __i % 8>{});
 			}
 		}
+		return __generic_shuffle_native<_ISA_, _Type_, _Tp_>(__x, make_splat_pattern<simd<_Type_, runtime_abi<_ISA_, __size>>, __i>{});
 	}
 	else if constexpr (sizeof(_Tp_) == 32) {
-		if constexpr (__i == 0) {
-			if constexpr (sizeof(_Type_) == 8 && __has_avx2_support_v<_ISA_>) {
-				return __as<_Tp_>(_mm256_broadcastq_epi64(__as<__m128i>(__x)));
-			}
-			else if constexpr (sizeof(_Type_) == 4 && __has_avx2_support_v<_ISA_>) {
-				return __as<_Tp_>(_mm256_broadcastd_epi32(__as<__m128i>(__x)));
-			}
-			else if constexpr (sizeof(_Type_) == 2 && __has_avx2_support_v<_ISA_>) {
-				return __as<_Tp_>(_mm256_broadcastw_epi16(__as<__m128i>(__x)));
-			}
-			else if constexpr (sizeof(_Type_) == 1 && __has_avx2_support_v<_ISA_>) {
-				return __as<_Tp_>(_mm256_broadcastb_epi8(__as<__m128i>(__x)));
-			}
+		constexpr auto __index = std::integral_constant<sizetype, __i % (__size / 2)>{};
+
+		if constexpr (__i == 0 && __has_avx2_support_v<_ISA_>) {
+			if constexpr (sizeof(_Type_) == 8)		return __as<_Tp_>(_mm256_broadcastq_epi64(__as<__m128i>(__x)));
+			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm256_broadcastd_epi32(__as<__m128i>(__x)));
+			else if constexpr (sizeof(_Type_) == 2) return __as<_Tp_>(_mm256_broadcastw_epi16(__as<__m128i>(__x)));
+			else if constexpr (sizeof(_Type_) == 1) return __as<_Tp_>(_mm256_broadcastb_epi8(__as<__m128i>(__x)));
 		}
-		else if constexpr (sizeof(_Type_) == 8) {
-			return __generic_shuffle_native<_ISA_, _Type_, _Tp_>(__x,
-				make_splat_pattern<simd<_Type_, runtime_abi<_ISA_, 4>>, __i>{});
+		else if constexpr (sizeof(_Type_) == 8) return __generic_shuffle_native<_ISA_, _Type_, _Tp_>(__x,
+			make_splat_pattern<simd<_Type_, runtime_abi<_ISA_, 4>>, __i>{});
+		else if constexpr (sizeof(_Type_) == 4) {
+			constexpr auto __index = std::integral_constant<sizetype, __i % (__size / 2)>{};
+
+			if constexpr (__i < (__size / 2)) {
+				const auto __half = __splat_native<_ISA_, _Type_>(__as<__m128i>(__x), __index);
+				return __as<_Tp_>(_mm256_insertf128_si256(__as<__m256i>(__half), __as<__m128i>(__half), 1));
+			}
+			else {
+				const auto __half = _mm256_permute_ps(__as<__m256>(__x), __broadcast_pshufd_index(std::integral_constant<sizetype, __i % (__size / 2)>{}));
+				return __as<_Tp_>(_mm256_permute2f128_si256(__as<__m256i>(__half), __as<__m256i>(__half), 0x31));
+			}
 		}
 		else {
-			return _Broadcast<_ISA_, _Tp_>()(_Extract<_ISA_, _Type_>()(__x, __i));
+			__m128i __half;
+
+			if constexpr (__i < (__size / 2)) __half = __splat_native<_ISA_, _Type_>(__as<__m128i>(__x), __index);
+			else __half = __splat_native<_ISA_, _Type_>(_mm256_extractf128_si256(__as<__m256i>(__x), 1), __index);
+
+			return __as<_Tp_>(_mm256_insertf128_si256(__as<__m256i>(__half), __as<__m128i>(__half), 1));
 		}
 	}
 	else if constexpr (sizeof(_Tp_) == 64) {
 		if constexpr (__i == 0) {
-			if constexpr (sizeof(_Type_) == 8) {
-				return __as<_Tp_>(_mm512_broadcastq_epi64(__as<__m128i>(__x)));
-			}
-			else if constexpr (sizeof(_Type_) == 4) {
-				return __as<_Tp_>(_mm512_broadcastd_epi32(__as<__m128i>(__x)));
-			}
-			else if constexpr (sizeof(_Type_) == 2 && __has_avx512bw_support_v<_ISA_>) {
-				return __as<_Tp_>(_mm512_broadcastw_epi16(__as<__m128i>(__x)));
-			}
-			else if constexpr (sizeof(_Type_) == 1 && __has_avx512bw_support_v<_ISA_>) {
-				return __as<_Tp_>(_mm512_broadcastb_epi8(__as<__m128i>(__x)));
-			}
+			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm512_broadcastq_epi64(__as<__m128i>(__x)));
+			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_broadcastd_epi32(__as<__m128i>(__x)));
+			else if constexpr (sizeof(_Type_) == 2 && __has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_broadcastw_epi16(__as<__m128i>(__x)));
+			else if constexpr (sizeof(_Type_) == 1 && __has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_broadcastb_epi8(__as<__m128i>(__x)));
 		}
-		else {
-			return _Broadcast<_ISA_, _Tp_>()(_Extract<_ISA_, _Type_>()(__x, __i));
-		}
+		else return _Broadcast<_ISA_, _Tp_>()(_Extract<_ISA_, _Type_>()(__x, __i));
 	}
 }
 
@@ -99,9 +93,7 @@ raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __splat(const patt
 
 			return __r;
 		}
-		else {
-			return __generic_shuffle(__x, __p);
-		}
+		else return __generic_shuffle(__x, __p);
 	}
 
 	return __x[__p.at<0>()];
