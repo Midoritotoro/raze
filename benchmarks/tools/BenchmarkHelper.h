@@ -461,7 +461,6 @@ PlatformColorCode GetPlatformColorCode(LogColor color) {
 }
 
 std::string FormatString(const char* msg, va_list args) {
-    // we might need a second shot at this, so pre-emptivly make a copy
     va_list args_cp;
     va_copy(args_cp, args);
 
@@ -471,17 +470,15 @@ std::string FormatString(const char* msg, va_list args) {
 
     va_end(args_cp);
 
-    // currently there is no error handling for failure, so this is hack.
     raze_assert(ret >= 0);
 
-    if (ret == 0) {  // handle empty expansion
+    if (ret == 0) {
         return {};
     }
     if (static_cast<size_t>(ret) < size) {
         return local_buff;
     }
-    // we did not provide a long enough buffer on our first attempt.
-    size = static_cast<size_t>(ret) + 1;  // + 1 for the null byte
+    size = static_cast<size_t>(ret) + 1;
     std::unique_ptr<char[]> buff(new char[size]);
     ret = vsnprintf(buff.get(), size, msg, args);
     raze_assert(ret > 0 && (static_cast<size_t>(ret)) < size);
@@ -509,7 +506,6 @@ void ColorPrintf(
 #ifdef raze_os_win
     const HANDLE stdout_handle = GetStdHandle(STD_OUTPUT_HANDLE);
 
-    // Gets the current text color.
     CONSOLE_SCREEN_BUFFER_INFO buffer_info;
     GetConsoleScreenBufferInfo(stdout_handle, &buffer_info);
     const WORD original_color_attrs = buffer_info.wAttributes;
@@ -524,7 +520,6 @@ void ColorPrintf(
     out << FormatString(fmt, args);
 
     out << std::flush;
-    // Restores the text and background color.
     SetConsoleTextAttribute(stdout_handle, original_color_attrs);
 #else
     const char* color_code = GetPlatformColorCode(color);

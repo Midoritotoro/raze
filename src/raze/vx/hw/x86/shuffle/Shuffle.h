@@ -10,11 +10,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Pattern_>
-raze_always_inline typename _Pattern_::vector_type __shuffle(const typename _Pattern_::vector_type& __x, _Pattern_ __p) noexcept {
-	using _Simd_ = typename _Pattern_::vector_type;
-	using _Abi_ = typename _Simd_::abi_type;
-	using _Value_ = typename _Simd_::value_type;
-	
+raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __shuffle(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
 	if constexpr (__is_reverse(__p)) {
 		return __reverse(__x, __p);
 	}
@@ -36,6 +32,13 @@ raze_always_inline typename _Pattern_::vector_type __shuffle(const typename _Pat
 	else {
 		return __generic_shuffle(__x, __p);
 	}
+}
+
+template <simd_type _Simd_, index_simd_type _Index_>
+raze_always_inline _Simd_ __shuffle(const _Simd_& __x, const _Index_& __idx) noexcept
+	requires (index_type_for<_Index_, _Simd_>)
+{
+	return __generic_shuffle(__x, __idx);
 }
 
 __RAZE_VX_NAMESPACE_END

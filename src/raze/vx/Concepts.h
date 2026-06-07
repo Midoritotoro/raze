@@ -40,6 +40,13 @@ concept trivially_chunk_swappable = simd_type<_Simd_> && (_Simd_::size() != 0 &&
 template <class _Simd_>
 concept native = simd_type<_Simd_> && _Simd_::is_native();
 
+template <class _Index_>
+concept index_simd_type = simd_type<_Index_> && std::is_unsigned_v<typename _Index_::value_type>;
+
+template <class _Index_, class _Simd_>
+concept index_type_for = simd_type<_Simd_> && index_simd_type<_Index_> && (_Simd_::size() == _Index_::size())
+	&& (sizeof(typename _Index_::value_type) == sizeof(typename _Simd_::value_type));
+
 struct aligned_mode {};
 constexpr inline auto aligned = raze::options::flag(aligned_mode{});
 struct aligned_option : raze::options::exact_option<aligned> {};

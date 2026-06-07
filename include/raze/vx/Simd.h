@@ -361,7 +361,7 @@ public:
     }
 
     template <sizetype _I_>
-    raze_always_inline const auto& __get() const noexcept {
+    raze_always_inline const auto __get() const noexcept {
         return raze::vx::__get<_I_>(_storage.storage());
     }
 
