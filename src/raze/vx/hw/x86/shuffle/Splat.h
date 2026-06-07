@@ -9,6 +9,15 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_>
+raze_nodiscard raze_always_inline auto __zmm_broadcast_low(_Tp_ __x) noexcept {
+	if constexpr (sizeof(_Type_) == 8) return _mm512_broadcastq_epi64(__as<__m128i>(__x));
+	else if constexpr (sizeof(_Type_) == 4) return _mm512_broadcastd_epi32(__as<__m128i>(__x));
+	else if constexpr (sizeof(_Type_) == 2 && __has_avx512bw_support_v<_ISA_>) return _mm512_broadcastw_epi16(__as<__m128i>(__x));
+	else if constexpr (sizeof(_Type_) == 1 && __has_avx512bw_support_v<_ISA_>) return _mm512_broadcastb_epi8(__as<__m128i>(__x));
+	return _Broadcast<_ISA_, __m512i>()(_Extract<_ISA_, _Type_>()(__x, std::integral_constant<sizetype, 0>{}));
+}
+
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_, sizetype _I_>
 raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_constant<sizetype, _I_> __i) noexcept
 	requires(__i >= 0 && __i < (sizeof(_Tp_) / sizeof(_Type_)))
@@ -68,13 +77,14 @@ raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_co
 		}
 	}
 	else if constexpr (sizeof(_Tp_) == 64) {
-		if constexpr (__i == 0) {
-			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm512_broadcastq_epi64(__as<__m128i>(__x)));
-			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_broadcastd_epi32(__as<__m128i>(__x)));
-			else if constexpr (sizeof(_Type_) == 2 && __has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_broadcastw_epi16(__as<__m128i>(__x)));
-			else if constexpr (sizeof(_Type_) == 1 && __has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_broadcastb_epi8(__as<__m128i>(__x)));
+		if constexpr (__i == 0) return __zmm_broadcast_low<_ISA_, _Type_>(__x);
+		else {
+			constexpr auto __index = std::integral_constant<sizetype, __i % (__size / 4)>{};
+			constexpr auto __lane = __i / 16;
+
+			return __as<_Tp_>(__zmm_broadcast_low<_ISA_, _Type_>(__splat_native<_ISA_, _Type_>(
+				_mm512_extracti32x4_epi32(__as<__m512i>(__x), __lane), __index)));
 		}
-		else return _Broadcast<_ISA_, _Tp_>()(_Extract<_ISA_, _Type_>()(__x, __i));
 	}
 }
 
