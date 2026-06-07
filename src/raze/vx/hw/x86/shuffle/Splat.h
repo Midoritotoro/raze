@@ -80,7 +80,7 @@ raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_co
 		if constexpr (__i == 0) return __zmm_broadcast_low<_ISA_, _Type_>(__x);
 		else {
 			constexpr auto __index = std::integral_constant<sizetype, __i % (__size / 4)>{};
-			constexpr auto __lane = __i / 16;
+			constexpr auto __lane = __i / (__size / 4);
 
 			return __as<_Tp_>(__zmm_broadcast_low<_ISA_, _Type_>(__splat_native<_ISA_, _Type_>(
 				_mm512_extracti32x4_epi32(__as<__m512i>(__x), __lane), __index)));

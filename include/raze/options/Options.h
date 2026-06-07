@@ -1,3 +1,6 @@
+// This part of the API was inspired by the EVE project.
+// The implementation has been adapted for raze::vx.
+
 #pragma once 
 
 #include <src/raze/options/Aggregator.h>

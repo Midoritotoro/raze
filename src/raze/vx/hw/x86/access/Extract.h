@@ -95,7 +95,7 @@ struct _Extract {
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
-			constexpr auto __mask = 1u << __index;
+			constexpr auto __mask = 1u << _I_;
 
 			if constexpr (__is_pd_v<_Element_>) {
 				return _mm512_cvtsd_f64(_mm512_maskz_compress_pd(__mask, __as<__m512d>(__x)));
