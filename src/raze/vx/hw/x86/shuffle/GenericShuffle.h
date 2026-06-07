@@ -6,6 +6,7 @@
 #include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
 #include <src/raze/vx/hw/configurable/memory/Load.h>
 #include <src/raze/vx/hw/configurable/memory/Store.h>
+#include <src/raze/vx/hw/x86/compare/Greater.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -452,14 +453,38 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Index_ __idx
 			return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), __as<__m256i>(__idx)));
 		}
 		else if constexpr (sizeof(_Type_) == 2) {
-			__m256i ymm1 = _mm256_mullo_epi16(__as<__m256i>(__idx), _mm256_set1_epi16(0x202));
-			ymm1 = _mm256_add_epi16(ymm1, _mm256_set1_epi16(0x0100));
-			__m256i ymm3 = _mm256_cmpgt_epi8(ymm1, _mm256_set1_epi8(15));
-			__m256i ymm2 = _mm256_permute4x64_epi64(__as<__m256i>(__x), 0xEE);
-			ymm2 = _mm256_shuffle_epi8(ymm2, ymm1);
-			__x = _mm256_inserti128_si256(__as<__m256i>(__x), __as<__m128i>(__x), 1);
-			__x = _mm256_shuffle_epi8(__x, ymm1);
-			return _mm256_blendv_epi8(__x, ymm2, ymm3);
+			if constexpr (__avx512vl && __avx512bw) {
+				return __as<_Intrin_>(_mm256_permutexvar_epi16(__as<__m256i>(__idx), __as<__m256i>(__x)));
+			}
+			else if constexpr (__avx2) {
+				// Multiplication by 0x0202 (= {0x02, 0x02} as a pair of bytes) creates pairs {2*i, 2*i}
+				// Adding 0x0100 increments the high byte of each pair (resulting in {2*i, 2*i+1}).
+				const auto __byte_shuffle_mask = _mm256_add_epi16(_mm256_mullo_epi16(__as<__m256i>(__idx),
+					_mm256_set1_epi16(0x202)), _mm256_set1_epi16(0x0100));
+
+				// If the index in __byte_shuffle_mask is > 15, then it is located at the top of the ymm register 
+				const auto __is_upper_half = _mm256_cmpgt_epi8(__byte_shuffle_mask, _mm256_set1_epi8(15));
+
+				// __upper: {__x[2], __x[3], __x[2], __x[3]}
+				const auto __upper = _mm256_shuffle_epi8(_mm256_permute4x64_epi64(__as<__m256i>(__x), 0xEE), __byte_shuffle_mask);
+				// __lower: {__x[0], __x[1], __x[0], __x[1]}
+				const auto __lower = _mm256_shuffle_epi8(_mm256_inserti128_si256(__as<__m256i>(__x), __as<__m128i>(__x), 1), __byte_shuffle_mask);
+
+				return __as<_Intrin_>(_Select<_ISA_, _Type_>()(__upper, __lower, __is_upper_half));
+			}
+		}
+		else if constexpr (sizeof(_Type_) == 1) {
+			if constexpr (__avx512vl && __avx512vbmi) {
+				return __as<_Intrin_>(_mm256_permutexvar_epi8(__as<__m256i>(__idx), __as<__m256i>(__x)));
+			}
+			else {
+				const auto __is_upper_half = _mm256_cmpgt_epi8(__as<__m256i>(__idx), _mm256_set1_epi8(15));
+				
+				const auto __upper = _mm256_shuffle_epi8(_mm256_permute4x64_epi64(__as<__m256i>(__x), 0xEE), __as<__m256i>(__idx));
+				const auto __lower = _mm256_shuffle_epi8(_mm256_inserti128_si256(__as<__m256i>(__x), __as<__m128i>(__x), 1), __as<__m256i>(__idx));
+
+				return __as<_Intrin_>(_Select<_ISA_, _Type_>()(__upper, __lower, __is_upper_half));
+			}
 		}
 	}
 
