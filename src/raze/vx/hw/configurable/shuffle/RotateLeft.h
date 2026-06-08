@@ -29,7 +29,7 @@ struct _Configurable_rotate_left : raze::options::strict_elementwise_callable<_C
         return __rotate_left(__x, __i);
     }
 
-    template <simd_type _Type_, sizetype _Elements_>
+    template <simd_type _Type_>
     raze_nodiscard static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, i32 __i) noexcept {
         return __rotate_left(__x, __i);
     }

@@ -284,6 +284,36 @@ consteval bool __is_dup_high_identity(_Pattern_ __p) noexcept {
 }
 
 template <class _Pattern_>
+consteval auto __get_rotate_left_shift(_Pattern_ __p) noexcept
+	requires (__is_rotate_left(_Pattern_{}))
+{
+	return __p[0];
+}
+
+template <class _Pattern_>
+consteval auto __get_rotate_right_shift(_Pattern_ __p) noexcept
+	requires (__is_rotate_right(_Pattern_{}))
+{
+	constexpr auto __n = _Pattern_::size();
+	return (__n - __p[0]) % __n;
+}
+
+template <class _Pattern_>
+consteval auto __get_slide_left_shift(_Pattern_ __p) noexcept
+	requires (__is_slide_left(_Pattern_{}))
+{
+	return __p[0];
+}
+
+template <class _Pattern_>
+consteval auto __get_slide_right_shift(_Pattern_ __p) noexcept
+	requires (__is_slide_right(_Pattern_{}))
+{
+	constexpr auto __n = _Pattern_::size();
+	return __n - __p[__n - 1] - 1;
+}
+
+template <class _Pattern_>
 consteval u8 __to_pshufd_mask(_Pattern_ __p) noexcept {
 	return ((__p[0] & 0x03) | ((__p[1] & 0x03) << 2)
 		| ((__p[2] & 0x03) << 4) | ((__p[3] & 0x03) << 6));
