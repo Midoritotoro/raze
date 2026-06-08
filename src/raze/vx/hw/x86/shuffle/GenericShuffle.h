@@ -12,6 +12,8 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Tp_>
 struct _Fallback_result {
+	static constexpr auto __fallback = true;
+
 	_Fallback_result(_Tp_ __x) noexcept : _data(__x) {}
 
 	_Fallback_result(_Fallback_result&&) noexcept = default;
@@ -380,8 +382,8 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) no
 
 				const auto* __i = reinterpret_cast<const unsigned long long*>(&__idx);
 				
-				if constexpr (std::is_floating_point_v<_Type_>) return __as<_Intrin_>(_mm_set_pd(__t[__i[1]], __t[__i[0]]));
-				else return __as<_Intrin_>(_mm_set_epi64x(__t[__i[1]], __t[__i[0]]));
+				if constexpr (std::is_floating_point_v<_Type_>) return _Fallback_result { __as<_Intrin_>(_mm_set_pd(__t[__i[1]], __t[__i[0]])) };
+				else return _Fallback_result{ __as<_Intrin_>(_mm_set_epi64x(__t[__i[1]], __t[__i[0]])) };
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 4) {
@@ -404,8 +406,8 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) no
 
 				const auto* __i = reinterpret_cast<const unsigned int*>(&__idx);
 				
-				if constexpr (std::is_floating_point_v<_Type_>) return __as<_Intrin_>(_mm_set_ps(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]]));
-				else return __as<_Intrin_>(_mm_set_epi32(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]]));
+				if constexpr (std::is_floating_point_v<_Type_>) return _Fallback_result{ __as<_Intrin_>(_mm_set_ps(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
+				else return _Fallback_result{ __as<_Intrin_>(_mm_set_epi32(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 2) {
@@ -427,8 +429,8 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) no
 				_Store<_ISA_>()(__t, __x, __aligned_policy{});
 
 				const auto* __i = reinterpret_cast<const unsigned short*>(&__idx);
-				return __as<_Intrin_>(_mm_set_epi16(__t[__i[7]], __t[__i[6]], __t[__i[5]],
-					__t[__i[4]], __t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]]));
+				return _Fallback_result{ __as<_Intrin_>(_mm_set_epi16(__t[__i[7]], __t[__i[6]], __t[__i[5]],
+					__t[__i[4]], __t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 1) {
@@ -440,10 +442,10 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) no
 				_Store<_ISA_>()(__t, __x, __aligned_policy{});
 
 				const auto* __i = reinterpret_cast<const unsigned char*>(&__idx);
-				return __as<_Intrin_>(_mm_set_epi8(__t[__i[15]], __t[__i[14]], __t[__i[13]],
+				return _Fallback_result { __as<_Intrin_>(_mm_set_epi8(__t[__i[15]], __t[__i[14]], __t[__i[13]],
 					__t[__i[12]], __t[__i[11]], __t[__i[10]], __t[__i[9]], __t[__i[8]],
 					__t[__i[7]], __t[__i[6]], __t[__i[5]], __t[__i[4]], __t[__i[3]],
-					__t[__i[2]], __t[__i[1]], __t[__i[0]]));
+					__t[__i[2]], __t[__i[1]], __t[__i[0]])) };
 			}
 		}
 	}
@@ -514,8 +516,8 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) no
 	else return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);
 }
 
-template <class _DesiredReturn_, class _Return_>
-concept __is_fallback = std::is_same_v<_Fallback_result<_DesiredReturn_>, _Return_>;
+template <class _Return_>
+concept __is_fallback = requires { { _Return_::__fallback } -> std::convertible_to<bool>; } && _Return_::__fallback;
 
 template <class _Pattern_>
 raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle_native_size(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
@@ -527,7 +529,7 @@ raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle_native_size(con
 	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p));
 	__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p);
 
-	if constexpr (__is_fallback<decltype(__storage_unwrap(__storage)), _Ret>) return _Fallback_result{ __result };
+	if constexpr (__is_fallback<_Ret>) return _Fallback_result{ __result };
 	else return __result;
 }
 
@@ -541,7 +543,7 @@ raze_always_inline _Simd_ __generic_shuffle_native_size(const _Simd_& __x, const
 	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native));
 	__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native);
 
-	if constexpr (__is_fallback<decltype(__storage_unwrap(__storage)), _Ret>) return _Fallback_result{ __result };
+	if constexpr (__is_fallback<_Ret>) return _Fallback_result{ __result };
 	else return __result;
 }
 
