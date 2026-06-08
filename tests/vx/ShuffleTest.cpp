@@ -17,7 +17,7 @@ void test_shuffle_with_compile_time_pattern() {
 
     {
         [&] <std::size_t... I>(std::index_sequence<I...>) {
-            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::u64, static_cast<raze::u64>((I * Seed * 1103515245u + 12345u) % N)...>{});
+            auto r = raze::vx::shuffle(v, raze::vx::make_pattern<Simd, static_cast<raze::u64>((I * Seed * 1103515245u + 12345u) % N)...>{});
 
             constexpr std::size_t indices[] = { I... };
             for (std::size_t i = 0; i < N; ++i)
@@ -31,7 +31,7 @@ void test_shuffle_with_compile_time_pattern() {
         };
 
         [&] <std::size_t... I>(std::index_sequence<I...>) {
-            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::u64, static_cast<raze::u64>(make_idx(I))...>{});
+            auto r = raze::vx::shuffle(v, raze::vx::make_pattern<Simd, static_cast<raze::u64>(make_idx(I))...>{});
 
             constexpr std::size_t idxs[] = { make_idx(I)... };
 
@@ -49,7 +49,7 @@ void test_shuffle_with_compile_time_pattern() {
         };
 
         [&] <std::size_t... I>(std::index_sequence<I...>) {
-            auto r = raze::vx::shuffle(v, std::integer_sequence<raze::u64, static_cast<raze::u64>(make_idx(I))...>{});
+            auto r = raze::vx::shuffle(v, raze::vx::make_pattern<Simd, static_cast<raze::u64>(make_idx(I))...>{});
 
             constexpr std::size_t idxs[] = { make_idx(I)... };
 
@@ -194,7 +194,7 @@ struct shuffle_tests {
         test_shuffle_runtime_random<Simd, 0xCAFEBABEULL, 30000>();
         test_shuffle_runtime_random<Simd,  0xDEADBEEF12345678ULL, 30000>();
 
-        // test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<4>{});
+        test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
     }
 
     void operator()() {

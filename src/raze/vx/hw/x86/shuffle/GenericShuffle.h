@@ -242,7 +242,7 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 			constexpr auto __mask = __expanded % std::integral_constant<sizetype, 16>{};
 
 			if constexpr (!__across_halfs(__p)) {
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p.expand<u16, u8>.template as_native<__m256i>()));
+				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p.expand<u16, u8>().template as_native<__m256i>()));
 			}
 			else if constexpr (__avx512bw && __avx512vl) {
 				return __as<_Intrin_>(_mm256_permutexvar_epi16(__p.template as_native<__m256i>(), __as<__m256i>(__x)));
@@ -256,11 +256,10 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 				return __as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
 			}
 			else {
-				constexpr auto __expanded = __p.expand<u16, u8>();
 				const auto __swapped = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0x01);
 
-				const auto __shuffled1 = _mm256_shuffle_epi8(__as<__m256i>(__x), __expanded.template as_native<__m256i>());
-				const auto __shuffled2 = _mm256_shuffle_epi8(__swapped, __mask.template as_native<__m256i>());
+				const auto __shuffled1 = _mm256_shuffle_epi8(__as<__m256i>(__x), __expanded.crossing_lanes().template as_native<__m256i>());
+				const auto __shuffled2 = _mm256_shuffle_epi8(__swapped, __expanded.non_crossing_lanes().template as_native<__m256i>());
 
 				return __as<_Intrin_>(_mm256_or_si256(__shuffled1, __shuffled2));
 			}
@@ -285,8 +284,8 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p
 			else {
 				const auto __swapped = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0x01);
 
-				const auto __shuffled1 = _mm256_shuffle_epi8(__as<__m256i>(__x), __p.template as_native<__m256i>());
-				const auto __shuffled2 = _mm256_shuffle_epi8(__swapped, __mask.template as_native<__m256i>());
+				const auto __shuffled1 = _mm256_shuffle_epi8(__as<__m256i>(__x), __p.crossing_lanes().template as_native<__m256i>());
+				const auto __shuffled2 = _mm256_shuffle_epi8(__swapped, __p.non_crossing_lanes().template as_native<__m256i>());
 
 				return __as<_Intrin_>(_mm256_or_si256(__shuffled1, __shuffled2));
 			}
@@ -486,6 +485,12 @@ raze_always_inline _Intrin_ __generic_shuffle_native(_Intrin_ __x, _Index_ __idx
 				return __as<_Intrin_>(_Select<_ISA_, _Type_>()(__upper, __lower, __is_upper_half));
 			}
 		}
+	}
+	else if constexpr (sizeof(_Intrin_) == 64) {
+		if constexpr (sizeof(_Type_) == 8) return __as<_Intrin_>(_mm512_permutexvar_epi64(__as<__m512i>(__idx), __as<__m512i>(__x)));
+		else if constexpr (sizeof(_Type_) == 4) return __as<_Intrin_>(_mm512_permutexvar_epi32(__as<__m512i>(__idx), __as<__m512i>(__x)));
+		else if constexpr (sizeof(_Type_) == 2 && __avx512bw) return __as<_Intrin_>(_mm512_permutexvar_epi16(__as<__m512i>(__idx), __as<__m512i>(__x)));
+		else if constexpr (sizeof(_Type_) == 1 && __avx512vbmi) return __as<_Intrin_>(_mm512_permutexvar_epi8(__as<__m512i>(__idx), __as<__m512i>(__x)));
 	}
 
 	return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);

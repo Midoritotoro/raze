@@ -208,6 +208,26 @@ struct _Shuffle_pattern {
             return _Shuffle_pattern<_Simd_, (__at<__I + __offset>())...>{};
         } (std::make_index_sequence<size() - __offset>{});
     }
+
+    constexpr auto crossing_lanes() const noexcept {
+        constexpr sizetype __simd_size = sizeof(_Simd_);
+        constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
+        constexpr sizetype __L = size() / __lanes;
+
+        return[] <sizetype... __I>(std::index_sequence<__I...>) {
+            return _Shuffle_pattern<_Simd_, ((__I / __L) != (__at<__I>() / __L) ? static_cast<sizetype>(-1) : __at<__I>())...>{};
+        }(std::make_index_sequence<size()>{});
+    }
+
+    constexpr auto non_crossing_lanes() const noexcept {
+        constexpr sizetype __simd_size = sizeof(_Simd_);
+        constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
+        constexpr sizetype __L = size() / __lanes;
+
+        return[] <sizetype... __I>(std::index_sequence<__I...>) {
+            return _Shuffle_pattern<_Simd_, ((__I / __L) == (__at<__I>() / __L) ? static_cast<sizetype>(-1) : __at<__I>())...>{};
+        }(std::make_index_sequence<size()>{});
+    }
 };
 
 template <class _Pattern_>
