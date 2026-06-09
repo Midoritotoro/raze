@@ -24,17 +24,20 @@ struct rotate_tests {
             }
         }
 
-        //[&] <size_t... I>(std::index_sequence<I...>) {
-        //    (([&] {
-        //        auto rl = raze::vx::rotate_left(v, std::integral_constant<size_t, I>{});
-        //        auto rr = raze::vx::rotate_right(v, std::integral_constant<size_t, I>{});
+        [&] <raze::sizetype... I>(std::integer_sequence<raze::sizetype, I...>) {
+            (([&] {
+                if constexpr (N > 16 && (I != N / 2 || I != 0 || I > 8)) {}
+                else {
+                    auto rl = raze::vx::rotate_left(v, std::integral_constant<raze::sizetype, I>{});
+                    auto rr = raze::vx::rotate_right(v, std::integral_constant<raze::sizetype, I>{});
 
-        //        for (size_t i = 0; i < N; ++i) {
-        //            raze_assert(rl[i] == _Type_(arr[(i + I) % N]));
-        //            raze_assert(rr[i] == _Type_(arr[(i + N - I) % N]));
-        //        }
-        //    }()), ...);
-        //}(std::make_index_sequence<N>{});
+                    for (raze::sizetype i = 0; i < N; ++i) {
+                        raze_assert(rl[i] == _Type_(arr[(i + I) % N]));
+                        raze_assert(rr[i] == _Type_(arr[(i + N - I) % N]));
+                    }
+                }
+            }()), ...);
+        }(std::make_integer_sequence<raze::sizetype, N>{});
     }
 
     void operator()() {
