@@ -17,12 +17,12 @@ struct _Configurable_load {
     template <class _Options_>
     struct __load : raze::options::strict_elementwise_callable<__load, _Options_, aligned_option> {
         template <any_iterator_or_pointer _Mem_>
-        raze_nodiscard raze_always_inline _Simd_ operator()(_Mem_ __it) const noexcept {
+        raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ operator()(_Mem_ __it) const noexcept {
             return raze::options::__dispatch_call(*this, __it);
         }
 
         template <any_iterator_or_pointer _Mem_>
-        static raze_always_inline auto deferred_call(auto __options, _Mem_ __it) noexcept {
+        static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, _Mem_ __it) noexcept {
             using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
             using _Value_ = typename _Simd_::value_type;
             using _Abi_ = typename _Simd_::abi_type;

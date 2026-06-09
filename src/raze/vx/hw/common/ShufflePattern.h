@@ -46,7 +46,7 @@ struct _Shuffle_pattern {
 	}
 
 	template <intrin_type _Intrin_>
-	raze_always_inline static auto as_native() noexcept {
+    raze_no_stack_protector raze_always_inline static auto as_native() noexcept {
 		using _IdxType = typename IntegerForSize<sizeof(_Intrin_) / size()>::Unsigned;
 		alignas(sizeof(_Intrin_)) static constexpr _IdxType __idx[size()] { _Indices_ ... };
 		return _Load<abi_t<_Simd_>::isa, _Intrin_>()(__idx, __aligned_policy{});

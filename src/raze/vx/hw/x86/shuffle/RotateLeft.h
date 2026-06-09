@@ -32,7 +32,7 @@ consteval auto __make_rotate_left_shuffle_table() noexcept {
 }
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_>
-raze_nodiscard raze_always_inline auto __make_rotate_left_idx(_Intrin_, i32 __sh) noexcept {
+raze_nodiscard raze_no_stack_protector raze_always_inline auto __make_rotate_left_idx(_Intrin_, i32 __sh) noexcept {
     constexpr auto __vector_bytes = sizeof(_Intrin_);
     constexpr auto __element_bytes = sizeof(_Type_);
     using _IdxType = typename IntegerForSizeof<_Type_>::Unsigned;
@@ -65,14 +65,14 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __rotate_left_f
 }
 
 template <class _Pattern_>
-raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __rotate_left(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+raze_nodiscard raze_no_stack_protector raze_always_inline pattern_vector_t<_Pattern_> __rotate_left(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
 	using _Ret = decltype(__generic_shuffle(__x, __p));
-	if constexpr (__is_fallback<_Ret>) return __rotate_left_fallback(__x, __get_rotate_left_shift(__p));
+	if constexpr (__is_fallback<_Ret> || !native<pattern_vector_t<_Pattern_>>) return __rotate_left_fallback(__x, __get_rotate_left_shift(__p));
 	else return __generic_shuffle(__x, __p);
 }
 
 template <simd_type _Simd_>
-raze_nodiscard raze_always_inline _Simd_ __rotate_left(const _Simd_& __x, i32 __sh) noexcept {
+raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __rotate_left(const _Simd_& __x, i32 __sh) noexcept {
 	using _Abi_ = abi_t<_Simd_>;
 	using _Value_ = typename _Simd_::value_type;
 

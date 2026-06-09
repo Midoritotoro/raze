@@ -15,12 +15,12 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <class _Options_>
 struct _Configurable_store : raze::options::strict_elementwise_callable<_Configurable_store, _Options_, aligned_option> {
     template <any_iterator_or_pointer _Mem_, simd_type _Type_>
-    raze_nodiscard raze_always_inline void operator()(_Mem_ __it, const _Type_& __x) const noexcept {
+    raze_nodiscard raze_no_stack_protector raze_always_inline void operator()(_Mem_ __it, const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __it, __x);
     }
 
     template <any_iterator_or_pointer _Mem_, simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, _Mem_ __it, const _Type_& __x) noexcept {
+    static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, _Mem_ __it, const _Type_& __x) noexcept {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
         using _Value_ = typename _Type_::value_type;
         using _Abi_ = typename _Type_::abi_type;

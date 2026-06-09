@@ -135,7 +135,7 @@ __generic_shuffle_scalar_fallback(const _Simd_& __x, const _Index_& __idx) noexc
 }
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, class _Pattern_>
-raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p) noexcept {
+raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p) noexcept {
 	static constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
 	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
 	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
@@ -380,7 +380,7 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p) no
 }
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, intrin_type _Index_>
-raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) noexcept {
+raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) noexcept {
 	static constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
 	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
 	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
@@ -548,42 +548,52 @@ template <class _Return_>
 concept __is_fallback = requires { { _Return_::__fallback } -> std::convertible_to<bool>; } && _Return_::__fallback;
 
 template <class _Pattern_>
-raze_always_inline pattern_vector_t<_Pattern_> __generic_shuffle_native_size(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+raze_always_inline raze_no_stack_protector auto __generic_shuffle_native_size(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
 	using _Simd_ = pattern_vector_t<_Pattern_>;
 	_Simd_ __result = __x;
 
 	auto& __storage = __result.template __get<0>();
 	
 	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p));
-	__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p);
 
-	if constexpr (__is_fallback<_Ret>) return _Fallback_result{ __result };
-	else return __result;
+	if constexpr (__is_fallback<_Ret>) {
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p)._data;
+		return _Fallback_result{ __result };
+	}
+	else {
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p);
+		return __result;
+	}
 }
 
 template <simd_type _Simd_, index_simd_type _Index_>
-raze_always_inline _Simd_ __generic_shuffle_native_size(const _Simd_& __x, const _Index_& __idx) noexcept {
+raze_always_inline raze_no_stack_protector auto __generic_shuffle_native_size(const _Simd_& __x, const _Index_& __idx) noexcept {
 	_Simd_ __result = __x;
 
 	auto& __storage = __result.template __get<0>();
 	auto __idx_native = __storage_unwrap(__idx.template __get<0>());
 	
 	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native));
-	__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native);
 
-	if constexpr (__is_fallback<_Ret>) return _Fallback_result{ __result };
-	else return __result;
+	if constexpr (__is_fallback<_Ret>) {
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native)._data;
+		return _Fallback_result{ __result };
+	}
+	else {
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native)._data;
+		return __result;
+	}
 }
 
 template <class _Pattern_>
-raze_always_inline auto __generic_shuffle(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
 	if constexpr (__is_identity(__p)) return __x;
 	else if constexpr (native<pattern_vector_t<_Pattern_>>) return __generic_shuffle_native_size(__x, __p);
 	else return __generic_shuffle_scalar_fallback(__x, __p);
 }
 
 template <simd_type _Simd_, index_simd_type _Index_>
-raze_always_inline auto __generic_shuffle(const _Simd_& __x, const _Index_& __idx) noexcept
+raze_always_inline raze_no_stack_protector auto __generic_shuffle(const _Simd_& __x, const _Index_& __idx) noexcept
 	requires (index_type_for<_Index_, _Simd_>)
 {
 	if constexpr (native<_Simd_>) return __generic_shuffle_native_size(__x, __idx);
