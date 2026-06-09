@@ -16,11 +16,11 @@ struct rotate_tests {
 
         for (size_t sh = 0; sh < N; ++sh) {
             auto rl = raze::vx::rotate_left(v, sh);
-            //auto rr = raze::vx::rotate_right(v, sh);
+            auto rr = raze::vx::rotate_right(v, sh);
 
             for (size_t i = 0; i < N; ++i) {
                 raze_assert(rl[i] == arr[(i + sh) % N]);
-                //raze_assert(rr[i] == arr[(i + N - sh) % N]);
+                raze_assert(rr[i] == arr[(i + N - sh) % N]);
             }
         }
 

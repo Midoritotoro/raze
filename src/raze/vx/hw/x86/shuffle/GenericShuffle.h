@@ -29,6 +29,29 @@ struct _Fallback_result {
 	_Tp_ _data;
 };
 
+
+template <intrin_type _Intrin_, class _IdxType_>
+struct _Rotate_indices {
+	using index_type = _IdxType_;
+	_Rotate_indices(_Intrin_ __x) noexcept : _data(__x) {}
+
+	_Rotate_indices(const _Rotate_indices&) noexcept = default;
+	_Rotate_indices(_Rotate_indices&&) noexcept = default;
+
+	_Rotate_indices& operator=(const _Rotate_indices&) noexcept = default;
+	_Rotate_indices& operator=(_Rotate_indices&&) noexcept = default;
+
+	raze_always_inline operator _Intrin_() const noexcept {
+		return _data;
+	}
+
+	raze_always_inline _Intrin_ data() const noexcept {
+		return _data;
+	}
+
+	_Intrin_ _data;
+};
+
 template <arch::ISA _ISA_, class _Type_,
 	intrin_type _Intrin_, sizetype ...	_Indices_>
 raze_nodiscard raze_no_stack_protector raze_always_inline _Fallback_result<_Intrin_> __shuffle_fallback(
