@@ -58,35 +58,33 @@ raze_nodiscard raze_always_inline auto __make_rotate_left_idx(_Intrin_, i32 __sh
     constexpr auto __vector_bytes = sizeof(_Intrin_);
     constexpr auto __element_bytes = sizeof(_Type_);
 
-    sizetype __shift = static_cast<sizetype>(__sh);
-
     if constexpr (sizeof(_Intrin_) == 16) {
         alignas(16) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, u8>();
-        return _Rotate_indices<_Intrin_, u8> { _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
+        return _Rotate_indices<_Intrin_, u8> { _Load<_ISA_, _Intrin_>()(__table[__sh].data(), __aligned_policy{}) };
     }
     else if constexpr (__vector_bytes == 32) {
         using _IdxType = typename IntegerForSizeof<_Type_>::Unsigned;
 
-        if constexpr (__has_avx2_support_v<_ISA_>) {
+        if constexpr (__has_avx2_support_v<_ISA_> && !(__has_avx512bw_support_v<_ISA_> && __has_avx512vl_support_v<_ISA_>)) {
             if constexpr (sizeof(_IdxType) >= 4) {
                 alignas(32) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, u32>();
-                return _Rotate_indices<_Intrin_, u32>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
+                return _Rotate_indices<_Intrin_, u32>{ _Load<_ISA_, _Intrin_>()(__table[__sh].data(), __aligned_policy{}) };
             }
             else {
                 alignas(32) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, u8>();
-                return _Rotate_indices<_Intrin_, u8>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
+                return _Rotate_indices<_Intrin_, u8>{ _Load<_ISA_, _Intrin_>()(__table[__sh].data(), __aligned_policy{}) };
             }
         }
         else {
             alignas(32) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, _IdxType>();
-            return _Rotate_indices<_Intrin_, _IdxType>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
+            return _Rotate_indices<_Intrin_, _IdxType>{ _Load<_ISA_, _Intrin_>()(__table[__sh].data(), __aligned_policy{}) };
         }
     }
     else if constexpr (__vector_bytes == 64) {
         using _IdxType = typename IntegerForSizeof<_Type_>::Unsigned;
 
         alignas(64) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, _IdxType>();
-        return _Rotate_indices<_Intrin_, _IdxType>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
+        return _Rotate_indices<_Intrin_, _IdxType>{ _Load<_ISA_, _Intrin_>()(__table[__sh].data(), __aligned_policy{}) };
     }
 }
 
