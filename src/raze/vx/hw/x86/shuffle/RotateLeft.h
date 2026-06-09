@@ -5,103 +5,106 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <sizetype _NumShifts_, sizetype _VectorBytes_, sizetype _ElementBytes_, typename _IdxType_>
-consteval auto __make_rotate_left_table() noexcept {
-    constexpr sizetype __num_indices = sizeof(_IdxType_) == 1 ? _VectorBytes_ : (_VectorBytes_ / sizeof(_IdxType_));
+template <sizetype _VectorBytes_, sizetype _ElementBytes_, typename _IdxType_>
+consteval auto __make_rotate_shuffle_table() noexcept {
     constexpr sizetype __num_elements = _VectorBytes_ / _ElementBytes_;
+    constexpr sizetype __idx_bytes = sizeof(_IdxType_);
+    constexpr sizetype __num_indices = _VectorBytes_ / __idx_bytes;
 
-    std::array<std::array<_IdxType_, __num_indices>, _NumShifts_> __table{};
+    constexpr sizetype __chunks_per_element = _ElementBytes_ / __idx_bytes;
+    constexpr sizetype __num_shifts = __num_elements;
 
-    for (sizetype __shift = 0; __shift < _NumShifts_; ++__shift) {
+    std::array<std::array<_IdxType_, __num_indices>, __num_shifts> __table{};
+
+    for (sizetype __shift = 0; __shift < __num_shifts; ++__shift) {
         sizetype __actual_shift = __shift % __num_elements;
 
         for (sizetype __idx = 0; __idx < __num_indices; ++__idx) {
-            if constexpr (sizeof(_IdxType_) == 1) {
-                sizetype __dst_elem = __idx / _ElementBytes_;
-                sizetype __src_elem = (__dst_elem + __actual_shift) % __num_elements;
-                sizetype __src_byte = __src_elem * _ElementBytes_ + (__idx % _ElementBytes_);
+            sizetype __dst_elem = __idx / __chunks_per_element;
+            sizetype __chunk_offset = __idx % __chunks_per_element;
+            sizetype __src_elem = (__dst_elem + __actual_shift) % __num_elements;
+            sizetype __src_chunk = __src_elem * __chunks_per_element + __chunk_offset;
 
-                __table[__shift][__idx] = static_cast<_IdxType_>(__src_byte);
-            }
-            else {
-                sizetype __src_elem = (__idx + __actual_shift) % __num_elements;
-
-                __table[__shift][__idx] = static_cast<_IdxType_>(__src_elem);
-            }
+            __table[__shift][__idx] = static_cast<_IdxType_>(__src_chunk);
         }
     }
     return __table;
 }
 
+template <intrin_type _Intrin_, class _IdxType_>
+struct _Rotate_indices {
+    using index_type = _IdxType_;
+    _Rotate_indices(_Intrin_ __x) noexcept : _data(__x) {}
+
+    _Rotate_indices(const _Rotate_indices&) noexcept = default;
+    _Rotate_indices(_Rotate_indices&&) noexcept = default;
+
+    _Rotate_indices& operator=(const _Rotate_indices&) noexcept = default;
+    _Rotate_indices& operator=(_Rotate_indices&&) noexcept = default;
+
+    raze_always_inline operator _Intrin_() const noexcept {
+        return _data;
+    }
+
+    raze_always_inline _Intrin_ data() const noexcept {
+        return _data;
+    }
+
+    _Intrin_ _data;
+};
+
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_>
-raze_nodiscard raze_always_inline _Intrin_ __make_rotate_left_idx(_Intrin_, i32 __sh) noexcept {
+raze_nodiscard raze_always_inline auto __make_rotate_left_idx(_Intrin_, i32 __sh) noexcept {
     constexpr auto __vector_bytes = sizeof(_Intrin_);
     constexpr auto __element_bytes = sizeof(_Type_);
-    constexpr auto __num_shifts = __vector_bytes / __element_bytes;
 
     sizetype __shift = static_cast<sizetype>(__sh);
 
-    if constexpr (__vector_bytes == 16) {
-        alignas(16) static constexpr auto __table = __make_rotate_left_table<__num_shifts, __vector_bytes, __element_bytes, u8>();
-        return _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{});
+    if constexpr (sizeof(_Intrin_) == 16) {
+        alignas(16) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, u8>();
+        return _Rotate_indices<_Intrin_, u8> { _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
     }
     else if constexpr (__vector_bytes == 32) {
-        if constexpr (__element_bytes >= 4) {
-            using _IdxType_ = std::conditional_t<(__element_bytes == 8), u64, u32>;
-            alignas(32) static constexpr auto __table = __make_rotate_left_table<__num_shifts, __vector_bytes, __element_bytes, _IdxType_>();
-            return _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{});
+        using _IdxType = typename IntegerForSizeof<_Type_>::Unsigned;
+
+        if constexpr (__has_avx2_support_v<_ISA_>) {
+            if constexpr (sizeof(_IdxType) >= 4) {
+                alignas(32) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, u32>();
+                return _Rotate_indices<_Intrin_, u32>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
+            }
+            else {
+                alignas(32) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, u8>();
+                return _Rotate_indices<_Intrin_, u8>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
+            }
         }
         else {
-            alignas(32) static constexpr auto __table = __make_rotate_left_table<__num_shifts, __vector_bytes, __element_bytes, u8>();
-            return _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{});
+            alignas(32) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, _IdxType>();
+            return _Rotate_indices<_Intrin_, _IdxType>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
         }
     }
     else if constexpr (__vector_bytes == 64) {
-        if constexpr (__element_bytes == 1) {
-            alignas(64) static constexpr auto __table = __make_rotate_left_table<__num_shifts, __vector_bytes, __element_bytes, u8>();
-            return _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{});
-        }
-        else if constexpr (__element_bytes == 2) {
-            alignas(64) static constexpr auto __table = __make_rotate_left_table<__num_shifts, __vector_bytes, __element_bytes, u16>();
-            return _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{});
-        }
-        else {
-            using _IdxType_ = std::conditional_t<(__element_bytes == 8), u64, u32>;
-            alignas(64) static constexpr auto __table = __make_rotate_left_table<__num_shifts, __vector_bytes, __element_bytes, _IdxType_>();
-            return _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{});
-        }
-    }
-    else {
-        alignas(__vector_bytes) static constexpr auto __table = __make_rotate_left_table<__num_shifts, __vector_bytes, __element_bytes, u8>();
-        return _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{});
+        using _IdxType = typename IntegerForSizeof<_Type_>::Unsigned;
+
+        alignas(64) static constexpr auto __table = __make_rotate_shuffle_table<__vector_bytes, __element_bytes, _IdxType>();
+        return _Rotate_indices<_Intrin_, _IdxType>{ _Load<_ISA_, _Intrin_>()(__table[__shift].data(), __aligned_policy{}) };
     }
 }
 
+template <simd_type _Simd_, class _Int_>
+raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __rotate_left_fallback(const _Simd_& __x, _Int_ __sh) noexcept {
+    alignas(64) typename _Simd_::value_type __arr[_Simd_::size() * 2];
+
+    vx::__store[vx::aligned](__arr, __x);
+    vx::__store[vx::aligned](__arr + _Simd_::size(), __x);
+
+    return vx::__load<_Simd_>[vx::aligned](__arr + __sh);
+}
 
 template <class _Pattern_>
 raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __rotate_left(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
-	using _Simd_ = pattern_vector_t<_Pattern_>;
 	using _Ret = decltype(__generic_shuffle(__x, __p));
-
-	if constexpr (__is_fallback<_Ret>) {
-		alignas(64) typename _Simd_::value_type __arr[_Simd_::size() * 2];
-
-		vx::__store[vx::aligned](__arr, __x);
-		vx::__store[vx::aligned](__arr + _Simd_::size(), __x);
-
-		return vx::__load<_Simd_>[vx::aligned](__arr + __get_rotate_left_shift(__p));
-	}
+	if constexpr (__is_fallback<_Ret>) return __rotate_left_fallback(__x, __get_rotate_left_shift(__p));
 	else return __generic_shuffle(__x, __p);
-}
-
-template <simd_type _Simd_>
-raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __rotate_left_fallback(const _Simd_& __x, i32 __sh) noexcept {
-	alignas(64) typename _Simd_::value_type __arr[_Simd_::size() * 2];
-
-	vx::__store[vx::aligned](__arr, __x);
-	vx::__store[vx::aligned](__arr + _Simd_::size(), __x);
-
-	return vx::__load<_Simd_>[vx::aligned](__arr + __sh);
 }
 
 template <simd_type _Simd_>
@@ -110,18 +113,21 @@ raze_nodiscard raze_always_inline _Simd_ __rotate_left(const _Simd_& __x, i32 __
 	using _Value_ = typename _Simd_::value_type;
 
 	if constexpr (native<_Simd_>) {
-		using _Ret = decltype(__generic_shuffle_native<_Abi_::isa, _Value_>(
+		using _Ret = decltype(__generic_shuffle_native<_Abi_::isa, typename decltype(__make_rotate_left_idx<_Abi_::isa,
+            _Value_>(__storage_unwrap(__x.template __get<0>()), __sh))::index_type>(
 			__storage_unwrap(__x.template __get<0>()), __make_rotate_left_idx<_Abi_::isa,
-			_Value_>(__storage_unwrap(__x.template __get<0>()), __sh)));
+			_Value_>(__storage_unwrap(__x.template __get<0>()), __sh).data()));
 		
 		if constexpr (__is_fallback<_Ret>) return __rotate_left_fallback(__x, __sh);
 		else {
 			auto __r = __x;
 			auto& __storage = __r.template __get<0>();
 
-			__storage = __generic_shuffle_native<_Abi_::isa, _Value_>(
-				__storage_unwrap(__storage), __make_rotate_left_idx<_Abi_::isa,
-				_Value_>(__storage_unwrap(__r.template __get<0>()), __sh));
+            const auto __rotate_indices = __make_rotate_left_idx<_Abi_::isa,
+                _Value_>(__storage_unwrap(__r.template __get<0>()), __sh);
+
+            using _IndexType = typename decltype(__rotate_indices)::index_type;
+			__storage = __generic_shuffle_native<_Abi_::isa, _IndexType>(__storage_unwrap(__storage), __rotate_indices.data());
 			
 			return __r;
 		}

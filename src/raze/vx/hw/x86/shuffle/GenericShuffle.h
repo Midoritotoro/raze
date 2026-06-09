@@ -31,7 +31,7 @@ struct _Fallback_result {
 
 template <arch::ISA _ISA_, class _Type_,
 	intrin_type _Intrin_, sizetype ...	_Indices_>
-raze_nodiscard raze_always_inline _Fallback_result<_Intrin_> __shuffle_fallback(
+raze_nodiscard raze_no_stack_protector raze_always_inline _Fallback_result<_Intrin_> __shuffle_fallback(
 	_Intrin_ __vector, std::integer_sequence<sizetype, _Indices_...>) noexcept
 {
 	constexpr auto __length = sizeof(_Intrin_) / sizeof(_Type_);
@@ -52,7 +52,7 @@ raze_nodiscard raze_always_inline _Fallback_result<_Intrin_> __shuffle_fallback(
 
 template <arch::ISA _ISA_, class _Type_,
 	intrin_type _Intrin_, intrin_type _Index_>
-raze_nodiscard raze_always_inline _Fallback_result<_Intrin_> __shuffle_fallback(
+raze_nodiscard raze_no_stack_protector raze_always_inline _Fallback_result<_Intrin_> __shuffle_fallback(
 	_Intrin_ __vector, _Index_ __idx) noexcept
 {
 	constexpr auto __length = sizeof(_Intrin_) / sizeof(_Type_);
@@ -72,7 +72,9 @@ raze_nodiscard raze_always_inline _Fallback_result<_Intrin_> __shuffle_fallback(
 }
 
 template <class _Pattern_>
-raze_always_inline _Fallback_result<pattern_vector_t<_Pattern_>> __generic_shuffle_scalar_fallback(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
+raze_no_stack_protector raze_always_inline _Fallback_result<pattern_vector_t<_Pattern_>> 
+__generic_shuffle_scalar_fallback(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept 
+{
 	using _Simd_ = pattern_vector_t<_Pattern_>;
 
 	alignas(64) typename _Simd_::value_type __dst[_Simd_::size()];
@@ -90,7 +92,9 @@ raze_always_inline _Fallback_result<pattern_vector_t<_Pattern_>> __generic_shuff
 }
 
 template <simd_type _Simd_, index_simd_type _Index_>
-raze_always_inline _Fallback_result<_Simd_> __generic_shuffle_scalar_fallback(const _Simd_& __x, const _Index_& __idx) noexcept {
+raze_no_stack_protector raze_always_inline _Fallback_result<_Simd_> 
+__generic_shuffle_scalar_fallback(const _Simd_& __x, const _Index_& __idx) noexcept 
+{
 	alignas(64) typename _Simd_::value_type __dst[_Simd_::size()];
 	alignas(64) typename _Simd_::value_type __src[_Simd_::size()];
 	alignas(64) typename _Index_::value_Type __idxs[_Index_::size()];
@@ -495,7 +499,7 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) no
 			if constexpr (__avx512vl && __avx512vbmi) {
 				return __as<_Intrin_>(_mm256_permutexvar_epi8(__as<__m256i>(__idx), __as<__m256i>(__x)));
 			}
-			else {
+			else if constexpr (__avx2) {
 				const auto __is_upper_half = _mm256_cmpgt_epi8(__as<__m256i>(__idx), _mm256_set1_epi8(15));
 				
 				const auto __upper = _mm256_shuffle_epi8(_mm256_permute4x64_epi64(__as<__m256i>(__x), 0xEE), __as<__m256i>(__idx));
@@ -503,6 +507,7 @@ raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) no
 
 				return __as<_Intrin_>(_Select<_ISA_, _Type_>()(__upper, __lower, __is_upper_half));
 			}
+			else return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);
 		}
 		else return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);
 	}
