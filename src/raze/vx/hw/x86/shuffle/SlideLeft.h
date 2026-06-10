@@ -61,29 +61,67 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
     using _Value_ = typename pattern_vector_t<_Pattern_>::value_type;
 
     constexpr auto __shift = __get_slide_left_shift(__p);
+    constexpr auto __shift_bytes = __shift * sizeof(_Value_);
     constexpr auto __size = __p.size();
 
     if constexpr (__shift == 0)
         return __x;
 
-    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_slli_si128(__as<__m128i>(__x), __shift * sizeof(_Value_)));
+    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_slli_si128(__as<__m128i>(__x), __shift_bytes));
     else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
-        if constexpr (__shift > (__size / 2)) {
-            const auto __y = _mm256_slli_si256(__as<__m256i>(__x), (__shift - (__size / 2)) * sizeof(_Value_));
-            return __as<_Intrin_>(_mm256_permute2x128_si256(__y, __y, 0x28));
+        if constexpr (__has_avx512vl_support_v<_ISA_> && (__shift_bytes % 4) == 0) {
+            return __as<_Intrin_>(_mm256_alignr_epi32(_mm256_setzero_si256(), __as<__m256i>(__x), __shift & 7));
         }
-        else if constexpr (__shift == (__size / 2)) {
-            return __as<_Intrin_>(_mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0x28));
+        else {
+            auto __low_part = _mm256_setzero_si256();
+            auto __high_part = _mm256_setzero_si256();
+
+            if constexpr (__shift == 0) return __x;
+            else if constexpr (__shift < 16) {
+                __low_part = _mm256_inserti128_si256(__low_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
+                __high_part = __as<__m256i>(__x);
+            }
+            else if constexpr (__shift < 32) __high_part = _mm256_inserti128_si256(__high_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
+            else return _Zero<__isa, _Intrin_>()();
+
+            if constexpr ((__shift % 16) == 0) return __as<_Intrin_>(__high_part);
+            return __as<_Intrin_>(_mm256_alignr_epi8(__low_part, __high_part, __shift & 0xF));
         }
-
-        const auto __y = _mm256_slli_si256(__as<__m256i>(__x), __shift * sizeof(_Value_));
-        const auto __z = _mm256_srli_si256(__as<__m256i>(__x), 16 - (__shift * sizeof(_Value_)));
-        const auto __w = _mm256_permute2x128_si256(__z, __z, 0x28);
-
-        return __as<_Intrin_>(_mm256_or_si256(__y, __w));
     }
     else if constexpr (sizeof(_Intrin_) == 64) {
+        auto __low_part = _mm512_setzero_si512();
+        auto __high_part = _mm512_setzero_si512();
 
+        if constexpr (__shift == 0) return __x;
+        else if constexpr (__shift < 16) {
+            __low_part = _mm512_maskz_shuffle_i64x2(0x3F, __as<__m512i>(__x), __as<__m512i>(__x), 0x39);
+            __high_part = __as<__m512i>(__x);
+        }
+        else if constexpr (__shift < 32) {
+            __low_part = _mm512_maskz_shuffle_i64x2(0x0F, __as<__m512i>(__x), __as<__m512i>(__x), 0x0E);
+            __high_part = _mm512_maskz_shuffle_i64x2(0x3F, __as<__m512i>(__x), __as<__m512i>(__x), 0x39);
+        }
+        else if constexpr (__shift < 48) {
+            __low_part = _mm512_maskz_shuffle_i64x2(0x03, __as<__m512i>(__x), __as<__m512i>(__x), 0x03);
+            __high_part = _mm512_maskz_shuffle_i64x2(0x0F, __as<__m512i>(__x), __as<__m512i>(__x), 0x0E);
+        }
+        else if constexpr (__shift < 64) {
+            __high_part = _mm512_maskz_shuffle_i64x2(0x03, __as<__m512i>(__x), __as<__m512i>(__x), 0x03);
+        }
+        else return _Zero<__isa, _Intrin_>()();
+
+        if constexpr (__has_avx512bw_support_v<_ISA_>) {
+            return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, __shift & 0xF));
+        }
+        else {
+            if constexpr ((__shift % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(_mm512_setzero_si512(), __as<__m512i>(__x), (__shift & 15)));
+
+            const auto __low256 = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), __shift & 0xF);
+            const auto __high256 = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__low_part), 1),
+                _mm512_extracti64x4_epi64(__as<__m512i>(__high_part), 1), __shift & 0xF);
+
+            return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low256), __high256, 1));
+        }
     }
 }
 

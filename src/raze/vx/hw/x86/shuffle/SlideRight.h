@@ -50,9 +50,95 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right_f
     return vx::__load<_Simd_>[vx::aligned](__arr + (_Simd_::size() - __sh));
 }
 
+template <intrin_type _Intrin_, class _Pattern_>
+raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_
+__slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
+{
+    constexpr auto __isa = abi_t<pattern_vector_t<_Pattern_>>::isa;
+    using _Value_ = typename pattern_vector_t<_Pattern_>::value_type;
+
+    constexpr auto __shift = __get_slide_right_shift(__p);
+    constexpr auto __shift_bytes = __shift * sizeof(_Value_);
+    constexpr auto __size = __p.size();
+
+    if constexpr (__shift == 0)
+        return __x;
+
+    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_srli_si128(__as<__m128i>(__x), __shift_bytes));
+    else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
+        if constexpr (__has_avx512vl_support_v<_ISA_> && (__shift_bytes % 4) == 0) {
+            return __as<_Intrin_>(_mm256_alignr_epi32(__as<__m256i>(__x), _mm256_setzero_si256(), (8 - __shift) & 7)));
+        }
+        else {
+            auto __low_part = _mm256_setzero_si256();
+            auto __high_part = _mm256_setzero_si256();
+
+            if constexpr (__shift_bytes >= sizeof(_Intrin_)) return _Zero<__isa, _Intrin_>()();
+            else if constexpr (__shift_bytes == 0) return __x;
+            else if constexpr (__shift_bytes < 16) {
+                __low_part = __as<__m256i>(__x);
+                __high_part = _mm256_inserti128_si256(__high_part, __as<__m128i>(__x), 1);
+            }
+            else if constexpr (__shift_bytes < 32) __low_part = _mm256_inserti128_si256(__low_part, __as<__m128i>(__x), 1);
+            else return _Zero<__isa, _Intrin_>()();
+
+            if constexpr ((__shift_bytes % 16) == 0) return __as<_Intrin_>(__low_part);
+            return __as<_Intrin_>(_mm256_alignr_epi8(__low_part, __high_part, 16 - (__shift_bytes & 0xF)));
+        }
+    }
+    else if constexpr (sizeof(_Intrin_) == 64) {
+        if constexpr (__shift_bytes >= sizeof(_Intrin_)) return _Zero<__isa, _Intrin_>()();
+
+        auto __low_part = _mm512_setzero_si512();
+        auto __high_part = _mm512_setzero_si512();
+
+        if constexpr (__shift_bytes == 0) return __x;
+        else if constexpr (__shift_bytes < 16) {
+            __low_part = __as<__m512i>(__x);
+            __high_part = _mm512_maskz_shuffle_i64x2(0xFC, __as<__m512i>(__x), __as<__m512i>(__x), 0x90);
+        }
+        else if constexpr (__shift_bytes < 32) {
+            __low_part = _mm512_maskz_shuffle_i64x2(0xFC, __as<__m512i>(__x), __as<__m512i>(__x), 0x90);
+            __high_part = _mm512_maskz_shuffle_i64x2(0xF0, __as<__m512i>(__x), __as<__m512i>(__x), 0x40);
+        }
+        else if constexpr (__shift_bytes < 48) {
+            __low_part = _mm512_maskz_shuffle_i64x2(0xF0, __as<__m512i>(__x), __as<__m512i>(__x), 0x40);
+            __high_part = _mm512_maskz_shuffle_i64x2(0xC0, __as<__m512i>(__x), __as<__m512i>(__x), 0x00);
+        }
+        else if constexpr (__shift_bytes < 64) {
+            __low_part = _mm512_maskz_shuffle_i64x2(0xC0, __as<__m512i>(__x), __as<__m512i>(__x), 0x00);
+        }
+        else return _Zero<__isa, _Intrin_>()();
+
+        if constexpr ((__shift_bytes % 4) == 0)
+            return __as<_Intrin_>(_mm512_alignr_epi32(__as<__m512i>(__x), _mm512_setzero_si512(), (16 - __shift_bytes) & 0xF));
+
+        if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift_bytes & 0xF)));
+        else {
+            const auto __low = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), 16 - (__shift_bytes & 0xF));
+            const auto __high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__low_part), 1),
+                _mm512_extracti64x4_epi64(__as<__m512i>(__high_part), 1), 16 - (__shift_bytes & 0xF));
+
+            return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+        }
+    }
+}
+
 template <class _Pattern_>
-raze_nodiscard raze_no_stack_protector raze_always_inline pattern_vector_t<_Pattern_> __slide_right(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
-    return __slide_right_fallback(__x, __get_slide_right_shift(__p));
+raze_nodiscard raze_no_stack_protector raze_always_inline pattern_vector_t<_Pattern_>
+__slide_right(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
+{
+    using _Simd_ = pattern_vector_t<_Pattern_>;
+
+    if constexpr (native<_Simd_>) {
+        auto __r = __x;
+
+        auto& __storage = __r.template __get<0>();
+        __storage = __slide_right_native(__storage_unwrap(__x.template __get<0>()), __p);
+
+        return __r;
+    }
+    else return __slide_right_fallback(__x, __get_slide_right_shift(__p));
 }
 
 template <simd_type _Simd_>
