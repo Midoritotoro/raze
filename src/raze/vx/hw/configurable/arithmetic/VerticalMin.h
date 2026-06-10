@@ -57,4 +57,6 @@ struct _Configurable_vmin: raze::options::strict_elementwise_callable<_Configura
     using callable_tag_type = _Configurable_vmin;
 };
 
+constexpr inline auto __vmin = raze::options::functor<_Configurable_vmin>;
+
 __RAZE_VX_NAMESPACE_END

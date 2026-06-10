@@ -8,6 +8,7 @@
 #include <src/raze/vx/hw/configurable/arithmetic/Abs.h>
 #include <src/raze/vx/hw/configurable/arithmetic/VerticalMax.h>
 #include <src/raze/vx/hw/configurable/arithmetic/VerticalMin.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Clamp.h>
 
 
 #if defined(raze_processor_x86)

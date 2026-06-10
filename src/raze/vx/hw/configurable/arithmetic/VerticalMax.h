@@ -57,4 +57,6 @@ struct _Configurable_vmax: raze::options::strict_elementwise_callable<_Configura
     using callable_tag_type = _Configurable_vmax;
 };
 
+constexpr inline auto __vmax = raze::options::functor<_Configurable_vmax>;
+
 __RAZE_VX_NAMESPACE_END

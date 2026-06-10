@@ -3,6 +3,8 @@
 #include <src/raze/vx/hw/common/PatternsCheck.h>
 #include <src/raze/vx/hw/x86/shuffle/GenericShuffle.h>
 
+#pragma strict_gs_check(off)
+
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype _VectorBytes_, sizetype _ElementBytes_, class _IdxType_>
@@ -39,13 +41,13 @@ consteval auto __make_slide_left_pshufb_table() noexcept {
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_>
 raze_nodiscard raze_no_stack_protector raze_always_inline auto __make_pshufb_slide_left_idx(_Intrin_, i32 __sh) noexcept {
     using _IdxType = typename IntegerForSizeof<_Type_>::Unsigned;
-    alignas(64) static constexpr auto __table_u8 = __make_slide_left_pshufb_table<sizeof(_Intrin_), sizeof(_Type_), u8>();
-    return _Rotate_indices<_Intrin_, u8> { _Load<_ISA_, _Intrin_>()(__table_u8[__sh].data(), __aligned_policy{}) };
+    alignas(sizeof(_Intrin_)) static constexpr auto __table_u8 = __make_slide_left_pshufb_table<sizeof(_Intrin_), sizeof(_Type_), u8>();
+    return _Rotate_indices<_Intrin_, u8> { _Load<_ISA_, _Intrin_>()(__table_u8[__sh & (sizeof(_Intrin_) - 1)].data(), __aligned_policy{}) };
 }
 
 template <simd_type _Simd_, class _Int_>
 raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_left_fallback(const _Simd_& __x, _Int_ __sh) noexcept {
-    alignas(64) typename _Simd_::value_type __arr[_Simd_::size() * 2];
+    alignas(sizeof(_Simd_)) typename _Simd_::value_type __arr[_Simd_::size() * 2];
 
     vx::__store[vx::aligned](__arr, __x);
     vx::__store[vx::aligned](__arr + _Simd_::size(), _Simd_::zero());
@@ -60,68 +62,73 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
     constexpr auto __isa = abi_t<pattern_vector_t<_Pattern_>>::isa;
     using _Value_ = typename pattern_vector_t<_Pattern_>::value_type;
 
-    constexpr auto __shift = __get_slide_left_shift(__p);
+    constexpr auto __shift = __get_slide_left_shift(__p) == __shuffle_zero ? __p.size() : __get_slide_left_shift(__p);
     constexpr auto __shift_bytes = __shift * sizeof(_Value_);
     constexpr auto __size = __p.size();
 
-    if constexpr (__shift == 0)
-        return __x;
-
-    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_slli_si128(__as<__m128i>(__x), __shift_bytes));
+    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_srli_si128(__as<__m128i>(__x), __shift_bytes));
     else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
-        if constexpr (__has_avx512vl_support_v<_ISA_> && (__shift_bytes % 4) == 0) {
+        if constexpr (__has_avx512vl_support_v<__isa> && (__shift_bytes % 4) == 0) {
             return __as<_Intrin_>(_mm256_alignr_epi32(_mm256_setzero_si256(), __as<__m256i>(__x), __shift & 7));
         }
         else {
             auto __low_part = _mm256_setzero_si256();
             auto __high_part = _mm256_setzero_si256();
 
-            if constexpr (__shift == 0) return __x;
-            else if constexpr (__shift < 16) {
+            if constexpr (__shift_bytes == 0) return __x;
+            else if constexpr (__shift_bytes < 16) {
                 __low_part = _mm256_inserti128_si256(__low_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
                 __high_part = __as<__m256i>(__x);
             }
-            else if constexpr (__shift < 32) __high_part = _mm256_inserti128_si256(__high_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
+            else if constexpr (__shift_bytes < 32) __high_part = _mm256_inserti128_si256(__high_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
             else return _Zero<__isa, _Intrin_>()();
 
-            if constexpr ((__shift % 16) == 0) return __as<_Intrin_>(__high_part);
-            return __as<_Intrin_>(_mm256_alignr_epi8(__low_part, __high_part, __shift & 0xF));
+            if constexpr ((__shift_bytes % 16) == 0) return __as<_Intrin_>(__high_part);
+            return __as<_Intrin_>(_mm256_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
         }
     }
     else if constexpr (sizeof(_Intrin_) == 64) {
         auto __low_part = _mm512_setzero_si512();
         auto __high_part = _mm512_setzero_si512();
 
-        if constexpr (__shift == 0) return __x;
-        else if constexpr (__shift < 16) {
+        if constexpr (__shift_bytes == 0) return __x;
+        else if constexpr (__shift_bytes < 16) {
             __low_part = _mm512_maskz_shuffle_i64x2(0x3F, __as<__m512i>(__x), __as<__m512i>(__x), 0x39);
             __high_part = __as<__m512i>(__x);
         }
-        else if constexpr (__shift < 32) {
+        else if constexpr (__shift_bytes < 32) {
             __low_part = _mm512_maskz_shuffle_i64x2(0x0F, __as<__m512i>(__x), __as<__m512i>(__x), 0x0E);
             __high_part = _mm512_maskz_shuffle_i64x2(0x3F, __as<__m512i>(__x), __as<__m512i>(__x), 0x39);
         }
-        else if constexpr (__shift < 48) {
+        else if constexpr (__shift_bytes < 48) {
             __low_part = _mm512_maskz_shuffle_i64x2(0x03, __as<__m512i>(__x), __as<__m512i>(__x), 0x03);
             __high_part = _mm512_maskz_shuffle_i64x2(0x0F, __as<__m512i>(__x), __as<__m512i>(__x), 0x0E);
         }
-        else if constexpr (__shift < 64) {
+        else if constexpr (__shift_bytes < 64) {
             __high_part = _mm512_maskz_shuffle_i64x2(0x03, __as<__m512i>(__x), __as<__m512i>(__x), 0x03);
         }
         else return _Zero<__isa, _Intrin_>()();
 
-        if constexpr (__has_avx512bw_support_v<_ISA_>) {
-            return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, __shift & 0xF));
+        if constexpr (__has_avx512bw_support_v<__isa>) {
+            return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
         }
         else {
-            if constexpr ((__shift % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(_mm512_setzero_si512(), __as<__m512i>(__x), (__shift & 15)));
+            if constexpr ((__shift_bytes % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(_mm512_setzero_si512(), __as<__m512i>(__x), (__shift_bytes & 15)));
 
-            const auto __low256 = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), __shift & 0xF);
+            const auto __low256 = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), __shift_bytes & 0xF);
             const auto __high256 = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__low_part), 1),
-                _mm512_extracti64x4_epi64(__as<__m512i>(__high_part), 1), __shift & 0xF);
+                _mm512_extracti64x4_epi64(__as<__m512i>(__high_part), 1), __shift_bytes & 0xF);
 
             return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low256), __high256, 1));
         }
+    }
+    else {
+        alignas(sizeof(_Intrin_)) _Value_ __arr[__p.size() * 2];
+
+        _Store<__isa>()(__arr, __x, __aligned_policy{});
+        _Store<__isa>()(__arr + __p.size(), _Zero<__isa, _Intrin_>()(), __aligned_policy{});
+
+        return _Load<__isa, _Intrin_>()(__arr + __shift, __aligned_policy{});
     }
 }
 
@@ -131,7 +138,9 @@ __slide_left(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
 {
     using _Simd_ = pattern_vector_t<_Pattern_>;
 
-    if constexpr (native<_Simd_>) {
+    if constexpr (__get_slide_left_shift(__p) == 0) return __x;
+    else if constexpr (__get_slide_left_shift(__p) >= _Simd_::size()) return _Simd_::zero();
+    else if constexpr (native<_Simd_>) {
         auto __r = __x;
 
         auto& __storage = __r.template __get<0>();
@@ -139,7 +148,7 @@ __slide_left(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
 
         return __r;
     }
-    else return __slide_left_fallback(__x, __get_slide_left_shift(__p));
+    else return __slide_left_fallback(__x, __get_slide_left_shift(__p) == __shuffle_zero ? __p.size() : __get_slide_left_shift(__p));
 }
 
 template <simd_type _Simd_>
@@ -163,7 +172,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_left(co
 
         using _Ret = decltype(__generic_shuffle_native<__isa, _IdxType>(_Intrin_{}, std::declval<_RetRotate>().data()));
 		
-		if constexpr (__is_fallback<_Ret>) return __rotate_left_fallback(__x, __sh);
+		if constexpr (__is_fallback<_Ret>) return __slide_left_fallback(__x, __sh);
 		else {
 			auto __r = __x;
 			auto& __storage = __r.template __get<0>();
@@ -180,3 +189,5 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_left(co
 }
 
 __RAZE_VX_NAMESPACE_END
+
+#pragma strict_gs_check(on)

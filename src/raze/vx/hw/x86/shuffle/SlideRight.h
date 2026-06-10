@@ -36,13 +36,13 @@ consteval auto __make_slide_right_pshufb_table() noexcept {
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_>
 raze_nodiscard raze_no_stack_protector raze_always_inline auto __make_pshufb_slide_right_idx(_Intrin_, i32 __sh) noexcept {
-    alignas(64) static constexpr auto __table_u8 = __make_slide_right_pshufb_table<sizeof(_Intrin_), sizeof(_Type_), u8>();
+    alignas(sizeof(_Intrin_)) static constexpr auto __table_u8 = __make_slide_right_pshufb_table<sizeof(_Intrin_), sizeof(_Type_), u8>();
     return _Rotate_indices<_Intrin_, u8>{ _Load<_ISA_, _Intrin_>()(__table_u8[__sh].data(), __aligned_policy{}) };
 }
 
 template <simd_type _Simd_, class _Int_>
 raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right_fallback(const _Simd_& __x, _Int_ __sh) noexcept {
-    alignas(64) typename _Simd_::value_type __arr[_Simd_::size() * 2];
+    alignas(sizeof(_Simd_)) typename _Simd_::value_type __arr[_Simd_::size() * 2];
 
     vx::__store[vx::aligned](__arr, _Simd_::zero());
     vx::__store[vx::aligned](__arr + _Simd_::size(), __x);
@@ -57,17 +57,17 @@ __slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
     constexpr auto __isa = abi_t<pattern_vector_t<_Pattern_>>::isa;
     using _Value_ = typename pattern_vector_t<_Pattern_>::value_type;
 
-    constexpr auto __shift = __get_slide_right_shift(__p);
+    constexpr auto __shift = __get_slide_right_shift(__p) == __shuffle_zero ? __p.size() : __get_slide_right_shift(__p);
     constexpr auto __shift_bytes = __shift * sizeof(_Value_);
     constexpr auto __size = __p.size();
 
     if constexpr (__shift == 0)
         return __x;
 
-    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_srli_si128(__as<__m128i>(__x), __shift_bytes));
+    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_slli_si128(__as<__m128i>(__x), __shift_bytes));
     else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
-        if constexpr (__has_avx512vl_support_v<_ISA_> && (__shift_bytes % 4) == 0) {
-            return __as<_Intrin_>(_mm256_alignr_epi32(__as<__m256i>(__x), _mm256_setzero_si256(), (8 - __shift) & 7)));
+        if constexpr (__has_avx512vl_support_v<__isa> && (__shift_bytes % 4) == 0) {
+            return __as<_Intrin_>(_mm256_alignr_epi32(__as<__m256i>(__x), _mm256_setzero_si256(), (8 - __shift) & 7));
         }
         else {
             auto __low_part = _mm256_setzero_si256();
@@ -113,7 +113,7 @@ __slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
         if constexpr ((__shift_bytes % 4) == 0)
             return __as<_Intrin_>(_mm512_alignr_epi32(__as<__m512i>(__x), _mm512_setzero_si512(), (16 - __shift_bytes) & 0xF));
 
-        if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift_bytes & 0xF)));
+        if constexpr (__has_avx512bw_support_v<__isa>) return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift_bytes & 0xF)));
         else {
             const auto __low = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), 16 - (__shift_bytes & 0xF));
             const auto __high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__low_part), 1),
@@ -121,6 +121,14 @@ __slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
 
             return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
         }
+    }
+    else {
+        alignas(sizeof(_Intrin_)) _Value_ __arr[__p.size() * 2];
+
+        _Store<__isa>()(__arr, _Zero<__isa, _Intrin_>()(), __aligned_policy{});
+        _Store<__isa>()(__arr + __p.size(), __x, __aligned_policy{});
+
+        return _Load<__isa, _Intrin_>()(__arr + (__p.size() - __shift), __aligned_policy{});
     }
 }
 
@@ -130,7 +138,9 @@ __slide_right(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
 {
     using _Simd_ = pattern_vector_t<_Pattern_>;
 
-    if constexpr (native<_Simd_>) {
+    if constexpr (__get_slide_right_shift(__p) == 0) return __x;
+    else if constexpr (__get_slide_right_shift(__p) >= __p.size()) return _Simd_::zero();
+    else if constexpr (native<_Simd_>) {
         auto __r = __x;
 
         auto& __storage = __r.template __get<0>();
@@ -138,7 +148,7 @@ __slide_right(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
 
         return __r;
     }
-    else return __slide_right_fallback(__x, __get_slide_right_shift(__p));
+    else return __slide_right_fallback(__x, __get_slide_right_shift(__p) == __shuffle_zero ? __p.size() : __get_slide_right_shift(__p));
 }
 
 template <simd_type _Simd_>

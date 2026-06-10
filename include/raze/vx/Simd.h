@@ -61,7 +61,7 @@ public:
      * to initialize all lanes explicitly.
     */
     simd() noexcept = default;
-    ~simd() noexcept  = default;
+    ~simd() noexcept = default;
     simd(const simd&) noexcept = default;
     simd(simd&&) noexcept = default;
     simd& operator=(const simd&) noexcept = default;
@@ -84,8 +84,8 @@ public:
     /**
      * @brief Returns a SIMD vector with all lanes set to zero.
     */
-    raze_nodiscard static raze_always_inline simd zero() noexcept {
-        simd __result {};
+    raze_nodiscard static raze_no_stack_protector raze_always_inline simd zero() noexcept {
+        simd __result;
 
         __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
             using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;

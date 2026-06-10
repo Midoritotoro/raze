@@ -27,7 +27,7 @@ struct slide_tests {
         //    }
         //}
 
-        [&] <raze::sizetype ... I>(std::integer_sequence<raze::sizetype, I...>) {
+        [&] <raze::sizetype ... I> (std::integer_sequence<raze::sizetype, I...>) {
             (([&] {
                 if constexpr (N > 16 && (I != N || I != N / 2 || I != 0 || I > 8)) {}
                 else {

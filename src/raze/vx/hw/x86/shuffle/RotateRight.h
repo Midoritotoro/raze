@@ -37,14 +37,14 @@ raze_nodiscard raze_no_stack_protector raze_always_inline auto __make_rotate_rig
     constexpr auto __element_bytes = sizeof(_Type_);
     using _IdxType = typename IntegerForSizeof<_Type_>::Unsigned;
 
-    alignas(64) static constexpr auto __table_u8 = __make_rotate_right_shuffle_table<__vector_bytes, __element_bytes, u8>();
-    alignas(64) static constexpr auto __table = __make_rotate_right_shuffle_table<__vector_bytes, __element_bytes, _IdxType>();
+    alignas(sizeof(_Intrin_)) static constexpr auto __table_u8 = __make_rotate_right_shuffle_table<__vector_bytes, __element_bytes, u8>();
+    alignas(sizeof(_Intrin_)) static constexpr auto __table = __make_rotate_right_shuffle_table<__vector_bytes, __element_bytes, _IdxType>();
 
     if constexpr (sizeof(_Intrin_) == 16)  return _Rotate_indices<_Intrin_, u8> { _Load<_ISA_, _Intrin_>()(__table_u8[__sh].data(), __aligned_policy{}) };
     else if constexpr (__vector_bytes == 32) {
         if constexpr (__has_avx2_support_v<_ISA_> && !(__has_avx512bw_support_v<_ISA_> && __has_avx512vl_support_v<_ISA_>)) {
             if constexpr (sizeof(_IdxType) >= 4) {
-                alignas(64) static constexpr auto __table_u32 = __make_rotate_right_shuffle_table<__vector_bytes, __element_bytes, u32>();
+                alignas(sizeof(_Intrin_)) static constexpr auto __table_u32 = __make_rotate_right_shuffle_table<__vector_bytes, __element_bytes, u32>();
                 return _Rotate_indices<_Intrin_, u32>{ _Load<_ISA_, _Intrin_>()(__table_u32[__sh].data(), __aligned_policy{}) };
             }
             else return _Rotate_indices<_Intrin_, u8>{ _Load<_ISA_, _Intrin_>()(__table_u8[__sh].data(), __aligned_policy{}) };
@@ -56,7 +56,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline auto __make_rotate_rig
 
 template <simd_type _Simd_, class _Int_>
 raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __rotate_right_fallback(const _Simd_& __x, _Int_ __sh) noexcept {
-    alignas(64) typename _Simd_::value_type __arr[_Simd_::size() * 2];
+    alignas(sizeof(_Simd_)) typename _Simd_::value_type __arr[_Simd_::size() * 2];
 
     vx::__store[vx::aligned](__arr, __x);
     vx::__store[vx::aligned](__arr + _Simd_::size(), __x);

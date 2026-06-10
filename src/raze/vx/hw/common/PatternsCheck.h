@@ -300,14 +300,14 @@ consteval auto __get_rotate_right_shift(_Pattern_ __p) noexcept
 
 template <class _Pattern_>
 consteval auto __get_slide_left_shift(_Pattern_ __p) noexcept
-	requires (__is_slide_left(_Pattern_{}))
+	// requires (__is_slide_left(_Pattern_{}))
 {
 	return __p[0];
 }
 
 template <class _Pattern_>
 consteval auto __get_slide_right_shift(_Pattern_ __p) noexcept
-	requires (__is_slide_right(_Pattern_{}))
+	//requires (__is_slide_right(_Pattern_{}))
 {
 	constexpr auto __n = _Pattern_::size();
 	return __n - __p[__n - 1] - 1;

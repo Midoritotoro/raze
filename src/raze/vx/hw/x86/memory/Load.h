@@ -10,7 +10,7 @@ concept any_iterator_or_pointer = std::input_or_output_iterator<_Iterator_> || s
 
 template <arch::ISA _ISA_, intrin_or_arithmetic_type _Type_>
 struct _Load {
-    static raze_always_inline _Type_ __load(const void* __mem) noexcept {
+    static raze_no_stack_protector raze_always_inline _Type_ __load(const void* __mem) noexcept {
         if constexpr (std::is_same_v<_Type_, __m128i>) return _mm_load_si128(static_cast<const __m128i*>(__mem));
         else if constexpr (std::is_same_v<_Type_, __m128d>) return _mm_load_pd(static_cast<const f64*>(__mem));
         else if constexpr (std::is_same_v<_Type_, __m128>)  return _mm_load_ps(static_cast<const f32*>(__mem));
@@ -23,7 +23,7 @@ struct _Load {
         else return *static_cast<const _Type_*>(__mem);
     }
 
-    static raze_always_inline _Type_ __loadu(const void* __mem) noexcept {
+    static raze_no_stack_protector raze_always_inline _Type_ __loadu(const void* __mem) noexcept {
         if constexpr (__has_sse3_support_v<_ISA_> && sizeof(_Type_) == 16) return __as<_Type_>(_mm_lddqu_si128(static_cast<const __m128i*>(__mem)));
         else if constexpr (std::is_same_v<_Type_, __m128i>) return _mm_loadu_si128(static_cast<const __m128i*>(__mem));
         else if constexpr (std::is_same_v<_Type_, __m128d>) return _mm_loadu_pd(static_cast<const f64*>(__mem));
@@ -39,7 +39,7 @@ struct _Load {
     }
 
     template <class _AlignPolicy_ = __unaligned_policy>
-    raze_nodiscard raze_static_operator raze_always_inline _Type_ operator()(
+    raze_nodiscard raze_no_stack_protector raze_static_operator raze_always_inline _Type_ operator()(
         const void* __mem, _AlignPolicy_ && = _AlignPolicy_{}) raze_const_operator noexcept
     {
         if constexpr (__is_aligned_v<_AlignPolicy_>) return __load(__mem);

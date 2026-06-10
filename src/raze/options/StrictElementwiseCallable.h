@@ -83,7 +83,7 @@ struct strict_elementwise_callable:
 template <
     class       _Callable_,
     class   ... _Args_>
-constexpr raze_always_inline auto __dispatch_call(
+constexpr raze_no_stack_protector raze_always_inline auto __dispatch_call(
     const _Callable_&   __callable, 
     _Args_&& ...        __args) noexcept 
 {
