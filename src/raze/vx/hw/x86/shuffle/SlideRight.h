@@ -67,7 +67,7 @@ __slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
     if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_slli_si128(__as<__m128i>(__x), __shift_bytes));
     else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
         if constexpr (__has_avx512vl_support_v<__isa> && (__shift_bytes % 4) == 0) {
-            return __as<_Intrin_>(_mm256_alignr_epi32(__as<__m256i>(__x), _mm256_setzero_si256(), (8 - __shift) & 7));
+            return __as<_Intrin_>(_mm256_alignr_epi32(__as<__m256i>(__x), _mm256_setzero_si256(), (8 - (__shift_bytes >> 2)) & 7));
         }
         else {
             auto __low_part = _mm256_setzero_si256();
@@ -110,8 +110,8 @@ __slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
         }
         else return _Zero<__isa, _Intrin_>()();
 
-        if constexpr ((__shift_bytes % 4) == 0)
-            return __as<_Intrin_>(_mm512_alignr_epi32(__as<__m512i>(__x), _mm512_setzero_si512(), (16 - __shift_bytes) & 0xF));
+        if constexpr ((__shift_bytes % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(
+            __as<__m512i>(__x), _mm512_setzero_si512(), (16 - (__shift_bytes >> 2)) & 15));
 
         if constexpr (__has_avx512bw_support_v<__isa>) return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift_bytes & 0xF)));
         else {

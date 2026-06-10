@@ -19,14 +19,14 @@ public:
     using tuple_type = std::conditional_t<__use_native, typename best_chunk<
         _Type_, _Abi_, _Abi_::size>::type, _Simd_vector_tuple_type<_Type_, _Abi_>>;
     
-    _Vector_storage() noexcept = default;
-    _Vector_storage(const _Vector_storage&) noexcept = default;
-    _Vector_storage(_Vector_storage&&) noexcept = default;
+    raze_always_inline _Vector_storage() noexcept = default;
+    raze_always_inline _Vector_storage(const _Vector_storage&) noexcept = default;
+    raze_always_inline _Vector_storage(_Vector_storage&&) noexcept = default;
 
-    ~_Vector_storage() = default;
+    raze_always_inline ~_Vector_storage() = default;
 
-    _Vector_storage& operator=(const _Vector_storage&) noexcept = default;
-    _Vector_storage& operator=(_Vector_storage&&) noexcept = default;
+    raze_always_inline _Vector_storage& operator=(const _Vector_storage&) noexcept = default;
+    raze_always_inline _Vector_storage& operator=(_Vector_storage&&) noexcept = default;
 
     raze_nodiscard static constexpr bool is_native() noexcept {
         return __use_native;

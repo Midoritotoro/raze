@@ -69,14 +69,13 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
     if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_srli_si128(__as<__m128i>(__x), __shift_bytes));
     else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
         if constexpr (__has_avx512vl_support_v<__isa> && (__shift_bytes % 4) == 0) {
-            return __as<_Intrin_>(_mm256_alignr_epi32(_mm256_setzero_si256(), __as<__m256i>(__x), __shift & 7));
+            return __as<_Intrin_>(_mm256_alignr_epi32(_mm256_setzero_si256(), __as<__m256i>(__x), (__shift_bytes >> 2) & 7));
         }
         else {
             auto __low_part = _mm256_setzero_si256();
             auto __high_part = _mm256_setzero_si256();
 
-            if constexpr (__shift_bytes == 0) return __x;
-            else if constexpr (__shift_bytes < 16) {
+            if constexpr (__shift_bytes < 16) {
                 __low_part = _mm256_inserti128_si256(__low_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
                 __high_part = __as<__m256i>(__x);
             }
@@ -91,8 +90,7 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
         auto __low_part = _mm512_setzero_si512();
         auto __high_part = _mm512_setzero_si512();
 
-        if constexpr (__shift_bytes == 0) return __x;
-        else if constexpr (__shift_bytes < 16) {
+        if constexpr (__shift_bytes < 16) {
             __low_part = _mm512_maskz_shuffle_i64x2(0x3F, __as<__m512i>(__x), __as<__m512i>(__x), 0x39);
             __high_part = __as<__m512i>(__x);
         }
@@ -113,7 +111,8 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
             return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
         }
         else {
-            if constexpr ((__shift_bytes % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(_mm512_setzero_si512(), __as<__m512i>(__x), (__shift_bytes & 15)));
+            if constexpr ((__shift_bytes % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(
+                _mm512_setzero_si512(), __as<__m512i>(__x), (__shift_bytes >> 2) & 0xF));
 
             const auto __low256 = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), __shift_bytes & 0xF);
             const auto __high256 = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__low_part), 1),
@@ -144,7 +143,7 @@ __slide_left(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
         auto __r = __x;
 
         auto& __storage = __r.template __get<0>();
-        __storage = __slide_left_native(__storage_unwrap(__x.template __get<0>()), __p);
+        __storage = __slide_left_native(__storage_unwrap(__r.template __get<0>()), __p);
 
         return __r;
     }

@@ -17,15 +17,15 @@ struct slide_tests {
 
         Simd v = raze::vx::load<Simd>(arr);
 
-        //for (size_t sh = 0; sh < N; ++sh) {
-        //    auto r1 = raze::vx::slide_left(v, sh);
-        //    auto r2 = raze::vx::slide_right(v, sh);
+        for (size_t sh = 0; sh < N; ++sh) {
+            auto r1 = raze::vx::slide_left(v, sh);
+            auto r2 = raze::vx::slide_right(v, sh);
 
-        //    for (size_t i = 0; i < N; ++i) {
-        //        raze_assert(r1[i] == ((i + sh < N) ? _Type_(arr[i + sh]) : _Type_(0)));
-        //        raze_assert(r2[i] == ((i >= sh) ? _Type_(arr[i - sh]) : _Type_(0)));
-        //    }
-        //}
+            for (size_t i = 0; i < N; ++i) {
+                raze_assert(r1[i] == ((i + sh < N) ? _Type_(arr[i + sh]) : _Type_(0)));
+                raze_assert(r2[i] == ((i >= sh) ? _Type_(arr[i - sh]) : _Type_(0)));
+            }
+        }
 
         [&] <raze::sizetype ... I> (std::integer_sequence<raze::sizetype, I...>) {
             (([&] {

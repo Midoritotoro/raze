@@ -60,12 +60,12 @@ public:
      * The contents of the vector are unspecified. Use `fill()` or `broadcast()`
      * to initialize all lanes explicitly.
     */
-    simd() noexcept = default;
-    ~simd() noexcept = default;
-    simd(const simd&) noexcept = default;
-    simd(simd&&) noexcept = default;
-    simd& operator=(const simd&) noexcept = default;
-    simd& operator=(simd&&) noexcept = default;
+    raze_always_inline simd() noexcept = default;
+    raze_always_inline ~simd() noexcept = default;
+    raze_always_inline simd(const simd&) noexcept = default;
+    raze_always_inline simd(simd&&) noexcept = default;
+    raze_always_inline simd& operator=(const simd&) noexcept = default;
+    raze_always_inline simd& operator=(simd&&) noexcept = default;
 
 
     /**

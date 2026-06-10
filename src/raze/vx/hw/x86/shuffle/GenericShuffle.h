@@ -580,7 +580,7 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle_native_size(co
 		return _Fallback_result{ __result };
 	}
 	else {
-		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native)._data;
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native);
 		return __result;
 	}
 }
