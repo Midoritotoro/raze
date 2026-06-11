@@ -5,6 +5,8 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+inline constexpr sizetype __shuffle_zero = std::numeric_limits<sizetype>::max();
+
 template <class _Pattern_>
 consteval bool __is_reverse(_Pattern_ __p) noexcept {
 	for (auto __i = 0; __i < _Pattern_::size(); ++__i)
@@ -63,14 +65,26 @@ template <class _Pattern_>
 consteval bool __is_slide_left(_Pattern_ __p) noexcept {
 	constexpr auto __n = _Pattern_::size();
 
-	const auto __shift = __p[0];
+	bool __found_shift = false;
+	sizetype __shift = 0;
 
-	if (__shift >= __n)
-		return false;
+	for (sizetype __i = 0; __i < __n; ++__i) {
+		const auto __v = __p[__i];
 
-	for (auto __i = 0; __i + __shift < __n; ++__i)
-		if (__p[__i] != (__i + __shift))
+		if (__v == __shuffle_zero)
+			continue;
+
+		if (!__found_shift) {
+			__shift = __v - __i;
+			__found_shift = true;
+		}
+
+		if (__v != __i + __shift)
 			return false;
+
+		if (__v >= __n)
+			return false;
+	}
 
 	return true;
 }
@@ -79,14 +93,30 @@ template <class _Pattern_>
 consteval bool __is_slide_right(_Pattern_ __p) noexcept {
 	constexpr auto __n = _Pattern_::size();
 
-	const auto __shift = __n - __p[__n - 1] - 1;
+	bool __found_shift = false;
+	sizetype __shift = 0;
 
-	if (__shift >= __n)
-		return false;
+	for (sizetype __i = 0; __i < __n; ++__i) {
+		const auto __v = __p[__i];
 
-	for (auto __i = __shift; __i < __n; ++__i)
-		if (__p[__i] != (__i - __shift))
+		if (__v == __shuffle_zero || __v < 0)
+			continue;
+
+		if (!__found_shift) {
+			__shift = __i - __v;
+			__found_shift = true;
+		}
+		else {
+			if (__i - __v != __shift)
+				return false;
+		}
+
+		if (__v != __i - __shift)
 			return false;
+
+		if (__v >= __n)
+			return false;
+	}
 
 	return true;
 }
@@ -284,6 +314,46 @@ consteval bool __is_dup_high_identity(_Pattern_ __p) noexcept {
 }
 
 template <class _Pattern_>
+consteval bool __is_zip(_Pattern_ __p) noexcept {
+	constexpr auto __n = _Pattern_::size();
+
+	if ((__n & 1) != 0)
+		return false;
+
+	constexpr auto __h = __n / 2;
+
+	for (sizetype __i = 0; __i < __h; ++__i) {
+		if (__p[2 * __i] != __i)
+			return false;
+
+		if (__p[2 * __i + 1] != (__h + __i))
+			return false;
+	}
+
+	return true;
+}
+
+template <class _Pattern_>
+consteval bool __is_unzip(_Pattern_ __p) noexcept {
+	constexpr auto __n = _Pattern_::size();
+
+	if ((__n & 1) != 0)
+		return false;
+
+	constexpr auto __h = __n / 2;
+
+	for (sizetype __i = 0; __i < __h; ++__i) {
+		if (__p[__i] != (2 * __i))
+			return false;
+
+		if (__p[__i + __h] != (2 * __i + 1))
+			return false;
+	}
+
+	return true;
+}
+
+template <class _Pattern_>
 consteval auto __get_rotate_left_shift(_Pattern_ __p) noexcept
 	requires (__is_rotate_left(_Pattern_{}))
 {
@@ -300,17 +370,24 @@ consteval auto __get_rotate_right_shift(_Pattern_ __p) noexcept
 
 template <class _Pattern_>
 consteval auto __get_slide_left_shift(_Pattern_ __p) noexcept
-	// requires (__is_slide_left(_Pattern_{}))
+	requires (__is_slide_left(_Pattern_{}))
 {
-	return __p[0];
+	for (sizetype __i = 0; __i < _Pattern_::size(); ++__i)
+		if (__p[__i] != __shuffle_zero)
+			return __p[__i] - __i;
+
+	return _Pattern_::size();
 }
 
 template <class _Pattern_>
 consteval auto __get_slide_right_shift(_Pattern_ __p) noexcept
-	//requires (__is_slide_right(_Pattern_{}))
+	requires (__is_slide_right(_Pattern_{}))
 {
-	constexpr auto __n = _Pattern_::size();
-	return __n - __p[__n - 1] - 1;
+	for (sizetype __i = 0; __i < _Pattern_::size(); ++__i)
+		if (__p[__i] != __shuffle_zero)
+			return __i - __p[__i];
+
+	return _Pattern_::size();
 }
 
 template <class _Pattern_>
@@ -333,8 +410,6 @@ consteval auto __make_shuffle_pattern_impl(std::integer_sequence<sizetype, _Indi
 template <simd_type _Simd_, auto _Fn_>
 using make_shuffle_pattern = decltype(__make_shuffle_pattern_impl<_Simd_, _Fn_>(
 		std::make_integer_sequence<sizetype, _Simd_::size()>{}));
-
-inline constexpr sizetype __shuffle_zero = std::numeric_limits<sizetype>::max();
 
 template <simd_type _Simd_, sizetype ... _Indices_>
 using make_pattern = _Shuffle_pattern<_Simd_, _Indices_...>;
@@ -376,6 +451,24 @@ using make_slide_right_pattern = make_shuffle_pattern<_Simd_,
 			return __shuffle_zero;
 
 		return __i - _Shift_;
+	}>;
+
+template <simd_type _Simd_>
+using make_zip_pattern = make_shuffle_pattern<_Simd_,
+	[] (sizetype __i) {
+		if ((__i & 1) == 0)
+			return __i / 2;
+
+		return _Simd_::size() / 2 + __i / 2;
+	}>;
+
+template <simd_type _Simd_>
+using make_unzip_pattern = make_shuffle_pattern<_Simd_,
+	[] (sizetype __i) {
+		if (__i < _Simd_::size() / 2)
+			return 2 * __i;
+
+		return 2 * (__i - _Simd_::size() / 2) + 1;
 	}>;
 
 __RAZE_VX_NAMESPACE_END

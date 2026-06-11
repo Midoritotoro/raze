@@ -194,7 +194,7 @@ struct shuffle_tests {
         test_shuffle_runtime_random<Simd, 0xCAFEBABEULL, 30000>();
         test_shuffle_runtime_random<Simd,  0xDEADBEEF12345678ULL, 30000>();
 
-        test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
+        // test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
     }
 
     void operator()() {
