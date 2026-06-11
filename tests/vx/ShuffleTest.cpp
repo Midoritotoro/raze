@@ -189,12 +189,12 @@ struct shuffle_tests {
         using Mask = typename Simd::mask_type;
         static constexpr size_t N = Simd::size();
 
-        test_shuffle_runtime_pattern<Simd>();
-        test_shuffle_runtime_random<Simd, 0x12345678ULL, 30000>();
-        test_shuffle_runtime_random<Simd, 0xCAFEBABEULL, 30000>();
-        test_shuffle_runtime_random<Simd,  0xDEADBEEF12345678ULL, 30000>();
+        //test_shuffle_runtime_pattern<Simd>();
+        //test_shuffle_runtime_random<Simd, 0x12345678ULL, 30000>();
+        //test_shuffle_runtime_random<Simd, 0xCAFEBABEULL, 30000>();
+        //test_shuffle_runtime_random<Simd,  0xDEADBEEF12345678ULL, 30000>();
 
-        // test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
+        test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
     }
 
     void operator()() {

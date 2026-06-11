@@ -19,7 +19,7 @@ raze_nodiscard raze_always_inline auto __zmm_broadcast_low(_Tp_ __x) noexcept {
 }
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_, sizetype _I_>
-raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_constant<sizetype, _I_> __i) noexcept
+raze_nodiscard raze_always_inline _Tp_ __splat_native(_Tp_ __x, std::integral_constant<sizetype, _I_> __i) noexcept
 	requires(__i >= 0 && __i < (sizeof(_Tp_) / sizeof(_Type_)))
 {
 	constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
@@ -39,10 +39,10 @@ raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_co
 				if constexpr (__i < 8) __combined = _mm_unpacklo_epi8(__as<__m128i>(__x), __as<__m128i>(__x));
 				else __combined = _mm_unpackhi_epi8(__as<__m128i>(__x), __as<__m128i>(__x));
 
-				return __generic_shuffle_native<_ISA_, i16, _Tp_>(__combined, make_splat_pattern<simd<i16, runtime_abi<_ISA_, 8>>, __i % 8>{});
+				return __as<_Tp_>(__generic_shuffle_native<_ISA_, i16>(__combined, make_splat_pattern<simd<i16, runtime_abi<_ISA_, 8>>, __i % 8>{}));
 			}
 		}
-		return __generic_shuffle_native<_ISA_, _Type_, _Tp_>(__x, make_splat_pattern<simd<_Type_, runtime_abi<_ISA_, __size>>, __i>{});
+		return __generic_shuffle_native<_ISA_, _Type_>(__x, make_splat_pattern<simd<_Type_, runtime_abi<_ISA_, __size>>, __i>{});
 	}
 	else if constexpr (sizeof(_Tp_) == 32) {
 		constexpr auto __index = std::integral_constant<sizetype, __i % (__size / 2)>{};
@@ -77,7 +77,7 @@ raze_nodiscard raze_always_inline auto __splat_native(_Tp_ __x, std::integral_co
 		}
 	}
 	else if constexpr (sizeof(_Tp_) == 64) {
-		if constexpr (__i == 0) return __zmm_broadcast_low<_ISA_, _Type_>(__x);
+		if constexpr (__i == 0) return __as<_Tp_>(__zmm_broadcast_low<_ISA_, _Type_>(__x));
 		else {
 			constexpr auto __index = std::integral_constant<sizetype, __i % (__size / 4)>{};
 			constexpr auto __lane = __i / (__size / 4);
