@@ -2,16 +2,50 @@
 
 #include <src/raze/vx/hw/x86/cast/As.h>
 #include <raze/memory/PointerToIntegral.h>
-
+#include <src/raze/vx/hw/x86/memory/Load.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <class _Type_>
+concept has_value_type = requires { typename _Type_::value_type; };
+
+
+template <class _Type_, class = void>
+struct __unwrap_int {
+	using type = _Type_;
+};
+
+template <class _Type_>
+struct __unwrap_int<_Type_, std::void_t<typename _Type_::value_type>> {
+	using type = typename _Type_::value_type;
+};
+
 template <arch::ISA	_ISA_, intrin_or_arithmetic_type _Tp_>
 struct _Broadcast {
-	template <arithmetic_type _Type_>
-	raze_nodiscard raze_static_operator raze_always_inline
-		_Tp_ operator()(_Type_ __value) raze_const_operator noexcept
+	template <class _WrappedType_>
+	raze_nodiscard raze_static_operator raze_no_stack_protector raze_always_inline
+		_Tp_ operator()(_WrappedType_ __value) raze_const_operator noexcept
+			requires(arithmetic_type<_WrappedType_> || has_value_type<_WrappedType_>)
 	{
+		using _Type_ = typename __unwrap_int<_WrappedType_>::type;
+
+#if 0
+		if constexpr (has_value_type<_WrappedType_>) {
+			constexpr size_t __count = sizeof(_Tp_) / sizeof(_Type_);
+
+			alignas(sizeof(_Tp_)) static constexpr std::array<_Type_, __count> __table = [] {
+				std::array<_Type_, __count> __result{};
+
+				for (auto& __x : __result)
+					__x = _WrappedType_::value;
+
+				return __result;
+			}();
+
+			return _Load<_ISA_, _Tp_>()(__table.data(), __aligned_policy{});
+		}
+#endif
+
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm_broadcastq_epi64(_mm_cvtsi64_si128(memory::pointer_to_integral(__value))));

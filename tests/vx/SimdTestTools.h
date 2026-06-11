@@ -227,7 +227,7 @@ void test_all() {
     //__test_all_helper<_Function_, raze::arch::ISA::AVX2FMA3, 256>();
 
     __test_all_helper<_Function_, raze::arch::ISA::AVX512F, 512>();
-    //__test_all_helper<_Function_, raze::arch::ISA::AVX512BW, 512>();
+    __test_all_helper<_Function_, raze::arch::ISA::AVX512BW, 512>();
     //__test_all_helper<_Function_, raze::arch::ISA::AVX512DQ, 512>();
     //__test_all_helper<_Function_, raze::arch::ISA::AVX512BWDQ, 512>();
     //__test_all_helper<_Function_, raze::arch::ISA::AVX512VBMI, 512>();
