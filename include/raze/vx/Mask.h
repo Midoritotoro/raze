@@ -59,7 +59,7 @@ public:
 		using _ItType = algorithm::__unwrapped_iterator_type<_ForwardIterator_>;
 		using _ItValueType = std::iter_value_t<_ItType>;
 
-		if constexpr (sizeof(_ItValueType) == 1 && type_traits::is_iterator_contiguous_v<_ItType>) {
+		if constexpr (sizeof(_ItValueType) == 1 && type_traits::is_iterator_contiguous_v<_ItType> && sizeof(_Type_) == 1) {
 			auto __current = reinterpret_cast<const bool*>(std::to_address(__first));
 
 			__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {

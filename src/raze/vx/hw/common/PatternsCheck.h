@@ -392,14 +392,13 @@ consteval auto __get_slide_right_shift(_Pattern_ __p) noexcept
 
 template <class _Pattern_>
 consteval u8 __to_pshufd_mask(_Pattern_ __p) noexcept {
-	return ((__p[0] & 0x03) | ((__p[1] & 0x03) << 2)
-		| ((__p[2] & 0x03) << 4) | ((__p[3] & 0x03) << 6));
+	return ((__p[0] & 0x03) | ((__p[1] & 0x03) << 2) | ((__p[2] & 0x03) << 4) | ((__p[3] & 0x03) << 6));
 }
 
 template <class _Pattern_>
 consteval u8 __shufpd_to_pshufd_mask(_Pattern_ __p) noexcept {
-	return ((2 * (__p[0] & 0x03)) | ((2 * (__p[0] & 0x03) + 1) << 2)
-		| ((2 * (__p[1] & 0x03) << 4) | ((2 * (__p[1] & 0x03) + 1) << 6)));
+	return (((2 * __p[0]) & 0x03) | (((2 * __p[0] + 1) & 0x03) << 2)
+		| (((2 * __p[1]) & 0x03) << 4) | (((2 * __p[1] + 1) & 0x03) << 6));
 }
 
 template <simd_type _Simd_, auto _Fn_, sizetype ... _Indices_>
