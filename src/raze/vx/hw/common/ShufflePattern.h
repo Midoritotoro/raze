@@ -2,13 +2,36 @@
 
 #include <raze/compatibility/Compatibility.h>
 #include <src/raze/vx/Concepts.h>
+#include <src/raze/vx/hw/configurable/shape/SplitBy.h>
+
 
 __RAZE_VX_NAMESPACE_BEGIN
+
+template <simd_type _Simd_, sizetype ... _Indices_>
+struct _Shuffle_pattern;
+
+template <class _Pattern_, sizetype _ChunkSize_, sizetype _ChunkIndex_, class _Seq_>
+struct __split_part_impl;
+
+template <class _Pattern_, sizetype _ChunkSize_, sizetype _ChunkIndex_, sizetype... I>
+struct __split_part_impl<_Pattern_, _ChunkSize_, _ChunkIndex_, std::index_sequence<I...>> {
+    using simd_type = typename _Pattern_::vector_type;
+    using type = _Shuffle_pattern<__split_by_simd_t<_ChunkSize_, simd_type, _ChunkIndex_>,
+        _Pattern_::template __at<_ChunkIndex_* _ChunkSize_ + I>()...>;
+};
+
+template <class _Pattern_, sizetype _ChunkSize_, sizetype _ChunkIndex_>
+using __split_part_t = typename __split_part_impl<_Pattern_,
+    _ChunkSize_, _ChunkIndex_, std::make_index_sequence<
+        ((_ChunkIndex_ + 1)* _ChunkSize_ <= _Pattern_::size())
+            ? _ChunkSize_ : (_Pattern_::size() - _ChunkIndex_ * _ChunkSize_)>>::type;
 
 template <simd_type _Simd_, sizetype ... _Indices_>
 struct _Shuffle_pattern {
 	static_assert(sizeof...(_Indices_) > 0);
     // static_assert(sizeof...(_Indices_) == _Simd_::size());
+
+    static constexpr std::array<sizetype, sizeof...(_Indices_)> __indices = { _Indices_ ... };
 
 	using vector_type = _Simd_;
 
@@ -29,8 +52,12 @@ struct _Shuffle_pattern {
 	}
 
 	template <sizetype _I_>
-	static constexpr auto __at() noexcept {
-		return std::get<_I_>(std::make_tuple(_Indices_...));
+    static constexpr auto __at() noexcept {
+#if 0
+        return std::get<_I_>(std::make_tuple(_Indices_...));
+#else
+        return __indices[_I_];
+#endif
 	}
 
 	template <sizetype _I_>
@@ -39,7 +66,7 @@ struct _Shuffle_pattern {
 	}
 
 	constexpr auto operator[](sizetype __i) const noexcept {
-		return to_array<sizetype>()[__i];
+		return __indices[__i];
 	}
 
 	template <std::unsigned_integral _IdxType_>
@@ -237,11 +264,11 @@ struct _Shuffle_pattern {
         using HalfSimd = simd<typename _Simd_::value_type, resize_abi_t<abi_t<_Simd_>, size() / 2>>;
 
         return std::pair{
-            [] <sizetype... J>(std::index_sequence<J...>) {
+            [] <sizetype... J> (std::index_sequence<J...>) {
                 return _Shuffle_pattern<HalfSimd, __at<J>()...>{};
             }(std::make_index_sequence<size() / 2>{}),
 
-            []<sizetype... J>(std::index_sequence<J...>) {
+            [] <sizetype... J> (std::index_sequence<J...>) {
                 return _Shuffle_pattern<HalfSimd, __at<J + size() / 2>()...>{};
             }(std::make_index_sequence<size() / 2>{})
         };
@@ -251,15 +278,29 @@ struct _Shuffle_pattern {
         return __split_impl(std::make_index_sequence<size()>{});
     }
 
+    template <sizetype _N_, sizetype... I>
+    constexpr auto __split_by_impl(std::index_sequence<I...>) const noexcept {
+        constexpr sizetype __chunk_size = (size() + _N_ - 1) / _N_;
+        return std::tuple<__split_part_t<_Shuffle_pattern, __chunk_size, I>...>{};
+    }
+
+    
+    template <sizetype _Chunks_>
+    consteval auto split_by() const noexcept {
+        static_assert(_Chunks_ > 0);
+        return __split_by_impl<_Chunks_>(std::make_index_sequence<_Chunks_>{});
+    }
+    
+
     template <class _Predicate_>
-    static constexpr auto to_mask(_Predicate_ __pred) noexcept {
+    raze_no_stack_protector raze_always_inline static auto to_mask(_Predicate_ __pred) noexcept {
         using mask_type = simd_mask<typename _Simd_::value_type, abi_t<_Simd_>>;
         alignas(64) static constexpr bool __mask[size()] { __pred(_Indices_)... };
         return mask_type(__mask, __aligned_policy{});
     }
 
     template <class _Predicate1_, class _Predicate2_>
-    static constexpr auto to_mask(_Predicate1_ __low, _Predicate2_ __high) noexcept {
+    raze_no_stack_protector raze_always_inline static auto to_mask(_Predicate1_ __low, _Predicate2_ __high) noexcept {
         using mask_type = simd_mask<typename _Simd_::value_type, abi_t<_Simd_>>;
 
         static constexpr std::array<sizetype, size()> __idx = { _Indices_... };
@@ -274,6 +315,7 @@ struct _Shuffle_pattern {
 
         return mask_type(__mask.data(), __aligned_policy{});
     }
+
 };
 
 template <class _Pattern_>

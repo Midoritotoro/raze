@@ -29,7 +29,7 @@ public:
 	using value_type = _Type_;
 	using abi_type = _Abi_;
 
-	simd_mask() noexcept {
+	raze_always_inline simd_mask() noexcept {
 		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
 			__chunk = _Mask_zero<abi_type::isa, typename _Chunk::unwrapped_type>()();
 		});
@@ -39,21 +39,21 @@ public:
 	simd_mask(simd_mask&&) = default;
 	~simd_mask() = default;
 
-	simd_mask(bool __value) noexcept {
+	raze_no_stack_protector raze_always_inline simd_mask(bool __value) noexcept {
 		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
 			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(__value);
 		});
 	}
 
 	template <class _ForwardIterator_, class _AlignmentPolicy_ = __unaligned_policy>
-	simd_mask(const _ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
+	raze_no_stack_protector raze_always_inline simd_mask(const _ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
 		requires(type_traits::is_iterator_v<_ForwardIterator_> && type_traits::is_iterator_forward_ranges_v<_ForwardIterator_>)
 	{
 		copy_from(__first, __alignment_policy);
 	}
 
 	template <class _ForwardIterator_, class _AlignmentPolicy_ = __unaligned_policy>
-	raze_always_inline void copy_from(_ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
+	raze_no_stack_protector raze_always_inline void copy_from(_ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
 		requires(std::convertible_to<std::iter_value_t<_ForwardIterator_>, bool>)
 	{
 		using _ItType = algorithm::__unwrapped_iterator_type<_ForwardIterator_>;

@@ -46,7 +46,7 @@ public:
     static constexpr auto __isa = _Abi_::isa;
     static constexpr auto __width = (_Abi_::size * sizeof(_Type_) * 8);
     static constexpr auto __size = _Abi_::size;
-    static constexpr auto __has_scalar_chunks = (_Abi_::size & (_Abi_::size - 1)) != 0;
+    static constexpr auto __has_scalar_chunks = (_Abi_::size % 16) != 0;
 
     using storage_type  = _Vector_storage<_Type_, _Abi_>;
     using reference     = _Simd_element_reference<simd>;

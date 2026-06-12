@@ -11,7 +11,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <arch::ISA _ISA_, u32 _Size_, raw_mask_type _Mask_, arithmetic_type _Type_>
 struct _Load_mask {
 	template <class _AlignPolicy_ = __unaligned_policy>
-	raze_nodiscard raze_static_operator raze_always_inline _Mask_ operator()(
+	raze_nodiscard raze_no_stack_protector raze_static_operator raze_always_inline _Mask_ operator()(
 		const bool* __mem, _AlignPolicy_&& __policy = _AlignPolicy_{}) raze_const_operator noexcept 
 	{
 		using _Signed = typename IntegerForSizeof<_Type_>::Signed;
