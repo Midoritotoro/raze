@@ -738,16 +738,6 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle_native_size(co
 	}
 }
 
-template <simd_type _Simd_>
-raze_always_inline raze_no_stack_protector auto __duplicate_low_half(const _Simd_& __x) noexcept {
-
-}
-
-template <simd_type _Simd_>
-raze_always_inline raze_no_stack_protector auto __duplicate_high_half(const _Simd_& __x) noexcept {
-
-}
-
 template <class _Pattern_>
 raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
 	using _Simd_ = pattern_vector_t<_Pattern_>;
@@ -755,94 +745,38 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_
 	if constexpr (__is_identity(__p)) return __x;
 	else if constexpr (native<_Simd_>) return __generic_shuffle_native_size(__x, __p);
 	else if constexpr (!has_any_scalar_chunks<_Simd_> && _Simd_::__chunks_count() == 2) {
-		alignas(64) typename _Simd_::value_type __arr[_Simd_::size()];
-
+		alignas(64) typename _Simd_::value_type __arr[_Simd_::size()]; 
 		const auto [__v1, __v2] = vx::__split(__x);
 
 		vx::__store[vx::aligned](__arr, __v1);
 		vx::__store[vx::aligned](__arr + __v1.size(), __v1);
-		const auto __low_dup = vx::__load<_Simd_>[vx::aligned](__arr);
+		auto __dup_low = vx::__load<_Simd_>[vx::aligned](__arr);
 
 		vx::__store[vx::aligned](__arr, __v2);
 		vx::__store[vx::aligned](__arr + __v2.size(), __v2);
-		const auto __high_dup = vx::__load<_Simd_>[vx::aligned](__arr);
+		auto __dup_high = vx::__load<_Simd_>[vx::aligned](__arr);
 
-		constexpr auto __split = __p.split();
+		constexpr auto __new_p = __p.split();
 
-		auto __shuffle_whole = []<class _Vec_, class _Pat_>(
-			const _Vec_ & __v,
-			_Pat_
-			) {
-			auto __r = __v;
+		auto& __c1_low = __dup_low.template __get<0>();
+		auto& __c1_high = __dup_high.template __get<0>();
 
-			auto& __c0 = __r.template __get<0>();
-			auto& __c1 = __r.template __get<1>();
+		using _Chunk1 = std::remove_cvref_t<decltype(__c1_low)>;
+		using _Chunk2 = std::remove_cvref_t<decltype(__c1_high)>;
 
-			using _ChunkSimd =
-				typename std::remove_cvref_t<decltype(__c0)>::as_simd;
+		const auto __r1 = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(
+			__storage_unwrap(__c1_low), make_shuffle_pattern<typename _Chunk1::as_simd, [&](auto __i) { return __new_p.first[__i]; } > {});
 
-			__c0 = __unwrap_fallback(
-				__generic_shuffle_native<
-				abi_t<_Simd_>::isa,
-				typename _Simd_::value_type
-				>(
-					__storage_unwrap(__c0),
-					make_shuffle_pattern <
-					_ChunkSimd,
-					[&](auto i) { return _Pat_{}[i]; }
-					> {}
-				)
-			);
+		const auto __r2 = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(
+			__storage_unwrap(__c1_high), make_shuffle_pattern<typename _Chunk1::as_simd, [&](auto __i) { return __new_p.second[__i]; } > {});
 
-			__c1 = __unwrap_fallback(
-				__generic_shuffle_native<
-				abi_t<_Simd_>::isa,
-				typename _Simd_::value_type
-				>(
-					__storage_unwrap(__c1),
-					make_shuffle_pattern <
-					_ChunkSimd,
-					[&](auto i) { return _Pat_{}[i]; }
-					> {}
-				)
-			);
+		__c1_low = __unwrap_fallback(__r1);
+		__dup_low.template __get<1>() = __c1_low;
+		__c1_high = __unwrap_fallback(__r2);
+		__dup_high.template __get<1>() = __c1_high;
 
-			return __r;
-		};
-
-		auto __lower =
-			__shuffle_whole(__low_dup, decltype(__split.first){});
-
-		auto __upper =
-			__shuffle_whole(__high_dup, decltype(__split.second){});
-
-		const auto __mask =
-			__p.to_mask(
-				[](auto i) { return i >= decltype(__v1)::size(); });
-
-		return vx::__select[__lower, __mask](__upper);
-		
-
-		//[&] <sizetype... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
-//	([&](auto __i) raze_always_inline_lambda{
-//		auto& __c1 = __dup_low.template __get<__i>();
-//		auto& __c2 = __dup_high.template __get<__i>();
-
-//		auto __c1_in = __storage_unwrap(__c1);
-//		auto __c2_in = __storage_unwrap(__c2);
-
-//		using _Chunk1 = std::remove_cvref_t<decltype(__c1)>;
-//		using _Chunk2 = std::remove_cvref_t<decltype(__c2)>;
-
-//		const auto __r1 = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(
-//			__c1_in, make_shuffle_pattern<typename _Chunk1::as_simd, [&] (auto __i) { return __new_p.first[__i]; }>{});
-//		const auto __r2 = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(
-//			__c2_in, make_shuffle_pattern<typename _Chunk2::as_simd, [&] (auto __i) { return __new_p.second[__i]; }>{});
-
-//		__c1 = __unwrap_fallback(__r1);
-//		__c2 = __unwrap_fallback(__r2);
-//	}(std::integral_constant<sizetype, _Indices_>{}), ...);
-//}(std::make_integer_sequence<sizetype, _Simd_::__chunks_count()>{});
+		const auto __mask = __p.to_mask([](auto __idx) { return __idx >= decltype(__v1)::size(); });
+		return vx::__select[__dup_low, __mask](__dup_high);
 	}
 	else return __generic_shuffle_scalar_fallback(__x, __p);
 }
