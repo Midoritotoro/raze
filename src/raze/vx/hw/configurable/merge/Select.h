@@ -44,4 +44,6 @@ struct _Configurable_select: raze::options::strict_elementwise_callable<_Configu
     using callable_tag_type = _Configurable_select;
 };
 
+constexpr inline auto __select = raze::options::functor<_Configurable_select>;
+
 __RAZE_VX_NAMESPACE_END

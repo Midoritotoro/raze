@@ -199,6 +199,7 @@ struct shuffle_tests {
 
     void operator()() {
         test_size<_Width_ / (sizeof(_Type_) * 8)>();
+        test_size<(_Width_ / (sizeof(_Type_) * 8)) * 2>();
     }
 };
 

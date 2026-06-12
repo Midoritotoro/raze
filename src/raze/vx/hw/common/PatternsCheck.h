@@ -411,6 +411,15 @@ template <simd_type _Simd_, auto _Fn_>
 using make_shuffle_pattern = decltype(__make_shuffle_pattern_impl<_Simd_, _Fn_>(
 		std::make_integer_sequence<sizetype, _Simd_::size()>{}));
 
+template <simd_type _Simd_, auto _Fn_, sizetype _Offset_, sizetype ... _Indices_>
+consteval auto __make_shuffle_pattern_with_offset_impl(std::integer_sequence<sizetype, _Indices_...>) noexcept {
+	return _Shuffle_pattern<_Simd_, _Fn_(_Indices_ + _Offset_)...>{};
+}
+
+template <simd_type _Simd_, auto _Fn_, sizetype _Offset_>
+using make_shuffle_pattern_with_offset = decltype(__make_shuffle_pattern_with_offset_impl<_Simd_, _Fn_, _Offset_>(
+	std::make_integer_sequence<sizetype, _Simd_::size()>{}));
+
 template <simd_type _Simd_, sizetype ... _Indices_>
 using make_pattern = _Shuffle_pattern<_Simd_, _Indices_...>;
 

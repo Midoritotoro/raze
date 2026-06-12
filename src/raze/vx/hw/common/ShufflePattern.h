@@ -8,6 +8,8 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <simd_type _Simd_, sizetype ... _Indices_>
 struct _Shuffle_pattern {
 	static_assert(sizeof...(_Indices_) > 0);
+    // static_assert(sizeof...(_Indices_) == _Simd_::size());
+
 	using vector_type = _Simd_;
 
 	constexpr _Shuffle_pattern() noexcept {}
@@ -22,8 +24,8 @@ struct _Shuffle_pattern {
 		return sizeof...(_Indices_);
 	}
 
-	static constexpr std::integer_sequence<size_t, _Indices_...> get() noexcept {
-		return std::integer_sequence<size_t, _Indices_...>{};
+	static constexpr std::integer_sequence<sizetype, _Indices_...> get() noexcept {
+		return std::integer_sequence<sizetype, _Indices_...>{};
 	}
 
 	template <sizetype _I_>
@@ -214,7 +216,7 @@ struct _Shuffle_pattern {
         constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
         constexpr sizetype __L = size() / __lanes;
 
-        return[] <sizetype... __I>(std::index_sequence<__I...>) {
+        return [] <sizetype... __I>(std::index_sequence<__I...>) {
             return _Shuffle_pattern<_Simd_, ((__I / __L) != (__at<__I>() / __L) ? static_cast<sizetype>(-1) : __at<__I>())...>{};
         }(std::make_index_sequence<size()>{});
     }
@@ -224,9 +226,53 @@ struct _Shuffle_pattern {
         constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
         constexpr sizetype __L = size() / __lanes;
 
-        return[] <sizetype... __I>(std::index_sequence<__I...>) {
+        return [] <sizetype... __I>(std::index_sequence<__I...>) {
             return _Shuffle_pattern<_Simd_, ((__I / __L) == (__at<__I>() / __L) ? static_cast<sizetype>(-1) : __at<__I>())...>{};
         }(std::make_index_sequence<size()>{});
+    }
+
+    template <sizetype... I>
+    static constexpr auto __split_impl(std::index_sequence<I...>)
+    {
+        using HalfSimd = simd<typename _Simd_::value_type, resize_abi_t<abi_t<_Simd_>, size() / 2>>;
+
+        return std::pair{
+            [] <sizetype... J>(std::index_sequence<J...>) {
+                return _Shuffle_pattern<HalfSimd, __at<J>()...>{};
+            }(std::make_index_sequence<size() / 2>{}),
+
+            []<sizetype... J>(std::index_sequence<J...>) {
+                return _Shuffle_pattern<HalfSimd, __at<J + size() / 2>()...>{};
+            }(std::make_index_sequence<size() / 2>{})
+        };
+    }
+
+    constexpr auto split() const noexcept {
+        return __split_impl(std::make_index_sequence<size()>{});
+    }
+
+    template <class _Predicate_>
+    static constexpr auto to_mask(_Predicate_ __pred) noexcept {
+        using mask_type = simd_mask<typename _Simd_::value_type, abi_t<_Simd_>>;
+        alignas(64) static constexpr bool __mask[size()] { __pred(_Indices_)... };
+        return mask_type(__mask, __aligned_policy{});
+    }
+
+    template <class _Predicate1_, class _Predicate2_>
+    static constexpr auto to_mask(_Predicate1_ __low, _Predicate2_ __high) noexcept {
+        using mask_type = simd_mask<typename _Simd_::value_type, abi_t<_Simd_>>;
+
+        static constexpr std::array<sizetype, size()> __idx = { _Indices_... };
+        alignas(64) static constexpr std::array<bool, size()> __mask = [=] {
+            std::array<bool, size()> __m {};
+
+            for (auto __i = 0; __i < size(); ++__i)
+                __m[__i] = (__i < size() / 2) ? __low(__idx[__i]) : __high(__idx[__i]);
+
+            return __m;
+        }();
+
+        return mask_type(__mask.data(), __aligned_policy{});
     }
 };
 

@@ -79,4 +79,6 @@ struct _Configurable_concat: raze::options::strict_elementwise_callable<_Configu
     using callable_tag_type = _Configurable_concat;
 };
 
+constexpr inline auto __concat = raze::options::functor<_Configurable_concat>;
+
 __RAZE_VX_NAMESPACE_END
