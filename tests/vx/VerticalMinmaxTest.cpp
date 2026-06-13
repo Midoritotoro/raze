@@ -21,9 +21,9 @@ struct vertical_minmax_tests {
             arrB[i] = _Type_((i % 3 == 0) ? (i + 5) : -(i + 2));
         }
 
-        Simd a; a.copy_from(arrA);
-        Simd b;  b.copy_from(arrB);
-        Simd fbk; fbk.copy_from(fallback);
+        Simd a = raze::vx::load<Simd>(arrA);
+        Simd b = raze::vx::load<Simd>(arrB);
+        Simd fbk = raze::vx::load<Simd>(fallback);
 
         {
             auto vmin = raze::vx::vertical_min(a, b);

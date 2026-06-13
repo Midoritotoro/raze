@@ -19,8 +19,8 @@ struct horizontal_minmax_tests {
         for (size_t i = 0; i < N; ++i)
             arr[i] = _Type_((i % 3 == 0) ? -(i + 5) : (i + 1));
 
-        Simd v; v.copy_from(arr);
-        Simd fbk; fbk.copy_from(fallback);
+        Simd v = raze::vx::load<Simd>(arr);
+        Simd fbk = raze::vx::load<Simd>(fallback);
 
         {
             auto hmin = raze::vx::horizontal_min(v);

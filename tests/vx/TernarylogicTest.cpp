@@ -11,10 +11,10 @@ void __test_ternarylogic_single_mask() {
         arrSrc[i] = T(100 + i);
     }
 
-    Simd a; a.copy_from(arrA);
-    Simd b; b.copy_from(arrB);
-    Simd c; c.copy_from(arrC);
-    Simd src; src.copy_from(arrSrc);
+    Simd a = raze::vx::load<Simd>(arrA);
+    Simd b = raze::vx::load<Simd>(arrB);
+    Simd c = raze::vx::load<Simd>(arrC);
+    Simd src = raze::vx::load<Simd>(arrSrc);
 
     Mask m = make_random_mask<Mask>();
 

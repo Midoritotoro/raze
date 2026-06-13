@@ -49,15 +49,15 @@ struct arithmetic_tests {
 
         std::transform(arrB, arrB + N, arrB, [](auto x) { return x * 3; });
 
-        Simd a; a.copy_from(arrA);
-        Simd b; b.copy_from(arrB);
+        Simd a = raze::vx::load<Simd>(arrA);
+        Simd b = raze::vx::load<Simd>(arrB);
 
         run(a, b, arrA, arrB, [](auto x, auto y) { return x + y; }, [](auto x, auto y) { return x + y; });
         run(a, b, arrA, arrB, [](auto x, auto y) { return x - y; }, [](auto x, auto y) { return x - y; });
         run(a, b, arrA, arrB, [](auto x, auto y) { return x * y; }, [](auto x, auto y) { return x * y; });
         
         std::iota(arrB, arrB + N, _Type_(1));
-        b.copy_from(arrB); 
+        b = raze::vx::load<Simd>(arrB);
 
         run(a, b, arrA, arrB, [](auto x, auto y) { return x / y; }, [](auto x, auto y) { return x / y; });
         
@@ -72,7 +72,7 @@ struct arithmetic_tests {
             alignas(64) _Type_ arrSrc[N];
             std::iota(arrSrc, arrSrc + N, 50);
 
-            Simd src; src.copy_from(arrSrc);
+            Simd src; src = raze::vx::load<Simd>(arrSrc);
 
             const auto run_tests = [arrA, arrB, arrSrc, a, b, src](auto m) {
                 test_where_unary<_Type_, N>(

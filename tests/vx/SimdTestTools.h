@@ -24,84 +24,11 @@ Mask make_random_mask() {
     return m;
 }
 
-template <
-    class T, 
-    size_t N,
-    class Simd, 
-    class Mask,
-    class WhereExpr,
-    class WhereZeroExpr,
-    class SimdOp,
-    class ScalarOp>
-void test_where_ternary(
-    const T(&arrA)[N], 
-    const T(&arrB)[N], 
-    const T(&arrC)[N],
-    const Mask& m,
-    const Simd& a, 
-    const Simd& b, 
-    const Simd& c,
-    const Simd& src,
-    const WhereExpr& w,
-    const WhereZeroExpr& wz,
-    SimdOp simd_op,
-    ScalarOp scalar_op) noexcept
-{
-    {
-        auto r1 = simd_op(w, b, c);
-        auto r2 = simd_op(a, w, c);
-        auto r3 = simd_op(a, b, w);
-
-        for (size_t i = 0; i < N; ++i) {
-            T expected1 = scalar_op(arrA[i], arrB[i], arrC[i], src[i], m[i], 0);
-            T expected2 = scalar_op(arrA[i], arrA[i], arrC[i], src[i], m[i], 1);
-            T expected3 = scalar_op(arrA[i], arrB[i], arrA[i], src[i], m[i], 2);
-
-            raze_assert(r1[i] == expected1);
-            raze_assert(r2[i] == expected2);
-            raze_assert(r3[i] == expected3);
-        }
-    }
-
-    {
-        auto r1 = simd_op(wz, b, c);
-        auto r2 = simd_op(a, wz, c);
-        auto r3 = simd_op(a, b, wz);
-
-        for (size_t i = 0; i < N; ++i) {
-            T zero = T(0);
-
-            T expected1 = m[i] ? scalar_op(arrA[i], arrB[i], arrC[i], zero, true, 0) : zero;
-            T expected2 = m[i] ? scalar_op(arrA[i], arrA[i], arrC[i], zero, true, 1) : zero;
-            T expected3 = m[i] ? scalar_op(arrA[i], arrB[i], arrA[i], zero, true, 2) : zero;
-
-            raze_assert(r1[i] == expected1);
-            raze_assert(r2[i] == expected2);
-            raze_assert(r3[i] == expected3);
-        }
-    }
-}
-
-
-template <
-    class T, 
-    size_t N, 
-    class Simd,
-    class Mask,
-    class SimdMaskOp, 
-    class SimdMaskzOp,
-    class ScalarOp>
-void test_where_binary(
-    const T(&arrA)[N], 
-    const T(&arrB)[N], 
-    const T(&arrSrc)[N],
-    const Mask& m, 
-    const Simd& a,
-    const Simd& b,
-    const Simd& src,
-    SimdMaskOp simd_mask_op,
-    SimdMaskzOp simd_maskz_op,
-    ScalarOp scalar_op) noexcept
+template <class T, size_t N, class Simd, class Mask, 
+    class SimdMaskOp, class SimdMaskzOp, class ScalarOp>
+void test_where_binary(const T(&arrA)[N], const T(&arrB)[N], const T(&arrSrc)[N],
+    const Mask& m,  const Simd& a, const Simd& b, const Simd& src,
+    SimdMaskOp simd_mask_op, SimdMaskzOp simd_maskz_op, ScalarOp scalar_op) noexcept
 {
     {
         auto r1 = simd_mask_op(a, b);
@@ -140,23 +67,40 @@ void test_where_binary(
     }
 }
 
-template <
-    class T, 
-    size_t N, 
-    class Simd,
-    class Mask,
-    class SimdMaskOp,
-    class SimdMaskzOp,
-    class ScalarOp>
-void test_where_unary(
-    const T(&arrA)[N],
-    const T(&arrSrc)[N],
-    const Mask& m,
-    const Simd& a,
-    const Simd& src,
-    SimdMaskOp simd_mask_op,
-    SimdMaskzOp simd_maskz_op,
-    ScalarOp scalar_op) noexcept
+template <class T, size_t N, class Simd, class Mask, 
+    class SimdMaskOp, class SimdMaskzOp, class ScalarOp>
+void test_where_ternary(const T(&arrA)[N], const T(&arrB)[N], const T(&arrC)[N], const T(&arrSrc)[N],
+    const Mask& m,  const Simd& a, const Simd& b, const Simd& c, const Simd& src,
+    SimdMaskOp simd_mask_op, SimdMaskzOp simd_maskz_op, ScalarOp scalar_op) noexcept
+{
+    {
+        auto r1 = simd_mask_op(a, b, c);
+
+        for (size_t i = 0; i < N; ++i) {
+            using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+            auto expected1 = std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], arrB[i], arrC[i], arrSrc[i], m[i])));
+            T extracted1 = r1[i];
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+        }
+    }
+
+    {
+        auto r1 = simd_maskz_op(a, b, c);
+
+        for (size_t i = 0; i < N; ++i) {
+            using _Reinterpret_type = typename raze::IntegerForSizeof<T>::Unsigned;
+            auto expected1 = m[i] ? std::bit_cast<_Reinterpret_type>(T(scalar_op(arrA[i], arrB[i], arrC[i], T(0), true))) : _Reinterpret_type(0);
+            T extracted1 = r1[i];
+            raze_assert(std::bit_cast<_Reinterpret_type>(extracted1) == expected1);
+        }
+    }
+}
+
+template <class T, size_t N, class Simd, class Mask,
+    class SimdMaskOp, class SimdMaskzOp, class ScalarOp>
+void test_where_unary(const T(&arrA)[N], const T(&arrSrc)[N], const Mask& m,
+    const Simd& a, const Simd& src, SimdMaskOp simd_mask_op,
+    SimdMaskzOp simd_maskz_op, ScalarOp scalar_op) noexcept
 {
     {
         auto r1 = simd_mask_op(a);

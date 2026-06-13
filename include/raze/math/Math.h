@@ -25,5 +25,9 @@ raze_nodiscard raze_always_inline _Type_ cos(_Type_ __x) noexcept {
 }
 
 constexpr inline auto abs = raze::options::functor<_Configurable_abs>;
+constexpr inline auto fma = raze::options::functor<_Configurable_fma>;
+constexpr inline auto fms = raze::options::functor<_Configurable_fms>;
+constexpr inline auto fnma = raze::options::functor<_Configurable_fnma>;
+constexpr inline auto fnms = raze::options::functor<_Configurable_fnms>;
 
 __RAZE_MATH_NAMESPACE_END

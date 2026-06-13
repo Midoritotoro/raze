@@ -16,11 +16,8 @@ struct reduce_tests {
         std::iota(arr, arr + N, 1);
         std::iota(fallback, fallback + N, 42);
 
-        Simd v;
-        v.copy_from(arr);
-
-        Simd fbk;
-        fbk.copy_from(fallback);
+        Simd v = raze::vx::load<Simd>(arr);
+        Simd fbk = raze::vx::load<Simd>(fallback);
 
         {
             auto result = raze::vx::hsum(v);

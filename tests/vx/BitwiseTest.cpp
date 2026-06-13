@@ -58,8 +58,8 @@ struct bitwise_tests {
         arrA[0]     = -1;
         arrA[N - 1] = 255;
 
-        Simd a; a.copy_from(arrA);
-        Simd b; b.copy_from(arrB);
+        Simd a; a = raze::vx::load<Simd>(arrA);
+        Simd b; b = raze::vx::load<Simd>(arrB);
 
         run(a, b, arrA, arrB, [](auto x, auto y){ return x & y; }, [](auto x, auto y){ return x & y; });
         run(a, b, arrA, arrB, [](auto x, auto y){ return x | y; }, [](auto x, auto y){ return x | y; });
@@ -115,7 +115,7 @@ struct bitwise_tests {
             alignas(64) _Type_ arrSrc[N];
             std::iota(arrSrc, arrSrc + N, 50);
 
-            Simd src; src.copy_from(arrSrc);
+            Simd src; src = raze::vx::load<Simd>(arrSrc);
 
             const auto run_tests = [arrA, arrB, arrSrc, a, b, src](auto m) {
                 test_where_unary<_Type_, N>(

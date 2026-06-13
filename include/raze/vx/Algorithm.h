@@ -15,6 +15,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+/* abs, fma, fms, fnma, fnms, sin, cos, tan, cotan defined in raze/math/Math.h */
 constexpr inline auto add = raze::options::functor<_Configurable_add>;
 constexpr inline auto sub = raze::options::functor<_Configurable_sub>;
 constexpr inline auto mul = raze::options::functor<_Configurable_mul>;
