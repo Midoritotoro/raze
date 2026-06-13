@@ -11,6 +11,12 @@ concept simd_type = __is_valid_simd_v<_Simd_>;
 template <class _Type_>
 concept simd_or_arithmetic_type = simd_type<_Type_> || arithmetic_type<_Type_>;
 
+template <class _Type_>
+concept floating_point_simd = simd_type<_Type_> || std::floating_point<typename _Type_::value_type>;
+
+template <class _Type_>
+concept floating_point_simd_or_scalar_type = floating_point_simd<_Type_> || std::floating_point<_Type_>;
+
 template <class _SimdMask_>
 concept simd_mask_type = __is_simd_mask_v<_SimdMask_>;
 

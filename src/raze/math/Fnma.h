@@ -12,7 +12,24 @@ __RAZE_MATH_NAMESPACE_BEGIN
 
 template <class _Options_>
 struct _Configurable_fnma: raze::options::strict_elementwise_callable<_Configurable_fnma, _Options_> {
-    template <vx::simd_or_arithmetic_type _Type_>
+    template <class _A_, class _B_, class _C_>
+        requires (vx::simd_type<std::remove_cvref_t<_A_>> ||
+            vx::simd_type<std::remove_cvref_t<_B_>> ||
+            vx::simd_type<std::remove_cvref_t<_C_>>)
+    raze_nodiscard raze_always_inline std::conditional_t<vx::simd_type<std::remove_cvref_t<_A_>>, std::remove_cvref_t<_A_>,
+        std::conditional_t<vx::simd_type<std::remove_cvref_t<_B_>>, std::remove_cvref_t<_B_>,
+        std::remove_cvref_t<_C_>>> operator()(_A_&& __x, _B_&& __y, _C_&& __z) const noexcept {
+        using _Simd_ = std::conditional_t<vx::simd_type<std::remove_cvref_t<_A_>>, std::remove_cvref_t<_A_>,
+            std::conditional_t<vx::simd_type<std::remove_cvref_t<_B_>>, std::remove_cvref_t<_B_>,
+            std::remove_cvref_t<_C_>>>;
+
+        return raze::options::__dispatch_call(*this,
+            _Simd_(std::forward<_A_>(__x)),
+            _Simd_(std::forward<_B_>(__y)),
+            _Simd_(std::forward<_C_>(__z)));
+    }
+
+    template <vx::arithmetic_type _Type_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, const _Type_& __y, const _Type_& __z) const noexcept {
         return raze::options::__dispatch_call(*this, __x, __y, __z);
     }
@@ -64,6 +81,8 @@ struct _Configurable_fnma: raze::options::strict_elementwise_callable<_Configura
 
     using callable_tag_type = _Configurable_fnma;
 };
+
+constexpr inline auto __fnma = raze::options::functor<_Configurable_fnma>;
 
 __RAZE_MATH_NAMESPACE_END
 

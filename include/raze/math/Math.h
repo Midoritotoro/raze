@@ -14,20 +14,12 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-template <class _Type_>
-raze_nodiscard raze_always_inline _Type_ sin(_Type_ __x) noexcept {
-	return __sin(__x);
-}
-
-template <class _Type_>
-raze_nodiscard raze_always_inline _Type_ cos(_Type_ __x) noexcept {
-	return __cos(__x);
-}
-
 constexpr inline auto abs = raze::options::functor<_Configurable_abs>;
-constexpr inline auto fma = raze::options::functor<_Configurable_fma>;
-constexpr inline auto fms = raze::options::functor<_Configurable_fms>;
-constexpr inline auto fnma = raze::options::functor<_Configurable_fnma>;
-constexpr inline auto fnms = raze::options::functor<_Configurable_fnms>;
+constexpr inline auto fma = __fma;
+constexpr inline auto fms = __fms;
+constexpr inline auto fnma = __fnma;
+constexpr inline auto fnms = __fnms;
+constexpr inline auto sin = raze::options::functor<_Configurable_sin>;
+constexpr inline auto cos = raze::options::functor<_Configurable_cos>;
 
 __RAZE_MATH_NAMESPACE_END

@@ -199,3 +199,62 @@ void test_all() {
     __test_all_helper<_Function_, raze::arch::ISA::AVX512VBMIVLDQ, 256>();
     __test_all_helper<_Function_, raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
 }
+
+template <
+    template <class, raze::arch::ISA, raze::u32> class _Function_,
+    raze::arch::ISA  _ISA_,
+    raze::u32 _Width_>
+void __test_all_fp_helper() {
+    if (!raze::arch::ProcessorFeatures::isSupported<_ISA_>())
+        return;
+
+    std::invoke(_Function_<raze::f32, _ISA_, _Width_>());
+    std::invoke(_Function_<raze::f64, _ISA_, _Width_>());
+}
+
+template <template <class, raze::arch::ISA, raze::u32> class _Function_>
+void test_all_fp() {
+    __test_all_fp_helper<_Function_, raze::arch::ISA::SSE2, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::SSE3, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::SSSE3, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::SSE41, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::SSE42, 128>();
+
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::FMA3, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX2, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX2FMA3, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX2, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::FMA3, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX2FMA3, 256>();
+
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512F, 512>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512BW, 512>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512DQ, 512>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512BWDQ, 512>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMI, 512>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMI2, 512>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMIDQ, 512>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMI2DQ, 512>();
+
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLF, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLBW, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLBWDQ, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLDQ, 128>();
+
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLF, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLBW, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLBWDQ, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VLDQ, 256>();
+
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMIVL, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMI2VL, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMIVLDQ, 128>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMI2VLDQ, 128>();
+
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMIVL, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMI2VL, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMIVLDQ, 256>();
+    __test_all_fp_helper<_Function_, raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
+}
