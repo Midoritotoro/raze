@@ -290,7 +290,6 @@ struct _Shuffle_pattern {
         static_assert(_Chunks_ > 0);
         return __split_by_impl<_Chunks_>(std::make_index_sequence<_Chunks_>{});
     }
-    
 
     template <class _Predicate_>
     raze_no_stack_protector raze_always_inline static auto to_mask(_Predicate_ __pred) noexcept {
@@ -316,6 +315,15 @@ struct _Shuffle_pattern {
         return mask_type(__mask.data(), __aligned_policy{});
     }
 
+    raze_always_inline constexpr auto invalidate_cross_lane() const noexcept {
+        constexpr sizetype __simd_size = sizeof(_Simd_);
+        constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
+        constexpr sizetype __lane_size = size() / __lanes;
+
+        return [] <sizetype... I> (std::index_sequence<I...>) {
+            return _Shuffle_pattern<_Simd_, (((__at<I>() / __lane_size) != (I / __lane_size)) ? static_cast<sizetype>(-1) : __at<I>())...>{};
+        }(std::make_index_sequence<size()>{});
+    }
 };
 
 template <class _Pattern_>

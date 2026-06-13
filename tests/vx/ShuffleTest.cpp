@@ -205,6 +205,16 @@ struct shuffle_tests {
 };
 
 int main() {
-    test_all<shuffle_tests>();
+    /*__test_all_helper<shuffle_tests, raze::arch::ISA::SSE2, 128>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::SSSE3, 128>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::SSE41, 128>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX2, 256>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX, 256>();*/
+    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512F, 512>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512BW, 512>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VBMI, 512>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VLBW, 256>();
+    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VBMIVL, 256>();
+
     return 0;
 }
