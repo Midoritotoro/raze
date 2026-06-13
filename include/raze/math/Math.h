@@ -3,6 +3,7 @@
 #include <raze/Types.h>
 #include <raze/compatibility/Compatibility.h>
 #include <src/raze/vx/hw/Arithmetic.h>
+#include <src/raze/math/Abs.h>
 #include <src/raze/math/Fma.h>
 #include <src/raze/math/Fms.h>
 #include <src/raze/math/Fnma.h>
@@ -22,5 +23,7 @@ template <class _Type_>
 raze_nodiscard raze_always_inline _Type_ cos(_Type_ __x) noexcept {
 	return __cos(__x);
 }
+
+constexpr inline auto abs = raze::options::functor<_Configurable_abs>;
 
 __RAZE_MATH_NAMESPACE_END

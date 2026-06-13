@@ -21,21 +21,6 @@ struct __ignore_none {
         return _Type_{};
     }
 
-    template <class _Type_> 
-    constexpr raze_always_inline std::ptrdiff_t offset(const as<_Type_>&) const noexcept {
-        return 0;
-    }
-
-    template <class _Type_>
-    constexpr raze_always_inline std::ptrdiff_t roffset(const as<_Type_>&) const noexcept {
-        return 0;
-    }
-
-    template <class _Type_>
-    constexpr raze_always_inline std::ptrdiff_t count(const as<_Type_>&) const noexcept {
-        return _Type_::size();
-    }
-
     raze_always_inline constexpr bool friend operator==(__ignore_none const&, __ignore_none const&) noexcept = default;
 };
 

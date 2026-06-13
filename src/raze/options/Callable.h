@@ -13,13 +13,11 @@ struct __decorator
 {};
 
 template <class _ConditionType_>
-concept condition_type = vx::simd_mask_type<_ConditionType_> || std::is_same_v<_ConditionType_, bool>;
+concept condition_type = vx::simd_mask_type<_ConditionType_> || std::is_same_v<std::remove_cvref_t<_ConditionType_>, bool>;
 
-template <
-    class _ConditionType_, 
-    class _AlternativeType_>
+template <class _ConditionType_, class _AlternativeType_>
 concept alternative_type = (vx::simd_mask_type<_ConditionType_> && vx::simd_type<_AlternativeType_>) ||
-    (std::is_same_v<_ConditionType_, bool> && (std::integral<_AlternativeType_> || std::floating_point<_AlternativeType_>));
+    (std::is_same_v<std::remove_cvref_t<_ConditionType_>, bool> && (std::integral<_AlternativeType_> || std::floating_point<_AlternativeType_>));
 
 template <class _ID_>
 concept decorator = std::derived_from<_ID_, __decorator>;

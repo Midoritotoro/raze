@@ -152,10 +152,6 @@ struct arithmetic_tests {
 
     void operator()() {
         test_size<(_Width_ / (sizeof(_Type_) * 8))>();
-        //test_size<1>();
-        //test_size<7>();
-        //test_size<17>();
-        //test_size<31>();
     }
 };
 

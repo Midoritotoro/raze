@@ -1,8 +1,6 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/arithmetic/Sub.h>
-#include <src/raze/vx/hw/x86/merge/Select.h>
-
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -95,8 +93,7 @@ struct _Abs {
 				return __as<_Tp_>(__result);
 			}
 		}
-
-		return __x < 0 ? -__x : __x;
+		else return __x < 0 ? -__x : __x;
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>

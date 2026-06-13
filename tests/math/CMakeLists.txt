@@ -1,28 +1,26 @@
-cmake_minimum_required(VERSION 4.1  FATAL_ERROR)
+cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
 
 project(razeTestsMath LANGUAGES CXX)
 
-
 set(raze_DIR "${CMAKE_CURRENT_LIST_DIR}/../../out/build")
-
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
 
 if (PROJECT_IS_TOP_LEVEL)
-    find_package(raze REQUIRED COMPONENTS
-        raze 
-   )
+    find_package(raze REQUIRED COMPONENTS raze)
 endif()
 
 enable_testing()
 macro(raze_math_add_test filename)
-    add_executable(${filename} ${filename}.cpp)
-    add_compile_options(/bigobj)
-
+    add_executable(${filename} ${filename}.cpp "${CMAKE_CURRENT_LIST_DIR}/../vx/SimdTestTools.h")
+    target_compile_options(${filename} PRIVATE /bigobj)
+    
     target_link_libraries(
       ${filename} PRIVATE
       raze::raze
     )
 
-    add_test(${filename} ${CMAKE_CURRENT_BINARY_DIR}/"algorithm"/${filename})
+    add_test(${filename} ${CMAKE_CURRENT_BINARY_DIR}/"math"/${filename})
     target_compile_features(${filename} PUBLIC cxx_std_23)
 endmacro(raze_math_add_test)
 

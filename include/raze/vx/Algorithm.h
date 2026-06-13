@@ -12,7 +12,6 @@
 #include <src/raze/vx/hw/Memory.h>
 #include <src/raze/vx/AsTernaryMask.h>
 #include <src/raze/vx/hw/Shape.h>
-#include <src/raze/vx/hw/Shuffle.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -23,7 +22,6 @@ constexpr inline auto div = raze::options::functor<_Configurable_div>;
 constexpr inline auto vertical_max = __vmax;
 constexpr inline auto vertical_min = __vmin;
 constexpr inline auto neg = raze::options::functor<_Configurable_neg>;
-constexpr inline auto abs = raze::options::functor<_Configurable_abs>;
 constexpr inline auto bit_or = raze::options::functor<_Configurable_or>;
 constexpr inline auto bit_xor = raze::options::functor<_Configurable_xor>;
 constexpr inline auto bit_and = raze::options::functor<_Configurable_and>;

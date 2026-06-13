@@ -5,7 +5,6 @@
 #include <src/raze/vx/hw/configurable/arithmetic/Mul.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Div.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Negate.h>
-#include <src/raze/vx/hw/configurable/arithmetic/Abs.h>
 #include <src/raze/vx/hw/configurable/arithmetic/VerticalMax.h>
 #include <src/raze/vx/hw/configurable/arithmetic/VerticalMin.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Clamp.h>
