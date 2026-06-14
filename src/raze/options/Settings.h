@@ -66,9 +66,9 @@ struct settings {
         if constexpr(contains(_Key_{})) 
             return (*this)[_Key_{}];
         else if constexpr(requires(_Value_ __t) { __t.perform(); })  
-            return __value.value.perform();
+            return __value._value.perform();
         else 
-            return __value.value;
+            return __value._value;
     }
         
     base _content;

@@ -45,4 +45,7 @@ struct _Configurable_sized_isa_dispatcher {
     };
 };
 
+template <template <class> class _Function_, class _Type_>
+constexpr inline auto __dispatch_sized_impl = raze::options::functor<typename _Configurable_sized_isa_dispatcher<_Function_, _Type_>::__impl>;
+
 __RAZE_VX_NAMESPACE_END
