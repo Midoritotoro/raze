@@ -9,12 +9,12 @@ template <class _Traits_>
 struct _Unroller {
 	template <class _Simd_>
 	struct __impl {
-		template <class _Function_>
-		raze_always_inline auto operator()(_Function_&& __f) const noexcept {
+		template <class _Function_, class ... _Args_>
+		raze_always_inline auto operator()(_Function_&& __f, _Args_ ... __args) const noexcept {
 			constexpr auto __unrolling = get_unrolling<_Traits_>();
 
 			auto __call = [&] <sizetype ... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda -> bool {
-				auto __work = [&](auto __i) raze_always_inline_lambda -> bool{ return __f(_Simd_{}); };
+				auto __work = [&](auto __i) raze_always_inline_lambda -> bool{ return __f(_Simd_{}, __args...); };
 				return (!__work(_Indices_) && ...);
 			};
 

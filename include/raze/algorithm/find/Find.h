@@ -32,6 +32,16 @@ struct _Find : _Traits_ {
 			}
 		}
 
+		template <class _Simd_>
+		raze_no_stack_protector raze_always_inline raze_nodiscard constexpr bool operator()(_Simd_, sizetype __a, sizetype __t) noexcept {
+			if (_iterator == _sentinel) return true;
+			else if (_proj(*_iterator) == _value) return true;
+			else {
+				++_iterator;
+				return false;
+			}
+		}
+
 		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
 			return _iterator;
 		}
@@ -51,7 +61,7 @@ struct _Find : _Traits_ {
 		using _Work = decltype(__work);
 
 		auto __dispatched = vx::__dispatch_sized_impl<typename options::_Unroller<decltype(this->traits())>::__impl, _Value_, _Iterator_>(
-			std::ranges::distance(__first, __last), __work);
+			std::ranges::distance(__first, __last), std::make_tuple(__work), std::make_tuple(__work));
 
 		__seek_possibly_wrapped_iterator(__first, __dispatched);
 		return __first;
