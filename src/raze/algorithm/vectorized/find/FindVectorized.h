@@ -48,13 +48,10 @@ struct __find_vectorized_internal {
 };
 
 template <class _Type_>
-__raze_simd_algorithm_inline _Type_* __find_vectorized(
-    const void* __first,
-    const void* __last,
-    _Type_      __value) noexcept
-{
-    return const_cast<_Type_*>(vx::__simd_sized_dispatcher<__find_vectorized_internal, _Type_>()(
-        __byte_length(__first, __last), &__find_scalar<_Type_>, __first, __last, __value));
+__raze_simd_algorithm_inline _Type_* __find_vectorized(const void* __first, const void* __last, _Type_ __value) noexcept {
+    return const_cast<_Type_*>(__find_scalar(__first, __last, __value));
+    //return const_cast<_Type_*>(vx::__simd_sized_dispatcher<__find_vectorized_internal, _Type_>()(
+       //__byte_length(__first, __last), &__find_scalar<_Type_>, __first, __last, __value));
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

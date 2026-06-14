@@ -25,3 +25,4 @@
 #include <src/raze/options/Settings.h>
 #include <src/raze/options/StrictElementwiseCallable.h>
 #include <src/raze/options/TypeOr.h>
+#include <src/raze/options/Traits.h>

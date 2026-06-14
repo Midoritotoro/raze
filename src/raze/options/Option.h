@@ -5,9 +5,7 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <
-    concepts::keyword   _Keyword_,
-    class               _Value_>
+template <concepts::keyword _Keyword_, class _Value_>
 struct option {
     using stored_value_type = std::decay_t<_Value_>;
     using keyword_type = _Keyword_;

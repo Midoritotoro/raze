@@ -5,7 +5,7 @@
 
 #include <type_traits>
 #include <xutility>
-
+#include <ranges>
 
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
 
@@ -199,5 +199,75 @@ constexpr bool __is_wrapped_iterator_nothrow_seekable_v
 #if !defined(__verify_unchecked)
 #  define __verify_unchecked(_Iterator) static_assert(raze::type_traits::__is_iterator_unwrapped_v<_Iterator>, "Iterators in unchecked-functions must be unwrapped. ");
 #endif // !defined(__verify_unchecked)
+
+template <class _Wrapped>
+concept __weakly_unwrappable = __allow_inheriting_unwrap_v<std::remove_cvref_t<_Wrapped>>
+	&& requires(_Wrapped&& __wrapped) { std::forward<_Wrapped>(__wrapped)._Unwrapped(); };
+
+template <class _Sentinel_>
+concept __weakly_unwrappable_sentinel = __weakly_unwrappable<const std::remove_reference_t<_Sentinel_>&>;
+
+template <class _Iterator_>
+concept __weakly_unwrappable_iterator = __weakly_unwrappable<_Iterator_> && \
+	requires(_Iterator_&& __it, std::remove_cvref_t<_Iterator_>& __mutable_it) {
+		__mutable_it._Seek_to(std::forward<_Iterator_>(__it)._Unwrapped());
+	};
+
+template <class _Sentinel_, class _Iterator_>
+concept __unwrappable_sentinel_for = __weakly_unwrappable_sentinel<_Sentinel_> && __weakly_unwrappable_iterator<_Iterator_> && 
+	requires(_Iterator_&& __it, const std::remove_reference_t<_Sentinel_>& __sentinel) {
+		{ __sentinel._Unwrapped() } -> std::sentinel_for<decltype(std::forward<_Iterator_>(__it)._Unwrapped())>;
+	};
+
+template <class _Sentinel_, class _Iterator_>
+raze_nodiscard raze_always_inline constexpr decltype(auto) __ranges_unwrap_iterator(_Iterator_&& __iterator)
+	noexcept(!__unwrappable_sentinel_for<_Sentinel_, _Iterator_> || __is_nothrow_unwrappable_v<_Iterator_>)
+{
+	static_assert(std::sentinel_for<std::remove_cvref_t<_Sentinel_>, std::remove_cvref_t<_Iterator_>>);
+
+	if constexpr (std::is_pointer_v<std::remove_cvref_t<_Iterator_>>) return __iterator + 0;
+	else if constexpr (__unwrappable_sentinel_for<_Sentinel_, _Iterator_>) return static_cast<_Iterator_&&>(__iterator)._Unwrapped();
+	else return static_cast<_Iterator_&&>(__iterator);
+}
+
+template <class _Iterator_, class _Sentinel_>
+raze_nodiscard raze_always_inline constexpr decltype(auto) __ranges_unwrap_sentinel(_Sentinel_&& __sentinel)
+	noexcept(!__unwrappable_sentinel_for<_Sentinel_, _Iterator_> || __is_nothrow_unwrappable_v<_Sentinel_>) 
+{
+	static_assert(std::sentinel_for<std::remove_cvref_t<_Sentinel_>, std::remove_cvref_t<_Iterator_>>);
+
+	if constexpr (std::is_pointer_v<std::remove_cvref_t<_Sentinel_>>) return __sentinel + 0;
+	else if constexpr (__unwrappable_sentinel_for<_Sentinel_, _Iterator_>) return static_cast<_Sentinel_&&>(__sentinel)._Unwrapped();
+	else return static_cast<_Sentinel_&&>(__sentinel);
+}
+
+template <std::ranges::range _Range_, class _Iterator_>
+raze_nodiscard raze_always_inline constexpr decltype(auto) __ranges_unwrap_range_iterator(_Iterator_&& __iterator)
+	noexcept(noexcept(__ranges_unwrap_iterator<std::ranges::sentinel_t<_Range_>>(static_cast<_Iterator_&&>(__iterator))))
+{
+	static_assert(std::same_as<std::remove_cvref_t<_Iterator_>, std::ranges::iterator_t<_Range_>>);
+	return __ranges_unwrap_iterator<std::ranges::sentinel_t<_Range_>>(static_cast<_Iterator_&&>(__iterator));
+}
+
+template <std::ranges::range _Range_, class _Sentinel_>
+raze_nodiscard raze_always_inline constexpr decltype(auto) __ranges_unwrap_range_sentinel(_Sentinel_&& __sentinel)
+	noexcept(noexcept(__ranges_unwrap_sentinel<std::ranges::iterator_t<_Range_>>(static_cast<_Sentinel_&&>(__sentinel))))
+{
+	static_assert(std::same_as<std::remove_cvref_t<_Sentinel_>, std::ranges::sentinel_t<_Range_>>);
+	return __ranges_unwrap_sentinel<std::ranges::iterator_t<_Range_>>(static_cast<_Sentinel_&&>(__sentinel));
+}
+
+template <class _Iterator_, class _Sentinel_>
+using __ranges_unwrap_iter_t = std::remove_cvref_t<decltype(__ranges_unwrap_iterator<_Sentinel_>(std::declval<_Iterator_>()))>;
+
+template <class _Sentinel_, class _Iterator_>
+using __ranges_unwrap_sent_t = std::remove_cvref_t<decltype(__ranges_unwrap_sentinel<_Iterator_>(std::declval<_Sentinel_>()))>;
+
+template <std::ranges::range _Range_>
+using __unwrapped_iterator_t = __ranges_unwrap_iter_t<std::ranges::iterator_t<_Range_>, std::ranges::sentinel_t<_Range_>>;
+
+template <std::ranges::range _Range_>
+using __unwrapped_sentinel_t = __ranges_unwrap_sent_t<std::ranges::sentinel_t<_Range_>, std::ranges::iterator_t<_Range_>>;
+
 
 __RAZE_TYPE_TRAITS_NAMESPACE_END
