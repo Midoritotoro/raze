@@ -5,6 +5,8 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+struct scalar_tag {};
+
 template <class _Simd_>
 concept simd_type = __is_valid_simd_v<_Simd_>;
 
