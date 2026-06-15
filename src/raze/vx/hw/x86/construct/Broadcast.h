@@ -99,10 +99,10 @@ struct _Broadcast {
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_broadcastq_epi64(_mm_cvtsi64_si128(memory::pointer_to_integral(__value))));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_broadcastd_epi32(_mm_cvtsi32_si128(memory::pointer_to_integral(__value))));
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi64(memory::pointer_to_integral(__value))); 
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi32(memory::pointer_to_integral(__value)));
 			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-				if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_broadcastw_epi16(_mm_cvtsi32_si128(__value)));
+				if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_set1_epi16(__value));
 				else {
 					i32 __x = __value;
 					__x |= __x << 16;
@@ -110,7 +110,7 @@ struct _Broadcast {
 				}
 			}
 			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-				if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_broadcastb_epi8(_mm_cvtsi32_si128(__value)));
+				if constexpr (__has_avx512bw_support_v<_ISA_>) return  __as<_Tp_>(_mm512_set1_epi8(__value));
 				else return _mm512_set1_epi32(static_cast<i32>(__value) * 0x01010101u);
 			}
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_set1_ps(__value));

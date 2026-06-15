@@ -98,7 +98,6 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             /EHsc
 
             /guard:cf
-
             /w15038 
             /w14265 
             /wd4018

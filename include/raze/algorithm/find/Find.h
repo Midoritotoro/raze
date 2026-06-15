@@ -32,25 +32,34 @@ struct _Find : _Traits_ {
 			}
 		}
 
+		template <vx::simd_type _Tag_, class _Iterator_, class _Sentinel_, class _Value_>
+		static raze_always_inline _Iterator_ __find(_Tag_, _Iterator_ __first,
+			_Sentinel_ __last, const _Value_& __v, sizetype __aligned_size, sizetype __tail_size) noexcept 
+		{
+			auto* __ptr = std::to_address(__first);
+			auto* __end = std::to_address(__last);
+
+			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
+
+			do {
+				const auto __mask = __v == raze::vx::load<_Tag_>[raze::vx::aligned](__ptr);
+
+				if (raze::vx::any_of(__mask))
+					return __ptr + raze::vx::find_first_set(__mask);
+
+				__advance_bytes(__ptr, sizeof(_Tag_));
+			} while (__ptr != __aligned_end);
+
+			for (; __ptr != __end; ++__ptr)
+				if (*__ptr == __v)
+					break;
+
+			return __ptr;
+		} 
+
 		template <vx::simd_type _Tag_>
-		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
-			if (std::ranges::distance(_iterator, _sentinel) < _Tag_::size())
-				return true;
-
-			auto __addr = std::to_address(_iterator);
-
-			const auto __loaded = raze::vx::load<_Tag_>(__addr);
-			const auto __mask = _value == __loaded;
-
-			if (raze::vx::any_of(__mask)) {
-				_iterator = __addr + raze::vx::find_first_set(__mask);
-				return true;
-			}
-
-			__advance_bytes(__addr, sizeof(_Tag_));
-			_iterator = __addr;
-
-			return false;
+		raze_always_inline raze_nodiscard void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
+			_iterator = __find(_Tag_{}, _iterator, _sentinel, _value, __aligned_size, __tail_size);
 		}
 
 		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
@@ -84,9 +93,9 @@ private:
 	{
 		__verify_range(__first, __last);
 
-		auto __work_tuple = std::make_tuple(__impl(__first, __last, __v, __proj));
+		auto __work = __impl(__first, __last, __v, __proj);
 		return vx::__dispatch_sized_impl<typename options::_Unroller<decltype(this->traits())>::__impl, 
-			_Value_, _Iterator_>(std::ranges::distance(__first, __last), __work_tuple, __work_tuple);
+			_Value_, _Iterator_>(algorithm::distance(__first, __last) * sizeof(_Value_), __work);
 	}
 };
 

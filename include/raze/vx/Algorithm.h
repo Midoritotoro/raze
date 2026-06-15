@@ -72,10 +72,29 @@ constexpr inline auto hsum = horizontal_sum;
 constexpr inline auto hmin = horizontal_min;
 constexpr inline auto hmax = horizontal_max;
 
-
 template <ternary_mask_expression_type _Expression_>
 raze_always_inline constexpr auto as_ternary_mask() noexcept {
 	return __as_ternary_mask<_Expression_>();
+}
+
+template <simd_type _Simd_>
+struct __zeroupper_at_destroy_guard {
+	__zeroupper_at_destroy_guard() noexcept = default;
+	__zeroupper_at_destroy_guard(const __zeroupper_at_destroy_guard&) noexcept = delete;
+	__zeroupper_at_destroy_guard(__zeroupper_at_destroy_guard&&) noexcept = default;
+
+	~__zeroupper_at_destroy_guard() noexcept {
+		if constexpr (__has_avx2_support_v<abi_t<_Simd_>::isa>)
+			_mm256_zeroupper();
+	}
+
+	__zeroupper_at_destroy_guard& operator=(const __zeroupper_at_destroy_guard&) noexcept = delete;
+	__zeroupper_at_destroy_guard& operator=(__zeroupper_at_destroy_guard&&) noexcept = default;
+};
+
+template <simd_type _Simd_>
+raze_nodiscard raze_always_inline __zeroupper_at_destroy_guard<_Simd_> make_guard() noexcept {
+	return {};
 }
 
 

@@ -11,12 +11,10 @@ struct _None_of {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_always_inline bool operator()(_Tp_ __x) const noexcept {
 		if constexpr (intrin_type<_Tp_>) {
+#if 0
 			if constexpr (sizeof(_Tp_) == 16) {
 				if constexpr (__has_sse41_support_v<_ISA_>) return _mm_testz_si128(__as<__m128i>(__x), __as<__m128i>(__x));
-				else {
-					const auto __compared = _Equal<arch::ISA::SSE2, i32>()(__x, _Zero<arch::ISA::SSE2, _Tp_>()());
-					return _To_bitmask<arch::ISA::SSE2, i32>()(__compared) == 0xF;
-				}
+				else return _To_bitmask<_ISA_, _Type_>()(__x) == 0;
 			}
 			else if constexpr (sizeof(_Tp_) == 32) {
 				return _mm256_testz_si256(__as<__m256i>(__x), __as<__m256i>(__x));
@@ -25,6 +23,9 @@ struct _None_of {
 				const auto __k = _mm512_test_epi32_mask(__as<__m512i>(__x), __as<__m512i>(__x));
 				return _kortestz_mask16_u8(__k, __k);
 			}
+#else
+			return _To_bitmask<_ISA_, _Type_>()(__x) == 0;
+#endif
 		}
 		else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
 			if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)

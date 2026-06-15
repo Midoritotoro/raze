@@ -3,6 +3,16 @@
 #include <src/raze/options/Traits.h>
 #include <src/raze/vx/Concepts.h>
 
+__RAZE_VX_NAMESPACE_BEGIN
+
+template <simd_type _Simd_>
+struct __zeroupper_at_destroy_guard;
+
+template <simd_type _Simd_>
+raze_nodiscard raze_always_inline __zeroupper_at_destroy_guard<_Simd_> make_guard() noexcept;
+
+__RAZE_VX_NAMESPACE_END
+
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 template <class _Traits_>
@@ -15,16 +25,15 @@ struct _Unroller {
 
 			if constexpr (std::is_same_v<_Tag_, vx::scalar_tag>) {
 				auto __call = [&] <sizetype ... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda -> bool {
-					auto __work = [&](auto __i) raze_always_inline_lambda -> bool{ return __f(_Tag_{}, __args...); };
+					auto __work = [&](auto __i) raze_always_inline_lambda -> bool { return __f(_Tag_{}, __args...); };
 					return (!__work(_Indices_) && ...);
 				};
 
 				while (__call(std::make_integer_sequence<sizetype, __unrolling>{}));
 			}
 			else {
-				while (!__f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, _Tag_::size() * __unrolling>>{}, __args...));
-				if constexpr (__unrolling > 1) while (!__f(_Tag_{}, __args...));
-				while (!__f(vx::scalar_tag{}, __args...));
+				const auto __guard = vx::make_guard<_Tag_>();
+				__f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, _Tag_::size() * __unrolling>>{}, __args...);
 			}
 
 			return __f.result();

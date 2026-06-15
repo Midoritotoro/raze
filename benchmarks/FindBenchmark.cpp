@@ -16,9 +16,9 @@ public:
         array[sizeForBenchmark - 1] = 42;
 
         while (state.KeepRunning()) {
+            benchmark::DoNotOptimize(array);
             auto* result = std::find(array, array + sizeForBenchmark, array[sizeForBenchmark - 1]);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
     }
 
@@ -29,9 +29,9 @@ public:
         array[sizeForBenchmark / 2] = 42;
 
         while (state.KeepRunning()) {
+            benchmark::DoNotOptimize(array);
             auto* result = std::find(array, array + sizeForBenchmark, array[sizeForBenchmark / 2]);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
     }
 
@@ -42,9 +42,9 @@ public:
         array[0] = 42;
 
         while (state.KeepRunning()) {
+            benchmark::DoNotOptimize(array);
             auto* result = std::find(array, array + sizeForBenchmark, array[0]);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
     }
 };
@@ -61,9 +61,9 @@ public:
         array[sizeForBenchmark - 1] = 42;
 
         while (state.KeepRunning()) {
+            benchmark::DoNotOptimize(array);
             auto* result = raze::algorithm::find(array, array + sizeForBenchmark, array[sizeForBenchmark - 1]);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
     }
 
@@ -74,9 +74,9 @@ public:
         array[sizeForBenchmark / 2] = 42;
 
         while (state.KeepRunning()) {
+            benchmark::DoNotOptimize(array);
             auto* result = raze::algorithm::find(array, array + sizeForBenchmark, array[sizeForBenchmark / 2]);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
     }
 
@@ -87,26 +87,26 @@ public:
         array[0] = 42;
 
         while (state.KeepRunning()) {
+            benchmark::DoNotOptimize(array);
             auto* result = raze::algorithm::find(array, array + sizeForBenchmark, array[0]);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
     }
 };
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInBegin);
-
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInMiddle);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInBegin);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInBegin);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInBegin);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInBegin);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInBegin);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInBegin);
+//
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInMiddle);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInMiddle);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInMiddle);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInMiddle);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInMiddle);
+//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInMiddle);
 
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInEnd);
 RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInEnd);

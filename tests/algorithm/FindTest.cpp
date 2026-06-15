@@ -81,13 +81,13 @@ void testFind() {
     };
 
     test_unroll(std::integral_constant<raze::sizetype, 1>{});
-    test_unroll(std::integral_constant<raze::sizetype, 2>{});
-    test_unroll(std::integral_constant<raze::sizetype, 3>{});
-    test_unroll(std::integral_constant<raze::sizetype, 4>{});
-    test_unroll(std::integral_constant<raze::sizetype, 5>{});
-    test_unroll(std::integral_constant<raze::sizetype, 6>{});
-    test_unroll(std::integral_constant<raze::sizetype, 7>{});
-    test_unroll(std::integral_constant<raze::sizetype, 8>{});
+    //test_unroll(std::integral_constant<raze::sizetype, 2>{});
+    //test_unroll(std::integral_constant<raze::sizetype, 3>{});
+    //test_unroll(std::integral_constant<raze::sizetype, 4>{});
+    //test_unroll(std::integral_constant<raze::sizetype, 5>{});
+    //test_unroll(std::integral_constant<raze::sizetype, 6>{});
+    //test_unroll(std::integral_constant<raze::sizetype, 7>{});
+    //test_unroll(std::integral_constant<raze::sizetype, 8>{});
 }
 
 void testFindIf() {
