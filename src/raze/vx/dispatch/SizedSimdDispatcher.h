@@ -52,15 +52,31 @@ struct _Configurable_sized_isa_dispatcher {
                 constexpr auto __aligned_size = _Size_ & ~0x3F;
 
                 if constexpr (sizeof(_Type_) >= 4) {
-                    if (arch::ProcessorFeatures::AVX512F()) {
-                        using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>;
-                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+                    using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>;
+
+                    if constexpr (__has_avx512f_support_v<__best_isa_compile_time()>) {
+                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                            std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                    }
+                    else {
+                        if (arch::ProcessorFeatures::AVX512F()) {
+                            return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                                std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                        }
                     }
                 }
                 else {
-                    if (arch::ProcessorFeatures::AVX512BW()) {
-                        using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>;
-                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+                    using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>;
+
+                    if constexpr (__has_avx512bw_support_v<__best_isa_compile_time()>) {
+                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                            std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                    }
+                    else {
+                        if (arch::ProcessorFeatures::AVX512BW()) {
+                            return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                                std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                        }
                     }
                 }
             }
@@ -69,26 +85,44 @@ struct _Configurable_sized_isa_dispatcher {
                 constexpr auto __aligned_size = _Size_ & ~0x1F;
                 using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX2, 32 / sizeof(_Type_)>>;
 
-                if (arch::ProcessorFeatures::AVX2())
-                    return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+                if constexpr (__has_avx2_support_v<__best_isa_compile_time()>) {
+                    return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                        std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                }
+                else {
+                    if (arch::ProcessorFeatures::AVX2())
+                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                            std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                }
             }
 
-            else if constexpr (_Size_ >= 16) {
+            if constexpr (_Size_ >= 16) {
                 constexpr auto __aligned_size = _Size_ & ~0xF;
+                using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>;
 
-                if (arch::ProcessorFeatures::SSE42()) 
-                    return _Function_<simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>>()(
-                        std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+                if constexpr (__has_sse42_support_v<__best_isa_compile_time()>) {
+                    return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                        std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                }
+                else {
+                    if (arch::ProcessorFeatures::SSE42())
+                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., std::integral_constant<sizetype, __aligned_size>{},
+                            std::integral_constant<sizetype, _Size_ - __aligned_size>{});
+                }
             }
-            
-            return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+            else {
+                return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+            }
         }
 
         template <class ... _Args_>
         static raze_always_inline _Return_ deferred_call(auto __options,
             sizetype __size, _Args_&& ... __args) noexcept
         {
-           if (const auto __aligned_size = __size & ~0x3F; __aligned_size != 0) {
+           if (__size < 16)
+               return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+
+           else if (const auto __aligned_size = __size & ~0x3F; __aligned_size != 0) {
                 if constexpr (sizeof(_Type_) >= 4) {
                     if (arch::ProcessorFeatures::AVX512F()) {
                         using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>;
@@ -111,9 +145,6 @@ struct _Configurable_sized_isa_dispatcher {
             else if (const auto __aligned_size = __size & ~0xF; __aligned_size != 0 && arch::ProcessorFeatures::SSE42())
                 return _Function_<simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>>()(
                     std::forward<_Args_>(__args)..., __aligned_size, __size - __aligned_size);
-            
-            else
-                return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
         }
 
         using callable_tag_type = __impl;

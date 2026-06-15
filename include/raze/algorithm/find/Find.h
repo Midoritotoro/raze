@@ -40,6 +40,10 @@ struct _Find : _Traits_ {
 			auto* __ptr = std::to_address(__first);
 			auto* __end = std::to_address(__last);
 
+			raze_assume(__ptr != __nullptr);
+			raze_assume(__end != __nullptr);
+			raze_assume(__ptr + _Tag_::size() < __end);
+
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			do {
@@ -64,20 +68,41 @@ struct _Find : _Traits_ {
 			std::integral_constant<sizetype, _AlignedSize_>, std::integral_constant<sizetype, _TailSize_>) noexcept 
 		{
 			auto* __ptr = std::to_address(__first);
+			auto* __end = std::to_address(__last);
 
 			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-			
-			do {
-				const auto __mask = __v == raze::vx::load<_Tag_>(__ptr);
+
+			raze_assume(__ptr <= __end);
+			raze_assume(__ptr != nullptr);
+
+			if constexpr (__iterations_aligned == 2) {
+				using _Tag_x2_ = vx::simd<typename _Tag_::value_type, vx::resize_abi_t<vx::abi_t<_Tag_>, _Tag_::size() * 2>>;
+
+				raze_assume(__ptr + sizeof(_Tag_x2_) <= __end);
+
+				const auto __mask = __v == raze::vx::load<_Tag_x2_>(__ptr);
 
 				if (raze::vx::any_of(__mask))
 					return __ptr + raze::vx::find_first_set(__mask);
 
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (--__iterations_aligned);
+				__advance_bytes(__ptr, sizeof(_Tag_x2_));
+			}
+			else {
+				auto __left = __iterations_aligned;
+
+				do {
+					const auto __mask = __v == raze::vx::load<_Tag_>(__ptr);
+
+					if (raze::vx::any_of(__mask))
+						return __ptr + raze::vx::find_first_set(__mask);
+
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (--__left);
+			}
 
 			if constexpr (_TailSize_ != 0) {
-				auto* __end = std::to_address(__last);
+				raze_assume(__end != nullptr);
+				raze_assume(__end >= __ptr);
 
 				do {
 					if (*__ptr++ == __v) break;
@@ -88,8 +113,16 @@ struct _Find : _Traits_ {
 		} 
 
 		template <vx::simd_type _Tag_>
-		raze_always_inline raze_nodiscard void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
+		raze_nodiscard raze_always_inline void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
 			__seek_possibly_wrapped_iterator(_iterator, __find(_Tag_{}, _iterator, _sentinel, _value, __aligned_size, __tail_size));
+		}
+
+		template <vx::simd_type _Tag_, sizetype _AlignedSize_, sizetype _TailSize_>
+		raze_nodiscard raze_always_inline void operator()(_Tag_, std::integral_constant<sizetype, _AlignedSize_> __aligned_size,
+			std::integral_constant<sizetype, _TailSize_> __tail_size) noexcept
+		{
+			__seek_possibly_wrapped_iterator(_iterator, __find(_Tag_{}, _iterator, _sentinel, _value, 
+				std::integral_constant<sizetype, _AlignedSize_>{}, std::integral_constant<sizetype, _TailSize_>{}));
 		}
 
 		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {

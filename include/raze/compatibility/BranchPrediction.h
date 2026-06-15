@@ -56,3 +56,20 @@
 #    define raze_unlikely_attribute
 #  endif
 #endif // !defined(raze_unlikely_attribute)
+
+
+#if !defined(raze_assume) 
+#  if defined(raze_cpp_msvc)
+#    define raze_assume(__cond) __assume(__cond)
+#  elif defined(raze_cpp_clang)
+#    define raze_assume(__cond) __builtin_assume(__cond)
+#  elif defined(raze_cpp_gnu)
+#    if raze_cpp_gnu >= 1400
+#      define raze_assume(__cond) __attribute__((assume(__cond)))
+#    else
+#      define raze_assume(__cond)
+#    endif
+#  else
+#    define raze_assume(__cond)
+#  endif // defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+#endif // !defined(raze_assume)
