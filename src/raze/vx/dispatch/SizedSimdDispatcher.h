@@ -32,15 +32,61 @@ template <template <class> class _Function_, class _Type_, class _Return_>
 struct _Configurable_sized_isa_dispatcher {
     template <class _Options_>
     struct __impl : raze::options::strict_elementwise_callable<__impl, _Options_>{
-        template <class _Size_, class ... _Args_>
-        raze_always_inline _Return_ operator()(_Size_ __size, _Args_&& ... __args) const noexcept
+        template <class ... _Args_>
+        raze_always_inline _Return_ operator()(sizetype __size, _Args_&& ... __args) const noexcept {
+            return raze::options::__dispatch_call(*this, __size, std::forward<_Args_>(__args)...);
+        }
+
+        template <sizetype _Size_, class ... _Args_>
+        raze_always_inline _Return_ operator()(std::integral_constant<sizetype, _Size_> __size,
+            _Args_&& ... __args) const noexcept
         {
             return raze::options::__dispatch_call(*this, __size, std::forward<_Args_>(__args)...);
         }
 
-        template <class _Size_, class ... _Args_>
+        template <sizetype _Size_, class ... _Args_>
         static raze_always_inline _Return_ deferred_call(auto __options,
-            _Size_ __size, _Args_&& ... __args) noexcept
+            std::integral_constant<sizetype, _Size_> __size, _Args_&& ... __args) noexcept
+        {
+            if constexpr (_Size_ >= 64) {
+                constexpr auto __aligned_size = _Size_ & ~0x3F;
+
+                if constexpr (sizeof(_Type_) >= 4) {
+                    if (arch::ProcessorFeatures::AVX512F()) {
+                        using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>;
+                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+                    }
+                }
+                else {
+                    if (arch::ProcessorFeatures::AVX512BW()) {
+                        using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>;
+                        return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+                    }
+                }
+            }
+
+            if constexpr (_Size_ >= 32) {
+                constexpr auto __aligned_size = _Size_ & ~0x1F;
+                using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX2, 32 / sizeof(_Type_)>>;
+
+                if (arch::ProcessorFeatures::AVX2())
+                    return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+            }
+
+            else if constexpr (_Size_ >= 16) {
+                constexpr auto __aligned_size = _Size_ & ~0xF;
+
+                if (arch::ProcessorFeatures::SSE42()) 
+                    return _Function_<simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>>()(
+                        std::forward<_Args_>(__args)..., __aligned_size, _Size_ - __aligned_size);
+            }
+            
+            return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+        }
+
+        template <class ... _Args_>
+        static raze_always_inline _Return_ deferred_call(auto __options,
+            sizetype __size, _Args_&& ... __args) noexcept
         {
            if (const auto __aligned_size = __size & ~0x3F; __aligned_size != 0) {
                 if constexpr (sizeof(_Type_) >= 4) {
@@ -66,7 +112,8 @@ struct _Configurable_sized_isa_dispatcher {
                 return _Function_<simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>>()(
                     std::forward<_Args_>(__args)..., __aligned_size, __size - __aligned_size);
             
-            return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+            else
+                return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
         }
 
         using callable_tag_type = __impl;

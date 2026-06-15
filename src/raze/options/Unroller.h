@@ -20,12 +20,12 @@ struct _Unroller {
 	template <class _Tag_>
 	struct __impl {
 		template <class _Function_, class ... _Args_>
-		raze_always_inline auto operator()(_Function_&& __f, _Args_ ... __args) const noexcept {
+		constexpr raze_always_inline auto operator()(_Function_&& __f, _Args_&& ... __args) const noexcept {
 			constexpr auto __unrolling = get_unrolling<_Traits_>();
 
 			if constexpr (std::is_same_v<_Tag_, vx::scalar_tag>) {
 				auto __call = [&] <sizetype ... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda -> bool {
-					auto __work = [&](auto __i) raze_always_inline_lambda -> bool { return __f(_Tag_{}, __args...); };
+					auto __work = [&](auto __i) raze_always_inline_lambda -> bool { return __f(_Tag_{}, std::forward<_Args_>(__args)...); };
 					return (!__work(_Indices_) && ...);
 				};
 
@@ -33,7 +33,12 @@ struct _Unroller {
 			}
 			else {
 				const auto __guard = vx::make_guard<_Tag_>();
-				__f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, _Tag_::size() * __unrolling>>{}, __args...);
+#if defined(raze_cpp_msvc)
+				__f(_Tag_{}, std::forward<_Args_>(__args)...); // Ignore unrolling
+#else
+				__f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, 
+					_Tag_::size() * __unrolling>>{}, std::forward<_Args_>(__args)...);
+#endif // defined(raze_cpp_msvc)
 			}
 
 			return __f.result();

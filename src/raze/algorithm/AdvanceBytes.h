@@ -142,7 +142,7 @@ raze_nodiscard _Char_* __unsigned_integral_to_buffer(
 template <
     typename    _Type_,
     class       _Integral_>
-raze_always_inline _Type_* __bytes_pointer_offset(
+constexpr raze_always_inline _Type_* __bytes_pointer_offset(
     _Type_*   __target,
     _Integral_      __offset) noexcept
 {
@@ -154,7 +154,7 @@ raze_always_inline _Type_* __bytes_pointer_offset(
 template <
     typename    _Type_,
     class       _Integral_>
-raze_always_inline const _Type_* __pointer_offset(
+constexpr raze_always_inline const _Type_* __pointer_offset(
     const _Type_*   __target,
     _Integral_      __offset) noexcept
 {

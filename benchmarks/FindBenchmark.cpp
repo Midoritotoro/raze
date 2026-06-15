@@ -17,7 +17,7 @@ public:
 
         while (state.KeepRunning()) {
             benchmark::DoNotOptimize(array);
-            auto* result = std::find(array, array + sizeForBenchmark, array[sizeForBenchmark - 1]);
+            auto* result = std::ranges::find(array, array[sizeForBenchmark - 1]);
             benchmark::DoNotOptimize(result);
         }
     }
@@ -30,7 +30,7 @@ public:
 
         while (state.KeepRunning()) {
             benchmark::DoNotOptimize(array);
-            auto* result = std::find(array, array + sizeForBenchmark, array[sizeForBenchmark / 2]);
+            auto* result = std::ranges::find(array, array[sizeForBenchmark / 2]);
             benchmark::DoNotOptimize(result);
         }
     }
@@ -43,7 +43,7 @@ public:
 
         while (state.KeepRunning()) {
             benchmark::DoNotOptimize(array);
-            auto* result = std::find(array, array + sizeForBenchmark, array[0]);
+            auto* result = std::ranges::find(array, array[0]);
             benchmark::DoNotOptimize(result);
         }
     }
@@ -62,7 +62,7 @@ public:
 
         while (state.KeepRunning()) {
             benchmark::DoNotOptimize(array);
-            auto* result = raze::algorithm::find(array, array + sizeForBenchmark, array[sizeForBenchmark - 1]);
+            auto* result = raze::algorithm::find(array, array[sizeForBenchmark - 1]);
             benchmark::DoNotOptimize(result);
         }
     }
@@ -75,7 +75,7 @@ public:
 
         while (state.KeepRunning()) {
             benchmark::DoNotOptimize(array);
-            auto* result = raze::algorithm::find(array, array + sizeForBenchmark, array[sizeForBenchmark / 2]);
+            auto* result = raze::algorithm::find(array, array[sizeForBenchmark / 2]);
             benchmark::DoNotOptimize(result);
         }
     }
@@ -88,7 +88,7 @@ public:
 
         while (state.KeepRunning()) {
             benchmark::DoNotOptimize(array);
-            auto* result = raze::algorithm::find(array, array + sizeForBenchmark, array[0]);
+            auto* result = raze::algorithm::find(array, array[0]);
             benchmark::DoNotOptimize(result);
         }
     }
