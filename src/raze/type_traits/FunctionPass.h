@@ -26,6 +26,7 @@ struct __function_reference {
     template <class ... _Args_>
     constexpr raze_always_inline decltype(auto) operator()(_Args_&& ... __values) const
         noexcept(std::is_nothrow_invocable_v<_Function_&, _Args_...>)
+            requires (std::invocable<_Function_, _Args_...>)
     {
         if constexpr (std::is_member_pointer_v<_Function_>)
             return std::invoke(_function, std::forward<_Args_>(__values)...);

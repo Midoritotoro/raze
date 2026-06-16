@@ -1,7 +1,7 @@
 #pragma once 
 
 #include <raze/compatibility/Compatibility.h>
-
+#include <concepts>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -13,6 +13,7 @@ struct not_fn {
     template <class ... _Args_>
     raze_always_inline constexpr decltype(auto) operator()(_Args_&& ... __args) const 
         noexcept(noexcept(!_fn(std::forward<_Args_>(__args)...)))
+            requires (std::invocable<_Fn_, _Args_...>)
     {
         return !_fn(std::forward<_Args_>(__args)...); 
     }

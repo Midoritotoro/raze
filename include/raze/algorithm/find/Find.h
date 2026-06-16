@@ -222,7 +222,7 @@ struct _Find_if_not : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 	{
 		return find_if(std::move(__first), std::move(__last),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+			make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -239,8 +239,7 @@ struct _Find_if_not : _Traits_ {
 		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_>)
 	{
-		return find_if(std::move(__range),
-			make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if(std::move(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 };
 

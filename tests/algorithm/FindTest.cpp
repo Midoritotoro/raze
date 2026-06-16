@@ -1,180 +1,403 @@
 ﻿#include <raze/algorithm/find/Find.h>
 
-#include <iostream>
-#include <iomanip>
+#include <vector>
+#include <random>
+#include <type_traits>
+#include <algorithm>
+#include <cassert>
 
-template <typename _IntType_>
-void testFind() {
-    auto test_unroll = [&] <raze::sizetype _I_> (std::integral_constant<raze::sizetype, _I_>) {
-        std::vector<_IntType_> vec1 = { 1, 2, 3, 4, 5 };
-        auto simd_result1 = raze::algorithm::find[raze::options::unroll<_I_>](vec1.begin(), vec1.end(), 1);
-        auto std_result1 = std::find(vec1.begin(), vec1.end(), 1);
-        raze_assert(simd_result1 == std_result1);
-        raze_assert(*simd_result1 == 1);
+template <typename T>
+struct IntDistributionType {
+    using type = T;
+};
 
-        std::vector<_IntType_> vec2 = { 10, 20, 30, 40, 50 };
-        auto simd_result2 = raze::algorithm::find[raze::options::unroll<_I_>](vec2.begin(), vec2.end(), 30);
-        auto std_result2 = std::find(vec2.begin(), vec2.end(), 30);
-        raze_assert(simd_result2 == std_result2);
-        raze_assert(*simd_result2 == 30);
+template <>
+struct IntDistributionType<char> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec3 = { 100, 110, 120, 122, 123 };
-        auto simd_result3 = raze::algorithm::find[raze::options::unroll<_I_>](vec3.begin(), vec3.end(), 123);
-        auto std_result3 = std::find(vec3.begin(), vec3.end(), 123);
-        raze_assert(simd_result3 == std_result3);
-        raze_assert(*simd_result3 == 123);
+template <>
+struct IntDistributionType<signed char> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec4 = { 1, 2, 3, 4, 5 };
-        auto simd_result4 = raze::algorithm::find[raze::options::unroll<_I_>](vec4.begin(), vec4.end(), 6);
-        auto std_result4 = std::find(vec4.begin(), vec4.end(), 6);
-        raze_assert(simd_result4 == vec4.end());
-        raze_assert(std_result4 == vec4.end());
-        raze_assert(simd_result4 == std_result4);
+template <>
+struct IntDistributionType<unsigned char> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec5 = {};
-        auto simd_result5 = raze::algorithm::find[raze::options::unroll<_I_>](vec5.begin(), vec5.end(), 1);
-        auto std_result5 = std::find(vec5.begin(), vec5.end(), 1);
-        raze_assert(simd_result5 == vec5.end());
-        raze_assert(std_result5 == vec5.end());
-        raze_assert(simd_result5 == std_result5);
+template <>
+struct IntDistributionType<bool> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec6;
-        vec6.reserve(64);
-        vec6 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 29, 1, 2, 3, 4, 5, 6, 7, 8, 9, 29, 1, 2, 3, 4, 5, 6, 7, 8, 9, 29,
-                1, 2, 3, 4, 5, 6, 7, 8, 9, 29, 1, 2, 3, 4, 5, 6, 7, 8, 9, 29, 1, 2, 3, 4, 5, 6, 7, 8, 9, 29, 14 };
-        auto simd_result6 = raze::algorithm::find[raze::options::unroll<_I_>](vec6.begin(), vec6.end(), 14);
-        auto std_result6 = std::find(vec6.begin(), vec6.end(), 14);
-        raze_assert(simd_result6 == std_result6);
-        raze_assert(*simd_result6 == 14);
+template <>
+struct IntDistributionType<wchar_t> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec7 = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17 };
-        auto simd_result7 = raze::algorithm::find[raze::options::unroll<_I_>](vec7.begin(), vec7.end(), 17);
-        auto std_result7 = std::find(vec7.begin(), vec7.end(), 17);
-        raze_assert(simd_result7 == std_result7);
-        raze_assert(*simd_result7 == 17);
+template <>
+struct IntDistributionType<char8_t> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec8(1024, 0);
-        vec8[0] = 42;
-        auto simd_result8 = raze::algorithm::find[raze::options::unroll<_I_>](vec8.begin(), vec8.end(), 42);
-        auto std_result8 = std::find(vec8.begin(), vec8.end(), 42);
-        raze_assert(simd_result8 == std_result8);
-        raze_assert(*simd_result8 == 42);
+template <>
+struct IntDistributionType<char16_t> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec9(1024, 0);
-        vec9[1023] = 42;
-        auto simd_result9 = raze::algorithm::find[raze::options::unroll<_I_>](vec9.begin(), vec9.end(), 42);
-        auto std_result9 = std::find(vec9.begin(), vec9.end(), 42);
-        raze_assert(simd_result9 == std_result9);
-        raze_assert(*simd_result9 == 42);
+template <>
+struct IntDistributionType<char32_t> {
+    using type = int;
+};
 
-        std::vector<_IntType_> vec10(1024, 0);
-        vec10[7] = 42;
-        auto simd_result10 = raze::algorithm::find[raze::options::unroll<_I_>](vec10.begin(), vec10.end(), 42);
-        auto std_result10 = std::find(vec10.begin(), vec10.end(), 42);
-        raze_assert(simd_result10 == std_result10);
-        raze_assert(*simd_result10 == 42);
+template <typename T>
+using int_distribution_type_t = typename IntDistributionType<T>::type;
 
-        std::vector<_IntType_> vec11(753, 0);
-        auto simd_result11 = raze::algorithm::find[raze::options::unroll<_I_>](vec11.begin(), vec11.end(), 42);
-        auto std_result11 = std::find(vec11.begin(), vec11.end(), 42);
-        raze_assert(simd_result11 == std_result11);
-    };
+template <typename T>
+struct RandomGenerator {
+    std::mt19937 gen;
+    
+    RandomGenerator(unsigned seed = 42) : gen(seed) {}
+    
+    T operator()() {
+        if constexpr (std::is_integral_v<T>) {
+            using DistType = int_distribution_type_t<T>;
+            
+            if constexpr (std::is_signed_v<T>) {
+                std::uniform_int_distribution<DistType> dist(-1000, 1000);
+                return static_cast<T>(dist(gen));
+            } else {
+                std::uniform_int_distribution<DistType> dist(0, 2000);
+                return static_cast<T>(dist(gen));
+            }
+        } else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(-1000.0, 1000.0);
+            return dist(gen);
+        }
+    }
+};
 
-    test_unroll(std::integral_constant<raze::sizetype, 1>{});
-    //test_unroll(std::integral_constant<raze::sizetype, 2>{});
-    //test_unroll(std::integral_constant<raze::sizetype, 3>{});
-    //test_unroll(std::integral_constant<raze::sizetype, 4>{});
-    //test_unroll(std::integral_constant<raze::sizetype, 5>{});
-    //test_unroll(std::integral_constant<raze::sizetype, 6>{});
-    //test_unroll(std::integral_constant<raze::sizetype, 7>{});
-    //test_unroll(std::integral_constant<raze::sizetype, 8>{});
+template <typename T>
+std::vector<T> generate_random_vector(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::vector<T> vec(size);
+    for (auto& elem : vec) {
+        elem = gen();
+    }
+    return vec;
 }
 
-void testFindIf() {
-    std::vector<int> v{ 1, 2, 3, 4, 5 };
-    {
-        auto it = raze::algorithm::find_if(v.begin(), v.end(),
-            [](int x) { return x > 3; });
-        raze_assert(it != v.end());
-        raze_assert(*it == 4);
+template <typename T>
+std::vector<T> generate_vector_with_target(size_t size, T target, size_t target_pos, unsigned seed = 42) {
+    auto vec = generate_random_vector<T>(size, seed);
+    if (target_pos < size) {
+        vec[target_pos] = target;
     }
-
-    {
-        auto it = raze::algorithm::find_if(v.begin(), v.end(),
-            [](int x) { return x == 1; });
-        raze_assert(it == v.begin());
-        raze_assert(*it == 1);
-    }
-
-    {
-        auto it = raze::algorithm::find_if(v.begin(), v.end(),
-            [](int x) { return x == 5; });
-        raze_assert(it != v.end());
-        raze_assert(*it == 5);
-    }
-
-    {
-        auto it = raze::algorithm::find_if(v.begin(), v.end(),
-            [](int x) { return x == 99; });
-        raze_assert(it == v.end());
-    }
-
-    {
-        std::vector<int> empty;
-        auto it = raze::algorithm::find_if(empty.begin(), empty.end(),
-            [](int) { return true; });
-        raze_assert(it == empty.end());
-    }
-
+    return vec;
 }
 
-void testFindIfNot() {
-    std::vector<int> v{ 1, 2, 3, 4, 5 };
-
-    {
-        auto it = raze::algorithm::find_if_not(v.begin(), v.end(),
-            [](auto x) { return x == decltype(x)(1); });
-        raze_assert(it != v.end());
-        raze_assert(*it == 2);
+template <typename T>
+void test_find_random(unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+    
+    for (int i = 0; i < 10000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i);
+        T target = gen();
+        
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), target);
+        auto std_result = std::find(vec.begin(), vec.end(), target);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
     }
-
-    {
-        auto it = raze::algorithm::find_if_not(v.begin(), v.end(),
-            [](auto x) { return x < 5; });
-        raze_assert(it != v.end());
-        raze_assert(*it == 5);
+    
+    for (size_t pos : {0, 1, 7, 15, 31, 63, 127, 255, 511, 999}) {
+        if (pos < 1000) {
+            auto vec = generate_vector_with_target<T>(1000, T(42), pos, seed);
+            auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
+            auto std_result = std::find(vec.begin(), vec.end(), T(42));
+            raze_assert(simd_result == std_result);
+            raze_assert(*simd_result == T(42));
+        }
     }
-
-    {
-        auto it = raze::algorithm::find_if_not(v.begin(), v.end(),
-            [](auto x) { return x < 10; });
-        raze_assert(it == v.end());
+    
+    for (int i = 0; i < 100; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 20000);
+        T target = gen();
+        
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), target);
+        auto std_result = std::find(vec.begin(), vec.end(), target);
+        
+        raze_assert(simd_result == std_result);
     }
+}
 
-    {
-        std::vector<int> empty;
-        auto it = raze::algorithm::find_if_not(empty.begin(), empty.end(),
-            [](auto) { return false; });
-        raze_assert(it == empty.end());
+template <typename T>
+void test_find_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 30000);
+        T target = RandomGenerator<T>(seed + i + 30000)();
+        
+        auto simd_result = raze::algorithm::find(vec, target);
+        auto std_result = std::ranges::find(vec, target);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
     }
+}
+
+template <typename T>
+void test_find_if_random(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 40000);
+        T threshold = RandomGenerator<T>(seed + i + 40000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        
+        auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
+    }
+    
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 50000);
+        T target = RandomGenerator<T>(seed + i + 50000)();
+        
+        auto pred = [target](T x) { return x == target; };
+        
+        auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 60000);
+        auto pred = [](T) { return false; };
+        
+        auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == vec.end());
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 70000);
+        auto pred = [](T) { return true; };
+        
+        auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == vec.begin());
+    }
+}
+
+template <typename T>
+void test_find_if_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 80000);
+        T threshold = RandomGenerator<T>(seed + i + 80000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        
+        auto simd_result = raze::algorithm::find_if(vec, pred);
+        auto std_result = std::ranges::find_if(vec, pred);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
+    }
+}
+
+template <typename T>
+void test_find_if_not_random(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 90000);
+        T threshold = RandomGenerator<T>(seed + i + 90000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        
+        auto simd_result = raze::algorithm::find_if_not(vec.begin(), vec.end(), pred);
+        auto std_result = std::find_if_not(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
+    }
+    
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 100000);
+        T target = RandomGenerator<T>(seed + i + 100000)();
+        
+        auto pred = [target](T x) { return x == target; };
+        
+        auto simd_result = raze::algorithm::find_if_not(vec.begin(), vec.end(), pred);
+        auto std_result = std::find_if_not(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
+    }
+}
+
+template <typename T>
+void test_find_if_not_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 110000);
+        T threshold = RandomGenerator<T>(seed + i + 110000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        
+        auto simd_result = raze::algorithm::find_if_not(vec, pred);
+        auto std_result = std::ranges::find_if_not(vec, pred);
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
+    }
+}
+
+struct Point {
+    int x, y;
+    bool operator==(const Point&) const = default;
+};
+
+template <typename T>
+void test_find_with_projection(unsigned seed = 42) {
+    for (int i = 0; i < 100; ++i) {
+        std::vector<Point> vec(100);
+        RandomGenerator<int> gen(seed + i + 120000);
+        for (auto& p : vec) {
+            p.x = gen();
+            p.y = gen();
+        }
+        
+        int target_x = gen();
+        
+        auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), 
+            [target_x](const Point& p) { return p.x == target_x; },
+            [](const Point& p) { return p; });
+        
+        auto std_result = std::find_if(vec.begin(), vec.end(), 
+            [target_x](const Point& p) { return p.x == target_x; });
+        
+        raze_assert(simd_result == std_result);
+        if (simd_result != vec.end()) {
+            raze_assert(*simd_result == *std_result);
+        }
+    }
+}
+
+template <typename T>
+void test_edge_cases() {
+    {
+        std::vector<T> vec;
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == vec.end());
+        raze_assert(std_result == vec.end());
+        raze_assert(simd_result == std_result);
+    }
+    
+    {
+        std::vector<T> vec = {T(42)};
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(*simd_result == T(42));
+    }
+    
+    {
+        std::vector<T> vec = {T(42)};
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(99));
+        auto std_result = std::find(vec.begin(), vec.end(), T(99));
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == vec.end());
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[0] = T(42);
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(*simd_result == T(42));
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[99] = T(42);
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(*simd_result == T(42));
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[50] = T(42);
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(*simd_result == T(42));
+    }
+    
+    {
+        std::vector<T> vec(100, T(42));
+        auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(*simd_result == T(42));
+    }
+}
+
+template <typename T>
+void run_all_tests_for_type() {
+    test_find_random<T>();
+    test_find_ranges<T>();
+    test_find_if_random<T>();
+    test_find_if_ranges<T>();
+    test_find_if_not_random<T>();
+    test_find_if_not_ranges<T>();
+    test_edge_cases<T>();
 }
 
 int main() {
-    testFind<int>();
-    testFind<short>();
-    testFind<long long>();
-    testFind<char>();
-
-    testFind<unsigned int>();
-    testFind<unsigned short>();
-    testFind<unsigned long long>();
-    testFind<unsigned char>();
-
-    testFind<float>();
-    testFind<double>();
-
-    testFindIf();
-    testFindIfNot();
-
+    //run_all_tests_for_type<int>();
+    //run_all_tests_for_type<short>();
+    //run_all_tests_for_type<long long>();
+    //run_all_tests_for_type<char>();
+    //
+    //run_all_tests_for_type<unsigned int>();
+    //run_all_tests_for_type<unsigned short>();
+    //run_all_tests_for_type<unsigned long long>();
+    //run_all_tests_for_type<unsigned char>();
+    //
+    //run_all_tests_for_type<float>();
+    //run_all_tests_for_type<double>();
+    
+    test_find_with_projection<int>();
+    
     return 0;
 }
