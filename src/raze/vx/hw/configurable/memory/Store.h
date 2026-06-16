@@ -2,6 +2,7 @@
 
 #include <raze/options/Options.h>
 #include <src/raze/vx/Concepts.h>
+#include <src/raze/vx/hw/configurable/memory/AlignedOption.h>
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/memory/Store.h>

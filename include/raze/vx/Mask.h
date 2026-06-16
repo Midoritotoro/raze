@@ -39,7 +39,7 @@ public:
 	simd_mask(simd_mask&&) = default;
 	~simd_mask() = default;
 
-	raze_no_stack_protector raze_always_inline simd_mask(bool __value) noexcept {
+	raze_no_stack_protector raze_always_inline explicit simd_mask(bool __value) noexcept {
 		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
 			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(__value);
 		});

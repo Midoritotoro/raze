@@ -133,28 +133,28 @@ void testFindIfNot() {
 
     {
         auto it = raze::algorithm::find_if_not(v.begin(), v.end(),
-            [](int x) { return x == 1; });
+            [](auto x) { return x == decltype(x)(1); });
         raze_assert(it != v.end());
         raze_assert(*it == 2);
     }
 
     {
         auto it = raze::algorithm::find_if_not(v.begin(), v.end(),
-            [](int x) { return x < 5; });
+            [](auto x) { return x < 5; });
         raze_assert(it != v.end());
         raze_assert(*it == 5);
     }
 
     {
         auto it = raze::algorithm::find_if_not(v.begin(), v.end(),
-            [](int x) { return x < 10; });
+            [](auto x) { return x < 10; });
         raze_assert(it == v.end());
     }
 
     {
         std::vector<int> empty;
         auto it = raze::algorithm::find_if_not(empty.begin(), empty.end(),
-            [](int) { return false; });
+            [](auto) { return false; });
         raze_assert(it == empty.end());
     }
 }

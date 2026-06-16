@@ -7,18 +7,20 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Fn_>
 struct not_fn {
-    _Fn_ _fn;
+    _Fn_& _fn;
+    using function_unwrapped_type = _Fn_;
 
-    constexpr explicit not_fn(_Fn_&& __fn) noexcept :
-        _fn(std::move(__fn)) 
-    {}
-    
     template <class ... _Args_>
-    raze_always_inline auto operator()(_Args_&& ... __args) const 
-        noexcept(noexcept(_fn(std::forward<_Args_>(__args)...))) 
+    raze_always_inline constexpr decltype(auto) operator()(_Args_&& ... __args) const 
+        noexcept(noexcept(!_fn(std::forward<_Args_>(__args)...)))
     {
-        return _fn(std::forward<_Args_>(__args)...); 
+        return !_fn(std::forward<_Args_>(__args)...); 
     }
 };
+
+template <class _Fn_>
+constexpr raze_always_inline decltype(auto) make_not_fn(_Fn_& __fn) noexcept {
+    return not_fn<_Fn_>(__fn);
+}
 
 __RAZE_ALGORITHM_NAMESPACE_END

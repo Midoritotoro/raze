@@ -5,6 +5,8 @@
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/EqualTo.h>
 #include <src/raze/algorithm/NotFn.h>
+#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
+#include <raze/options/Options.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -34,16 +36,18 @@ struct _Find_if : _Traits_ {
 
 		template <vx::simd_type _Tag_>
 		raze_nodiscard raze_always_inline void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
-			auto* __ptr = std::to_address(__first);
+			auto* __ptr = std::to_address(_iterator);
 			raze_assume(__ptr != __nullptr);
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			do {
-				const auto __mask = __pred(__proj(raze::vx::load<_Tag_>(__ptr)));
+				const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
 
-				if (raze::vx::any_of(__mask))
-					return __ptr + raze::vx::find_first_set(__mask);
+				if (raze::vx::any_of(__mask)) {
+					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set(__mask));
+					return;
+				}
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
@@ -58,11 +62,11 @@ struct _Find_if : _Traits_ {
 		template <vx::simd_type _Tag_, sizetype _AlignedSize_, sizetype _TailSize_>
 		raze_nodiscard raze_always_inline void operator()(_Tag_, 
 			std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>) noexcept
+			std::integral_constant<sizetype, _TailSize_>) noexcept 
 		{
 			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
 
-			auto* __ptr = std::to_address(__first);
+			auto* __ptr = std::to_address(_iterator);
 			raze_assume(__ptr != nullptr);
 
 			auto __left = __iterations_aligned;
@@ -70,8 +74,10 @@ struct _Find_if : _Traits_ {
 			do {
 				const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
 
-				if (raze::vx::any_of(__mask))
-					return __ptr + raze::vx::find_first_set(__mask);
+				if (raze::vx::any_of(__mask)) {
+					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set(__mask));
+					return;
+				}
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (--__left);
@@ -166,7 +172,7 @@ private:
 				return __first;
 			}
 		}
-	
+		
 		__seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(__work));
 		return __first;
 	}
@@ -216,8 +222,7 @@ struct _Find_if_not : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 	{
 		return find_if(std::move(__first), std::move(__last),
-			algorithm::not_fn(type_traits::__pass_function(__pred)), 
-			type_traits::__pass_function(__proj));
+			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -226,8 +231,7 @@ struct _Find_if_not : _Traits_ {
 			requires(!constexpr_sized_range<_Range_>)
 	{
 		return find_if(std::move(__range),
-			algorithm::not_fn(type_traits::__pass_function(__pred)),
-			type_traits::__pass_function(__proj));
+			make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -236,8 +240,7 @@ struct _Find_if_not : _Traits_ {
 			requires(constexpr_sized_range<_Range_>)
 	{
 		return find_if(std::move(__range),
-			algorithm::not_fn(type_traits::__pass_function(__pred)),
-			type_traits::__pass_function(__proj));
+			make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 };
 

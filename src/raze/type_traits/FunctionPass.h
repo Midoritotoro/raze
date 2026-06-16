@@ -21,21 +21,23 @@ constexpr inline bool __is_lightweight_callable_v = std::conjunction_v<
 template <class _Function_>
 struct __function_reference {
     _Function_& _function;
+    using function_unwrapped_type = _Function_;
 
     template <class ... _Args_>
-    constexpr decltype(auto) operator()(_Args_&& ... __values) 
+    constexpr raze_always_inline decltype(auto) operator()(_Args_&& ... __values) const
         noexcept(std::is_nothrow_invocable_v<_Function_&, _Args_...>)
     {
-        return std::invoke(_function, std::forward<_Args_>(__values)...);
+        if constexpr (std::is_member_pointer_v<_Function_>)
+            return std::invoke(_function, std::forward<_Args_>(__values)...);
+        else
+            return _function(std::forward<_Args_>(__values)...);
     }
 };
 
 template <class _Function_>
-raze_nodiscard constexpr auto __pass_function(_Function_& __function) noexcept {
-    if constexpr (__is_lightweight_callable_v<_Function_>)
-        return __function;
-    else
-        return __function_reference(__function);
+raze_nodiscard raze_always_inline constexpr auto __pass_function(_Function_& __function) noexcept {
+    if constexpr (__is_lightweight_callable_v<_Function_>) return __function;
+    else return __function_reference<_Function_>(__function);
 }
 
 __RAZE_TYPE_TRAITS_NAMESPACE_END

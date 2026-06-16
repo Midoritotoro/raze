@@ -1,7 +1,8 @@
 #pragma once 
 
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 #include <raze/vx/Abi.h>
-#include <raze/vx/Mask.h>
+// #include <raze/vx/Mask.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -55,8 +56,24 @@ template <class _Index_, class _Simd_>
 concept index_type_for = simd_type<_Simd_> && index_simd_type<_Index_> && (_Simd_::size() == _Index_::size())
 	&& (sizeof(typename _Index_::value_type) == sizeof(typename _Simd_::value_type));
 
-struct aligned_mode {};
-constexpr inline auto aligned = raze::options::flag(aligned_mode{});
-struct aligned_option : raze::options::exact_option<aligned> {};
+template <simd_type _Simd_>
+struct __zeroupper_at_destroy_guard {
+	__zeroupper_at_destroy_guard() noexcept = default;
+	__zeroupper_at_destroy_guard(const __zeroupper_at_destroy_guard&) noexcept = delete;
+	__zeroupper_at_destroy_guard(__zeroupper_at_destroy_guard&&) noexcept = default;
+
+	~__zeroupper_at_destroy_guard() noexcept {
+		if constexpr (__has_avx2_support_v<abi_t<_Simd_>::isa>)
+			_mm256_zeroupper();
+	}
+
+	__zeroupper_at_destroy_guard& operator=(const __zeroupper_at_destroy_guard&) noexcept = delete;
+	__zeroupper_at_destroy_guard& operator=(__zeroupper_at_destroy_guard&&) noexcept = default;
+};
+
+template <simd_type _Simd_>
+raze_nodiscard raze_always_inline __zeroupper_at_destroy_guard<_Simd_> make_guard() noexcept {
+	return {};
+}
 
 __RAZE_VX_NAMESPACE_END

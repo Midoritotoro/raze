@@ -1,17 +1,6 @@
 #pragma once
 
 #include <src/raze/options/Traits.h>
-#include <src/raze/vx/Concepts.h>
-
-__RAZE_VX_NAMESPACE_BEGIN
-
-template <simd_type _Simd_>
-struct __zeroupper_at_destroy_guard;
-
-template <simd_type _Simd_>
-raze_nodiscard raze_always_inline __zeroupper_at_destroy_guard<_Simd_> make_guard() noexcept;
-
-__RAZE_VX_NAMESPACE_END
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
