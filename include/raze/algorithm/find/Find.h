@@ -11,6 +11,9 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+template <class _Func_, class ... _Args_>
+using function_return_type = decltype(std::invoke(std::declval<_Func_>(), std::declval<_Args_>()...));
+
 template <class _Traits_>
 struct _Find_if : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
@@ -90,8 +93,6 @@ struct _Find_if : _Traits_ {
 					++_iterator;
 				} while (_iterator != _sentinel);
 			}
-
-			return _iterator;
 		}
 
 		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
@@ -183,31 +184,34 @@ constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>;
 template <class _Traits_>
 struct _Find : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Value_ = std::iter_value_t<_Iterator_>, class _Projection_ = std::identity>
+		class _Value_, class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
-		_Sentinel_ __last, const std::type_identity_t<_Value_>& __v, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 	{
-		return find_if(std::move(__first), std::move(__last), algorithm::equal_to(__v),
+		return find_if(std::move(__first), std::move(__last), algorithm::equal_to(
+			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_ = std::ranges::range_value_t<_Range_>,
+	template <std::ranges::input_range _Range_, class _Value_,
 		class _Projection_ = std::identity>
 	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(
-		_Range_&& __range, const std::type_identity_t<_Value_>& __v, _Projection_ __proj = {}) const noexcept
+		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_>)
 	{
-		return find_if(std::move(__range), algorithm::equal_to(__v),
+		return find_if(std::move(__range), algorithm::equal_to(
+			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_ = std::ranges::range_value_t<_Range_>, 
+	template <std::ranges::input_range _Range_, class _Value_, 
 		class _Projection_ = std::identity>
 	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(_Range_&& __range,
-		const std::type_identity_t<_Value_>& __v, _Projection_ __proj = {}) const noexcept
+		const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_>)
 	{
-		return find_if(std::move(__range), algorithm::equal_to(__v),
+		return find_if(std::move(__range), algorithm::equal_to(
+			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
 };

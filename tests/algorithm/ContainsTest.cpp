@@ -1,128 +1,263 @@
 ﻿#include <raze/algorithm/find/Contains.h>
 
-#include <ranges>
 #include <vector>
-#include <array>
-#include <numeric>
 #include <random>
+#include <type_traits>
+#include <algorithm>
+#include <cassert>
 
+template <typename T>
+struct IntDistributionType {
+    using type = T;
+};
 
-template <typename _IntType_>
-void testContains() {
-    {
-        std::vector<_IntType_> v{ 1, 2, 3, 4, 5 };
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 1) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 5) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 6) == false);
-    }
+template <>
+struct IntDistributionType<char> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v{};
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 1) == false);
-    }
+template <>
+struct IntDistributionType<signed char> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v{ 42 };
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 42) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 0) == false);
-    }
+template <>
+struct IntDistributionType<unsigned char> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v(128, 0);
-        v[0] = 99;
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 99) == true);
-    }
+template <>
+struct IntDistributionType<bool> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v(128, 0);
-        v[127] = 77;
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 77) == true);
-    }
+template <>
+struct IntDistributionType<wchar_t> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v(128, 0);
-        v[64] = 55;
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 55) == true);
-    }
+template <>
+struct IntDistributionType<char8_t> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v(256, 123);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 999) == false);
-    }
+template <>
+struct IntDistributionType<char16_t> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v{ 1,2,3,4,5,6,7 };
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 7) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 8) == false);
-    }
+template <>
+struct IntDistributionType<char32_t> {
+    using type = int;
+};
 
-    {
-        std::vector<_IntType_> v(1024, 0);
-        v[0] = 11;
-        v[777] = 22;
-        v[1023] = 33;
+template <typename T>
+using int_distribution_type_t = typename IntDistributionType<T>::type;
 
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 11) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 22) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 33) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 44) == false);
-    }
-
-    /*{
-        std::vector<_IntType_> v;
-        v.reserve(512);
-        for (int i = 0; i < 64; ++i)
-        {
-            v.push_back(1);
-            v.push_back(2);
-            v.push_back(3);
-            v.push_back(4);
-            v.push_back(5);
+template <typename T>
+struct RandomGenerator {
+    std::mt19937 gen;
+    
+    RandomGenerator(unsigned seed = 42) : gen(seed) {}
+    
+    T operator()() {
+        if constexpr (std::is_integral_v<T>) {
+            using DistType = int_distribution_type_t<T>;
+            
+            if constexpr (std::is_signed_v<T>) {
+                std::uniform_int_distribution<DistType> dist(-1000, 1000);
+                return static_cast<T>(dist(gen));
+            } else {
+                std::uniform_int_distribution<DistType> dist(0, 2000);
+                return static_cast<T>(dist(gen));
+            }
+        } else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(-1000.0, 1000.0);
+            return dist(gen);
         }
-        v.push_back(999);
-
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 999) == true);
-        raze_assert(raze::algorithm::contains(v.begin(), v.end(), 12345) == false);
     }
+};
 
-    {
-        std::mt19937_64 rng(0xBADC0FFEEULL);
-        std::uniform_int_distribution<size_t> lenDist(0, 4096);
-        std::uniform_int_distribution<long long> valDist(
-            std::numeric_limits<long long>::min() / 2,
-            std::numeric_limits<long long>::max() / 2
-        );
+template <typename T>
+std::vector<T> generate_random_vector(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::vector<T> vec(size);
+    for (auto& elem : vec) {
+        elem = gen();
+    }
+    return vec;
+}
 
-        for (int iter = 0; iter < 1'000'000; ++iter) {
-            size_t len = lenDist(rng);
+template <typename T>
+std::vector<T> generate_vector_with_target(size_t size, T target, size_t target_pos, unsigned seed = 42) {
+    auto vec = generate_random_vector<T>(size, seed);
+    if (target_pos < size) {
+        vec[target_pos] = target;
+    }
+    return vec;
+}
 
-            std::vector<_IntType_> vec;
-            vec.reserve(len);
-
-            for (size_t i = 0; i < len; ++i)
-                vec.push_back(static_cast<_IntType_>(valDist(rng)));
-
-            _IntType_ target = static_cast<_IntType_>(valDist(rng));
-
-            auto simd_res = raze::algorithm::contains(vec.begin(), vec.end(), target);
-            auto std_res = std::ranges::contains(vec.begin(), vec.end(), target);
-
-            raze_assert(simd_res == std_res);
+template <typename T>
+void test_contains_random(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 500000);
+        T target = RandomGenerator<T>(seed + i + 500000)();
+        
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), target);
+        auto std_result = (std::find(vec.begin(), vec.end(), target) != vec.end());
+        
+        raze_assert(simd_result == std_result);
+    }
+    
+    for (size_t pos : {0, 1, 7, 15, 31, 63, 99}) {
+        auto vec = generate_vector_with_target<T>(100, T(42), pos, seed);
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == true);
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 510000);
+        T missing_target = std::is_integral_v<T> ? static_cast<T>(999999) : static_cast<T>(999999.9);
+        
+        auto std_check = (std::find(vec.begin(), vec.end(), missing_target) != vec.end());
+        if (!std_check) {
+            auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), missing_target);
+            raze_assert(simd_result == false);
         }
-    }*/
+    }
+}
+
+template <typename T>
+void test_contains_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 520000);
+        T target = RandomGenerator<T>(seed + i + 520000)();
+        
+        auto simd_result = raze::algorithm::contains(vec, target);
+        auto std_result = std::ranges::contains(vec, target);
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+template <typename T>
+void test_contains_edge_cases() {
+    {
+        std::vector<T> vec;
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        auto std_result = (std::find(vec.begin(), vec.end(), T(42)) != vec.end());
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == false);
+    }
+    
+    {
+        std::vector<T> vec = {T(42)};
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == true);
+    }
+    
+    {
+        std::vector<T> vec = {T(42)};
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(99));
+        raze_assert(simd_result == false);
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[0] = T(42);
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == true);
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[99] = T(42);
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == true);
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[50] = T(42);
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == true);
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == false);
+    }
+    
+    {
+        std::vector<T> vec(100, T(42));
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == true);
+    }
+}
+
+struct Point {
+    int x, y;
+    bool operator==(const Point&) const = default;
+};
+
+template <typename T>
+void test_contains_with_projection(unsigned seed = 42) {
+    for (int i = 0; i < 10000; ++i) {
+        std::vector<Point> vec(100);
+        RandomGenerator<int> gen(seed + i + 530000);
+        for (auto& p : vec) {
+            p.x = gen();
+            p.y = gen();
+        }
+        
+        int target_x = gen();
+        
+        auto simd_result = raze::algorithm::contains(vec.begin(), vec.end(), target_x, [] (const Point& p) { return p.x; });
+        auto std_result = (std::find_if(vec.begin(), vec.end(), [target_x](const Point& p) { return p.x == target_x; }) != vec.end());
+        
+        raze_assert(simd_result == std_result);
+    }
+    
+    for (int i = 0; i < 10000; ++i) {
+        std::vector<Point> vec(100);
+        RandomGenerator<int> gen(seed + i + 540000);
+        for (auto& p : vec) {
+            p.x = gen();
+            p.y = gen();
+        }
+        
+        int target_x = gen();
+        
+        auto simd_result = raze::algorithm::contains(vec, target_x, [](const Point& p) { return p.x; });
+        auto std_result = std::ranges::contains(vec, target_x, [](const Point& p) { return p.x; });
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+template <typename T>
+void run_all_tests_for_type() {
+    test_contains_random<T>();
+    test_contains_ranges<T>();
+    test_contains_edge_cases<T>();
 }
 
 int main() {
-    testContains<char>();
-    testContains<unsigned char>();
-    testContains<short>();
-    testContains<unsigned short>();
-    testContains<int>();
-    testContains<unsigned int>();
-    testContains<long long>();
-    testContains<unsigned long long>();
-    testContains<float>();
-    testContains<double>();
-
+    run_all_tests_for_type<int>();
+    run_all_tests_for_type<short>();
+    run_all_tests_for_type<long long>();
+    run_all_tests_for_type<char>();
+    
+    run_all_tests_for_type<unsigned int>();
+    run_all_tests_for_type<unsigned short>();
+    run_all_tests_for_type<unsigned long long>();
+    run_all_tests_for_type<unsigned char>();
+    
+    run_all_tests_for_type<float>();
+    run_all_tests_for_type<double>();
+    
+    test_contains_with_projection<int>();
+    
     return 0;
 }
