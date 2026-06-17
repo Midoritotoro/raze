@@ -39,6 +39,7 @@ struct alignment_policy {
  * @tparam _Type_  The scalar element type (e.g., i32, f32, f64).
  * @tparam _Abi_   ABI descriptor specifying ISA and register width.
 */
+
 template <class _Type_, class _Abi_>
 class simd {
     static_assert(type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>, "Unsupported element type. ");

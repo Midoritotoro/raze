@@ -4,33 +4,28 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <
-    class _InputIterator_, 
-    class _Predicate_>
-__simd_nodiscard_inline_constexpr bool all_of(
-    _InputIterator_ __first,
-    _InputIterator_ __last,
-    _Predicate_     __predicate) noexcept(
-        std::is_nothrow_invocable_v<
-		    _Predicate_, std::iter_value_t<_InputIterator_>>)
-{
-    return (raze::algorithm::find_if_not(__first, __last, type_traits::__pass_function(__predicate)) == _Last);
-}
+template <class _Traits_>
+struct _All_of : _Traits_ {
+	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
+		class _Predicate_, class _Projection_ = std::identity>
+	constexpr raze_always_inline bool operator()(_Iterator_ __first,
+		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+	{
+		return algorithm::find_if_not(std::move(__first), __last,
+			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)) == __last;
+	}
 
-template <
-    class _ExecutionPolicy_,
-    class _InputIterator_,
-    class _Predicate_,
-    concurrency::enable_if_execution_policy<_ExecutionPolicy_> = 0>
-raze_nodiscard bool all_of(
-    _ExecutionPolicy_&&,
-    _InputIterator_ __first,
-    _InputIterator_ __last,
-    _Predicate_     __predicate) noexcept(
-        std::is_nothrow_invocable_v<
-        _Predicate_, std::iter_value_t<_InputIterator_>>)
-{
-    return raze::algorithm::all_of(__first, __last, type_traits::__pass_function(__predicate));
-}
+	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
+	constexpr raze_always_inline bool operator()(
+		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+	{
+		auto __last = std::ranges::end(__range);
+		return algorithm::find_if_not(std::move(__range), type_traits::__pass_function(__pred),
+			type_traits::__pass_function(__proj)) == __last;
+	}
+};
+
+constexpr inline auto all_of = raze::options::function_with_traits<_All_of>;
+
 
 __RAZE_ALGORITHM_NAMESPACE_END

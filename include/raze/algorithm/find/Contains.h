@@ -1,35 +1,32 @@
 #pragma once 
 
-#include <src/raze/algorithm/unchecked/find/ContainsUnchecked.h>
-#include <raze/concurrency/Execution.h>
-
+#include <raze/algorithm/find/Find.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <
-	class _Iterator_,
-	class _Type_ = std::iter_value_t<_Iterator_>>
-__simd_nodiscard_inline_constexpr bool contains(
-	_Iterator_											__first,
-	_Iterator_											__last,
-	const typename std::type_identity<_Type_>::type&	__value) noexcept
-{
-	__verify_range(__first, __last);
-	return __contains_unchecked(__unwrap_iterator(__first), __unwrap_iterator(__last), __value);
-}
+template <class _Traits_>
+struct _Contains : _Traits_ {
+	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
+		class _Value_ = std::iter_value_t<_Iterator_>, class _Projection_ = std::identity>
+	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
+		_Sentinel_ __last, const std::type_identity_t<_Value_>& __v, _Projection_ __proj = {}) const noexcept
+	{
+		return algorithm::find(std::move(__first), __last, __v,
+			type_traits::__pass_function(__proj)) != __last;
+	}
 
-template <
-	class _ExecutionPolicy_,
-	class _Iterator_,
-	class _Type_ = std::iter_value_t<_Iterator_>,
-	concurrency::enable_if_execution_policy<_ExecutionPolicy_> = 0>
-__simd_nodiscard_inline_constexpr bool contains(
-	_ExecutionPolicy_&&,
-	_Iterator_		__first,
-	_Iterator_		__last,
-	const _Type_&	__value) noexcept
-{
-	return raze::algorithm::contains(__first, __last, __value);
-}
+	template <std::ranges::input_range _Range_, class _Value_ = std::ranges::range_value_t<_Range_>,
+		class _Projection_ = std::identity>
+	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(
+		_Range_&& __range, const std::type_identity_t<_Value_>& __v, _Projection_ __proj = {}) const noexcept
+	{
+		auto __last = std::ranges::end(__range);
+		return algorithm::find_if(std::move(__range), __v,
+			type_traits::__pass_function(__proj)) != __last;
+	}
+};
+
+constexpr inline auto contains = raze::options::function_with_traits<_Contains>;
+
 
 __RAZE_ALGORITHM_NAMESPACE_END

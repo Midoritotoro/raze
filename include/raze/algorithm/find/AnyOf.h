@@ -4,33 +4,28 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <
-    class _InputIterator_, 
-    class _Predicate_>
-__simd_inline_constexpr bool any_of(
-    _InputIterator_ __first,
-    _InputIterator_ __last,
-    _Predicate_     __predicate) noexcept(
-        std::is_nothrow_invocable_v<
-		    _Predicate_, std::iter_value_t<_InputIterator_>>)
-{
-    return (raze::algorithm::find_if(__first, __last, type_traits::__pass_function(__predicate)) != __last);
-}
+template <class _Traits_>
+struct _Any_of : _Traits_ {
+	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
+		class _Predicate_, class _Projection_ = std::identity>
+	constexpr raze_always_inline bool operator()(_Iterator_ __first,
+		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+	{
+		return algorithm::find_if(std::move(__first), __last,
+			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)) != __last;
+	}
 
-template <
-    class _ExecutionPolicy_,
-    class _InputIterator_,
-    class _Predicate_,
-    concurrency::enable_if_execution_policy<_ExecutionPolicy_> = 0>
-raze_nodiscard raze_constexpr_cxx20 raze_always_inline bool any_of(
-    _ExecutionPolicy_&&,
-    _InputIterator_ __first,
-    _InputIterator_ __last,
-    _Predicate_     __predicate) noexcept(
-        std::is_nothrow_invocable_v<
-            _Predicate_, std::iter_value_t<_InputIterator_>>)
-{
-    return raze::algorithm::any_of(__first, __last, type_traits::__pass_function(__predicate));
-}
+	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
+	constexpr raze_always_inline bool operator()(
+		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+	{
+		auto __last = std::ranges::end(__range);
+		return algorithm::find_if(std::move(__range), type_traits::__pass_function(__pred),
+			type_traits::__pass_function(__proj)) != __last;
+	}
+};
+
+constexpr inline auto any_of = raze::options::function_with_traits<_Any_of>;
+
 
 __RAZE_ALGORITHM_NAMESPACE_END

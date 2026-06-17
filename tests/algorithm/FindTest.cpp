@@ -384,18 +384,18 @@ void run_all_tests_for_type() {
 }
 
 int main() {
-    //run_all_tests_for_type<int>();
-    //run_all_tests_for_type<short>();
-    //run_all_tests_for_type<long long>();
-    //run_all_tests_for_type<char>();
-    //
-    //run_all_tests_for_type<unsigned int>();
-    //run_all_tests_for_type<unsigned short>();
-    //run_all_tests_for_type<unsigned long long>();
-    //run_all_tests_for_type<unsigned char>();
-    //
-    //run_all_tests_for_type<float>();
-    //run_all_tests_for_type<double>();
+    run_all_tests_for_type<int>();
+    run_all_tests_for_type<short>();
+    run_all_tests_for_type<long long>();
+    run_all_tests_for_type<char>();
+    
+    run_all_tests_for_type<unsigned int>();
+    run_all_tests_for_type<unsigned short>();
+    run_all_tests_for_type<unsigned long long>();
+    run_all_tests_for_type<unsigned char>();
+    
+    run_all_tests_for_type<float>();
+    run_all_tests_for_type<double>();
     
     test_find_with_projection<int>();
     
