@@ -1,125 +1,112 @@
 #pragma once 
 
-#include <src/raze/algorithm/AlgorithmDebug.h>
-
-#include <src/raze/algorithm/vectorized/find/SearchVectorized.h>
-#include <src/raze/type_traits/CanMemcmpElements.h>
-
-#include <src/raze/algorithm/MsvcIteratorUnwrap.h>
-#include <src/raze/type_traits/OperatorWrappers.h>
-
+#include <raze/algorithm/find/Find.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <
-	class _FirstForwardIterator_,
-	class _SecondForwardIterator_,
-	class _Predicate_>
-raze_nodiscard raze_always_inline raze_constexpr_cxx20 bool starts_with(
-	_FirstForwardIterator_	__first1,
-	_FirstForwardIterator_	__last1,
-	_SecondForwardIterator_ __first2,
-	_SecondForwardIterator_ __last2,
-	_Predicate_				__predicate) noexcept(
-		std::is_nothrow_invocable_v<
-			_Predicate_,
-			std::iter_value_t<_FirstForwardIterator_>,
-			std::iter_value_t<_SecondForwardIterator_>
-		>
-	)
-{
-	using _Value_ = std::iter_value_t<_FirstForwardIterator_>;
+template <class _Traits_>
+struct _Starts_with : _Traits_ {
+	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
+		class _Predicate_, class _Projection1_, class _Projection2_>
+	struct __impl {
+		_Iterator1_ _iterator1;
+		_Iterator2_ _iterator2;
+		_Sentinel1_ _sentinel1;
+		_Sentinel2_ _sentinel2;
+		_Predicate_ _predicate;
+		_Projection1_ _proj1;
+		_Projection2_ _proj2;
+		bool _result;
 
-	using _FirstForwardIteratorUnwrappedType_	= __unwrapped_iterator_type<_FirstForwardIterator_>;
-	using _SecondForwardIteratorUnwrappedType_	= __unwrapped_iterator_type<_SecondForwardIterator_>;
+		constexpr explicit __impl(_Iterator1_ __it1, _Sentinel1_ __sent1, _Iterator2_ __it2,
+			_Sentinel2_ __sent2, _Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) noexcept:
+				_iterator1(__it1), _sentinel1(__sent1), _iterator2(__it2), _sentinel2(__sent2),
+				_predicate(__pred), _proj1(__proj1), _proj2(__proj2)
+		{}
 
-	__verify_range(__first1, __last1);
-	__verify_range(__first2, __last2);
+		template <class _Tag_>
+		constexpr raze_always_inline bool operator()(_Tag_) noexcept {
+			if (_iterator1 != _sentinel1 && _iterator2 != _sentinel2) {
+				if (!_predicate(_proj1(*_iterator1), _proj2(*_iterator2))) {
+					_result = false;
+					return true;
+				}
 
-	auto __first1_unwrapped			= __unwrap_iterator(__first1);
-	auto __first2_unwrapped			= __unwrap_iterator(__first2);
+				++_iterator1;
+				++_iterator2;
 
-	const auto __last1_unwrapped	= __unwrap_iterator(__last1);
-	const auto __last2_unwrapped	= __unwrap_iterator(__last2);
+				return false;
+			}
 
-	if constexpr (
-		type_traits::is_iterator_random_ranges_v<_FirstForwardIteratorUnwrappedType_> &&
-		type_traits::is_iterator_random_ranges_v<_SecondForwardIteratorUnwrappedType_>
-	)
+			_result = _iterator2 == _sentinel2;
+			return true;
+		}
+
+		raze_always_inline constexpr bool result() const noexcept {
+			return _result;
+		}
+	};
+
+	template <std::input_iterator _Iterator1_, std::sentinel_for<_Iterator1_> _Sentinel1_,
+		std::input_iterator _Iterator2_, std::sentinel_for<_Iterator2_> _Sentinel2_,
+		class _Predicate_ = std::ranges::equal_to, class _Projection1_ = std::identity,
+		class _Projection2_ = std::identity>
+	constexpr raze_always_inline bool operator()(_Iterator1_ __first1,
+		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
+		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		const auto __first_range_length		= __iterators_difference(__first1_unwrapped, __last1_unwrapped);
-		const auto __second_range_length	= __iterators_difference(__first2_unwrapped, __last2_unwrapped);
-
-		if (__first_range_length < __second_range_length)
-			return false;
-
-		for (auto current = sizetype(0); current < __second_range_length; ++current, ++__first1_unwrapped, ++__first2_unwrapped)
-			if (__predicate(*__first1_unwrapped, *__first2_unwrapped) == false)
-				return false;
-		
-		return true;
+		return __starts_with_unchecked(std::move(__first1), std::move(__last1),
+			std::move(__first2), std::move(__last2), type_traits::__pass_function(__pred),
+			type_traits::__pass_function(__proj1), type_traits::__pass_function(__proj2));
 	}
-	else {
-		for (; __first1_unwrapped != __last1_unwrapped && __first2_unwrapped != __last2_unwrapped; ++__first1_unwrapped, ++__first2_unwrapped)
-			if (!__predicate(*__first1_unwrapped, *__first2_unwrapped))
-				return false;
 
-		return (__first2_unwrapped == __last2_unwrapped);
+	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
+		class _Predicate_ = std::ranges::equal_to, class _Projection1_ = std::identity,
+		class _Projection2_ = std::identity>
+	constexpr raze_always_inline bool operator()(_Range1_&& __range1, _Range2_&& __range2, 
+		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+			requires((!constexpr_sized_range<_Range1_> || !constexpr_sized_range<_Range2_>) &&
+				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
+					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
+	{
+		return __starts_with_unchecked(std::ranges::begin(__range1), std::ranges::end(__range1),
+			std::ranges::begin(__range2), std::ranges::end(__range2), type_traits::__pass_function(__pred),
+			type_traits::__pass_function(__proj1), type_traits::__pass_function(__proj2));
 	}
-}
 
-template <
-	class _FirstForwardIterator_,
-	class _SecondForwardIterator_>
-raze_nodiscard raze_always_inline raze_constexpr_cxx20 bool starts_with(
-	_FirstForwardIterator_	__first1,
-	_FirstForwardIterator_	__last1,
-	_SecondForwardIterator_ __first2,
-	_SecondForwardIterator_ __last2) noexcept(
-		std::is_nothrow_invocable_v<
-			type_traits::equal_to<>,
-			std::iter_value_t<_FirstForwardIterator_>,
-			std::iter_value_t<_SecondForwardIterator_>>)
-{
-	return raze::algorithm::starts_with(__first1, __last1, __first2, __last2, type_traits::equal_to<>{});
-}
+	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
+		class _Predicate_ = std::ranges::equal_to, class _Projection1_ = std::identity,
+		class _Projection2_ = std::identity>
+	constexpr raze_always_inline bool operator()(_Range1_&& __range1, _Range2_&& __range2, 
+		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+			requires(constexpr_sized_range<_Range1_> && constexpr_sized_range<_Range2_> &&
+				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
+					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
+	{
+		if constexpr (__range_constexpr_size<_Range1_>() < __range_constexpr_size<_Range2_>()) return false;
+		else return __starts_with_unchecked(std::ranges::begin(__range1), std::ranges::end(__range1),
+			std::ranges::begin(__range2), std::ranges::end(__range2), type_traits::__pass_function(__pred),
+			type_traits::__pass_function(__proj1), type_traits::__pass_function(__proj2));
+	}
+private:
+	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
+		class _Predicate_, class _Projection1_, class _Projection2_>
+	constexpr raze_always_inline bool __starts_with_unchecked(_Iterator1_ __first1,
+		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
+		_Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept
+	{
+		__verify_range(__first1, __last1);
+		__verify_range(__first2, __last2);
 
-template <
-	class _ExecutionPolicy_,
-	class _FirstForwardIterator_,
-	class _SecondForwardIterator_,
-	class _Predicate_>
-raze_nodiscard raze_always_inline raze_constexpr_cxx20 bool starts_with(
-	_ExecutionPolicy_&&,
-	_FirstForwardIterator_	__first1,
-	_FirstForwardIterator_	__last1,
-	_SecondForwardIterator_ __first2,
-	_SecondForwardIterator_ __last2,
-	_Predicate_				__predicate) noexcept(
-		std::is_nothrow_invocable_v<
-			_Predicate_,
-			std::iter_value_t<_FirstForwardIterator_>,
-			std::iter_value_t<_SecondForwardIterator_>>)
-{
-	return raze::algorithm::starts_with(__first1, __last1, __first2, __last2, type_traits::__pass_function(__predicate));
-}
+		using _Value_ = std::iter_value_t<_Iterator1_>;
 
-template <
-	class _ExecutionPolicy_,
-	class _FirstForwardIterator_,
-	class _SecondForwardIterator_>
-raze_nodiscard raze_always_inline raze_constexpr_cxx20 bool starts_with(
-	_ExecutionPolicy_&&,
-	_FirstForwardIterator_	__first1,
-	_FirstForwardIterator_	__last1,
-	_SecondForwardIterator_ __first2,
-	_SecondForwardIterator_ __last2) noexcept(
-		std::is_nothrow_invocable_v<
-			type_traits::equal_to<>,
-			std::iter_value_t<_FirstForwardIterator_>,
-			std::iter_value_t<_SecondForwardIterator_>>)
-{
-	return raze::algorithm::starts_with(__first1, __last1, __first2, __last2);
-}
+		auto __work = __impl(__first1, __last1, __first2, __last2, __pred, __proj1, __proj2);
+		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__work);
+	}
+};
+
+constexpr inline auto starts_with  = raze::options::function_with_traits<_Starts_with>;
+
 
 __RAZE_ALGORITHM_NAMESPACE_END
