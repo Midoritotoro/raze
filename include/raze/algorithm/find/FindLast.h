@@ -14,120 +14,119 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class _Traits_>
 struct _Find_last_if : _Traits_ {
     template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-    struct __impl {
-        _Iterator_ _iterator;
-        _Iterator_ _iterator_last;
-        _Sentinel_ _sentinel;
-        _Predicate_ _predicate;
-        _Projection_ _proj;
+struct __impl {
+    _Iterator_ _iterator;
+    _Iterator_ _iterator_last;
+    _Sentinel_ _sentinel;
+    _Predicate_ _predicate;
+    _Projection_ _proj;
 
-        constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept:
-            _iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
-        {
-            _iterator_last = _iterator;
-            std::advance(_iterator_last, std::ranges::distance(__it, __sent));
-        }
+    constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept:
+        _iterator(__it), _iterator_last(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
+    {
+        std::advance(_iterator_last, std::ranges::distance(__it, __sent));
+    }
 
-        template <class _Tag_>
-        raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
-            if constexpr (std::bidirectional_iterator<_Iterator_>) {
-                if (_iterator_last == _iterator) { 
-                    _iterator = _sentinel;
-                    return true;
-                }
-
-                if (_predicate(_proj(*(--_iterator_last)))) { 
-                    _iterator = _iterator_last; 
-                    return true; 
-                }
-            }
-            else {
-                if (_iterator == _sentinel) {
-                    _iterator = _iterator_last;
-                    return true;
-                }
-
-                if (_predicate(_proj(*_iterator))) return true;
-
-                ++_iterator;
-                return false;
-            }
-        }
-
-        template <vx::simd_type _Tag_>
-		raze_nodiscard raze_always_inline void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
-			auto* __last = std::to_address(_iterator_last);
-			raze_assume(__last != __nullptr);
-
-			const auto __stop_at = __bytes_pointer_offset(__last, -i64(__aligned_size));
-
-			do {
-                __rewind_bytes(__last, sizeof(_Tag_));
-				const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__last)));
-
-				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(_iterator, __last + _Tag_::size() - vx::find_last_set(__mask) - 1);
-					return;
-				}
-			} while (__last != __stop_at);
-
-			__seek_possibly_wrapped_iterator(_iterator_last, __last);
-
-            while (_iterator_last != _iterator) {
-                if (_predicate(_proj(*_iterator_last))) {
-                    __seek_possibly_wrapped_iterator(_iterator, _iterator_last);
-                    return;
-                }
-
-                --_iterator_last;
-            }
-            
-            if (!_predicate(_proj(*_iterator_last)))
+    template <class _Tag_>
+    raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
+        if constexpr (std::bidirectional_iterator<_Iterator_>) {
+            if (_iterator_last == _iterator) { 
                 _iterator = _sentinel;
-		}
-
-		template <vx::simd_type _Tag_, sizetype _AlignedSize_, sizetype _TailSize_>
-		raze_nodiscard raze_always_inline void operator()(_Tag_, 
-			std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>) noexcept 
-		{
-			auto* __last = std::to_address(_iterator_last);
-			raze_assume(__last != __nullptr);
-
-            constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-            auto __left = __iterations_aligned;
-
-			do {
-                __rewind_bytes(__last, sizeof(_Tag_));
-				const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__last)));
-
-				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(_iterator, __last + _Tag_::size() - vx::find_last_set(__mask) - 1);
-					return;
-				}
-			} while (--__left);
-
-			__seek_possibly_wrapped_iterator(_iterator_last, __last);
-
-            if constexpr (_TailSize_ != 0) {
-                do {
-                    if (_predicate(_proj(*_iterator_last))) {
-                        __seek_possibly_wrapped_iterator(_iterator, _iterator_last);
-                        return;
-                    }
-
-                    --_iterator_last;
-                } while (_iterator_last != _iterator);
+                return true;
             }
-
-            if (!_predicate(_proj(*_iterator_last)))
-                _iterator = _sentinel;
-		}
-
-        raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
-            return _iterator;
+            if (_predicate(_proj(*(--_iterator_last)))) { 
+                _iterator = _iterator_last; 
+                return true; 
+            }
+            return false;
         }
-    };
+        else {
+            if (_iterator == _sentinel) {
+                _iterator = _iterator_last;
+                return true;
+            }
+            if (_predicate(_proj(*_iterator))) return true;
+            ++_iterator;
+            return false;
+        }
+    }
+
+    template <vx::simd_type _Tag_>
+    raze_nodiscard raze_always_inline void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
+        auto __result_it = _sentinel;
+        auto* __ptr = std::to_address(_iterator_last);
+        raze_assume(__ptr != __nullptr);
+
+        const auto __stop_at = __bytes_pointer_offset(__ptr, -i64(__aligned_size));
+
+        do {
+            __rewind_bytes(__ptr, sizeof(_Tag_));
+            const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
+
+            if (raze::vx::any_of(__mask)) {
+                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set(__mask) - 1);
+                _iterator = __result_it;
+                return;
+            }
+        } while (__ptr != __stop_at);
+        
+        auto __tail_it = _iterator_last;
+        __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+
+        while (true) {
+            if (_predicate(_proj(*__tail_it))) {
+                _iterator = __tail_it;
+                return;
+            }
+            if (__tail_it == _iterator) break;
+            --__tail_it;
+        }
+
+        _iterator = _sentinel;
+    }
+
+    template <vx::simd_type _Tag_, sizetype _AlignedSize_, sizetype _TailSize_>
+    raze_nodiscard raze_always_inline void operator()(_Tag_,
+        std::integral_constant<sizetype, _AlignedSize_>,
+        std::integral_constant<sizetype, _TailSize_>) noexcept
+    {
+        auto __result_it = _sentinel;
+        auto* __ptr = std::to_address(_iterator_last);
+        raze_assume(__ptr != __nullptr);
+
+        constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
+        auto __left = __iterations_aligned;
+
+        do {
+            __rewind_bytes(__ptr, sizeof(_Tag_));
+            const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
+
+            if (raze::vx::any_of(__mask)) {
+                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set(__mask) - 1);
+                _iterator = __result_it;
+                return;
+            }
+        } while (--__left);
+
+        auto __tail_it = _iterator_last;
+        __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+
+        while (true) {
+            if (_predicate(_proj(*__tail_it))) {
+                _iterator = __tail_it;
+                return;
+            }
+            if (__tail_it == _iterator) break;
+            --__tail_it;
+        }
+
+        _iterator = _sentinel;
+    }
+
+    raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
+        return _iterator;
+    }
+};
 
     template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
         class _Predicate_, class _Projection_ = std::identity>
@@ -187,12 +186,12 @@ private:
             if not consteval {
                 __seek_possibly_wrapped_iterator(__first, vx::__dispatch_sized_impl<
                     typename options::_Unroller<decltype(this->traits())>::__impl,
-                    _Value_, _Iterator_>(algorithm::distance(__first, __last) * sizeof(_Value_), __work));
+                    _Value_, _Iterator_>(algorithm::distance(__first, __last) * sizeof(_Value_), std::move(__work)));
                 return __first;
             }
         }
         
-        __seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(__work));
+        __seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(std::move(__work)));
         return __first;
     }
 
@@ -212,12 +211,12 @@ private:
             if not consteval {
                 __seek_possibly_wrapped_iterator(__first, vx::__dispatch_sized_impl<
                     typename options::_Unroller<decltype(this->traits())>::__impl,
-                    _Value_, _Iterator_>(std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{}, __work));
+                    _Value_, _Iterator_>(std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{}, std::move(__work)));
                 return __first;
             }
         }
         
-        __seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(__work));
+        __seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(std::move(__work)));
         return __first;
     }
 };

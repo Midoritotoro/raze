@@ -106,12 +106,10 @@ template <std::unsigned_integral _IntegralType_>
 raze_always_inline i32 __lzcnt_clz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
 
-    if      constexpr (__digits == 64)
-        return static_cast<int>(__raze_lzcnt_u64(static_cast<u64>(__value)));
-    else if constexpr (__digits == 32)
-        return static_cast<int>(__raze_lzcnt_u32(static_cast<u32>(__value)));
-    else
-        return static_cast<int>(__raze_lzcnt_u16(static_cast<u16>(__value))) - (16 - __digits);
+    if constexpr (__digits == 64)  return static_cast<int>(__raze_lzcnt_u64(static_cast<u64>(__value)));
+    else return static_cast<int>(__raze_lzcnt_u32(static_cast<u32>(__value))) - (32 - __digits);
+    /*else
+        return static_cast<int>(__raze_lzcnt_u16(static_cast<u16>(__value))) - (16 - __digits);*/
 }
 
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
