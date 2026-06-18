@@ -111,7 +111,7 @@ struct Point {
 
 template <typename T>
 void test_find_with_projection(unsigned seed = 42) {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         std::vector<Point> vec(100);
         RandomGenerator<int> gen(seed + i + 120000);
         for (auto& p : vec) {
@@ -137,7 +137,7 @@ void test_find_with_projection(unsigned seed = 42) {
 
 template <typename T>
 void test_starts_with_random(unsigned seed = 42) {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         size_t s1 = 50 + (i % 100);
         size_t s2 = 20 + (i % 50);
         if (i % 5 == 0) s2 = s1 + 10;
@@ -158,7 +158,7 @@ void test_starts_with_random(unsigned seed = 42) {
 
 template <typename T>
 void test_ends_with_random(unsigned seed = 42) {
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         size_t s1 = 50 + (i % 100);
         size_t s2 = 20 + (i % 50);
         if (i % 5 == 0) s2 = s1 + 10;
@@ -179,7 +179,7 @@ void test_ends_with_random(unsigned seed = 42) {
 
 template <typename T>
 void test_starts_ends_with_pred(unsigned seed = 42) {
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         size_t s1 = 50 + (i % 100);
         size_t s2 = 20 + (i % 50);
         if (i % 5 == 0) s2 = s1 + 10;
@@ -281,7 +281,7 @@ void test_ends_with_edge_cases() {
 
 template <typename T>
 void test_starts_ends_with_projection(unsigned seed = 42) {
-    for (int i = 0; i < 1000; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         std::vector<Point> vec1(100);
         std::vector<Point> vec2(50);
         RandomGenerator<int> gen(seed + i + 130000);

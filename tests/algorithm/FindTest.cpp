@@ -109,7 +109,7 @@ void test_find_random(unsigned seed = 42) {
         T target = gen();
         
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), target);
-        auto std_result = std::find(vec.begin(), vec.end(), target);
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), target);
         
         raze_assert(simd_result == std_result);
         if (simd_result != vec.end()) {
@@ -132,7 +132,7 @@ void test_find_random(unsigned seed = 42) {
         T target = gen();
         
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), target);
-        auto std_result = std::find(vec.begin(), vec.end(), target);
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), target);
         
         raze_assert(simd_result == std_result);
     }
@@ -163,7 +163,7 @@ void test_find_if_random(unsigned seed = 42) {
         auto pred = [threshold](T x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
-        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_if(vec.begin(), vec.end(), pred);
         
         raze_assert(simd_result == std_result);
         if (simd_result != vec.end()) {
@@ -178,7 +178,7 @@ void test_find_if_random(unsigned seed = 42) {
         auto pred = [target](T x) { return x == target; };
         
         auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
-        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_if(vec.begin(), vec.end(), pred);
         
         raze_assert(simd_result == std_result);
         if (simd_result != vec.end()) {
@@ -191,7 +191,7 @@ void test_find_if_random(unsigned seed = 42) {
         auto pred = [](T) { return false; };
         
         auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
-        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_if(vec.begin(), vec.end(), pred);
         
         raze_assert(simd_result == std_result);
         raze_assert(simd_result == vec.end());
@@ -202,7 +202,7 @@ void test_find_if_random(unsigned seed = 42) {
         auto pred = [](T) { return true; };
         
         auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), pred);
-        auto std_result = std::find_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_if(vec.begin(), vec.end(), pred);
         
         raze_assert(simd_result == std_result);
         raze_assert(simd_result == vec.begin());
@@ -236,7 +236,7 @@ void test_find_if_not_random(unsigned seed = 42) {
         auto pred = [threshold](T x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::find_if_not(vec.begin(), vec.end(), pred);
-        auto std_result = std::find_if_not(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_if_not(vec.begin(), vec.end(), pred);
         
         raze_assert(simd_result == std_result);
         if (simd_result != vec.end()) {
@@ -251,7 +251,7 @@ void test_find_if_not_random(unsigned seed = 42) {
         auto pred = [target](T x) { return x == target; };
         
         auto simd_result = raze::algorithm::find_if_not(vec.begin(), vec.end(), pred);
-        auto std_result = std::find_if_not(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_if_not(vec.begin(), vec.end(), pred);
         
         raze_assert(simd_result == std_result);
         if (simd_result != vec.end()) {
@@ -299,7 +299,7 @@ void test_find_with_projection(unsigned seed = 42) {
             [target_x](const Point& p) { return p.x == target_x; },
             [](const Point& p) { return p; });
         
-        auto std_result = std::find_if(vec.begin(), vec.end(), 
+        auto std_result = std::ranges::find_if(vec.begin(), vec.end(),
             [target_x](const Point& p) { return p.x == target_x; });
         
         raze_assert(simd_result == std_result);
@@ -314,7 +314,7 @@ void test_edge_cases() {
     {
         std::vector<T> vec;
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
-        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), T(42));
         raze_assert(simd_result == vec.end());
         raze_assert(std_result == vec.end());
         raze_assert(simd_result == std_result);
@@ -323,7 +323,7 @@ void test_edge_cases() {
     {
         std::vector<T> vec = {T(42)};
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
-        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), T(42));
         raze_assert(simd_result == std_result);
         raze_assert(*simd_result == T(42));
     }
@@ -331,7 +331,7 @@ void test_edge_cases() {
     {
         std::vector<T> vec = {T(42)};
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(99));
-        auto std_result = std::find(vec.begin(), vec.end(), T(99));
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), T(99));
         raze_assert(simd_result == std_result);
         raze_assert(simd_result == vec.end());
     }
@@ -340,7 +340,7 @@ void test_edge_cases() {
         std::vector<T> vec(100, T(0));
         vec[0] = T(42);
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
-        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), T(42));
         raze_assert(simd_result == std_result);
         raze_assert(*simd_result == T(42));
     }
@@ -349,7 +349,7 @@ void test_edge_cases() {
         std::vector<T> vec(100, T(0));
         vec[99] = T(42);
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
-        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), T(42));
         raze_assert(simd_result == std_result);
         raze_assert(*simd_result == T(42));
     }
@@ -358,7 +358,7 @@ void test_edge_cases() {
         std::vector<T> vec(100, T(0));
         vec[50] = T(42);
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
-        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), T(42));
         raze_assert(simd_result == std_result);
         raze_assert(*simd_result == T(42));
     }
@@ -366,7 +366,7 @@ void test_edge_cases() {
     {
         std::vector<T> vec(100, T(42));
         auto simd_result = raze::algorithm::find(vec.begin(), vec.end(), T(42));
-        auto std_result = std::find(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::find(vec.begin(), vec.end(), T(42));
         raze_assert(simd_result == std_result);
         raze_assert(*simd_result == T(42));
     }

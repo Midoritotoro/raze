@@ -11,9 +11,6 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Func_, class ... _Args_>
-using function_return_type = decltype(std::invoke(std::declval<_Func_>(), std::declval<_Args_>()...));
-
 template <class _Traits_>
 struct _Find_if : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
@@ -104,6 +101,7 @@ struct _Find_if : _Traits_ {
 		class _Predicate_, class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
 		__seek_possibly_wrapped_iterator(__first, __find_unchecked(
 			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
@@ -114,22 +112,31 @@ struct _Find_if : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_>)
+			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
+				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __find_unchecked(std::ranges::begin(__range), std::ranges::end(__range),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+		auto __first = std::ranges::begin(__range);
+		__seek_possibly_wrapped_iterator(__first, __find_unchecked(
+			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)), 
+			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
+			type_traits::__pass_function(__proj)));
+		return __first;
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(_Range_&& __range,
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_>)
+			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
+				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __find_unchecked(std::ranges::begin(__range), std::ranges::end(__range),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj), 
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		auto __first = std::ranges::begin(__range);
+		__seek_possibly_wrapped_iterator(__first, __find_unchecked(
+			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
+			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
+			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+		return __first;
 	}
 private:
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
@@ -195,22 +202,22 @@ struct _Find : _Traits_ {
 
 	template <std::ranges::input_range _Range_, class _Value_,
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_>)
 	{
-		return find_if(std::move(__range), algorithm::equal_to(
+		return find_if(std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_, 
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(_Range_&& __range,
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_>)
 	{
-		return find_if(std::move(__range), algorithm::equal_to(
+		return find_if(std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
@@ -224,26 +231,27 @@ struct _Find_if_not : _Traits_ {
 		class _Predicate_, class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return find_if(std::move(__first), std::move(__last),
-			make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if(std::move(__first), std::move(__last), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_>)
+			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
+				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return find_if(std::move(__range),
-			make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if(std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::iterator_t<_Range_> operator()(_Range_&& __range,
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_>)
+			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
+				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return find_if(std::move(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if(std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 };
 

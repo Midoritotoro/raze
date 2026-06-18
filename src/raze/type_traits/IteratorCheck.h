@@ -6,6 +6,8 @@
 #include <type_traits>
 #include <xutility>
 #include <ranges>
+#include <concepts>
+
 
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
 
@@ -268,6 +270,34 @@ using __unwrapped_iterator_t = __ranges_unwrap_iter_t<std::ranges::iterator_t<_R
 
 template <std::ranges::range _Range_>
 using __unwrapped_sentinel_t = __ranges_unwrap_sent_t<std::ranges::sentinel_t<_Range_>, std::ranges::iterator_t<_Range_>>;
+
+#if defined(raze_cpp_msvc)
+  constexpr inline auto __unchecked_begin = std::ranges::_Ubegin;
+  constexpr inline auto __unchecked_end = std::ranges::_Uend;
+#else 
+  constexpr inline auto __unchecked_begin = std::identity{};
+  constexpr inline auto __unchecked_end = std::identity{};
+#endif // defined(raze_cpp_msvc)
+
+template <std::forward_iterator _Iterator_, class _Sentinel_>
+raze_nodiscard raze_always_inline constexpr __ranges_unwrap_iter_t<_Iterator_, _Sentinel_> __find_final_unwrapped_iterator(
+	const __ranges_unwrap_iter_t<_Iterator_, _Sentinel_>& __first, _Sentinel_&& __last) 
+		requires(std::sentinel_for<std::remove_cvref_t<_Sentinel_>, _Iterator_>)
+{
+	  if constexpr (std::is_same_v<__ranges_unwrap_iter_t<_Iterator_, _Sentinel_>, __ranges_unwrap_sent_t<_Sentinel_, _Iterator_>>)
+		  return __ranges_unwrap_sentinel<_Iterator_>(std::forward<_Sentinel_>(__last));
+	  else return std::ranges::next(__first, __ranges_unwrap_sentinel<_Iterator_>(std::forward<_Sentinel_>(__last)));
+  }
+
+template <std::ranges::forward_range _Range_>
+raze_nodiscard raze_always_inline constexpr auto __find_final_unwrapped_iterator(_Range_& __range) {
+	  if constexpr (std::ranges::common_range<_Range_>) {
+		  if constexpr (std::same_as<decltype(__unchecked_end(__range)), __unwrapped_iterator_t<_Range_>>) return __unchecked_end(__range);
+		  else return __ranges_unwrap_sentinel<_Range_>(std::ranges::end(__range));
+	  }
+	  else if constexpr (std::ranges::sized_range<_Range_>) return std::ranges::next(__unchecked_begin(__range), std::ranges::distance(__range));
+	  else return std::ranges::next(__unchecked_begin(__range), __unchecked_end(__range));
+  }
 
 
 __RAZE_TYPE_TRAITS_NAMESPACE_END
