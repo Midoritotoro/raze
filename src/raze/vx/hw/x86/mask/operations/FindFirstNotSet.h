@@ -14,12 +14,7 @@ struct _Find_first_not_set {
 			return __x;
 		}
 		else {
-			auto __int_mask = _To_mask<_ISA_, _Type_>()(__x);
-			using _MaskTp = decltype(__int_mask);
-
-			if constexpr (_Size_ <= 8) return math::__ctz_n_bits<_Size_>(_MaskTp(~__int_mask));
-			else if constexpr (__has_avx2_support_v<_ISA_>) return math::__tzcnt_ctz(_MaskTp(~__int_mask));
-			else return math::__bsf_ctz(_MaskTp(~__int_mask));
+			return math::__ctz_not_n_bits<_ISA_, _Size_>(_To_mask<_ISA_, _Type_>()(__x));
 		}
 	}
 };

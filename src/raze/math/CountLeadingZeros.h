@@ -136,35 +136,13 @@ template <sizetype _Bits_>
 struct __clz_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
-        constexpr auto __max_for_n_bits = _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
-        constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
+        constexpr auto __type_bits = raze_sizeof_in_bits(_IntegralType_);
+        constexpr auto __offset = __type_bits - _Bits_;
+        
+        constexpr auto __mask = _IntegralType_((_IntegralType_(1) << _Bits_) - 1);
 
-        using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
-
-        return __count_leading_zero_bits(static_cast<_UintForBits>(__value & __max_for_n_bits));
-    }
-};
-
-template <>
-struct __clz_n_bits_implementation<2> {
-    template <std::unsigned_integral _IntegralType_>
-    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
-        __value &= 0x03;
-        __value = __value | (__value >> 1);
-        return __popcnt_n_bits<2>(static_cast<_IntegralType_>(~__value));
-    }
-};
-
-template <>
-struct __clz_n_bits_implementation<4> {
-    template <std::unsigned_integral _IntegralType_>
-    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
-        __value &= 0xF;
-
-        __value = __value | (__value >> 1);
-        __value = __value | (__value >> 2);
-
-        return __popcnt_n_bits<4>(static_cast<_IntegralType_>(~__value));
+        __value &= __mask;
+        return __count_leading_zero_bits(__value) - __offset;
     }
 };
 
@@ -177,5 +155,4 @@ constexpr raze_always_inline i32 __clz_n_bits(_IntegralType_ __value) noexcept {
 
     return __clz_n_bits_implementation<_Bits_>()(__value);
 }
-
 __RAZE_MATH_NAMESPACE_END
