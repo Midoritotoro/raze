@@ -6,7 +6,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, arithmetic_type _Type_>
+template <arch::ISA _ISA_, u32 _Size_, arithmetic_type _Type_, bool _Unsafe_>
 struct _Find_first_not_set {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_always_inline i32 operator()(_Tp_ __x) const noexcept {
@@ -14,7 +14,7 @@ struct _Find_first_not_set {
 			return __x;
 		}
 		else {
-			return math::__ctz_not_n_bits<_ISA_, _Size_>(_To_mask<_ISA_, _Type_>()(__x));
+			return math::__ctz_not_n_bits<_ISA_, _Size_, _Unsafe_>(_To_mask<_ISA_, _Type_>()(__x));
 		}
 	}
 };

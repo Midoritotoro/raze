@@ -122,27 +122,29 @@ struct _Configurable_sized_isa_dispatcher {
            if (__size < 16)
                return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
 
-           else if (const auto __aligned_size = __size & ~0x3F; __aligned_size != 0) {
+           const auto __all = arch::ProcessorFeatures::all();
+
+           if (const auto __aligned_size = __size & ~0x3F; __aligned_size != 0) {
                 if constexpr (sizeof(_Type_) >= 4) {
-                    if (arch::ProcessorFeatures::AVX512F()) {
+                    if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all)) {
                         using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>;
                         return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, __size - __aligned_size);
                     }
                 }
                 else {
-                    if (arch::ProcessorFeatures::AVX512BW()) {
+                    if (arch::ProcessorFeatures::has<arch::__features::AVX512BW>(__all)) {
                         using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>;
                         return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, __size - __aligned_size);
                     }
                 }
             }
 
-            if (const auto __aligned_size = __size & ~0x1F; __aligned_size != 0 && arch::ProcessorFeatures::AVX2()) {
+            if (const auto __aligned_size = __size & ~0x1F; __aligned_size != 0 && arch::ProcessorFeatures::has<arch::__features::AVX2>(__all)) {
                 using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX2, 32 / sizeof(_Type_)>>;
                 return _Function_<_Simd_>()(std::forward<_Args_>(__args)..., __aligned_size, __size - __aligned_size);
             }
 
-            else if (const auto __aligned_size = __size & ~0xF; __aligned_size != 0 && arch::ProcessorFeatures::SSE42())
+            if (const auto __aligned_size = __size & ~0xF; __aligned_size != 0 && arch::ProcessorFeatures::has<arch::__features::SSE42>(__all))
                 return _Function_<simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>>()(
                     std::forward<_Args_>(__args)..., __aligned_size, __size - __aligned_size);
         }

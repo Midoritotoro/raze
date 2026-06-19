@@ -3,6 +3,7 @@
 
 #include <raze/options/Options.h>
 #include <src/raze/vx/Concepts.h>
+#include <src/raze/vx/hw/configurable/mask/Options.h>
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/mask/operations/FindFirstNotSet.h>
@@ -13,7 +14,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_find_first_not_set: raze::options::strict_elementwise_callable<_Configurable_find_first_not_set, _Options_> {
+struct _Configurable_find_first_not_set: raze::options::strict_elementwise_callable<_Configurable_find_first_not_set, _Options_, not_null_option> {
     template <simd_mask_type _Type_>
     raze_nodiscard raze_always_inline i32 operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);
@@ -26,9 +27,10 @@ struct _Configurable_find_first_not_set: raze::options::strict_elementwise_calla
         using _Abi_ = typename _Type_::abi_type;
 
         auto __index = 0;
+        constexpr auto __unsafe = _Options_::contains(not_null) && _Type_::__chunks_count() == 1;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (const _Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __index += _Find_first_not_set<_Abi_::isa, _Chunk::size, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+            __index += _Find_first_not_set<_Abi_::isa, _Chunk::size, _Value_, __unsafe>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
             return _All_of<_Abi_::isa, _Chunk::size, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
         };
 

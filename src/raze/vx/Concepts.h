@@ -2,7 +2,6 @@
 
 #include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 #include <raze/vx/Abi.h>
-// #include <raze/vx/Mask.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

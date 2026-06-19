@@ -12,13 +12,22 @@
 #include <raze/compatibility/Inline.h>
 
 #include <iostream>
+#include <src/raze/math/BitTest.h>
 
 
 __RAZE_ARCH_NAMESPACE_BEGIN
 
+enum class __features : u8 {
+    SSE, SSE2, SSE3, SSSE3, SSE41, SSE42, AVX, AVX2, FMA3,
+    AVX512F, AVX512BW, AVX512PF, AVX512ER, AVX512CD, AVX512VL, 
+    AVX512DQ, AVX512VBMI, AVX512VBMI2, POPCNT
+};
+
 class ProcessorFeatures
 {
 public:
+    raze_nodiscard raze_always_inline static i32 all() noexcept;
+
     raze_nodiscard raze_always_inline static bool SSE()         noexcept;
     raze_nodiscard raze_always_inline static bool SSE2()        noexcept;
     raze_nodiscard raze_always_inline static bool SSE3()        noexcept;
@@ -42,6 +51,12 @@ public:
 
     template <arch::ISA _Feature_> 
     raze_nodiscard raze_always_inline static bool isSupported() noexcept;
+
+    template <__features _Feature_>
+    static raze_always_inline bool has(i32 __all) noexcept {
+        constexpr auto __bit = 1u << static_cast<u32>(_Feature_);
+        return (__all & __bit) != 0;
+    }
 private:
     class ProcessorFeaturesInternal
     {
@@ -49,28 +64,30 @@ private:
     public:
         ProcessorFeaturesInternal() noexcept;
 
-        bool _sse           : 1 = false;
-        bool _sse2          : 1 = false;
-        bool _sse3          : 1 = false;
-        bool _sse41         : 1 = false;
-        bool _sse42         : 1 = false;
-        bool _ssse3         : 1 = false;
+        bool _sse = false;
+        bool _sse2 = false;
+        bool _sse3 = false;
+        bool _sse41 = false;
+        bool _sse42 = false;
+        bool _ssse3 = false;
         
-        bool _avx           : 1 = false;
-        bool _avx2          : 1 = false;
-        bool _fma3          : 1 = false;
+        bool _avx = false;
+        bool _avx2 = false;
+        bool _fma3 = false;
 
-        bool _avx512f       : 1 = false;
-        bool _avx512bw      : 1 = false;
-        bool _avx512pf      : 1 = false;
-        bool _avx512er      : 1 = false;
-        bool _avx512cd      : 1 = false;
-        bool _avx512vl      : 1 = false;
-        bool _avx512dq      : 1 = false;
-        bool _avx512vbmi    : 1 = false;
-        bool _avx512vbmi2   : 1 = false;
+        bool _avx512f = false;
+        bool _avx512bw = false;
+        bool _avx512pf = false;
+        bool _avx512er = false;
+        bool _avx512cd = false;
+        bool _avx512vl = false;
+        bool _avx512dq = false;
+        bool _avx512vbmi = false;
+        bool _avx512vbmi2 = false;
 
         bool _popcnt = false;
+
+        i32 _all = 0;
     };
 
     static inline ProcessorFeaturesInternal _processorFeaturesInternal;
@@ -132,6 +149,30 @@ ProcessorFeatures::ProcessorFeaturesInternal::ProcessorFeaturesInternal() noexce
         _avx512vbmi     = (leaf7Ecx >> 1) & 1;
         _avx512vbmi2    = (leaf7Ecx >> 6) & 1;
     }
+
+    _all = (i32(_sse) << static_cast<u32>(__features::SSE)) |
+        (i32(_sse2) << static_cast<u32>(__features::SSE2)) |
+        (i32(_sse3) << static_cast<u32>(__features::SSE3)) |
+        (i32(_ssse3) << static_cast<u32>(__features::SSSE3)) |
+        (i32(_sse41) << static_cast<u32>(__features::SSE41)) |
+        (i32(_sse42) << static_cast<u32>(__features::SSE42)) |
+        (i32(_avx) << static_cast<u32>(__features::AVX)) |
+        (i32(_avx2) << static_cast<u32>(__features::AVX2)) |
+        (i32(_fma3) << static_cast<u32>(__features::FMA3)) |
+        (i32(_avx512f) << static_cast<u32>(__features::AVX512F)) |
+        (i32(_avx512bw) << static_cast<u32>(__features::AVX512BW)) |
+        (i32(_avx512pf) << static_cast<u32>(__features::AVX512PF)) |
+        (i32(_avx512er) << static_cast<u32>(__features::AVX512ER)) |
+        (i32(_avx512cd) << static_cast<u32>(__features::AVX512CD)) |
+        (i32(_avx512vl) << static_cast<u32>(__features::AVX512VL)) |
+        (i32(_avx512dq) << static_cast<u32>(__features::AVX512DQ)) |
+        (i32(_avx512vbmi) << static_cast<u32>(__features::AVX512VBMI)) |
+        (i32(_avx512vbmi2) << static_cast<u32>(__features::AVX512VBMI2)) |
+        (i32(_popcnt) << static_cast<u32>(__features::POPCNT));
+}
+
+i32 ProcessorFeatures::all() noexcept {
+    return _processorFeaturesInternal._all;
 }
 
 bool ProcessorFeatures::SSE() noexcept {

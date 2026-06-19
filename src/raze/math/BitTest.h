@@ -6,9 +6,7 @@
 __RAZE_MATH_NAMESPACE_BEGIN
 
 template <class _IntegralType_>
-raze_always_inline bool __bit_test(
-    const _IntegralType_& __integer,
-    i32                __bit_index) noexcept
+raze_always_inline bool __bit_test(_IntegralType_ __integer, i32 __bit_index) noexcept
 {
     raze_debug_assert(__bit_index < raze_sizeof_in_bits(_IntegralType_) && __bit_index >= 0);
 

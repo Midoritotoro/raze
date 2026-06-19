@@ -81,21 +81,21 @@ constexpr raze_always_inline i32 __bit_hacks_clz(_IntegralType_ __value) noexcep
 
 #if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
 
-template <std::unsigned_integral _IntegralType_>
+template <bool _Unsafe_, std::unsigned_integral _IntegralType_>
 raze_always_inline i32 __bsr_clz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
-    auto __index = ulong(0);
+    ulong __index;
 
     if constexpr (__digits == 64) {
-        if (!_BitScanReverse64(&__index, __value))
-            return __digits;
+        raze_maybe_unused_attribute auto __r = _BitScanReverse64(&__index, static_cast<u32>(__value));
+        if constexpr (!_Unsafe_) { if (!__r) return __digits; }
     }
     else if constexpr (__digits <= 32) {
-        if (!_BitScanReverse(&__index, __value))
-            return __digits;
+        raze_maybe_unused_attribute auto __r = _BitScanReverse(&__index, static_cast<u32>(__value));
+        if constexpr (!_Unsafe_) { if (!__r) return __digits; }
     }
 
-    return static_cast<int>(__digits - 1 - __index);
+    return __digits - 1 - __index;
 }
 
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
@@ -105,11 +105,9 @@ raze_always_inline i32 __bsr_clz(_IntegralType_ __value) noexcept {
 template <std::unsigned_integral _IntegralType_>
 raze_always_inline i32 __lzcnt_clz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
-
-    if constexpr (__digits == 64)  return static_cast<int>(__raze_lzcnt_u64(static_cast<u64>(__value)));
-    else return static_cast<int>(__raze_lzcnt_u32(static_cast<u32>(__value))) - (32 - __digits);
-    /*else
-        return static_cast<int>(__raze_lzcnt_u16(static_cast<u16>(__value))) - (16 - __digits);*/
+    if constexpr (__digits == 64)  return __raze_lzcnt_u64(static_cast<u64>(__value));
+    else if constexpr (__digits == 32) return __raze_lzcnt_u32(static_cast<u32>(__value)) - (32 - __digits);
+    else return __raze_lzcnt_u16(static_cast<u16>(__value)) - (16 - __digits);
 }
 
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
@@ -121,7 +119,7 @@ constexpr raze_always_inline i32 __count_leading_zero_bits(_IntegralType_ __valu
         if (arch::ProcessorFeatures::AVX2())
             return __lzcnt_clz(__value);
         else
-            return __bsr_clz(__value);
+            return __bsr_clz<false>(__value);
     }
     else
 #endif // defined(raze_processor_x86) && !defined(raze_processor_arm)
@@ -130,8 +128,28 @@ constexpr raze_always_inline i32 __count_leading_zero_bits(_IntegralType_ __valu
     }
 }
 
-template <sizetype _Bits_>
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_>
 struct __clz_n_bits_implementation {
+    template <std::unsigned_integral _IntegralType_>
+    constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
+        constexpr auto __type_bits = raze_sizeof_in_bits(_IntegralType_);
+        constexpr auto __offset = __type_bits - _Bits_;
+
+        if constexpr (vx::__has_avx2_support_v<_ISA_>) return __lzcnt_clz(__value) - __offset;
+        else return __bsr_clz<_Unsafe_>(__value) - __offset;
+    }
+};
+
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_, std::unsigned_integral _IntegralType_>
+constexpr raze_always_inline i32 __clz_n_bits(_IntegralType_ __value) noexcept {
+    static_assert(_Bits_ <= 64);
+    static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);
+
+    return __clz_n_bits_implementation<_ISA_, _Bits_, _Unsafe_>()(__value);
+}
+
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_>
+struct __clz_not_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
         constexpr auto __type_bits = raze_sizeof_in_bits(_IntegralType_);
@@ -139,18 +157,20 @@ struct __clz_n_bits_implementation {
         
         constexpr auto __mask = _IntegralType_((_IntegralType_(1) << _Bits_) - 1);
 
-        __value &= __mask;
-        return __count_leading_zero_bits(__value) - __offset;
+        __value = _IntegralType_(~__value);
+        if constexpr (_Bits_ < 8) __value &= __mask;
+
+        if constexpr (vx::__has_avx2_support_v<_ISA_>) return __lzcnt_clz(__value) - __offset;
+        else return __bsr_clz<_Unsafe_>(__value) - __offset;
     }
 };
 
-template <
-    sizetype _Bits_, 
-    std::unsigned_integral _IntegralType_>
-constexpr raze_always_inline i32 __clz_n_bits(_IntegralType_ __value) noexcept {
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_, std::unsigned_integral _IntegralType_>
+constexpr raze_always_inline i32 __clz_not_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);
 
-    return __clz_n_bits_implementation<_Bits_>()(__value);
+    return __clz_n_bits_implementation<_ISA_, _Bits_, _Unsafe_>()(__value);
 }
+
 __RAZE_MATH_NAMESPACE_END

@@ -90,18 +90,22 @@ constexpr raze_always_inline i32 __bit_hacks_ctz(_IntegralType_ __value) noexcep
 
 #if defined (raze_processor_x86)
 
-template <std::unsigned_integral _IntegralType_>
+template <bool _Unsafe_, std::unsigned_integral _IntegralType_>
 raze_always_inline i32 __bsf_ctz(_IntegralType_ __value) noexcept {
     constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
     constexpr auto __max    = std::numeric_limits<_IntegralType_>::max();
 
-    auto __index = ulong(__digits);
+    ulong __index;
 
     if constexpr (__digits == 64) {
-        if (!_BitScanForward64(&__index, __value)) return __digits;
+        auto __r = _BitScanForward64(&__index, __value);
+        if constexpr (_Unsafe_) return __index;
+        else { if (!__r) return __digits; }
     }
     else {
-        if (!_BitScanForward(&__index, __value)) return __digits;
+        auto __r = _BitScanForward(&__index, __value);
+        if constexpr (_Unsafe_) return __index;
+        else { if (!__r) return __digits; }
     }
 
     return __index;
@@ -125,7 +129,7 @@ constexpr raze_always_inline i32 __count_trailing_zero_bits(_IntegralType_ __val
         if (arch::ProcessorFeatures::AVX2())
             return __tzcnt_ctz(__value);
         else
-            return __bsf_ctz(__value);
+            return __bsf_ctz<false>(__value);
     }
     else
 #endif // defined(raze_processor_x86) && !defined(raze_processor_arm)
@@ -134,7 +138,7 @@ constexpr raze_always_inline i32 __count_trailing_zero_bits(_IntegralType_ __val
     }
 }
 
-template <arch::ISA _ISA_, sizetype _Bits_> 
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_>
 struct __ctz_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
@@ -145,8 +149,8 @@ struct __ctz_n_bits_implementation {
         constexpr auto __sentinel = _IntegralType_(1ull << _Bits_);
 
         if constexpr (!vx::__has_avx2_support_v<_ISA_>) {
-            if constexpr (_Bits_ != 32 && _Bits_ != 64) return __bsf_ctz(static_cast<_UintForBits>(__value | __sentinel));
-            else return __bsf_ctz(__value);
+            if constexpr (_Bits_ != 32 && _Bits_ != 64) return __bsf_ctz<_Unsafe_>(static_cast<_UintForBits>(__value | __sentinel));
+            else return __bsf_ctz<_Unsafe_>(__value);
         }
         else {
             if constexpr (_Bits_ != 32 && _Bits_ != 64) {
@@ -158,15 +162,15 @@ struct __ctz_n_bits_implementation {
     }
 };
 
-template <arch::ISA _ISA_, sizetype _Bits_, std::unsigned_integral _IntegralType_>
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_, std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline i32 __ctz_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);
     
-    return __ctz_n_bits_implementation<_ISA_, _Bits_>()(__value);
+    return __ctz_n_bits_implementation<_ISA_, _Bits_, _Unsafe_>()(__value);
 }
 
-template <arch::ISA _ISA_, sizetype _Bits_> 
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_>
 struct __ctz_not_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
@@ -178,8 +182,8 @@ struct __ctz_not_n_bits_implementation {
         constexpr auto __mask = _IntegralType_(__sentinel - 1);
 
         if constexpr (!vx::__has_avx2_support_v<_ISA_>) {
-            if constexpr (_Bits_ != 32 && _Bits_ != 64) return __bsf_ctz(static_cast<_UintForBits>((__value ^ __mask) | __sentinel));
-            else return __bsf_ctz(__value ^ __mask);
+            if constexpr (_Bits_ != 32 && _Bits_ != 64) return __bsf_ctz<_Unsafe_>(static_cast<_UintForBits>((__value ^ __mask) | __sentinel));
+            else return __bsf_ctz<_Unsafe_>(__value ^ __mask);
         }
         else {
             if constexpr (_Bits_ != 32 && _Bits_ != 64) {
@@ -191,12 +195,12 @@ struct __ctz_not_n_bits_implementation {
     }
 };
 
-template <arch::ISA _ISA_, sizetype _Bits_, std::unsigned_integral _IntegralType_>
+template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_, std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline i32 __ctz_not_n_bits(_IntegralType_ __value) noexcept {
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);
     
-    return __ctz_not_n_bits_implementation<_ISA_, _Bits_>()(__value);
+    return __ctz_not_n_bits_implementation<_ISA_, _Bits_, _Unsafe_>()(__value);
 }
 
 __RAZE_MATH_NAMESPACE_END

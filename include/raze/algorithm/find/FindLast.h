@@ -64,7 +64,7 @@ struct __impl {
             const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
 
             if (raze::vx::any_of(__mask)) {
-                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set(__mask) - 1);
+                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
                 _iterator = __result_it;
                 return;
             }
@@ -102,22 +102,24 @@ struct __impl {
             const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
 
             if (raze::vx::any_of(__mask)) {
-                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set(__mask) - 1);
+                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
                 _iterator = __result_it;
                 return;
             }
         } while (--__left);
 
-        auto __tail_it = _iterator_last;
-        __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+        if constexpr (_TailSize_ != 0) {
+            auto __tail_it = _iterator_last;
+            __seek_possibly_wrapped_iterator(__tail_it, __ptr);
 
-        while (true) {
-            if (_predicate(_proj(*__tail_it))) {
-                _iterator = __tail_it;
-                return;
-            }
-            if (__tail_it == _iterator) break;
-            --__tail_it;
+            do {
+                if (_predicate(_proj(*__tail_it))) {
+                    _iterator = __tail_it;
+                    return;
+                }
+                if (__tail_it == _iterator) break;
+                --__tail_it;
+            } while (true);
         }
 
         _iterator = _sentinel;
