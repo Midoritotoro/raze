@@ -22,8 +22,9 @@ struct __impl {
     _Projection_ _proj;
 
     constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept:
-        _iterator(__it), _iterator_last(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
+        _iterator(std::move(__it)), _sentinel(std::move(__sent)), _predicate(__pred), _proj(__proj)
     {
+        _iterator_last = _iterator;
         std::advance(_iterator_last, std::ranges::distance(__it, __sent));
     }
 
@@ -53,7 +54,6 @@ struct __impl {
 
     template <vx::simd_type _Tag_>
     raze_nodiscard raze_always_inline void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
-        auto __result_it = _sentinel;
         auto* __ptr = std::to_address(_iterator_last);
         raze_assume(__ptr != __nullptr);
 
@@ -64,8 +64,7 @@ struct __impl {
             const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
 
             if (raze::vx::any_of(__mask)) {
-                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
-                _iterator = __result_it;
+                __seek_possibly_wrapped_iterator(_iterator, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
                 return;
             }
         } while (__ptr != __stop_at);
@@ -180,7 +179,7 @@ private:
         using _Value_ = std::iter_value_t<_Iterator_>;
 
         __verify_range(__first, __last);
-        auto __work = __impl(__first, __last, __pred, __proj);
+        auto __work = __impl(std::move(__first), std::move(__last), __pred, __proj);
         
         if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
             vectorizable_projection<_Projection_, _Iterator_>)
@@ -205,7 +204,7 @@ private:
         using _Value_ = std::iter_value_t<_Iterator_>;
 
         __verify_range(__first, __last);
-        auto __work = __impl(__first, __last, __pred, __proj);
+        auto __work = __impl(std::move(__first), std::move(__last), __pred, __proj);
 
         if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_>
             && vectorizable_projection<_Projection_, _Iterator_>)

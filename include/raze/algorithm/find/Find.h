@@ -42,10 +42,8 @@ struct _Find_if : _Traits_ {
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			do {
-				const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
-
-				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set(__mask));
+				if (const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr))); raze::vx::any_of(__mask)) {
+					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
 					return;
 				}
 
@@ -72,10 +70,8 @@ struct _Find_if : _Traits_ {
 			auto __left = __iterations_aligned;
 
 			do {
-				const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
-
-				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set(__mask));
+				if (const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));  raze::vx::any_of(__mask)) {
+					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
 					return;
 				}
 
@@ -146,20 +142,17 @@ private:
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
 		__verify_range(__first, __last);
-		auto __work = __impl(__first, __last, __pred, __proj);
 		
 		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				__seek_possibly_wrapped_iterator(__first, vx::__dispatch_sized_impl<typename options::_Unroller<decltype(this->traits())>::__impl,
-					_Value_, _Iterator_>(algorithm::distance(__first, __last) * sizeof(_Value_), __work));
-				return __first;
+				return vx::__dispatch_sized_impl<typename options::_Unroller<decltype(this->traits())>::__impl,
+					_Value_, _Iterator_>(algorithm::distance(__first, __last) * sizeof(_Value_), __impl(__first, __last, __pred, __proj));
 			}
 		}
 		
-		__seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(__work));
-		return __first;
+		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
 	}
 
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
