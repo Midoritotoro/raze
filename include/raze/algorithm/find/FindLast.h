@@ -14,212 +14,293 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class _Traits_>
 struct _Find_last_if : _Traits_ {
     template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-struct __impl {
-    _Iterator_ _iterator;
-    _Iterator_ _iterator_last;
-    _Sentinel_ _sentinel;
-    _Predicate_ _predicate;
-    _Projection_ _proj;
+    struct __impl {
+        _Iterator_ _iterator;
+        _Iterator_ _iterator_last;
+        _Iterator_ _current;
+        _Sentinel_ _sentinel;
+        _Predicate_ _predicate;
+        _Projection_ _proj;
+        bool _found = false;
 
-    constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept:
-        _iterator(std::move(__it)), _sentinel(std::move(__sent)), _predicate(__pred), _proj(__proj)
-    {
-        _iterator_last = _iterator;
-        std::advance(_iterator_last, std::ranges::distance(__it, __sent));
-    }
+        constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept:
+            _iterator(__it), _sentinel(__sent), _current(__it), _predicate(__pred), _proj(__proj)
+        {
+            _iterator_last = _iterator;
 
-    template <class _Tag_>
-    raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
-        if constexpr (std::bidirectional_iterator<_Iterator_>) {
-            if (_iterator_last == _iterator) { 
-                _iterator = _sentinel;
-                return true;
-            }
-            if (_predicate(_proj(*(--_iterator_last)))) { 
-                _iterator = _iterator_last; 
-                return true; 
-            }
-            return false;
-        }
-        else {
-            if (_iterator == _sentinel) {
-                _iterator = _iterator_last;
-                return true;
-            }
-            if (_predicate(_proj(*_iterator))) return true;
-            ++_iterator;
-            return false;
-        }
-    }
-
-    template <vx::simd_type _Tag_>
-    raze_nodiscard raze_always_inline void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) noexcept {
-        auto* __ptr = std::to_address(_iterator_last);
-        raze_assume(__ptr != __nullptr);
-
-        const auto __stop_at = __bytes_pointer_offset(__ptr, -i64(__aligned_size));
-
-        do {
-            __rewind_bytes(__ptr, sizeof(_Tag_));
-            const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
-
-            if (raze::vx::any_of(__mask)) {
-                __seek_possibly_wrapped_iterator(_iterator, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
-                return;
-            }
-        } while (__ptr != __stop_at);
-        
-        auto __tail_it = _iterator_last;
-        __seek_possibly_wrapped_iterator(__tail_it, __ptr);
-
-        while (true) {
-            if (_predicate(_proj(*__tail_it))) {
-                _iterator = __tail_it;
-                return;
-            }
-            if (__tail_it == _iterator) break;
-            --__tail_it;
+            if constexpr (std::same_as<_Iterator_, _Sentinel_>) _iterator_last = _sentinel;
+            else std::ranges::advance(_iterator_last, std::ranges::distance(__it, __sent));
         }
 
-        _iterator = _sentinel;
-    }
-
-    template <vx::simd_type _Tag_, sizetype _AlignedSize_, sizetype _TailSize_>
-    raze_nodiscard raze_always_inline void operator()(_Tag_,
-        std::integral_constant<sizetype, _AlignedSize_>,
-        std::integral_constant<sizetype, _TailSize_>) noexcept
-    {
-        auto __result_it = _sentinel;
-        auto* __ptr = std::to_address(_iterator_last);
-        raze_assume(__ptr != __nullptr);
-
-        constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-        auto __left = __iterations_aligned;
-
-        do {
-            __rewind_bytes(__ptr, sizeof(_Tag_));
-            const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr)));
-
-            if (raze::vx::any_of(__mask)) {
-                __seek_possibly_wrapped_iterator(__result_it, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
-                _iterator = __result_it;
-                return;
+        template <class _Tag_>
+        raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
+            if constexpr (std::same_as<_Iterator_, _Sentinel_> && std::bidirectional_iterator<_Iterator_>) {
+                if (_iterator_last == _iterator) { 
+                    _iterator = _sentinel;
+                    _iterator_last = _sentinel;
+                    return true;
+                }
+                if (_predicate(_proj(*(--_iterator_last)))) { 
+                    _iterator = _iterator_last; 
+                    _iterator_last = _sentinel;
+                    return true; 
+                }
+                return false;
             }
-        } while (--__left);
+            else {
+                if (_current == _sentinel) {
+                    if (!_found) _iterator = _current;
+                    _iterator_last = _current;
+                    return true;
+                }
 
-        if constexpr (_TailSize_ != 0) {
-            auto __tail_it = _iterator_last;
-            __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+                if (_predicate(_proj(*_current))) {
+                    _iterator = _current;
+                    _found = true;
+                }
+
+                ++_current;
+                return false;
+            }
+        }
+
+        raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> result() const noexcept {
+            return { _iterator, _iterator_last };
+        }
+    };
+
+	template <class _Tag_>
+	struct __vectorized_find_last {
+        template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
+        raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
+            _Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+        {
+            if constexpr (std::bidirectional_iterator<_Iterator_> && std::same_as<_Iterator_, _Sentinel_>) {
+                for (auto __r = __sentinel; __r != __first;)
+                    if (__predicate(__proj(*--__r)))
+                        return { std::move(__r), std::move(__sentinel) };
+
+                return { __sentinel, __sentinel };
+            }
+            else if constexpr (std::same_as<_Iterator_, _Sentinel_>) {
+                auto __r = __sentinel;
+
+                for (; __first != __sentinel; ++__first)
+                    if (__predicate(__proj(*__first)))
+                        __r = __first;
+
+                return { std::move(__r), std::move(__sentinel) };
+            }
+            else {
+                auto __r = __first;
+                bool __found = false;
+
+                for (;; ++__first) {
+                    if (__first == __sentinel) {
+                        if (!__found) __r = __first;
+                        break;
+                    }
+
+                    if (__predicate(__proj(*__first))) {
+                        __r = __first;
+                        __found = true;
+                    }
+                }
+                return { std::move(__r), std::move(__first) };
+            }
+        }
+
+        template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
+        raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_> operator()(sizetype __aligned_size,
+            sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
+            _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+        {
+            _Iterator_ __iterator_last;
+
+            if constexpr (std::same_as<_Iterator_, _Sentinel_>) __iterator_last = __sentinel;
+            else { __iterator_last = __first; std::ranges::advance(__iterator_last, std::ranges::distance(__first, __sentinel));  };
+
+            auto* __ptr = std::to_address(__iterator_last);
+            raze_assume(__ptr != __nullptr);
+
+            const auto __stop_at = __bytes_pointer_offset(__ptr, -i64(__aligned_size));
 
             do {
-                if (_predicate(_proj(*__tail_it))) {
-                    _iterator = __tail_it;
-                    return;
+                __rewind_bytes(__ptr, sizeof(_Tag_));
+                const auto __mask = __predicate(__proj(raze::vx::load<_Tag_>(__ptr)));
+
+                if (raze::vx::any_of(__mask)) {
+                    __seek_possibly_wrapped_iterator(__first, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
+                    return { __first, __iterator_last };
                 }
-                if (__tail_it == _iterator) break;
+            } while (__ptr != __stop_at);
+        
+            auto __tail_it = __iterator_last;
+            __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+
+            while (true) {
+                if (__predicate(__proj(*__tail_it))) {
+                    __first = __tail_it;
+                    return { __first, __iterator_last };
+                }
+                if (__tail_it == __first) break;
                 --__tail_it;
-            } while (true);
+            }
+
+            return { __iterator_last, __iterator_last };
         }
 
-        _iterator = _sentinel;
-    }
+        template <sizetype _AlignedSize_, sizetype _TailSize_,
+            class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
+        raze_nodiscard raze_always_inline std::pair<_Iterator_, _Iterator_> operator()(std::integral_constant<sizetype, _AlignedSize_>,
+            std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
+            _Predicate_ __predicate, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+        {
+            constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
+            _Iterator_ __iterator_last;
 
-    raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
-        return _iterator;
-    }
-};
+            if constexpr (std::same_as<_Iterator_, _Sentinel_>) __iterator_last = __sentinel;
+            else { __iterator_last = __first; std::ranges::advance(__iterator_last, std::ranges::distance(__first, __sentinel)); };
+
+            auto* __ptr = std::to_address(__iterator_last);
+            raze_assume(__ptr != __nullptr);
+            
+            auto __left = __iterations_aligned;
+
+            do {
+                __rewind_bytes(__ptr, sizeof(_Tag_));
+                const auto __mask = __predicate(__proj(raze::vx::load<_Tag_>(__ptr)));
+
+                if (raze::vx::any_of(__mask)) {
+                    __seek_possibly_wrapped_iterator(__first, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
+                    return { __first, __iterator_last };
+                }
+            } while (--__left);
+        
+            auto __tail_it = __iterator_last;
+            __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+
+            if constexpr (_TailSize_ != 0) {
+                do {
+                    if (__predicate(__proj(*__tail_it))) {
+                        __first = __tail_it;
+                        return { __first, __iterator_last };
+                    }
+                    if (__tail_it == __first) break;
+                    --__tail_it;
+                } while (true);
+            }
+
+            return { __first, __iterator_last };
+        }
+	};
 
     template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
         class _Predicate_, class _Projection_ = std::identity>
-    raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
+    raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
         _Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
             requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
     {
         auto __unwrapped_first = type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first));
 
-        __seek_possibly_wrapped_iterator(__first, __find_last_unchecked(__unwrapped_first,
-            type_traits::__find_final_unwrapped_iterator<_Iterator_>(__unwrapped_first, std::move(__last)),
-            type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)));
+        if constexpr (std::bidirectional_iterator<_Iterator_>) {
+            auto __unwrapped_last = type_traits::__find_final_unwrapped_iterator<_Iterator_>(__unwrapped_first, std::move(__last));
+            auto __unwrapped_result = __find_last_unchecked(
+                std::move(__unwrapped_first), std::move(__unwrapped_last),
+                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
 
-        return __first;
+            return type_traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
+        }
+        else {
+            auto __unwrapped_result = __find_last_unchecked(std::move(__unwrapped_first),
+                type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
+                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+
+            return type_traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
+        }
     }
 
     template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-    constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
+    constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
         _Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
             requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
                 _Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
     {
-        auto __first = std::ranges::begin(__range);
-        __seek_possibly_wrapped_iterator(__first, __find_last_unchecked(
-            type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)), 
-            type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
-            type_traits::__pass_function(__proj)));
-        return __first;
+        if constexpr (std::ranges::bidirectional_range<_Range_>) {
+            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                type_traits::__unchecked_begin(__range), type_traits::__find_final_unwrapped_iterator(__range),
+                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)));
+        }
+        else {
+            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                type_traits::__unchecked_begin(__range), type_traits::__unchecked_end(__range),
+                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)));
+        }
+
     }
 
     template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-    constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
+    constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(_Range_&& __range,
         _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
             requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
                 _Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
     {
-        auto __first = std::ranges::begin(__range);
-        __seek_possibly_wrapped_iterator(__first, __find_last_unchecked(
-            type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
-            type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
-            type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
-        return __first;
+        if constexpr (std::ranges::bidirectional_range<_Range_>) {
+            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                type_traits::__unchecked_begin(__range), type_traits::__find_final_unwrapped_iterator(__range),
+                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj),
+                std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+        }
+        else {
+            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                type_traits::__unchecked_begin(__range), type_traits::__unchecked_end(__range),
+                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj),
+                std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+        }
     }
 private:
     template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-    raze_nodiscard constexpr raze_always_inline _Iterator_ __find_last_unchecked(
-        _Iterator_ __first, _Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj) const noexcept
-    {
-        using _Value_ = std::iter_value_t<_Iterator_>;
+	raze_nodiscard constexpr raze_always_inline auto __find_last_unchecked(
+		_Iterator_ __first, _Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj) const noexcept
+	{
+		__verify_range(__first, __last);
+		
+		using _TraitsType = decltype(this->traits());
+		using _Value_ = std::iter_value_t<_Iterator_>;
 
-        __verify_range(__first, __last);
-        auto __work = __impl(std::move(__first), std::move(__last), __pred, __proj);
-        
-        if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
-            vectorizable_projection<_Projection_, _Iterator_>)
-        {
-            if not consteval {
-                __seek_possibly_wrapped_iterator(__first, vx::__dispatch_sized_impl<
-                    typename options::_Unroller<decltype(this->traits())>::__impl,
-                    _Value_, _Iterator_>(algorithm::distance(__first, __last) * sizeof(_Value_), std::move(__work)));
-                return __first;
-            }
-        }
-        
-        __seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(std::move(__work)));
-        return __first;
-    }
+		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
+			vectorizable_projection<_Projection_, _Iterator_>)
+		{
+			if not consteval {
+				return vx::__dispatch_sized_impl<__vectorized_find_last, _Value_, std::ranges::subrange<_Iterator_>>(
+					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __pred, __proj);
+			}
+		}
+		
+		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
+	}
 
-    template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
-    raze_nodiscard constexpr raze_always_inline _Iterator_ __find_last_unchecked(_Iterator_ __first, 
-        _Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj,
-        std::integral_constant<sizetype, _Size_> __size) const noexcept
-    {
-        using _Value_ = std::iter_value_t<_Iterator_>;
+	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
+	raze_nodiscard constexpr raze_always_inline auto __find_last_unchecked(_Iterator_ __first,
+		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
+	{
+		__verify_range(__first, __last);
 
-        __verify_range(__first, __last);
-        auto __work = __impl(std::move(__first), std::move(__last), __pred, __proj);
+		using _TraitsType = decltype(this->traits());
+		using _Value_ = std::iter_value_t<_Iterator_>;
 
-        if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_>
-            && vectorizable_projection<_Projection_, _Iterator_>)
-        {
-            if not consteval {
-                __seek_possibly_wrapped_iterator(__first, vx::__dispatch_sized_impl<
-                    typename options::_Unroller<decltype(this->traits())>::__impl,
-                    _Value_, _Iterator_>(std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{}, std::move(__work)));
-                return __first;
-            }
-        }
-        
-        __seek_possibly_wrapped_iterator(__first, options::__unroller<decltype(this->traits()), vx::scalar_tag>(std::move(__work)));
-        return __first;
-    }
+		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_>
+			&& vectorizable_projection<_Projection_, _Iterator_>)
+		{
+			if not consteval {
+				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
+				return vx::__dispatch_sized_impl<__vectorized_find_last,
+					_Value_, std::ranges::subrange<_Iterator_>>(__bytes, __first, __last, __pred, __proj);
+			}
+		}
+		
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
+	}
 };
 
 constexpr inline auto find_last_if = raze::options::function_with_traits<_Find_last_if>;
@@ -228,7 +309,7 @@ template <class _Traits_>
 struct _Find_last : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
 		class _Value_, class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
+	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
 		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 	{
 		return find_last_if(std::move(__first), std::move(__last), algorithm::equal_to(
@@ -238,7 +319,7 @@ struct _Find_last : _Traits_ {
 
 	template <std::ranges::input_range _Range_, class _Value_,
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
 		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_>)
 	{
@@ -249,7 +330,7 @@ struct _Find_last : _Traits_ {
 
 	template <std::ranges::input_range _Range_, class _Value_, 
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(_Range_&& __range,
 		const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_>)
 	{
@@ -265,7 +346,7 @@ template <class _Traits_>
 struct _Find_last_if_not : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
 		class _Predicate_, class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
+	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
@@ -273,7 +354,7 @@ struct _Find_last_if_not : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
@@ -282,7 +363,7 @@ struct _Find_last_if_not : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(_Range_&& __range,
 		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)

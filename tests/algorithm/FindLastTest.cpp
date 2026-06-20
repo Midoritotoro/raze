@@ -97,24 +97,6 @@ std::vector<T> generate_vector_with_target(size_t size, T target, size_t target_
     return vec;
 }
 
-template <typename It, typename T>
-It manual_find_last(It first, It last, const T& val) {
-    It res = last;
-    for (It it = first; it != last; ++it) {
-        if (*it == val) res = it;
-    }
-    return res;
-}
-
-template <typename It, typename Pred>
-It manual_find_last_if(It first, It last, Pred pred) {
-    It res = last;
-    for (It it = first; it != last; ++it) {
-        if (pred(*it)) res = it;
-    }
-    return res;
-}
-
 template <typename T>
 void test_find_last_random(unsigned seed = 42) {
     RandomGenerator<T> gen(seed);
@@ -127,11 +109,13 @@ void test_find_last_random(unsigned seed = 42) {
         T target = gen();
         
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), target);
-        auto std_result = manual_find_last(vec.begin(), vec.end(), target);
-        
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        auto std_result = std::ranges::find_last(vec, target);
+
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (!simd_result.empty()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
     
@@ -139,9 +123,10 @@ void test_find_last_random(unsigned seed = 42) {
         if (pos < 1000) {
             auto vec = generate_vector_with_target<T>(1000, T(42), pos, seed);
             auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(42));
-            auto std_result = manual_find_last(vec.begin(), vec.end(), T(42));
-            raze_assert(simd_result == std_result);
-            raze_assert(*simd_result == T(42));
+            auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(42));
+            raze_assert(simd_result.begin() == std_result.begin());
+            raze_assert(simd_result.end() == std_result.end());
+            raze_assert(*simd_result.begin() == T(42));
         }
     }
     
@@ -150,9 +135,10 @@ void test_find_last_random(unsigned seed = 42) {
         T target = gen();
         
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), target);
-        auto std_result = manual_find_last(vec.begin(), vec.end(), target);
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), target);
         
-        raze_assert(simd_result == std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
     }
 }
 
@@ -163,11 +149,13 @@ void test_find_last_ranges(unsigned seed = 42) {
         T target = RandomGenerator<T>(seed + i + 30000)();
         
         auto simd_result = raze::algorithm::find_last(vec, target);
-        auto std_result = manual_find_last(vec.begin(), vec.end(), target);
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), target);
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
 }
@@ -181,11 +169,13 @@ void test_find_last_if_random(unsigned seed = 42) {
         auto pred = [threshold](T x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::find_last_if(vec.begin(), vec.end(), pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_last_if(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
     
@@ -196,11 +186,13 @@ void test_find_last_if_random(unsigned seed = 42) {
         auto pred = [target](T x) { return x == target; };
         
         auto simd_result = raze::algorithm::find_last_if(vec.begin(), vec.end(), pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_last_if(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
     
@@ -209,10 +201,10 @@ void test_find_last_if_random(unsigned seed = 42) {
         auto pred = [](T) { return false; };
         
         auto simd_result = raze::algorithm::find_last_if(vec.begin(), vec.end(), pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_last_if(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        raze_assert(simd_result == vec.end());
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.begin() == vec.end());
     }
     
     for (int i = 0; i < 100; ++i) {
@@ -220,10 +212,10 @@ void test_find_last_if_random(unsigned seed = 42) {
         auto pred = [](T) { return true; };
         
         auto simd_result = raze::algorithm::find_last_if(vec.begin(), vec.end(), pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_last_if(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        raze_assert(simd_result == std::prev(vec.end()));
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.begin() == std::prev(vec.end()));
     }
 }
 
@@ -236,11 +228,13 @@ void test_find_last_if_ranges(unsigned seed = 42) {
         auto pred = [threshold](T x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::find_last_if(vec, pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::find_last_if(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
 }
@@ -254,11 +248,13 @@ void test_find_last_if_not_random(unsigned seed = 42) {
         auto pred = [threshold](T x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::find_last_if_not(vec.begin(), vec.end(), pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), [pred](T x) { return !pred(x); });
+        auto std_result = std::ranges::find_last_if_not(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
     
@@ -269,11 +265,13 @@ void test_find_last_if_not_random(unsigned seed = 42) {
         auto pred = [target](T x) { return x == target; };
         
         auto simd_result = raze::algorithm::find_last_if_not(vec.begin(), vec.end(), pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), [pred](T x) { return !pred(x); });
+        auto std_result = std::ranges::find_last_if_not(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
 }
@@ -287,11 +285,13 @@ void test_find_last_if_not_ranges(unsigned seed = 42) {
         auto pred = [threshold](T x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::find_last_if_not(vec, pred);
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(), [pred](T x) { return !pred(x); });
+        auto std_result = std::ranges::find_last_if_not(vec.begin(), vec.end(), pred);
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
 }
@@ -317,12 +317,14 @@ void test_find_last_with_projection(unsigned seed = 42) {
             [target_x](const Point& p) { return p.x == target_x; },
             [](const Point& p) { return p; });
         
-        auto std_result = manual_find_last_if(vec.begin(), vec.end(),
+        auto std_result = std::ranges::find_last_if(vec.begin(), vec.end(),
             [target_x](const Point& p) { return p.x == target_x; });
         
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+
+        if (simd_result.begin() != vec.end()) {
+            raze_assert(*simd_result.begin() == *std_result.begin());
         }
     }
 }
@@ -332,61 +334,68 @@ void test_find_last_edge_cases() {
     {
         std::vector<T> vec;
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(42));
-        auto std_result = manual_find_last(vec.begin(), vec.end(), T(42));
-        raze_assert(simd_result == vec.end());
-        raze_assert(std_result == vec.end());
-        raze_assert(simd_result == std_result);
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result.begin() == vec.end());
+        raze_assert(std_result.begin() == vec.end());
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
     }
     
     {
         std::vector<T> vec = {T(42)};
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(42));
-        auto std_result = manual_find_last(vec.begin(), vec.end(), T(42));
-        raze_assert(simd_result == std_result);
-        raze_assert(*simd_result == T(42));
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+        raze_assert(*simd_result.begin() == T(42));
     }
     
     {
         std::vector<T> vec = {T(42)};
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(99));
-        auto std_result = manual_find_last(vec.begin(), vec.end(), T(99));
-        raze_assert(simd_result == std_result);
-        raze_assert(simd_result == vec.end());
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(99));
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+        raze_assert(simd_result.begin() == vec.end());
     }
     
     {
         std::vector<T> vec(100, T(0));
         vec[0] = T(42);
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(42));
-        auto std_result = manual_find_last(vec.begin(), vec.end(), T(42));
-        raze_assert(simd_result == std_result);
-        raze_assert(*simd_result == T(42));
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+        raze_assert(*simd_result.begin() == T(42));
     }
     
     {
         std::vector<T> vec(100, T(0));
         vec[99] = T(42);
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(42));
-        auto std_result = manual_find_last(vec.begin(), vec.end(), T(42));
-        raze_assert(simd_result == std_result);
-        raze_assert(*simd_result == T(42));
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+        raze_assert(*simd_result.begin() == T(42));
     }
     
     {
         std::vector<T> vec(100, T(0));
         vec[50] = T(42);
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(42));
-        auto std_result = manual_find_last(vec.begin(), vec.end(), T(42));
-        raze_assert(simd_result == std_result);
-        raze_assert(*simd_result == T(42));
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+        raze_assert(*simd_result.begin() == T(42));
     }
     
     {
         std::vector<T> vec(100, T(42));
         auto simd_result = raze::algorithm::find_last(vec.begin(), vec.end(), T(42));
-        auto std_result = manual_find_last(vec.begin(), vec.end(), T(42));
-        raze_assert(simd_result == std_result);
-        raze_assert(*simd_result == T(42));
+        auto std_result = std::ranges::find_last(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result.begin() == std_result.begin());
+        raze_assert(simd_result.end() == std_result.end());
+        raze_assert(*simd_result.begin() == T(42));
     }
 }
 

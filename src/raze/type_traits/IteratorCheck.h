@@ -8,7 +8,6 @@
 #include <ranges>
 #include <concepts>
 
-
 __RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
 
 
@@ -299,5 +298,31 @@ raze_nodiscard raze_always_inline constexpr auto __find_final_unwrapped_iterator
 	  else return std::ranges::next(__unchecked_begin(__range), __unchecked_end(__range));
   }
 
+template <class _Result_, class _Wrapped_, class _Unwrapped_>
+raze_always_inline constexpr _Result_ __rewrap_subrange(_Wrapped_& __v, std::ranges::subrange<_Unwrapped_>&& __unwrapped_result) {
+	if constexpr (std::same_as<_Result_, std::ranges::dangling>) {
+		return std::ranges::dangling {};
+	}
+	else if constexpr (std::same_as<_Result_, std::ranges::subrange<_Unwrapped_>>) {
+		return std::move(__unwrapped_result);
+	}
+	else if constexpr (std::ranges::range<_Wrapped_>) {
+		auto __first = std::ranges::begin(__v);
+		auto __last = __first;
+
+		__first._Seek_to(__unwrapped_result.begin());
+		__last._Seek_to(__unwrapped_result.end());
+
+		return _Result_ { std::move(__first), std::move(__last) };
+	}
+	else {
+		auto __last = __v;
+
+		__v._Seek_to(__unwrapped_result.begin());
+		__last._Seek_to(__unwrapped_result.end());
+
+		return _Result_ { std::move(__v), std::move(__last) };
+	}
+}
 
 __RAZE_TYPE_TRAITS_NAMESPACE_END

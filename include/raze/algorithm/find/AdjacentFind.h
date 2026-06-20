@@ -53,7 +53,14 @@ struct _Adjacent_find : _Traits_ {
 		raze_nodiscard raze_always_inline _Iterator_ operator()(_Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
 			_Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
 		{
-			
+			if (__first == __sentinel)
+				return __first;
+
+			for (auto __next = __first; ++__next != __sentinel; __first = __next)
+				if (__predicate(__proj(*__first), __proj(*__next)))
+					break;
+
+			return __first;
 		}
 
 		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
@@ -87,7 +94,7 @@ struct _Adjacent_find : _Traits_ {
 			__seek_possibly_wrapped_iterator(__first, __ptr);
 
 			if (__first == __sentinel)
-				return;
+				return __first;
 
 			for (auto __next = __first; ++__next != __sentinel; __first = __next)
 				if (__predicate(__proj(*__first), __proj(*__next)))
@@ -104,7 +111,7 @@ struct _Adjacent_find : _Traits_ {
 		{
 			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
 
-			auto* __ptr = std::to_address(_iterator);
+			auto* __ptr = std::to_address(__first);
 			auto* __end = __bytes_pointer_offset(__ptr, _AlignedSize_ + _TailSize_);
 
 			raze_assume(__ptr != nullptr);
@@ -113,28 +120,30 @@ struct _Adjacent_find : _Traits_ {
 			auto __left = __iterations_aligned;
 
 			do {
-				const auto __current = _proj(raze::vx::load<_Tag_>(__ptr));
-				const auto __next = _proj(raze::vx::load<_Tag_>(__next_ptr));
+				const auto __current = __proj(raze::vx::load<_Tag_>(__ptr));
+				const auto __next = __proj(raze::vx::load<_Tag_>(__next_ptr));
 				
-				const auto __mask = _predicate(__current, __next);
+				const auto __mask = __predicate(__current, __next);
 
 				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
-					return;
+					__seek_possibly_wrapped_iterator(__first, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
+					return __first;
 				}
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 				__advance_bytes(__next_ptr, sizeof(_Tag_));
 			} while (--__left);
 			
-			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			__seek_possibly_wrapped_iterator(__first, __ptr);
 
 			if constexpr (_TailSize_ == 0)
-				return;
+				return __first;
 
-			for (auto __next = _iterator; ++__next != _sentinel; _iterator = __next)
-				if (_predicate(_proj(*_iterator), _proj(*__next)))
+			for (auto __next = __first; ++__next != __sentinel; __first = __next)
+				if (__predicate(__proj(*__first), __proj(*__next)))
 					break;
+
+			return __first;
 		}
 	};
 
@@ -196,7 +205,7 @@ private:
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_find, _Value_, _Iterator_>(
+				return vx::__dispatch_sized_impl<__vectorized_adjacent_find, _Value_, _Iterator_>(
 					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __pred, __proj);
 			}
 		}
@@ -218,7 +227,7 @@ private:
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_find,
+				return vx::__dispatch_sized_impl<__vectorized_adjacent_find,
 					_Value_, _Iterator_>(__bytes, __first, __last, __pred, __proj);
 			}
 		}
