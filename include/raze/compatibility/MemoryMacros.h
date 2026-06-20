@@ -5,11 +5,7 @@
 
 
 #if !defined(raze_restrict)
-#  if defined(raze_cpp_msvc) || defined (raze_cpp_clang)
-#    define raze_restrict   __declspec(restrict)
-#  elif defined(raze_cpp_gnu)
-#    define raze_restrict   __restrict  
-#  endif // defined(raze_cpp_msvc) || defined (raze_cpp_clang) || defined(raze_cpp_gnu)
+#  define raze_restrict __restrict  
 #endif // !defined(raze_restrict)
 
 #if !defined(raze_sizeof_in_bits)

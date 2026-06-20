@@ -142,11 +142,11 @@ template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_>
 struct __ctz_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
-        constexpr auto __max_for_n_bits = _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
         constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
-
         using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
-        constexpr auto __sentinel = _IntegralType_(1ull << _Bits_);
+
+        constexpr auto __sentinel = _Bits_ == raze_sizeof_in_bits(_IntegralType_)
+            ? 0 : _IntegralType_(1ull << _Bits_);
 
         if constexpr (!vx::__has_avx2_support_v<_ISA_>) {
             if constexpr (_Bits_ != 32 && _Bits_ != 64) return __bsf_ctz<_Unsafe_>(static_cast<_UintForBits>(__value | __sentinel));
@@ -174,11 +174,11 @@ template <arch::ISA _ISA_, sizetype _Bits_, bool _Unsafe_>
 struct __ctz_not_n_bits_implementation {
     template <std::unsigned_integral _IntegralType_>
     constexpr raze_always_inline i32 operator()(_IntegralType_ __value) const noexcept {
-        constexpr auto __max_for_n_bits = _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
         constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
 
         using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
-        constexpr auto __sentinel = _IntegralType_(1ull << _Bits_);
+        constexpr auto __sentinel = _Bits_ == raze_sizeof_in_bits(_IntegralType_)
+            ? 0 : _IntegralType_(1ull << _Bits_);
         constexpr auto __mask = _IntegralType_(__sentinel - 1);
 
         if constexpr (!vx::__has_avx2_support_v<_ISA_>) {

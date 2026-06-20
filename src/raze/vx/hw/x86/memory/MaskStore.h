@@ -15,7 +15,7 @@ struct _Mask_store {
 	static constexpr auto __avx = __has_avx_support_v<_ISA_>;
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_static_operator raze_no_stack_protector raze_always_inline void __store(void* __mem, _Mask_ __mask, _Tp_ __x) raze_const_operator noexcept {
+	raze_static_operator raze_no_stack_protector raze_always_inline void __store(void* raze_restrict __mem, _Mask_ __mask, _Tp_ __x) raze_const_operator noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return _mm_mask_store_epi64(__mem, __mask, __as<__m128i>(__x));
 			if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return _mm_mask_store_epi32(__mem, __mask, __as<__m128i>(__x));
@@ -43,7 +43,7 @@ struct _Mask_store {
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_static_operator raze_no_stack_protector raze_always_inline void __storeu(void* __mem, _Mask_ __mask, _Tp_ __x) raze_const_operator noexcept {
+	raze_static_operator raze_no_stack_protector raze_always_inline void __storeu(void* raze_restrict __mem, _Mask_ __mask, _Tp_ __x) raze_const_operator noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 				if constexpr (__avx512vl) return _mm_mask_storeu_epi64(__mem, __mask, __as<__m128i>(__x));
@@ -108,7 +108,7 @@ struct _Mask_store {
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, class _AligntPolicy_ = __unaligned_policy>
-	raze_static_operator raze_no_stack_protector raze_always_inline void operator()(void* __mem,
+	raze_static_operator raze_no_stack_protector raze_always_inline void operator()(void* raze_restrict __mem,
 		_Mask_ __mask, _Tp_ __x, _AligntPolicy_&& __policy = _AligntPolicy_{}) raze_const_operator noexcept
 	{
 		if constexpr (__is_aligned_v<_AligntPolicy_>) __store(__mem, __mask, __x);

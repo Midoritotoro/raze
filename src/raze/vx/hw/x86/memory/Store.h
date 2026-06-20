@@ -9,7 +9,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <arch::ISA	_ISA_>
 struct _Store {
 	template <intrin_or_arithmetic_type	_Tp_>
-	static raze_no_stack_protector raze_always_inline void __store(void* __mem, _Tp_ __v) noexcept {
+	static raze_no_stack_protector raze_always_inline void __store(void* raze_restrict __mem, _Tp_ __v) noexcept {
 		if constexpr (std::is_same_v<_Tp_, __m128i>) return _mm_store_si128(reinterpret_cast<__m128i*>(__mem), __v);
 		else if constexpr (std::is_same_v<_Tp_, __m128d>) return _mm_store_pd(reinterpret_cast<f64*>(__mem), __v);
 		else if constexpr (std::is_same_v<_Tp_, __m128>) return _mm_store_ps(reinterpret_cast<f32*>(__mem), __v);
@@ -23,7 +23,7 @@ struct _Store {
 	}
 
 	template <intrin_or_arithmetic_type	_Tp_>
-	static raze_no_stack_protector raze_always_inline void __storeu(void* __mem, _Tp_ __v) noexcept {
+	static raze_no_stack_protector raze_always_inline void __storeu(void* raze_restrict __mem, _Tp_ __v) noexcept {
 		if constexpr (std::is_same_v<_Tp_, __m128i>) return _mm_storeu_si128(reinterpret_cast<__m128i*>(__mem), __v);
 		else if constexpr (std::is_same_v<_Tp_, __m128d>) return _mm_storeu_pd(reinterpret_cast<f64*>(__mem), __v);
 		else if constexpr (std::is_same_v<_Tp_, __m128>) return _mm_storeu_ps(reinterpret_cast<f32*>(__mem), __v);
@@ -37,7 +37,7 @@ struct _Store {
 	}
 
 	template <intrin_or_arithmetic_type	_Tp_, class	_AlignPolicy_ = __unaligned_policy>
-	raze_static_operator raze_no_stack_protector raze_always_inline void operator()(void* __mem,
+	raze_static_operator raze_no_stack_protector raze_always_inline void operator()(void* raze_restrict __mem,
 		_Tp_ __v, _AlignPolicy_&& = _AlignPolicy_{}) raze_const_operator noexcept
 	{
 		if constexpr (__is_aligned_v<_AlignPolicy_>) __store(__mem, __v);

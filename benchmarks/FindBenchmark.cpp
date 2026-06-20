@@ -1,118 +1,139 @@
 #include <raze/algorithm/find/Find.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
-#include <uchar.h>
-#include <wchar.h> 
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_StdFind(benchmark::State& state) {
+    TestData<T, Size> test;
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class StdFindBenchmark {
-public:
-    static void FindInEnd(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
-        std::memset(array, 0, sizeof(array));
+    constexpr T needle = std::numeric_limits<T>::max();
+    test.data[Position] = needle;
 
-        array[sizeForBenchmark - 1] = 42;
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
 
-        while (state.KeepRunning()) {
-            benchmark::DoNotOptimize(array);
-            auto* result = std::ranges::find(array, array[sizeForBenchmark - 1]);
-            benchmark::DoNotOptimize(result);
+        for (int i = 0; i < 1024; ++i) {
+            auto it = std::ranges::find(test.data, needle);
+            benchmark::DoNotOptimize(it);
         }
+
+        benchmark::ClobberMemory();
     }
 
-    static void FindInMiddle(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
-        std::memset(array, 0, sizeof(array));
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        array[sizeForBenchmark / 2] = 42;
 
-        while (state.KeepRunning()) {
-            benchmark::DoNotOptimize(array);
-            auto* result = std::ranges::find(array, array[sizeForBenchmark / 2]);
-            benchmark::DoNotOptimize(result);
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_RazeFind(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = raze::algorithm::find(test.data, needle);
+            benchmark::DoNotOptimize(it);
         }
+        
+        benchmark::ClobberMemory();
     }
 
-    static void FindInBegin(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
-        std::memset(array, 0, sizeof(array));
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        array[0] = 42;
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_StdFindPred(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        while (state.KeepRunning()) {
-            benchmark::DoNotOptimize(array);
-            auto* result = std::ranges::find(array, array[0]);
-            benchmark::DoNotOptimize(result);
+    constexpr T needle = std::numeric_limits<T>::max();
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = std::ranges::find_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+            benchmark::DoNotOptimize(it);
         }
-    }
-};
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class RazeFindBenchmark {
-public:
-    static void FindInEnd(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
-        std::memset(array, 0, sizeof(array));
-
-        array[sizeForBenchmark - 1] = 42;
-
-        while (state.KeepRunning()) {
-            benchmark::DoNotOptimize(array);
-            auto* result = raze::algorithm::find(array, array[sizeForBenchmark - 1]);
-            benchmark::DoNotOptimize(result);
-        }
+        benchmark::ClobberMemory();
     }
 
-    static void FindInMiddle(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
-        std::memset(array, 0, sizeof(array));
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        array[sizeForBenchmark / 2] = 42;
 
-        while (state.KeepRunning()) {
-            benchmark::DoNotOptimize(array);
-            auto* result = raze::algorithm::find(array, array[sizeForBenchmark / 2]);
-            benchmark::DoNotOptimize(result);
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_RazeFindPred(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = raze::algorithm::find_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+            benchmark::DoNotOptimize(it);
         }
+
+        benchmark::ClobberMemory();
     }
 
-    static void FindInBegin(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
-        std::memset(array, 0, sizeof(array));
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        array[0] = 42;
+#define RAZE_BENCHMARK_FIND(name1, name2) \
+    BENCHMARK(name1<raze::i8, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);
 
-        while (state.KeepRunning()) {
-            benchmark::DoNotOptimize(array);
-            auto* result = raze::algorithm::find(array, array[0]);
-            benchmark::DoNotOptimize(result);
-        }
-    }
-};
+void RegisterAll()
+{
+    RAZE_BENCHMARK_FIND(BM_RazeFind, BM_StdFind);
+    RAZE_BENCHMARK_FIND(BM_RazeFindPred, BM_StdFindPred);
+}
 
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInBegin);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInBegin);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInBegin);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInBegin);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInBegin);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInBegin);
-//
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInMiddle);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInMiddle);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInMiddle);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInMiddle);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInMiddle);
-//RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInMiddle);
-
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u8, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u16, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u32, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, raze::u64, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, float, FindInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeFindBenchmark, StdFindBenchmark, double, FindInEnd);
 
 RAZE_BENCHMARK_MAIN();

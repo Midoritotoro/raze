@@ -76,7 +76,7 @@ struct _Div {
 
 		return __div_fallback<_ISA_, _Type_>(__x, __y);
 	}
-
+	
 	template <intrin_type _Tp_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Type_ __y) const noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
@@ -182,9 +182,7 @@ struct _Div {
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_div_ps(__as<__m256>(__x), __as<__m256>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_div_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (__has_avx2_support_v<_ISA_>) {
+			if constexpr (__has_avx2_support_v<_ISA_>) {
 				if constexpr (__is_epi32_v<_Type_>) {
 					const auto __divisor_information = _Divisor<i32>(__y);
 

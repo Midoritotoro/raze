@@ -14,7 +14,7 @@ struct _Maskz_load {
 	static constexpr auto __avx = __has_avx_support_v<_ISA_>;
 
 	template <raw_mask_type _Mask_>
-	raze_nodiscard static raze_always_inline _Tp_ __loadu(const void* __mem, _Mask_ __mask) noexcept {
+	raze_nodiscard static raze_always_inline _Tp_ __loadu(const void* raze_restrict __mem, _Mask_ __mask) noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 				if constexpr (__avx512vl) return __as<_Tp_>(_mm_maskz_loadu_epi64(__mask, __mem));
@@ -81,7 +81,7 @@ struct _Maskz_load {
 	}
 
 	template <raw_mask_type _Mask_>
-	raze_nodiscard static raze_always_inline _Tp_ __load(const void* __mem, _Mask_ __mask) noexcept {
+	raze_nodiscard static raze_always_inline _Tp_ __load(const void* raze_restrict __mem, _Mask_ __mask) noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_maskz_load_epi64(__mask, __mem));
 			else if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_maskz_load_epi32(__mask, __mem));
@@ -111,7 +111,7 @@ struct _Maskz_load {
 	}
 
 	template <raw_mask_type _Mask_, class _AlignPolicy_ = __unaligned_policy>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(const void* __mem, 
+	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(const void* raze_restrict __mem, 
 		_Mask_ __mask, _AlignPolicy_&& __policy = _AlignPolicy_{}) raze_const_operator noexcept
 	{
 		if constexpr (__is_aligned_v<_AlignPolicy_>) return __load(__mem, __mask);

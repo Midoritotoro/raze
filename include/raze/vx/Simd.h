@@ -21,6 +21,15 @@ struct alignment_policy {
     static constexpr bool __alignment = _Alignment_;
 };
 
+template <class _Simd_, class _Left_, class _Right_>
+concept __correct_simd_binary_op = simd_type<_Simd_> &&
+    (std::same_as<std::remove_cvref_t<_Left_>, _Simd_> && (
+        std::convertible_to<std::remove_cvref_t<_Right_>, typename _Simd_::value_type> ||
+        std::same_as<std::remove_cvref_t<_Right_>, _Simd_>)) ||
+    (std::same_as<std::remove_cvref_t<_Right_>, _Simd_> && (
+        std::convertible_to<std::remove_cvref_t<_Left_>, typename _Simd_::value_type> ||
+        std::same_as<std::remove_cvref_t<_Left_>, _Simd_>));
+
 /**
  * @class simd
  * @brief A fixed-size SIMD vector abstraction with ISA/ABI‑aware backend dispatch.
@@ -150,61 +159,52 @@ public:
         return bit_shr(__x, __shift);
     }
 
-    template <class _RightType_>
-    raze_always_inline friend simd operator-(
-        const simd&         __x,
-        const _RightType_&  __y) noexcept 
-            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
-                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+    template <class _Left_, class _Right_>
+    raze_always_inline friend simd operator-(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
     {
         return sub(__x, __y);
     }
 
-    template <class _RightType_>
-    raze_always_inline friend simd operator+(
-        const simd&         __x,
-        const _RightType_&  __y) noexcept 
-            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> || 
-                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+    template <class _Left_, class _Right_>
+    raze_always_inline friend simd operator+(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
     {
         return add(__x, __y);
     }
 
-    template <class _RightType_>
-    raze_always_inline friend simd operator*(
-        const simd&         __x, 
-        const _RightType_&  __y) noexcept 
-            requires(std::is_same_v<std::remove_cvref_t<_RightType_>, simd> ||
-                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type>)
+    template <class _Left_, class _Right_>
+    raze_always_inline friend simd operator*(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
     {
         return mul(__x, __y);
     }
 
-    template <
-        class _LeftType_,
-        class _RightType_>
-    raze_always_inline friend simd operator/(
-        const _LeftType_&   __x,
-        const _RightType_&  __y) noexcept requires(
-            (std::is_same_v<std::remove_cvref_t<_LeftType_>, simd> && (
-                std::is_convertible_v<std::remove_cvref_t<_RightType_>, value_type> ||
-                std::is_same_v<std::remove_cvref_t<_RightType_>, simd>)) ||
-            (std::is_same_v<std::remove_cvref_t<_RightType_>, simd> && (
-                std::is_convertible_v<std::remove_cvref_t<_LeftType_>, value_type> ||
-                std::is_same_v<std::remove_cvref_t<_LeftType_>, simd>)))
+    template <class _Left_, class _Right_>
+    raze_always_inline friend simd operator/(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
     {
         return div(__x, __y);
     }
 
-    raze_always_inline friend simd operator&(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend simd operator&(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    {
         return bit_and(__x, __y);
     }
 
-    raze_always_inline friend simd operator|(const simd& __x,  const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend simd operator|(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    {
         return bit_or(__x, __y);
     }
 
-    raze_always_inline friend simd operator^(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend simd operator^(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    {
         return bit_xor(__x, __y);
     }
 
@@ -212,27 +212,45 @@ public:
         return bit_not(*this);
     }
 
-    raze_always_inline friend mask_type operator==(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend mask_type operator==(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    {
         return is_equal(__x, __y);
     }
 
-    raze_always_inline friend mask_type operator!=(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend mask_type operator!=(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    {
         return is_not_equal(__x, __y);
     }
 
-    raze_always_inline friend mask_type operator<(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend mask_type operator<(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    {
         return is_less(__x, __y);
     }
 
-    raze_always_inline friend mask_type operator<=(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend mask_type operator<=(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    {
         return is_less_equal(__x, __y);
     }
 
-    raze_always_inline friend mask_type operator>(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend mask_type operator>(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    {
         return is_greater(__x, __y);
     }
 
-    raze_always_inline friend mask_type operator>=(const simd& __x, const simd& __y) noexcept {
+    template <class _Left_, class _Right_>
+    raze_always_inline friend mask_type operator>=(const _Left_& __x, const _Right_& __y) noexcept
+        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    {
         return is_greater_equal(__x, __y);
     }
 

@@ -56,32 +56,32 @@ struct _Not_t {
     }
 };
 
-template <class _Left_, class _Right_>
-constexpr _And_t<_Left_, _Right_> operator&(_Left_, _Right_) noexcept {
-    return {}; 
-}
-
-template <class _Left_, class _Right_>
-constexpr _Or_t<_Left_, _Right_> operator|(_Left_, _Right_) noexcept {
-    return {}; 
-}
-
-template <class _Left_, class _Right_>
-constexpr _Xor_t<_Left_, _Right_> operator^(_Left_, _Right_) noexcept {
-    return {}; 
-}
-
-template <class _Type_> 
-constexpr _Not_t<_Type_> operator~(_Type_) noexcept {
-    return {}; 
-}
-
 template <class _Type_>
 concept ternary_mask_expression_type =
     requires(bool __a, bool __b, bool __c) {
         { _Type_::__eval(__a, __b, __c) } -> std::same_as<bool>;
     };
 
+
+template <ternary_mask_expression_type _Left_, ternary_mask_expression_type _Right_>
+constexpr _And_t<_Left_, _Right_> operator&(_Left_, _Right_) noexcept {
+    return {}; 
+}
+
+template <ternary_mask_expression_type _Left_, ternary_mask_expression_type _Right_>
+constexpr _Or_t<_Left_, _Right_> operator|(_Left_, _Right_) noexcept {
+    return {}; 
+}
+
+template <ternary_mask_expression_type _Left_, ternary_mask_expression_type _Right_>
+constexpr _Xor_t<_Left_, _Right_> operator^(_Left_, _Right_) noexcept {
+    return {}; 
+}
+
+template <ternary_mask_expression_type _Type_>
+constexpr _Not_t<_Type_> operator~(_Type_) noexcept {
+    return {}; 
+}
 
 template <ternary_mask_expression_type _Expression_>
 raze_nodiscard consteval u8 __as_ternary_mask() noexcept {
