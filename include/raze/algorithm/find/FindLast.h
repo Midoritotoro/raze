@@ -152,7 +152,7 @@ struct _Find_last_if : _Traits_ {
 
         template <sizetype _AlignedSize_, sizetype _TailSize_,
             class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-        raze_nodiscard raze_always_inline std::pair<_Iterator_, _Iterator_> operator()(std::integral_constant<sizetype, _AlignedSize_>,
+        raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_> operator()(std::integral_constant<sizetype, _AlignedSize_>,
             std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
             _Predicate_ __predicate, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
         {
