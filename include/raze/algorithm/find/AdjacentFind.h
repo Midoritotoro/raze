@@ -58,9 +58,9 @@ struct _Adjacent_find : _Traits_ {
 
 			for (auto __next = __first; ++__next != __sentinel; __first = __next)
 				if (__predicate(__proj(*__first), __proj(*__next)))
-					break;
+					return __first;
 
-			return __first;
+			return __sentinel;
 		}
 
 		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
@@ -98,9 +98,9 @@ struct _Adjacent_find : _Traits_ {
 
 			for (auto __next = __first; ++__next != __sentinel; __first = __next)
 				if (__predicate(__proj(*__first), __proj(*__next)))
-					break;
+					return __first;
 
-			return __first;
+			return __sentinel;
 		}
 
 		template <sizetype _AlignedSize_, sizetype _TailSize_, 
@@ -141,14 +141,14 @@ struct _Adjacent_find : _Traits_ {
 
 			for (auto __next = __first; ++__next != __sentinel; __first = __next)
 				if (__predicate(__proj(*__first), __proj(*__next)))
-					break;
+					return __first;
 
-			return __first;
+			return __sentinel;
 		}
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Predicate_ = std::ranges::equal_to, class _Projection_ = std::identity>
+		class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_binary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>,
@@ -162,7 +162,7 @@ struct _Adjacent_find : _Traits_ {
 		return __first;
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_ = std::ranges::equal_to, class _Projection_ = std::identity>
+	template <std::ranges::input_range _Range_, class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
 	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_> && std::indirect_binary_predicate<_Predicate_, 
@@ -177,7 +177,7 @@ struct _Adjacent_find : _Traits_ {
 		return __first;
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_ = std::ranges::equal_to, class _Projection_ = std::identity>
+	template <std::ranges::input_range _Range_, class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
 	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		_Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_> && std::indirect_binary_predicate<_Predicate_, 
@@ -201,7 +201,7 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
+		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_binary_predicate<_Predicate_, _Iterator_> &&
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
@@ -222,7 +222,7 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_>
+		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_binary_predicate<_Predicate_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {

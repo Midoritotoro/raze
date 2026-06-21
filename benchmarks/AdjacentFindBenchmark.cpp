@@ -1,0 +1,138 @@
+#include <raze/algorithm/find/AdjacentFind.h>
+#include <benchmarks/tools/BenchmarkHelper.h>
+
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_StdAdjacentFind(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = std::ranges::adjacent_find(test.data);
+            benchmark::DoNotOptimize(cnt);
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(state.iterations() * Size);
+}
+
+
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_RazeAdjacentFind(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = raze::algorithm::adjacent_find(test.data);
+            benchmark::DoNotOptimize(cnt);
+        }
+        
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(state.iterations() * Size);
+}
+
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_StdAdjacentFindPred(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = std::ranges::adjacent_find(test.data, [](auto x, auto y) { return ((x * 3 + 7) * 2) == (y * y); });
+            benchmark::DoNotOptimize(cnt);
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(state.iterations() * Size);
+}
+
+
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_RazeAdjacentFindPred(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = raze::algorithm::adjacent_find(test.data, [](auto x, auto y) { return ((x * 3 + 7) * 2) == (y * y); });
+            benchmark::DoNotOptimize(cnt);
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(state.iterations() * Size);
+}
+
+#define RAZE_BENCHMARK_FIND(name1, name2) \
+    BENCHMARK(name1<raze::i8, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 16, 15>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 1024, 1023>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 4096, 4095>)->Repetitions(10)->ReportAggregatesOnly(true);
+
+void RegisterAll() {
+    RAZE_BENCHMARK_FIND(BM_RazeAdjacentFind, BM_StdAdjacentFind);
+    RAZE_BENCHMARK_FIND(BM_RazeAdjacentFindPred, BM_StdAdjacentFindPred);
+}
+
+
+RAZE_BENCHMARK_MAIN();

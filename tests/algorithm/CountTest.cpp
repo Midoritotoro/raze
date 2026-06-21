@@ -1,100 +1,379 @@
-﻿#include <cassert>
+﻿#include <raze/algorithm/find/Count.h>
+
 #include <vector>
-#include <algorithm>
-#include <iostream>
 #include <random>
-#include <cstdint>
 #include <type_traits>
-#include <raze/algorithm/find/Count.h>
+#include <algorithm>
+#include <cassert>
 
+template <typename T>
+struct IntDistributionType {
+    using type = T;
+};
 
-template <class T>
-std::size_t raze_count(const T* data, std::size_t n, T value) {
-    return raze::algorithm::count(data, data + n, value);
-}
+template <>
+struct IntDistributionType<char> {
+    using type = int;
+};
 
-template <class T>
-void check_single_case(const std::vector<T>& v, T value)
-{
-    std::size_t simd_res = raze_count(v.data(), v.size(), value);
-    std::size_t std_res = std::count(v.begin(), v.end(), value);
+template <>
+struct IntDistributionType<signed char> {
+    using type = int;
+};
 
-    raze_assert(simd_res == std_res);
-}
+template <>
+struct IntDistributionType<unsigned char> {
+    using type = int;
+};
 
-template <class T>
-void run_tests_for_type()
-{
-    {
-        std::vector<T> v = { 1,2,3,2,2,5,2,7 };
-        check_single_case(v, T(2));
-        check_single_case(v, T(5));
-        check_single_case(v, T(42));
-    }
+template <>
+struct IntDistributionType<bool> {
+    using type = int;
+};
 
-    for (std::size_t n = 1; n < 200; ++n) {
-        std::vector<T> v(n);
-        for (std::size_t i = 0; i < n; ++i)
-            v[i] = T(i % 7);
+template <>
+struct IntDistributionType<wchar_t> {
+    using type = int;
+};
 
-        for (int val = 0; val < 7; ++val)
-            check_single_case(v, T(val));
-    }
+template <>
+struct IntDistributionType<char8_t> {
+    using type = int;
+};
 
-    {
-        const std::size_t N = 1'000'000;
-        std::vector<T> v(N);
-        for (std::size_t i = 0; i < N; ++i)
-            v[i] = T(i % 13);
+template <>
+struct IntDistributionType<char16_t> {
+    using type = int;
+};
 
-        for (int val = 0; val < 13; ++val)
-            check_single_case(v, T(val));
-    }
+template <>
+struct IntDistributionType<char32_t> {
+    using type = int;
+};
 
-    {
-        std::mt19937_64 rng(123456);
-        std::uniform_int_distribution<uint64_t> dist_int;
-        std::uniform_real_distribution<double> dist_fp(-1000.0, 1000.0);
+template <typename T>
+using int_distribution_type_t = typename IntDistributionType<T>::type;
 
-        const std::size_t N = 4096;
-        std::vector<T> v(N);
-
-        for (int iter = 0; iter < 1'000'000; ++iter) {
-            if constexpr (std::is_floating_point_v<T>) {
-                for (std::size_t i = 0; i < N; ++i)
-                    v[i] = T(dist_fp(rng));
+template <typename T>
+struct RandomGenerator {
+    std::mt19937 gen;
+    
+    RandomGenerator(unsigned seed = 42) : gen(seed) {}
+    
+    T operator()() {
+        if constexpr (std::is_integral_v<T>) {
+            using DistType = int_distribution_type_t<T>;
+            
+            if constexpr (std::is_signed_v<T>) {
+                std::uniform_int_distribution<DistType> dist(-1000, 1000);
+                return static_cast<T>(dist(gen));
+            } else {
+                std::uniform_int_distribution<DistType> dist(0, 2000);
+                return static_cast<T>(dist(gen));
             }
-            else {
-                for (std::size_t i = 0; i < N; ++i)
-                    v[i] = T(dist_int(rng));
-            }
-
-            T pattern;
-            if constexpr (std::is_floating_point_v<T>)
-                pattern = T(dist_fp(rng));
-            else
-                pattern = T(dist_int(rng));
-
-            std::size_t simd_res = raze_count(v.data(), N, pattern);
-            std::size_t std_res = std::count(v.begin(), v.end(), pattern);
-
-            raze_assert(simd_res == std_res);
+        } else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(-1000.0, 1000.0);
+            return dist(gen);
         }
     }
+};
+
+template <typename T>
+std::vector<T> generate_random_vector(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::vector<T> vec(size);
+    for (auto& elem : vec) {
+        elem = gen();
+    }
+    return vec;
 }
 
-int main()
-{
-    run_tests_for_type<int8_t>();
-    run_tests_for_type<uint8_t>();
-    run_tests_for_type<int16_t>();
-    run_tests_for_type<uint16_t>();
-    run_tests_for_type<int32_t>();
-    run_tests_for_type<uint32_t>();
-    run_tests_for_type<int64_t>();
-    run_tests_for_type<uint64_t>();
-    run_tests_for_type<float>();
-    run_tests_for_type<double>();
+template <typename T>
+std::vector<T> generate_vector_with_target(size_t size, T target, size_t target_pos, unsigned seed = 42) {
+    auto vec = generate_random_vector<T>(size, seed);
+    if (target_pos < size) {
+        vec[target_pos] = target;
+    }
+    return vec;
+}
 
+template <typename T>
+void test_count_random(unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+    
+    for (int i = 0; i < 10000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i);
+        T target = gen();
+        
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), target);
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), target);
+        
+        raze_assert(simd_result == std_result);
+    }
+    
+    for (size_t pos : {0, 1, 7, 15, 31, 63, 127, 255, 511, 999}) {
+        if (pos < 1000) {
+            auto vec = generate_vector_with_target<T>(1000, T(42), pos, seed);
+            auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(42));
+            auto std_result = std::ranges::count(vec.begin(), vec.end(), T(42));
+            raze_assert(simd_result == std_result);
+            raze_assert(simd_result >= 1);
+        }
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 20000);
+        T target = gen();
+        
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), target);
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), target);
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+template <typename T>
+void test_count_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 30000);
+        T target = RandomGenerator<T>(seed + i + 30000)();
+        
+        auto simd_result = raze::algorithm::count(vec, target);
+        auto std_result = std::ranges::count(vec, target);
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+template <typename T>
+void test_count_if_random(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 40000);
+        T threshold = RandomGenerator<T>(seed + i + 40000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        
+        auto simd_result = raze::algorithm::count_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::count_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+    }
+    
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 50000);
+        T target = RandomGenerator<T>(seed + i + 50000)();
+        
+        auto pred = [target](T x) { return x == target; };
+        
+        auto simd_result = raze::algorithm::count_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::count_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 60000);
+        auto pred = [](T) { return false; };
+        
+        auto simd_result = raze::algorithm::count_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::count_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 0);
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 70000);
+        auto pred = [](T) { return true; };
+        
+        auto simd_result = raze::algorithm::count_if(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::count_if(vec.begin(), vec.end(), pred);
+        
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 100);
+    }
+}
+
+template <typename T>
+void test_count_if_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 80000);
+        T threshold = RandomGenerator<T>(seed + i + 80000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        
+        auto simd_result = raze::algorithm::count_if(vec, pred);
+        auto std_result = std::ranges::count_if(vec, pred);
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+template <typename T>
+void test_count_if_not_random(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 90000);
+        T threshold = RandomGenerator<T>(seed + i + 90000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        auto not_pred = [threshold](T x) { return !(x > threshold); };
+        
+        auto simd_result = raze::algorithm::count_if_not(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::count_if(vec.begin(), vec.end(), not_pred);
+        
+        raze_assert(simd_result == std_result);
+    }
+    
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 100000);
+        T target = RandomGenerator<T>(seed + i + 100000)();
+        
+        auto pred = [target](T x) { return x == target; };
+        auto not_pred = [target](T x) { return x != target; };
+        
+        auto simd_result = raze::algorithm::count_if_not(vec.begin(), vec.end(), pred);
+        auto std_result = std::ranges::count_if(vec.begin(), vec.end(), not_pred);
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+template <typename T>
+void test_count_if_not_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 110000);
+        T threshold = RandomGenerator<T>(seed + i + 110000)();
+        
+        auto pred = [threshold](T x) { return x > threshold; };
+        auto not_pred = [threshold](T x) { return !(x > threshold); };
+        
+        auto simd_result = raze::algorithm::count_if_not(vec, pred);
+        auto std_result = std::ranges::count_if(vec, not_pred);
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+struct Point {
+    int x, y;
+    bool operator==(const Point&) const = default;
+};
+
+template <typename T>
+void test_count_with_projection(unsigned seed = 42) {
+    for (int i = 0; i < 100; ++i) {
+        std::vector<Point> vec(100);
+        RandomGenerator<int> gen(seed + i + 120000);
+        for (auto& p : vec) {
+            p.x = gen();
+            p.y = gen();
+        }
+        
+        int target_x = gen();
+        
+        auto simd_result = raze::algorithm::count_if(vec.begin(), vec.end(), 
+            [target_x](int x) { return x == target_x; },
+            [](const Point& p) { return p.x; });
+        
+        auto std_result = std::ranges::count_if(vec.begin(), vec.end(),
+            [target_x](const Point& p) { return p.x == target_x; });
+        
+        raze_assert(simd_result == std_result);
+    }
+}
+
+template <typename T>
+void test_count_edge_cases() {
+    {
+        std::vector<T> vec;
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == 0);
+        raze_assert(std_result == 0);
+        raze_assert(simd_result == std_result);
+    }
+    
+    {
+        std::vector<T> vec = {T(42)};
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 1);
+    }
+    
+    {
+        std::vector<T> vec = {T(42)};
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(99));
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), T(99));
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 0);
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[0] = T(42);
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 1);
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[99] = T(42);
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 1);
+    }
+    
+    {
+        std::vector<T> vec(100, T(0));
+        vec[50] = T(42);
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 1);
+    }
+    
+    {
+        std::vector<T> vec(100, T(42));
+        auto simd_result = raze::algorithm::count(vec.begin(), vec.end(), T(42));
+        auto std_result = std::ranges::count(vec.begin(), vec.end(), T(42));
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result == 100);
+    }
+}
+
+template <typename T>
+void run_all_tests_for_type() {
+    test_count_random<T>();
+    test_count_ranges<T>();
+    test_count_if_random<T>();
+    test_count_if_ranges<T>();
+    test_count_if_not_random<T>();
+    test_count_if_not_ranges<T>();
+    test_count_edge_cases<T>();
+}
+
+int main() {
+    run_all_tests_for_type<int>();
+    run_all_tests_for_type<short>();
+    run_all_tests_for_type<long long>();
+    run_all_tests_for_type<char>();
+    
+    run_all_tests_for_type<unsigned int>();
+    run_all_tests_for_type<unsigned short>();
+    run_all_tests_for_type<unsigned long long>();
+    run_all_tests_for_type<unsigned char>();
+    
+    run_all_tests_for_type<float>();
+    run_all_tests_for_type<double>();
+    
+    test_count_with_projection<int>();
+    
     return 0;
 }

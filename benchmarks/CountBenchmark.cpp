@@ -1,130 +1,138 @@
 #include <raze/algorithm/find/Count.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
-#include <uchar.h>
-#include <wchar.h>
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_StdCount(benchmark::State& state) {
+    TestData<T, Size> test;
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class StdCountBenchmark {
-public:
-    static void CountAllEqual(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
+    constexpr T needle = std::numeric_limits<T>::max();
+    test.data[Position] = needle;
 
-        for (int i = 0; i < sizeForBenchmark; ++i)
-            array[i] = 42;
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
 
-        while (state.KeepRunning()) {
-            auto result = std::count(array, array + sizeForBenchmark, 42);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = std::ranges::count(test.data, needle);
+            benchmark::DoNotOptimize(cnt);
         }
+
+        benchmark::ClobberMemory();
     }
 
-    static void CountEverySecond(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        for (int i = 0; i < sizeForBenchmark; ++i)
-            if (i % 2 == 0)
-                array[i] = 42;
-            else
-                array[i] = 0;
 
-        while (state.KeepRunning()) {
-            auto result = std::count(array, array + sizeForBenchmark, 42);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_RazeCount(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = raze::algorithm::count(test.data, needle);
+            benchmark::DoNotOptimize(cnt);
         }
+        
+        benchmark::ClobberMemory();
     }
 
-    static void CountEveryFourth(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        for (int i = 0; i < sizeForBenchmark; ++i)
-            if (i % 4 == 0)
-                array[i] = 42;
-            else
-                array[i] = 0;
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_StdCountPred(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        while (state.KeepRunning()) {
-            auto result = std::count(array, array + sizeForBenchmark, 42);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+    constexpr T needle = std::numeric_limits<T>::max();
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = std::ranges::count_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+            benchmark::DoNotOptimize(cnt);
         }
-    }
-};
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class RazeCountBenchmark {
-public:
-    static void CountAllEqual(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
-
-        for (int i = 0; i < sizeForBenchmark; ++i)
-            array[i] = 42;
-
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::count(array, array + sizeForBenchmark, 42);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
+        benchmark::ClobberMemory();
     }
 
-    static void CountEverySecond(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        for (int i = 0; i < sizeForBenchmark; ++i)
-            if (i % 2 == 0)
-                array[i] = 42;
-            else
-                array[i] = 0;
 
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::count(array, array + sizeForBenchmark, 42);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+template <class T, std::size_t Size, std::size_t Position>
+static void BM_RazeCountPred(benchmark::State& state) {
+    TestData<T, Size> test;
+
+    constexpr T needle = std::numeric_limits<T>::max();
+
+    test.data[Position] = needle;
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto cnt = raze::algorithm::count_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+            benchmark::DoNotOptimize(cnt);
         }
+
+        benchmark::ClobberMemory();
     }
 
-    static void CountEveryFourth(benchmark::State& state) noexcept {
-        _Char_ array[sizeForBenchmark];
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        for (int i = 0; i < sizeForBenchmark; ++i)
-            if (i % 4 == 0)
-                array[i] = 42;
-            else
-                array[i] = 0;
+#define RAZE_BENCHMARK_FIND(name1, name2) \
+    BENCHMARK(name1<raze::i8, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 16, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 1024, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 4096, 0>)->Repetitions(10)->ReportAggregatesOnly(true);
 
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::count(array, array + sizeForBenchmark, 42);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-};
+void RegisterAll() {
+    RAZE_BENCHMARK_FIND(BM_RazeCount, BM_StdCount);
+    RAZE_BENCHMARK_FIND(BM_RazeCountPred, BM_StdCountPred);
+}
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint8, CountAllEqual);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint16, CountAllEqual);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint32, CountAllEqual);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint64, CountAllEqual);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, float, CountAllEqual);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, double, CountAllEqual);
-
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint8, CountEverySecond);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint16, CountEverySecond);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint32, CountEverySecond);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint64, CountEverySecond);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, float, CountEverySecond);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, double, CountEverySecond);
-
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint8, CountEveryFourth);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint16, CountEveryFourth);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint32, CountEveryFourth);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, raze::uint64, CountEveryFourth);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, float, CountEveryFourth);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeCountBenchmark, StdCountBenchmark, double, CountEveryFourth);
 
 RAZE_BENCHMARK_MAIN();
