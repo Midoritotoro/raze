@@ -1,140 +1,139 @@
 #include <raze/algorithm/find/Mismatch.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
-#include <uchar.h>
-#include <wchar.h>
-#include <cstring>
-#include <vector>
-#include <algorithm>
+template <class T, std::size_t Size>
+struct MismatchTestData {
+    std::array<T, Size> data1;
+    std::array<T, Size> data2;
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class StdMismatchBenchmark {
-public:
-    static void MismatchInEnd(benchmark::State& state) noexcept {
-        std::vector<_Char_> array1(sizeForBenchmark);
-        std::vector<_Char_> array2(sizeForBenchmark);
-
-        std::memset(array1.data(), 0, sizeForBenchmark * sizeof(_Char_));
-        std::memset(array2.data(), 0, sizeForBenchmark * sizeof(_Char_));
-
-        array2[sizeForBenchmark - 1] = static_cast<_Char_>(42);
-
-        while (state.KeepRunning()) {
-            auto result = std::mismatch(array1.begin(), array1.end(), array2.begin());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-
-    static void MismatchInMiddle(benchmark::State& state) noexcept {
-        std::vector<_Char_> array1(sizeForBenchmark);
-        std::vector<_Char_> array2(sizeForBenchmark);
-
-        std::memset(array1.data(), 0, sizeForBenchmark * sizeof(_Char_));
-        std::memset(array2.data(), 0, sizeForBenchmark * sizeof(_Char_));
-
-        array2[sizeForBenchmark / 2] = static_cast<_Char_>(42);
-
-        while (state.KeepRunning()) {
-            auto result = std::mismatch(array1.begin(), array1.end(), array2.begin());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-
-    static void MismatchInBegin(benchmark::State& state) noexcept {
-        std::vector<_Char_> array1(sizeForBenchmark);
-        std::vector<_Char_> array2(sizeForBenchmark);
-
-        std::memset(array1.data(), 0, sizeForBenchmark * sizeof(_Char_));
-        std::memset(array2.data(), 0, sizeForBenchmark * sizeof(_Char_));
-
-        array2[0] = static_cast<_Char_>(42);
-
-        while (state.KeepRunning()) {
-            auto result = std::mismatch(array1.begin(), array1.end(), array2.begin());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+    MismatchTestData() {
+        for (std::size_t i = 0; i < Size; ++i) {
+            data1[i] = static_cast<T>(i + 1);
+            data2[i] = static_cast<T>(i + 1);
         }
     }
 };
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class RazeMismatchBenchmark {
-public:
-    static void MismatchInEnd(benchmark::State& state) noexcept {
-        std::vector<_Char_> array1(sizeForBenchmark);
-        std::vector<_Char_> array2(sizeForBenchmark);
+template <class T, std::size_t Size>
+static void BM_StdMismatch(benchmark::State& state) {
+    MismatchTestData<T, Size> test;
 
-        std::memset(array1.data(), 0, sizeForBenchmark * sizeof(_Char_));
-        std::memset(array2.data(), 0, sizeForBenchmark * sizeof(_Char_));
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data1);
+        benchmark::DoNotOptimize(test.data2);
 
-        array2[sizeForBenchmark - 1] = static_cast<_Char_>(42);
-
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::mismatch(array1.begin(), array1.end(), array2.begin());
+        for (int i = 0; i < 1024; ++i) {
+            auto result = std::ranges::mismatch(test.data1, test.data2);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
+
+        benchmark::ClobberMemory();
     }
 
-    static void MismatchInMiddle(benchmark::State& state) noexcept {
-        std::vector<_Char_> array1(sizeForBenchmark);
-        std::vector<_Char_> array2(sizeForBenchmark);
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        std::memset(array1.data(), 0, sizeForBenchmark * sizeof(_Char_));
-        std::memset(array2.data(), 0, sizeForBenchmark * sizeof(_Char_));
+template <class T, std::size_t Size>
+static void BM_RazeMismatch(benchmark::State& state) {
+    MismatchTestData<T, Size> test;
 
-        array2[sizeForBenchmark / 2] = static_cast<_Char_>(42);
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data1);
+        benchmark::DoNotOptimize(test.data2);
 
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::mismatch(array1.begin(), array1.end(), array2.begin());
+        for (int i = 0; i < 1024; ++i) {
+            auto result = raze::algorithm::mismatch(test.data1, test.data2);
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
+
+        benchmark::ClobberMemory();
     }
 
-    static void MismatchInBegin(benchmark::State& state) noexcept {
-        std::vector<_Char_> array1(sizeForBenchmark);
-        std::vector<_Char_> array2(sizeForBenchmark);
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        std::memset(array1.data(), 0, sizeForBenchmark * sizeof(_Char_));
-        std::memset(array2.data(), 0, sizeForBenchmark * sizeof(_Char_));
+template <class T, std::size_t Size>
+static void BM_StdMismatchPred(benchmark::State& state) {
+    MismatchTestData<T, Size> test;
 
-        array2[0] = static_cast<_Char_>(42);
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data1);
+        benchmark::DoNotOptimize(test.data2);
 
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::mismatch(array1.begin(), array1.end(), array2.begin());
+        for (int i = 0; i < 1024; ++i) {
+            auto result = std::ranges::mismatch(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
             benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
         }
+
+        benchmark::ClobberMemory();
     }
-};
 
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint8, MismatchInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint16, MismatchInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint32, MismatchInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint64, MismatchInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, float, MismatchInBegin);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, double, MismatchInBegin);
+template <class T, std::size_t Size>
+static void BM_RazeMismatchPred(benchmark::State& state) {
+    MismatchTestData<T, Size> test;
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint8, MismatchInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint16, MismatchInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint32, MismatchInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint64, MismatchInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, float, MismatchInMiddle);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, double, MismatchInMiddle);
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data1);
+        benchmark::DoNotOptimize(test.data2);
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint8, MismatchInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint16, MismatchInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint32, MismatchInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, raze::uint64, MismatchInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, float, MismatchInEnd);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeMismatchBenchmark, StdMismatchBenchmark, double, MismatchInEnd);
+        for (int i = 0; i < 1024; ++i) {
+            auto result = raze::algorithm::mismatch(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
+            benchmark::DoNotOptimize(result);
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(state.iterations() * Size);
+}
+
+#define RAZE_BENCHMARK_MISMATCH(name1, name2) \
+    BENCHMARK(name1<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);
+
+void RegisterAll()
+{
+    RAZE_BENCHMARK_MISMATCH(BM_RazeMismatch, BM_StdMismatch);
+    RAZE_BENCHMARK_MISMATCH(BM_RazeMismatchPred, BM_StdMismatchPred);
+}
 
 RAZE_BENCHMARK_MAIN();
