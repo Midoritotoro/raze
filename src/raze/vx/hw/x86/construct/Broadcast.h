@@ -111,7 +111,7 @@ struct _Broadcast {
 			}
 			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
 				if constexpr (__has_avx512bw_support_v<_ISA_>) return  __as<_Tp_>(_mm512_set1_epi8(__value));
-				else return _mm512_set1_epi32(static_cast<i32>(__value) * 0x01010101u);
+				else return _mm512_set1_epi32(static_cast<u8>(__value) * 0x01010101u);
 			}
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_set1_ps(__value));
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_set1_pd(__value));

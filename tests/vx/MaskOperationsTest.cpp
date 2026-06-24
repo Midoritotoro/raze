@@ -72,10 +72,126 @@ struct variable_length_mask_tests {
                 raze_assert(c_not[i] == (!av));
             }
         }
+
+        {
+            Mask m_empty(false);
+            Mask m_empty_cleared = raze::vx::clear_first(m_empty);
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(!m_empty_cleared[i]);
+
+            if constexpr (N > 0) {
+                Mask m(false);
+                m[0] = true;
+
+                auto r = raze::vx::clear_first(m);
+
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(!r[i]);
+            }
+
+            if constexpr (N > 0) {
+                Mask m(false);
+                m[N - 1] = true;
+
+                auto r = raze::vx::clear_first(m);
+
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(!r[i]);
+            }
+
+            if constexpr (N >= 4) {
+                Mask m(false);
+
+                m[1] = true;
+                m[3] = true;
+                m[N - 1] = true;
+
+                auto r = raze::vx::clear_first(m);
+
+                raze_assert(!r[1]);
+                raze_assert(r[3]);
+                raze_assert(r[N - 1]);
+
+                for (size_t i = 0; i < N; ++i) {
+                    if (i != 1 && i != 3 && i != N - 1)
+                        raze_assert(!r[i]);
+                }
+            }
+
+            if constexpr (N > 0) {
+                Mask m(true);
+
+                auto r = raze::vx::clear_first(m);
+
+                raze_assert(!r[0]);
+
+                for (size_t i = 1; i < N; ++i)
+                    raze_assert(r[i]);
+            }
+        }
+
+        {
+            Mask m_empty(false);
+            Mask m_empty_cleared = raze::vx::clear_last(m_empty);
+
+            for (size_t i = 0; i < N; ++i)
+                raze_assert(!m_empty_cleared[i]);
+
+            if constexpr (N > 0) {
+                Mask m(false);
+                m[0] = true;
+
+                auto r = raze::vx::clear_last(m);
+
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(!r[i]);
+            }
+
+            if constexpr (N > 0) {
+                Mask m(false);
+                m[N - 1] = true;
+
+                auto r = raze::vx::clear_last(m);
+
+                for (size_t i = 0; i < N; ++i)
+                    raze_assert(!r[i]);
+            }
+
+            if constexpr (N > 4) {
+                Mask m(false);
+
+                m[0] = true;
+                m[2] = true;
+                m[N - 2] = true;
+
+                auto r = raze::vx::clear_last(m);
+
+                raze_assert(r[0]);
+                raze_assert(r[2]);
+                raze_assert(!r[N - 2]);
+
+                for (size_t i = 0; i < N; ++i) {
+                    if (i != 0 && i != 2 && i != N - 2)
+                        raze_assert(!r[i]);
+                }
+            }
+
+            if constexpr (N > 0) {
+                Mask m(true);
+
+                auto r = raze::vx::clear_last(m);
+
+                raze_assert(!r[N - 1]);
+
+                for (size_t i = 0; i + 1 < N; ++i)
+                    raze_assert(r[i]);
+            }
+        }
     }
 
     void operator()() const {
-        //test_size<(_Width_ / (sizeof(_Type_) * 8))>();
+        test_size<(_Width_ / (sizeof(_Type_) * 8))>();
         test_size<1>();
         //test_size<7>();
         //test_size<17>();

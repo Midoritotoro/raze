@@ -67,7 +67,7 @@ raze_always_inline raze_nodiscard constexpr decltype(auto) __unwrap_iterator_off
 }
 
 template <class _Iterator_, class _UnwrappedIterator_>
-raze_always_inline constexpr void __seek_possibly_wrapped_iterator(
+raze_nodiscard raze_always_inline constexpr void __seek_possibly_wrapped_iterator(
     _Iterator_& __iterator, _UnwrappedIterator_&& __unwrapped_iterator) noexcept(
         type_traits::__is_wrapped_iterator_seekable_v<_Iterator_, _UnwrappedIterator_> == false || 
         type_traits::__is_wrapped_iterator_nothrow_seekable_v<_Iterator_, _UnwrappedIterator_>)

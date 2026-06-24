@@ -26,8 +26,11 @@ struct _To_vector {
                     if constexpr (__avx512dq) return __as<_Vector_>(_mm_movm_epi64(__mask));
                     else return __as<_Vector_>(_mm512_maskz_mov_epi64(__mask, _All_ones<_ISA_, __m512i>()()));
                 }
-                else return __as<_Vector_>(_mm_cmpgt_epi32(_mm_and_si128(_mm_set1_epi8(
-                    static_cast<i8>(__mask)), _mm_setr_epi32(1, 1, 2, 2)), _mm_setzero_si128()));
+                else {
+                    const auto __broadcasted = _mm_set1_epi8(static_cast<i8>(__mask));
+                    const auto __intersection = _mm_and_si128(__broadcasted, _mm_setr_epi32(1, 1, 2, 2));
+                    return __as<_Vector_>(_mm_cmpgt_epi32(__intersection, _mm_setzero_si128()));
+                }
             }
             else if constexpr (sizeof(_Type_) == 4) {
                 if constexpr (__avx512vl) {
@@ -69,15 +72,14 @@ struct _To_vector {
         else if constexpr (sizeof(_Vector_) == 32) {
             auto __fallback_avx = [=] () raze_always_inline_lambda {
                 using _MaskType = __mmask_for_elements_t<0x20 / sizeof(_Type_)>;
-                using _HalfType = IntegerForSize<__constexpr_max<(sizeof(_MaskType) >> 1), 1>()>::Unsigned;
 
-                constexpr auto __maximum = math::__maximum_integral_limit<_HalfType>();
-                constexpr auto __shift = (sizeof(_MaskType) << 2);
+                constexpr auto __half_bits = (sizeof(_Vector_) / 2) / sizeof(_Type_);
+                constexpr _MaskType __low_mask = (_MaskType(1) << __half_bits) - 1;
 
-                const auto __low = _To_vector<arch::ISA::SSSE3, __m128i, _Type_>()(__mask & __maximum);
-                const auto __high = _To_vector<arch::ISA::SSSE3, __m128i, _Type_>()(__mask >> __shift);
+                const auto __low = _To_vector<arch::ISA::SSSE3, __m128i, _Type_>()(_MaskType(__mask & __low_mask));
+                const auto __high = _To_vector<arch::ISA::SSSE3, __m128i, _Type_>()(_MaskType(__mask >> __half_bits));
 
-                return __as<_Vector_>(_mm256_insertf128_si256(__as<__m256i>(__low), __high, 1));
+                return __as<_Vector_>(_mm256_insertf128_si256(__as<__m256i>(__low), __as<__m128i>(__high), 1));
             };
 
             if constexpr (sizeof(_Type_) == 8) {
@@ -146,15 +148,14 @@ struct _To_vector {
             }
             else {
                 using _MaskType = __mmask_for_elements_t<0x40 / sizeof(_Type_)>;
-                using _HalfType = IntegerForSize<__constexpr_max<(sizeof(_MaskType) >> 1), 1>()>::Unsigned;
 
-                constexpr auto __maximum = math::__maximum_integral_limit<_HalfType>();
-                constexpr auto __shift = (sizeof(_MaskType) << 2);
+                constexpr auto __half_bits = (sizeof(_Vector_) / 2) / sizeof(_Type_);
+                constexpr _MaskType __low_mask = (_MaskType(1) << __half_bits) - 1;
 
-                const auto __low = _To_vector<arch::ISA::AVX2, __m256i, _Type_>()(__mask & __maximum);
-                const auto __high = _To_vector<arch::ISA::AVX2, __m256i, _Type_>()((__mask >> __shift));
+                const auto __low = _To_vector<arch::ISA::AVX2, __m256i, _Type_>()(_MaskType(__mask & __low_mask));
+                const auto __high = _To_vector<arch::ISA::AVX2, __m256i, _Type_>()(_MaskType(__mask >> __half_bits));
 
-                return __as<_Vector_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+                return __as<_Vector_>(_mm512_inserti64x4(__as<__m512i>(__low), __as<__m256i>(__high), 1));
             }
         }
     }

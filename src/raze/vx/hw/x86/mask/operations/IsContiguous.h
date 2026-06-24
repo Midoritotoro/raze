@@ -20,18 +20,10 @@ struct _Is_contiguous {
 		else if constexpr (std::is_integral_v<_Tp_>) {
 			auto __len = __k - __n;
 			
-#if 0
-			u32 __is_valid = static_cast<u32>(__len > 0);
-			u32 __shift = (_Size_ - __len) & -__is_valid;
-			auto __x = (__max_for_bits<_Size_, _Tp_>() >> __shift) & -__is_valid;
-			__x <<= __n;
-			return (__mask & __x) == __x;
-#else
 			if constexpr (_Size_ == 64) return _tzcnt_u64((~__mask) >> __n) >= __len;
 			else if constexpr (__has_avx2_support_v<_ISA_>) return _bzhi_u64((~__mask) >> __n, __len) == 0;
 			else return (((~__mask) >> __n) & ((1ull << __len) - 1)) == 0; // Compilers usually turn this code into bzhi,
 			// but for compatibility with MSVC Runtime Dispatch, this is implemented manually
-#endif
 		}
 		else {
 			return _Is_contiguous()(_To_mask<_ISA_, _Type_>()(__mask), __n, __k);

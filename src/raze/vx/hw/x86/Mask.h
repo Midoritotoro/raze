@@ -17,5 +17,5 @@
 #include <src/raze/vx/hw/x86/mask/operations/ToBitmask.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
-
-
+#include <src/raze/vx/hw/x86/mask/operations/ClearFirst.h>
+#include <src/raze/vx/hw/x86/mask/operations/ClearLasts.h>

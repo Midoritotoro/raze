@@ -10,4 +10,7 @@
 #include <src/raze/vx/hw/configurable/mask/FindFirstNotSet.h>
 #include <src/raze/vx/hw/configurable/mask/FindLastSet.h>
 #include <src/raze/vx/hw/configurable/mask/FindLastNotSet.h>
+#include <src/raze/vx/hw/configurable/mask/ClearFirst.h>
+#include <src/raze/vx/hw/configurable/mask/ClearLast.h>
+
 
