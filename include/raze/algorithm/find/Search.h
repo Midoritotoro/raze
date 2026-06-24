@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <raze/algorithm/find/Equal.h>
+#include <raze/algorithm/find/Find.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -61,7 +62,7 @@ struct _Search : _Traits_ {
 			class _Sentinel2_, class _Predicate_, class _Projection1_, class _Projection2_>
 		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator1_> operator()(_Iterator1_ __first1,
 			_Sentinel1_ __sentinel1, _Iterator2_ __first2, _Sentinel2_ __sentinel2, 
-			_Predicate_ __predicate, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(!vx::simd_type<_Tag_>)
+			_Predicate_ __predicate, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept
 		{
 			for (;; ++__first1) {
 				auto __it1 = __first1;
@@ -78,7 +79,7 @@ struct _Search : _Traits_ {
 		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator1_> operator()(sizetype __aligned_size,
 			sizetype __tail_size, _Iterator1_ __first1, _Sentinel1_ __sentinel1, 
 			_Iterator2_ __first2, _Sentinel2_ __sentinel2, _Predicate_ __predicate, 
-			_Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(vx::simd_type<_Tag_>)
+			_Projection1_ __proj1, _Projection2_ __proj2) const noexcept
 		{
 			using _Value_ = std::iter_value_t<_Iterator1_>;
 
@@ -92,7 +93,7 @@ struct _Search : _Traits_ {
 			const auto __needle_length = algorithm::distance(__first2, __sentinel2);
 
 			const auto __needle_first = __needle[0];
-			const auto __needle_last = __needle[__needle_length -1];
+			const auto __needle_last = __needle[__needle_length - 1];
 
 			const auto __needle_bytes = sizeof(_Value_) * __needle_length;
 			const auto __last_offset = __needle_bytes - sizeof(_Value_);
@@ -101,7 +102,7 @@ struct _Search : _Traits_ {
 			auto __processed_bytes = sizetype(0);
 
 			while (__processed_bytes < __aligned_size && (__haystack_bytes - __processed_bytes) >= (__last_offset + sizeof(_Tag_))) {
-				const auto __equal_first = __predicate(__proj1(__needle_first), __proj2(vx::load<_Tag_>(__haystack)));
+				const auto __equal_first = __predicate(__proj1(vx::load<_Tag_>(__haystack)), __proj2(__needle_first));
 
 				if (vx::none_of(__equal_first)) {
 					__processed_bytes += sizeof(_Tag_);
@@ -109,20 +110,22 @@ struct _Search : _Traits_ {
 					continue;
 				}
 
-				const auto __equal_last = __predicate(__proj1(__needle_last), __proj2(vx::load<_Tag_>(__bytes_pointer_offset(__haystack, __last_offset))));
+				const auto __equal_last = __predicate(__proj1(vx::load<_Tag_>(__bytes_pointer_offset(__haystack, __last_offset))), __proj2(__needle_last));
 				auto __combined = __equal_first & __equal_last;
 
 				if (vx::any_of(__combined)) {
 					do {
-						const auto __first_set = vx::find_first_set(__combined);
+						const auto __first_set = vx::find_first_set[vx::not_null](__combined);
 
 						const auto __match_bytes = __first_set * sizeof(_Value_) + sizeof(_Value_);
 						const auto __main_match = __bytes_pointer_offset(__haystack, __match_bytes);
 
-						if (memcmp(__main_match, __bytes_pointer_offset(__needle, sizeof(_Value_)), __needle_bytes - 2 * sizeof(_Value_)) == 0)
-							return __main_match - 1;
+						if (memcmp(__main_match, __bytes_pointer_offset(__needle, sizeof(_Value_)), __needle_bytes - 2 * sizeof(_Value_)) == 0) {
+							__seek_possibly_wrapped_iterator(__first1, __main_match - 1);
+							return { __first1, __first1 + __needle_length };
+						}
 
-						vx::clear_left(__combined);
+						__combined = vx::clear_first[vx::not_null](__combined);
 					} while (vx::any_of(__combined));
 				}
 
@@ -132,10 +135,11 @@ struct _Search : _Traits_ {
 
 			const auto __remaining_bytes = __haystack_bytes - __processed_bytes;
 
-			if (__remaining_bytes < __needle_bytes)
-				return (*this)(__bytes_pointer_offset(__haystack, __remaining_bytes), __sentinel1,
-					__first2, __sentinel2, __predicate, __proj1, __proj2);
-			else return { __last1, __last1 };
+			if (__remaining_bytes >= __needle_bytes) {
+				__seek_possibly_wrapped_iterator(__first1, __haystack);
+				return (*this)(__first1, __sentinel1, __first2, __sentinel2, __predicate, __proj1, __proj2);
+			}
+			else return { __sentinel1, __sentinel1 };
 		}
 	};
 
@@ -232,7 +236,12 @@ private:
 				if (__needle_size == __haystack_size) return equal(__first1,
 					__last1, __first2, __last2, __pred, __proj1, __proj2) ? std::ranges::subrange { __first1, __last1 } : std::ranges::subrange { __last1, __last1 };
 				if (__needle_size > __haystack_size) return { __last1, __last1 };
+				if (__needle_size == 1) {
+					const auto __found = find_if(__first1, __last1, [&__pred, &__first2](auto __x)
+						raze_always_inline_lambda{ return __pred(__x, *__first2); });
 
+					return { __found, __found != __last1 ? std::ranges::next(__found) : __found };
+				}
 				return vx::__dispatch_sized_impl<__vectorized_search, _Value1_, std::ranges::subrange<_Iterator1_>>(
 					__haystack_size * sizeof(_Value1_), __first1, __last1, __first2, __last2, __pred, __proj1, __proj2);
 			}
@@ -245,7 +254,7 @@ private:
 	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
 		class _Predicate_, class _Projection1_, class _Projection2_, sizetype _HaystackSize_,
 		sizetype _NeedleSize_>
-	constexpr raze_always_inline std::ranges::subrange<_Iterator1_> __mismatch_unchecked(_Iterator1_ __first1,
+	constexpr raze_always_inline std::ranges::subrange<_Iterator1_> __search_unchecked(_Iterator1_ __first1,
 		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
 		_Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2,
 		std::integral_constant<sizetype, _HaystackSize_>,
@@ -264,8 +273,14 @@ private:
 			if not consteval {
 				if constexpr (_NeedleSize_ == 0) return { __first1, __first1 };
 				else if constexpr (_NeedleSize_ == _HaystackSize_) return equal(__first1,
-					__last1, __first2, __last2, __pred, __proj1, __proj2) ? std::ranges::subrange { __first1, __last1 } : std::ranges::subrange { __last1, __last1 };
+					__last1, __first2, __last2, __pred, __proj1, __proj2) ? std::ranges::subrange{ __first1, __last1 } : std::ranges::subrange{ __last1, __last1 };
 				else if constexpr (_NeedleSize_ > _HaystackSize_) return { __last1, __last1 };
+				else if constexpr (_NeedleSize_ == 1) {
+					const auto __found = find_if(__first1, __last1, [&__pred, &__first2] (auto __x) 
+						raze_always_inline_lambda { return __pred(__x, *__first2); });
+
+					return { __found, __found != __last1 ? std::ranges::next(__found) : __found };
+				}
 				else {
 					return vx::__dispatch_sized_impl<__vectorized_search, _Value1_, std::ranges::subrange<_Iterator1_>>(
 						std::integral_constant<sizetype, _HaystackSize_ * sizeof(_Value1_)>{}, __first1, __last1, __first2, __last2, __pred, __proj1, __proj2);
