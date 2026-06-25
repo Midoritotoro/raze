@@ -1,168 +1,187 @@
 #include <raze/algorithm/find/Search.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
-#include <algorithm>
-#include <iostream>
-#include <string>
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_StdSearch(benchmark::State& state) {
+    TestData<T, Size> test;
 
+    constexpr T needle_value = std::numeric_limits<T>::max();
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmarkMain,
-    SizeForBenchmark sizeForBenchmarkSub>
-class StdSearchBenchmark {
-public:
-    static void SubAtBegin(benchmark::State& state) noexcept {
-        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
-        std::vector<_Char_> subArr(sizeForBenchmarkSub);
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
 
-        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
-        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
 
-        const size_t copyCount = std::min<size_t>(sizeForBenchmarkMain, sizeForBenchmarkSub);
-        for (size_t i = 0; i < copyCount; ++i)
-            mainArr[i] = subArr[i];
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
 
-        while (state.KeepRunning()) {
-            auto* result = std::search(
-                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
-                subArr.data(), subArr.data() + sizeForBenchmarkSub);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+        for (int i = 0; i < 1024; ++i) {
+            auto it = std::ranges::search(test.data, needle);
+            benchmark::DoNotOptimize(it);
         }
+
+        benchmark::ClobberMemory();
     }
 
-    static void SubInMiddle(benchmark::State& state) noexcept {
-        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
-        std::vector<_Char_> subArr(sizeForBenchmarkSub);
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
-        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_RazeSearch(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
-            const size_t pos = (sizeForBenchmarkMain - sizeForBenchmarkSub) / 2;
-            for (size_t i = 0; i < sizeForBenchmarkSub; ++i)
-                mainArr[pos + i] = subArr[i];
+    constexpr T needle_value = std::numeric_limits<T>::max();
+
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
+
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = raze::algorithm::search(test.data, needle);
+            benchmark::DoNotOptimize(it);
         }
 
-        while (state.KeepRunning()) {
-            auto* result = std::search(
-                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
-                subArr.data(), subArr.data() + sizeForBenchmarkSub);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
+        benchmark::ClobberMemory();
     }
 
-    static void SubAtEnd(benchmark::State& state) noexcept {
-        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
-        std::vector<_Char_> subArr(sizeForBenchmarkSub);
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
-        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_StdSearchPred(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
-            const size_t pos = sizeForBenchmarkMain - sizeForBenchmarkSub;
-            for (size_t i = 0; i < sizeForBenchmarkSub; ++i)
-                mainArr[pos + i] = subArr[i];
+    constexpr T needle_value = std::numeric_limits<T>::max();
+
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
+
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
+
+    auto pred = [](auto x, auto y) {
+        auto transform = [](auto v) {
+            return (v * 1664525 + 1013904223) - 17;
+        };
+
+        return transform(x) == transform(y);
+    };
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = std::ranges::search(test.data, needle, pred);
+            benchmark::DoNotOptimize(it);
         }
 
-        while (state.KeepRunning()) {
-            auto* result = std::search(
-                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
-                subArr.data(), subArr.data() + sizeForBenchmarkSub);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-};
-
-
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmarkMain,
-    SizeForBenchmark sizeForBenchmarkSub>
-class RazeSearchBenchmark {
-public:
-    static void SubAtBegin(benchmark::State& state) noexcept {
-        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
-        std::vector<_Char_> subArr(sizeForBenchmarkSub);
-
-        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
-        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
-
-        const size_t copyCount = std::min<size_t>(sizeForBenchmarkMain, sizeForBenchmarkSub);
-        for (size_t i = 0; i < copyCount; ++i)
-            mainArr[i] = subArr[i];
-
-        while (state.KeepRunning()) {
-            auto* result = raze::algorithm::search(
-                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
-                subArr.data(), subArr.data() + sizeForBenchmarkSub);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
+        benchmark::ClobberMemory();
     }
 
-    static void SubInMiddle(benchmark::State& state) noexcept {
-        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
-        std::vector<_Char_> subArr(sizeForBenchmarkSub);
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
-        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_RazeSearchPred(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
-            const size_t pos = (sizeForBenchmarkMain - sizeForBenchmarkSub) / 2;
-            for (size_t i = 0; i < sizeForBenchmarkSub; ++i)
-                mainArr[pos + i] = subArr[i];
+    constexpr T needle_value = std::numeric_limits<T>::max();
+
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
+
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
+
+    auto pred = [](auto x, auto y) {
+        auto transform = [](auto v) {
+            return (v * 1664525 + 1013904223) - 17;
+        };
+
+        return transform(x) == transform(y);
+    };
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = raze::algorithm::search(test.data, needle, pred);
+            benchmark::DoNotOptimize(it);
         }
 
-        while (state.KeepRunning()) {
-            auto* result = raze::algorithm::search(
-                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
-                subArr.data(), subArr.data() + sizeForBenchmarkSub);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
+        benchmark::ClobberMemory();
     }
 
-    static void SubAtEnd(benchmark::State& state) noexcept {
-        std::vector<_Char_> mainArr(sizeForBenchmarkMain);
-        std::vector<_Char_> subArr(sizeForBenchmarkSub);
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-        std::fill(mainArr.begin(), mainArr.end(), static_cast<_Char_>(1));
-        std::fill(subArr.begin(), subArr.end(), static_cast<_Char_>(2));
+#define RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, size, needle, pos) \
+    BENCHMARK(name1<raze::i8,  size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i8,  size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::i16, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i16, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::i32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::i64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::f32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::f32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::f64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::f64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true);
 
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain) {
-            const size_t pos = sizeForBenchmarkMain - sizeForBenchmarkSub;
-            for (size_t i = 0; i < sizeForBenchmarkSub; ++i)
-                mainArr[pos + i] = subArr[i];
-        }
+#define RAZE_BENCHMARK_SEARCH(name1, name2) \
+    /* Size = 16 */ \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 1, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 1, 8) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 1, 15) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 4, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 4, 6) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 4, 12) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 8, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 8, 4) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 8, 8) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 16, 16, 0) \
+    \
+    /* Size = 1024 */ \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 1, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 1, 512) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 1, 1023) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 4, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 4, 512) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 4, 1020) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 8, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 8, 512) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 8, 1016) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 32, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 32, 512) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 32, 992) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 1024, 1024, 0) \
+    \
+    /* Size = 4096 */ \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 1, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 1, 2048) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 1, 4095) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 4, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 4, 2048) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 4, 4092) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 8, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 8, 2048) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 8, 4088) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 64, 0) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 64, 2048) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 64, 4032) \
+    RAZE_BENCHMARK_SEARCH_TYPES(name1, name2, 4096, 4096, 0)
 
-        while (state.KeepRunning()) {
-            auto* result = raze::algorithm::search(
-                mainArr.data(), mainArr.data() + sizeForBenchmarkMain,
-                subArr.data(), subArr.data() + sizeForBenchmarkSub);
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-};
-
-
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtBegin);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtBegin);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubAtBegin);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubAtBegin);
-//
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubInMiddle);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubInMiddle);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubInMiddle);
-//RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubInMiddle);
-
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int8, SubAtEnd);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int16, SubAtEnd);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int32, SubAtEnd);
-RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeSearchBenchmark, StdSearchBenchmark, raze::int64, SubAtEnd);
+void RegisterAll()
+{
+    RAZE_BENCHMARK_SEARCH(BM_RazeSearch, BM_StdSearch);
+    RAZE_BENCHMARK_SEARCH(BM_RazeSearchPred, BM_StdSearchPred);
+}
 
 RAZE_BENCHMARK_MAIN();

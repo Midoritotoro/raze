@@ -1,252 +1,187 @@
 #include <raze/algorithm/find/FindEnd.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
-#include <algorithm>
-#include <iostream>
-#include <string>
-#include <random>
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_StdFindEnd(benchmark::State& state) {
+    TestData<T, Size> test;
 
-template <
-    class _FirstUnwrappedBidirectionalIterator_,
-    class _SecondUnwrappedBidirectionalIterator_,
-    class _Predicate_>
-__simd_nodiscard_inline_constexpr _FirstUnwrappedBidirectionalIterator_ scalar_find_end_unchecked(
-    _FirstUnwrappedBidirectionalIterator_	__first1_unwrapped,
-    _FirstUnwrappedBidirectionalIterator_	__last1_unwrapped,
-    _SecondUnwrappedBidirectionalIterator_	__first2_unwrapped,
-    _SecondUnwrappedBidirectionalIterator_	__last2_unwrapped,
-    _Predicate_								__predicate)
-{
-    for (auto __candidate_unwrapped = __last1_unwrapped;; --__candidate_unwrapped) {
-        auto __next1_unwrapped = __candidate_unwrapped;
-        auto __next2_unwrapped = __last2_unwrapped;
+    constexpr T needle_value = std::numeric_limits<T>::max();
 
-        for (;;) {
-            if (__first2_unwrapped == __next2_unwrapped) {
-                raze::algorithm::__seek_possibly_wrapped_iterator(__first1_unwrapped, __next1_unwrapped);
-                return __first1_unwrapped;
-            }
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
 
-            if (__first1_unwrapped == __next1_unwrapped)
-                return __last1_unwrapped;
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
 
-            --__next1_unwrapped;
-            --__next2_unwrapped;
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
 
-            if (__predicate(*__next1_unwrapped, *__next2_unwrapped) == false)
-                break;
+        for (int i = 0; i < 1024; ++i) {
+            auto it = std::ranges::find_end(test.data, needle);
+            benchmark::DoNotOptimize(it);
         }
+
+        benchmark::ClobberMemory();
     }
+
+    state.SetItemsProcessed(state.iterations() * Size);
 }
 
-template <
-    class _FirstBidirectionalIterator_,
-    class _SecondBidirectionalIterator_,
-    class _Predicate_ = std::equal_to<>>
-__simd_nodiscard_inline_constexpr _FirstBidirectionalIterator_ scalar_find_end(
-    _FirstBidirectionalIterator_	__first1,
-    _FirstBidirectionalIterator_    __last1,
-    _SecondBidirectionalIterator_	__first2,
-    _SecondBidirectionalIterator_	__last2,
-    _Predicate_						__predicate = _Predicate_{})
-{
-    raze::algorithm::__seek_possibly_wrapped_iterator(__first1, scalar_find_end_unchecked(raze::algorithm::__unwrap_iterator(__first1),
-        raze::algorithm::__unwrap_iterator(__last1), raze::algorithm::__unwrap_iterator(__first2), raze::algorithm::__unwrap_iterator(__last2),
-        raze::type_traits::__pass_function(__predicate)));
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_RazeFindEnd(benchmark::State& state) {
+    TestData<T, Size> test;
 
-    return __first1;
+    constexpr T needle_value = std::numeric_limits<T>::max();
+
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
+
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = raze::algorithm::find_end(test.data, needle);
+            benchmark::DoNotOptimize(it);
+        }
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetItemsProcessed(state.iterations() * Size);
 }
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmarkMain,
-    SizeForBenchmark sizeForBenchmarkSub>
-class StdFindEndBenchmark {
-public:
-    static void SubAtBegin(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_StdFindEndPred(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
+    constexpr T needle_value = std::numeric_limits<T>::max();
 
-        std::copy(needle.begin(), needle.end(), haystack.begin());
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
 
-        while (state.KeepRunning()) {
-            auto result = std::find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
+
+    auto pred = [](auto x, auto y) {
+        auto transform = [](auto v) {
+            return (v * 1664525 + 1013904223) - 17;
+        };
+
+        return transform(x) == transform(y);
+    };
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = std::ranges::find_end(test.data, needle, pred);
+            benchmark::DoNotOptimize(it);
         }
+
+        benchmark::ClobberMemory();
     }
 
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-    static void SubInMiddle(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
+template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
+static void BM_RazeFindEndPred(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
+    constexpr T needle_value = std::numeric_limits<T>::max();
 
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain)
-            std::copy(needle.begin(), needle.end(), haystack.begin() + (sizeForBenchmarkMain - sizeForBenchmarkSub) / 2);
+    std::array<T, NeedleSize> needle {};
+    needle.fill(needle_value);
 
-        while (state.KeepRunning()) {
-            auto result = std::find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
+    for (std::size_t i = 0; i < needle.size() && Position + i < Size; ++i)
+        test.data[Position + i] = needle[i];
+
+    auto pred = [](auto x, auto y) {
+        auto transform = [](auto v) {
+            return (v * 1664525 + 1013904223) - 17;
+        };
+
+        return transform(x) == transform(y);
+    };
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        for (int i = 0; i < 1024; ++i) {
+            auto it = raze::algorithm::find_end(test.data, needle, pred);
+            benchmark::DoNotOptimize(it);
         }
+
+        benchmark::ClobberMemory();
     }
 
+    state.SetItemsProcessed(state.iterations() * Size);
+}
 
-    static void SubAtEnd(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
+#define RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, size, needle, pos) \
+    BENCHMARK(name1<raze::i8,  size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i8,  size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::i16, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i16, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::i32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::i64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::i64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::f32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::f32, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name1<raze::f64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true); \
+    BENCHMARK(name2<raze::f64, size, needle, pos>)->Repetitions(10)->ReportAggregatesOnly(true);
 
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
+#define RAZE_BENCHMARK_FIND_END(name1, name2) \
+    /* Size = 16 */ \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 1, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 1, 8) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 1, 15) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 4, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 4, 6) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 4, 12) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 8, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 8, 4) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 8, 8) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 16, 16, 0) \
+    \
+    /* Size = 1024 */ \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 1, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 1, 512) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 1, 1023) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 4, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 4, 512) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 4, 1020) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 8, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 8, 512) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 8, 1016) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 32, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 32, 512) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 32, 992) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 1024, 1024, 0) \
+    \
+    /* Size = 4096 */ \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 1, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 1, 2048) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 1, 4095) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 4, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 4, 2048) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 4, 4092) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 8, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 8, 2048) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 8, 4088) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 64, 0) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 64, 2048) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 64, 4032) \
+    RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, 4096, 4096, 0)
 
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain)
-            std::copy(needle.begin(), needle.end(), haystack.begin() + (sizeForBenchmarkMain - sizeForBenchmarkSub));
-
-        while (state.KeepRunning()) {
-            auto result = std::find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-};
-
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmarkMain,
-    SizeForBenchmark sizeForBenchmarkSub>
-class RazeFindEndBenchmark {
-public:
-    static void SubAtBegin(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
-
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
-
-        std::copy(needle.begin(), needle.end(), haystack.begin());
-
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-
-
-    static void SubInMiddle(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
-
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
-
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain)
-            std::copy(needle.begin(), needle.end(), haystack.begin() + (sizeForBenchmarkMain - sizeForBenchmarkSub) / 2);
-
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-
-
-    static void SubAtEnd(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
-
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
-
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain)
-            std::copy(needle.begin(), needle.end(), haystack.begin() + (sizeForBenchmarkMain - sizeForBenchmarkSub));
-
-        while (state.KeepRunning()) {
-            auto result = raze::algorithm::find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-};
-
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmarkMain,
-    SizeForBenchmark sizeForBenchmarkSub>
-class ScalarFindEndBenchmark {
-public:
-    static void SubAtBegin(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
-
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
-
-        std::copy(needle.begin(), needle.end(), haystack.begin());
-
-        while (state.KeepRunning()) {
-            auto result = scalar_find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-
-
-    static void SubInMiddle(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
-
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
-
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain)
-            std::copy(needle.begin(), needle.end(), haystack.begin() + (sizeForBenchmarkMain - sizeForBenchmarkSub) / 2);
-
-        while (state.KeepRunning()) {
-            auto result = scalar_find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-
-
-    static void SubAtEnd(benchmark::State& state) noexcept {
-        std::vector<_Char_> haystack(sizeForBenchmarkMain);
-        std::vector<_Char_> needle(sizeForBenchmarkSub);
-
-        std::fill(haystack.begin(), haystack.end(), static_cast<_Char_>(1));
-        std::fill(needle.begin(), needle.end(), static_cast<_Char_>(2));
-
-        if (sizeForBenchmarkSub <= sizeForBenchmarkMain)
-            std::copy(needle.begin(), needle.end(), haystack.begin() + (sizeForBenchmarkMain - sizeForBenchmarkSub));
-
-        while (state.KeepRunning()) {
-            auto result = scalar_find_end(haystack.begin(), haystack.end(), needle.begin(), needle.end());
-            benchmark::DoNotOptimize(result);
-            benchmark::ClobberMemory();
-        }
-    }
-};
-
-#define REGISTER_ALL(TEST) \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, ScalarFindEndBenchmark, raze::int8, TEST); \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, ScalarFindEndBenchmark, raze::int16, TEST); \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, ScalarFindEndBenchmark, raze::int32, TEST); \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, ScalarFindEndBenchmark, raze::int64, TEST); \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, StdFindEndBenchmark, raze::int8, TEST); \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, StdFindEndBenchmark, raze::int16, TEST); \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, StdFindEndBenchmark, raze::int32, TEST); \
-    RAZE_ADD_SEARCH_BENCHMARKS_FOR_EACH_SIZE(RazeFindEndBenchmark, StdFindEndBenchmark, raze::int64, TEST);
-
-REGISTER_ALL(SubAtBegin)
-REGISTER_ALL(SubInMiddle)
-REGISTER_ALL(SubAtEnd)
-
+void RegisterAll()
+{
+    RAZE_BENCHMARK_FIND_END(BM_RazeFindEnd, BM_StdFindEnd);
+    RAZE_BENCHMARK_FIND_END(BM_RazeFindEndPred, BM_StdFindEndPred);
+}
 
 RAZE_BENCHMARK_MAIN();
