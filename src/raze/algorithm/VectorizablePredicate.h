@@ -29,6 +29,11 @@ struct __function_unwrapped_impl<_Function_> {
 template <class _Function_>
 using __function_unwrapped = typename __function_unwrapped_impl<_Function_>::type;
 
+template <class _Function_>
+raze_always_inline constexpr __function_unwrapped<_Function_> __unwrap_function(_Function_&& __f) noexcept {
+    return static_cast<__function_unwrapped<_Function_>>(std::forward<_Function_>(__f));
+}
+
 template <class _Type_>
 concept vectorizable_value_type = type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>;
 
@@ -59,6 +64,18 @@ concept vectorizable_binary_predicate = !always_scalar_binary<_Predicate_, _Iter
         { std::invoke(std::declval<__function_unwrapped<std::remove_cvref_t<_Predicate_>>>(), 
             std::declval<__simd_value_t<_Iterator1_>>(),
             std::declval<__simd_value_t<_Iterator2_>>()) } -> std::convertible_to<__simd_mask_value_t<_Iterator1_>>;
+};
+
+template <class _Function_, class _Iterator_>
+concept vectorizable_unary_function = vectorizable_value_type<std::iter_value_t<_Iterator_>> && requires {
+    { std::invoke(std::declval<__function_unwrapped<std::remove_cvref_t<_Function_>>>(), std::declval<__simd_value_t<_Iterator_>&>()) };
+};
+
+template <class _Function_, class _Iterator1_, class _Iterator2_ = _Iterator1_>
+concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t<_Iterator1_>> && 
+    vectorizable_value_type<std::iter_value_t<_Iterator2_>> && requires {
+        { std::invoke(std::declval<__function_unwrapped<std::remove_cvref_t<_Function_>>>(),
+            std::declval<__simd_value_t<_Iterator1_>&>(), std::declval<__simd_value_t<_Iterator2_>&>()) };
 };
 
 template <class _Projection_, class _Iterator_>

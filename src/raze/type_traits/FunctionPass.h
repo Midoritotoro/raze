@@ -23,6 +23,10 @@ struct __function_reference {
     _Function_& _function;
     using function_unwrapped_type = _Function_;
 
+    constexpr raze_always_inline operator _Function_& () noexcept {
+        return _function;
+    }
+
     template <class ... _Args_>
     constexpr raze_always_inline decltype(auto) operator()(_Args_&& ... __values) const
         noexcept(std::is_nothrow_invocable_v<_Function_&, _Args_...>)

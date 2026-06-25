@@ -10,6 +10,10 @@ struct not_fn {
     _Fn_& _fn;
     using function_unwrapped_type = _Fn_;
 
+    constexpr raze_always_inline operator _Fn_& () noexcept {
+        return _fn;
+    }
+
     template <class ... _Args_>
     raze_always_inline constexpr decltype(auto) operator()(_Args_&& ... __args) const 
         noexcept(noexcept(!_fn(std::forward<_Args_>(__args)...)))
