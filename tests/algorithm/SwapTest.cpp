@@ -1,177 +1,621 @@
-#include <cAssert>
-#include <algorithm>
-#include <iostream>
-#include <vector>
-#include <string>
-
 #include <raze/algorithm/swap/Swap.h>
 
-struct Custom {
-    int x;
-    Custom(int v = 0) : x(v) {}
-    bool operator==(const Custom& other) const { return x == other.x; }
+#include <vector>
+#include <list>
+#include <forward_list>
+#include <random>
+#include <type_traits>
+#include <algorithm>
+#include <cassert>
+
+template <typename T>
+struct IntDistributionType {
+    using type = T;
 };
 
-int main() {
-    {
-        int a = 1, b = 2;
-        raze::algorithm::swap(a, b);
-        raze_assert(a == 2 && b == 1);
-    }
+template <>
+struct IntDistributionType<char> {
+    using type = int;
+};
 
-    {
-        double a = 3.14, b = 2.71;
-        raze::algorithm::swap(a, b);
-        raze_assert(a == 2.71 && b == 3.14);
-    }
+template <>
+struct IntDistributionType<signed char> {
+    using type = int;
+};
 
-    {
-        Custom c1(10), c2(20);
-        raze::algorithm::swap(c1, c2);
-        raze_assert(c1.x == 20 && c2.x == 10);
-    }
+template <>
+struct IntDistributionType<unsigned char> {
+    using type = int;
+};
 
-    {
-        int arr1[3] = { 1,2,3 };
-        int arr2[3] = { 4,5,6 };
-        raze::algorithm::swap(arr1, arr2);
-        raze_assert((arr1[0] == 4 && arr1[1] == 5 && arr1[2] == 6));
-        raze_assert((arr2[0] == 1 && arr2[1] == 2 && arr2[2] == 3));
-    }
+template <>
+struct IntDistributionType<bool> {
+    using type = int;
+};
 
-    {
-        int arr1[1] = { 42 };
-        int arr2[1] = { 99 };
-        raze::algorithm::swap(arr1, arr2);
-        raze_assert(arr1[0] == 99 && arr2[0] == 42);
-    }
+template <>
+struct IntDistributionType<wchar_t> {
+    using type = int;
+};
 
-    {
-        int a = 123;
-        raze::algorithm::swap(a, a);
-        raze_assert(a == 123);
-    }
+template <>
+struct IntDistributionType<char8_t> {
+    using type = int;
+};
 
-    {
-        constexpr size_t N = 1'000'0;
-        int v1[N];
-        std::fill(v1, v1 + N, 1);
+template <>
+struct IntDistributionType<char16_t> {
+    using type = int;
+};
 
-        int v2[N];
-        std::fill(v2, v2 + N, 2);
+template <>
+struct IntDistributionType<char32_t> {
+    using type = int;
+};
 
-        raze::algorithm::swap(v1, v2);
+template <typename T>
+using int_distribution_type_t = typename IntDistributionType<T>::type;
 
-        raze_assert(std::all_of(v1, v1 + N, [](int x) { return x == 2; }));
-        raze_assert(std::all_of(v2, v2 + N, [](int x) { return x == 1; }));
-    }
-
-    {
-        int a1[5] = { 1,2,3,4,5 };
-        int a2[5] = { 6,7,8,9,10 };
-
-        int b1[5] = { 1,2,3,4,5 };
-        int b2[5] = { 6,7,8,9,10 };
-
-        raze::algorithm::swap(a1, a2);
-        std::swap(b1, b2);
-
-        for (int i = 0; i < 5; ++i) {
-            raze_assert(a1[i] == b1[i]);
-            raze_assert(a2[i] == b2[i]);
+template <typename T>
+struct RandomGenerator {
+    std::mt19937 gen;
+    
+    RandomGenerator(unsigned seed = 42) : gen(seed) {}
+    
+    T operator()() {
+        if constexpr (std::is_integral_v<T>) {
+            using DistType = int_distribution_type_t<T>;
+            
+            if constexpr (std::is_signed_v<T>) {
+                std::uniform_int_distribution<DistType> dist(-1000, 1000);
+                return static_cast<T>(dist(gen));
+            } else {
+                std::uniform_int_distribution<DistType> dist(0, 2000);
+                return static_cast<T>(dist(gen));
+            }
+        } else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(-1000.0, 1000.0);
+            return dist(gen);
         }
     }
+};
 
-    {
-        // === ������� ���� ===
-        std::vector<int> a = { 1,2,3 };
-        std::vector<int> b = { 4,5,6 };
-
-        raze::algorithm::swap_ranges(a.begin(), a.end(), b.begin());
-
-        raze_assert((a == std::vector<int>{4, 5, 6}));
-        raze_assert((b == std::vector<int>{1, 2, 3}));
+template <typename T>
+std::vector<T> generate_random_vector(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::vector<T> vec(size);
+    for (auto& elem : vec) {
+        elem = gen();
     }
+    return vec;
+}
 
-    {
-        // === ���������������� ���� ===
-        std::vector<Custom> a = { Custom(1), Custom(2) };
-        std::vector<Custom> b = { Custom(9), Custom(8) };
-
-        raze::algorithm::swap_ranges(a.begin(), a.end(), b.begin());
-
-        raze_assert(a[0].x == 9 && a[1].x == 8);
-        raze_assert(b[0].x == 1 && b[1].x == 2);
+template <typename T>
+std::list<T> generate_random_list(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::list<T> lst;
+    for (size_t i = 0; i < size; ++i) {
+        lst.push_back(gen());
     }
+    return lst;
+}
 
-    {
-        // === ��������� �������� ===
-        std::vector<int> a = { 1,2,3,4 };
-        std::vector<int> b = { 9,8,7,6 };
-
-        raze::algorithm::swap_ranges(a.begin() + 1, a.begin() + 3, b.begin() + 1);
-
-        raze_assert((a == std::vector<int>{1, 8, 7, 4}));
-        raze_assert((b == std::vector<int>{9, 2, 3, 6}));
+template <typename T>
+std::forward_list<T> generate_random_forward_list(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::forward_list<T> flst;
+    std::vector<T> temp;
+    for (size_t i = 0; i < size; ++i) {
+        temp.push_back(gen());
     }
-
-    {
-        // === swap_ranges � ��������� ===
-        int a[3] = { 10,20,30 };
-        int b[3] = { 1,2,3 };
-
-        raze::algorithm::swap_ranges(a, a + 3, b);
-
-        raze_assert((a[0] == 1 && a[1] == 2 && a[2] == 3));
-        raze_assert((b[0] == 10 && b[1] == 20 && b[2] == 30));
+    for (auto it = temp.rbegin(); it != temp.rend(); ++it) {
+        flst.push_front(*it);
     }
+    return flst;
+}
 
-    {
-        // === ������� �������� ===
-        std::vector<int> a = { 1,2,3 };
-        std::vector<int> b = { 4,5,6 };
-
-        raze::algorithm::swap_ranges(a.begin(), a.begin(), b.begin()); // ������ �� ��������
-
-        raze_assert((a == std::vector<int>{1, 2, 3}));
-        raze_assert((b == std::vector<int>{4, 5, 6}));
+template <typename T>
+void test_swap_ranges_random(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+    
+    for (int i = 0; i < 1000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec1 = generate_random_vector<T>(size, seed + i);
+        auto vec2 = generate_random_vector<T>(size, seed + i + 100000);
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        auto std_result = std::ranges::swap_ranges(vec1_copy.begin(), vec1_copy.end(), vec2_copy.begin(), vec2_copy.end());
+        
+        raze_assert(std::ranges::equal(vec1, vec1_copy));
+        raze_assert(std::ranges::equal(vec2, vec2_copy));
+        raze_assert(simd_result.in1 == vec1.end());
+        raze_assert(simd_result.in2 == vec2.end());
     }
-
-    {
-        // === ������� ��������� ===
-        std::vector<int> a = { 1,2,3 };
-        std::vector<int> b = { 4,5,6 };
-
-        auto it = raze::algorithm::swap_ranges(a.begin(), a.end(), b.begin());
-        raze_assert(it == b.end());
+    
+    for (int i = 0; i < 500; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec1 = generate_random_vector<T>(size, seed + i + 200000);
+        auto vec2 = generate_random_vector<T>(size, seed + i + 300000);
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        std::ranges::swap_ranges(vec1_copy.begin(), vec1_copy.end(), vec2_copy.begin(), vec2_copy.end());
+        
+        raze_assert(std::ranges::equal(vec1, vec1_copy));
+        raze_assert(std::ranges::equal(vec2, vec2_copy));
     }
+}
 
-    {
-        // === ��������� � std::swap_ranges ===
-        std::vector<int> a1 = { 1,2,3 };
-        std::vector<int> b1 = { 4,5,6 };
-
-        std::vector<int> a2 = a1;
-        std::vector<int> b2 = b1;
-
-        raze::algorithm::swap_ranges(a1.begin(), a1.end(), b1.begin());
-        std::swap_ranges(a2.begin(), a2.end(), b2.begin());
-
-        raze_assert(a1 == a2);
-        raze_assert(b1 == b2);
+template <typename T>
+void test_swap_ranges_different_sizes(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(1, 500);
+    
+    for (int i = 0; i < 500; ++i) {
+        size_t size1 = size_dist(size_gen);
+        size_t size2 = size_dist(size_gen);
+        size_t min_size = std::min(size1, size2);
+        
+        auto vec1 = generate_random_vector<T>(size1, seed + i + 400000);
+        auto vec2 = generate_random_vector<T>(size2, seed + i + 500000);
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        auto std_result = std::ranges::swap_ranges(vec1_copy.begin(), vec1_copy.end(), vec2_copy.begin(), vec2_copy.end());
+        
+        raze_assert(std::ranges::equal(vec1, vec1_copy));
+        raze_assert(std::ranges::equal(vec2, vec2_copy));
+        
+        for (size_t j = 0; j < min_size; ++j) {
+            raze_assert(vec1[j] == vec1_copy[j]);
+            raze_assert(vec2[j] == vec2_copy[j]);
+        }
+        
+        for (size_t j = min_size; j < size1; ++j) {
+            raze_assert(vec1[j] == vec1_copy[j]);
+        }
+        
+        for (size_t j = min_size; j < size2; ++j) {
+            raze_assert(vec2[j] == vec2_copy[j]);
+        }
     }
-
-    {
-        // === ������� ������� ===
-        constexpr size_t N = 1'000'0;
-        std::vector<int> a(N, 1);
-        std::vector<int> b(N, 2);
-
-        raze::algorithm::swap_ranges(a.begin(), a.end(), b.begin());
-
-        raze_assert(std::all_of(a.begin(), a.end(), [](int x) { return x == 2; }));
-        raze_assert(std::all_of(b.begin(), b.end(), [](int x) { return x == 1; }));
+    
+    for (int i = 0; i < 100; ++i) {
+        size_t size1 = 100;
+        size_t size2 = 50;
+        
+        auto vec1 = generate_random_vector<T>(size1, seed + i + 600000);
+        auto vec2 = generate_random_vector<T>(size2, seed + i + 700000);
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(simd_result.in1 == vec1.begin() + 50);
+        raze_assert(simd_result.in2 == vec2.end());
+        
+        for (size_t j = 0; j < 50; ++j) {
+            raze_assert(vec1[j] == vec2_copy[j]);
+            raze_assert(vec2[j] == vec1_copy[j]);
+        }
+        
+        for (size_t j = 50; j < 100; ++j) {
+            raze_assert(vec1[j] == vec1_copy[j]);
+        }
     }
+    
+    for (int i = 0; i < 100; ++i) {
+        size_t size1 = 50;
+        size_t size2 = 100;
+        
+        auto vec1 = generate_random_vector<T>(size1, seed + i + 800000);
+        auto vec2 = generate_random_vector<T>(size2, seed + i + 900000);
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(simd_result.in1 == vec1.end());
+        raze_assert(simd_result.in2 == vec2.begin() + 50);
+        
+        for (size_t j = 0; j < 50; ++j) {
+            raze_assert(vec1[j] == vec2_copy[j]);
+            raze_assert(vec2[j] == vec1_copy[j]);
+        }
+        
+        for (size_t j = 50; j < 100; ++j) {
+            raze_assert(vec2[j] == vec2_copy[j]);
+        }
+    }
+}
 
+template <typename T>
+void test_swap_ranges_edge_cases() {
+    {
+        std::vector<T> vec1;
+        std::vector<T> vec2;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(simd_result.in1 == vec1.end());
+        raze_assert(simd_result.in2 == vec2.end());
+    }
+    
+    {
+        std::vector<T> vec1 = {T(1), T(2), T(3)};
+        std::vector<T> vec2;
+        auto vec1_copy = vec1;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(simd_result.in1 == vec1.begin());
+        raze_assert(simd_result.in2 == vec2.end());
+        raze_assert(std::ranges::equal(vec1, vec1_copy));
+    }
+    
+    {
+        std::vector<T> vec1;
+        std::vector<T> vec2 = {T(1), T(2), T(3)};
+        auto vec2_copy = vec2;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(simd_result.in1 == vec1.end());
+        raze_assert(simd_result.in2 == vec2.begin());
+        raze_assert(std::ranges::equal(vec2, vec2_copy));
+    }
+    
+    {
+        std::vector<T> vec1 = {T(42)};
+        std::vector<T> vec2 = {T(99)};
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(vec1[0] == T(99));
+        raze_assert(vec2[0] == T(42));
+    }
+    
+    {
+        std::vector<T> vec1 = {T(1), T(2), T(3)};
+        std::vector<T> vec2 = {T(10), T(20), T(30)};
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        auto simd_result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(vec1[0] == T(10));
+        raze_assert(vec1[1] == T(20));
+        raze_assert(vec1[2] == T(30));
+        raze_assert(vec2[0] == T(1));
+        raze_assert(vec2[1] == T(2));
+        raze_assert(vec2[2] == T(3));
+        raze_assert(simd_result.in1 == vec1.end());
+        raze_assert(simd_result.in2 == vec2.end());
+    }
+    
+    {
+        std::vector<T> vec1(100, T(1));
+        std::vector<T> vec2(100, T(2));
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        for (const auto& x : vec1) {
+            raze_assert(x == T(2));
+        }
+        for (const auto& x : vec2) {
+            raze_assert(x == T(1));
+        }
+    }
+    
+    for (size_t size : {1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256}) {
+        std::vector<T> vec1(size, T(10));
+        std::vector<T> vec2(size, T(20));
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        for (const auto& x : vec1) {
+            raze_assert(x == T(20));
+        }
+        for (const auto& x : vec2) {
+            raze_assert(x == T(10));
+        }
+    }
+}
+
+template <typename T>
+void test_swap_ranges_return_value() {
+    {
+        std::vector<T> vec1 = {T(1), T(2), T(3)};
+        std::vector<T> vec2 = {T(10), T(20), T(30)};
+        
+        auto result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(result.in1 == vec1.end());
+        raze_assert(result.in2 == vec2.end());
+    }
+    
+    {
+        std::vector<T> vec1 = {T(1), T(2), T(3), T(4), T(5)};
+        std::vector<T> vec2 = {T(10), T(20)};
+        
+        auto result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(result.in1 == vec1.begin() + 2);
+        raze_assert(result.in2 == vec2.end());
+    }
+    
+    {
+        std::vector<T> vec1;
+        std::vector<T> vec2;
+        
+        auto result = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(result.in1 == vec1.end());
+        raze_assert(result.in2 == vec2.end());
+    }
+    
+    {
+        std::vector<T> vec1 = {T(1), T(2), T(3)};
+        std::vector<T> vec2 = {T(10), T(20), T(30)};
+        
+        auto [in1, in2] = raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(in1 == vec1.end());
+        raze_assert(in2 == vec2.end());
+    }
+}
+
+template <typename T>
+void test_swap_ranges_large_vectors(unsigned seed = 42) {
+    for (size_t size : {10000, 50000, 100000}) {
+        auto vec1 = generate_random_vector<T>(size, seed + static_cast<unsigned>(size));
+        auto vec2 = generate_random_vector<T>(size, seed + static_cast<unsigned>(size) + 1);
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(std::ranges::equal(vec1, vec2_copy));
+        raze_assert(std::ranges::equal(vec2, vec1_copy));
+    }
+}
+
+template <typename T>
+void test_swap_ranges_simd_boundaries(unsigned seed = 42) {
+    for (size_t n : {0, 1, 2, 3, 4, 5, 7, 8, 9, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 255, 256, 257}) {
+        size_t size = n + 100;
+        auto vec1 = generate_random_vector<T>(size, seed + static_cast<unsigned>(n));
+        auto vec2 = generate_random_vector<T>(size, seed + static_cast<unsigned>(n) + 1000);
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        raze::algorithm::swap_ranges(vec1.begin(), vec1.begin() + n, vec2.begin(), vec2.begin() + n);
+        
+        for (size_t j = 0; j < n; ++j) {
+            raze_assert(vec1[j] == vec2_copy[j]);
+            raze_assert(vec2[j] == vec1_copy[j]);
+        }
+        
+        for (size_t j = n; j < size; ++j) {
+            raze_assert(vec1[j] == vec1_copy[j]);
+            raze_assert(vec2[j] == vec2_copy[j]);
+        }
+    }
+}
+
+struct Point {
+    int x, y;
+    bool operator==(const Point&) const = default;
+};
+
+void test_swap_ranges_struct(unsigned seed = 42) {
+    for (int i = 0; i < 100; ++i) {
+        std::vector<Point> vec1(100);
+        std::vector<Point> vec2(100);
+        RandomGenerator<int> gen(seed + i + 100000);
+        for (auto& p : vec1) {
+            p.x = gen();
+            p.y = gen();
+        }
+        for (auto& p : vec2) {
+            p.x = gen();
+            p.y = gen();
+        }
+        auto vec1_copy = vec1;
+        auto vec2_copy = vec2;
+        
+        raze::algorithm::swap_ranges(vec1.begin(), vec1.end(), vec2.begin(), vec2.end());
+        
+        raze_assert(vec1 == vec2_copy);
+        raze_assert(vec2 == vec1_copy);
+    }
+}
+
+template <typename T>
+void test_swap_ranges_list(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(10, 200);
+    
+    for (int i = 0; i < 200; ++i) {
+        size_t size = size_dist(size_gen);
+        auto list1 = generate_random_list<T>(size, seed + i + 200000);
+        auto list2 = generate_random_list<T>(size, seed + i + 300000);
+        auto lst1_copy = list1;
+        auto lst2_copy = list2;
+        
+        raze::algorithm::swap_ranges(list1.begin(), list1.end(), list2.begin(), list2.end());
+        
+        raze_assert(std::ranges::equal(list1, lst2_copy));
+        raze_assert(std::ranges::equal(list2, lst1_copy));
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        size_t size1 = 50 + (i % 50);
+        size_t size2 = 30 + (i % 40);
+        
+        auto list1 = generate_random_list<T>(size1, seed + i + 400000);
+        auto list2 = generate_random_list<T>(size2, seed + i + 500000);
+        auto lst1_copy = list1;
+        auto lst2_copy = list2;
+        
+        auto result = raze::algorithm::swap_ranges(list1.begin(), list1.end(), list2.begin(), list2.end());
+        
+        size_t min_size = std::min(size1, size2);
+        auto it1 = list1.begin();
+        auto it2 = list2.begin();
+        auto it1_copy = lst1_copy.begin();
+        auto it2_copy = lst2_copy.begin();
+        
+        for (size_t j = 0; j < min_size; ++j, ++it1, ++it2, ++it1_copy, ++it2_copy) {
+            raze_assert(*it1 == *it2_copy);
+            raze_assert(*it2 == *it1_copy);
+        }
+    }
+}
+
+template <typename T>
+void test_swap_ranges_forward_list(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(10, 200);
+    
+    for (int i = 0; i < 200; ++i) {
+        size_t size = size_dist(size_gen);
+        auto flst1 = generate_random_forward_list<T>(size, seed + i + 600000);
+        auto flst2 = generate_random_forward_list<T>(size, seed + i + 700000);
+        auto flst1_copy = flst1;
+        auto flst2_copy = flst2;
+        
+        raze::algorithm::swap_ranges(flst1.begin(), flst1.end(), flst2.begin(), flst2.end());
+        
+        raze_assert(std::ranges::equal(flst1, flst2_copy));
+        raze_assert(std::ranges::equal(flst2, flst1_copy));
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        size_t size1 = 50 + (i % 50);
+        size_t size2 = 30 + (i % 40);
+        
+        auto flst1 = generate_random_forward_list<T>(size1, seed + i + 800000);
+        auto flst2 = generate_random_forward_list<T>(size2, seed + i + 900000);
+        auto flst1_copy = flst1;
+        auto flst2_copy = flst2;
+        
+        auto result = raze::algorithm::swap_ranges(flst1.begin(), flst1.end(), flst2.begin(), flst2.end());
+        
+        size_t min_size = std::min(size1, size2);
+        auto it1 = flst1.begin();
+        auto it2 = flst2.begin();
+        auto it1_copy = flst1_copy.begin();
+        auto it2_copy = flst2_copy.begin();
+        
+        for (size_t j = 0; j < min_size; ++j, ++it1, ++it2, ++it1_copy, ++it2_copy) {
+            raze_assert(*it1 == *it2_copy);
+            raze_assert(*it2 == *it1_copy);
+        }
+    }
+}
+
+template <typename T>
+void test_swap_ranges_mixed_containers(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(10, 200);
+    
+    for (int i = 0; i < 100; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 1000000);
+        auto lst = generate_random_list<T>(size, seed + i + 1100000);
+        auto vec_copy = vec;
+        auto lst_copy = lst;
+        
+        raze::algorithm::swap_ranges(vec.begin(), vec.end(), lst.begin(), lst.end());
+        
+        raze_assert(std::ranges::equal(vec, lst_copy));
+        raze_assert(std::ranges::equal(lst, vec_copy));
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 1200000);
+        auto flst = generate_random_forward_list<T>(size, seed + i + 1300000);
+        auto vec_copy = vec;
+        auto flst_copy = flst;
+        
+        raze::algorithm::swap_ranges(vec.begin(), vec.end(), flst.begin(), flst.end());
+        
+        raze_assert(std::ranges::equal(vec, flst_copy));
+        raze_assert(std::ranges::equal(flst, vec_copy));
+    }
+    
+    for (int i = 0; i < 100; ++i) {
+        size_t size = size_dist(size_gen);
+        auto lst = generate_random_list<T>(size, seed + i + 1400000);
+        auto flst = generate_random_forward_list<T>(size, seed + i + 1500000);
+        auto lst_copy = lst;
+        auto flst_copy = flst;
+        
+        raze::algorithm::swap_ranges(lst.begin(), lst.end(), flst.begin(), flst.end());
+        
+        raze_assert(std::ranges::equal(lst, flst_copy));
+        raze_assert(std::ranges::equal(flst, lst_copy));
+    }
+}
+
+template <typename T>
+void test_swap_ranges_overlapping(unsigned seed = 42) {
+    for (int i = 0; i < 100; ++i) {
+        size_t size = 100;
+        auto vec = generate_random_vector<T>(size, seed + i + 1600000);
+        auto vec_copy = vec;
+        
+        raze::algorithm::swap_ranges(vec.begin(), vec.begin() + 50, vec.begin() + 50, vec.end());
+        
+        for (size_t j = 0; j < 50; ++j) {
+            raze_assert(vec[j] == vec_copy[j + 50]);
+            raze_assert(vec[j + 50] == vec_copy[j]);
+        }
+    }
+}
+
+template <typename T>
+void run_all_tests_for_type() {
+    test_swap_ranges_random<T>();
+    test_swap_ranges_different_sizes<T>();
+    test_swap_ranges_edge_cases<T>();
+    test_swap_ranges_return_value<T>();
+    test_swap_ranges_large_vectors<T>();
+    test_swap_ranges_simd_boundaries<T>();
+    test_swap_ranges_list<T>();
+    test_swap_ranges_forward_list<T>();
+    test_swap_ranges_mixed_containers<T>();
+    test_swap_ranges_overlapping<T>();
+}
+
+int main() {
+    run_all_tests_for_type<int>();
+    run_all_tests_for_type<short>();
+    run_all_tests_for_type<long long>();
+    run_all_tests_for_type<char>();
+    
+    run_all_tests_for_type<unsigned int>();
+    run_all_tests_for_type<unsigned short>();
+    run_all_tests_for_type<unsigned long long>();
+    run_all_tests_for_type<unsigned char>();
+    
+    run_all_tests_for_type<float>();
+    run_all_tests_for_type<double>();
+    
+    test_swap_ranges_struct();
+    
     return 0;
 }

@@ -12,60 +12,46 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <
-    typename    _Type_,
-    class       _Integral_>
-raze_always_inline void __rewind_bytes(
-    _Type_*&    __target,
-    _Integral_  __offset) noexcept
-{
-    __target = reinterpret_cast<_Type_*>(const_cast<unsigned char*>(
+template <class _Type_, class _Integral_>
+raze_always_inline void __rewind_bytes(_Type_*& __target, _Integral_ __offset) noexcept {
+    __target = reinterpret_cast<_Type_*>(const_cast<u8*>(
+        reinterpret_cast<const volatile u8*>(__target)) - __offset);
+}
+
+template <class _Type_, class _Integral_>
+raze_always_inline void __rewind_bytes(const _Type_*& __target, _Integral_ __offset) noexcept {
+    __target = reinterpret_cast<const _Type_*>(const_cast<const u8*>(
         reinterpret_cast<const volatile unsigned char*>(__target)) - __offset);
 }
 
-template <
-    typename    _Type_,
-    class       _Integral_>
-raze_always_inline void __rewind_bytes(
-    const _Type_*&  __target,
-    _Integral_      __offset) noexcept
-{
-    __target = reinterpret_cast<const _Type_*>(const_cast<const unsigned char*>(
-        reinterpret_cast<const volatile unsigned char*>(__target)) - __offset);
-}
-
-template <
-    typename    _Type_,
-    class       _Integral_>
-raze_always_inline void __advance_bytes(
-    _Type_*&    __target,
-    _Integral_  __offset) noexcept
-{
+template <class _Type_, class _Integral_>
+raze_always_inline void __advance_bytes(_Type_*& __target, _Integral_ __offset) noexcept {
     __target = reinterpret_cast<_Type_*>(const_cast<unsigned char*>(
         reinterpret_cast<const volatile unsigned char*>(__target)) + __offset);
 }
 
-template <
-    typename    _Type_,
-    class       _Integral_>
-raze_always_inline void __advance_bytes(
-    const _Type_*&  __target,
-    _Integral_      __offset) noexcept
-{
+template <class _Type_, class _Integral_>
+raze_always_inline void __advance_bytes(const _Type_*& __target, _Integral_ __offset) noexcept {
     __target = reinterpret_cast<const _Type_*>(const_cast<const unsigned char*>(
         reinterpret_cast<const volatile unsigned char*>(__target)) + __offset);
 }
 
+template <class _Type1_, class _Type2_, class _Integral_>
+raze_always_inline void __advance_bytes(_Type1_*& __target1, _Type2_*& __target2, _Integral_ __offset) noexcept {
+    __advance_bytes(__target1, __offset);
+    __advance_bytes(__target2, __offset);
+}
 
-raze_always_inline sizetype __byte_length(
-    const volatile void* __first,
-    const volatile void* __last) noexcept
-{
-    return static_cast<sizetype>(
-        const_cast<const unsigned char*>(reinterpret_cast<const volatile unsigned char*>(__last)) - 
+template <class _Type1_, class _Type2_, class _Integral_>
+raze_always_inline void __advance_bytes(const _Type1_*& __target1, const _Type2_*& __target2, _Integral_ __offset) noexcept {
+    __advance_bytes(__target1, __offset);
+    __advance_bytes(__target2, __offset);
+}
+
+raze_always_inline sizetype __byte_length(const volatile void* __first, const volatile void* __last) noexcept {
+    return static_cast<sizetype>(const_cast<const unsigned char*>(reinterpret_cast<const volatile unsigned char*>(__last)) - 
         const_cast<const unsigned char*>(reinterpret_cast<const volatile unsigned char*>(__first)));
 }
-
 
 template <class _ContiguousIterator_>
 constexpr inline type_traits::iterator_difference_type<_ContiguousIterator_> __iterators_difference(
