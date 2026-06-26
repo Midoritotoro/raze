@@ -30,7 +30,7 @@ struct _Unroller {
 #endif // defined(raze_cpp_msvc)
 			}
 
-			return __f.result();
+			if constexpr (requires { __f.result(); }) return __f.result();
 		}
 	};
 };
