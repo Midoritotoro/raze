@@ -22,15 +22,13 @@ static void BM_StdEqual(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = std::ranges::equal(test.data1, test.data2);
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = std::ranges::equal(test.data1, test.data2);
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
@@ -41,15 +39,13 @@ static void BM_RazeEqual(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = raze::algorithm::equal(test.data1, test.data2);
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = raze::algorithm::equal(test.data1, test.data2);
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
@@ -60,15 +56,13 @@ static void BM_StdEqualPred(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = std::ranges::equal(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = std::ranges::equal(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
@@ -79,15 +73,13 @@ static void BM_RazeEqualPred(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = raze::algorithm::equal(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = raze::algorithm::equal(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 #define RAZE_BENCHMARK_EQUAL(name1, name2) \

@@ -11,15 +11,13 @@ static void BM_StdFindLast(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = std::ranges::find_last(test.data, needle);
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = std::ranges::find_last(test.data, needle);
+        benchmark::DoNotOptimize(it);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 
@@ -34,15 +32,13 @@ static void BM_RazeFindLast(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = raze::algorithm::find_last(test.data, needle);
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = raze::algorithm::find_last(test.data, needle);
+        benchmark::DoNotOptimize(it);
         
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 template <class T, std::size_t Size, std::size_t Position>
@@ -55,15 +51,13 @@ static void BM_StdFindLastPred(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = std::ranges::find_last_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = std::ranges::find_last_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+        benchmark::DoNotOptimize(it);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 
@@ -78,15 +72,13 @@ static void BM_RazeFindLastPred(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = raze::algorithm::find_last_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = raze::algorithm::find_last_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+        benchmark::DoNotOptimize(it);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 #define RAZE_BENCHMARK_FIND(name1, name2) \

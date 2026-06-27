@@ -22,15 +22,13 @@ static void BM_StdMismatch(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = std::ranges::mismatch(test.data1, test.data2);
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = std::ranges::mismatch(test.data1, test.data2);
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
@@ -41,15 +39,13 @@ static void BM_RazeMismatch(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = raze::algorithm::mismatch(test.data1, test.data2);
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = raze::algorithm::mismatch(test.data1, test.data2);
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
@@ -60,15 +56,13 @@ static void BM_StdMismatchPred(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = std::ranges::mismatch(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = std::ranges::mismatch(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
@@ -79,15 +73,13 @@ static void BM_RazeMismatchPred(benchmark::State& state) {
         benchmark::DoNotOptimize(test.data1);
         benchmark::DoNotOptimize(test.data2);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto result = raze::algorithm::mismatch(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
-            benchmark::DoNotOptimize(result);
-        }
+        auto result = raze::algorithm::mismatch(test.data1, test.data2, [](auto a, auto b) { return (a * 2 + 1) == (b * 2 + 1); });
+        benchmark::DoNotOptimize(result);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 #define RAZE_BENCHMARK_MISMATCH(name1, name2) \

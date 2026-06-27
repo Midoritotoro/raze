@@ -29,8 +29,7 @@ struct _Replace_if : _Traits_ {
 		template <class _Tag_>
 		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
 			if (_iterator == _sentinel) return true;
-			if (_predicate(_proj(*_iterator)))
-				*_iterator = _new_value;
+			if (_predicate(_proj(*_iterator))) *_iterator = _new_value;
 			++_iterator;
 			return false;
 		}
@@ -206,18 +205,7 @@ struct _Replace : _Traits_ {
 		class _Projection_ = std::identity>
 	constexpr raze_always_inline void operator()(_Range_&& __range, const _ValueType1_& __old_value,
 		const _ValueType2_& __new_value, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::permutable<std::ranges::iterator_t<_Range_>>)
-	{
-		replace_if(std::forward<_Range_>(__range), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__old_value)),
-			__new_value, type_traits::__pass_function(__proj));
-	}
-
-	template <std::ranges::input_range _Range_, class _ValueType1_, class _ValueType2_,
-		class _Projection_ = std::identity>
-	constexpr raze_always_inline void operator()(_Range_&& __range, const _ValueType1_& __old_value,
-		const _ValueType2_& __new_value, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_> && std::permutable<std::ranges::iterator_t<_Range_>>)
+			requires(std::permutable<std::ranges::iterator_t<_Range_>>)
 	{
 		replace_if(std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__old_value)),

@@ -16,15 +16,13 @@ static void BM_StdFindEnd(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = std::ranges::find_end(test.data, needle);
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = std::ranges::find_end(test.data, needle);
+        benchmark::DoNotOptimize(it);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * (Size + NeedleSize) * sizeof(T));
 }
 
 template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
@@ -42,15 +40,13 @@ static void BM_RazeFindEnd(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = raze::algorithm::find_end(test.data, needle);
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = raze::algorithm::find_end(test.data, needle);
+        benchmark::DoNotOptimize(it);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * (Size + NeedleSize) * sizeof(T));
 }
 
 template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
@@ -76,15 +72,13 @@ static void BM_StdFindEndPred(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = std::ranges::find_end(test.data, needle, pred);
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = std::ranges::find_end(test.data, needle, pred);
+        benchmark::DoNotOptimize(it);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * (Size + NeedleSize) * sizeof(T));
 }
 
 template <class T, std::size_t Size, std::size_t NeedleSize, std::size_t Position>
@@ -110,15 +104,13 @@ static void BM_RazeFindEndPred(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto it = raze::algorithm::find_end(test.data, needle, pred);
-            benchmark::DoNotOptimize(it);
-        }
+        auto it = raze::algorithm::find_end(test.data, needle, pred);
+        benchmark::DoNotOptimize(it);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(static_cast<int64_t>(state.iterations()) * (Size + NeedleSize) * sizeof(T));
 }
 
 #define RAZE_BENCHMARK_FIND_END_TYPES(name1, name2, size, needle, pos) \

@@ -10,16 +10,12 @@ static void BM_StdCount(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = std::ranges::count(test.data, needle);
-            benchmark::DoNotOptimize(cnt);
-        }
-
+        auto cnt = std::ranges::count(test.data, needle);
+        benchmark::DoNotOptimize(cnt);
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 
@@ -33,16 +29,12 @@ static void BM_RazeCount(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = raze::algorithm::count(test.data, needle);
-            benchmark::DoNotOptimize(cnt);
-        }
-        
+        auto cnt = raze::algorithm::count(test.data, needle);
+        benchmark::DoNotOptimize(cnt);
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 template <class T, std::size_t Size, std::size_t Position>
@@ -54,16 +46,12 @@ static void BM_StdCountPred(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = std::ranges::count_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
-            benchmark::DoNotOptimize(cnt);
-        }
-
+        auto cnt = std::ranges::count_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+        benchmark::DoNotOptimize(cnt);
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 
@@ -77,16 +65,12 @@ static void BM_RazeCountPred(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = raze::algorithm::count_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
-            benchmark::DoNotOptimize(cnt);
-        }
-
+        auto cnt = raze::algorithm::count_if(test.data, [](auto x) { return ((x * 3 + 7) * 2) == 2; });
+        benchmark::DoNotOptimize(cnt);
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 #define RAZE_BENCHMARK_FIND(name1, name2) \
