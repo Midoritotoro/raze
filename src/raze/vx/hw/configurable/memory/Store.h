@@ -13,6 +13,26 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+struct reuse_load_key_t : options::as_keyword<reuse_load_key_t> {
+    using as_keyword<reuse_load_key_t>::operator=;
+};
+
+constexpr inline reuse_load_key_t reuse_load_key = {};
+
+struct conditional_option {
+    raze_always_inline constexpr auto process(const auto& __base, options::concepts::exactly<reuse_load_key> auto __options) const {
+        return raze::options::merge_prefer_first(__base, options::options{ __options });
+    }
+
+    raze_always_inline constexpr auto process(const auto& __base, raze::vx::simd_type auto __option) const noexcept {
+        return process(__base, reuse_load_key = __option);
+    }
+
+    raze_always_inline constexpr auto default_to(const auto& __base) const {
+        return raze::options::merge_prefer_first(options::options{ reuse_load_key = ignore_reuse }, __base);
+    }
+};
+
 template <class _Options_>
 struct _Configurable_store : raze::options::strict_elementwise_callable<_Configurable_store, _Options_, aligned_option> {
     template <any_iterator_or_pointer _Mem_, simd_type _Type_>
@@ -56,7 +76,6 @@ struct _Configurable_store : raze::options::strict_elementwise_callable<_Configu
                     else
                         _Mask_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__mchunk), __storage_unwrap(__chunk));
 
-                    _Mask_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__mchunk), __storage_unwrap(__chunk));
                     algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
                 }, __mask.__storage().storage());
         }

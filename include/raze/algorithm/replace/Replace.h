@@ -58,7 +58,7 @@ struct _Replace_if : _Traits_ {
 
 			do {
 				auto __loaded = vx::load<_Tag_>(__ptr);
-				vx::store[__predicate(__proj(__loaded)), __loaded](__ptr, _Tag_(__new_value));
+				vx::store[__predicate(__proj(__loaded))](__ptr, _Tag_(__new_value));
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
@@ -83,8 +83,7 @@ struct _Replace_if : _Traits_ {
 			auto __left = __iterations_aligned;
 
 			do {
-				auto __loaded = vx::load<_Tag_>(__ptr);
-				vx::store[__predicate(__proj(__loaded)), __loaded](__ptr, _Tag_(__new_value));
+				vx::store[__predicate(__proj(vx::load<_Tag_>(__ptr)))](__ptr, _Tag_(__new_value));
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (--__left);
 

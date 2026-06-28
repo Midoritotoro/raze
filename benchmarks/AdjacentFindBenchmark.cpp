@@ -11,15 +11,13 @@ static void BM_StdAdjacentFind(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = std::ranges::adjacent_find(test.data);
-            benchmark::DoNotOptimize(cnt);
-        }
+        auto cnt = std::ranges::adjacent_find(test.data);
+        benchmark::DoNotOptimize(cnt);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 
@@ -34,15 +32,13 @@ static void BM_RazeAdjacentFind(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = raze::algorithm::adjacent_find(test.data);
-            benchmark::DoNotOptimize(cnt);
-        }
+        auto cnt = raze::algorithm::adjacent_find(test.data);
+        benchmark::DoNotOptimize(cnt);
         
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 template <class T, std::size_t Size, std::size_t Position>
@@ -55,15 +51,13 @@ static void BM_StdAdjacentFindPred(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = std::ranges::adjacent_find(test.data, [](auto x, auto y) { return ((x * 3 + 7) * 2) == (y * y); });
-            benchmark::DoNotOptimize(cnt);
-        }
+        auto cnt = std::ranges::adjacent_find(test.data, [](auto x, auto y) { return ((x * 3 + 7) * 2) == (y * y); });
+        benchmark::DoNotOptimize(cnt);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 
@@ -78,15 +72,13 @@ static void BM_RazeAdjacentFindPred(benchmark::State& state) {
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
 
-        for (int i = 0; i < 1024; ++i) {
-            auto cnt = raze::algorithm::adjacent_find(test.data, [](auto x, auto y) { return ((x * 3 + 7) * 2) == (y * y); });
-            benchmark::DoNotOptimize(cnt);
-        }
+        auto cnt = raze::algorithm::adjacent_find(test.data, [](auto x, auto y) { return ((x * 3 + 7) * 2) == (y * y); });
+        benchmark::DoNotOptimize(cnt);
 
         benchmark::ClobberMemory();
     }
 
-    state.SetItemsProcessed(state.iterations() * Size);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
 #define RAZE_BENCHMARK_FIND(name1, name2) \
