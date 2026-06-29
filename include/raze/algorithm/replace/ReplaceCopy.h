@@ -64,14 +64,11 @@ struct _Replace_copy_if : _Traits_ {
 			auto* __in_ptr = std::to_address(__first);
 			auto* __out_ptr = std::to_address(__result);
 
-			raze_assume(__in_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
-
 			const auto __aligned_end = __bytes_pointer_offset(__in_ptr, __aligned_size);
 
 			do {
-				auto __loaded = vx::load<_Tag_>(__in_ptr);
-				vx::store(__out_ptr, vx::select[__predicate(__proj(__loaded)), __loaded](_Tag_(__new_value)));
+				const auto __data = vx::load<_Tag_>(__in_ptr);
+				vx::store(__out_ptr, vx::select[__predicate(__proj(__data))](_Tag_(__new_value)));
 				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
 			} while (__in_ptr != __aligned_end);
 
@@ -95,9 +92,6 @@ struct _Replace_copy_if : _Traits_ {
 
 			auto* __in_ptr = std::to_address(__first);
 			auto* __out_ptr = std::to_address(__result);
-
-			raze_assume(__in_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
 
 			auto __left = __iterations_aligned;
 

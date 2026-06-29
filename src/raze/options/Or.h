@@ -2,52 +2,43 @@
 
 #include <src/raze/options/Concepts.h>
 
-
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <
-    class _Condition_,
-    class _Value_>
-struct or_: _Condition_ {
+template <class _Type_>
+struct __storage_selector {
+    using type = std::conditional_t<sizeof(_Type_) <= 8, _Type_, const _Type_&>;
+};
+
+template <class _Type_>
+using __storage_selector_t = typename __storage_selector<_Type_>::type;
+
+template <class _Condition_, class _Value_>
+struct or_ {
     static constexpr bool has_alternative = true;
+    static constexpr bool is_inverted = false;
+    static constexpr bool is_complete = false;
 
     using alternative_type = _Value_;
-    using conditional_type = _Condition_;
+    using condition_type = _Condition_;
+    
+    using _ValueStorage_ = __storage_selector_t<_Value_>;
+    using _ConditionStorage_ = __storage_selector_t<_Condition_>;
 
-    constexpr or_(
-        const _Condition_& __condition, 
-        const _Value_& __value) noexcept: 
-            _Condition_(__condition), 
-            _alternative(__value) 
+    constexpr or_(const _Condition_& __condition, const _Value_& __value) noexcept:
+        _condition(__condition), _alternative(__value)
     {}
 
-    constexpr raze_always_inline _Condition_ base() const {
-        return *this; 
-    }
-
-    template <class _Type_> 
-    constexpr raze_always_inline auto rebase(_Type_ __value) const noexcept {
-        return or_<_Condition_, _Type_>{static_cast<const _Condition_&>(*this), __value};
-    }
-
-    constexpr raze_always_inline _Condition_ drop_alternative() const noexcept {
-        return *this; 
-    }
-
-    constexpr raze_always_inline _Value_ alternative() const noexcept {
+    constexpr raze_always_inline decltype(auto) alternative() const noexcept {
         return _alternative;
     }
 
-    constexpr raze_always_inline auto map_alternative(auto __operation) const 
-        noexcept(noexcept(__operation(_alternative)))
-    {
-        auto __mapped = __operation(_alternative);
-        _Condition_ __condition = *this;
-
-        return or_<_Condition_, decltype(__mapped)>{__condition, __mapped};
+    template <class _Type_>
+    raze_always_inline auto mask(const as<_Type_>&) const noexcept {
+        return _condition;
     }
 
-    _Value_ _alternative;
+    raze_no_unique_address _ConditionStorage_ _condition;
+    raze_no_unique_address _ValueStorage_ _alternative;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END

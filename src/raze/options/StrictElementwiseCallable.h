@@ -7,10 +7,7 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <
-    auto    _Keyword_,
-    class   _Options_,
-    class   _Type_>
+template <auto _Keyword_, class _Options_, class   _Type_>
 concept match_option = concepts::same_as<_Type_, fetch_t<_Keyword_, _Options_>>;
 
 inline constexpr struct { 
@@ -19,39 +16,25 @@ inline constexpr struct {
     } 
 } return_2nd = {};
 
-template <
-    template <class> class  _Function_, 
-    class                   _OptionsValues_, 
-    class ...               _Options_>
+template <template <class> class  _Function_, class _OptionsValues_,  class ... _Options_>
 struct strict_elementwise_callable:
     conditional_callable<_Function_, _OptionsValues_, _Options_...>
 {
     using base_t = conditional_callable<_Function_, _OptionsValues_, _Options_...>;
     using func_t =  _Function_<_OptionsValues_>;
 
-    template <
-        callable_options    __Options_, 
-        class               _Type_,
-        class ...           _Types_>
-    constexpr raze_always_inline auto adapt_call(
-        const __Options_&   __options, 
-        _Type_              __first,
-        _Types_ ...         __args) const noexcept
+    template <callable_options __Options_, class _Type_, class ... _Types_>
+    constexpr raze_always_inline auto adapt_call(const __Options_& __options, 
+        _Type_ __first, _Types_ ... __args) const noexcept
     {
         if constexpr(requires{ func_t::deferred_call(__options, __first, __args...); })
             return func_t::deferred_call(__options, __first, __args...);
-        else 
-            return ignore{};
+        else return ignore{};
     }
 
-    template <
-        callable_options    __Options_, 
-        class               _Type_,
-        class ...           _Types_>
-    constexpr raze_always_inline auto behaviour(
-        const __Options_&   __options, 
-        _Type_              __first,
-        _Types_ ...         __args) const noexcept
+    template <callable_options __Options_, class _Type_, class ... _Types_>
+    constexpr raze_always_inline auto behaviour(const __Options_& __options, 
+        _Type_ __first, _Types_ ... __args) const noexcept
     {
         if constexpr (!__Options_::contains(condition_key) || 
             match_option<condition_key, __Options_, __ignore_none>)
@@ -68,24 +51,15 @@ struct strict_elementwise_callable:
         }
     }
 
-    template <
-        class       _Type_,
-        class ...   _Types_>
-    constexpr raze_always_inline auto retarget(
-        auto        __arch, 
-        _Type_      __first, 
-        _Types_...  __args) const noexcept
-    {
+    template <class _Type_, class ... _Types_>
+    constexpr raze_always_inline auto retarget(auto __arch, _Type_ __first, _Types_...  __args) const noexcept {
         return this->behavior(this->options(), __first, __args...);
     }
 };
 
-template <
-    class       _Callable_,
-    class   ... _Args_>
+template <class _Callable_, class ... _Args_>
 constexpr raze_no_stack_protector raze_always_inline auto __dispatch_call(
-    const _Callable_&   __callable, 
-    _Args_&& ...        __args) noexcept 
+    const _Callable_& __callable, _Args_&& ... __args) noexcept 
 {
     using _ReturnType = decltype(__callable(std::forward<_Args_>(__args)...));
 

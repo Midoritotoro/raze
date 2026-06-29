@@ -70,12 +70,12 @@ public:
      * The contents of the vector are unspecified. Use `fill()` or `broadcast()`
      * to initialize all lanes explicitly.
     */
-    simd() noexcept = default;
-    ~simd() noexcept = default;
-    simd(const simd&) noexcept = default;
-    simd(simd&&) noexcept = default;
-    simd& operator=(const simd&) noexcept = default;
-    simd& operator=(simd&&) noexcept = default;
+    raze_no_stack_protector simd() noexcept = default;
+    raze_no_stack_protector ~simd() noexcept = default;
+    raze_no_stack_protector simd(const simd&) noexcept = default;
+    raze_no_stack_protector simd(simd&&) noexcept = default;
+    raze_no_stack_protector simd& operator=(const simd&) noexcept = default;
+    raze_no_stack_protector simd& operator=(simd&&) noexcept = default;
 
 
     /**
@@ -83,11 +83,11 @@ public:
      *
      * @param value  The scalar value to broadcast into all lanes.
     */
-    raze_always_inline explicit(false) simd(value_type __value) noexcept {
+    raze_no_stack_protector raze_always_inline explicit(false) simd(value_type __value) noexcept {
         fill(__value);
     }
 
-    raze_always_inline simd(const storage_type& __storage) noexcept {
+    raze_no_stack_protector raze_always_inline simd(const storage_type& __storage) noexcept {
         _storage = __storage;
     }
 
@@ -108,7 +108,7 @@ public:
     /**
      * @brief Returns a SIMD vector with all lanes set to `value`.
     */
-    raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
+    raze_no_stack_protector raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
         simd __result {};
         
         __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk, _Tp __value) raze_always_inline_lambda {
@@ -123,8 +123,13 @@ public:
      * @brief Fills all lanes with `value`.
      * @return Reference to `*this`.
     */
-    raze_always_inline simd& fill(value_type __value) noexcept {
-        return *this = broadcast(__value);
+    raze_no_stack_protector raze_always_inline simd& fill(value_type __value) noexcept {
+        __for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk & __chunk, _Tp __value) raze_always_inline_lambda {
+            using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
+            __chunk = _Broadcast<__isa, _StorageType>()(__value);
+        }, __value);
+
+        return *this;
     }
 
     /**

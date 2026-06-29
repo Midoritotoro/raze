@@ -53,9 +53,9 @@ struct callable:
     raze_always_inline constexpr auto operator[](
         _Condition_     __condition,
         _Alternative_   __source) const noexcept
-            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
+            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
     {
-        auto __new_traits = base::operator[](or_(if_(__condition), __source));
+        auto __new_traits = base::operator[](or_(__condition, __source));
         return _Functor_<decltype(__new_traits)>{__new_traits};
     }
 
@@ -65,9 +65,9 @@ struct callable:
     raze_always_inline constexpr auto operator[](
         _Alternative_   __source,
         _Condition_     __condition) const noexcept
-            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(if_(__condition), __source)]; })
+            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
     {
-        auto __new_traits = base::operator[](or_(if_(__condition), __source));
+        auto __new_traits = base::operator[](or_(__condition, __source));
         return _Functor_<decltype(__new_traits)>{__new_traits};
     }
 
