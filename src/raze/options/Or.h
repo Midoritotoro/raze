@@ -28,6 +28,12 @@ struct or_ {
         _condition(__condition), _alternative(__value)
     {}
 
+    constexpr or_(const or_&) noexcept = default;
+    constexpr or_(or_&&) noexcept = default;
+
+    constexpr or_& operator=(const or_&) noexcept = default;
+    constexpr or_& operator=(or_&&) noexcept = default;
+
     constexpr raze_always_inline decltype(auto) alternative() const noexcept {
         return _alternative;
     }

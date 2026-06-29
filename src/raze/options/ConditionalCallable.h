@@ -15,7 +15,7 @@ struct __conditional_callable:  callable<_Function_, _OptionsValues_, _Options_.
     using func_t =  _Function_<_OptionsValues_>;
 
     template <callable_options __Options_, class _Type_, class ... _Types_>
-    constexpr raze_always_inline auto behavior(const __Options_& __options, _Type_ __first, _Types_ ... __args) const {
+    constexpr raze_always_inline auto behavior(const __Options_& __options, const _Type_& __first, const _Types_& ... __args) const {
         return func_t::deferred_call(__options, __first, __args...);
     }
 };
@@ -34,11 +34,11 @@ concept conditional_expression = requires(_Type_)  {
 };
 
 struct conditional_option {
-    raze_always_inline constexpr auto process(const auto& __base, concepts::exactly<condition_key> auto __options) const {
+    raze_always_inline constexpr auto process(const auto& __base, concepts::exactly<condition_key> auto const& __options) const {
         return raze::options::merge_prefer_first(__base, options{ __options });
     }
 
-    raze_always_inline constexpr auto process(const auto& __base, raze::vx::simd_mask_type auto __option) const noexcept {
+    raze_always_inline constexpr auto process(const auto& __base, raze::vx::simd_mask_type auto const& __option) const noexcept {
         return process(__base, condition_key = if_(__option));
     }
 
@@ -46,7 +46,7 @@ struct conditional_option {
         return process(__base, condition_key = if_(__option));
     }
 
-    raze_always_inline constexpr auto process(const auto& __base, conditional_expression auto __option) const noexcept {
+    raze_always_inline constexpr auto process(const auto& __base, conditional_expression auto const& __option) const noexcept {
         return process(__base, condition_key = __option);
     }
 
@@ -60,7 +60,7 @@ struct conditional_callable: __conditional_callable<_Function_, _OptionsValues_,
     using base_t = __conditional_callable<_Function_, _OptionsValues_, conditional_option, _Options_...>;
 
     template <callable_options __Options_, class _Type_, class ... _Types_>
-    constexpr raze_always_inline auto behavior(const __Options_& __options, _Type_ __first, _Types_... __args) const noexcept {
+    constexpr raze_always_inline auto behavior(const __Options_& __options, const _Type_& __first, const _Types_&... __args) const noexcept {
         return base_t::behavior(__options, __first, __args...);
     }
 };

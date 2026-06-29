@@ -33,42 +33,29 @@ struct callable:
 
     template <callable_options __Options_> 
     raze_always_inline constexpr auto operator[](const __Options_& __options) const noexcept {
-        auto __merged = raze::options::merge(__options, this->options());
-        raze::options::options<decltype(__merged)> __new_options{__merged};
-
-        return _Functor_<decltype(__new_options)>{__new_options};
+        auto __merged = merge(__options, this->options());
+        return _Functor_<options<decltype(__merged)>>{options<decltype(__merged)>{std::move(__merged)}};
     }
 
     template <class _Type_>
-    raze_always_inline constexpr auto operator[](_Type_ __t) const noexcept
+    raze_always_inline constexpr auto operator[](const _Type_& __t) const noexcept
         requires(requires(const base& __base) { __base[__t];}) 
     {
-        auto __new_traits = base::operator[](__t);
-        return _Functor_<decltype(__new_traits)>{__new_traits};
+        return _Functor_<decltype(base::operator[](__t))>{ base::operator[](__t)};
     }
 
-    template <
-        condition_type      _Condition_,
-        class               _Alternative_>
-    raze_always_inline constexpr auto operator[](
-        _Condition_     __condition,
-        _Alternative_   __source) const noexcept
-            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
+    template <condition_type _Condition_, class _Alternative_>
+    raze_always_inline constexpr auto operator[](const _Condition_& __condition, const _Alternative_& __source) const noexcept
+        requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
     {
-        auto __new_traits = base::operator[](or_(__condition, __source));
-        return _Functor_<decltype(__new_traits)>{__new_traits};
+        return _Functor_<decltype(base::operator[](or_(__condition, __source)))>{base::operator[](or_(__condition, __source))};
     }
 
-    template <
-        class               _Alternative_,
-        condition_type      _Condition_>
-    raze_always_inline constexpr auto operator[](
-        _Alternative_   __source,
-        _Condition_     __condition) const noexcept
-            requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
+    template <class _Alternative_, condition_type _Condition_>
+    raze_always_inline constexpr auto operator[](const _Alternative_& __source, const _Condition_& __condition) const noexcept
+        requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
     {
-        auto __new_traits = base::operator[](or_(__condition, __source));
-        return _Functor_<decltype(__new_traits)>{__new_traits};
+        return _Functor_<decltype(base::operator[](or_(__condition, __source)))>{base::operator[](or_(__condition, __source))};
     }
 
     template <class _Type_>

@@ -68,7 +68,7 @@ struct _Replace_copy_if : _Traits_ {
 
 			do {
 				const auto __data = vx::load<_Tag_>(__in_ptr);
-				vx::store(__out_ptr, vx::select[__predicate(__proj(__data))](_Tag_(__new_value)));
+				vx::store(__out_ptr, vx::select[__predicate(__proj(__data)), __data](_Tag_(__new_value)));
 				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
 			} while (__in_ptr != __aligned_end);
 
@@ -96,8 +96,8 @@ struct _Replace_copy_if : _Traits_ {
 			auto __left = __iterations_aligned;
 
 			do {
-				auto __loaded = vx::load<_Tag_>(__in_ptr);
-				vx::store(__out_ptr, vx::select[__predicate(__proj(__loaded)), __loaded](_Tag_(__new_value)));
+				auto __data = vx::load<_Tag_>(__in_ptr);
+				vx::store(__out_ptr, vx::select[__predicate(__proj(__data)), __data](_Tag_(__new_value)));
 				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
 			} while (--__left);
 
