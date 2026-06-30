@@ -45,28 +45,34 @@ struct _Reverse : _Traits_ {
 		raze_nodiscard raze_always_inline void operator()(_Iterator_ __first,
 			_Sentinel_ __sentinel) const noexcept requires(!vx::simd_type<_Tag_>)
 		{
-			for (auto __tail = std::ranges::next(__first, __sentinel); !(__first == __tail || __first == --__tail); ++__first)
-				std::ranges::iter_swap(__first, __tail);
+			_Iterator_ __end_it = std::ranges::next(__first, __sentinel);
+			for (; !(__first == __end_it || __first == --__end_it); ++__first)
+				std::ranges::iter_swap(__first, __end_it);
 		}
 
 		template <class _Iterator_, class _Sentinel_>
 		raze_nodiscard raze_always_inline void operator()(sizetype __aligned_size,
 			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel) const noexcept requires(vx::simd_type<_Tag_>)
 		{
+			using _Value_ = typename std::iter_value_t<_Iterator_>;
+			
 			auto* __ptr = std::to_address(__first);
 			raze_assume(__ptr != nullptr);
 
-			_Iterator_ __end_it = __sentinel;
+			_Iterator_ __end_it = std::ranges::next(__first, __sentinel);
 
+			const auto __size = __aligned_size + __tail_size;
 			const auto __num_vecs = __aligned_size / sizeof(_Tag_);
 			raze_assume(__num_vecs > 0);
 
 			const auto __pairs = __num_vecs >> 1;
 
 			auto* __ptr_front = __ptr;
-			auto* __ptr_back = __bytes_pointer_offset(__ptr, static_cast<i64>(__aligned_size - sizeof(_Tag_)));
+			auto* __ptr_back = __bytes_pointer_offset(__ptr, __size);
 
 			for (sizetype __i = 0; __i < __pairs; ++__i) {
+				__rewind_bytes(__ptr_back, sizeof(_Tag_));
+
 				const auto __vf = vx::load<_Tag_>(__ptr_front);
 				const auto __vb = vx::load<_Tag_>(__ptr_back);
 
@@ -74,25 +80,17 @@ struct _Reverse : _Traits_ {
 				vx::store(__ptr_back, vx::reverse(__vf));
 
 				__advance_bytes(__ptr_front, sizeof(_Tag_));
-				__ptr_back = __bytes_pointer_offset(__ptr_back, -static_cast<i64>(sizeof(_Tag_)));
-			}
-
-			if ((__num_vecs & 1) == 0) {
-				const auto __vmid = vx::load<_Tag_>(__ptr_front);
-				vx::store(__ptr_front, vx::reverse(__vmid));
-				__advance_bytes(__ptr_front, sizeof(_Tag_));
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr_front);
+			
+			_Iterator_ __back_it;
+			__seek_possibly_wrapped_iterator(__back_it, __ptr_back);
 
-			auto __tail_begin = __first;
-			auto __tail_end = __end_it;
-
-			while (__tail_begin != __tail_end) {
-				--__tail_end;
-				if (__tail_begin == __tail_end) break;
-				std::ranges::iter_swap(__tail_begin, __tail_end);
-				++__tail_begin;
+			while (__first < __back_it) {
+				--__back_it;
+				std::ranges::iter_swap(__first, __back_it);
+				++__first;
 			}
 		}
 
@@ -101,19 +99,22 @@ struct _Reverse : _Traits_ {
 			std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first,
 			_Sentinel_ __sentinel) const noexcept requires(vx::simd_type<_Tag_>)
 		{
+			using _Value_ = typename std::iter_value_t<_Iterator_>;
+			constexpr auto __size = _AlignedSize_ + _TailSize_;
 			constexpr auto __num_vecs = _AlignedSize_ / sizeof(_Tag_);
 			constexpr auto __pairs = __num_vecs / 2;
-			constexpr auto __has_mid = (__num_vecs % 2) != 0;
 
 			auto* __ptr = std::to_address(__first);
 			raze_assume(__ptr != nullptr);
 
-			_Iterator_ __end_it = __sentinel;
+			_Iterator_ __end_it = std::ranges::next(__first, __sentinel);
 
 			auto* __ptr_front = __ptr;
-			auto* __ptr_back = __bytes_pointer_offset(__ptr, static_cast<i64>(_AlignedSize_ - sizeof(_Tag_)));
+			auto* __ptr_back = __bytes_pointer_offset(__ptr, __size);
 
 			for (sizetype __i = 0; __i < __pairs; ++__i) {
+				__rewind_bytes(__ptr_back, sizeof(_Tag_));
+
 				const auto __vf = vx::load<_Tag_>(__ptr_front);
 				const auto __vb = vx::load<_Tag_>(__ptr_back);
 
@@ -121,26 +122,17 @@ struct _Reverse : _Traits_ {
 				vx::store(__ptr_back, vx::reverse(__vf));
 
 				__advance_bytes(__ptr_front, sizeof(_Tag_));
-				__ptr_back = __bytes_pointer_offset(__ptr_back, -static_cast<i64>(sizeof(_Tag_)));
-			}
-
-			if constexpr (__has_mid) {
-				const auto __vmid = vx::load<_Tag_>(__ptr_front);
-				vx::store(__ptr_front, vx::reverse(__vmid));
-				__advance_bytes(__ptr_front, sizeof(_Tag_));
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr_front);
-
-			if constexpr (_TailSize_ > 1) {
-				auto __tail_begin = __first;
-				auto __tail_end = __end_it;
-
-				while (__tail_begin != __tail_end) {
-					--__tail_end;
-					if (__tail_begin == __tail_end) break;
-					std::ranges::iter_swap(__tail_begin, __tail_end);
-					++__tail_begin;
+			
+			if constexpr (_TailSize_ > 0) {
+				_Iterator_ __back_it = __first + (__ptr_back - __ptr);
+					
+				while (__first < __back_it) {
+					--__back_it;
+					std::ranges::iter_swap(__first, __back_it);
+					++__first;
 				}
 			}
 		}

@@ -22,8 +22,7 @@ struct _Reverse_copy : _Traits_ {
 
 		constexpr explicit __impl(_InIterator_ __first, _Sentinel_ __last, _OutIterator_ __out_it) noexcept {
 			_begin = __first;
-			if constexpr (std::same_as<_InIterator_, _Sentinel_>) _end = __last;
-			else _end = std::ranges::next(__first, __last);
+			_end = std::ranges::next(__first, __last);
 			_current = _end;
 			_out_it = __out_it;
 		}
@@ -47,98 +46,75 @@ struct _Reverse_copy : _Traits_ {
 		raze_nodiscard raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
 		operator()(_InIterator_ __first, _Sentinel_ __sentinel, _OutIterator_ __result) const noexcept requires(!vx::simd_type<_Tag_>)
 		{
-			_InIterator_ __end_it;
-			if constexpr (std::same_as<_InIterator_, _Sentinel_>) __end_it = __sentinel;
-			else __end_it = std::ranges::next(__first, __sentinel);
-
+			auto __end_it = std::ranges::next(__first, __sentinel);
 			auto __it = __end_it;
 			while (__it != __first) {
 				--__it;
 				*__result++ = *__it;
 			}
-
 			return { __end_it, __result };
 		}
 
 		template <class _InIterator_, class _Sentinel_, class _OutIterator_>
 		raze_nodiscard raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-		operator()(sizetype __aligned_size, sizetype __tail_size,
-			_InIterator_ __first, _Sentinel_ __sentinel, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
+		operator()(sizetype __aligned_size, sizetype __tail_size, _InIterator_ __first, 
+			_Sentinel_ __sentinel, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
 		{
-			auto* __in_ptr = std::to_address(__first);
+			auto* __in_begin = std::to_address(__first);
+			auto* __in_end = std::to_address(__sentinel);
 			auto* __out_ptr = std::to_address(__result);
-			raze_assume(__in_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
 
-			_InIterator_ __end_it;
-			if constexpr (std::same_as<_InIterator_, _Sentinel_>) __end_it = __sentinel;
-			else __end_it = std::ranges::next(__first, __sentinel);
-
-			if (__tail_size > 0) {
-				auto __tail_it = __end_it;
-				for (sizetype __i = 0; __i < __tail_size; ++__i) {
-					--__tail_it;
-					*__out_ptr++ = *__tail_it;
+			if (__tail_size != 0) {
+				const auto __tail_count = __tail_size / sizeof(typename _Tag_::value_type);
+				for (auto __i = 0; __i < __tail_count; ++__i) {
+					--__in_end;
+					*__out_ptr++ = *__in_end;
 				}
 			}
 
-			const auto __num_vecs = __aligned_size / sizeof(_Tag_);
-			if (__num_vecs > 0) {
-				auto* __read_ptr = __bytes_pointer_offset(__in_ptr, static_cast<i64>(__aligned_size - sizeof(_Tag_)));
+			const auto __count = __aligned_size / sizeof(_Tag_);
 
-				for (sizetype __i = 0; __i < __num_vecs; ++__i) {
-					const auto __v = vx::load<_Tag_>(__read_ptr);
-					vx::store(__out_ptr, vx::reverse(__v));
-					__advance_bytes(__out_ptr, sizeof(_Tag_));
-					__read_ptr = __bytes_pointer_offset(__read_ptr, -static_cast<i64>(sizeof(_Tag_)));
-				}
+			for (sizetype __i = 0; __i < __count; ++__i) {
+				__rewind_bytes(__in_end, sizeof(_Tag_));
+				const auto __v = vx::load<_Tag_>(__in_end);
+				vx::store(__out_ptr, vx::reverse(__v));
+				__advance_bytes(__out_ptr, sizeof(_Tag_));
 			}
 
 			__seek_possibly_wrapped_iterator(__result, __out_ptr);
-
-			return { __end_it, __result };
+			return { __sentinel, __result };
 		}
 
 		template <sizetype _AlignedSize_, sizetype _TailSize_,
 			class _InIterator_, class _Sentinel_, class _OutIterator_>
 		raze_nodiscard raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
 		operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>,
-			_InIterator_ __first, _Sentinel_ __sentinel, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
+			std::integral_constant<sizetype, _TailSize_>, _InIterator_ __first,
+			_Sentinel_ __sentinel, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
 		{
-			constexpr auto __num_vecs = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __in_ptr = std::to_address(__first);
+			auto* __in_begin = std::to_address(__first);
+			auto* __in_end = std::to_address(__sentinel);
 			auto* __out_ptr = std::to_address(__result);
-			raze_assume(__in_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
 
-			_InIterator_ __end_it;
-			if constexpr (std::same_as<_InIterator_, _Sentinel_>) __end_it = __sentinel;
-			else __end_it = std::ranges::next(__first, __sentinel);
-
-			if constexpr (_TailSize_ > 0) {
-				auto __tail_it = __end_it;
-				for (sizetype __i = 0; __i < _TailSize_; ++__i) {
-					--__tail_it;
-					*__out_ptr++ = *__tail_it;
+			if constexpr (_TailSize_ != 0) {
+				constexpr auto __tail_count = _TailSize_ / sizeof(typename _Tag_::value_type);
+				for (auto __i = 0; __i < __tail_count; ++__i) {
+					--__in_end;
+					*__out_ptr++ = *__in_end;
 				}
 			}
 
-			if constexpr (__num_vecs > 0) {
-				auto* __read_ptr = __bytes_pointer_offset(__in_ptr, static_cast<i64>(_AlignedSize_ - sizeof(_Tag_)));
+			constexpr auto __count = _AlignedSize_ / sizeof(_Tag_);
 
-				for (sizetype __i = 0; __i < __num_vecs; ++__i) {
-					const auto __v = vx::load<_Tag_>(__read_ptr);
-					vx::store(__out_ptr, vx::reverse(__v));
-					__advance_bytes(__out_ptr, sizeof(_Tag_));
-					__read_ptr = __bytes_pointer_offset(__read_ptr, -static_cast<i64>(sizeof(_Tag_)));
-				}
+			for (sizetype __i = 0; __i < __count; ++__i) {
+				__rewind_bytes(__in_end, sizeof(_Tag_));
+				const auto __v = vx::load<_Tag_>(__in_end);
+				vx::store(__out_ptr, vx::reverse(__v));
+				__advance_bytes(__out_ptr, sizeof(_Tag_));
 			}
 
 			__seek_possibly_wrapped_iterator(__result, __out_ptr);
-
-			return { __end_it, __result };
+			return { __sentinel, __result };
 		}
 	};
 
@@ -149,13 +125,13 @@ struct _Reverse_copy : _Traits_ {
 		requires(std::indirectly_copyable<_InIterator_, _OutIterator_>)
 	{
 		auto __r = __reverse_copy_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_InIterator_>(__sent),
+			type_traits::__ranges_unwrap_sentinel<_InIterator_>(std::move(__sent)),
 			algorithm::__unwrap_iterator(std::move(__result)));
 
 		__seek_possibly_wrapped_iterator(__first, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__sent, std::move(__r.out));
+		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
 
-		return { std::move(__first), std::move(__sent) };
+		return { std::move(__first), std::move(__result) };
 	}
 
 	template <std::ranges::bidirectional_range _Range_, std::weakly_incrementable _OutIterator_>
@@ -172,9 +148,9 @@ struct _Reverse_copy : _Traits_ {
 			algorithm::__unwrap_iterator(std::move(__result)));
 
 		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__end, std::move(__r.out));
+		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
 
-		return { std::move(__begin), std::move(__end) };
+		return { std::move(__begin), std::move(__result) };
 	}
 
 	template <std::ranges::bidirectional_range _Range_, std::weakly_incrementable _OutIterator_>
@@ -192,9 +168,9 @@ struct _Reverse_copy : _Traits_ {
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
 		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__end, std::move(__r.out));
+		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
 
-		return { std::move(__begin), std::move(__end) };
+		return { std::move(__begin), std::move(__result) };
 	}
 
 private:

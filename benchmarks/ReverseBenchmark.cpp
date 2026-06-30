@@ -1,44 +1,133 @@
-#include <raze/algorithm/order/Reverse.h>
-#include <algorithm>
+#include <raze/algorithm/modifying/Reverse.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class StdReverseBenchmark {
-public:
-    static inline auto array = FixedArray<_Char_, sizeForBenchmark>{};
+template <class T, std::size_t Size>
+static void BM_StdReverse(benchmark::State& state) {
+    TestData<T, Size> test;
 
-    static void Reverse(benchmark::State& state) noexcept {
-        while (state.KeepRunning()) {
-            std::reverse(array.data, array.data + sizeForBenchmark);
-            benchmark::DoNotOptimize(array.data);
-        }
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        std::ranges::reverse(test.data);
+        benchmark::DoNotOptimize(test.data);
+
+        benchmark::ClobberMemory();
     }
-};
 
-template <
-    typename _Char_,
-    SizeForBenchmark sizeForBenchmark>
-class RazeReverseBenchmark {
-public:
-    static inline auto array = FixedArray<_Char_, sizeForBenchmark>{};
+    // Reverse reads and writes each element, so 2x memory traffic
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+}
 
-    static void Reverse(benchmark::State& state) noexcept {
+template <class T, std::size_t Size>
+static void BM_RazeReverse(benchmark::State& state) {
+    TestData<T, Size> test;
 
-        while (state.KeepRunning()) {
-            raze::algorithm::reverse(array.data, array.data + sizeForBenchmark);
-            benchmark::DoNotOptimize(array.data);
-        }
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(test.data);
+
+        raze::algorithm::reverse(test.data);
+        benchmark::DoNotOptimize(test.data);
+
+        benchmark::ClobberMemory();
     }
-};
 
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeReverseBenchmark, StdReverseBenchmark, raze::int8, Reverse);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeReverseBenchmark, StdReverseBenchmark, raze::int16, Reverse);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeReverseBenchmark, StdReverseBenchmark, raze::int32, Reverse);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeReverseBenchmark, StdReverseBenchmark, raze::int64, Reverse);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeReverseBenchmark, StdReverseBenchmark, float, Reverse);
-RAZE_ADD_BENCHMARKS_FOR_EACH_SIZE(RazeReverseBenchmark, StdReverseBenchmark, double, Reverse);
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+}
 
+template <class T, std::size_t Size>
+static void BM_StdReverseCopy(benchmark::State& state) {
+    TestData<T, Size> source;
+    std::array<T, Size> destination{};
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(source.data);
+        benchmark::DoNotOptimize(destination);
+
+        std::ranges::reverse_copy(source.data, destination.begin());
+        benchmark::DoNotOptimize(destination);
+
+        benchmark::ClobberMemory();
+    }
+
+    // ReverseCopy reads from source and writes to destination
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+}
+
+template <class T, std::size_t Size>
+static void BM_RazeReverseCopy(benchmark::State& state) {
+    TestData<T, Size> source;
+    std::array<T, Size> destination{};
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(source.data);
+        benchmark::DoNotOptimize(destination);
+
+        raze::algorithm::reverse_copy(source.data, destination.begin());
+        benchmark::DoNotOptimize(destination);
+
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+}
+
+#define RAZE_BENCHMARK_REVERSE(name1, name2) \
+    BENCHMARK(name1<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true)
+
+void RegisterAll()
+{
+    RAZE_BENCHMARK_REVERSE(BM_RazeReverse, BM_StdReverse);
+    RAZE_BENCHMARK_REVERSE(BM_RazeReverseCopy, BM_StdReverseCopy);
+}
 
 RAZE_BENCHMARK_MAIN();
