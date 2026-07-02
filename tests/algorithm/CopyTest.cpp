@@ -1,238 +1,329 @@
-#define NOMINMAX
+#include <raze/algorithm/copy/Copy.h>
 
-#include <raze/algorithm/copy/CopyN.h>
-#include <random> 
-#include <deque>
-#include <chrono>
+#include <vector>
+#include <list>
+#include <forward_list>
+#include <random>
+#include <type_traits>
+#include <algorithm>
+#include <cassert>
+#include <cstring>
 
-template <typename It1, typename It2>
-void Assert_equal(It1 first1, It1 last1, It2 first2) {
-    auto n = std::distance(first1, last1);
-    for (decltype(n) i = 0; i < n; ++i) {
-        raze_assert(*(first1 + i) == *(first2 + i));
+template <typename T>
+struct IntDistributionType { using type = T; };
+template <> struct IntDistributionType<char> { using type = int; };
+template <> struct IntDistributionType<signed char> { using type = int; };
+template <> struct IntDistributionType<unsigned char> { using type = int; };
+template <> struct IntDistributionType<bool> { using type = int; };
+template <> struct IntDistributionType<wchar_t> { using type = int; };
+template <> struct IntDistributionType<char8_t> { using type = int; };
+template <> struct IntDistributionType<char16_t> { using type = int; };
+template <> struct IntDistributionType<char32_t> { using type = int; };
+
+template <typename T>
+using int_distribution_type_t = typename IntDistributionType<T>::type;
+
+template <typename Range1, typename Range2>
+bool equal_ranges(const Range1& lhs, const Range2& rhs) {
+    return std::ranges::equal(
+        lhs,  rhs,
+        [](const auto& a, const auto& b) {
+            using T = std::remove_cvref_t<decltype(a)>;
+
+            if constexpr (std::is_floating_point_v<T>) return (std::isnan(a) && std::isnan(b)) || (a == b);
+            else return a == b;
+        });
+}
+
+template <typename T>
+struct RandomGenerator {
+    std::mt19937 gen;
+    RandomGenerator(unsigned seed = 42) : gen(seed) {}
+    
+    T operator()() {
+        if constexpr (std::is_integral_v<T>) {
+            using DistType = int_distribution_type_t<T>;
+            if constexpr (std::is_signed_v<T>) {
+                std::uniform_int_distribution<DistType> dist(-1000, 1000);
+                return static_cast<T>(dist(gen));
+            } else {
+                std::uniform_int_distribution<DistType> dist(0, 2000);
+                return static_cast<T>(dist(gen));
+            }
+        } else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(-1000.0, 1000.0);
+            return dist(gen);
+        }
+    }
+};
+
+template <typename T>
+std::vector<T> generate_random_vector(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::vector<T> vec(size);
+    for (auto& elem : vec) elem = gen();
+    return vec;
+}
+
+template <typename T>
+std::list<T> generate_random_list(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::list<T> lst;
+    for (size_t i = 0; i < size; ++i) lst.push_back(gen());
+    return lst;
+}
+
+template <typename T>
+std::forward_list<T> generate_random_forward_list(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::forward_list<T> flst;
+    std::vector<T> temp;
+    for (size_t i = 0; i < size; ++i) temp.push_back(gen());
+    for (auto it = temp.rbegin(); it != temp.rend(); ++it) flst.push_front(*it);
+    return flst;
+}
+
+struct S1 { char a; friend bool operator==(const S1&, const S1&) = default; };
+struct S2 { short a; friend bool operator==(const S2&, const S2&) = default; };
+struct S4 { int a; friend bool operator==(const S4&, const S4&) = default; };
+struct S8 { int x, y; friend bool operator==(const S8&, const S8&) = default; };
+struct Point { int x, y; friend bool operator==(const Point&, const Point&) = default; };
+
+template <typename T>
+void test_copy_random(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+    
+    for (int i = 0; i < 1000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto src = generate_random_vector<T>(size, seed + i);
+        std::vector<T> dst(size), dst_copy(size);
+        
+        auto simd_result = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        auto std_result = std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        
+        raze_assert(equal_ranges(dst, dst_copy));
+        raze_assert(simd_result.in == src.end());
+        raze_assert(simd_result.out == dst.end());
+        raze_assert(std_result.in == src.end());
+        raze_assert(std_result.out == dst_copy.end());
     }
 }
 
 template <typename T>
-void fill_random(std::vector<T>& v, uint64_t seed = 12345) {
-    std::mt19937_64 rng(seed);
-    if constexpr (std::is_integral_v<T>) {
-        std::uniform_int_distribution<long long> dist(
-            std::numeric_limits<long long>::min(),
-            std::numeric_limits<long long>::max()
-        );
-        for (auto& x : v) x = static_cast<T>(dist(rng));
-    }
-    else if constexpr (std::is_floating_point_v<T>) {
-        std::uniform_real_distribution<double> dist(-1e6, 1e6);
-        for (auto& x : v) x = static_cast<T>(dist(rng));
-    }
-    else {
-        std::uniform_int_distribution<int> dist(0, 255);
-        for (auto& x : v) x = static_cast<T>(dist(rng));
+void test_copy_ranges(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+    
+    for (int i = 0; i < 1000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto src = generate_random_vector<T>(size, seed + i + 30000);
+        std::vector<T> dst(size), dst_copy(size);
+        
+        raze::algorithm::copy(src, dst.begin());
+        std::ranges::copy(src, dst_copy.begin());
+        
+        raze_assert(equal_ranges(dst, dst_copy));
     }
 }
 
-template <>
-void fill_random<char>(std::vector<char>& v, uint64_t seed) {
-    std::mt19937 rng(static_cast<uint32_t>(seed));
-    std::uniform_int_distribution<int> dist(0, 127);
-    for (auto& x : v) x = static_cast<char>(dist(rng));
+template <typename T>
+void test_copy_edge_cases() {
+    {
+        std::vector<T> src, dst, dst_copy;
+        auto r1 = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        auto r2 = std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        raze_assert(equal_ranges(dst, dst_copy));
+        raze_assert(r1.in == src.end() && r1.out == dst.end());
+        raze_assert(r2.in == src.end() && r2.out == dst_copy.end());
+    }
+    {
+        std::vector<T> src = {T(42)};
+        std::vector<T> dst(1), dst_copy(1);
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        raze_assert(equal_ranges(dst, dst_copy));
+        raze_assert(dst[0] == T(42));
+    }
+    {
+        std::vector<T> src(100, T(99));
+        std::vector<T> dst(100), dst_copy(100);
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        raze_assert(equal_ranges(dst, dst_copy));
+        for (const auto& x : dst) raze_assert(x == T(99));
+    }
+}
+
+template <typename T>
+void test_copy_simd_boundaries(unsigned seed = 42) {
+    for (size_t size : {1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256, 511, 512}) {
+        auto src = generate_random_vector<T>(size, seed + static_cast<unsigned>(size));
+        std::vector<T> dst(size), dst_copy(size);
+        
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        
+        raze_assert(equal_ranges(dst, dst_copy));
+    }
+}
+
+template <typename T>
+void test_copy_large_vectors(unsigned seed = 42) {
+    for (size_t size : {10000, 50000, 100000}) {
+        auto src = generate_random_vector<T>(size, seed + static_cast<unsigned>(size));
+        std::vector<T> dst(size), dst_copy(size);
+        
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        
+        raze_assert(equal_ranges(dst, dst_copy));
+    }
+}
+
+template <typename T>
+void test_copy_list(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(10, 200);
+    
+    for (int i = 0; i < 200; ++i) {
+        size_t size = size_dist(size_gen);
+        auto src = generate_random_list<T>(size, seed + i + 200000);
+        std::list<T> dst, dst_copy;
+        
+        for (size_t j = 0; j < size; ++j) { dst.push_back(T{}); dst_copy.push_back(T{}); }
+        
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        
+        raze_assert(equal_ranges(dst, dst_copy));
+    }
+}
+
+template <typename T>
+void test_copy_forward_list(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(10, 200);
+    
+    for (int i = 0; i < 200; ++i) {
+        size_t size = size_dist(size_gen);
+        auto src = generate_random_forward_list<T>(size, seed + i + 600000);
+        std::forward_list<T> dst, dst_copy;
+        
+        for (size_t j = 0; j < size; ++j) { dst.push_front(T{}); dst_copy.push_front(T{}); }
+        
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        
+        raze_assert(equal_ranges(dst, dst_copy));
+    }
+}
+
+template <typename T>
+void test_copy_overlapping(unsigned seed = 42) {
+    for (int i = 0; i < 100; ++i) {
+        size_t size = 100;
+        auto vec = generate_random_vector<T>(size, seed + i + 1600000);
+        auto vec_copy = vec;
+        
+        raze::algorithm::copy(vec.begin(), vec.begin() + 50, vec.begin() + 50);
+        std::ranges::copy(vec_copy.begin(), vec_copy.begin() + 50, vec_copy.begin() + 50);
+        
+        raze_assert(equal_ranges(vec, vec_copy));
+    }
+}
+
+template <class Struct>
+void test_copy_small_structs(unsigned seed = 42) {
+    std::mt19937 size_gen(seed);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+    
+    for (int i = 0; i < 200; ++i) {
+        size_t size = size_dist(size_gen);
+        std::vector<Struct> src(size), dst(size), dst_copy(size);
+        for (auto& x : src) std::memset(&x, static_cast<unsigned char>(i % 256), sizeof(Struct));
+        
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        raze_assert(equal_ranges(dst, dst_copy));
+    }
+    
+    for (size_t size : {0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256}) {
+        std::vector<Struct> src(size), dst(size), dst_copy(size);
+        for (auto& x : src) std::memset(&x, 0xAB, sizeof(Struct));
+        
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        raze_assert(equal_ranges(dst, dst_copy));
+    }
+}
+
+template <class T>
+void test_copy_bit_patterns() {
+    unsigned char patterns[] = {0x00, 0xFF, 0xAA, 0x55, 0x01, 0x80};
+    for (size_t size : {0, 1, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256, 1000}) {
+        for (unsigned char pattern : patterns) {
+            std::vector<T> src(size), dst(size), dst_copy(size);
+            for (auto& x : src) std::memset(&x, pattern, sizeof(T));
+            
+            raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+            std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+            
+            raze_assert(equal_ranges(dst, dst_copy));
+            for (size_t i = 0; i < size; ++i) {
+                raze_assert(std::memcmp(&dst[i], &src[i], sizeof(T)) == 0);
+            }
+        }
+    }
+}
+
+void test_copy_struct(unsigned seed = 42) {
+    for (int i = 0; i < 100; ++i) {
+        std::vector<Point> src(100), dst(100), dst_copy(100);
+        for (auto& p : src) { p.x = i; p.y = i * 2; }
+        
+        raze::algorithm::copy(src.begin(), src.end(), dst.begin());
+        std::ranges::copy(src.begin(), src.end(), dst_copy.begin());
+        raze_assert(equal_ranges(dst, dst_copy));
+    }
+}
+
+template <typename T>
+void run_all_tests_for_type() {
+    test_copy_random<T>();
+    test_copy_ranges<T>();
+    test_copy_edge_cases<T>();
+    test_copy_simd_boundaries<T>();
+    test_copy_large_vectors<T>();
+    test_copy_list<T>();
+    test_copy_forward_list<T>();
+    test_copy_overlapping<T>();
 }
 
 int main() {
-    {
-        std::vector<int> src;
-        std::vector<int> dst(0);
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.begin());
-    }
-
-    {
-        std::vector<int> src = { 42 };
-        std::vector<int> dst(1, 0);
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.end());
-        Assert_equal(src.begin(), src.end(), dst.begin());
-    }
+    run_all_tests_for_type<int>();
+    run_all_tests_for_type<short>();
+    run_all_tests_for_type<long long>();
+    run_all_tests_for_type<char>();
+    run_all_tests_for_type<unsigned int>();
+    run_all_tests_for_type<unsigned short>();
+    run_all_tests_for_type<unsigned long long>();
+    run_all_tests_for_type<unsigned char>();
+    run_all_tests_for_type<float>();
+    run_all_tests_for_type<double>();
     
-    {
-        std::vector<int> src = { 1,2,3,4,5,6,7,8 };
-        std::vector<int> dst(src.size(), 0);
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.end());
-        Assert_equal(src.begin(), src.end(), dst.begin());
-    }
-
-    {
-        std::string src = "simd copy test!";
-        std::string dst(src.size(), '\0');
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.end());
-        raze_assert(src == dst);
-    }
-
-    {
-        std::array<int, 16> srcarr{};
-        for (int i = 0; i < 16; ++i) srcarr[i] = i * i;
-        int dstarr[16] = {};
-        auto out = raze::algorithm::copy(srcarr.data(), srcarr.data() + srcarr.size(), dstarr);
-        raze_assert(out == dstarr + 16);
-        for (int i = 0; i < 16; ++i) raze_assert(srcarr[i] == dstarr[i]);
-    }
-
-    {
-        std::list<int> src = { 10,20,30,40,50 };
-        std::list<int> dst(src.size(), 0);
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-
-        auto itsrc = src.begin();
-        auto itdst = dst.begin();
-        for (; itsrc != src.end(); ++itsrc, ++itdst) raze_assert(*itsrc == *itdst);
-    }
-
-   
-   {
-        std::deque<int> src = { 3,1,4,1,5,9,2,6,5 };
-        std::deque<int> dst(src.size());
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.end());
-        for (size_t i = 0; i < src.size(); ++i) raze_assert(src[i] == dst[i]);
-    }
-
-    {
-        std::vector<char> src(1024);
-        fill_random(src, 1);
-        std::vector<char> dst(src.size(), 0);
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.end());
-        Assert_equal(src.begin(), src.end(), dst.begin());
-    }
-
-    {
-        std::vector<int> src(4096);
-        fill_random(src, 2);
-        std::vector<int> dst(src.size(), 0);
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.end());
-        Assert_equal(src.begin(), src.end(), dst.begin());
-    }
-
-    {
-        std::vector<uint64_t> src(8192);
-        fill_random(src, 3);
-        std::vector<uint64_t> dst(src.size(), 0);
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-        raze_assert(out == dst.end());
-        Assert_equal(src.begin(), src.end(), dst.begin());
-    }
-
-    {
-        const size_t n = 10'000'000;
-        std::vector<int> src(n);
-        fill_random(src, 4);
-        std::vector<int> dst(n, 0);
-
-        auto out = raze::algorithm::copy(src.begin(), src.end(), dst.begin());
-
-        raze_assert(out == dst.end());
-  
-        for (size_t i = 0; i < n; i += n / 10) raze_assert(src[i] == dst[i]);
-        raze_assert(src.front() == dst.front());
-        raze_assert(src.back() == dst.back());
-    }
-
-
-    {
-        std::vector<int> src(1024);
-        for (int i = 0; i < 1024; ++i) src[i] = i;
-        std::vector<int> dst(1024, -1);
-
-        auto out = std::copy(src.begin() + 100, src.begin() + 900, dst.begin() + 50);
-        raze_assert(out == dst.begin() + 50 + (900 - 100));
-        for (int i = 0; i < 50; ++i) raze_assert(dst[i] == -1);
-        for (int i = 0; i < 800; ++i) raze_assert(dst[50 + i] == src[100 + i]);
-        for (int i = 850; i < 1024; ++i) raze_assert(dst[i] == -1);
-    }
-
-    {
-        std::vector<int> src(100);
-        for (int i = 0; i < 100; ++i) src[i] = i * 3;
-        std::vector<int> dst;
-        auto out = raze::algorithm::copy(src.begin(), src.end(), std::back_inserter(dst));
-        raze_assert(dst.size() == src.size());
-        for (size_t i = 0; i < src.size(); ++i) raze_assert(dst[i] == src[i]);
-    }
-
-    {
-        std::list<int> src = { 1,2,3,4,5 };
-        std::list<int> dst;
-        auto out = raze::algorithm::copy(src.begin(), src.end(), std::inserter(dst, dst.begin()));
-        auto its = src.begin();
-        auto itd = dst.begin();
-        for (; its != src.end(); ++its, ++itd) raze_assert(*its == *itd);
-    }
-
-    {
-        int src[5] = { 1, 2, 3, 4, 5 };
-        int dst[5] = {};
-        raze::algorithm::copy_n(src, 5, dst);
-        for (int i = 0; i < 5; ++i) {
-            raze_assert(dst[i] == src[i]);
-        }
-    }
-
-    // --- ��������� ����������� ---
-    {
-        int src[5] = { 10, 20, 30, 40, 50 };
-        int dst[5] = {};
-        raze::algorithm::copy_n(src, 3, dst);
-        raze_assert(dst[0] == 10);
-        raze_assert(dst[1] == 20);
-        raze_assert(dst[2] == 30);
-        // ����� �� ������
-        raze_assert(dst[3] == 0);
-        raze_assert(dst[4] == 0);
-    }
-
-    // --- ����������� � std::vector ---
-    {
-        std::vector<int> src{ 7, 8, 9, 10 };
-        std::vector<int> dst(4);
-        raze::algorithm::copy_n(src.data(), src.size(), dst.data());
-        for (size_t i = 0; i < src.size(); ++i) {
-            raze_assert(dst[i] == src[i]);
-        }
-    }
-
-    // --- ������ ���� ---
-    {
-        char src[3] = { 'a', 'b', 'c' };
-        char dst[3] = {};
-        raze::algorithm::copy_n(src, 3, dst);
-        raze_assert(dst[0] == 'a');
-        raze_assert(dst[1] == 'b');
-        raze_assert(dst[2] == 'c');
-
-        float srcf[2] = { 1.5f, -2.5f };
-        float dstf[2] = {};
-        raze::algorithm::copy_n(srcf, 2, dstf);
-        raze_assert(dstf[0] == 1.5f);
-        raze_assert(dstf[1] == -2.5f);
-    }
-
-    // --- ����������� ������ ---
-    {
-        int src[3] = { 42, 43, 44 };
-        int dst[3] = { 0, 0, 0 };
-        raze::algorithm::copy_n(src, 0, dst); // ������ �� ��������
-        raze_assert(dst[0] == 0 && dst[1] == 0 && dst[2] == 0);
-
-        raze::algorithm::copy_n(src, 1, dst);
-        raze_assert(dst[0] == 42);
-        raze_assert(dst[1] == 0);
-        raze_assert(dst[2] == 0);
-    }
-
+    test_copy_struct();
+    test_copy_small_structs<S1>();
+    test_copy_small_structs<S2>();
+    test_copy_small_structs<S4>();
+    test_copy_small_structs<S8>();
+    
+    test_copy_bit_patterns<S1>();
+    test_copy_bit_patterns<S2>();
+    test_copy_bit_patterns<S4>();
+    test_copy_bit_patterns<S8>();
+    test_copy_bit_patterns<float>();
+    test_copy_bit_patterns<double>();
+    
     return 0;
 }
