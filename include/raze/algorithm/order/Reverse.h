@@ -174,10 +174,12 @@ private:
 
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
-		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8) {
+		if constexpr (std::contiguous_iterator<_Iterator_> && std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
+			&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0) 
+		{
 			if not consteval {
+				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
 				return vx::__dispatch_sized_impl<__vectorized_reverse, _IntegerValue_, void>(
 					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last);
 			}
@@ -194,10 +196,12 @@ private:
 
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
-		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8) {
+		if constexpr (std::contiguous_iterator<_Iterator_> && std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
+			&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0)
+		{
 			if not consteval {
+				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_IntegerValue_)>{};
 				return vx::__dispatch_sized_impl<__vectorized_reverse, _IntegerValue_, void>(__bytes, __first, __last);
 			}

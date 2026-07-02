@@ -34,7 +34,7 @@ raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexce
 		}
 	}
 	else if constexpr (sizeof(_Intrin_) == 64) {
-		if constexpr (sizeof(_Value_) <= 2 && !__has_avx512bw_support_v<_ISA_>) {
+		if constexpr ((sizeof(_Value_) == 2 && !__has_avx512bw_support_v<_ISA_>) || (sizeof(_Value_) == 1 && !__has_avx512vbmi_support_v<_ISA_>)) {
 			constexpr auto __p_offset = __p.offset(std::integral_constant<sizetype, __p.size() / 2>{});
 			__m256i __native;
 			

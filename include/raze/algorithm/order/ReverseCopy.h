@@ -72,14 +72,14 @@ struct _Reverse_copy : _Traits_ {
 				}
 			}
 
-			const auto __count = __aligned_size / sizeof(_Tag_);
+			auto __count = __aligned_size / sizeof(_Tag_);
 
-			for (sizetype __i = 0; __i < __count; ++__i) {
+			do {
 				__rewind_bytes(__in_end, sizeof(_Tag_));
 				const auto __v = vx::load<_Tag_>(__in_end);
 				vx::store(__out_ptr, vx::reverse(__v));
 				__advance_bytes(__out_ptr, sizeof(_Tag_));
-			}
+			} while (--__count);
 
 			__seek_possibly_wrapped_iterator(__result, __out_ptr);
 			return { __sentinel, __result };
@@ -105,13 +105,14 @@ struct _Reverse_copy : _Traits_ {
 			}
 
 			constexpr auto __count = _AlignedSize_ / sizeof(_Tag_);
+			auto __left = __count;
 
-			for (sizetype __i = 0; __i < __count; ++__i) {
+			do {
 				__rewind_bytes(__in_end, sizeof(_Tag_));
 				const auto __v = vx::load<_Tag_>(__in_end);
 				vx::store(__out_ptr, vx::reverse(__v));
 				__advance_bytes(__out_ptr, sizeof(_Tag_));
-			}
+			} while (--__left);
 
 			__seek_possibly_wrapped_iterator(__result, __out_ptr);
 			return { __sentinel, __result };
@@ -182,12 +183,12 @@ private:
 
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_InIterator_>;
-		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 
 		if constexpr (std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8)
+			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 && (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0)
 		{
 			if not consteval {
+				using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 				return vx::__dispatch_sized_impl<__vectorized_reverse_copy, _IntegerValue_,
 					std::ranges::in_out_result<_InIterator_, _OutIterator_>>(
 					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __result);
@@ -206,12 +207,12 @@ private:
 
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_InIterator_>;
-		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 
 		if constexpr (std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8)
+			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 && (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0)
 		{
 			if not consteval {
+				using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_IntegerValue_)>{};
 				return vx::__dispatch_sized_impl<__vectorized_reverse_copy, _IntegerValue_,
 					std::ranges::in_out_result<_InIterator_, _OutIterator_>>(

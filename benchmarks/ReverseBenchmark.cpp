@@ -1,4 +1,4 @@
-#include <raze/algorithm/modifying/Reverse.h>
+#include <raze/algorithm/order/Reverse.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
 template <class T, std::size_t Size>
@@ -14,7 +14,6 @@ static void BM_StdReverse(benchmark::State& state) {
         benchmark::ClobberMemory();
     }
 
-    // Reverse reads and writes each element, so 2x memory traffic
     state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
@@ -27,43 +26,6 @@ static void BM_RazeReverse(benchmark::State& state) {
 
         raze::algorithm::reverse(test.data);
         benchmark::DoNotOptimize(test.data);
-
-        benchmark::ClobberMemory();
-    }
-
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
-}
-
-template <class T, std::size_t Size>
-static void BM_StdReverseCopy(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
-
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
-
-        std::ranges::reverse_copy(source.data, destination.begin());
-        benchmark::DoNotOptimize(destination);
-
-        benchmark::ClobberMemory();
-    }
-
-    // ReverseCopy reads from source and writes to destination
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
-}
-
-template <class T, std::size_t Size>
-static void BM_RazeReverseCopy(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
-
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
-
-        raze::algorithm::reverse_copy(source.data, destination.begin());
-        benchmark::DoNotOptimize(destination);
 
         benchmark::ClobberMemory();
     }
@@ -127,7 +89,6 @@ static void BM_RazeReverseCopy(benchmark::State& state) {
 void RegisterAll()
 {
     RAZE_BENCHMARK_REVERSE(BM_RazeReverse, BM_StdReverse);
-    RAZE_BENCHMARK_REVERSE(BM_RazeReverseCopy, BM_StdReverseCopy);
 }
 
 RAZE_BENCHMARK_MAIN();

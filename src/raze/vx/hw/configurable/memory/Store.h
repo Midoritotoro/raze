@@ -82,7 +82,7 @@ struct _Configurable_store : raze::options::strict_elementwise_callable<_Configu
         else {
             return __x.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
                 auto __mem = std::to_address(__it);
-                
+
                 if constexpr (_Options_::contains(aligned))
                     _Store<_Abi_::isa>()(__mem, __storage_unwrap(__chunk), __aligned_policy{});
                 else

@@ -39,12 +39,12 @@ struct or_ {
     }
 
     template <class _Type_>
-    raze_always_inline auto mask(const as<_Type_>&) const noexcept {
+    raze_always_inline decltype(auto) mask(const as<_Type_>&) const noexcept {
         return _condition;
     }
 
-    raze_no_unique_address _ConditionStorage_ _condition;
-    raze_no_unique_address _ValueStorage_ _alternative;
+    _ConditionStorage_ _condition;
+    _ValueStorage_ _alternative;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END

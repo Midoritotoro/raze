@@ -12,8 +12,9 @@ struct if_ {
     static constexpr bool is_complete = false;
 
     using condition_type = _Condition_;
+    using _ConditionStorage_ = __storage_selector_t<_Condition_>;
 
-    if_(_Condition_ __condition) noexcept:
+    if_(const _Condition_& __condition) noexcept:
         _condition(__condition) 
     {}
 
@@ -23,11 +24,11 @@ struct if_ {
     }
 
     template <class _Type_>
-    raze_always_inline auto mask(const as<_Type_>&) const noexcept {
+    raze_always_inline decltype(auto) mask(const as<_Type_>&) const noexcept {
         return _condition;
     }
 
-    _Condition_ _condition;
+    _ConditionStorage_ _condition;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END

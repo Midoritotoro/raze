@@ -758,7 +758,7 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_
 		constexpr auto __new_p = __p.split();
 
 		[&] <sizetype... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
-			([&](auto __i) raze_always_inline_lambda{
+			([&](auto __i) raze_always_inline_lambda {
 				auto& __c1 = __dup_1.template __get<__i>();
 				auto& __c2 = __dup_2.template __get<__i>();
 
