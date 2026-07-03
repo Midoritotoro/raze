@@ -79,7 +79,7 @@ concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t
 };
 
 template <class _Projection_, class _Iterator_>
-concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<_Projection_>, std::identity>;
+concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<__function_unwrapped<_Projection_>>, std::identity>;
 
 
 __RAZE_ALGORITHM_NAMESPACE_END
