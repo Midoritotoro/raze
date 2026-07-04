@@ -59,7 +59,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
             const auto __low_x = __as<__m128i>(__x);
 #endif // defined(raze_cpp_msvc_only)
             const auto __low = __as<__m256i>(_mm_alignr_epi8(__low_x, _mm256_extractf128_si256(__as<__m256i>(__y), 1), 16 - __shift_bytes));
-            const auto __high = __as<__m128i>(_mm_alignr_epi8(_mm256_extractf128_si256(__as<__m256i>(__x), 1), __low_x, 16 - __shift_bytes));
+            const auto __high = _mm_alignr_epi8(_mm256_extractf128_si256(__as<__m256i>(__x), 1), __low_x, 16 - __shift_bytes);
             return __as<_Intrin_>(_mm256_insertf128_si256(__low, __high, 1));
         }
         else {
@@ -68,22 +68,72 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
             const auto __low_x = __as<__m128i>(_mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0));
             const auto __low_y = __as<__m128i>(_mm256_permute2x128_si256(__as<__m256i>(__y), __as<__m256i>(__y), 0));
 #else
-            const auto __low_x = _mm256_extractf128_si256(__as<__m256i>(__x), 0);
-            const auto __low_y = _mm256_extractf128_si256(__as<__m256i>(__y), 0);
+            const auto __low_x = __as<__m128i>(__x);
+            const auto __low_y = __as<__m128i>(__y);
 #endif // defined(raze_cpp_msvc_only)
             const auto __high_y = _mm256_extractf128_si256(__as<__m256i>(__y), 1);
             const auto __low = __as<__m256i>(_mm_alignr_epi8(__high_y, __low_y, __shift));
-            const auto __high = __as<__m128i>(_mm_alignr_epi8(__low_x, __high_y, __shift));
+            const auto __high = _mm_alignr_epi8(__low_x, __high_y, __shift);
             return __as<_Intrin_>(_mm256_insertf128_si256(__low, __high, 1));
         }
     }
+    else if constexpr (sizeof(_Intrin_) == 64) {
+        if constexpr ((__shift_bytes % 4) == 0) {
+            return __as<_Intrin_>(_mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 16 - __shift_bytes / 4));
+        }
+        else if constexpr (__shift_bytes < 16) {
+            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(__as<__m512i>(__x), 
+                _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 12), 16 - __shift_bytes));
+            else {
+                const auto __first = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 12);
 
-    alignas(sizeof(_Intrin_)) _Type_ __arr[__size * 2];
+                const auto __low = _mm256_alignr_epi8(__as<__m256i>(__x), __as<__m256i>(__first), 16 - __shift_bytes);
+                const auto __high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__x), 1), _mm512_extracti64x4_epi64(__first, 1), 16 - __shift_bytes);
 
-    _Store<_ISA_>()(__arr, __y, __aligned_policy{});
-    _Store<_ISA_>()(__arr + __size, __x, __aligned_policy{});
+                return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+            }
+        }
+        else if constexpr (__shift_bytes < 32) {
+            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
+                _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 12),
+                _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 8), 32 - __shift_bytes));
+            else {
+                const auto __first = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 12);
+                const auto __second = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 8);
 
-    return _Load<_ISA_, _Intrin_>()(__arr + (__size - __sh), __aligned_policy{});
+                const auto __low = _mm256_alignr_epi8(__as<__m256i>(__first), __as<__m256i>(__second), 32 - __shift_bytes);
+                const auto __high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__first, 1), _mm512_extracti64x4_epi64(__second, 1), 32 - __shift_bytes);
+
+                return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+            }
+        }
+        else if constexpr (__shift_bytes < 48) {
+            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
+                _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 8),
+                _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 4), 48 - __shift_bytes));
+            else {
+                const auto __first = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 8);
+                const auto __second = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 4);
+
+                const auto __low = _mm256_alignr_epi8(__as<__m256i>(__first), __as<__m256i>(__second), 48 - __shift_bytes);
+                const auto __high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__first, 1), _mm512_extracti64x4_epi64(__second, 1), 48 - __shift_bytes);
+
+                return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+            }
+        }
+        else if constexpr (__shift_bytes < 64) {
+            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
+                _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 4), __as<__m512i>(__y), 64 - __shift_bytes));
+            else {
+                const auto __first = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 4);
+
+                const auto __low = _mm256_alignr_epi8(__as<__m256i>(__first), __as<__m256i>(__y), 64 - __shift_bytes);
+                const auto __high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__first, 1), _mm512_extracti64x4_epi64(__as<__m512i>(__y), 1), 64 - __shift_bytes);
+
+                return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+            }
+        }
+    }
 }
 
 template <simd_type _Simd_, sizetype _Slide_>
@@ -94,6 +144,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right_m
     using _Type_ = typename _Simd_::value_type;
 
     if constexpr (_Slide_ == 0) return __x;
+    else if constexpr (_Slide_ == _Simd_::size()) return __y;
     else if constexpr (native<_Simd_>) {
         auto __r = __x;
 
@@ -110,7 +161,6 @@ template <simd_type _Simd_>
 raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right_merge(
     const _Simd_& __x, const _Simd_& __y, i32 __sh) noexcept 
 {
-    raze_debug_assert(__sh < _Simd_::size());
 	return __slide_right_merge_fallback(__x, __y, __sh);
 }
 

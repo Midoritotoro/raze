@@ -38,23 +38,19 @@ struct slide_merge_tests {
         [&] <raze::sizetype ... I> (std::integer_sequence<raze::sizetype, I...>) {
             (([&] {
                 constexpr auto __i = I;
+                auto r1 = raze::vx::slide_left_merge(v1, v2,
+                    std::integral_constant<raze::sizetype, I>{});
+                auto r2 = raze::vx::slide_right_merge(v1, v2,
+                    std::integral_constant<raze::sizetype, I>{});
 
-                if constexpr (N > 16 && (I != N || I != N / 2 || I != 0 || I > 8)) {}
-                else {
-                    auto r1 = raze::vx::slide_left_merge(v1, v2,
-                        std::integral_constant<raze::sizetype, I>{});
-                    auto r2 = raze::vx::slide_right_merge(v1, v2,
-                        std::integral_constant<raze::sizetype, I>{});
+                for (size_t i = 0; i < N; ++i) {
+                    raze_assert(r1[i] == ((i + I < N)
+                        ? _Type_(arr1[i + I])
+                        : _Type_(arr2[i + I - N])));
 
-                    for (size_t i = 0; i < N; ++i) {
-                        raze_assert(r1[i] == ((i + I < N)
-                            ? _Type_(arr1[i + I])
-                            : _Type_(arr2[i + I - N])));
-
-                        raze_assert(r2[i] == ((i >= I)
-                            ? _Type_(arr1[i - I])
-                            : _Type_(arr2[N - I + i])));
-                    }
+                    raze_assert(r2[i] == ((i >= I)
+                        ? _Type_(arr1[i - I])
+                        : _Type_(arr2[N - I + i])));
                 }
             }()), ...);
         }(std::make_integer_sequence<raze::sizetype, N>{});
@@ -62,8 +58,8 @@ struct slide_merge_tests {
 
     void operator()() {
         test_size<_Width_ / (sizeof(_Type_) * 8)>();
-        // test_size<_Width_ / (sizeof(_Type_) * 8) + 1>();
-        // test_size<1>();
+        test_size<_Width_ / (sizeof(_Type_) * 8) + 1>();
+        test_size<1>();
     }
 };
 
