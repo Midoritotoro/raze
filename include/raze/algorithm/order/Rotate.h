@@ -1,6 +1,8 @@
 #pragma once 
 
 #include <raze/algorithm/order/Reverse.h>
+#include <raze/algorithm/swap/Swap.h>
+#include <raze/algorithm/copy/Copy.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -61,44 +63,99 @@ struct _Rotate : _Traits_ {
 			sizetype __tail_size, _Iterator_ __first, _Iterator_ __middle, _Sentinel_ __sentinel) const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			using _Value_ = typename std::iter_value_t<_Iterator_>;
+			u8 __buf[512];
 
-			auto __simd_reverse_range = [&] (auto* __start, sizetype __size_bytes) raze_always_inline_lambda {
-				if (raze_unlikely(__size_bytes == 0)) return;
+			auto* __first_ptr = std::to_address(__first);
+			auto* __middle_ptr = std::to_address(__middle);
+			auto* __last_ptr = std::to_address(__sentinel);
+			 
+			auto __swap_3_ranges = [] (auto* __first1, auto* __last1, auto* __first2, auto* __first3) raze_always_inline_lambda {
+				const auto __first1_aligned_size = __byte_length(__first1, __last1) & ~(sizeof(_Tag_) - 1);
+				const auto __first1_aligned_end = __bytes_pointer_offset(__first1, __first1_aligned_size);
 
-				auto* __front = __start;
-				auto* __back = __bytes_pointer_offset(__start, __size_bytes);
+				do {
+					auto __v1 = vx::load<_Tag_>(__first1);
+					auto __v2 = vx::load<_Tag_>(__first2);
+					auto __v3 = vx::load<_Tag_>(__first3);
+					vx::store(__first1, __v2);
+					vx::store(__first2, __v3);
+					vx::store(__first3, __v1);
+					__advance_bytes(__first1, __first3, sizeof(_Tag_));
+					__advance_bytes(__first2, sizeof(_Tag_));
+				} while (__first1 != __first1_aligned_end);
 
-				const auto __iterations = (__size_bytes / sizeof(_Tag_)) >> 1;
+				for (; __first1 != __last1; ++__first1, ++__first2, ++__first3) {
+					_Value_ __v1 = *__first1;
+					_Value_ __v2 = *__first2;
+					_Value_ __v3 = *__first3;
 
-				for (auto __i = 0; __i < __iterations; ++__i) {
-					__rewind_bytes(__back, sizeof(_Tag_));
-
-					const auto __vf = vx::load<_Tag_>(__front);
-					const auto __vb = vx::load<_Tag_>(__back);
-
-					vx::store(__front, vx::reverse(__vb));
-					vx::store(__back, vx::reverse(__vf));
-
-					__advance_bytes(__front, sizeof(_Tag_));
+					*__first1 = __v2;
+					*__first2 = __v3;
+					*__first3 = __v1;
 				}
-
-				while (__front < __back) std::ranges::iter_swap(__front++, --__back);
 			};
 
-			auto* __ptr_first = std::to_address(__first);
-			auto* __ptr_middle = std::to_address(__middle);
-			auto* __ptr_last = std::to_address(__sentinel);
+			using _Copy_fn = typename _Copy<_Traits_>::__vectorized_copy<_Tag_>;
 
-			const auto __left_bytes = __byte_length(__ptr_first, __ptr_middle);
-			const auto __right_bytes = __byte_length(__ptr_middle, __ptr_last);
+			for (;;) {
+				const auto __left_size = __byte_length(__first_ptr, __middle_ptr);
+				const auto __right_size = __byte_length(__middle_ptr, __last_ptr);
 
-			__simd_reverse_range(__ptr_first, __left_bytes);
-			__simd_reverse_range(__ptr_middle, __right_bytes);
-			__simd_reverse_range(__ptr_first, __left_bytes + __right_bytes);
+				const auto __aligned_left_size = __left_size & ~(sizeof(_Tag_) - 1);
+				const auto __tail_left_size = __left_size - __aligned_left_size;
 
-			__seek_possibly_wrapped_iterator(__first, __ptr_first);
-			__seek_possibly_wrapped_iterator(__middle, __ptr_middle);
-			__seek_possibly_wrapped_iterator(__sentinel, __ptr_last);
+				const auto __aligned_right_size = __right_size & ~(sizeof(_Tag_) - 1);
+				const auto __tail_right_size = __right_size - __aligned_right_size;
+
+				if (__left_size <= __right_size) {
+					if (__left_size == 0) break;
+
+					if (__left_size <= 512 && (__left_size <= 128 || __right_size >= __left_size * 2)) {
+						_Copy_fn()(__aligned_left_size, __tail_left_size, __first_ptr, __bytes_pointer_offset(__first_ptr, __left_size), __buf);
+						memmove(__first_ptr, __middle_ptr, __right_size);
+						__advance_bytes(__first_ptr, __right_size);
+						memcpy(__first_ptr, __buf, __left_size);
+						break;
+					}
+
+					auto* __mid2 = __last_ptr;
+					__rewind_bytes(__mid2, __left_size);
+					if (__left_size * 2 > __right_size) {
+						swap_ranges(__first_ptr, __mid2, __mid2, __last_ptr);
+						__last_ptr = __mid2;
+					}
+					else {
+						auto* __mid3 = __mid2;
+						__rewind_bytes(__mid3, __left_size);
+						__swap_3_ranges(__mid2, __last_ptr, __first_ptr, __mid3);
+						__last_ptr = __mid3;
+					}
+				}
+				else {
+					if (__right_size == 0) break;
+
+					if (__right_size <= 512 && (__right_size <= 128 || __left_size >= __right_size * 2)) {
+						__rewind_bytes(__last_ptr, __right_size);
+						memcpy(__buf, __last_ptr, __right_size);
+						auto* __mid2 = __first_ptr;
+						__advance_bytes(__mid2, __right_size);
+						memmove(__mid2, __first_ptr, __left_size);
+						memcpy(__first_ptr, __buf, __right_size);
+						break;
+					}
+
+					if (__right_size * 2 > __left_size) {
+						swap_ranges(__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
+						__advance_bytes(__first_ptr, __right_size);
+					}
+					else {
+						auto* __mid2 = __first_ptr;
+						__advance_bytes(__mid2, __right_size);
+						__swap_3_ranges(__middle_ptr, __last_ptr, __mid2, __first_ptr);
+						__advance_bytes(__first_ptr, __right_size * 2);
+					}
+				}
+			}
 
 			return std::ranges::subrange(__first + (__sentinel - __middle), __sentinel);
 		}
@@ -157,16 +214,16 @@ private:
 		if (__first == __middle) { auto __last_it = std::ranges::next(__first, __last); return { __last_it, __last_it }; }
 		if (__middle == __last) return { std::move(__first), std::move(__middle) };
 
-		//if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
-		//	&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
-		//	&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0) 
-		//{
-		//	if not consteval {
-		//		using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-		//		return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>>(
-		//			algorithm::distance(__first, __last) * sizeof(_Value_), __first, __middle, __last);
-		//	}
-		//}
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
+			&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
+			&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0) 
+		{
+			if not consteval {
+				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
+				return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>>(
+					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __middle, __last);
+			}
+		}
 
 		return __vectorized_rotate<vx::scalar_tag>()(__first, __middle, __last);
 	}
