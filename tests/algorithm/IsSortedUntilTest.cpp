@@ -1,6 +1,7 @@
 #include <raze/algorithm/order/IsSortedUntil.h>
 
 #include <vector>
+#include <array>
 #include <random>
 #include <type_traits>
 #include <algorithm>
@@ -11,45 +12,14 @@ struct IntDistributionType {
     using type = T;
 };
 
-template <>
-struct IntDistributionType<char> {
-    using type = int;
-};
-
-template <>
-struct IntDistributionType<signed char> {
-    using type = int;
-};
-
-template <>
-struct IntDistributionType<unsigned char> {
-    using type = int;
-};
-
-template <>
-struct IntDistributionType<bool> {
-    using type = int;
-};
-
-template <>
-struct IntDistributionType<wchar_t> {
-    using type = int;
-};
-
-template <>
-struct IntDistributionType<char8_t> {
-    using type = int;
-};
-
-template <>
-struct IntDistributionType<char16_t> {
-    using type = int;
-};
-
-template <>
-struct IntDistributionType<char32_t> {
-    using type = int;
-};
+template <> struct IntDistributionType<char> { using type = int; };
+template <> struct IntDistributionType<signed char> { using type = int; };
+template <> struct IntDistributionType<unsigned char> { using type = int; };
+template <> struct IntDistributionType<bool> { using type = int; };
+template <> struct IntDistributionType<wchar_t> { using type = int; };
+template <> struct IntDistributionType<char8_t> { using type = int; };
+template <> struct IntDistributionType<char16_t> { using type = int; };
+template <> struct IntDistributionType<char32_t> { using type = int; };
 
 template <typename T>
 using int_distribution_type_t = typename IntDistributionType<T>::type;
@@ -104,6 +74,101 @@ std::vector<T> generate_partially_sorted_vector(size_t size, size_t break_pos, u
     return vec;
 }
 
+template <typename T, std::size_t N>
+void test_is_sorted_until_array_sorted() {
+    std::array<T, N> arr{};
+    for (std::size_t i = 0; i < N; ++i) {
+        arr[i] = static_cast<T>(i);
+    }
+    
+    auto simd_result = raze::algorithm::is_sorted_until(arr);
+    auto std_result = std::ranges::is_sorted_until(arr);
+    
+    raze_assert(simd_result == std_result);
+}
+
+template <typename T, std::size_t N>
+void test_is_sorted_until_array_unsorted() {
+    std::array<T, N> arr{};
+    for (std::size_t i = 0; i < N; ++i) {
+        arr[i] = static_cast<T>(i);
+    }
+    
+    if constexpr (N > 1) {
+        std::swap(arr[N / 2], arr[N / 2 + 1]);
+        
+        auto simd_result = raze::algorithm::is_sorted_until(arr);
+        auto std_result = std::ranges::is_sorted_until(arr);
+        
+        raze_assert(simd_result == std_result);
+        raze_assert(simd_result != arr.end());
+        if (simd_result != arr.begin()) {
+            auto prev = simd_result;
+            --prev;
+            raze_assert(*prev > *simd_result);
+        }
+    }
+}
+
+template <typename T, std::size_t N>
+void test_is_sorted_until_array_with_pred() {
+    std::array<T, N> arr{};
+    for (std::size_t i = 0; i < N; ++i) {
+        arr[i] = static_cast<T>(N - i);
+    }
+    
+    auto pred = [](T a, T b) { return a >= b; };
+    
+    auto simd_result = raze::algorithm::is_sorted_until(arr, pred);
+    auto std_result = std::ranges::is_sorted_until(arr, pred);
+    
+    raze_assert(simd_result == std_result);
+    raze_assert(simd_result == arr.end());
+}
+
+template <typename T, std::size_t N>
+void test_is_sorted_until_array_with_proj() {
+    std::array<T, N> arr{};
+    for (std::size_t i = 0; i < N; ++i) {
+        arr[i] = static_cast<T>(i);
+    }
+    
+    auto proj = [](T x) { return -x; };
+    
+    auto simd_result = raze::algorithm::is_sorted_until(arr, std::less<T>{}, proj);
+    auto std_result = std::ranges::is_sorted_until(arr, std::less<T>{}, proj);
+    
+    raze_assert(simd_result == std_result);
+    raze_assert(simd_result != arr.end());
+}
+
+template <typename T>
+void test_is_sorted_until_arrays_compile_time_sizes() {
+    test_is_sorted_until_array_sorted<T, 0>();
+    test_is_sorted_until_array_sorted<T, 1>();
+    test_is_sorted_until_array_sorted<T, 4>();
+    test_is_sorted_until_array_sorted<T, 8>();
+    test_is_sorted_until_array_sorted<T, 16>();
+    test_is_sorted_until_array_sorted<T, 32>();
+    test_is_sorted_until_array_sorted<T, 64>();
+    test_is_sorted_until_array_sorted<T, 128>();
+    test_is_sorted_until_array_sorted<T, 256>();
+    
+    test_is_sorted_until_array_unsorted<T, 4>();
+    test_is_sorted_until_array_unsorted<T, 8>();
+    test_is_sorted_until_array_unsorted<T, 16>();
+    test_is_sorted_until_array_unsorted<T, 32>();
+    test_is_sorted_until_array_unsorted<T, 64>();
+    test_is_sorted_until_array_unsorted<T, 128>();
+    test_is_sorted_until_array_unsorted<T, 256>();
+    
+    test_is_sorted_until_array_with_pred<T, 16>();
+    test_is_sorted_until_array_with_pred<T, 64>();
+    
+    test_is_sorted_until_array_with_proj<T, 16>();
+    test_is_sorted_until_array_with_proj<T, 64>();
+}
+
 template <typename T>
 void test_is_sorted_until_random(unsigned seed = 42) {
     RandomGenerator<T> gen(seed);
@@ -113,7 +178,7 @@ void test_is_sorted_until_random(unsigned seed = 42) {
     for (int i = 0; i < 10000; ++i) {
         size_t size = size_dist(size_gen);
         auto vec = generate_random_vector<T>(size, seed + i);
-        
+
         auto simd_result = raze::algorithm::is_sorted_until(vec.begin(), vec.end());
         auto std_result = std::ranges::is_sorted_until(vec.begin(), vec.end());
         
@@ -340,6 +405,7 @@ void run_all_tests_for_type() {
     test_is_sorted_until_with_projection<T>();
     test_is_sorted_until_edge_cases<T>();
     test_is_sorted_until_simd_boundaries<T>();
+    test_is_sorted_until_arrays_compile_time_sizes<T>();
 }
 
 int main() {

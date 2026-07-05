@@ -24,9 +24,9 @@
 template <class T, std::size_t Size>
 struct TestData
 {
-    std::array<T, Size> data;
+    std::vector<T> data;
 
-    TestData() {
+    TestData(): data(Size) {
         for (std::size_t i = 0; i < Size; ++i)
             data[i] = static_cast<T>(i + 1);
     }
@@ -60,7 +60,6 @@ static struct Loc {
         std::setlocale(LC_ALL, "en_US.UTF-8");
     }
 } localeSet;
-
 
 enum LogColor {
     COLOR_DEFAULT,

@@ -15,37 +15,32 @@ template <class _Traits_>
 struct _Is_sorted: _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
 	struct __impl {
-		_Iterator_ _iterator;
+		_Iterator_ _first;
+		_Iterator_ _prev;
 		_Sentinel_ _sentinel;
 		_Comp_ _comp;
 		_Projection_ _proj;
 
 		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Comp_ __comp, _Projection_ __proj) noexcept :
-			_iterator(__it), _sentinel(__sent), _comp(__comp), _proj(__proj)
+			_first(__it), _prev(__it), _sentinel(__sent), _comp(__comp), _proj(__proj)
 		{}
 
 		template <class _Tag_>
 		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
-			if (_iterator == _sentinel) return true;
+			if (_first == _sentinel) return true;
 
-			auto __next = _iterator;
+			++_first;
+			if (_first == _sentinel) return true;
 
-			if (++__next == _sentinel) {
-				_iterator = __next;
+			if (std::invoke(_comp, std::invoke(_proj, *_first), std::invoke(_proj, *_prev)))
 				return true;
-			}
 
-			if (_comp(_proj(*__next), _proj(*_iterator))) {
-				_iterator = __next;
-				return true;
-			}
-
-			_iterator = __next;
+			++_prev;
 			return false;
 		}
 
 		raze_nodiscard constexpr raze_always_inline bool result() const noexcept {
-			return _iterator == _sentinel;
+			return _first == _sentinel;
 		}
 	};
 
@@ -57,8 +52,8 @@ struct _Is_sorted: _Traits_ {
 		{
 			if (__first == __sentinel) return true;
 
-			for (auto __next = __first; ++__next != __sentinel; __first = __next)
-				if (__comp(__proj(*__next), __proj(*__first)))
+			for (auto __prev = __first; ++__first != __sentinel; ++__prev)
+				if (std::invoke(__comp, std::invoke(__proj, *__first), std::invoke(__proj, *__prev)))
 					return false;
 
 			return true;
@@ -76,12 +71,48 @@ struct _Is_sorted: _Traits_ {
 #if defined(raze_cpp_msvc_only)
 				do {
 					const auto __current = __proj(vx::load<_Tag_>(__ptr));
-					const auto __next_block = __proj(vx::load<_Tag_>(__ptr + _Tag_::size()));
+					const auto __next = __proj(vx::load<_Tag_>(__ptr + 1));
 
-					const auto __next = vx::slide_left_merge(__current, __next_block, std::integral_constant<sizetype, 1>{});
+					if (vx::any_of(__comp(__next, __current))) return false;
 
-					if (vx::any_of(__comp(__next, __current)))
-						return false;
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (__ptr + _Tag_::size() != __aligned_end);
+#else
+				auto __first_loaded = __proj(vx::load<_Tag_>(__ptr));
+				do {
+					const auto __second_loaded = __proj(vx::load<_Tag_>(__ptr + _Tag_::size()));
+					const auto __current = __first_loaded;
+					const auto __next = vx::slide_left_merge(__current, __second_loaded, std::integral_constant<sizetype, 1>{});
+
+					if (vx::any_of(__comp(__next, __current))) return false;
+
+					__first_loaded = __second_loaded;
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (__ptr + _Tag_::size() != __aligned_end);
+#endif
+			}
+
+			__seek_possibly_wrapped_iterator(__first, __ptr);
+			return (*this)(__first, __sentinel, __comp, __proj);
+		}
+
+		template <sizetype _AlignedSize_, sizetype _TailSize_, class _Iterator_,
+			class _Sentinel_, class _Comp_, class _Projection_>
+		raze_nodiscard raze_always_inline bool operator()(std::integral_constant<sizetype, _AlignedSize_>,
+			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel, _Comp_ __comp,
+			_Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+		{
+			auto* __ptr = std::to_address(__first);
+
+			if constexpr (_AlignedSize_ >= sizeof(_Tag_) * 2) {
+				const auto __aligned_end = __bytes_pointer_offset(__ptr, _AlignedSize_);
+
+#if defined(raze_cpp_msvc_only)
+				do {
+					const auto __current = __proj(vx::load<_Tag_>(__ptr));
+					const auto __next = __proj(vx::load<_Tag_>(__ptr + 1));
+
+					if (vx::any_of(__comp(__next, __current))) return false;
 
 					__advance_bytes(__ptr, sizeof(_Tag_));
 				} while (__ptr + _Tag_::size() != __aligned_end);
@@ -129,7 +160,7 @@ struct _Is_sorted: _Traits_ {
 
 	template <std::ranges::input_range _Range_, class _Comp_ = std::less<>, class _Projection_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Range_&& __range,
-		_Comp_ __comp, _Projection_ __proj = {}) const noexcept
+		_Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_> && std::indirect_strict_weak_order<_Comp_,
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
