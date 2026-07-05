@@ -129,7 +129,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_function<_Function_, _Iterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
+			&& vectorizable_unary_function<_Function_, _Iterator_> &&
 			vectorizable_projection<_Projection_, _Iterator_> && type_traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {

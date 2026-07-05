@@ -194,8 +194,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _InValue_ = std::iter_value_t<_InputIterator_>;
 
-		if constexpr (std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			vectorizable_unary_predicate<_Predicate_, _InputIterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InputIterator_> 
+			&& std::contiguous_iterator<_OutIterator_> && vectorizable_unary_predicate<_Predicate_, _InputIterator_> &&
 			vectorizable_projection<_Projection_, _InputIterator_>)
 		{
 			if not consteval {
@@ -220,8 +220,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _InValue_ = std::iter_value_t<_InputIterator_>;
 
-		if constexpr (std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			vectorizable_unary_predicate<_Predicate_, _InputIterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InputIterator_>
+			&& std::contiguous_iterator<_OutIterator_> && vectorizable_unary_predicate<_Predicate_, _InputIterator_> &&
 			vectorizable_projection<_Projection_, _InputIterator_>)
 		{
 			if not consteval {
@@ -248,7 +248,7 @@ struct _Replace_copy : _Traits_ {
 			requires(std::indirectly_copyable<_InputIterator_, _OutIterator_> &&
 				std::indirectly_writable<_OutIterator_, const _ValueType2_&>)
 	{
-		return replace_copy_if(std::move(__first), std::move(__last), std::move(__result),
+		return replace_copy_if[_Traits_::traits()](std::move(__first), std::move(__last), std::move(__result),
 			algorithm::equal_to(function_return_type<_Projection_, std::iter_value_t<_InputIterator_>>(__old_value)),
 			__new_value, type_traits::__pass_function(__proj));
 	}
@@ -261,7 +261,7 @@ struct _Replace_copy : _Traits_ {
 			requires(std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _OutIterator_> &&
 				std::indirectly_writable<_OutIterator_, const _ValueType2_&>)
 	{
-		return replace_copy_if(std::forward<_Range_>(__range), std::move(__result),
+		return replace_copy_if[_Traits_::traits()](std::forward<_Range_>(__range), std::move(__result),
 			algorithm::equal_to(function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__old_value)),
 			__new_value, type_traits::__pass_function(__proj));
 	}

@@ -168,7 +168,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
+			&& vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
@@ -189,7 +190,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_>
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
+			&& vectorizable_unary_predicate<_Predicate_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
@@ -212,7 +214,7 @@ struct _Find : _Traits_ {
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
 		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 	{
-		return find_if(std::move(__first), std::move(__last), algorithm::equal_to(
+		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
 			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
@@ -223,7 +225,7 @@ struct _Find : _Traits_ {
 		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_>)
 	{
-		return find_if(std::forward<_Range_>(__range), algorithm::equal_to(
+		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
@@ -234,7 +236,7 @@ struct _Find : _Traits_ {
 		const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_>)
 	{
-		return find_if(std::forward<_Range_>(__range), algorithm::equal_to(
+		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
 			type_traits::__pass_function(__proj));
 	}
@@ -250,7 +252,7 @@ struct _Find_if_not : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return find_if(std::move(__first), std::move(__last), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -259,7 +261,7 @@ struct _Find_if_not : _Traits_ {
 			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return find_if(std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -268,7 +270,7 @@ struct _Find_if_not : _Traits_ {
 			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return find_if(std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}
 };
 

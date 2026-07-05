@@ -133,5 +133,4 @@ private:
 
 constexpr inline auto ends_with  = raze::options::function_with_traits<_Ends_with>;
 
-
 __RAZE_ALGORITHM_NAMESPACE_END

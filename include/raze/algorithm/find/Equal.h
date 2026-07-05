@@ -191,6 +191,8 @@ private:
 		__verify_range(__first1, __last1);
 		__verify_range(__first2, __last2);
 
+		using _TraitsType = decltype(this->traits());
+
 		using _Value1_ = std::iter_value_t<_Iterator1_>;
 		using _Value2_ = std::iter_value_t<_Iterator2_>;
 
@@ -202,7 +204,8 @@ private:
 			if (__first_size != algorithm::distance(__first2, __last2)) return false;
 		}
 
-		if constexpr (std::same_as<_Value1_, _Value2_> &&  std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_> && 
+			std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
 			vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
 			vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
 		{
@@ -226,10 +229,13 @@ private:
 		__verify_range(__first1, __last1);
 		__verify_range(__first2, __last2);
 
+		using _TraitsType = decltype(this->traits());
+
 		using _Value1_ = std::iter_value_t<_Iterator1_>;
 		using _Value2_ = std::iter_value_t<_Iterator2_>;
 
-		if constexpr (std::same_as<_Value1_, _Value2_> && std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> && 
+		if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_> && 
+			std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
 			vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
 			vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
 		{

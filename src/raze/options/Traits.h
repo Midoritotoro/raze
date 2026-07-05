@@ -40,6 +40,14 @@ constexpr sizetype get_unrolling() {
     return raze::options::fetch_t<(unroll_key | index<1>), _Traits_>{};
 }
 
+struct scalar_mode {};
+constexpr inline auto scalar = raze::options::flag(scalar_mode{});
+
+template <class _Traits_>
+constexpr bool always_scalar() {
+    return _Traits_::contains(scalar);
+}
+
 constexpr inline auto no_traits = traits();
 
 template <template <class> class _Function_, class _Traits_>

@@ -129,7 +129,8 @@ private:
 		using _Value_ = std::iter_value_t<_InIterator_>;
 		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 
-		if constexpr (std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && 
+			std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_> &&
 			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 &&
 			(sizeof(_Value_) != 0) && ((sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0))
 		{

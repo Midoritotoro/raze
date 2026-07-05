@@ -194,8 +194,8 @@ private:
 		using _Value1_ = std::iter_value_t<_Iterator1_>;
 		using _Value2_ = std::iter_value_t<_Iterator2_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
-			std::same_as<_Value1_, _Value2_> && std::is_trivially_copyable_v<_Value1_>)
+		if constexpr (!options::always_scalar<_TraitsType>() &&  std::contiguous_iterator<_Iterator1_> 
+			&& std::contiguous_iterator<_Iterator2_> && std::same_as<_Value1_, _Value2_> && std::is_trivially_copyable_v<_Value1_>)
 		{
 			if not consteval {
 				const auto __dist1 = algorithm::distance(__first1, __last1);
@@ -224,8 +224,8 @@ private:
 		using _Value1_ = std::iter_value_t<_Iterator1_>;
 		using _Value2_ = std::iter_value_t<_Iterator2_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
-			std::same_as<_Value1_, _Value2_> && std::is_trivially_copyable_v<_Value1_>)
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator1_> 
+			&& std::contiguous_iterator<_Iterator2_> && std::same_as<_Value1_, _Value2_> && std::is_trivially_copyable_v<_Value1_>)
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value1_)>{};

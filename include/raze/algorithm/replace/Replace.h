@@ -146,7 +146,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
+			&& vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
@@ -170,7 +171,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
-		if constexpr (std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_>
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
+			&& vectorizable_unary_predicate<_Predicate_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
@@ -194,7 +196,7 @@ struct _Replace : _Traits_ {
 	constexpr raze_always_inline void operator()(_Iterator_ __first, _Sentinel_ __last,
 		const _ValueType1_& __old_value, const _ValueType2_& __new_value, _Projection_ __proj = {}) const noexcept
 	{
-		replace_if(std::move(__first), std::move(__last), algorithm::equal_to(
+		replace_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
 			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__old_value)),
 			__new_value, type_traits::__pass_function(__proj));
 	}
@@ -205,7 +207,7 @@ struct _Replace : _Traits_ {
 		const _ValueType2_& __new_value, _Projection_ __proj = {}) const noexcept
 			requires(std::permutable<std::ranges::iterator_t<_Range_>>)
 	{
-		replace_if(std::forward<_Range_>(__range), algorithm::equal_to(
+		replace_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__old_value)),
 			__new_value, type_traits::__pass_function(__proj));
 	}

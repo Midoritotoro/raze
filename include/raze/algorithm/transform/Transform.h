@@ -389,7 +389,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _InValue_ = std::iter_value_t<_InputIterator_>;
 
-		if constexpr (std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && 
+			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
 			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<_Projection_, _InputIterator_> &&
 			type_traits::__is_lightweight_callable_v<_Function_>)
 		{
@@ -414,7 +415,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _InValue_ = std::iter_value_t<_InputIterator_>;
 
-		if constexpr (std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && 
+			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
 			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<_Projection_, _InputIterator_> &&
 			type_traits::__is_lightweight_callable_v<_Function_>)
 		{
@@ -443,7 +445,8 @@ private:
 		using _InValue1_ = std::iter_value_t<_InputIterator1_>;
 		using _InValue2_ = std::iter_value_t<_InputIterator2_>;
 
-		if constexpr (std::contiguous_iterator<_InputIterator1_> && std::contiguous_iterator<_InputIterator2_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && 
+			std::contiguous_iterator<_InputIterator1_> && std::contiguous_iterator<_InputIterator2_> &&
 			std::contiguous_iterator<_OutIterator_> && std::same_as<_InValue1_, _InValue2_> &&
 			vectorizable_binary_function<_Function_, _InputIterator1_, _InputIterator2_> &&
 			vectorizable_projection<_Projection1_, _InputIterator1_> && vectorizable_projection<_Projection2_, _InputIterator2_> &&
@@ -479,7 +482,8 @@ private:
 		using _InValue1_ = std::iter_value_t<_InputIterator1_>;
 		using _InValue2_ = std::iter_value_t<_InputIterator2_>;
 
-		if constexpr (std::contiguous_iterator<_InputIterator1_> && std::contiguous_iterator<_InputIterator2_> &&
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InputIterator1_> 
+			&& std::contiguous_iterator<_InputIterator2_> &&
 			std::contiguous_iterator<_OutIterator_> && std::same_as<_InValue1_, _InValue2_> &&
 			vectorizable_binary_function<_Function_, _InputIterator1_, _InputIterator2_> &&
 			vectorizable_projection<_Projection1_, _InputIterator1_> &&
