@@ -28,7 +28,7 @@ struct if_ {
         return _condition;
     }
 
-    _ConditionStorage_ _condition;
+    raze_no_unique_address _ConditionStorage_ _condition;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END

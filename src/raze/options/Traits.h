@@ -7,12 +7,12 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 template <class _Settings_>
 struct traits : _Settings_ {
     template <concepts::option ... _Options_>
-    constexpr explicit traits(_Options_ && ... __options): 
+    constexpr explicit traits(_Options_ && ... __options) noexcept: 
         _Settings_(std::forward<_Options_>(__options)...) 
     {}
 
     template <class ... _Options_>
-    constexpr traits(const settings<_Options_...>& __options) :
+    constexpr traits(const settings<_Options_...>& __options) noexcept:
         _Settings_(__options)
     {}
 };
@@ -82,7 +82,7 @@ template <template <class> class _Function_, class _Traits_>
 struct __supports_traits {
     using traits_type = _Traits_;
 
-    constexpr _Traits_ traits() const noexcept { 
+    raze_always_inline constexpr _Traits_ traits() const noexcept {
         return _traits;
     }
 
@@ -92,7 +92,7 @@ struct __supports_traits {
     {}
 
     template <class _Settings_>
-    constexpr auto operator[](raze::options::traits<_Settings_> __traits) const noexcept {
+    raze_always_inline constexpr auto operator[](raze::options::traits<_Settings_> __traits) const noexcept {
         using _SettingsType = decltype(raze::options::merge(__traits, _traits));
         auto __sum = raze::options::traits<_SettingsType>(raze::options::merge(__traits, _traits));
 
@@ -101,14 +101,14 @@ struct __supports_traits {
     }
 
     template <concepts::option _Trait_>
-    constexpr auto operator[](_Trait_ __trait) const noexcept {
+    raze_always_inline constexpr auto operator[](_Trait_ __trait) const noexcept {
         return operator[](raze::options::traits(__trait));
     }
 private:
-    _Traits_ _traits;
+    raze_no_unique_address _Traits_ _traits;
 };
 
 template <template <class> class _Function_>
-constexpr auto function_with_traits = _Function_<__supports_traits<_Function_, decltype(no_traits)>>();
+static inline constexpr auto function_with_traits = _Function_<__supports_traits<_Function_, decltype(no_traits)>>();
 
 __RAZE_OPTIONS_NAMESPACE_END

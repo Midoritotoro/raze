@@ -14,7 +14,7 @@ struct option {
         return _contents;
     }
 
-    stored_value_type _contents;
+    raze_no_unique_address stored_value_type _contents;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END

@@ -7,7 +7,7 @@
 #include <src/raze/algorithm/NotFn.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 #include <raze/options/Options.h>
-
+#include <src/raze/algorithm/memory/Memcpy.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -32,74 +32,6 @@ struct _Copy : _Traits_ {
 
 		constexpr raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_> result() const noexcept {
 			return { _in_iterator, _out_iterator };
-		}
-	};
-
-	template <class _Tag_>
-	struct __vectorized_copy {
-		template <class _InIterator_, class _Sentinel_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-		operator()(_InIterator_ __first, _Sentinel_ __sentinel, _OutIterator_ __result) const noexcept
-		{
-			using _Type_ = std::iter_value_t<_InIterator_>;
-			
-			auto __first_address = std::to_address(__first);
-			auto __result_address = std::to_address(__result);
-			auto __last_address = std::to_address(__sentinel);
-
-			for (; __first_address != __last_address; ++__first_address, ++__result_address)
-				*reinterpret_cast<_Type_*>(__result_address) = *reinterpret_cast<const _Type_* const>(__first_address);
-
-			__seek_possibly_wrapped_iterator(__first, __first_address);
-			__seek_possibly_wrapped_iterator(__result, __result_address);
-
-			return { __first, __result };
-		}
-
-		template <class _InIterator_, class _Sentinel_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-		operator()(sizetype __aligned_size, sizetype __tail_size,
-			_InIterator_ __first, _Sentinel_ __sentinel, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __in_ptr = std::to_address(__first);
-			auto* __out_ptr = std::to_address(__result);
-
-			const auto __aligned_end = __bytes_pointer_offset(__in_ptr, __aligned_size);
-
-			do {
-				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
-				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
-			} while (__in_ptr != __aligned_end);
-
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
-
-			return (*this)(__first, __sentinel, __result);
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _InIterator_, class _Sentinel_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-		operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>,
-			_InIterator_ __first, _Sentinel_ __sentinel, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __in_ptr = std::to_address(__first);
-			auto* __out_ptr = std::to_address(__result);
-
-			auto __left = __iterations_aligned;
-
-			do {
-				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
-				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
-			} while (--__left);
-
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
-
-			return (*this)(__first, __sentinel, __result);
 		}
 	};
 
@@ -168,15 +100,20 @@ private:
 		using _Value_ = std::iter_value_t<_InIterator_>;
 		using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
 
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 &&
-			(sizeof(_Value_) != 0) && ((sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0))
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InIterator_> 
+			&& std::contiguous_iterator<_OutIterator_> && std::is_trivially_copyable_v<_Value_>)
 		{
 			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_copy, _IntegerValue_,
-					std::ranges::in_out_result<_InIterator_, _OutIterator_>>(
-					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __result);
+				auto* __first_ptr = std::to_address(__first);
+				auto* __r_ptr = std::to_address(__result);
+
+				const auto __size = __byte_length(__first_ptr, std::to_address(__last));
+				auto __e = algorithm::__memcpy[_Traits_::traits()](__r_ptr, __first_ptr, __size);
+
+				__seek_possibly_wrapped_iterator(__first, __bytes_pointer_offset(__first_ptr, __size));
+				__seek_possibly_wrapped_iterator(__result, static_cast<decltype(__r_ptr)>(__e));
+
+				return std::ranges::in_out_result(__first, __result);
 			}
 		}
 
@@ -194,16 +131,19 @@ private:
 		using _Value_ = std::iter_value_t<_InIterator_>;
 		using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
 
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InIterator_> 
-			&& std::contiguous_iterator<_OutIterator_> &&
-			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 &&
-			(sizeof(_Value_) != 0) && ((sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0))
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InIterator_>
+			&& std::contiguous_iterator<_OutIterator_> && std::is_trivially_copyable_v<_Value_>)
 		{
 			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_IntegerValue_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_copy, _IntegerValue_,
-					std::ranges::in_out_result<_InIterator_, _OutIterator_>, options::__get_forced_isa<_TraitsType>()>(
-					__bytes, __first, __last, __result);
+				auto* __first_ptr = std::to_address(__first);
+				auto* __r_ptr = std::to_address(__result);
+				auto __e = algorithm::__memcpy[_Traits_::traits()](__r_ptr, __first_ptr,
+					std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{});
+
+				__seek_possibly_wrapped_iterator(__first, __bytes_pointer_offset(__first_ptr, _Size_));
+				__seek_possibly_wrapped_iterator(__result, static_cast<decltype(__r_ptr)>(__e));
+
+				return std::ranges::in_out_result(__first, __result);
 			}
 		}
 
@@ -211,6 +151,6 @@ private:
 	}
 };
 
-constexpr inline auto copy = raze::options::function_with_traits<_Copy>;
+static inline constexpr auto copy = raze::options::function_with_traits<_Copy>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

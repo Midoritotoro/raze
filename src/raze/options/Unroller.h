@@ -36,6 +36,6 @@ struct _Unroller {
 };
 
 template <class _Traits_, class _Simd_>
-constexpr inline auto __unroller = typename _Unroller<_Traits_>::template __impl<_Simd_>{};
+static inline constexpr auto __unroller = typename _Unroller<_Traits_>::template __impl<_Simd_>{};
 
 __RAZE_OPTIONS_NAMESPACE_END

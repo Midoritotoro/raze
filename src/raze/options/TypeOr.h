@@ -9,7 +9,7 @@ template <
     concepts::keyword   _Type_,
     class               _Value_> 
 struct __type_or {
-    _Value_ _value;
+    raze_no_unique_address _Value_ _value;
 
     template <concepts::option ... _Options_>
     constexpr raze_always_inline decltype(auto) operator()(_Options_&&... __options) const noexcept {

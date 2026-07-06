@@ -151,34 +151,28 @@ struct _Configurable_sized_isa_dispatcher {
                 return _Function_<_Simd_>()(__aligned_size, __size - __aligned_size, std::forward<_Args_>(__args)...);
            }
            else {
-               if (__size < 16)
-                   return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
-
+               if (__size < 16) return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
                const auto __all = arch::ProcessorFeatures::all();
 
-               //if (const auto __aligned_size = __size & ~0x3F; __aligned_size != 0) {
-               //     if constexpr (sizeof(_Type_) >= 4) {
-               //         if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all)) {
-               //             using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>;
-               //             return _Function_<_Simd_>()(__aligned_size, __size - __aligned_size, std::forward<_Args_>(__args)...);
-               //         }
-               //     }
-               //     else {
-               //         if (arch::ProcessorFeatures::has<arch::__features::AVX512BW>(__all)) {
-               //             using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>;
-               //             return _Function_<_Simd_>()(__aligned_size, __size - __aligned_size, std::forward<_Args_>(__args)...);
-               //         }
-               //     }
-               // }
+               if (__size >= 64) {
+                    if constexpr (sizeof(_Type_) >= 4) {
+                        if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all))
+                            return _Function_<simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>>()(
+                                __size & ~0x3F, __size & 0x3F, std::forward<_Args_>(__args)...);
+                    }
+                    else {
+                        if (arch::ProcessorFeatures::has<arch::__features::AVX512BW>(__all))
+                            return _Function_<simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>>()(
+                                __size & ~0x3F, __size & 0x3F, std::forward<_Args_>(__args)...);
+                    }
+                }
 
-               if (const auto __aligned_size = __size & ~0x1F; __aligned_size != 0 && arch::ProcessorFeatures::has<arch::__features::AVX2>(__all)) {
-                   using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX2, 32 / sizeof(_Type_)>>;
-                   return _Function_<_Simd_>()(__aligned_size, __size - __aligned_size, std::forward<_Args_>(__args)...);
-               }
+                if (__size >= 32 && arch::ProcessorFeatures::has<arch::__features::AVX2>(__all))
+                    return _Function_<simd<_Type_, runtime_abi<arch::ISA::AVX2, 32 / sizeof(_Type_)>>>()(
+                        __size & ~0x1F, __size & 0x1F, std::forward<_Args_>(__args)...);
 
-               if (const auto __aligned_size = __size & ~0xF; __aligned_size != 0 && arch::ProcessorFeatures::has<arch::__features::SSE42>(__all))
-                   return _Function_<simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>>()(
-                       __aligned_size, __size - __aligned_size, std::forward<_Args_>(__args)...);
+                return _Function_<simd<_Type_, runtime_abi<arch::ISA::SSE2, 16 / sizeof(_Type_)>>>()(
+                    __size & ~0xF, __size & 0xF, std::forward<_Args_>(__args)...);
            }
         }
 
@@ -187,6 +181,6 @@ struct _Configurable_sized_isa_dispatcher {
 };
 
 template <template <class> class _Function_, class _Type_, class _Return_, arch::ISA _ForcedISA_ = arch::ISA::None>
-constexpr inline auto __dispatch_sized_impl = raze::options::functor<typename _Configurable_sized_isa_dispatcher<_Function_, _Type_, _Return_, _ForcedISA_>::__impl>;
+static inline constexpr auto __dispatch_sized_impl = raze::options::functor<typename _Configurable_sized_isa_dispatcher<_Function_, _Type_, _Return_, _ForcedISA_>::__impl>;
 
 __RAZE_VX_NAMESPACE_END

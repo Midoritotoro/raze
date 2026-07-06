@@ -71,7 +71,7 @@ struct settings {
             return __value._value;
     }
         
-    base _content;
+    raze_no_unique_address base _content;
 };
 
 template <concepts::option ... _Options_>

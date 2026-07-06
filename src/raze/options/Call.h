@@ -17,7 +17,7 @@ struct call {
         return _callable();
     }
 
-    _Function_ _callable;
+    raze_no_unique_address _Function_ _callable;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END
