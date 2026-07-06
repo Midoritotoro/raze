@@ -48,6 +48,34 @@ constexpr bool always_scalar() {
     return _Traits_::contains(scalar);
 }
 
+struct compact_mode {};
+constexpr inline auto compact = raze::options::flag(compact_mode{});
+
+template <class _Traits_>
+constexpr bool is_compact() {
+    return _Traits_::contains(compact);
+}
+
+struct __force_isa_key_t : as_keyword<__force_isa_key_t> {
+    template <class _Value_>
+    constexpr auto operator=(const _Value_&) const noexcept {
+        return option<__force_isa_key_t, _Value_>{};
+    }
+};
+
+constexpr inline __force_isa_key_t __force_isa_key;
+
+template <arch::ISA _ISA_>
+constexpr inline auto __isa = std::integral_constant<arch::ISA, _ISA_>{};
+
+template <arch::ISA _ISA_>
+constexpr inline auto __force_isa = (__force_isa_key = __isa<_ISA_>);
+
+template <class _Traits_>
+constexpr arch::ISA __get_forced_isa() {
+    return raze::options::fetch_t<(__force_isa_key | __isa<arch::ISA::None>), _Traits_>{};
+}
+
 constexpr inline auto no_traits = traits();
 
 template <template <class> class _Function_, class _Traits_>

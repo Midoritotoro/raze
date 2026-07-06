@@ -1,91 +1,115 @@
-#include <raze/algorithm/order/Rotate.h>
+#include <raze/algorithm/order/RotateCopy.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 
 template <class T, std::size_t Size>
-static void BM_StdRotateSmall(benchmark::State& state) {
+static void BM_StdRotateCopySmall(benchmark::State& state) {
     TestData<T, Size> test;
+    std::array<T, Size> dst{};
     constexpr std::size_t MidPos = 1;
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-        std::ranges::rotate(test.data, test.data.begin() + MidPos);
-        benchmark::DoNotOptimize(test.data);
+        benchmark::DoNotOptimize(dst);
+
+        std::ranges::rotate_copy(test.data, test.data.begin() + MidPos, dst.begin());
+
+        benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
-static void BM_RazeRotateSmall(benchmark::State& state) {
+static void BM_RazeRotateCopySmall(benchmark::State& state) {
     TestData<T, Size> test;
+    std::array<T, Size> dst{};
     constexpr std::size_t MidPos = 1;
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-        raze::algorithm::rotate(test.data, test.data.begin() + MidPos);
-        benchmark::DoNotOptimize(test.data);
+        benchmark::DoNotOptimize(dst);
+
+        raze::algorithm::rotate_copy(test.data, test.data.begin() + MidPos, dst.begin());
+
+        benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
-static void BM_StdRotateHalf(benchmark::State& state) {
+static void BM_StdRotateCopyHalf(benchmark::State& state) {
     TestData<T, Size> test;
+    std::array<T, Size> dst{};
     constexpr std::size_t MidPos = Size / 2;
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-        std::ranges::rotate(test.data, test.data.begin() + MidPos);
-        benchmark::DoNotOptimize(test.data);
+        benchmark::DoNotOptimize(dst);
+
+        std::ranges::rotate_copy(test.data, test.data.begin() + MidPos, dst.begin());
+
+        benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
-static void BM_RazeRotateHalf(benchmark::State& state) {
+static void BM_RazeRotateCopyHalf(benchmark::State& state) {
     TestData<T, Size> test;
+    std::array<T, Size> dst{};
     constexpr std::size_t MidPos = Size / 2;
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-        raze::algorithm::rotate(test.data, test.data.begin() + MidPos);
-        benchmark::DoNotOptimize(test.data);
+        benchmark::DoNotOptimize(dst);
+
+        raze::algorithm::rotate_copy(test.data, test.data.begin() + MidPos, dst.begin());
+
+        benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
-static void BM_StdRotateLarge(benchmark::State& state) {
+static void BM_StdRotateCopyLarge(benchmark::State& state) {
     TestData<T, Size> test;
+    std::array<T, Size> dst{};
     constexpr std::size_t MidPos = Size > 1 ? Size - 1 : 0;
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-        std::ranges::rotate(test.data, test.data.begin() + MidPos);
-        benchmark::DoNotOptimize(test.data);
+        benchmark::DoNotOptimize(dst);
+
+        std::ranges::rotate_copy(test.data, test.data.begin() + MidPos, dst.begin());
+
+        benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
 template <class T, std::size_t Size>
-static void BM_RazeRotateLarge(benchmark::State& state) {
+static void BM_RazeRotateCopyLarge(benchmark::State& state) {
     TestData<T, Size> test;
+    std::array<T, Size> dst{};
     constexpr std::size_t MidPos = Size > 1 ? Size - 1 : 0;
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-        raze::algorithm::rotate(test.data, test.data.begin() + MidPos);
-        benchmark::DoNotOptimize(test.data);
+        benchmark::DoNotOptimize(dst);
+
+        raze::algorithm::rotate_copy(test.data, test.data.begin() + MidPos, dst.begin());
+
+        benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
 }
 
-#define RAZE_BENCHMARK_ROTATE_GROUP(name1, name2) \
+#define RAZE_BENCHMARK_ROTATE_COPY_GROUP(name1, name2) \
     BENCHMARK(name1<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name2<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name1<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
@@ -124,9 +148,9 @@ static void BM_RazeRotateLarge(benchmark::State& state) {
 
 void RegisterAll()
 {
-    RAZE_BENCHMARK_ROTATE_GROUP(BM_RazeRotateSmall, BM_StdRotateSmall);
-    RAZE_BENCHMARK_ROTATE_GROUP(BM_RazeRotateHalf, BM_StdRotateHalf);
-    RAZE_BENCHMARK_ROTATE_GROUP(BM_RazeRotateLarge, BM_StdRotateLarge);
+    RAZE_BENCHMARK_ROTATE_COPY_GROUP(BM_RazeRotateCopySmall, BM_StdRotateCopySmall);
+    RAZE_BENCHMARK_ROTATE_COPY_GROUP(BM_RazeRotateCopyHalf, BM_StdRotateCopyHalf);
+    RAZE_BENCHMARK_ROTATE_COPY_GROUP(BM_RazeRotateCopyLarge, BM_StdRotateCopyLarge);
 }
 
 RAZE_BENCHMARK_MAIN();

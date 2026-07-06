@@ -203,7 +203,7 @@ private:
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_IntegerValue_)>{};
 				return vx::__dispatch_sized_impl<__vectorized_copy_backward, _IntegerValue_,
-					std::ranges::in_out_result<_InputIterator_, _OutIterator_>>(
+					std::ranges::in_out_result<_InputIterator_, _OutIterator_>, options::__get_forced_isa<_TraitsType>()>(
 						__bytes, __first, __last_it, __result);
 			}
 		}

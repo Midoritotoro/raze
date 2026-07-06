@@ -41,8 +41,16 @@ struct _Copy_n : _Traits_ {
 		template <class _InIterator_, class _DifferenceType_, class _OutIterator_>
 		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
 		operator()(_InIterator_ __first, _DifferenceType_ __n, _OutIterator_ __result) const noexcept {
-			for (sizetype __i = 0; __i < __n; ++__i, ++__first, ++__result)
-				*__result = *__first;
+			using _Type_ = std::iter_value_t<_InIterator_>;
+
+			auto* __first_address = std::to_address(__first);
+			auto* __result_address = std::to_address(__result);
+
+			for (sizetype __i = 0; __i < __n; ++__i, ++__first_address, ++__result_address)
+				*reinterpret_cast<_Type_*>(__result_address) = *reinterpret_cast<const _Type_* const>(__first_address);
+
+			__seek_possibly_wrapped_iterator(__result, __result_address);
+			__seek_possibly_wrapped_iterator(__first, __first_address);
 
 			return { __first, __result };
 		}
@@ -65,11 +73,7 @@ struct _Copy_n : _Traits_ {
 			__seek_possibly_wrapped_iterator(__first, __in_ptr);
 			__seek_possibly_wrapped_iterator(__result, __out_ptr);
 
-			const auto __tail_elems = __tail_size / sizeof(typename _Tag_::value_type);
-			for (sizetype __i = 0; __i < __tail_elems; ++__i)
-				*__result++ = *__first++;
-
-			return { __first, __result };
+			return (*this)(__first, __tail_size / sizeof(typename _Tag_::value_type), __result);
 		}
 
 		template <sizetype _AlignedSize_, sizetype _TailSize_,
@@ -95,12 +99,7 @@ struct _Copy_n : _Traits_ {
 			__seek_possibly_wrapped_iterator(__first, __in_ptr);
 			__seek_possibly_wrapped_iterator(__result, __out_ptr);
 
-			if constexpr (__tail_elems > 0) {
-				for (sizetype __i = 0; __i < __tail_elems; ++__i)
-					*__result++ = *__first++;
-			}
-
-			return { __first, __result };
+			return (*this)(__first, __tail_elems, __result);
 		}
 	};
 
@@ -136,7 +135,7 @@ private:
 		{
 			if not consteval {
 				return vx::__dispatch_sized_impl<__vectorized_copy_n, _IntegerValue_,
-					std::ranges::in_out_result<_InIterator_, _OutIterator_>>(
+					std::ranges::in_out_result<_InIterator_, _OutIterator_>, options::__get_forced_isa<_TraitsType>()>(
 					__n * sizeof(_Value_), __first, __n, __result);
 			}
 		}

@@ -3,6 +3,7 @@
 #include <raze/algorithm/order/Reverse.h>
 #include <raze/algorithm/swap/Swap.h>
 #include <raze/algorithm/copy/Copy.h>
+#include <raze/algorithm/copy/CopyN.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -95,33 +96,27 @@ struct _Rotate : _Traits_ {
 				}
 			};
 
-			using _Copy_fn = typename _Copy<_Traits_>::__vectorized_copy<_Tag_>;
+			using _Copy_fn = typename _Copy<_Traits_>::template __vectorized_copy<_Tag_>;
 
 			for (;;) {
 				const auto __left_size = __byte_length(__first_ptr, __middle_ptr);
 				const auto __right_size = __byte_length(__middle_ptr, __last_ptr);
 
-				const auto __aligned_left_size = __left_size & ~(sizeof(_Tag_) - 1);
-				const auto __tail_left_size = __left_size - __aligned_left_size;
-
-				const auto __aligned_right_size = __right_size & ~(sizeof(_Tag_) - 1);
-				const auto __tail_right_size = __right_size - __aligned_right_size;
-
 				if (__left_size <= __right_size) {
 					if (__left_size == 0) break;
 
 					if (__left_size <= 512 && (__left_size <= 128 || __right_size >= __left_size * 2)) {
-						_Copy_fn()(__aligned_left_size, __tail_left_size, __first_ptr, __bytes_pointer_offset(__first_ptr, __left_size), __buf);
+						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __left_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
 						memmove(__first_ptr, __middle_ptr, __right_size);
 						__advance_bytes(__first_ptr, __right_size);
-						memcpy(__first_ptr, __buf, __left_size);
+						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](reinterpret_cast<_Value_*>(__buf), __left_size / sizeof(_Value_), __first_ptr);
 						break;
 					}
 
 					auto* __mid2 = __last_ptr;
 					__rewind_bytes(__mid2, __left_size);
 					if (__left_size * 2 > __right_size) {
-						swap_ranges(__first_ptr, __mid2, __mid2, __last_ptr);
+						swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __mid2, __mid2, __last_ptr);
 						__last_ptr = __mid2;
 					}
 					else {
@@ -136,16 +131,16 @@ struct _Rotate : _Traits_ {
 
 					if (__right_size <= 512 && (__right_size <= 128 || __left_size >= __right_size * 2)) {
 						__rewind_bytes(__last_ptr, __right_size);
-						memcpy(__buf, __last_ptr, __right_size);
+						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](__last_ptr, __right_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
 						auto* __mid2 = __first_ptr;
 						__advance_bytes(__mid2, __right_size);
 						memmove(__mid2, __first_ptr, __left_size);
-						memcpy(__first_ptr, __buf, __right_size);
+						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](reinterpret_cast<_Value_*>(__buf), __right_size / sizeof(_Value_), __first_ptr);
 						break;
 					}
 
 					if (__right_size * 2 > __left_size) {
-						swap_ranges(__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
+						swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
 						__advance_bytes(__first_ptr, __right_size);
 					}
 					else {

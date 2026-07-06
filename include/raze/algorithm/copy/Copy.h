@@ -41,8 +41,18 @@ struct _Copy : _Traits_ {
 		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
 		operator()(_InIterator_ __first, _Sentinel_ __sentinel, _OutIterator_ __result) const noexcept
 		{
-			for (; __first != __sentinel; ++__first, ++__result)
-				*__result = *__first;
+			using _Type_ = std::iter_value_t<_InIterator_>;
+			
+			auto __first_address = std::to_address(__first);
+			auto __result_address = std::to_address(__result);
+			auto __last_address = std::to_address(__sentinel);
+
+			for (; __first_address != __last_address; ++__first_address, ++__result_address)
+				*reinterpret_cast<_Type_*>(__result_address) = *reinterpret_cast<const _Type_* const>(__first_address);
+
+			__seek_possibly_wrapped_iterator(__first, __first_address);
+			__seek_possibly_wrapped_iterator(__result, __result_address);
+
 			return { __first, __result };
 		}
 
@@ -192,7 +202,7 @@ private:
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_IntegerValue_)>{};
 				return vx::__dispatch_sized_impl<__vectorized_copy, _IntegerValue_,
-					std::ranges::in_out_result<_InIterator_, _OutIterator_>>(
+					std::ranges::in_out_result<_InIterator_, _OutIterator_>, options::__get_forced_isa<_TraitsType>()>(
 					__bytes, __first, __last, __result);
 			}
 		}
