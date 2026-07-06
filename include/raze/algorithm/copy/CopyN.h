@@ -7,6 +7,7 @@
 #include <src/raze/algorithm/NotFn.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 #include <raze/options/Options.h>
+#include <src/raze/algorithm/memory/Memcpy.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN 
@@ -36,80 +37,11 @@ struct _Copy_n : _Traits_ {
 		}
 	};
 
-	template <class _Tag_>
-	struct __vectorized_copy_n {
-		template <class _InIterator_, class _DifferenceType_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-		operator()(_InIterator_ __first, _DifferenceType_ __n, _OutIterator_ __result) const noexcept {
-			using _Type_ = std::iter_value_t<_InIterator_>;
-
-			auto* __first_address = std::to_address(__first);
-			auto* __result_address = std::to_address(__result);
-
-			for (sizetype __i = 0; __i < __n; ++__i, ++__first_address, ++__result_address)
-				*reinterpret_cast<_Type_*>(__result_address) = *reinterpret_cast<const _Type_* const>(__first_address);
-
-			__seek_possibly_wrapped_iterator(__result, __result_address);
-			__seek_possibly_wrapped_iterator(__first, __first_address);
-
-			return { __first, __result };
-		}
-
-		template <class _InIterator_, class _DifferenceType_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-		operator()(sizetype __aligned_size, sizetype __tail_size,
-			_InIterator_ __first, _DifferenceType_, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __in_ptr = std::to_address(__first);
-			auto* __out_ptr = std::to_address(__result);
-
-			const auto __aligned_end = __bytes_pointer_offset(__in_ptr, __aligned_size);
-
-			do {
-				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
-				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
-			} while (__in_ptr != __aligned_end);
-
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
-
-			return (*this)(__first, __tail_size / sizeof(typename _Tag_::value_type), __result);
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _InIterator_, class _DifferenceType_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-		operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>,
-			_InIterator_ __first, _DifferenceType_, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-			constexpr auto __tail_elems = _TailSize_ / sizeof(typename _Tag_::value_type);
-
-			auto* __in_ptr = std::to_address(__first);
-			auto* __out_ptr = std::to_address(__result);
-
-			auto __left = __iterations_aligned;
-
-			do {
-				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
-				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
-			} while (--__left);
-
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
-
-			return (*this)(__first, __tail_elems, __result);
-		}
-	};
-
 	template <std::input_iterator _InIterator_, std::weakly_incrementable _OutIterator_>
 	constexpr raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
 	operator()(_InIterator_ __first, std::iter_difference_t<_InIterator_> __n, _OutIterator_ __result) const noexcept
 		requires(std::indirectly_copyable<_InIterator_, _OutIterator_>)
 	{
-		if (__n <= 0) return { std::move(__first), std::move(__result) };
-
 		auto __r = __copy_n_unchecked(type_traits::__ranges_unwrap_iterator<_InIterator_>(std::move(__first)),
 			static_cast<sizetype>(__n), algorithm::__unwrap_iterator(std::move(__result)));
 
@@ -122,21 +54,25 @@ struct _Copy_n : _Traits_ {
 private:
 	template <class _InIterator_, class _OutIterator_>
 	raze_nodiscard constexpr raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-	__copy_n_unchecked(_InIterator_ __first, sizetype __n, _OutIterator_ __result) const noexcept
+	__copy_n_unchecked(_InIterator_ __first, std::iter_difference_t<_InIterator_> __n, _OutIterator_ __result) const noexcept
 	{
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_InIterator_>;
 		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
 
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 &&
-			(sizeof(_Value_) != 0) && ((sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0))
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InIterator_> && 
+			std::contiguous_iterator<_OutIterator_> && std::is_trivially_copyable_v<_Value_>)
 		{
 			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_copy_n, _IntegerValue_,
-					std::ranges::in_out_result<_InIterator_, _OutIterator_>, options::__get_forced_isa<_TraitsType>()>(
-					__n * sizeof(_Value_), __first, __n, __result);
+				auto* __first_ptr = std::to_address(__first);
+				auto* __r_ptr = std::to_address(__result);
+
+				auto __e = algorithm::__memcpy[_Traits_::traits()](__r_ptr, __first_ptr, __n * sizeof(_Value_));
+
+				__seek_possibly_wrapped_iterator(__first, __first_ptr + __n);
+				__seek_possibly_wrapped_iterator(__result, static_cast<decltype(__r_ptr)>(__e));
+
+				return std::ranges::in_out_result(__first, __result);
 			}
 		}
 

@@ -7,7 +7,7 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-raze_declare_const_function void* raze_stdcall __memcpy_scalar(void* raze_restrict __dst,
+raze_no_stack_protector raze_declare_const_function void* raze_stdcall __memcpy_scalar(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __bytes) noexcept
 {
 	char* __dst_ch = static_cast<char*>(__dst);
@@ -20,7 +20,7 @@ raze_declare_const_function void* raze_stdcall __memcpy_scalar(void* raze_restri
 }
 
 template <vx::simd_type _Simd_>
-raze_always_inline void* __general_memcpy_vectorized(void* raze_restrict __dst,
+raze_no_stack_protector raze_always_inline void* __general_memcpy_vectorized(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __aligned_bytes, sizetype __tail_bytes) noexcept
 {
 	raze_assume(__aligned_bytes >= sizeof(_Simd_));
@@ -40,21 +40,21 @@ raze_always_inline void* __general_memcpy_vectorized(void* raze_restrict __dst,
 	return __dst_ch;
 }
 
- raze_declare_const_function void* raze_stdcall __memcpy_sse2(void* raze_restrict __dst,
+raze_no_stack_protector raze_never_inline raze_declare_const_function void* raze_stdcall __memcpy_sse2(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __aligned_bytes, sizetype __tail_bytes) noexcept
 {
 	using _Simd_ = vx::simd<i32, vx::runtime_abi<arch::ISA::SSE2, 4>>;
 	return __general_memcpy_vectorized<_Simd_>(__dst, __src, __aligned_bytes, __tail_bytes);
 }
 
- raze_declare_const_function void* raze_stdcall __memcpy_avx(void* raze_restrict __dst,
+raze_no_stack_protector raze_never_inline raze_declare_const_function void* raze_stdcall __memcpy_avx(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __aligned_bytes, sizetype __tail_bytes) noexcept
 {
 	using _Simd_ = vx::simd<i32, vx::runtime_abi<arch::ISA::AVX, 8>>;
 	return __general_memcpy_vectorized<_Simd_>(__dst, __src, __aligned_bytes, __tail_bytes);
 }
 
- raze_declare_const_function void* raze_stdcall __memcpy_avx512f(void* raze_restrict __dst,
+raze_no_stack_protector raze_never_inline raze_declare_const_function void* raze_stdcall __memcpy_avx512f(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __aligned_bytes, sizetype __tail_bytes) noexcept
 {
 	using _Simd_ = vx::simd<i32, vx::runtime_abi<arch::ISA::AVX512F, 16>>;
@@ -62,7 +62,7 @@ raze_always_inline void* __general_memcpy_vectorized(void* raze_restrict __dst,
 }
 
 template <template <class> class _Func_, class _Traits_>
-raze_never_inline raze_declare_const_function void* raze_stdcall __dispatch_memcpy(void* raze_restrict __dst,
+raze_no_stack_protector raze_always_inline raze_declare_const_function void* raze_stdcall __dispatch_memcpy(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __bytes) noexcept
 {
 	return vx::__dispatch_sized_impl<_Func_, i32, void*, options::__get_forced_isa<_Traits_>()>(__bytes, __dst, __src, __bytes);

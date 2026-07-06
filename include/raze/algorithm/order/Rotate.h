@@ -4,6 +4,8 @@
 #include <raze/algorithm/swap/Swap.h>
 #include <raze/algorithm/copy/Copy.h>
 #include <raze/algorithm/copy/CopyN.h>
+#include <src/raze/algorithm/memory/Swap3Ranges.h>
+#include <src/raze/algorithm/memory/SwapRanges.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -69,34 +71,6 @@ struct _Rotate : _Traits_ {
 			auto* __first_ptr = std::to_address(__first);
 			auto* __middle_ptr = std::to_address(__middle);
 			auto* __last_ptr = std::to_address(__sentinel);
-			 
-			auto __swap_3_ranges = [] (auto* __first1, auto* __last1, auto* __first2, auto* __first3) raze_always_inline_lambda {
-				const auto __first1_aligned_size = __byte_length(__first1, __last1) & ~(sizeof(_Tag_) - 1);
-				const auto __first1_aligned_end = __bytes_pointer_offset(__first1, __first1_aligned_size);
-
-				do {
-					auto __v1 = vx::load<_Tag_>(__first1);
-					auto __v2 = vx::load<_Tag_>(__first2);
-					auto __v3 = vx::load<_Tag_>(__first3);
-					vx::store(__first1, __v2);
-					vx::store(__first2, __v3);
-					vx::store(__first3, __v1);
-					__advance_bytes(__first1, __first3, sizeof(_Tag_));
-					__advance_bytes(__first2, sizeof(_Tag_));
-				} while (__first1 != __first1_aligned_end);
-
-				for (; __first1 != __last1; ++__first1, ++__first2, ++__first3) {
-					_Value_ __v1 = *__first1;
-					_Value_ __v2 = *__first2;
-					_Value_ __v3 = *__first3;
-
-					*__first1 = __v2;
-					*__first2 = __v3;
-					*__first3 = __v1;
-				}
-			};
-
-			using _Copy_fn = typename _Copy<_Traits_>::template __vectorized_copy<_Tag_>;
 
 			for (;;) {
 				const auto __left_size = __byte_length(__first_ptr, __middle_ptr);
@@ -116,13 +90,13 @@ struct _Rotate : _Traits_ {
 					auto* __mid2 = __last_ptr;
 					__rewind_bytes(__mid2, __left_size);
 					if (__left_size * 2 > __right_size) {
-						swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __mid2, __mid2, __last_ptr);
+						__swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __mid2, __mid2, __last_ptr);
 						__last_ptr = __mid2;
 					}
 					else {
 						auto* __mid3 = __mid2;
 						__rewind_bytes(__mid3, __left_size);
-						__swap_3_ranges(__mid2, __last_ptr, __first_ptr, __mid3);
+						__swap_3_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__mid2, __last_ptr, __first_ptr, __mid3);
 						__last_ptr = __mid3;
 					}
 				}
@@ -140,13 +114,13 @@ struct _Rotate : _Traits_ {
 					}
 
 					if (__right_size * 2 > __left_size) {
-						swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
+						__swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
 						__advance_bytes(__first_ptr, __right_size);
 					}
 					else {
 						auto* __mid2 = __first_ptr;
 						__advance_bytes(__mid2, __right_size);
-						__swap_3_ranges(__middle_ptr, __last_ptr, __mid2, __first_ptr);
+						__swap_3_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__middle_ptr, __last_ptr, __mid2, __first_ptr);
 						__advance_bytes(__first_ptr, __right_size * 2);
 					}
 				}
@@ -215,7 +189,8 @@ private:
 		{
 			if not consteval {
 				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>>(
+				return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>,
+					options::__get_forced_isa<_TraitsType>()>(
 					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __middle, __last);
 			}
 		}
@@ -241,7 +216,8 @@ private:
 		{
 			if not consteval {
 				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>>(
+				return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>,
+				options::__get_forced_isa<_TraitsType>()>(
 					std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{}, __first, __middle, __last);
 			}
 		}
