@@ -13,8 +13,27 @@ raze_unmangled raze_no_stack_protector raze_declare_const_function void* raze_st
 	char* __dst_ch = static_cast<char*>(__dst);
 	const char* __src_ch = static_cast<const char*>(__src);
 
-	for (sizetype __i = 0; __i < __bytes; ++__i)
+	while (__bytes >= 8) {
+		*reinterpret_cast<raze::i64*>(__dst_ch) = *reinterpret_cast<const raze::i64*>(__src_ch);
+		__dst_ch += 8;
+		__src_ch += 8;
+		__bytes -= 8;
+	}
+	if (__bytes >= 4) {
+		*reinterpret_cast<raze::i32*>(__dst_ch) = *reinterpret_cast<const raze::i32*>(__src_ch);
+		__dst_ch += 4;
+		__src_ch += 4;
+		__bytes -= 4;
+	}
+	if (__bytes >= 2) {
+		*reinterpret_cast<raze::i16*>(__dst_ch) = *reinterpret_cast<const raze::i16*>(__src_ch);
+		__dst_ch += 2;
+		__src_ch += 2;
+		__bytes -= 2;
+	}
+	if (__bytes) {
 		*__dst_ch++ = *__src_ch++;
+	}
 
 	return __dst_ch;
 }
@@ -31,7 +50,6 @@ raze_no_stack_protector raze_always_inline void* __general_memcpy_vectorized(voi
 		__aligned_bytes -= sizeof(_Simd_);
 	} while (__aligned_bytes != 0);
 
-	return __raze_memcpy_scalar(__dst, __src, __tail_bytes);
 }
 
 raze_unmangled raze_no_stack_protector raze_declare_const_function void* raze_stdcall __raze_memcpy_sse2(void* raze_restrict __dst,

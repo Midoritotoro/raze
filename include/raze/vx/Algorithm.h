@@ -69,11 +69,90 @@ constexpr inline auto rotate_left = raze::options::functor<_Configurable_rotate_
 constexpr inline auto rotate_right = raze::options::functor<_Configurable_rotate_right>;
 constexpr inline auto shuffle = raze::options::functor<_Configurable_shuffle>;
 constexpr inline auto clamp = raze::options::functor<_Configurable_clamp>;
+constexpr inline auto sfence = raze::options::functor<_Configurable_sfence>;
 constexpr inline auto vmin = vertical_min;
 constexpr inline auto vmax = vertical_max;
 constexpr inline auto hsum = horizontal_sum;
 constexpr inline auto hmin = horizontal_min;
 constexpr inline auto hmax = horizontal_max;
+
+template <class _Type_>
+struct stream_ptr {
+    using value_type = _Type_;
+    using pointer = _Type_*;
+    using const_pointer = const _Type_*;
+    using reference = _Type_&;
+    using const_reference = const _Type_&;
+
+    pointer _ptr = nullptr;
+
+    stream_ptr() noexcept {}
+    explicit stream_ptr(pointer __p) noexcept:  
+        _ptr(__p) 
+    {}
+
+    stream_ptr(const std::remove_const_t<_Type_>* __p) noexcept:
+        _ptr(const_cast<pointer>(__p)) 
+    {}
+
+    ~stream_ptr() noexcept {
+        sfence();
+    }
+
+    raze_always_inline pointer get() const noexcept {
+        return _ptr;
+    }
+
+    raze_always_inline stream_ptr operator+(std::ptrdiff_t __offset) const noexcept {
+        return stream_ptr(_ptr + __offset);
+    }
+
+    raze_always_inline stream_ptr operator-(std::ptrdiff_t __offset) const noexcept {
+        return stream_ptr(_ptr - __offset);
+    }
+
+    raze_always_inline stream_ptr& operator+=(std::ptrdiff_t __offset) noexcept {
+        _ptr += __offset;
+        return *this;
+    }
+
+    raze_always_inline stream_ptr& operator-=(std::ptrdiff_t __offset) noexcept {
+        _ptr -= __offset;
+        return *this;
+    }
+
+    raze_always_inline stream_ptr& operator++() noexcept {
+        ++_ptr;
+        return *this;
+    }
+
+    raze_always_inline stream_ptr operator++(int) noexcept {
+        stream_ptr __tmp = *this;
+        ++_ptr;
+        return __tmp;
+    }
+
+    raze_always_inline bool operator==(const stream_ptr& __other) const noexcept {
+        return _ptr == __other._ptr;
+    }
+
+    raze_always_inline bool operator!=(const stream_ptr& __other) const noexcept {
+        return _ptr != __other._ptr;
+    }
+
+    raze_always_inline bool operator<(const stream_ptr& __other) const noexcept {
+        return _ptr < __other._ptr;
+    }
+
+    raze_always_inline void advance_bytes(sizetype __bytes) noexcept {
+        algorithm::__advance_bytes(_ptr, __bytes);
+    }
+};
+
+template <class _Type_>
+raze_always_inline constexpr stream_ptr<std::remove_cv_t<_Type_>> stream(_Type_* __ptr) noexcept {
+    return stream_ptr<std::remove_cv_t<_Type_>>(__ptr);
+}
 
 template <ternary_mask_expression_type _Expression_>
 raze_always_inline constexpr auto as_ternary_mask() noexcept {
