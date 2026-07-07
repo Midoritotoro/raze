@@ -80,23 +80,23 @@ struct _Rotate : _Traits_ {
 					if (__left_size == 0) break;
 
 					if (__left_size <= 512 && (__left_size <= 128 || __right_size >= __left_size * 2)) {
-						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __left_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
+						copy_n(__first_ptr, __left_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
 						memmove(__first_ptr, __middle_ptr, __right_size);
 						__advance_bytes(__first_ptr, __right_size);
-						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](reinterpret_cast<_Value_*>(__buf), __left_size / sizeof(_Value_), __first_ptr);
+						copy_n(reinterpret_cast<_Value_*>(__buf), __left_size / sizeof(_Value_), __first_ptr);
 						break;
 					}
 
 					auto* __mid2 = __last_ptr;
 					__rewind_bytes(__mid2, __left_size);
 					if (__left_size * 2 > __right_size) {
-						__swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __mid2, __mid2, __last_ptr);
+						__swap_ranges(__first_ptr, __mid2, __mid2, __last_ptr);
 						__last_ptr = __mid2;
 					}
 					else {
 						auto* __mid3 = __mid2;
 						__rewind_bytes(__mid3, __left_size);
-						__swap_3_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__mid2, __last_ptr, __first_ptr, __mid3);
+						__swap_3_ranges(__mid2, __last_ptr, __first_ptr, __mid3);
 						__last_ptr = __mid3;
 					}
 				}
@@ -105,22 +105,22 @@ struct _Rotate : _Traits_ {
 
 					if (__right_size <= 512 && (__right_size <= 128 || __left_size >= __right_size * 2)) {
 						__rewind_bytes(__last_ptr, __right_size);
-						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](__last_ptr, __right_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
+						copy_n(__last_ptr, __right_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
 						auto* __mid2 = __first_ptr;
 						__advance_bytes(__mid2, __right_size);
 						memmove(__mid2, __first_ptr, __left_size);
-						copy_n[options::__force_isa<vx::abi_t<_Tag_>::isa>](reinterpret_cast<_Value_*>(__buf), __right_size / sizeof(_Value_), __first_ptr);
+						copy_n(reinterpret_cast<_Value_*>(__buf), __right_size / sizeof(_Value_), __first_ptr);
 						break;
 					}
 
 					if (__right_size * 2 > __left_size) {
-						__swap_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
+						__swap_ranges(__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
 						__advance_bytes(__first_ptr, __right_size);
 					}
 					else {
 						auto* __mid2 = __first_ptr;
 						__advance_bytes(__mid2, __right_size);
-						__swap_3_ranges[options::__force_isa<vx::abi_t<_Tag_>::isa>](__middle_ptr, __last_ptr, __mid2, __first_ptr);
+						__swap_3_ranges(__middle_ptr, __last_ptr, __mid2, __first_ptr);
 						__advance_bytes(__first_ptr, __right_size * 2);
 					}
 				}

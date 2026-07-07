@@ -55,3 +55,7 @@
 #    define raze_declare_cold_function
 #  endif // defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 #endif // !defined(raze_declare_cold_function)
+
+#if !defined (raze_unmangled) 
+#  define raze_unmangled extern "C"
+#endif // !defined(raze_unmangled)

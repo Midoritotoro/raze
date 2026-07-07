@@ -7,7 +7,7 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-raze_no_stack_protector raze_declare_const_function void raze_stdcall __swap_3_ranges_scalar(void* __first1,
+raze_unmangled raze_no_stack_protector raze_declare_const_function void raze_stdcall __raze_swap_3_ranges_scalar(void* __first1,
 	void* __last1, void* __first2, void* __first3) noexcept
 {
 	char* __ch_first1 = static_cast<char*>(__first1);
@@ -59,61 +59,56 @@ raze_no_stack_protector raze_always_inline void __general_swap_3_ranges_vectoriz
 	}
 }
 
-raze_no_stack_protector raze_never_inline raze_declare_const_function void raze_stdcall __swap_3_ranges_sse2(void* __first1,
+raze_unmangled raze_no_stack_protector raze_never_inline raze_declare_const_function void raze_stdcall __raze_swap_3_ranges_sse2(void* __first1,
 	void* __last1, void* __first2, void* __first3, sizetype __aligned_bytes, sizetype __tail_bytes) noexcept
 {
 	using _Simd_ = vx::simd<i32, vx::runtime_abi<arch::ISA::SSE2, 4>>;
 	return __general_swap_3_ranges_vectorized<_Simd_>(__first1, __last1, __first2, __first3, __aligned_bytes, __tail_bytes);
 }
 
-raze_no_stack_protector raze_never_inline raze_declare_const_function void raze_stdcall __swap_3_ranges_avx(void* __first1,
+raze_unmangled raze_no_stack_protector raze_never_inline raze_declare_const_function void raze_stdcall __raze_swap_3_ranges_avx(void* __first1,
 	void* __last1, void* __first2, void* __first3, sizetype __aligned_bytes, sizetype __tail_bytes) noexcept
 {
 	using _Simd_ = vx::simd<i32, vx::runtime_abi<arch::ISA::AVX, 8>>;
 	return __general_swap_3_ranges_vectorized<_Simd_>(__first1, __last1, __first2, __first3, __aligned_bytes, __tail_bytes);
 }
 
-raze_no_stack_protector raze_never_inline raze_declare_const_function void raze_stdcall __swap_3_ranges_avx512f(void* __first1,
+raze_unmangled raze_no_stack_protector raze_never_inline raze_declare_const_function void raze_stdcall __raze_swap_3_ranges_avx512f(void* __first1,
 	void* __last1, void* __first2, void* __first3, sizetype __aligned_bytes, sizetype __tail_bytes) noexcept
 {
 	using _Simd_ = vx::simd<i32, vx::runtime_abi<arch::ISA::AVX512F, 16>>;
 	return __general_swap_3_ranges_vectorized<_Simd_>(__first1, __last1, __first2, __first3, __aligned_bytes, __tail_bytes);
 }
 
-template <template <class> class _Func_, class _Traits_>
-raze_no_stack_protector raze_always_inline raze_declare_const_function void raze_stdcall __dispatch_swap_3_ranges(
-	void* __first1, void* __last1, void* __first2, void* __first3, sizetype __bytes) noexcept
+template <class _Tag_>
+struct __vectorized_swap_3_ranges_internal {
+	raze_always_inline void operator()(void* __first1, void* __last1, void* __first2, void* __first3) const noexcept {
+		return __raze_swap_3_ranges_scalar(__first1, __last1, __first2, __first3);
+	}
+
+	raze_always_inline void operator()(sizetype __aligned_size, sizetype __tail_size,
+		void* __first1, void* __last1, void* __first2, void* __first3) const noexcept
+	{
+		using _Abi_ = vx::abi_t<_Tag_>;
+		if constexpr (vx::__has_avx512f_support_v<_Abi_::isa>) return __raze_swap_3_ranges_avx512f(__first1, __last1, __first2, __first3, __aligned_size, __tail_size);
+		else if constexpr (vx::__has_avx_support_v<_Abi_::isa>) return __raze_swap_3_ranges_avx(__first1, __last1, __first2, __first3, __aligned_size, __tail_size);
+		else return __raze_swap_3_ranges_sse2(__first1, __last1, __first2, __first3, __aligned_size, __tail_size);
+	}
+};
+
+raze_unmangled raze_no_stack_protector raze_never_inline raze_declare_const_function void raze_stdcall __raze_swap_3_ranges(
+	void* __first1, void* __last1, void* __first2, void* __first3) noexcept
 {
-	return vx::__dispatch_sized_impl<_Func_, i32, void, options::__get_forced_isa<_Traits_>()>(__bytes, __first1, __last1, __first2, __first3);
+	return vx::__dispatch_sized_impl<__vectorized_swap_3_ranges_internal, i32, void>(__byte_length(__first1, __last1), __first1, __last1, __first2, __first3);
 }
 
 template <class _Traits_>
 struct _Swap_3_ranges : _Traits_ {
-	template <class _Tag_>
-	struct __vectorized_swap_3_ranges {
-		raze_always_inline void operator()(void* __first1, void* __last1, void* __first2, void* __first3) const noexcept {
-			return __swap_3_ranges_scalar(__first1, __last1, __first2, __first3);
-		}
-
-		raze_always_inline void operator()(sizetype __aligned_size, sizetype __tail_size,
-			void* __first1, void* __last1, void* __first2, void* __first3) const noexcept
-		{
-			using _Abi_ = vx::abi_t<_Tag_>;
-			if constexpr (vx::__has_avx512f_support_v<_Abi_::isa>) return __swap_3_ranges_avx512f(__first1, __last1, __first2, __first3, __aligned_size, __tail_size);
-			else if constexpr (vx::__has_avx_support_v<_Abi_::isa>) return __swap_3_ranges_avx(__first1, __last1, __first2, __first3, __aligned_size, __tail_size);
-			else return __swap_3_ranges_sse2(__first1, __last1, __first2, __first3, __aligned_size, __tail_size);
-		}
-	};
-
 	raze_always_inline void operator()(void* __first1, void* __last1, void* __first2, void* __first3) const noexcept {
 		using _TraitsType_ = decltype(_Traits_::traits());
-		if constexpr (options::__get_forced_isa<_TraitsType_>() == arch::ISA::None) {
-			return __dispatch_swap_3_ranges<__vectorized_swap_3_ranges, _TraitsType_>(__first1, __last1, __first2, __first3, __byte_length(__first1, __last1));
-		}
-		else {
-			return vx::__dispatch_sized_impl<__vectorized_swap_3_ranges, i32, void,
-				options::__get_forced_isa<_TraitsType_>()>(__byte_length(__first1, __last1), __first1, __last1, __first2, __first3);
-		}
+		if constexpr (options::__get_forced_isa<_TraitsType_>() == arch::ISA::None) return __raze_swap_3_ranges(__first1, __last1, __first2, __first3);
+		else return vx::__dispatch_sized_impl<__vectorized_swap_3_ranges_internal, i32, void,
+			options::__get_forced_isa<_TraitsType_>()>(__byte_length(__first1, __last1), __first1, __last1, __first2, __first3);
 	}
 };
 

@@ -151,10 +151,10 @@ struct _Configurable_sized_isa_dispatcher {
                 return _Function_<_Simd_>()(__aligned_size, __size - __aligned_size, std::forward<_Args_>(__args)...);
            }
            else {
-               if (__size < 16) return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
-               const auto __all = arch::ProcessorFeatures::all();
+                if (__size < 16) return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+                const auto __all = arch::ProcessorFeatures::all();
 
-               if (__size >= 64) {
+                if (__size >= 64) {
                     if constexpr (sizeof(_Type_) >= 4) {
                         if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all))
                             return _Function_<simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>>()(
