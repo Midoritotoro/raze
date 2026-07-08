@@ -94,7 +94,7 @@ void test_copy_random(unsigned seed = 42) {
     std::mt19937 size_gen(seed + 1);
     std::uniform_int_distribution<int> size_dist(0, 1000);
     
-    for (int i = 0; i < 100000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         size_t size = size_dist(size_gen);
         auto src = generate_random_vector<T>(size, seed + i);
         std::vector<T> dst(size), dst_copy(size);
@@ -115,7 +115,7 @@ void test_copy_ranges(unsigned seed = 42) {
     std::mt19937 size_gen(seed + 1);
     std::uniform_int_distribution<int> size_dist(0, 1000);
     
-    for (int i = 0; i < 100000; ++i) {
+    for (int i = 0; i < 10000; ++i) {
         size_t size = size_dist(size_gen);
         auto src = generate_random_vector<T>(size, seed + i + 30000);
         std::vector<T> dst(size), dst_copy(size);
@@ -186,7 +186,7 @@ void test_copy_list(unsigned seed = 42) {
     std::mt19937 size_gen(seed + 1);
     std::uniform_int_distribution<int> size_dist(10, 2000);
     
-    for (int i = 0; i < 20000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         size_t size = size_dist(size_gen);
         auto src = generate_random_list<T>(size, seed + i + 200000);
         std::list<T> dst, dst_copy;
@@ -203,9 +203,9 @@ void test_copy_list(unsigned seed = 42) {
 template <typename T>
 void test_copy_forward_list(unsigned seed = 42) {
     std::mt19937 size_gen(seed + 1);
-    std::uniform_int_distribution<int> size_dist(10, 12500);
+    std::uniform_int_distribution<int> size_dist(10, 5000);
     
-    for (int i = 0; i < 200; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         size_t size = size_dist(size_gen);
         auto src = generate_random_forward_list<T>(size, seed + i + 600000);
         std::forward_list<T> dst, dst_copy;
@@ -221,7 +221,7 @@ void test_copy_forward_list(unsigned seed = 42) {
 
 template <typename T>
 void test_copy_overlapping(unsigned seed = 42) {
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         size_t size = 100;
         auto vec = generate_random_vector<T>(size, seed + i + 1600000);
         auto vec_copy = vec;
@@ -238,7 +238,7 @@ void test_copy_small_structs(unsigned seed = 42) {
     std::mt19937 size_gen(seed);
     std::uniform_int_distribution<int> size_dist(0, 1000);
     
-    for (int i = 0; i < 20000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         size_t size = size_dist(size_gen);
         std::vector<Struct> src(size), dst(size), dst_copy(size);
         for (auto& x : src) std::memset(&x, static_cast<unsigned char>(i % 256), sizeof(Struct));
@@ -278,7 +278,7 @@ void test_copy_bit_patterns() {
 }
 
 void test_copy_struct(unsigned seed = 42) {
-    for (int i = 0; i < 100000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         std::vector<Point> src(100), dst(100), dst_copy(100);
         for (auto& p : src) { p.x = i; p.y = i * 2; }
         

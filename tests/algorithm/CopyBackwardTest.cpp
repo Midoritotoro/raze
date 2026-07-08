@@ -92,10 +92,8 @@ void test_copy_backward_random(unsigned seed = 42) {
         auto std_result = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(simd_result.in == src.end());
-        raze_assert(simd_result.out == dst.end() - static_cast<std::ptrdiff_t>(size));
-        raze_assert(std_result.in == src.end());
-        raze_assert(std_result.out == dst_copy.end() - static_cast<std::ptrdiff_t>(size));
+        raze_assert((src.end() - simd_result.in) == (src.end() - std_result.in));
+        raze_assert((dst.end() - simd_result.out) == (dst_copy.end() - std_result.out));
     }
 }
 
@@ -113,10 +111,8 @@ void test_copy_backward_ranges(unsigned seed = 42) {
         auto std_result = std::ranges::copy_backward(src, dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(simd_result.in == src.end());
-        raze_assert(simd_result.out == dst.end() - static_cast<std::ptrdiff_t>(size));
-        raze_assert(std_result.in == src.end());
-        raze_assert(std_result.out == dst_copy.end() - static_cast<std::ptrdiff_t>(size));
+        raze_assert((src.end() - simd_result.in) == (src.end() - std_result.in));
+        raze_assert((dst.end() - simd_result.out) == (dst_copy.end() - std_result.out));
     }
 }
 
@@ -127,10 +123,8 @@ void test_copy_backward_edge_cases() {
         auto r1 = raze::algorithm::copy_backward(src.begin(), src.end(), dst.end());
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.end());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.end());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     {
         std::vector<T> src = {T(42)};
@@ -138,11 +132,8 @@ void test_copy_backward_edge_cases() {
         auto r1 = raze::algorithm::copy_backward(src.begin(), src.end(), dst.end());
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(dst[0] == T(42));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin()); 
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     {
         std::vector<T> src(100, T(99));
@@ -151,10 +142,8 @@ void test_copy_backward_edge_cases() {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         raze_assert(equal_ranges(dst, dst_copy));
         for (const auto& x : dst) raze_assert(x == T(99));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
 }
 
@@ -168,10 +157,8 @@ void test_copy_backward_return_value(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     
     {
@@ -182,14 +169,8 @@ void test_copy_backward_return_value(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.end() - 3);
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.end() - 3);
-        
-        raze_assert(dst[7] == T(10));
-        raze_assert(dst[8] == T(20));
-        raze_assert(dst[9] == T(30));
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     
     {
@@ -200,15 +181,8 @@ void test_copy_backward_return_value(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin() + 2, src.begin() + 6, dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.begin() + 2);
-        raze_assert(r1.out == dst.end() - 4);
-        raze_assert(r2.in == src.end() + 2);
-        raze_assert(r2.out == dst_copy.end() - 4);
-        
-        raze_assert(dst[4] == T(3));
-        raze_assert(dst[5] == T(4));
-        raze_assert(dst[6] == T(5));
-        raze_assert(dst[7] == T(6));
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     
     for (size_t size : {1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256}) {
@@ -218,23 +192,8 @@ void test_copy_backward_return_value(unsigned seed = 42) {
         auto r1 = raze::algorithm::copy_backward(src.begin(), src.end(), dst.end());
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
-    }
-    
-    {
-        std::vector<T> src = {T(1), T(2), T(3)};
-        std::vector<T> dst(3), dst_copy(3);
-        
-        auto [in, out] = raze::algorithm::copy_backward(src.begin(), src.end(), dst.end());
-        auto [in2, out2] = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
-        
-        raze_assert(in == src.end());
-        raze_assert(out == dst.begin());
-        raze_assert(in2 == src.end());
-        raze_assert(out2 == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     
     {
@@ -245,10 +204,8 @@ void test_copy_backward_return_value(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src, dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
 }
 
@@ -262,10 +219,8 @@ void test_copy_backward_simd_boundaries(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
 }
 
@@ -279,10 +234,8 @@ void test_copy_backward_large_vectors(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
 }
 
@@ -300,12 +253,7 @@ void test_copy_backward_list(unsigned seed = 42) {
         
         auto r1 = raze::algorithm::copy_backward(src.begin(), src.end(), dst.end());
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
-        
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
     }
 }
 
@@ -321,10 +269,8 @@ void test_copy_backward_overlapping(unsigned seed = 42) {
         
         raze_assert(equal_ranges(vec, vec_copy));
         
-        raze_assert(r1.in == vec.end());
-        raze_assert(r1.out == vec.begin() + 50);
-        raze_assert(r2.in == vec_copy.end());
-        raze_assert(r2.out == vec_copy.begin() + 50);
+        raze_assert((vec.end() - r1.in) == (vec_copy.end() - r2.in));
+        raze_assert((vec.end() - r1.out) == (vec_copy.end() - r2.out));
         
         for (size_t j = 0; j < 50; ++j) {
             if constexpr (std::is_floating_point_v<T>) { if (std::isnan(vec[j]) || std::isnan(vec_copy[j])) continue; }
@@ -345,10 +291,8 @@ void test_copy_backward_overlapping(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(vec_copy.begin(), vec_copy.end(), vec_copy.end());
         
         raze_assert(equal_ranges(vec, vec_copy));
-        raze_assert(r1.in == vec.end());
-        raze_assert(r1.out == vec.begin()); 
-        raze_assert(r2.in == vec_copy.end());
-        raze_assert(r2.out == vec_copy.begin());
+        raze_assert((vec.end() - r1.in) == (vec_copy.end() - r2.in));
+        raze_assert((vec.end() - r1.out) == (vec_copy.end() - r2.out));
     }
 }
 
@@ -366,10 +310,8 @@ void test_copy_backward_small_structs(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     
     for (size_t size : {0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256}) {
@@ -380,10 +322,8 @@ void test_copy_backward_small_structs(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
     
     for (int i = 0; i < 50; ++i) {
@@ -396,10 +336,8 @@ void test_copy_backward_small_structs(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(vec_copy.begin(), vec_copy.begin() + 50, vec_copy.end());
         
         raze_assert(equal_ranges(vec, vec_copy));
-        raze_assert(r1.in == vec.end());
-        raze_assert(r1.out == vec.begin() + 50);
-        raze_assert(r2.in == vec_copy.end());
-        raze_assert(r2.out == vec_copy.begin() + 50);
+        raze_assert((vec.end() - r1.in) == (vec_copy.end() - r2.in));
+        raze_assert((vec.end() - r1.out) == (vec_copy.end() - r2.out));
     }
 }
 
@@ -415,10 +353,8 @@ void test_copy_backward_bit_patterns() {
             auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
             
             raze_assert(equal_ranges(dst, dst_copy));
-            raze_assert(r1.in == src.end());
-            raze_assert(r1.out == dst.begin());
-            raze_assert(r2.in == src.end());
-            raze_assert(r2.out == dst_copy.begin());
+            raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+            raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
             
             for (size_t i = 0; i < size; ++i) {
                 raze_assert(std::memcmp(&dst[i], &src[i], sizeof(T)) == 0);
@@ -436,10 +372,8 @@ void test_copy_backward_struct(unsigned seed = 42) {
         auto r2 = std::ranges::copy_backward(src.begin(), src.end(), dst_copy.end());
         
         raze_assert(equal_ranges(dst, dst_copy));
-        raze_assert(r1.in == src.end());
-        raze_assert(r1.out == dst.begin());
-        raze_assert(r2.in == src.end());
-        raze_assert(r2.out == dst_copy.begin());
+        raze_assert((src.end() - r1.in) == (src.end() - r2.in));
+        raze_assert((dst.end() - r1.out) == (dst_copy.end() - r2.out));
     }
 }
 

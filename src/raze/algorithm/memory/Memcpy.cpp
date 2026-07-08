@@ -4,41 +4,32 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-raze_always_inline void* __memcpy_scalar_impl(u8* raze_restrict __dst_ch,
-    const u8* raze_restrict __src_ch, sizetype __bytes) noexcept
+raze_always_inline void* __memcpy_scalar_impl(volatile u8* raze_restrict __dst_ch,
+    const volatile u8* raze_restrict __src_ch, sizetype __bytes) noexcept
 {
 	while (__bytes >= 8) {
-		*reinterpret_cast<raze::i64*>(__dst_ch) = *reinterpret_cast<const raze::i64*>(__src_ch);
-		__dst_ch += 8;
-		__src_ch += 8;
-		__bytes -= 8;
+		*reinterpret_cast<volatile raze::i64*>(__dst_ch) = *reinterpret_cast<const volatile raze::i64*>(__src_ch);
+		__dst_ch += 8; __src_ch += 8; __bytes -= 8;
 	}
 	if (__bytes >= 4) {
-		*reinterpret_cast<raze::i32*>(__dst_ch) = *reinterpret_cast<const raze::i32*>(__src_ch);
-		__dst_ch += 4;
-		__src_ch += 4;
-		__bytes -= 4;
+		*reinterpret_cast<volatile raze::i32*>(__dst_ch) = *reinterpret_cast<const volatile raze::i32*>(__src_ch);
+		__dst_ch += 4; __src_ch += 4; __bytes -= 4;
 	}
 	if (__bytes >= 2) {
-		*reinterpret_cast<raze::i16*>(__dst_ch) = *reinterpret_cast<const raze::i16*>(__src_ch);
-		__dst_ch += 2;
-		__src_ch += 2;
-		__bytes -= 2;
+		*reinterpret_cast<volatile raze::i16*>(__dst_ch) = *reinterpret_cast<const volatile raze::i16*>(__src_ch);
+		__dst_ch += 2; __src_ch += 2; __bytes -= 2;
 	}
 	if (__bytes) {
 		*__dst_ch++ = *__src_ch++;
 	}
 
-	return __dst_ch;
+	return const_cast<u8*>(__dst_ch);
 }
 
 raze_unmangled raze_no_stack_protector raze_declare_const_function void* raze_stdcall __raze_memcpy_scalar(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __bytes) noexcept
 {
-	u8* __dst_ch = static_cast<u8*>(__dst);
-	const u8* __src_ch = static_cast<const u8*>(__src);
-
-    return __memcpy_scalar_impl(__dst_ch, __src_ch, __bytes);
+    return __memcpy_scalar_impl(static_cast<u8*>(__dst), static_cast<const u8*>(__src), __bytes);
 }
 
 raze_always_inline void __memcpy_16(void* raze_restrict __dst, const void* raze_restrict __src) noexcept {
@@ -278,14 +269,14 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 	u8* __ch_dst = (u8*)__dst;
 	const u8* __ch_src = (const u8*)__src;
 	
-	i32 __all_features = arch::ProcessorFeatures::all();
-
 	if (__bytes >= 16) {
 		if (__bytes >= 32) {
 			if (__bytes >= __erms_threshold) {
+				i32 __all_features = arch::ProcessorFeatures::all();
+
 				if (arch::ProcessorFeatures::has<arch::__features::ERMS>(__all_features)) {
 					__movsb(__ch_dst, __ch_src, __bytes);
-					goto __ret;
+					return __bytes_pointer_offset(__ch_dst, __bytes);
 				}
 				else {
 					if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all_features)) {
@@ -294,26 +285,12 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 							_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
 							_mm512_storeu_si512(__ch_dst + 128, _mm512_loadu_si512(__ch_src + 128));
 							_mm512_storeu_si512(__ch_dst + 192, _mm512_loadu_si512(__ch_src + 192));
-							_mm512_storeu_si512(__ch_dst + 256, _mm512_loadu_si512(__ch_src + 256));
-							_mm512_storeu_si512(__ch_dst + 320, _mm512_loadu_si512(__ch_src + 320));
-							_mm512_storeu_si512(__ch_dst + 384, _mm512_loadu_si512(__ch_src + 384));
-							_mm512_storeu_si512(__ch_dst + 448, _mm512_loadu_si512(__ch_src + 448));
-							__ch_dst += 512;
-							__ch_src += 512;
-							__bytes -= 512;
-						} while (__bytes > 512);
-
-						if (__bytes >= 256) {
-							_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
-							_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
-							_mm512_storeu_si512(__ch_dst + 128, _mm512_loadu_si512(__ch_src + 128));
-							_mm512_storeu_si512(__ch_dst + 192, _mm512_loadu_si512(__ch_src + 192));
 							__ch_dst += 256;
 							__ch_src += 256;
 							__bytes -= 256;
-						}
+						} while (__bytes >= 256);
 
-						return __raze_memcpy_scalar(__ch_dst, __ch_src, __bytes);
+						goto __avx512_process_tail_from_0_to_256;
 					}
 					else if (arch::ProcessorFeatures::has<arch::__features::AVX2>(__all_features)) {
 						do {
@@ -321,26 +298,12 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
 							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 2, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 2));
 							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 3, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 3));
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 4, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 4));
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 5, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 5));
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 6, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 6));
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 7, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 7));
-							__ch_dst += 256;
-							__ch_src += 256;
-							__bytes -= 256;
-						} while (__bytes > 256);
-
-						if (__bytes >= 128) {
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src)));
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 2, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 2));
-							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 3, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 3));
 							__ch_dst += 128;
 							__ch_src += 128;
 							__bytes -= 128;
-						}
+						} while (__bytes >= 128);
 
-						return __raze_memcpy_scalar(__ch_dst, __ch_src, __bytes);
+						goto __avx_process_tail_from_0_to_128;
 					}
 					else {
 						do {
@@ -348,94 +311,36 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
 							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 2, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 2));
 							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 3, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 3));
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 4, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 4));
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 5, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 5));
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 6, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 6));
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 7, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 7));
-							__ch_dst += 128;
-							__ch_src += 128;
-							__bytes -= 128;
-						} while (__bytes > 128);
-
-						if (__bytes >= 64) {
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src)));
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 2, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 2));
-							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 3, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 3));
 							__ch_dst += 64;
 							__ch_src += 64;
 							__bytes -= 64;
-						}
+						} while (__bytes >= 64);
 
-						return __raze_memcpy_scalar(__ch_dst, __ch_src, __bytes);
+						goto __sse2_process_tail_from_0_to_64;
 					}
 
 					__memcpy_scalar_impl(__ch_dst, __ch_src, __bytes);
-					goto __ret;
+					return __bytes_pointer_offset(__ch_dst, __bytes);
 				}
 			}
 			else {
+				i32 __all_features = arch::ProcessorFeatures::all();
+
 				if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all_features)) {
-					while (__bytes >= 512) {
-						_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
-						_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
-						_mm512_storeu_si512(__ch_dst + 128, _mm512_loadu_si512(__ch_src + 128));
-						_mm512_storeu_si512(__ch_dst + 192, _mm512_loadu_si512(__ch_src + 192));
-						_mm512_storeu_si512(__ch_dst + 256, _mm512_loadu_si512(__ch_src + 256));
-						_mm512_storeu_si512(__ch_dst + 320, _mm512_loadu_si512(__ch_src + 320));
-						_mm512_storeu_si512(__ch_dst + 384, _mm512_loadu_si512(__ch_src + 384));
-						_mm512_storeu_si512(__ch_dst + 448, _mm512_loadu_si512(__ch_src + 448));
-
-						__ch_dst += 512;
-						__ch_src += 512;
-						__bytes -= 512;
-					}
-
-					if (__bytes >= 256) {
-						_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
-						_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
-						_mm512_storeu_si512(__ch_dst + 128, _mm512_loadu_si512(__ch_src + 128));
-						_mm512_storeu_si512(__ch_dst + 192, _mm512_loadu_si512(__ch_src + 192));
-						__ch_dst += 256;
-						__ch_src += 256;
-						__bytes -= 256;
-					}
-
-					if (__bytes >= 128) {
-						_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
-						_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
-						__ch_dst += 128;
-						__ch_src += 128;
-						__bytes -= 128;
-					}
-
-					if (__bytes >= 64) {
-						_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
-						__ch_dst += 64;
-						__ch_src += 64;
-						__bytes -= 64;
-					}
-
-					__memcpy_small_avx512f(__ch_dst, __ch_src, __bytes);
-					goto __ret;
-				}
-				else if (arch::ProcessorFeatures::has<arch::__features::AVX2>(__all_features)) {
 					while (__bytes >= 256) {
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src)));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 2, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 2));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 3, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 3));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 4, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 4));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 5, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 5));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 6, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 6));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 7, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 7));
-
+						_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
+						_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
+						_mm512_storeu_si512(__ch_dst + 128, _mm512_loadu_si512(__ch_src + 128));
+						_mm512_storeu_si512(__ch_dst + 192, _mm512_loadu_si512(__ch_src + 192));
 						__ch_dst += 256;
 						__ch_src += 256;
 						__bytes -= 256;
 					}
 
-					if (__bytes >= 128) {
+					goto __avx512_process_tail_from_0_to_256;
+				}
+				else if (arch::ProcessorFeatures::has<arch::__features::AVX>(__all_features)) {
+					while (__bytes >= 128) {
 						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src)));
 						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
 						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 2, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 2));
@@ -445,34 +350,10 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 						__bytes -= 128;
 					}
 
-					if (__bytes >= 64) {
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src)));
-						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
-						__ch_dst += 64;
-						__ch_src += 64;
-						__bytes -= 64;
-					}
-
-					__memcpy_small_avx(__ch_dst, __ch_src, __bytes);
-					goto __ret;
+					goto __avx_process_tail_from_0_to_128;
 				}
 				else {
-					while (__bytes >= 128) {
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src)));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 2, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 2));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 3, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 3));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 4, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 4));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 5, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 5));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 6, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 6));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 7, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 7));
-
-						__ch_dst += 128;
-						__ch_src += 128;
-						__bytes -= 128;
-					}
-
-					if (__bytes >= 64) {
+					while (__bytes >= 64) {
 						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src)));
 						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
 						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 2, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 2));
@@ -482,29 +363,62 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 						__bytes -= 64;
 					}
 
-					if (__bytes >= 32) {
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src)));
-						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
-						__ch_dst += 32;
-						__ch_src += 32;
-						__bytes -= 32;
-					}
-
-					__memcpy_small_sse2(__ch_dst, __ch_src, __bytes);
-					goto __ret;
+					goto __sse2_process_tail_from_0_to_64;
 				}
 			}
 
-
-			goto __ret;
+			if (arch::ProcessorFeatures::AVX()) __memcpy_small_avx(__dst, __src, __bytes);
+			return __bytes_pointer_offset(__ch_dst, __bytes);
 		}
 
 		__memcpy_small_sse2(__dst, __src, __bytes);
-		goto __ret;
+		return __bytes_pointer_offset(__ch_dst, __bytes);
 	}
-	
-	__memcpy_small(__dst, __src, __bytes);
-__ret:
+	else {
+		__memcpy_small(__dst, __src, __bytes);
+	}
+
+__avx512_process_tail_from_0_to_256:
+	if (__bytes >= 128) {
+		_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
+		_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
+		__ch_dst += 128;
+		__ch_src += 128;
+		__bytes -= 128;
+	}
+
+	if (__bytes >= 64) {
+		_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
+		__ch_dst += 64;
+		__ch_src += 64;
+		__bytes -= 64;
+	}
+
+	__memcpy_small_avx512f(__ch_dst, __ch_src, __bytes);
+	return __bytes_pointer_offset(__ch_dst, __bytes);
+
+__avx_process_tail_from_0_to_128:
+	if (__bytes >= 64) {
+		_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src)));
+		_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
+		__ch_dst += 64;
+		__ch_src += 64;
+		__bytes -= 64;
+	}
+
+	__memcpy_small_avx(__ch_dst, __ch_src, __bytes);
+	return __bytes_pointer_offset(__ch_dst, __bytes);
+
+__sse2_process_tail_from_0_to_64:
+	if (__bytes >= 32) {
+		_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src)));
+		_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
+		__ch_dst += 32;
+		__ch_src += 32;
+		__bytes -= 32;
+	}
+
+	__memcpy_small_sse2(__ch_dst, __ch_src, __bytes);
 	return __bytes_pointer_offset(__ch_dst, __bytes);
 }
 

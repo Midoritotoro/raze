@@ -6,6 +6,7 @@
 #include <raze/algorithm/copy/CopyN.h>
 #include <src/raze/algorithm/memory/Swap3Ranges.h>
 #include <src/raze/algorithm/memory/SwapRanges.h>
+#include <src/raze/algorithm/memory/Memmove.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -80,10 +81,10 @@ struct _Rotate : _Traits_ {
 					if (__left_size == 0) break;
 
 					if (__left_size <= 512 && (__left_size <= 128 || __right_size >= __left_size * 2)) {
-						copy_n(__first_ptr, __left_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
-						memmove(__first_ptr, __middle_ptr, __right_size);
+						__raze_memcpy(__buf, __first_ptr, __left_size);
+						__raze_memmove(__first_ptr, __middle_ptr, __right_size);
 						__advance_bytes(__first_ptr, __right_size);
-						copy_n(reinterpret_cast<_Value_*>(__buf), __left_size / sizeof(_Value_), __first_ptr);
+						__raze_memcpy(__first_ptr, __buf, __left_size);
 						break;
 					}
 
@@ -105,11 +106,11 @@ struct _Rotate : _Traits_ {
 
 					if (__right_size <= 512 && (__right_size <= 128 || __left_size >= __right_size * 2)) {
 						__rewind_bytes(__last_ptr, __right_size);
-						copy_n(__last_ptr, __right_size / sizeof(_Value_), reinterpret_cast<_Value_*>(__buf));
+						__raze_memcpy(__buf, __last_ptr, __right_size);
 						auto* __mid2 = __first_ptr;
 						__advance_bytes(__mid2, __right_size);
-						memmove(__mid2, __first_ptr, __left_size);
-						copy_n(reinterpret_cast<_Value_*>(__buf), __right_size / sizeof(_Value_), __first_ptr);
+						__raze_memmove(__mid2, __first_ptr, __left_size);
+						__raze_memcpy(__first_ptr, __buf, __right_size);
 						break;
 					}
 

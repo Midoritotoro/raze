@@ -455,8 +455,8 @@ void test_for_each_large_vectors(unsigned seed = 42) {
         auto vec = generate_random_vector<T>(size, seed + static_cast<unsigned>(size) + 999);
         auto vec_copy = vec;
         
-        raze::algorithm::for_each(vec.begin(), vec.end(), [](auto& x) { x = static_cast<T>(x + 1); });
-        std::ranges::for_each(vec_copy.begin(), vec_copy.end(), [](auto& x) { x = static_cast<T>(x + 1); });
+        raze::algorithm::for_each(vec.begin(), vec.end(), [](auto& x) { x = x + 1; });
+        std::ranges::for_each(vec_copy.begin(), vec_copy.end(), [](auto& x) { x = x + 1; });
         
         raze_assert(vec == vec_copy);
     }
