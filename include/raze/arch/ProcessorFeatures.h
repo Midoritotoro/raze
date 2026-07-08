@@ -18,7 +18,7 @@
 __RAZE_ARCH_NAMESPACE_BEGIN
 
 enum class __features : u8 {
-    SSE, SSE2, SSE3, SSSE3, SSE41, SSE42, AVX, AVX2, FMA3,
+    ERMS, SSE, SSE2, SSE3, SSSE3, SSE41, SSE42, AVX, AVX2, FMA3,
     AVX512F, AVX512BW, AVX512PF, AVX512ER, AVX512CD, AVX512VL, 
     AVX512DQ, AVX512VBMI, AVX512VBMI2, POPCNT
 };
@@ -46,7 +46,8 @@ public:
     raze_nodiscard raze_always_inline static bool AVX512DQ()    noexcept;
     raze_nodiscard raze_always_inline static bool AVX512VBMI()  noexcept;
     raze_nodiscard raze_always_inline static bool AVX512VBMI2() noexcept;
-    
+    raze_nodiscard raze_always_inline static bool ERMS() noexcept;
+
     raze_nodiscard raze_always_inline static bool POPCNT()      noexcept;
 
     template <arch::ISA _Feature_> 
@@ -62,7 +63,7 @@ private:
     {
         raze_nodiscard raze_always_inline static i32 highest_function_id(u32* registers) noexcept;
     public:
-        ProcessorFeaturesInternal() noexcept;
+        raze_always_inline ProcessorFeaturesInternal() noexcept;
 
         bool _sse = false;
         bool _sse2 = false;
@@ -86,6 +87,7 @@ private:
         bool _avx512vbmi2 = false;
 
         bool _popcnt = false;
+        bool _erms = false;
 
         i32 _all = 0;
     };
@@ -145,6 +147,7 @@ ProcessorFeatures::ProcessorFeaturesInternal::ProcessorFeaturesInternal() noexce
         _avx512er       = (leaf7Ebx >> 27) & 1;
         _avx512cd       = (leaf7Ebx >> 28) & 1;
         _avx512vl       = (leaf7Ebx >> 31) & 1;
+        _erms           = (leaf7Ebx >> 9) & 1;
 
         _avx512vbmi     = (leaf7Ecx >> 1) & 1;
         _avx512vbmi2    = (leaf7Ecx >> 6) & 1;
@@ -168,11 +171,16 @@ ProcessorFeatures::ProcessorFeaturesInternal::ProcessorFeaturesInternal() noexce
         (i32(_avx512dq) << static_cast<u32>(__features::AVX512DQ)) |
         (i32(_avx512vbmi) << static_cast<u32>(__features::AVX512VBMI)) |
         (i32(_avx512vbmi2) << static_cast<u32>(__features::AVX512VBMI2)) |
-        (i32(_popcnt) << static_cast<u32>(__features::POPCNT));
+        (i32(_popcnt) << static_cast<u32>(__features::POPCNT)) |
+        (i32(_erms) << static_cast<u32>(__features::ERMS));
 }
 
 i32 ProcessorFeatures::all() noexcept {
     return _processorFeaturesInternal._all;
+}
+
+bool ProcessorFeatures::ERMS() noexcept {
+    return _processorFeaturesInternal._erms;
 }
 
 bool ProcessorFeatures::SSE() noexcept {

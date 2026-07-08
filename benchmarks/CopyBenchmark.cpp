@@ -28,14 +28,15 @@ struct S8_ll { long long a; };
 template <class T, std::size_t Size>
 static void BM_StdCopy(benchmark::State& state) {
     TestData<T, Size> src;
-    std::array<T, Size> dst{};
+    TestData<T, Size> dst{};
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(src.data);
         benchmark::DoNotOptimize(dst);
 
-        std::ranges::copy(src.data, dst.begin());
+        auto res = std::ranges::copy(src.data, dst.data.begin());
 
+        benchmark::DoNotOptimize(res);
         benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
@@ -46,14 +47,14 @@ static void BM_StdCopy(benchmark::State& state) {
 template <class T, std::size_t Size>
 static void BM_RazeCopy(benchmark::State& state) {
     TestData<T, Size> src;
-    std::array<T, Size> dst{};
+    TestData<T, Size> dst{};
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(src.data);
         benchmark::DoNotOptimize(dst);
 
-        raze::algorithm::copy(src.data, dst.begin());
-
+        auto res =  raze::algorithm::copy(src.data, dst.data.begin());
+        benchmark::DoNotOptimize(res);
         benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
@@ -71,8 +72,9 @@ static void BM_StdCopyStruct(benchmark::State& state) {
         benchmark::DoNotOptimize(src);
         benchmark::DoNotOptimize(dst);
 
-        std::ranges::copy(src, dst.begin());
+        auto res = std::ranges::copy(src, dst.begin());
 
+        benchmark::DoNotOptimize(res);
         benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
@@ -90,8 +92,9 @@ static void BM_RazeCopyStruct(benchmark::State& state) {
         benchmark::DoNotOptimize(src);
         benchmark::DoNotOptimize(dst);
 
-        raze::algorithm::copy(src, dst.begin());
+        auto res = raze::algorithm::copy(src, dst.begin());
 
+        benchmark::DoNotOptimize(res);
         benchmark::DoNotOptimize(dst);
         benchmark::ClobberMemory();
     }
@@ -100,6 +103,19 @@ static void BM_RazeCopyStruct(benchmark::State& state) {
 }
 
 #define RAZE_BENCHMARK_COPY(name1, name2) \
+    BENCHMARK(name1<raze::i8, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 8>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    \
     BENCHMARK(name1<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name2<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name1<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\

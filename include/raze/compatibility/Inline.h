@@ -17,7 +17,7 @@
 
 #if !defined(raze_always_inline)
 #  if defined(raze_cpp_msvc)
-#    define raze_always_inline __forceinline
+#    define raze_always_inline inline __forceinline
 #  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 #    define raze_always_inline inline __attribute__((__always_inline__))
 #  else 

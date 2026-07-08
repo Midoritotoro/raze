@@ -67,7 +67,7 @@ private:
 				auto* __first_ptr = std::to_address(__first);
 				auto* __r_ptr = std::to_address(__result);
 
-				auto __e = algorithm::__memcpy[_Traits_::traits()](__r_ptr, __first_ptr, __n * sizeof(_Value_));
+				auto __e = __raze_memcpy(__r_ptr, __first_ptr, __n * sizeof(_Value_));
 
 				__seek_possibly_wrapped_iterator(__first, __first_ptr + __n);
 				__seek_possibly_wrapped_iterator(__result, static_cast<decltype(__r_ptr)>(__e));

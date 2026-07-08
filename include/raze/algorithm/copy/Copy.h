@@ -108,7 +108,7 @@ private:
 				auto* __r_ptr = std::to_address(__result);
 
 				const auto __size = __byte_length(__first_ptr, std::to_address(__last));
-				auto __e = algorithm::__memcpy[_Traits_::traits()](__r_ptr, __first_ptr, __size);
+				auto __e = __raze_memcpy(__r_ptr, __first_ptr, __size);
 
 				__seek_possibly_wrapped_iterator(__first, __bytes_pointer_offset(__first_ptr, __size));
 				__seek_possibly_wrapped_iterator(__result, static_cast<decltype(__r_ptr)>(__e));
@@ -137,8 +137,7 @@ private:
 			if not consteval {
 				auto* __first_ptr = std::to_address(__first);
 				auto* __r_ptr = std::to_address(__result);
-				auto __e = algorithm::__memcpy[_Traits_::traits()](__r_ptr, __first_ptr,
-					std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{});
+				auto __e = __raze_memcpy(__r_ptr, __first_ptr, std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{});
 
 				__seek_possibly_wrapped_iterator(__first, __bytes_pointer_offset(__first_ptr, _Size_));
 				__seek_possibly_wrapped_iterator(__result, static_cast<decltype(__r_ptr)>(__e));

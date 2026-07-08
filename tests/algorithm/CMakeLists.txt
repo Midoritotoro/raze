@@ -1,4 +1,4 @@
- cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
 
 project(razeTestsAlgorithm LANGUAGES CXX)
 
@@ -12,26 +12,33 @@ if (PROJECT_IS_TOP_LEVEL)
 endif()
 
 enable_testing()
+
+if(MSVC)
+    add_compile_options(/Od /Zi /bigobj /D NDEBUG=0) 
+else()
+    add_compile_options(-O0 -g -D NDEBUG=0)
+endif()
+
 macro(raze_algorithm_add_test filename)
     add_executable(${filename} ${filename}.cpp)
 
-    add_compile_options(/bigobj)
-    
     target_link_libraries(
       ${filename} PRIVATE
       raze::raze
     )
 
-    add_test(${filename} ${CMAKE_CURRENT_BINARY_DIR}/"algorithm"/${filename})
-    target_compile_features(${filename} PUBLIC cxx_std_23)
-endmacro(raze_algorithm_add_test)
+    set_target_properties(${filename} PROPERTIES
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+    )
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+    add_test(NAME ${filename} COMMAND ${filename})
+endmacro(raze_algorithm_add_test)
 
 FILE(GLOB algorithmTests *.cpp)
 
 FOREACH(testsource ${algorithmTests})
-    GET_FILENAME_COMPONENT(filename ${testsource} NAME_WE)
-    raze_algorithm_add_test(${filename})
+   GET_FILENAME_COMPONENT(filename ${testsource} NAME_WE)
+   raze_algorithm_add_test(${filename})
 ENDFOREACH()
