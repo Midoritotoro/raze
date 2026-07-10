@@ -81,5 +81,10 @@ concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t
 template <class _Projection_, class _Iterator_>
 concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<__function_unwrapped<_Projection_>>, std::identity>;
 
+template <class _Comp_>
+concept is_less_comparator = std::is_same_v<std::remove_cvref_t<__function_unwrapped<_Comp_>>, std::less<>>;
+
+template <class _Comp_>
+concept is_greater_comparator = std::is_same_v<std::remove_cvref_t<__function_unwrapped<_Comp_>>, std::greater<>>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

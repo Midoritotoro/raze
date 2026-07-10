@@ -1,94 +1,412 @@
-﻿#define _USE_STD_VECTOR_ALGORITHMS 0
-#include <cassert>
-#include <cstdint>
+#include <raze/algorithm/extreme/Min.h> 
+#include <raze/algorithm/extreme/Max.h>
+#include <raze/algorithm/extreme/MinMax.h>
+
 #include <vector>
-#include <list>
-#include <deque>
-#include <limits>
+#include <random>
 #include <type_traits>
-#include <utility>
-#include <raze/algorithm/minmax/Minmax.h>
-#include <raze/algorithm/minmax/MinmaxRange.h>
+#include <algorithm>
+#include <cassert>
+#include <optional>
 
+template <typename T>
+struct IntDistributionType {
+    using type = T;
+};
 
-template <class T>
-std::pair<T, T> ref_minmax_scalar(T a, T b) {
-    return (a < b) ? std::make_pair(a, b) : std::make_pair(b, a);
-}
+template <>
+struct IntDistributionType<char> {
+    using type = int;
+};
 
-template <class It>
-std::pair<typename std::iterator_traits<It>::value_type,
-    typename std::iterator_traits<It>::value_type>
-    ref_minmax_range(It first, It last) {
-    using V = typename std::iterator_traits<It>::value_type;
-    raze_assert(first != last && "ref_minmax_range requires non-empty range");
-    V minv = *first, maxv = *first;
-    for (++first; first != last; ++first) {
-        if (*first < minv) minv = *first;
-        if (maxv < *first) maxv = *first;
+template <>
+struct IntDistributionType<signed char> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<unsigned char> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<bool> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<wchar_t> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<char8_t> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<char16_t> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<char32_t> {
+    using type = int;
+};
+
+template <typename T>
+using int_distribution_type_t = typename IntDistributionType<T>::type;
+
+template <typename T>
+struct RandomGenerator {
+    std::mt19937 gen;
+
+    RandomGenerator(unsigned seed = 42) : gen(seed) {}
+
+    T operator()() {
+        if constexpr (std::is_integral_v<T>) {
+            using DistType = int_distribution_type_t<T>;
+
+            if constexpr (std::is_signed_v<T>) {
+                std::uniform_int_distribution<DistType> dist(-1000, 1000);
+                return static_cast<T>(dist(gen));
+            }
+            else {
+                std::uniform_int_distribution<DistType> dist(0, 2000);
+                return static_cast<T>(dist(gen));
+            }
+        }
+        else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(-1000.0, 1000.0);
+            return dist(gen);
+        }
     }
-    return std::make_pair(minv, maxv);
-}
+};
 
-template <class T>
-std::vector<T> make_data(std::size_t bytes) {
-    std::size_t n = std::max<std::size_t>(1, bytes / sizeof(T));
-    std::vector<T> v(n);
-    for (size_t i = 0; i < n; ++i) v[i] = T(i % 97);
-    return v;
-}
-
-template <class Cont, class T>
-void test_container(std::size_t bytes) {
-    using raze::algorithm::minmax_range;
-    Cont c;
-    auto v = make_data<T>(bytes);
-    c.insert(c.end(), v.begin(), v.end());
-    if (c.empty()) return;
-    auto got = minmax_range<typename Cont::iterator>(c.begin(), c.end());
-    auto ref = ref_minmax_range(c.begin(), c.end());
-    raze_assert(got.first == ref.first);
-    raze_assert(got.second == ref.second);
-}
-
-template <class T>
-void run_tests_for_type() {
-    using raze::algorithm::minmax;
-    using raze::algorithm::minmax_range;
-
-    auto p1 = minmax<T>(1, 2);
-    auto r1 = ref_minmax_scalar<T>(1, 2);
-    raze_assert(p1.first == r1.first && p1.second == r1.second);
-
-    auto p2 = minmax<T>(2, 1);
-    auto r2 = ref_minmax_scalar<T>(2, 1);
-    raze_assert(p2.first == r2.first && p2.second == r2.second);
-
-    auto p3 = minmax<T>(0, 0);
-    auto r3 = ref_minmax_scalar<T>(0, 0);
-    raze_assert(p3.first == r3.first && p3.second == r3.second);
-
-    auto p4 = minmax<T>(std::numeric_limits<T>::min(),
-        std::numeric_limits<T>::max());
-    auto r4 = ref_minmax_scalar<T>(std::numeric_limits<T>::min(),
-        std::numeric_limits<T>::max());
-    raze_assert(p4.first == r4.first && p4.second == r4.second);
-
-    for (std::size_t sz : {16u, 64u, 512u, 4000u}) {
-        test_container<std::vector<T>, T>(sz);
-        test_container<std::list<T>, T>(sz);
-        test_container<std::deque<T>, T>(sz);
+template <typename T>
+std::vector<T> generate_random_vector(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::vector<T> vec(size);
+    for (auto& elem : vec) {
+        elem = gen();
     }
+    return vec;
+}
+
+template <typename T>
+std::vector<T> generate_vector_with_target(size_t size, T target, size_t target_pos, unsigned seed = 42) {
+    auto vec = generate_random_vector<T>(size, seed);
+    if (target_pos < size) {
+        vec[target_pos] = target;
+    }
+    return vec;
+}
+
+template <typename T>
+void test_min_edge_cases() {
+    {
+        std::vector<T> vec;
+        auto raze_res = raze::algorithm::min(vec.begin(), vec.end());
+        auto std_res_iter = std::ranges::min_element(vec.begin(), vec.end());
+
+        raze_assert(!raze_res.has_value());
+        raze_assert(std_res_iter == vec.end());
+    }
+
+    {
+        std::vector<T> vec = { T(42) };
+        auto raze_res = raze::algorithm::min(vec.begin(), vec.end());
+        auto std_res = std::ranges::min(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(42));
+    }
+
+    {
+        std::vector<T> vec(100, T(5));
+        auto raze_res = raze::algorithm::min(vec.begin(), vec.end());
+        auto std_res = std::ranges::min(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(5));
+    }
+
+    {
+        std::vector<T> vec = { T(1), T(10), T(20), T(30) };
+        auto raze_res = raze::algorithm::min(vec.begin(), vec.end());
+        auto std_res = std::ranges::min(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(1));
+    }
+
+    {
+        std::vector<T> vec = { T(30), T(20), T(10), T(1) };
+        auto raze_res = raze::algorithm::min(vec.begin(), vec.end());
+        auto std_res = std::ranges::min(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(1));
+    }
+
+    if constexpr (std::is_signed_v<T>) {
+        std::vector<T> vec = { T(10), T(-50), T(0), T(5) };
+        auto raze_res = raze::algorithm::min(vec.begin(), vec.end());
+        auto std_res = std::ranges::min(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(-50));
+    }
+}
+
+template <typename T>
+void test_max_edge_cases() {
+    {
+        std::vector<T> vec;
+        auto raze_res = raze::algorithm::max(vec.begin(), vec.end());
+        auto std_res_iter = std::ranges::max_element(vec.begin(), vec.end());
+
+        raze_assert(!raze_res.has_value());
+        raze_assert(std_res_iter == vec.end());
+    }
+
+    {
+        std::vector<T> vec = { T(42) };
+        auto raze_res = raze::algorithm::max(vec.begin(), vec.end());
+        auto std_res = std::ranges::max(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(42));
+    }
+
+    {
+        std::vector<T> vec = { T(100), T(10), T(20) };
+        auto raze_res = raze::algorithm::max(vec.begin(), vec.end());
+        auto std_res = std::ranges::max(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(100));
+    }
+
+    {
+        std::vector<T> vec = { T(10), T(20), T(100) };
+        auto raze_res = raze::algorithm::max(vec.begin(), vec.end());
+        auto std_res = std::ranges::max(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+        raze_assert(raze_res.value() == T(100));
+    }
+}
+
+template <typename T>
+void test_minmax_edge_cases() {
+    {
+        std::vector<T> vec;
+        auto raze_res = raze::algorithm::minmax(vec);
+        raze_assert(!raze_res.has_value());
+    }
+
+    {
+        std::vector<T> vec = { T(42) };
+        auto raze_res = raze::algorithm::minmax(vec.begin(), vec.end());
+        auto std_res = std::ranges::minmax(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res->first == std_res.min);
+        raze_assert(raze_res->second == std_res.max);
+        raze_assert(raze_res->first == raze_res->second);
+    }
+
+    {
+        std::vector<T> vec = { T(10), T(50), T(5), T(100), T(20) };
+        auto raze_res = raze::algorithm::minmax(vec.begin(), vec.end());
+        auto std_res = std::ranges::minmax(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res->first == std_res.min);
+        raze_assert(raze_res->second == std_res.max);
+        raze_assert(raze_res->first == T(5));
+        raze_assert(raze_res->second == T(100));
+    }
+}
+
+template <typename T>
+void test_min_random(unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(1, 1000);
+
+    for (int i = 0; i < 5000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i);
+
+        auto raze_res = raze::algorithm::min(vec.begin(), vec.end());
+        auto std_res = std::ranges::min(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+    }
+}
+
+template <typename T>
+void test_max_random(unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(1, 1000);
+
+    for (int i = 0; i < 5000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i);
+
+        auto raze_res = raze::algorithm::max(vec.begin(), vec.end());
+        auto std_res = std::ranges::max(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+    }
+}
+
+template <typename T>
+void test_minmax_random(unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(1, 1000);
+
+    for (int i = 0; i < 5000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i);
+
+        auto raze_res = raze::algorithm::minmax(vec.begin(), vec.end());
+        auto std_res = std::ranges::minmax(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res->first == std_res.min);
+        raze_assert(raze_res->second == std_res.max);
+    }
+}
+
+template <typename T>
+void test_min_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 30000);
+
+        auto raze_res = raze::algorithm::min(vec);
+        auto std_res = std::ranges::min(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+    }
+}
+
+template <typename T>
+void test_max_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 40000);
+
+        auto raze_res = raze::algorithm::max(vec);
+        auto std_res = std::ranges::max(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res.value() == std_res);
+    }
+}
+
+template <typename T>
+void test_minmax_ranges(unsigned seed = 42) {
+    for (int i = 0; i < 1000; ++i) {
+        auto vec = generate_random_vector<T>(100, seed + i + 50000);
+
+        auto raze_res = raze::algorithm::minmax(vec);
+        auto std_res = std::ranges::minmax(vec);
+
+        raze_assert(raze_res.has_value());
+        raze_assert(raze_res->first == std_res.min);
+        raze_assert(raze_res->second == std_res.max);
+    }
+}
+
+struct Person {
+    std::string name;
+    int age;
+};
+
+template <typename T>
+void test_min_with_projection(unsigned seed = 42) {
+    std::vector<Person> people = {
+        {"Alice", 30},
+        {"Bob", 25},
+        {"Charlie", 35},
+        {"David", 20}
+    };
+
+    auto proj = [](const Person& p) { return p.age; };
+
+    auto raze_res = raze::algorithm::min(people.begin(), people.end(), proj);
+    auto std_res_iter = std::ranges::min_element(people.begin(), people.end(), {}, proj);
+
+    raze_assert(raze_res.has_value());
+    raze_assert(raze_res->age == std_res_iter->age);
+    raze_assert(raze_res->age == 20);
+}
+
+template <typename T>
+void test_max_with_projection(unsigned seed = 42) {
+    std::vector<Person> people = {
+        {"Alice", 30},
+        {"Bob", 25},
+        {"Charlie", 35},
+        {"David", 20}
+    };
+
+    auto proj = [](const Person& p) { return p.age; };
+
+    auto raze_res = raze::algorithm::max(people.begin(), people.end(), proj);
+    auto std_res_iter = std::ranges::max_element(people.begin(), people.end(), {}, proj);
+
+    raze_assert(raze_res.has_value());
+    raze_assert(raze_res->age == std_res_iter->age);
+    raze_assert(raze_res->age == 35);
+}
+
+template <typename T>
+void run_all_minmax_tests_for_type() {
+    test_min_edge_cases<T>();
+    test_max_edge_cases<T>();
+    test_minmax_edge_cases<T>();
+
+    test_min_random<T>();
+    test_max_random<T>();
+    test_minmax_random<T>();
+
+    test_min_ranges<T>();
+    test_max_ranges<T>();
+    test_minmax_ranges<T>();
 }
 
 int main() {
-    run_tests_for_type<int8_t>();
-    run_tests_for_type<uint8_t>();
-    run_tests_for_type<int16_t>();
-    run_tests_for_type<uint16_t>();
-    run_tests_for_type<int32_t>();
-    run_tests_for_type<uint32_t>();
-    run_tests_for_type<int64_t>();
-    run_tests_for_type<uint64_t>();
+    run_all_minmax_tests_for_type<int>();
+    run_all_minmax_tests_for_type<short>();
+    run_all_minmax_tests_for_type<long long>();
+    run_all_minmax_tests_for_type<char>();
+
+    run_all_minmax_tests_for_type<unsigned int>();
+    run_all_minmax_tests_for_type<unsigned short>();
+    run_all_minmax_tests_for_type<unsigned long long>();
+    run_all_minmax_tests_for_type<unsigned char>();
+
+    run_all_minmax_tests_for_type<float>();
+    run_all_minmax_tests_for_type<double>();
+
+    test_min_with_projection<int>();
+    test_max_with_projection<int>();
+
     return 0;
 }

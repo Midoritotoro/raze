@@ -1,0 +1,214 @@
+#pragma once 
+
+#include <raze/concurrency/Execution.h>
+#include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/VectorizablePredicate.h>
+#include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/NotFn.h>
+#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
+#include <raze/options/Options.h>
+#include <optional>
+
+
+__RAZE_ALGORITHM_NAMESPACE_BEGIN
+
+template <class _Traits_>
+struct _Max_element : _Traits_ {
+	template <class _Iterator_, class _Sentinel_, class _Projection_>
+	struct __impl {
+		_Iterator_ _iterator;
+		_Sentinel_ _sentinel;
+		_Projection_ _proj;
+		std::iter_value_t<_Iterator_> _largest_value_iterator;
+
+		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Projection_ __proj) noexcept :
+			_iterator(__it), _sentinel(__sent),  _proj(__proj), _largest_value_iterator(__it)
+		{
+			++_iterator;
+		}
+
+		template <class _Tag_>
+		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
+			if (_iterator == _sentinel) return true;
+			else {
+				if (_proj(*_largest_value_iterator) < _proj(*_iterator))
+					_largest_value_iterator = _iterator;
+				++_iterator;
+				return false;
+			}
+		}
+
+		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
+			return _largest_value_iterator;
+		}
+	};
+
+	template <class _Tag_>
+	struct __vectorized_max_element {
+		template <class _Iterator_, class _Sentinel_, class _Projection_>
+		raze_nodiscard raze_always_inline _Iterator_ operator()(_Iterator_ __first, 
+			_Sentinel_ __sentinel, _Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+		{
+			if (__first == __sentinel) return std::ranges::next(__first, __sentinel);
+			_Iterator_ __largest_value_iterator = __first;
+
+			for (; ++__first != __sentinel;)
+				if (__proj(*__largest_value_iterator) < __proj(*__first))
+					__largest_value_iterator = __first;
+
+			return __largest_value_iterator;
+		}
+
+		template <class _Iterator_, class _Sentinel_, class _Projection_>
+		raze_nodiscard raze_always_inline auto operator()(sizetype __aligned_size,
+			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel,
+			_Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+		{
+			using _Value_ = std::iter_value_t<_Iterator_>;
+
+			auto* __ptr = std::to_address(__first);
+			raze_assume(__ptr != nullptr);
+
+			using _UnsignedValueType = IntegerForSizeof<_Value_>::Unsigned;
+			using _IndexSimdType = vx::simd<_UnsignedValueType, vx::abi_t<_Tag_>>;
+
+			auto __max_element = static_cast<const _Value_*>(__first);
+
+			auto __current_indices_max = _IndexSimdType::zero();
+			auto __current_indices = _IndexSimdType::zero();
+			auto __current_values = __proj(vx::load<_Tag_>(__first));
+			auto __current_values_max = __current_values;
+
+			constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
+			constexpr auto __max_portion_size = std::max(static_cast<u64>(__integer_max)
+				+ 1, static_cast<u64>(__integer_max)) * sizeof(_Tag_);
+
+			constexpr auto __has_portion_max_value =
+				(math::__maximum_integral_limit<u64>() != __max_portion_size);
+			auto __aligned_portion_size = std::min(__max_portion_size, __aligned_size);
+
+			auto __portion_begin = __max_element;
+			auto __stop_at = __bytes_pointer_offset(__first, __aligned_portion_size);
+			__aligned_size -= __aligned_portion_size;
+
+			while (true) {
+				__advance_bytes(__first, sizeof(_Tag_));
+				++__current_indices;
+
+				if (__first != __stop_at) {
+					__current_values = __proj(vx::load<_Tag_>(__first));
+					const auto __greater_mask = (__current_values > __current_values_max);
+
+					__current_indices_max = vx::select[__greater_mask, __current_indices_max](__current_indices);
+					__current_values_max = vx::select[__greater_mask, __current_values_max](__current_values);
+				}
+				else {
+					const auto __all_max = vx::horizontal_max(__current_values_max);
+					const auto __max_values_indices = vx::select[__current_values_max == __all_max, ~_IndexSimdType::zero()](__current_indices_max);
+					const auto __all_max_indices = vx::horizontal_min(__max_values_indices);
+					const auto __horizontal_position = vx::find_first_set(__all_max_indices == __max_values_indices);
+					const auto __vertical_position = sizetype(__current_indices_max[__horizontal_position]);
+
+					const auto __maybe_max_element = __bytes_pointer_offset(__portion_begin,
+						__vertical_position * sizeof(_Tag_) + __horizontal_position * sizeof(_Value_));
+
+					if (*__maybe_max_element > *__max_element) __max_element = __maybe_max_element;
+
+					if constexpr (__has_portion_max_value) {
+						__aligned_portion_size = std::min(__max_portion_size, __aligned_size);
+
+						if (__aligned_portion_size == 0) break;
+
+						__aligned_size -= __aligned_portion_size;
+						__advance_bytes(__stop_at, __aligned_portion_size);
+						__portion_begin = static_cast<const _Value_*>(__first);
+
+						__current_values = __proj(vx::load<_Tag_>(__first));
+						__current_values_max = __current_values;
+						__current_indices_max = _IndexSimdType::zero();
+					}
+					else {
+						break;
+					}
+				}
+			}
+
+			__seek_possibly_wrapped_iterator(__first, __ptr);
+			return (*this)(__first, __sentinel, __proj);
+		}
+	};
+
+	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, class _Projection_ = std::identity>
+	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
+		_Sentinel_ __last, _Projection_ __proj = {}) const noexcept
+	{
+		return __max_element_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
+			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
+			type_traits::__pass_function(__proj));
+	}
+
+	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
+		_Range_&& __range, _Projection_ __proj = {}) const noexcept
+			requires(!constexpr_sized_range<_Range_>)
+	{
+		return __max_element_unchecked(type_traits::__unchecked_begin(__range),
+			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj));
+	}
+
+	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
+		_Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
+	{
+		return __max_element_unchecked(type_traits::__unchecked_begin(__range),
+			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj),
+			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+	}
+private:
+	template <class _Iterator_, class _Sentinel_, class _Projection_>
+	raze_nodiscard constexpr raze_always_inline _Iterator_ __max_element_unchecked(
+		_Iterator_ __first, _Sentinel_ __last, _Projection_ __proj) const noexcept
+	{
+		__verify_range(__first, __last);
+
+		using _TraitsType = decltype(this->traits());
+		using _Value_ = std::iter_value_t<_Iterator_>;
+
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
+			&& vectorizable_projection<_Projection_, _Iterator_>)
+		{
+			if not consteval {
+				return vx::__dispatch_sized_impl<__vectorized_max_element, _Value_, _Iterator_>(
+					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __proj);
+			}
+		}
+
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj));
+	}
+
+	template <class _Iterator_, class _Sentinel_, class _Projection_, sizetype _Size_>
+	raze_nodiscard constexpr raze_always_inline _Iterator_ __max_element_unchecked(_Iterator_ __first,
+		_Sentinel_ __last, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
+	{
+		__verify_range(__first, __last);
+
+		using _TraitsType = decltype(this->traits());
+		using _Value_ = std::iter_value_t<_Iterator_>;
+
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
+			&& vectorizable_projection<_Projection_, _Iterator_>)
+		{
+			if not consteval {
+				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
+				return vx::__dispatch_sized_impl<__vectorized_max_element,
+					_Value_, _Iterator_>(__bytes, __first, __last, __proj);
+			}
+		}
+
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj));
+	}
+};
+
+constexpr inline auto max_element = raze::options::function_with_traits<_Max_element>;
+
+__RAZE_ALGORITHM_NAMESPACE_END
