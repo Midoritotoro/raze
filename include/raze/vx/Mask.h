@@ -99,50 +99,10 @@ public:
 	raze_always_inline auto operator[](i32 __index) noexcept {
 		return reference_type(*this, __index);
 	}
-	
-	//template <u32 _Elements_>
-	//friend raze_always_inline simd_mask operator>>(const simd_mask& __x,
-	//	std::integral_constant<u32, _Elements_>	__elements) noexcept
-	//{
-	//	return slide_right(__x, __elements);
-	//}
-
-	//friend raze_always_inline simd_mask operator>>(const simd_mask& __x, u32 __elements) noexcept {
-	//	return slide_right(__x, __elements);
-	//}
-
-	//template <u32 _Elements_>
-	//friend raze_always_inline simd_mask operator<<(const simd_mask&	__x,
-	//	std::integral_constant<u32, _Elements_>	__elements) noexcept
-	//{
-	//	return slide_left(__x, __elements);
-	//}
-
-	//friend raze_always_inline simd_mask operator<<(const simd_mask& __x, u32 __elements) noexcept {
-	//	return slide_left(__x, __elements);
-	//}
 
 	raze_nodiscard raze_always_inline static constexpr auto size() noexcept {
 		return abi_type::size;
 	}
-
-	//template <u32 _Elements_>
-	//raze_always_inline simd_mask& operator<<=(std::integral_constant<u32, _Elements_> __elements) noexcept {
-	//	return *this = (*this << __elements);
-	//}
-
-	//raze_always_inline simd_mask& operator<<=(u32 __elements) noexcept {
-	//	return *this = (*this << __elements);
-	//}
-
-	//template <u32 _Elements_>
-	//raze_always_inline simd_mask& operator>>=(std::integral_constant<u32, _Elements_> __elements) noexcept {
-	//	return *this = (*this >> __elements);
-	//}
-
-	//raze_always_inline simd_mask& operator>>=(u32 __elements) noexcept {
-	//	return *this = (*this >> __elements);
-	//}
 
 	raze_always_inline simd_mask& operator=(const simd_mask& __other) noexcept {
 		_storage = __other._storage;

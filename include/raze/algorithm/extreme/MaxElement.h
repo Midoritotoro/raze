@@ -19,7 +19,7 @@ struct _Max_element : _Traits_ {
 		_Iterator_ _iterator;
 		_Sentinel_ _sentinel;
 		_Projection_ _proj;
-		std::iter_value_t<_Iterator_> _largest_value_iterator;
+		_Iterator_ _largest_value_iterator;
 
 		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Projection_ __proj) noexcept :
 			_iterator(__it), _sentinel(__sent),  _proj(__proj), _largest_value_iterator(__it)
@@ -47,9 +47,9 @@ struct _Max_element : _Traits_ {
 	struct __vectorized_max_element {
 		template <class _Iterator_, class _Sentinel_, class _Projection_>
 		raze_nodiscard raze_always_inline _Iterator_ operator()(_Iterator_ __first, 
-			_Sentinel_ __sentinel, _Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+			_Sentinel_ __sentinel, _Projection_ __proj) const noexcept
 		{
-			if (__first == __sentinel) return std::ranges::next(__first, __sentinel);
+			if (__first == __sentinel) return __first;
 			_Iterator_ __largest_value_iterator = __first;
 
 			for (; ++__first != __sentinel;)
@@ -83,8 +83,7 @@ struct _Max_element : _Traits_ {
 			constexpr auto __max_portion_size = std::max(static_cast<u64>(__integer_max)
 				+ 1, static_cast<u64>(__integer_max)) * sizeof(_Tag_);
 
-			constexpr auto __has_portion_max_value =
-				(math::__maximum_integral_limit<u64>() != __max_portion_size);
+			constexpr auto __has_portion_max_value = (math::__maximum_integral_limit<u64>() != __max_portion_size);
 			auto __aligned_portion_size = std::min(__max_portion_size, __aligned_size);
 
 			auto __portion_begin = __max_element;
@@ -97,6 +96,8 @@ struct _Max_element : _Traits_ {
 
 				if (__first != __stop_at) {
 					__current_values = __proj(vx::load<_Tag_>(__first));
+					__current_values_max = __proj(__current_values_max);
+
 					const auto __greater_mask = (__current_values > __current_values_max);
 
 					__current_indices_max = vx::select[__greater_mask, __current_indices_max](__current_indices);
@@ -142,9 +143,12 @@ struct _Max_element : _Traits_ {
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Projection_ __proj = {}) const noexcept
 	{
-		return __max_element_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
+		__seek_possibly_wrapped_iterator(__first, __max_element_unchecked(
+			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
 			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__proj));
+			type_traits::__pass_function(__proj)));
+
+		return __first;
 	}
 
 	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
@@ -152,17 +156,23 @@ struct _Max_element : _Traits_ {
 		_Range_&& __range, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_>)
 	{
-		return __max_element_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj));
+		auto __begin = std::ranges::begin(__range);
+		__seek_possibly_wrapped_iterator(__begin, __max_element_unchecked(
+			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
+			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj)));
+		return __begin;
 	}
 
 	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
 	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		_Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
 	{
-		return __max_element_unchecked(type_traits::__unchecked_begin(__range),
+		auto __begin = std::ranges::begin(__range);
+		__seek_possibly_wrapped_iterator(__begin, __max_element_unchecked(
+			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
 			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+		return __begin;
 	}
 private:
 	template <class _Iterator_, class _Sentinel_, class _Projection_>

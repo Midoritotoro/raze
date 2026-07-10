@@ -66,13 +66,16 @@ struct _Min_value : _Traits_ {
 			raze_assume(__ptr != nullptr);
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
-			auto __vmin = __proj(vx::load<_Tag_>(__ptr));
+			auto __vmin = vx::load<_Tag_>(__ptr);
 			__advance_bytes(__ptr, sizeof(_Tag_));
 
-			while (__ptr != __aligned_end) {
-				__vmin = vx::vertical_min(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmin));
-				__advance_bytes(__ptr, sizeof(_Tag_));
+			if (__ptr != __aligned_end) {
+				do {
+					__vmin = vx::vertical_min(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmin));
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (__ptr != __aligned_end);
 			}
+			else __vmin = __proj(__vmin);
 
 			__seek_possibly_wrapped_iterator(__first, __ptr);
 			auto __lowest_value = vx::horizontal_min(__vmin);
@@ -95,14 +98,19 @@ struct _Min_value : _Traits_ {
 			auto* __ptr = std::to_address(__first);
 			raze_assume(__ptr != nullptr);
 
-			auto __vmin = __proj(vx::load<_Tag_>(__ptr));
+			auto __vmin = vx::load<_Tag_>(__ptr);
 			auto __left = __iterations_aligned;
 
 			__advance_bytes(__ptr, sizeof(_Tag_));
 
-			while (--__left) {
-				__vmin = vx::vertical_max(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmin));
-				__advance_bytes(__ptr, sizeof(_Tag_));
+			if (--__left) {
+				do {
+					__vmin = vx::vertical_max(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmin));
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (--__left);
+			}
+			else {
+				__vmin = __proj(__vmin);
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr);

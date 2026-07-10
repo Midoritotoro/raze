@@ -68,12 +68,17 @@ struct _Max_value : _Traits_ {
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
-			auto __vmax = __proj(vx::load<_Tag_>(__ptr));
+			auto __vmax = vx::load<_Tag_>(__ptr);
 			__advance_bytes(__ptr, sizeof(_Tag_));
 
-			while (__ptr != __aligned_end) {
-				__vmax = vx::vertical_max(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmax));
-				__advance_bytes(__ptr, sizeof(_Tag_));
+			if (__ptr != __aligned_end) {
+				do {
+					__vmax = vx::vertical_max(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmax));
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (__ptr != __aligned_end);
+			}
+			else {
+				__vmax = __proj(__vmax);
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr);
@@ -97,14 +102,19 @@ struct _Max_value : _Traits_ {
 			auto* __ptr = std::to_address(__first);
 			raze_assume(__ptr != nullptr);
 
-			auto __vmax = __proj(vx::load<_Tag_>(__ptr));
+			auto __vmax = vx::load<_Tag_>(__ptr);
 			auto __left = __iterations_aligned;
 
 			__advance_bytes(__ptr, sizeof(_Tag_));
 
-			while (--__left) {
-				__vmax = vx::vertical_max(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmax));
-				__advance_bytes(__ptr, sizeof(_Tag_));
+			if (--__left) {
+				do {
+					__vmax = vx::vertical_max(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmax));
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (--__left);
+			}
+			else {
+				__vmax = __proj(__vmax);
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr);

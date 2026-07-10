@@ -72,16 +72,22 @@ struct _Minmax_value : _Traits_ {
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
-			auto __vmax = __proj(vx::load<_Tag_>(__ptr));
+			auto __vmax = vx::load<_Tag_>(__ptr);
 			auto __vmin = __vmax;
 
 			__advance_bytes(__ptr, sizeof(_Tag_));
 
-			while (__ptr != __aligned_end) {
-				const auto __loaded = __proj(vx::load<_Tag_>(__ptr));
-				__vmax = vx::vertical_max(__loaded, __proj(__vmax));
-				__vmin = vx::vertical_min(__loaded, __proj(__vmin));
-				__advance_bytes(__ptr, sizeof(_Tag_));
+			if (__ptr != __aligned_end) {
+				do {
+					const auto __loaded = __proj(vx::load<_Tag_>(__ptr));
+					__vmax = vx::vertical_max(__loaded, __proj(__vmax));
+					__vmin = vx::vertical_min(__loaded, __proj(__vmin));
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (__ptr != __aligned_end);
+			}
+			else {
+				__vmax = __proj(__vmax);
+				__vmin = __vmax;
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr);
@@ -110,16 +116,22 @@ struct _Minmax_value : _Traits_ {
 
 			auto __left = __iterations_aligned;
 
-			auto __vmax = __proj(vx::load<_Tag_>(__ptr));
+			auto __vmax = vx::load<_Tag_>(__ptr);
 			auto __vmin = __vmax;
 
 			__advance_bytes(__ptr, sizeof(_Tag_));
 
-			while (--__left) {
-				const auto __loaded = __proj(vx::load<_Tag_>(__ptr));
-				__vmax = vx::vertical_max(__loaded, __proj(__vmax));
-				__vmin = vx::vertical_min(__loaded, __proj(__vmin));
-				__advance_bytes(__ptr, sizeof(_Tag_));
+			if (--__left) {
+				do {
+					const auto __loaded = __proj(vx::load<_Tag_>(__ptr));
+					__vmax = vx::vertical_max(__loaded, __proj(__vmax));
+					__vmin = vx::vertical_min(__loaded, __proj(__vmin));
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (--__left);
+			}
+			else {
+				__vmax = __proj(__vmax);
+				__vmin = __vmax;
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr);
