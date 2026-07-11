@@ -8,8 +8,6 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 template <class _Condition_>
 struct if_ {
     static constexpr bool has_alternative = false;
-    static constexpr bool is_inverted = false;
-    static constexpr bool is_complete = false;
 
     using condition_type = _Condition_;
     using _ConditionStorage_ = __storage_selector_t<_Condition_>;

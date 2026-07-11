@@ -34,16 +34,16 @@ struct _Configurable_hmin : raze::options::strict_elementwise_callable<_Configur
 
             if constexpr (_Mask_::has_alternative) {
                 auto __alternative = __condition.alternative();
-                __result = __mask[0] ? __x[0] : __alternative[0];
+                __result = __mask[std::integral_constant<sizetype, 0>{}] ? __x[std::integral_constant<sizetype, 0>{}] : __alternative[std::integral_constant<sizetype, 0>{}];
                 __x.__for_each_chunk(__chunk_op, __mask.__storage().storage(), __alternative.__storage().storage());
             }
             else {
-                __result = __mask[0] ? __x[0] : 0;
+                __result = __mask[std::integral_constant<sizetype, 0>{}] ? __x[std::integral_constant<sizetype, 0>{}] : 0;
                 __x.__for_each_chunk(__chunk_op, __mask.__storage().storage());
             }
         }
         else {
-            __result = __x[0];
+            __result = __x[std::integral_constant<sizetype, 0>{}];
             __x.__for_each_chunk(__chunk_op);
         }
 

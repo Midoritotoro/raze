@@ -9,43 +9,32 @@ template <arch::ISA	_ISA_, arithmetic_type _Type_>
 struct _Fold {
     template <intrin_or_arithmetic_type _Tp_, class _ReduceBinaryFunction_>
     raze_nodiscard raze_static_operator raze_always_inline _Type_ operator()(
-        _Tp_ __x, _ReduceBinaryFunction_  __reduce) raze_const_operator noexcept
+        _Tp_ __x, _ReduceBinaryFunction_ __reduce) raze_const_operator noexcept
     {
         if constexpr (sizeof(_Tp_) == 16) {
             if constexpr (sizeof(_Type_) == 8) {
-                auto __folded = __as<__m128i>(__x);
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
-
-                if constexpr (__is_pd_v<_Type_>) return _mm_cvtsd_f64(__as<__m128d>(__folded));
-                else return _mm_cvtsi128_si64(__folded);
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 8)));
+                if constexpr (__is_pd_v<_Type_>) return _mm_cvtsd_f64(__as<__m128d>(__x));
+                else return _mm_cvtsi128_si64(__as<__m128i>(__x));
             }
             else if constexpr (sizeof(_Type_) == 4) {
-                auto __folded = __as<__m128i>(__x);
-
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 4));
-
-                if constexpr (__is_ps_v<_Type_>) return _mm_cvtss_f32(__as<__m128>(__folded));
-                else return _mm_cvtsi128_si32(__folded);
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 8)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 4)));
+                if constexpr (__is_ps_v<_Type_>) return _mm_cvtss_f32(__as<__m128>(__x));
+                else return _mm_cvtsi128_si32(__as<__m128i>(__x));
             }
             else if constexpr (sizeof(_Type_) == 2) {
-                auto __folded = __as<__m128i>(__x);
-
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 4));
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 2));
-
-                return static_cast<_Type_>(_mm_cvtsi128_si32(__as<__m128i>(__folded)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 8)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 4)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 2)));
+                return static_cast<_Type_>(_mm_cvtsi128_si32(__as<__m128i>(__x)));
             }
             else if constexpr (sizeof(_Type_) == 1) {
-                auto __folded = __as<__m128i>(__x);
-
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 8));
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 4));
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 2));
-                __folded = __reduce(__folded, _mm_srli_si128(__folded, 1));
-
-                return static_cast<_Type_>(_mm_cvtsi128_si32(__as<__m128i>(__folded)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 8)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 4)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 2)));
+                __x = __reduce(__x, __as<_Tp_>(_mm_srli_si128(__as<__m128i>(__x), 1)));
+                return static_cast<_Type_>(_mm_cvtsi128_si32(__as<__m128i>(__x)));
             }
         }
         else if constexpr (sizeof(_Tp_) == 32) {
@@ -59,10 +48,8 @@ struct _Fold {
                 const auto __shuffle2 = _mm256_shuffle_ps(__swapped_halfs, __swapped_halfs, 0x4E);
                 __folded = __reduce(__folded, __as<__m256d>(__shuffle2));
 
-                if constexpr (__is_pd_v<_Type_>)
-                    return _mm256_cvtsd_f64(__folded);
-                else
-                    return _mm256_cvtsi256_si64(__as<__m256i>(__folded));
+                if constexpr (__is_pd_v<_Type_>) return _mm256_cvtsd_f64(__folded);
+                else return _mm256_cvtsi256_si64(__as<__m256i>(__folded));
             }
             else if constexpr (sizeof(_Type_) == 4) {
                 auto __folded = __as<__m256>(__x);
@@ -77,15 +64,11 @@ struct _Fold {
                 const auto __shuffle3 = _mm256_shuffle_ps(__folded, __folded, 0xB1);
                 __folded = __reduce(__folded, __shuffle3);
 
-                if constexpr (__is_ps_v<_Type_>)
-                    return _mm256_cvtss_f32(__as<__m256>(__folded));
-                else
-                    return _mm256_cvtsi256_si32(__as<__m256i>(__folded));
+                if constexpr (__is_ps_v<_Type_>) return _mm256_cvtss_f32(__as<__m256>(__folded));
+                else return _mm256_cvtsi256_si32(__as<__m256i>(__folded));
             }
             else if constexpr (sizeof(_Type_) == 2) {
-                const auto __high = _mm256_permute2f128_pd(__as<__m256d>(__x),
-                    __as<__m256d>(__x), 1);
-
+                const auto __high = _mm256_permute2f128_pd(__as<__m256d>(__x), __as<__m256d>(__x), 1);
                 auto __folded = __as<__m256d>(__x);
                 __folded = __reduce(__folded, __high);
 
@@ -153,30 +136,26 @@ struct _Fold {
             }
             else if constexpr (sizeof(_Type_) == 2) {
                 if constexpr (__has_avx512bw_support_v<_ISA_>) {
-                    const auto __shuffle_words = _mm512_set_epi8(
+                    auto __shuffled = _mm512_permutexvar_epi64(_mm512_setr_epi64(7, 6, 5, 4, 3, 2, 1, 0), __as<__m512i>(__x));
+                    __x = __reduce(__x, __as<_Tp_>(__shuffled));
+
+                    __shuffled = _mm512_permutex_epi64(__as<__m512i>(__x), 0x4E);
+                    __x = __reduce(__x, __as<_Tp_>(__shuffled));
+
+                    __shuffled = _mm512_permutex_epi64(__as<__m512i>(__x), 0xB1);
+                    __x = __reduce(__x, __as<_Tp_>(__shuffled));
+
+                    __shuffled = __as<__m512i>(_mm512_permute_ps(__as<__m512>(__x), 0xB1));
+                    __x = __reduce(__x, __as<_Tp_>(__shuffled));
+
+                    __shuffled = _mm512_shuffle_epi8(__as<__m512i>(__x), _mm512_set_epi8(
                         61, 60, 63, 62, 57, 56, 59, 58, 53, 52, 55, 54, 49, 48, 51, 50,
                         45, 44, 47, 46, 41, 40, 43, 42, 37, 36, 39, 38, 33, 32, 35, 34,
                         29, 28, 31, 30, 25, 24, 27, 26, 21, 20, 23, 22, 17, 16, 19, 18,
-                        13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2);
+                        13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
+                    __x = __reduce(__x, __as<_Tp_>(__shuffled));
 
-                    auto __folded = __as<__m512i>(__x);
-
-                    const auto __shuffled1 = _mm512_permutexvar_epi64(_mm512_setr_epi64(7, 6, 5, 4, 3, 2, 1, 0), __folded);
-                    __folded = __reduce(__folded, __shuffled1);
-
-                    const auto __shuffled2 = _mm512_permutex_epi64(__folded, 0x4E);
-                    __folded = __reduce(__folded, __shuffled2);
-
-                    const auto __shuffled3 = _mm512_permutex_epi64(__folded, 0xB1);
-                    __folded = __reduce(__folded, __shuffled3);
-
-                    const auto __shuffled4 = __as<__m512i>(_mm512_permute_ps(__as<__m512>(__folded), 0xB1));
-                    __folded = __reduce(__folded, __shuffled4);
-
-                    const auto __shuffled5 = _mm512_shuffle_epi8(__folded, __shuffle_words);
-                    __folded = __reduce(__folded, __as<__m512i>(__shuffled5));
-
-                    return _mm512_cvtsi512_si32(__folded);
+                    return _mm512_cvtsi512_si32(__as<__m512i>(__x));
                 }
                 else {
                     const auto __shuffle_words = _mm256_broadcastsi128_si256(_mm_set_epi8(13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
@@ -285,6 +264,20 @@ struct _Fold {
         else {
             return __x;
         }
+    }
+
+    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, class _ReduceBinaryFunction_>
+    raze_nodiscard raze_static_operator raze_always_inline _Type_ operator()(
+        _Tp_ __x, _ReduceBinaryFunction_ __reduce, _Mask_ __mask) raze_const_operator noexcept
+    {
+        return _Fold()(_Select<_ISA_, _Type_>()(__x, __mask), __reduce);
+    }
+
+    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, class _ReduceBinaryFunction_>
+    raze_nodiscard raze_static_operator raze_always_inline _Type_ operator()(_Tp_ __x,
+        _ReduceBinaryFunction_ __reduce, _Mask_ __mask, _Tp_ __src) raze_const_operator noexcept
+    {
+        return _Fold()(_Select<_ISA_, _Type_>()(__x, __src, __mask), __reduce);
     }
 };
 

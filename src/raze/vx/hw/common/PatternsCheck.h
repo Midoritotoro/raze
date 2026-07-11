@@ -479,4 +479,31 @@ using make_unzip_pattern = make_shuffle_pattern<_Simd_,
 		return 2 * (__i - _Simd_::size() / 2) + 1;
 	}>;
 
+template <class _Simd_, sizetype _GroupSize_, sizetype ... _Indices_>
+struct __make_fixed_shuffle_impl {
+	static_assert(_GroupSize_ < _Simd_::size());
+	static constexpr std::array<sizetype, sizeof...(_Indices_)> __all_indices = { _Indices_... };
+
+	template <sizetype ... _Seq_>
+	static auto __build(std::integer_sequence<sizetype, _Seq_...>)
+		-> _Shuffle_pattern<_Simd_, __all_indices[_Seq_]...>;
+
+	using type = decltype(__build(std::make_index_sequence<(_Simd_::size() / _GroupSize_)>{}));
+};
+
+template <simd_type _Simd_, sizetype _GroupSize_, sizetype ... _Indices_>
+constexpr auto __fixed_shuffle_indices(std::integer_sequence<sizetype, _Indices_...>) noexcept {
+	return typename __make_fixed_shuffle_impl<_Simd_, _GroupSize_, _Indices_...>::type{};
+}
+
+template <simd_type _Simd_, sizetype _GroupSize_, class _OriginalPattern_>
+using make_fixed_shuffle_pattern = decltype(__fixed_shuffle_indices<_Simd_, _GroupSize_>(_OriginalPattern_::get()));
+
+template <simd_type _Simd_, sizetype _GroupSize_>
+using make_swap_adjacent_pattern = make_fixed_shuffle_pattern<_Simd_, _GroupSize_,
+	 make_shuffle_pattern<_Simd_, [] (sizetype __i) {
+		if (__i & 1) return __i - 1;
+		else return __i + 1;
+	}>>;
+
 __RAZE_VX_NAMESPACE_END

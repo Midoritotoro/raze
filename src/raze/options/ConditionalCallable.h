@@ -15,7 +15,7 @@ struct __conditional_callable:  callable<_Function_, _OptionsValues_, _Options_.
     using func_t =  _Function_<_OptionsValues_>;
 
     template <callable_options __Options_, class _Type_, class ... _Types_>
-    constexpr raze_always_inline auto behavior(const __Options_& __options, const _Type_& __first, const _Types_& ... __args) const {
+    constexpr raze_always_inline auto behavior(const __Options_& __options, const _Type_& __first, const _Types_& ... __args) const noexcept {
         return func_t::deferred_call(__options, __first, __args...);
     }
 };
@@ -29,12 +29,10 @@ constexpr inline condition_key_t condition_key = {};
 template <class _Type_>
 concept conditional_expression = requires(_Type_)  {
     { _Type_::has_alternative } -> std::convertible_to<bool>;
-    { _Type_::is_inverted } -> std::convertible_to<bool>;
-    { _Type_::is_complete } -> std::convertible_to<bool>;
 };
 
 struct conditional_option {
-    raze_always_inline constexpr auto process(const auto& __base, concepts::exactly<condition_key> auto const& __options) const {
+    raze_always_inline constexpr auto process(const auto& __base, concepts::exactly<condition_key> auto const& __options) const noexcept {
         return raze::options::merge_prefer_first(__base, options{ __options });
     }
 
@@ -50,7 +48,7 @@ struct conditional_option {
         return process(__base, condition_key = __option);
     }
 
-    raze_always_inline constexpr auto default_to(const auto& __base) const {
+    raze_always_inline constexpr auto default_to(const auto& __base) const noexcept {
         return raze::options::merge_prefer_first(options{condition_key = ignore_none}, __base);
     }
 };

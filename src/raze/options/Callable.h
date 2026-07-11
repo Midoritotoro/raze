@@ -9,9 +9,6 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-struct __decorator 
-{};
-
 template <class _ConditionType_>
 concept condition_type = vx::simd_mask_type<_ConditionType_> || std::is_same_v<std::remove_cvref_t<_ConditionType_>, bool>;
 
@@ -19,13 +16,7 @@ template <class _ConditionType_, class _AlternativeType_>
 concept alternative_type = (vx::simd_mask_type<_ConditionType_> && vx::simd_type<_AlternativeType_>) ||
     (std::is_same_v<std::remove_cvref_t<_ConditionType_>, bool> && (std::integral<_AlternativeType_> || std::floating_point<_AlternativeType_>));
 
-template <class _ID_>
-concept decorator = std::derived_from<_ID_, __decorator>;
-
-template <
-    template<class> class   _Functor_,
-    class                   _OptionsValues_, 
-    class ...               _Options_>
+template <template <class> class _Functor_, class _OptionsValues_, class ... _Options_>
 struct callable:
     decorated_with<_OptionsValues_, _Options_...>
 {
@@ -34,7 +25,8 @@ struct callable:
     template <callable_options __Options_> 
     raze_always_inline constexpr auto operator[](const __Options_& __options) const noexcept {
         auto __merged = merge(__options, this->options());
-        return _Functor_<options<decltype(__merged)>>{options<decltype(__merged)>{std::move(__merged)}};
+        options<decltype(__merged)> __new{ __merged };
+        return _Functor_<decltype(__new)>{__new};
     }
 
     template <class _Type_>
@@ -60,9 +52,7 @@ struct callable:
 
     template <class _Type_>
     raze_always_inline void operator[](const _Type_& __t) const noexcept
-        requires(!callable_options<_Type_> && 
-            !requires(const base& __base) { __base[__t]; } &&
-            !decorator<_Type_>) = delete;
+        requires(!callable_options<_Type_> && !requires(const base& __base) { __base[__t]; }) = delete;
 
     template <class ... Args>
     raze_always_inline constexpr auto behavior(Args&& ... __args) const noexcept {

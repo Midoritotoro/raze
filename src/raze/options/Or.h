@@ -15,8 +15,6 @@ using __storage_selector_t = typename __storage_selector<_Type_>::type;
 template <class _Condition_, class _Value_>
 struct or_ {
     static constexpr bool has_alternative = true;
-    static constexpr bool is_inverted = false;
-    static constexpr bool is_complete = false;
 
     using alternative_type = _Value_;
     using condition_type = _Condition_;

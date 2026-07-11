@@ -5,6 +5,7 @@
 #include <src/raze/vx/hw/configurable/reduce/HorizontalSum.h>
 #include <src/raze/vx/hw/configurable/reduce/HorizontalMin.h>
 #include <src/raze/vx/hw/configurable/reduce/HorizontalMax.h>
+#include <src/raze/vx/hw/configurable/reduce/Fold.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

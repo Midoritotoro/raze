@@ -180,7 +180,7 @@ struct _Reduce_add {
 
     template <intrin_or_arithmetic_type	_Tp_, raw_mask_type	_Mask_>
     raze_nodiscard raze_always_inline __reduce_type<_Type_> operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
-        return (*this)(_Selectz<_ISA_, _Type_>()(__x, __mask));
+        return (*this)(_Select<_ISA_, _Type_>()(__x, __mask));
     }
 
     template <intrin_or_arithmetic_type	_Tp_, raw_mask_type	_Mask_>

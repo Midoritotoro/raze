@@ -41,32 +41,8 @@ raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexce
 			if constexpr (sizeof(_Value_) == 2) __native = __p_offset.template expand<u16, u8>().template as_native<__m256i>();
 			else __native = __p_offset.template as_native<__m256i>();
 
-			// MSVC quirk:
-			// This temporary is intentionally redundant.
-			// Removing it may result in worse codegen due to MSVC AVX-512 RA behavior.
-			// Leave it alone.
-			//
-			// WITH temp:
-			//	vmovqdu
-			//  vpshufb        
-			//  vextracti64x4  
-			//  vpshufb       
-			//  vshufi64x2   
-			//
-			// WITHOUT temp:
-			//	vpshufb        
-			//	vmovdqu
-			//	vextractf32x4  
-			//  vextractf32x4      
-			//  vmovdqu  
-			//  vextracti64x4     
-			//  vpshufb   
-			//	vshufi64x2
-
-			const auto __z = __as<__m512i>(__x);
-
-			const auto __low_half = _mm512_extracti64x4_epi64(__z, 0);
-			const auto __high_half = _mm512_extracti64x4_epi64(__z, 1);
+			const auto __low_half = _mm512_extracti64x4_epi64(__as<__m512i>(__x), 0);
+			const auto __high_half = _mm512_extracti64x4_epi64(__as<__m512i>(__x), 1);
 
 			const auto __low = _mm256_shuffle_epi8(__low_half, __native);
 			const auto __high = _mm256_shuffle_epi8(__high_half, __native);

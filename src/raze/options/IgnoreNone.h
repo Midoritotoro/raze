@@ -8,8 +8,14 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 struct __ignore_none {
     static constexpr bool has_alternative = false;
-    static constexpr bool is_inverted = true;
-    static constexpr bool is_complete = true;
+    
+    __ignore_none() noexcept = default;
+    __ignore_none(const __ignore_none&) noexcept = default;
+    __ignore_none(__ignore_none&&) noexcept = default;
+    ~__ignore_none() noexcept = default;
+
+    __ignore_none& operator=(const __ignore_none&) noexcept = default;
+    __ignore_none& operator=(__ignore_none&&) noexcept = default;
 
     template <class _Value_>
     constexpr raze_always_inline auto else_(_Value_ __value) const noexcept {

@@ -16,7 +16,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 /* abs, fma, fms, fnma, fnms, sin, cos, tan, cotan defined in raze/math/Math.h */
-constexpr inline auto add = raze::options::functor<_Configurable_add>;
+constexpr inline auto add = __add;
 constexpr inline auto sub = raze::options::functor<_Configurable_sub>;
 constexpr inline auto mul = raze::options::functor<_Configurable_mul>;
 constexpr inline auto div = raze::options::functor<_Configurable_div>;
@@ -30,7 +30,7 @@ constexpr inline auto bit_andnot = raze::options::functor<_Configurable_andnot>;
 constexpr inline auto bit_shl = raze::options::functor<_Configurable_shl>;
 constexpr inline auto bit_shr = raze::options::functor<_Configurable_shr>;
 constexpr inline auto bit_not = raze::options::functor<_Configurable_not>;
-constexpr inline auto horizontal_sum = raze::options::functor<_Configurable_hsum>;
+constexpr inline auto horizontal_sum = __hsum;
 constexpr inline auto horizontal_min = raze::options::functor<_Configurable_hmin>;
 constexpr inline auto horizontal_max = raze::options::functor<_Configurable_hmax>;
 constexpr inline auto all_of = raze::options::functor<_Configurable_all_of>;
@@ -70,11 +70,13 @@ constexpr inline auto rotate_right = raze::options::functor<_Configurable_rotate
 constexpr inline auto shuffle = raze::options::functor<_Configurable_shuffle>;
 constexpr inline auto clamp = raze::options::functor<_Configurable_clamp>;
 constexpr inline auto sfence = raze::options::functor<_Configurable_sfence>;
+constexpr inline auto fold = raze::options::functor<_Configurable_fold>;
 constexpr inline auto vmin = vertical_min;
 constexpr inline auto vmax = vertical_max;
 constexpr inline auto hsum = horizontal_sum;
 constexpr inline auto hmin = horizontal_min;
 constexpr inline auto hmax = horizontal_max;
+
 
 template <class _Type_>
 struct stream_ptr {

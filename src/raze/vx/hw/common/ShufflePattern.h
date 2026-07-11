@@ -29,7 +29,6 @@ using __split_part_t = typename __split_part_impl<_Pattern_,
 template <simd_type _Simd_, sizetype ... _Indices_>
 struct _Shuffle_pattern {
 	static_assert(sizeof...(_Indices_) > 0);
-    // static_assert(sizeof...(_Indices_) == _Simd_::size());
 
     static constexpr std::array<sizetype, sizeof...(_Indices_)> __indices = { _Indices_ ... };
 

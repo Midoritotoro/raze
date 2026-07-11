@@ -68,13 +68,19 @@ struct _Extreme : _Traits_ {
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
-			auto __extreme_vertical = __proj(vx::load<_Tag_>(__ptr));
+			auto __extreme_vertical = vx::load<_Tag_>(__ptr);
 			__advance_bytes(__ptr, sizeof(_Tag_));
 
-			while (__ptr != __aligned_end) {
-				const auto __mask = __comp(__extreme_vertical)
-				__extreme_vertical = vx::select[__mask, (__proj(vx::load<_Tag_>(__ptr)), __proj(__vmax));
-				__advance_bytes(__ptr, sizeof(_Tag_));
+			if (__ptr != __aligned_end) {
+				do {
+					const auto __loaded = __proj(vx::load<_Tag_>(__ptr));
+					const auto __mask = __comp(__loaded, __proj(__extreme_vertical));
+					__extreme_vertical = vx::select[__mask, __extreme_vertical](__loaded);
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (__ptr != __aligned_end);
+			}
+			else {
+				__extreme_vertical = __proj(__extreme_vertical);
 			}
 
 			__seek_possibly_wrapped_iterator(__first, __ptr);

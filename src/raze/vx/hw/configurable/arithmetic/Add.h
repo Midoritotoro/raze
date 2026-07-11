@@ -11,6 +11,8 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
 struct _Configurable_add: raze::options::strict_elementwise_callable<_Configurable_add, _Options_> {
+    __raze_add_fold_compatibility(_Add);
+
     template <simd_type _Type_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, const _Type_& __y) const noexcept {
         return raze::options::__dispatch_call(*this, __x, __y);
@@ -56,5 +58,7 @@ struct _Configurable_add: raze::options::strict_elementwise_callable<_Configurab
 
     using callable_tag_type = _Configurable_add;
 };
+
+constexpr inline auto __add = raze::options::functor<_Configurable_add>;
 
 __RAZE_VX_NAMESPACE_END
