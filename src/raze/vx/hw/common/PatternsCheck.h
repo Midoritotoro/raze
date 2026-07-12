@@ -478,19 +478,17 @@ using make_unzip_pattern = make_shuffle_pattern<_Simd_,
 
 		return 2 * (__i - _Simd_::size() / 2) + 1;
 	}>;
+
 template <simd_type _Simd_, sizetype _GroupSize_>
-using make_swap_adjacent_pattern =
-make_shuffle_pattern < _Simd_,
-	[](sizetype i) {
-	constexpr sizetype block = 2 * _GroupSize_;
+using make_swap_adjacent_pattern = make_shuffle_pattern<_Simd_,
+	[] (sizetype __i) {
+		constexpr auto __block = 2 * _GroupSize_;
 
-	const auto block_begin = (i / block) * block;
-	const auto offset = i % block;
+		const auto __block_begin = (__i / __block) * __block;
+		const auto __offset = __i % __block;
 
-	if (offset < _GroupSize_)
-		return block_begin + offset + _GroupSize_;
-	else
-		return block_begin + offset - _GroupSize_;
-	} > ;
+		if (__offset < _GroupSize_) return __block_begin + __offset + _GroupSize_;
+		else return __block_begin + __offset - _GroupSize_;
+	}>;
 
 __RAZE_VX_NAMESPACE_END

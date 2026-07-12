@@ -43,7 +43,7 @@ struct _Configurable_fold : raze::options::strict_elementwise_callable<_Configur
 
             if constexpr (_Type_::size() == 1) {
                 if constexpr (_Options_::contains(broadcast)) return __select[__options](__x);
-                else return __select[__options](__x)[std::integral_constant<sizetype, 0>{}];
+                else return _Value_(__select[__options](__x)[std::integral_constant<sizetype, 0>{}]);
             }
             else {
                 constexpr auto __depth = std::bit_width(sizetype(_Type_::size())) - 1;
