@@ -17,18 +17,6 @@ raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __shuffle(const pa
 	else if constexpr (__is_splat(__p)) {
 		return __splat(__x, __p);
 	}
-	/*else if constexpr (__is_slide_left(__p)) {
-
-	}
-	else if constexpr (__is_slide_right(__p)) {
-		 
-	}
-	else if constexpr (__is_rotate_left(__p)) {
-
-	}
-	else if constexpr (__is_rotate_right(__p)) {
-
-	}*/
 	else {
 		return __generic_shuffle(__x, __p);
 	}

@@ -11,4 +11,5 @@
 #include <src/raze/vx/hw/configurable/shuffle/SlideRightMerge.h>
 #include <src/raze/vx/hw/configurable/shuffle/RotateLeft.h>
 #include <src/raze/vx/hw/configurable/shuffle/RotateRight.h>
+#include <src/raze/vx/hw/configurable/shuffle/SwapAdjacent.h>
 

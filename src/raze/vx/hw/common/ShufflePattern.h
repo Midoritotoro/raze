@@ -52,11 +52,7 @@ struct _Shuffle_pattern {
 
 	template <sizetype _I_>
     static constexpr auto __at() noexcept {
-#if 0
-        return std::get<_I_>(std::make_tuple(_Indices_...));
-#else
         return __indices[_I_];
-#endif
 	}
 
 	template <sizetype _I_>

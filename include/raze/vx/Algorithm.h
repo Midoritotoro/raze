@@ -67,6 +67,7 @@ constexpr inline auto slide_right = raze::options::functor<_Configurable_slide_r
 constexpr inline auto slide_right_merge = raze::options::functor<_Configurable_slide_right_merge>;
 constexpr inline auto rotate_left = raze::options::functor<_Configurable_rotate_left>;
 constexpr inline auto rotate_right = raze::options::functor<_Configurable_rotate_right>;
+constexpr inline auto swap_adjacent = __swap_adjacent;
 constexpr inline auto shuffle = raze::options::functor<_Configurable_shuffle>;
 constexpr inline auto clamp = raze::options::functor<_Configurable_clamp>;
 constexpr inline auto sfence = raze::options::functor<_Configurable_sfence>;

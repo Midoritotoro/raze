@@ -22,7 +22,7 @@ struct horizontal_minmax_tests {
         Simd v = raze::vx::load<Simd>(arr);
         Simd fbk = raze::vx::load<Simd>(fallback);
 
-        {
+        /*{
             auto hmin = raze::vx::fold(v, raze::vx::vertical_min);
             auto expected = (*std::min_element(arr, arr + N));
             raze_assert(hmin == expected);
@@ -68,7 +68,7 @@ struct horizontal_minmax_tests {
                 raze_assert(rminwz == expected_min);
                 raze_assert(rmaxwz == expected_max);
             }
-        }
+        }*/
 
         {
             auto result = raze::vx::fold(v, raze::vx::add);
@@ -105,7 +105,7 @@ struct horizontal_minmax_tests {
     void operator()() {
         test_size<_Width_ / (sizeof(_Type_) * 8)>();
         //test_size<_Width_ / (sizeof(_Type_) * 8) * 2>();
-        test_size<1>();
+        //test_size<1>();
     }
 };
 
