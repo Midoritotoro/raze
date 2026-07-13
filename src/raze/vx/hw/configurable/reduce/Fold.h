@@ -36,27 +36,36 @@ struct _Configurable_fold : raze::options::strict_elementwise_callable<_Configur
     }
 
     template <simd_type _Type_, class _Callable_>
-    static raze_always_inline auto deferred_call(auto __options, _Type_ __x, _Callable_ __callable) noexcept {
-            using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-            using _Value_ = typename _Type_::value_type;
-            using _Abi_ = typename _Type_::abi_type;
+    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, _Callable_ __callable) noexcept
+        requires(std::is_same_v<algorithm::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
+    {
+        return __hsum[__options](__x);
+    }
 
-            if constexpr (_Type_::size() == 1) {
-                if constexpr (_Options_::contains(broadcast)) return __select[__options](__x);
-                else return _Value_(__select[__options](__x)[std::integral_constant<sizetype, 0>{}]);
-            }
-            else {
-                constexpr auto __depth = std::bit_width(sizetype(_Type_::size())) - 1;
+    template <simd_type _Type_, class _Callable_>
+    static raze_always_inline auto deferred_call(auto __options, _Type_ __x, _Callable_ __callable) noexcept
+        requires(!std::is_same_v<algorithm::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
+    {
+        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+        using _Value_ = typename _Type_::value_type;
+        using _Abi_ = typename _Type_::abi_type;
 
-                const auto __r = [&] <sizetype ... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
-                    __x = __select[__options](__x);
-                    ((__x = __callable(__x, __swap_adjacent(__x, std::integral_constant<sizetype, 1ull << _Indices_>{}))), ...);
-                    return __x;
-                } (std::make_integer_sequence<sizetype, __depth>{});
+        if constexpr (_Type_::size() == 1) {
+            if constexpr (_Options_::contains(broadcast)) return __select[__options](__x);
+            else return _Value_(__select[__options](__x)[std::integral_constant<sizetype, 0>{}]);
+        }
+        else {
+            constexpr auto __depth = std::bit_width(sizetype(_Type_::size())) - 1;
 
-                if constexpr (_Options_::contains(broadcast)) return __r;
-                else return __r[std::integral_constant<sizetype, 0>{}];
-            }
+            const auto __r = [&] <sizetype ... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
+                __x = __select[__options](__x);
+                ((__x = __callable(__x, __swap_adjacent(__x, std::integral_constant<sizetype, 1ull << _Indices_>{}))), ...);
+                return __x;
+            } (std::make_integer_sequence<sizetype, __depth>{});
+
+            if constexpr (_Options_::contains(broadcast)) return __r;
+            else return __r[std::integral_constant<sizetype, 0>{}];
+        }
     }
 
     using callable_tag_type = _Configurable_fold;

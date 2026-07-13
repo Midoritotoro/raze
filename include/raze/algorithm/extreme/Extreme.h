@@ -44,7 +44,7 @@ struct _Extreme : _Traits_ {
 	};
 
 	template <class _Tag_>
-	struct __vectorized_max_value {
+	struct __vectorized_extreme {
 		template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
 		raze_nodiscard raze_always_inline std::iter_value_t<_Iterator_> operator()(_Iterator_ __first,
 			_Sentinel_ __sentinel, _Comp_ __comp, _Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
@@ -83,11 +83,14 @@ struct _Extreme : _Traits_ {
 				__extreme_vertical = __proj(__extreme_vertical);
 			}
 
+			auto __largest_value = vx::fold(__extreme_vertical, [&] (const auto& __x, const auto& __y) raze_always_inline_lambda {
+				return vx::select[__comp(__x, __y), __y](__x);
+			});
+
 			__seek_possibly_wrapped_iterator(__first, __ptr);
-			auto __largest_value = vx::horizontal_max(__vmax);
 
 			for (; __first != __sentinel; ++__first)
-				if (__proj(__largest_value) < __proj(*__first))
+				if (__comp(__proj(*__first), __proj(__largest_value)))
 					__largest_value = *__first;
 
 			return __largest_value;
@@ -100,7 +103,38 @@ struct _Extreme : _Traits_ {
 			_Comp_ __comp, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
+			
+			auto* __ptr = std::to_address(__first);
+			raze_assume(__ptr != nullptr);
 
+			auto __left = __iterations_aligned;
+			auto __extreme_vertical = vx::load<_Tag_>(__ptr);
+
+			__advance_bytes(__ptr, sizeof(_Tag_));
+
+			if (--__left) {
+				do {
+					const auto __loaded = __proj(vx::load<_Tag_>(__ptr));
+					const auto __mask = __comp(__loaded, __proj(__extreme_vertical));
+					__extreme_vertical = vx::select[__mask, __extreme_vertical](__loaded);
+					__advance_bytes(__ptr, sizeof(_Tag_));
+				} while (--__left);
+			}
+			else {
+				__extreme_vertical = __proj(__extreme_vertical);
+			}
+
+			auto __largest_value = vx::fold(__extreme_vertical, [&] (const auto& __x, const auto& __y) raze_always_inline_lambda {
+				return vx::select[__comp(__x, __y), __y](__x);
+			});
+
+			__seek_possibly_wrapped_iterator(__first, __ptr);
+
+			for (; __first != __sentinel; ++__first)
+				if (__comp(__proj(*__first), __proj(__largest_value)))
+					__largest_value = *__first;
+
+			return __largest_value;
 		}
 	};
 
@@ -146,11 +180,12 @@ private:
 		if (__first == __last) return std::nullopt;
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
+			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				return std::optional<_Value_> { vx::__dispatch_sized_impl<__vectorized_max_value, _Value_, _Value_>(
-					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __proj) };
+				return std::optional<_Value_> { vx::__dispatch_sized_impl<__vectorized_extreme, _Value_, _Value_>(
+					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __comp, __proj) };
 			}
 		}
 
@@ -169,12 +204,13 @@ private:
 		if (__first == __last) return std::nullopt;
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
+			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				return std::optional<_Value_> { vx::__dispatch_sized_impl<__vectorized_max_value,
-					_Value_, _Value_>(__bytes, __first, __last, __proj) };
+				return std::optional<_Value_> { vx::__dispatch_sized_impl<__vectorized_extreme,
+					_Value_, _Value_>(__bytes, __first, __last, __comp, __proj) };
 			}
 		}
 
