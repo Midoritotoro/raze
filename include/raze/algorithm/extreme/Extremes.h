@@ -20,8 +20,8 @@ struct _Extremes : _Traits_ {
 		_Sentinel_ _sentinel;
 		_Projection_ _proj;
 		_Comp_ _comp;
-		std::iter_value_t<_Iterator_> _extreme_upper_value;
 		std::iter_value_t<_Iterator_> _extreme_lower_value;
+		std::iter_value_t<_Iterator_> _extreme_upper_value;
 
 		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Comp_ __comp, _Projection_ __proj) noexcept :
 			_iterator(__it), _sentinel(__sent), _proj(__proj), _comp(__comp),

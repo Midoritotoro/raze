@@ -66,17 +66,17 @@ struct _Max_element : _Traits_ {
 		{
 			using _Value_ = std::iter_value_t<_Iterator_>;
 
-			auto* __ptr = std::to_address(__first);
+			auto* __ptr = const_cast<_Value_*>(std::to_address(__first));
 			raze_assume(__ptr != nullptr);
 
 			using _UnsignedValueType = IntegerForSizeof<_Value_>::Unsigned;
 			using _IndexSimdType = vx::simd<_UnsignedValueType, vx::abi_t<_Tag_>>;
 
-			auto __max_element = static_cast<const _Value_*>(__first);
+			auto __max_element = static_cast<_Value_*>(__ptr);
 
 			auto __current_indices_max = _IndexSimdType::zero();
 			auto __current_indices = _IndexSimdType::zero();
-			auto __current_values = __proj(vx::load<_Tag_>(__first));
+			auto __current_values = __proj(vx::load<_Tag_>(__ptr));
 			auto __current_values_max = __current_values;
 
 			constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
@@ -87,15 +87,15 @@ struct _Max_element : _Traits_ {
 			auto __aligned_portion_size = std::min(__max_portion_size, __aligned_size);
 
 			auto __portion_begin = __max_element;
-			auto __stop_at = __bytes_pointer_offset(__first, __aligned_portion_size);
+			auto __stop_at = __bytes_pointer_offset(__ptr, __aligned_portion_size);
 			__aligned_size -= __aligned_portion_size;
 
 			while (true) {
-				__advance_bytes(__first, sizeof(_Tag_));
+				__advance_bytes(__ptr, sizeof(_Tag_));
 				++__current_indices;
 
-				if (__first != __stop_at) {
-					__current_values = __proj(vx::load<_Tag_>(__first));
+				if (__ptr != __stop_at) {
+					__current_values = __proj(vx::load<_Tag_>(__ptr));
 					__current_values_max = __proj(__current_values_max);
 
 					const auto __greater_mask = (__current_values > __current_values_max);
@@ -122,9 +122,9 @@ struct _Max_element : _Traits_ {
 
 						__aligned_size -= __aligned_portion_size;
 						__advance_bytes(__stop_at, __aligned_portion_size);
-						__portion_begin = static_cast<const _Value_*>(__first);
+						__portion_begin = static_cast<_Value_*>(__ptr);
 
-						__current_values = __proj(vx::load<_Tag_>(__first));
+						__current_values = __proj(vx::load<_Tag_>(__ptr));
 						__current_values_max = __current_values;
 						__current_indices_max = _IndexSimdType::zero();
 					}
@@ -134,8 +134,16 @@ struct _Max_element : _Traits_ {
 				}
 			}
 
+			_Iterator_ __largest_value_iterator;
+
 			__seek_possibly_wrapped_iterator(__first, __ptr);
-			return (*this)(__first, __sentinel, __proj);
+			__seek_possibly_wrapped_iterator(__largest_value_iterator, __max_element);
+
+			for (; __first != __sentinel; ++__first)
+				if (__proj(*__largest_value_iterator) < __proj(*__first))
+					__largest_value_iterator = __first;
+
+			return __largest_value_iterator;
 		}
 	};
 

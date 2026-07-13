@@ -1,0 +1,287 @@
+#pragma once 
+
+#include <raze/concurrency/Execution.h>
+#include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/VectorizablePredicate.h>
+#include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/NotFn.h>
+#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
+#include <raze/options/Options.h>
+#include <optional>
+
+
+__RAZE_ALGORITHM_NAMESPACE_BEGIN
+
+template <class _Traits_>
+struct _Extreme_elements : _Traits_ {
+	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+	struct __impl {
+		_Iterator_ _iterator;
+		_Sentinel_ _sentinel;
+		_Comp_ _comp;
+		_Projection_ _proj;
+		_Iterator_ _first_extreme;
+		_Iterator_ _last_extreme;
+
+		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Comp_ __comp, _Projection_ __proj) noexcept :
+			_iterator(__it), _sentinel(__sent), _proj(__proj), _comp(__comp), _first_extreme(__it),
+			_last_extreme(__it)
+		{
+			++_iterator;
+		}
+
+		template <class _Tag_>
+		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
+			if (_iterator == _sentinel) return true;
+			else {
+				if (std::invoke(_comp, std::invoke(_proj, *_iterator), std::invoke(_proj, *_first_extreme)))
+					_first_extreme = _iterator;
+				if (!std::invoke(_comp, std::invoke(_proj, *_iterator), std::invoke(_proj, *_last_extreme)))
+					_last_extreme = _iterator;
+				++_iterator;
+				return false;
+			}
+		}
+
+		raze_nodiscard constexpr raze_always_inline std::pair<_Iterator_, _Iterator_> result() const noexcept {
+			return { _first_extreme, _last_extreme };
+		}
+	};
+
+	template <class _Tag_>
+	struct __vectorized_extreme_elements {
+		template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+		raze_nodiscard raze_always_inline std::pair<_Iterator_, _Iterator_> operator()(_Iterator_ __first,
+			_Sentinel_ __sentinel, _Comp_ __comp, _Projection_ __proj) const noexcept
+		{
+			if (__first == __sentinel) return { __first, __first };
+
+			_Iterator_ __first_extreme = __first;
+			_Iterator_ __last_extreme = __first;
+
+			for (; ++__first != __sentinel;) {
+				if (__comp(__proj(*__first), __proj(*__first_extreme))) __first_extreme = __first;
+				if (!__comp(__proj(*__first), __proj(*__last_extreme))) __last_extreme = __first;
+			}
+
+			return { __first_extreme, __last_extreme };
+		}
+
+		template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+		raze_nodiscard raze_always_inline std::pair<_Iterator_, _Iterator_> operator()(sizetype __aligned_size,
+			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel,
+			_Comp_ __comp, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+		{
+			using _Value_ = typename _Tag_::value_type;
+
+			auto* __ptr = const_cast<_Value_*>(std::to_address(__first));
+
+			using _UnsignedValueType = IntegerForSizeof<_Value_>::Unsigned;
+			using _IndexSimdType = vx::simd<_UnsignedValueType, vx::abi_t<_Tag_>>;
+
+			auto __last_extreme = static_cast<_Value_*>(__ptr);
+			auto __first_extreme = static_cast<_Value_*>(__ptr);
+
+			auto __current_indices_extreme_last = _IndexSimdType::zero();
+			auto __current_indices_extreme_first = _IndexSimdType::zero();
+			auto __current_indices = _IndexSimdType::zero();
+			auto __current_values = __proj(vx::load<_Tag_>(__ptr));
+			auto __current_values_extreme_last = __current_values;
+			auto __current_values_extreme_first = __current_values;
+
+			constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
+			constexpr auto __max_portion_size = std::max(static_cast<u64>(__integer_max)
+				+ 1, static_cast<u64>(__integer_max)) * sizeof(_Tag_);
+
+			constexpr auto __has_portion_max_value = (math::__maximum_integral_limit<u64>() != __max_portion_size);
+			auto __aligned_portion_size = std::min(__max_portion_size, __aligned_size);
+
+			auto __portion_begin = __ptr;
+			auto __stop_at = __bytes_pointer_offset(__ptr, __aligned_portion_size);
+			__aligned_size -= __aligned_portion_size;
+
+			while (true) {
+				__advance_bytes(__ptr, sizeof(_Tag_));
+				++__current_indices;
+
+				if (__ptr != __stop_at) {
+					__current_values = __proj(vx::load<_Tag_>(__ptr));
+					__current_values_extreme_last = __proj(__current_values_extreme_last);
+					__current_values_extreme_first = __proj(__current_values_extreme_first);
+
+					const auto __first_mask = __comp(__current_values, __current_values_extreme_first);
+					const auto __last_mask = __comp(__current_values, __current_values_extreme_last);
+
+					__current_indices_extreme_first = vx::select[__first_mask, __current_indices](__current_indices_extreme_first);
+					__current_values_extreme_first = vx::select[__first_mask, __current_values_extreme_first](__current_values);
+
+					__current_indices_extreme_last = vx::select[__last_mask, __current_indices_extreme_last](__current_indices);
+					__current_values_extreme_last = vx::select[__last_mask, __current_values](__current_values_extreme_last);
+				}
+				else {
+					const auto __all_extreme_first = vx::fold(__current_values_extreme_first, [&] (const auto& __x, const auto& __y) 
+						raze_always_inline_lambda { const auto __mask = __comp(__x, __y); return vx::select[__mask, __y](__x); });
+
+					const auto __all_extreme_last = vx::fold(__current_values_extreme_last, [&] (const auto& __x, const auto& __y)
+						raze_always_inline_lambda { const auto __mask = __comp(__x, __y); return vx::select[__mask, __x](__y); });
+					
+					const auto __mask_first = (__current_values_extreme_first == __all_extreme_first);
+					const auto __mask_last = (__current_values_extreme_last == __all_extreme_last);
+
+					const auto __first_values_indices = vx::select[__mask_first, ~_IndexSimdType::zero()](__current_indices_extreme_first);
+					const auto __last_values_indices = vx::select[__mask_last, _IndexSimdType::zero()](__current_indices_extreme_last);
+
+					const auto __all_first_indices = vx::hmin(__first_values_indices);
+					const auto __all_last_indices = vx::hmax(__last_values_indices);
+
+					const auto __final_first_mask = (__all_first_indices == __first_values_indices) & __mask_first;
+					const auto __final_last_mask = math::bit_cast<decltype(__mask_last)>(__all_last_indices == __last_values_indices) & __mask_last;
+
+					const auto __horizontal_first_position = vx::find_first_set(__final_first_mask);
+					const auto __horizontal_last_position = (_Tag_::size() - 1 - vx::find_last_set(__final_last_mask));
+
+					const auto __vertical_last_position = sizetype(__current_indices_extreme_last[__horizontal_last_position]);
+					const auto __vertical_first_position = sizetype(__current_indices_extreme_first[__horizontal_first_position]);
+
+					const auto __maybe_first_extreme = __bytes_pointer_offset(__portion_begin,
+						__vertical_first_position * sizeof(_Tag_) + __horizontal_first_position * sizeof(_Value_));
+
+					const auto __maybe_last_extreme = __bytes_pointer_offset(__portion_begin,
+						__vertical_last_position * sizeof(_Tag_) + __horizontal_last_position * sizeof(_Value_));
+
+					if (__comp(*__maybe_first_extreme, *__first_extreme)) __first_extreme = __maybe_first_extreme;
+					if (!__comp(*__maybe_last_extreme, *__last_extreme)) __last_extreme = __maybe_last_extreme;
+
+					if constexpr (__has_portion_max_value) {
+						__aligned_portion_size = std::min(__max_portion_size, __aligned_size);
+						if (__aligned_portion_size == 0) break;
+
+						__aligned_size -= __aligned_portion_size;
+						__advance_bytes(__stop_at, __aligned_portion_size);
+						__portion_begin = static_cast<_Value_*>(__ptr);
+
+						__current_values = __proj(vx::load<_Tag_>(__ptr));
+						__current_values_extreme_first = __current_values;
+						__current_values_extreme_last = __current_values;
+						__current_indices_extreme_first = _IndexSimdType::zero();
+						__current_indices_extreme_last = _IndexSimdType::zero();
+					}
+					else {
+						break;
+					}
+				}
+			}
+
+			_Iterator_ __first_extreme_it, __last_extreme_it;
+			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_possibly_wrapped_iterator(__first_extreme_it, __first_extreme);
+			__seek_possibly_wrapped_iterator(__last_extreme_it, __last_extreme);
+
+			for (; __first != __sentinel; ++__first) {
+				if (__comp(__proj(*__first), __proj(*__first_extreme_it))) __first_extreme_it = __first;
+				if (!__comp(__proj(*__first), __proj(*__last_extreme_it))) __last_extreme_it = __first;
+			}
+
+			return { __first_extreme_it, __last_extreme_it };
+		}
+	};
+
+	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, 
+		class _Comp_ = std::greater<>, class _Projection_ = std::identity>
+	raze_nodiscard constexpr raze_always_inline std::pair<_Iterator_, _Iterator_> operator()(_Iterator_ __first,
+		_Sentinel_ __last, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
+	{
+		auto __r = __extreme_elements_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
+			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)), type_traits::__pass_function(__comp), 
+			type_traits::__pass_function(__proj));
+
+		auto __first_uninitialized = std::move(__first);
+
+		__seek_possibly_wrapped_iterator(__first, std::move(__r.first));
+		__seek_possibly_wrapped_iterator(__first_uninitialized, std::move(__r.second));
+
+		return { __first, __first_uninitialized };
+	}
+
+	template <std::ranges::input_range _Range_, class _Comp_ = std::less<>, class _Projection_ = std::identity >
+	constexpr raze_always_inline std::pair<std::ranges::borrowed_iterator_t<_Range_>, std::ranges::borrowed_iterator_t<_Range_>>
+		operator()(_Range_&& __range, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept requires(!constexpr_sized_range<_Range_>)
+	{
+		auto __begin = std::ranges::begin(__range);
+		auto __r = __extreme_elements_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
+			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp), type_traits::__pass_function(__proj));
+
+		auto __begin_uninitialized = std::move(__begin);
+
+		__seek_possibly_wrapped_iterator(__begin, std::move(__r.first));
+		__seek_possibly_wrapped_iterator(__begin_uninitialized, std::move(__r.second));
+
+		return { __begin, __begin_uninitialized };
+	}
+
+	template <std::ranges::input_range _Range_, class _Comp_ = std::less<>, class _Projection_ = std::identity>
+	constexpr raze_always_inline std::pair<std::ranges::borrowed_iterator_t<_Range_>, std::ranges::borrowed_iterator_t<_Range_>>
+		operator()(_Range_&& __range, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
+	{
+		auto __begin = std::ranges::begin(__range);
+		auto __r = __extreme_elements_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
+			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp), 
+			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+
+		auto __begin_uninitialized = std::move(__begin);
+
+		__seek_possibly_wrapped_iterator(__begin, std::move(__r.first));
+		__seek_possibly_wrapped_iterator(__begin_uninitialized, std::move(__r.second));
+
+		return { __begin, __begin_uninitialized };
+	}
+private:
+	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+	raze_nodiscard constexpr raze_always_inline std::pair<_Iterator_, _Iterator_> __extreme_elements_unchecked(
+		_Iterator_ __first, _Sentinel_ __last, _Comp_ __comp, _Projection_ __proj) const noexcept
+	{
+		__verify_range(__first, __last);
+
+		using _TraitsType = decltype(this->traits());
+		using _Value_ = std::iter_value_t<_Iterator_>;
+
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
+			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
+			&& vectorizable_projection<_Projection_, _Iterator_>)
+		{
+			if not consteval {
+				return vx::__dispatch_sized_impl<__vectorized_extreme_elements, _Value_, std::pair<_Iterator_, _Iterator_>>(
+					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __comp, __proj);
+			}
+		}
+
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __comp, __proj));
+	}
+
+	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_, sizetype _Size_>
+	raze_nodiscard constexpr raze_always_inline std::pair<_Iterator_, _Iterator_> __extreme_elements_unchecked(_Iterator_ __first,
+		_Sentinel_ __last, _Comp_ __comp, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
+	{
+		__verify_range(__first, __last);
+
+		using _TraitsType = decltype(this->traits());
+		using _Value_ = std::iter_value_t<_Iterator_>;
+
+		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
+			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
+			&& vectorizable_projection<_Projection_, _Iterator_>)
+		{
+			if not consteval {
+				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
+				return vx::__dispatch_sized_impl<__vectorized_extreme_elements,
+					_Value_, std::pair<_Iterator_, _Iterator_>>(__bytes, __first, __last, __comp, __proj);
+			}
+		}
+
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __comp, __proj));
+	}
+};
+
+constexpr inline auto extreme_elements = raze::options::function_with_traits<_Extreme_elements>;
+
+__RAZE_ALGORITHM_NAMESPACE_END
