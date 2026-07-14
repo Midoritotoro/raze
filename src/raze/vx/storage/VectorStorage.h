@@ -13,7 +13,6 @@ class _Vector_storage {
     static constexpr std::size_t __bytes = _Abi_::size * sizeof(_Type_);
     static constexpr bool __use_native = (__bytes == 16 && __has_sse2_support_v<_Abi_::isa>) ||
         (__bytes == 32 && __has_avx_support_v<_Abi_::isa>) || (__bytes == 64 && __has_avx512f_support_v<_Abi_::isa>);
-
 public:
     using abi_type = _Abi_;
     using tuple_type = std::conditional_t<__use_native, typename best_chunk<

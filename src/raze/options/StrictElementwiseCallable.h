@@ -67,30 +67,4 @@ constexpr raze_no_stack_protector raze_always_inline auto __dispatch_call(
     else return __callable.behavior(__callable.options(), std::forward<_Args_>(__args)...);
 }
 
-#if !defined(__raze_add_fold_compatibility)
-#  define __raze_add_fold_compatibility(__op) \
-    template <arithmetic_type _Type_> \
-    raze_nodiscard raze_always_inline _Type_ operator()(_Type_ __x, _Type_ __y) const noexcept { \
-        return raze::options::__dispatch_call(*this, __x, __y); \
-    } \
-    \
-    template <class _Value_, arch::ISA _ISA_, intrin_type _First_, class ... _Args_> \
-    raze_nodiscard raze_always_inline _First_ operator()(options::as<_Value_> __v, \
-        std::integral_constant<arch::ISA, _ISA_> __c, _First_ __first, _Args_&& ... __args) const noexcept \
-    { \
-        return raze::options::__dispatch_call(*this, __v, __c, __first, __args...); \
-    } \
-    \
-    template <class _Value_, arch::ISA _ISA_, class ... _Args_> \
-    static raze_always_inline auto deferred_call(auto __options, options::as<_Value_>, \
-        std::integral_constant<arch::ISA, _ISA_>, _Args_&& ... __args) noexcept \
-    { \
-        return __op<_ISA_, _Value_>()(__args...); \
-    } \
-    \
-    template <arithmetic_type _Type_> \
-    static raze_always_inline auto deferred_call(auto __options, _Type_ __x, _Type_ __y) noexcept { \
-        return __op<arch::ISA::None, _Type_>()(__x, __y); \
-    }
-#endif // !defined(__raze_add_fold_compatibility)
 __RAZE_OPTIONS_NAMESPACE_END

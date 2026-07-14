@@ -20,14 +20,14 @@ void mask_compress_any(
         dst[i] = src[i];
 }
 
-template <class Type_, raze::arch::ISA _ISA_, raze::u32 _Width_>
+template <class _Type_, raze::arch::ISA _ISA_, raze::u32 _Width_>
 struct compress_tests {
-    using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Width_>>;
-    using Mask = typename Simd::mask_type;
-    using U = typename raze::IntegerForSizeof<_Type_>::Unsigned;
-    static constexpr size_t N = Simd::size();
+    template <raze::sizetype _Size_>
+    void test_size() {
+        using Simd = raze::vx::simd<_Type_, raze::vx::runtime_abi<_ISA_, _Size_>>;
+        using Mask = typename Simd::mask_type;
+        static constexpr size_t N = Simd::size();
 
-    void operator()() {
         alignas(64) _Type_ src[N];
         for (size_t i = 0; i < N; ++i)
             src[i] = _Type_(i + 1);
@@ -43,6 +43,11 @@ struct compress_tests {
             raze::vx::compress_store(dst, v, mask);
             raze_assert(std::equal(dst, dst + N, expected, expected + N));
         }
+    }
+
+    void operator()() {
+        test_size<_Width_ / (sizeof(_Type_) * 8)>();
+        test_size<1>();
     }
 };
 

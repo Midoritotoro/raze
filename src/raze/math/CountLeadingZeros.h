@@ -170,7 +170,7 @@ constexpr raze_always_inline i32 __clz_not_n_bits(_IntegralType_ __value) noexce
     static_assert(_Bits_ <= 64);
     static_assert(raze_sizeof_in_bits(_IntegralType_) >= _Bits_);
 
-    return __clz_n_bits_implementation<_ISA_, _Bits_, _Unsafe_>()(__value);
+    return __clz_not_n_bits_implementation<_ISA_, _Bits_, _Unsafe_>()(__value);
 }
 
 __RAZE_MATH_NAMESPACE_END

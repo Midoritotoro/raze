@@ -11,8 +11,6 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
 struct _Configurable_sub: raze::options::strict_elementwise_callable<_Configurable_sub, _Options_> {
-    __raze_add_fold_compatibility(_Sub);
-
     template <simd_type _Type_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, const _Type_& __y) const noexcept {
         return raze::options::__dispatch_call(*this, __x, __y);

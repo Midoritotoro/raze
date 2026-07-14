@@ -47,7 +47,7 @@ struct _Compress {
 
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__avx512vl) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__not_mask);
+				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
 				const auto __set_bits = math::__native_popcnt_n_bits<__size>(__not_mask);
 
 				if constexpr (sizeof(_Type_) == 8) return { __set_bits, __as<_Tp_>(_mm_mask_compress_epi64(__as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
@@ -90,7 +90,7 @@ struct _Compress {
 					return { __total_bytes / sizeof(_Type_), __as<_Tp_>(__result_vec) };
 				}
 				else {
-					const auto __shuffle_mask = _Load<_ISA_, __m128i>(__tables_sse<sizeof(_Type_)>.__shuffle[__int_mask]);
+					const auto __shuffle_mask = _Load<_ISA_, __m128i>()(__tables_sse<sizeof(_Type_)>.__shuffle[__int_mask]);
 					const auto __processed_bytes = __tables_sse<sizeof(_Type_)>.__size[__int_mask];
 					return { __processed_bytes / sizeof(_Type_), __as<_Tp_>(_mm_shuffle_epi8(__as<__m128i>(__x), __shuffle_mask)) };
 				}
@@ -129,7 +129,7 @@ struct _Compress {
 		}
 		else if constexpr (sizeof(_Tp_) == 32) {
 			if constexpr (__avx512vl) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__not_mask);
+				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
 				const auto __set_bits = math::__native_popcnt_n_bits<__size>(__not_mask);
 
 				if constexpr (sizeof(_Type_) == 8) return { __set_bits, __as<_Tp_>(_mm256_mask_compress_epi64(__as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
@@ -235,7 +235,7 @@ struct _Compress {
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
-			const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__not_mask);
+			const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
 			const auto __set_bits = math::__native_popcnt_n_bits<__size>(__not_mask);
 
 			if constexpr (sizeof(_Type_) == 8) return { __set_bits, __as<_Tp_>(_mm512_mask_compress_epi64(__as<__m512i>(__x), __not_mask, __as<__m512i>(__x))) };
@@ -397,8 +397,8 @@ struct _Compress {
 			}
 		}
 		
-		if constexpr (arithmetic_type<_Tp_>) return __compress_mask ? std::pair{ 1, __x } : std::pair{ 0, 0 };
-		else return __fallback(__x, __compress_mask);
+		if constexpr (arithmetic_type<_Tp_>) return __compress_mask ? std::pair<i32, _Tp_>{ 0, 0 } : std::pair<i32, _Tp_> { sizeof(_Tp_), __x };
+		else return __fallback(__x, __int_mask);
 	}
 };
 

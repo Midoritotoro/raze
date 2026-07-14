@@ -26,12 +26,6 @@ struct _Vector_wrapper {
     _Vector_wrapper& operator=(const _Vector_wrapper&) noexcept = default;
     _Vector_wrapper& operator=(_Vector_wrapper&&) noexcept = default;
 
-    //template <intrin_type _OtherIntrin_> requires (sizeof(_Intrin_) == sizeof(_OtherIntrin_))
-    //raze_always_inline _Vector_wrapper& operator=(_OtherIntrin_ __vector) noexcept {
-    //    _data = __as<_Intrin_>(__vector);
-    //    return *this;
-    //}
-
     template <sizetype _I_, intrin_type _OtherIntrin_>
     raze_always_inline void insert(_OtherIntrin_ __intrin) noexcept {
         _Insert_vector<_Abi_::isa>()(_data, std::integral_constant<sizetype, _I_>{}, __intrin);
