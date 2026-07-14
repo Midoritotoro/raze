@@ -72,22 +72,23 @@ struct _Extreme_elements : _Traits_ {
 			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel,
 			_Comp_ __comp, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
-			using _Value_ = typename _Tag_::value_type;
+			using _Value_ = std::iter_value_t<_Iterator_>;
 
 			auto* __ptr = const_cast<_Value_*>(std::to_address(__first));
+			raze_assume(__ptr != nullptr);
 
 			using _UnsignedValueType = IntegerForSizeof<_Value_>::Unsigned;
 			using _IndexSimdType = vx::simd<_UnsignedValueType, vx::abi_t<_Tag_>>;
 
-			auto __last_extreme = static_cast<_Value_*>(__ptr);
 			auto __first_extreme = static_cast<_Value_*>(__ptr);
+			auto __last_extreme = static_cast<_Value_*>(__ptr);
 
-			auto __current_indices_extreme_last = _IndexSimdType::zero();
 			auto __current_indices_extreme_first = _IndexSimdType::zero();
+			auto __current_indices_extreme_last = _IndexSimdType::zero();
 			auto __current_indices = _IndexSimdType::zero();
 			auto __current_values = __proj(vx::load<_Tag_>(__ptr));
-			auto __current_values_extreme_last = __current_values;
 			auto __current_values_extreme_first = __current_values;
+			auto __current_values_extreme_last = __current_values;
 
 			constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
 			constexpr auto __max_portion_size = std::max(static_cast<u64>(__integer_max)
@@ -106,54 +107,48 @@ struct _Extreme_elements : _Traits_ {
 
 				if (__ptr != __stop_at) {
 					__current_values = __proj(vx::load<_Tag_>(__ptr));
-					__current_values_extreme_last = __proj(__current_values_extreme_last);
 					__current_values_extreme_first = __proj(__current_values_extreme_first);
 
-					const auto __first_mask = __comp(__current_values, __current_values_extreme_first);
-					const auto __last_mask = __comp(__current_values, __current_values_extreme_last);
+					const auto __extreme_mask_first = __comp(__current_values, __current_values_extreme_first);
+					__current_indices_extreme_first = vx::select[__extreme_mask_first, __current_indices_extreme_first](__current_indices);
+					__current_values_extreme_first = vx::select[__extreme_mask_first, __current_values_extreme_first](__current_values);
 
-					__current_indices_extreme_first = vx::select[__first_mask, __current_indices](__current_indices_extreme_first);
-					__current_values_extreme_first = vx::select[__first_mask, __current_values_extreme_first](__current_values);
-
-					__current_indices_extreme_last = vx::select[__last_mask, __current_indices_extreme_last](__current_indices);
-					__current_values_extreme_last = vx::select[__last_mask, __current_values](__current_values_extreme_last);
+					const auto __extreme_mask_last = !__comp(__current_values, __current_values_extreme_last);
+					__current_indices_extreme_last = vx::select[__extreme_mask_last, __current_indices_extreme_last](__current_indices);
+					__current_values_extreme_last = vx::select[__extreme_mask_last, __current_values_extreme_last](__current_values);
 				}
 				else {
-					const auto __all_extreme_first = vx::fold(__current_values_extreme_first, [&] (const auto& __x, const auto& __y) 
-						raze_always_inline_lambda { const auto __mask = __comp(__x, __y); return vx::select[__mask, __y](__x); });
+					const auto __all_extreme_first = vx::fold(__current_values_extreme_first, [&](const auto& __x, const auto& __y)
+						raze_always_inline_lambda { const auto __mask = __comp(__x, __y);  return vx::select[__mask, __y](__x); });
 
-					const auto __all_extreme_last = vx::fold(__current_values_extreme_last, [&] (const auto& __x, const auto& __y)
-						raze_always_inline_lambda { const auto __mask = __comp(__x, __y); return vx::select[__mask, __x](__y); });
-					
-					const auto __mask_first = (__current_values_extreme_first == __all_extreme_first);
-					const auto __mask_last = (__current_values_extreme_last == __all_extreme_last);
+					const auto __all_extreme_last = vx::fold(__current_values_extreme_last, [&](const auto& __x, const auto& __y)
+						raze_always_inline_lambda { const auto __mask = !__comp(__x, __y);  return vx::select[__mask, __y](__x); });
 
-					const auto __first_values_indices = vx::select[__mask_first, ~_IndexSimdType::zero()](__current_indices_extreme_first);
-					const auto __last_values_indices = vx::select[__mask_last, _IndexSimdType::zero()](__current_indices_extreme_last);
+					if (__comp(__all_extreme_first, *__last_extreme)) {
+						auto __first_mask = (__all_extreme_first == __current_values_extreme_first);
+						const auto __first_extreme_values_indices = vx::select[(__current_values_extreme_first == __all_extreme_first), ~_IndexSimdType::zero()](__current_indices_extreme_first);
+						const auto __first_all_extreme_indices = vx::horizontal_min(__first_extreme_values_indices);
+						const auto __first_horizontal_position = vx::find_first_set(math::bit_cast<decltype(__first_mask)>(__first_all_extreme_indices == __first_extreme_values_indices) & __first_mask);
+						const auto __first_vertical_position = sizetype(__current_indices_extreme_first[__first_horizontal_position]);
+						const auto __maybe_first_extreme = __bytes_pointer_offset(__portion_begin,
+							__first_vertical_position * sizeof(_Tag_) + __first_horizontal_position * sizeof(_Value_));
+						if (__comp(*__maybe_first_extreme, *__first_extreme)) __first_extreme = __maybe_first_extreme;
+					}
 
-					const auto __all_first_indices = vx::hmin(__first_values_indices);
-					const auto __all_last_indices = vx::hmax(__last_values_indices);
-
-					const auto __final_first_mask = (__all_first_indices == __first_values_indices) & __mask_first;
-					const auto __final_last_mask = math::bit_cast<decltype(__mask_last)>(__all_last_indices == __last_values_indices) & __mask_last;
-
-					const auto __horizontal_first_position = vx::find_first_set(__final_first_mask);
-					const auto __horizontal_last_position = (_Tag_::size() - 1 - vx::find_last_set(__final_last_mask));
-
-					const auto __vertical_last_position = sizetype(__current_indices_extreme_last[__horizontal_last_position]);
-					const auto __vertical_first_position = sizetype(__current_indices_extreme_first[__horizontal_first_position]);
-
-					const auto __maybe_first_extreme = __bytes_pointer_offset(__portion_begin,
-						__vertical_first_position * sizeof(_Tag_) + __horizontal_first_position * sizeof(_Value_));
-
-					const auto __maybe_last_extreme = __bytes_pointer_offset(__portion_begin,
-						__vertical_last_position * sizeof(_Tag_) + __horizontal_last_position * sizeof(_Value_));
-
-					if (__comp(*__maybe_first_extreme, *__first_extreme)) __first_extreme = __maybe_first_extreme;
-					if (!__comp(*__maybe_last_extreme, *__last_extreme)) __last_extreme = __maybe_last_extreme;
+					if (!__comp(__all_extreme_last, *__last_extreme)) {
+						auto __last_mask = (__all_extreme_last == __current_values_extreme_last);
+						const auto __last_extreme_values_indices = vx::select[(__current_values_extreme_last == __all_extreme_last), _IndexSimdType::zero()](__current_indices_extreme_last);
+						const auto __last_all_extreme_indices = vx::horizontal_max(__last_extreme_values_indices);
+						const auto __last_horizontal_position = _Tag_::size() - 1 - vx::find_last_set(math::bit_cast<decltype(__last_mask)>(__last_all_extreme_indices == __last_extreme_values_indices) & __last_mask);
+						const auto __last_vertical_position = sizetype(__current_indices_extreme_last[__last_horizontal_position]);
+						const auto __maybe_last_extreme = __bytes_pointer_offset(__portion_begin,
+							__last_vertical_position * sizeof(_Tag_) + __last_horizontal_position * sizeof(_Value_));
+						if (!__comp(*__maybe_last_extreme, *__last_extreme)) __last_extreme = __maybe_last_extreme;
+					}
 
 					if constexpr (__has_portion_max_value) {
 						__aligned_portion_size = std::min(__max_portion_size, __aligned_size);
+
 						if (__aligned_portion_size == 0) break;
 
 						__aligned_size -= __aligned_portion_size;
