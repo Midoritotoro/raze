@@ -1,5 +1,8 @@
 #include <raze/algorithm/extreme/ExtremeElement.h>
 #include <raze/algorithm/extreme/ExtremeElements.h>
+#include <raze/algorithm/extreme/Minmax.h>
+#include <raze/math/Math.h>
+
 
 #include <vector>
 #include <random>
@@ -214,46 +217,40 @@ template <typename T>
 void test_extreme_elements_empty() {
     std::vector<T> vec;
 
-    //auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::less<>{});
+    auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::less<>{});
 
-    //raze_assert(!res.first.has_value());
-    //raze_assert(!res.second.has_value());
+    raze_assert(res.first == vec.end());
+    raze_assert(res.second == vec.end());
 }
 
 template <typename T>
 void test_extreme_elements_single() {
     std::vector<T> vec = { T(42) };
 
-    //auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::less<>{});
+    auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::less<>{});
 
-    //raze_assert(res.first.has_value());
-    //raze_assert(res.second.has_value());
-    //raze_assert(*res.first == T(42));
-    //raze_assert(*res.second == T(42));
+    raze_assert(*res.first == T(42));
+    raze_assert(*res.second == T(42));
 }
 
 template <typename T>
 void test_extreme_elements_basic() {
     std::vector<T> vec = { T(10), T(50), T(5), T(100), T(20) };
 
-    //auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::less<>{});
+    auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::less<>{});
 
-    //raze_assert(res.first.has_value());
-    //raze_assert(res.second.has_value());
-    //raze_assert(*res.first == T(5));
-    //raze_assert(*res.second == T(100));
+    raze_assert(*res.first == T(5));
+    raze_assert(*res.second == T(100));
 }
 
 template <typename T>
 void test_extreme_elements_reverse_comp() {
     std::vector<T> vec = { T(10), T(50), T(5), T(100), T(20) };
 
-    //auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::greater<>{});
+    auto res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::greater<>{});
 
-    //raze_assert(res.first.has_value());
-    //raze_assert(res.second.has_value());
-    //raze_assert(*res.first == T(100));
-    //raze_assert(*res.second == T(5));
+    raze_assert(*res.first == T(100));
+    raze_assert(*res.second == T(5));
 }
 
 template <typename T>
@@ -266,21 +263,38 @@ void test_extreme_elements_random(unsigned seed = 42) {
         size_t size = size_dist(size_gen);
         auto vec = generate_random_vector<T>(size, seed + i);
 
-        //auto raze_res = raze::algorithm::extreme_elements(vec.begin(), vec.end(), std::less<>{});
+        {
+            auto raze_res = raze::algorithm::extreme_elements(vec, std::less<>{});
+            auto std_minmax = std::ranges::minmax_element(vec);
 
-        //if (vec.empty()) {
-        //    raze_assert(!raze_res.first.has_value());
-        //    raze_assert(!raze_res.second.has_value());
-        //}
-        //else {
-        //    auto std_min = *std::ranges::min_element(vec);
-        //    auto std_max = *std::ranges::max_element(vec);
+            raze_assert(raze_res.first == std_minmax.min);
+            raze_assert(raze_res.second == std_minmax.max);
+        }
 
-        //    raze_assert(raze_res.first.has_value());
-        //    raze_assert(raze_res.second.has_value());
-        //    raze_assert(*raze_res.first == std_min);
-        //    raze_assert(*raze_res.second == std_max);
-        //}
+        {
+            auto raze_res = raze::algorithm::extreme_elements(vec, std::greater<>{});
+            auto raze_minmax = raze::algorithm::minmax(vec);
+
+            if (raze_minmax.has_value()) {
+                auto first_max = std::ranges::find(vec, raze_minmax.value().second);
+                auto last_min = std::ranges::find_last(vec, raze_minmax.value().first).begin();
+
+                raze_assert(raze_res.first == first_max);
+                raze_assert(raze_res.second == last_min);
+            }
+        }
+
+        {
+            auto comp = [] (auto a, auto b) {
+                return raze::math::abs(a) < raze::math::abs(b);
+            };
+
+            auto raze_res = raze::algorithm::extreme_elements(vec, comp);
+            auto std_res = std::ranges::minmax_element(vec, comp);
+
+            raze_assert(raze_res.first == std_res.min);
+            raze_assert(raze_res.second == std_res.max);
+        }
     }
 }
 
@@ -337,13 +351,15 @@ void run_all_extreme_elements_tests_for_type() {
 }
 
 int main() {
-    //run_all_extreme_element_tests_for_type<int>();
-    //run_all_extreme_element_tests_for_type<short>();
-    //run_all_extreme_element_tests_for_type<long long>();
-    //run_all_extreme_element_tests_for_type<float>();
-    //run_all_extreme_element_tests_for_type<double>();
+    run_all_extreme_element_tests_for_type<int>();
+    run_all_extreme_element_tests_for_type<char>();
+    run_all_extreme_element_tests_for_type<short>();
+    run_all_extreme_element_tests_for_type<long long>();
+    run_all_extreme_element_tests_for_type<float>();
+    run_all_extreme_element_tests_for_type<double>();
 
     run_all_extreme_elements_tests_for_type<int>();
+    run_all_extreme_element_tests_for_type<char>();
     run_all_extreme_elements_tests_for_type<short>();
     run_all_extreme_elements_tests_for_type<long long>();
     run_all_extreme_elements_tests_for_type<float>();

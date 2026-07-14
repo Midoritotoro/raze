@@ -104,16 +104,22 @@ struct _Max_element : _Traits_ {
 					__current_values_max = vx::select[__greater_mask, __current_values_max](__current_values);
 				}
 				else {
-					const auto __all_max = vx::horizontal_max(__current_values_max);
-					const auto __max_values_indices = vx::select[__current_values_max == __all_max, ~_IndexSimdType::zero()](__current_indices_max);
-					const auto __all_max_indices = vx::horizontal_min(__max_values_indices);
-					const auto __horizontal_position = vx::find_first_set(__all_max_indices == __max_values_indices);
-					const auto __vertical_position = sizetype(__current_indices_max[__horizontal_position]);
+					const auto __max = vx::horizontal_max(__current_values_max);
 
-					const auto __maybe_max_element = __bytes_pointer_offset(__portion_begin,
-						__vertical_position * sizeof(_Tag_) + __horizontal_position * sizeof(_Value_));
+					if (__max > *__max_element) {
+						auto __mask_max = (__current_values_max == __max);
+						
+						const auto __max_values_indices = vx::select[__mask_max, ~_IndexSimdType::zero()](__current_indices_max);
+						const auto __all_max_indices = vx::horizontal_min(__max_values_indices);
+						
+						const auto __horizontal_position = vx::find_first_set(math::bit_cast<decltype(__mask_max)>(__all_max_indices == __max_values_indices) & __mask_max);
+						const auto __vertical_position = sizetype(__current_indices_max[__horizontal_position]);
 
-					if (*__maybe_max_element > *__max_element) __max_element = __maybe_max_element;
+						const auto __maybe_max_element = __bytes_pointer_offset(__portion_begin,
+							__vertical_position * sizeof(_Tag_) + __horizontal_position * sizeof(_Value_));
+
+						if (*__maybe_max_element > *__max_element) __max_element = __maybe_max_element;
+					}
 
 					if constexpr (__has_portion_max_value) {
 						__aligned_portion_size = std::min(__max_portion_size, __aligned_size);

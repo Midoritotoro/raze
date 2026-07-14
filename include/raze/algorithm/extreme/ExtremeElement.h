@@ -105,18 +105,23 @@ struct _Extreme_element : _Traits_ {
 					__current_values_extreme = vx::select[__extreme_mask, __current_values_extreme](__current_values);
 				}
 				else {
-					const auto __all_extreme = vx::fold(__current_values_extreme, [&] (const auto& __x, const auto& __y) 
+					const auto __extreme_value = vx::fold(__current_values_extreme, [&](const auto& __x, const auto& __y)
 						raze_always_inline_lambda{ const auto __mask = __comp(__x, __y);  return vx::select[__mask, __y](__x); });
 
-					const auto __extreme_values_indices = vx::select[__current_values_extreme == __all_extreme, ~_IndexSimdType::zero()](__current_indices_extreme);
-					const auto __all_extreme_indices = vx::horizontal_min(__extreme_values_indices);
-					const auto __horizontal_position = vx::find_first_set(__all_extreme_indices == __extreme_values_indices);
-					const auto __vertical_position = sizetype(__current_indices_extreme[__horizontal_position]);
+					if (__comp(__extreme_value, *__extreme_element)) {
+						auto __extreme_mask = __current_values_extreme == __extreme_value;
 
-					const auto __maybe_extreme_element = __bytes_pointer_offset(__portion_begin,
-						__vertical_position * sizeof(_Tag_) + __horizontal_position * sizeof(_Value_));
+						const auto __extreme_values_indices = vx::select[__extreme_mask, ~_IndexSimdType::zero()](__current_indices_extreme);
+						const auto __all_extreme_indices = vx::horizontal_min(__extreme_values_indices);
+						
+						const auto __horizontal_position = vx::find_first_set(math::bit_cast<decltype(__extreme_mask)>(__all_extreme_indices == __extreme_values_indices) & __extreme_mask);
+						const auto __vertical_position = sizetype(__current_indices_extreme[__horizontal_position]);
 
-					if (__comp(*__maybe_extreme_element, *__extreme_element)) __extreme_element = __maybe_extreme_element;
+						const auto __maybe_extreme_element = __bytes_pointer_offset(__portion_begin,
+							__vertical_position * sizeof(_Tag_) + __horizontal_position * sizeof(_Value_));
+
+						if (__comp(*__maybe_extreme_element, *__extreme_element)) __extreme_element = __maybe_extreme_element;
+					}
 
 					if constexpr (__has_portion_max_value) {
 						__aligned_portion_size = std::min(__max_portion_size, __aligned_size);

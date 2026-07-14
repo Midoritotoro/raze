@@ -104,16 +104,22 @@ struct _Min_element : _Traits_ {
 					__current_values_min = vx::select[__less_mask, __current_values_min](__current_values);
 				}
 				else {
-					const auto __all_min = vx::horizontal_min(__current_values_min);
-					const auto __min_values_indices = vx::select[__current_values_min == __all_min, ~_IndexSimdType::zero()](__current_indices_min);
-					const auto __all_min_indices = vx::horizontal_min(__min_values_indices);
-					const auto __horizontal_position = vx::find_first_set(__all_min_indices == __min_values_indices);
-					const auto __vertical_position = sizetype(__current_indices_min[__horizontal_position]);
+					const auto __min = vx::horizontal_min(__current_values_min);
 
-					const auto __maybe_min_element = __bytes_pointer_offset(__portion_begin,
-						__vertical_position * sizeof(_Tag_) + __horizontal_position * sizeof(_Value_));
+					if (__min < *__min_element) {
+						auto __min_mask = (__min == __current_values_min);
+						
+						const auto __min_values_indices = vx::select[__min_mask, ~_IndexSimdType::zero()](__current_indices_min);
+						const auto __all_min_indices = vx::horizontal_min(__min_values_indices);
+						
+						const auto __horizontal_position = vx::find_first_set(math::bit_cast<decltype(__min_mask)>(__all_min_indices == __min_values_indices) & __min_mask);
+						const auto __vertical_position = sizetype(__current_indices_min[__horizontal_position]);
+						
+						const auto __maybe_min_element = __bytes_pointer_offset(__portion_begin,
+							__vertical_position * sizeof(_Tag_) + __horizontal_position * sizeof(_Value_));
 
-					if (*__maybe_min_element < *__min_element) __min_element = __maybe_min_element;
+						if (*__maybe_min_element < *__min_element) __min_element = __maybe_min_element;
+					}
 
 					if constexpr (__has_portion_max_value) {
 						__aligned_portion_size = std::min(__max_portion_size, __aligned_size);

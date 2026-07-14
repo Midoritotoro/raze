@@ -108,6 +108,7 @@ struct _Extreme_elements : _Traits_ {
 				if (__ptr != __stop_at) {
 					__current_values = __proj(vx::load<_Tag_>(__ptr));
 					__current_values_extreme_first = __proj(__current_values_extreme_first);
+					__current_values_extreme_last = __proj(__current_values_extreme_last);
 
 					const auto __extreme_mask_first = __comp(__current_values, __current_values_extreme_first);
 					__current_indices_extreme_first = vx::select[__extreme_mask_first, __current_indices_extreme_first](__current_indices);
@@ -118,31 +119,41 @@ struct _Extreme_elements : _Traits_ {
 					__current_values_extreme_last = vx::select[__extreme_mask_last, __current_values_extreme_last](__current_values);
 				}
 				else {
-					const auto __all_extreme_first = vx::fold(__current_values_extreme_first, [&](const auto& __x, const auto& __y)
+					const auto __extreme_first = vx::fold(__current_values_extreme_first, [&] (const auto& __x, const auto& __y)
 						raze_always_inline_lambda { const auto __mask = __comp(__x, __y);  return vx::select[__mask, __y](__x); });
 
-					const auto __all_extreme_last = vx::fold(__current_values_extreme_last, [&](const auto& __x, const auto& __y)
-						raze_always_inline_lambda { const auto __mask = !__comp(__x, __y);  return vx::select[__mask, __y](__x); });
+					const auto __extreme_last = vx::fold(__current_values_extreme_last, [&] (const auto& __x, const auto& __y)
+						raze_always_inline_lambda { const auto __mask = __comp(__x, __y);  return vx::select[__mask, __x](__y); });
 
-					if (__comp(__all_extreme_first, *__last_extreme)) {
-						auto __first_mask = (__all_extreme_first == __current_values_extreme_first);
-						const auto __first_extreme_values_indices = vx::select[(__current_values_extreme_first == __all_extreme_first), ~_IndexSimdType::zero()](__current_indices_extreme_first);
+					if (__comp(__extreme_first, *__last_extreme)) {
+						auto __first_mask = !__comp(__current_values_extreme_first, __extreme_first) &
+							!__comp(__extreme_first, __current_values_extreme_first);
+
+						const auto __first_extreme_values_indices = vx::select[__first_mask, ~_IndexSimdType::zero()](__current_indices_extreme_first);
 						const auto __first_all_extreme_indices = vx::horizontal_min(__first_extreme_values_indices);
+						
 						const auto __first_horizontal_position = vx::find_first_set(math::bit_cast<decltype(__first_mask)>(__first_all_extreme_indices == __first_extreme_values_indices) & __first_mask);
 						const auto __first_vertical_position = sizetype(__current_indices_extreme_first[__first_horizontal_position]);
+						
 						const auto __maybe_first_extreme = __bytes_pointer_offset(__portion_begin,
 							__first_vertical_position * sizeof(_Tag_) + __first_horizontal_position * sizeof(_Value_));
+						
 						if (__comp(*__maybe_first_extreme, *__first_extreme)) __first_extreme = __maybe_first_extreme;
 					}
 
-					if (!__comp(__all_extreme_last, *__last_extreme)) {
-						auto __last_mask = (__all_extreme_last == __current_values_extreme_last);
-						const auto __last_extreme_values_indices = vx::select[(__current_values_extreme_last == __all_extreme_last), _IndexSimdType::zero()](__current_indices_extreme_last);
+					if (!__comp(__extreme_last, *__last_extreme)) {
+						auto __last_mask = !__comp(__current_values_extreme_last, __extreme_last) &
+							!__comp(__extreme_last, __current_values_extreme_last);
+						
+						const auto __last_extreme_values_indices = vx::select[__last_mask, _IndexSimdType::zero()](__current_indices_extreme_last);
 						const auto __last_all_extreme_indices = vx::horizontal_max(__last_extreme_values_indices);
+						
 						const auto __last_horizontal_position = _Tag_::size() - 1 - vx::find_last_set(math::bit_cast<decltype(__last_mask)>(__last_all_extreme_indices == __last_extreme_values_indices) & __last_mask);
 						const auto __last_vertical_position = sizetype(__current_indices_extreme_last[__last_horizontal_position]);
+						
 						const auto __maybe_last_extreme = __bytes_pointer_offset(__portion_begin,
 							__last_vertical_position * sizeof(_Tag_) + __last_horizontal_position * sizeof(_Value_));
+						
 						if (!__comp(*__maybe_last_extreme, *__last_extreme)) __last_extreme = __maybe_last_extreme;
 					}
 
@@ -240,6 +251,8 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
+		if (__first == __last) return { __first, __first };
+
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
 			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
@@ -261,6 +274,8 @@ private:
 
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
+
+		if (__first == __last) return { __first, __first };
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
 			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
