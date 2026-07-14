@@ -28,19 +28,21 @@ struct _Configurable_find_next_set : raze::options::strict_elementwise_callable<
         i32 __index = 0;
         constexpr auto __unsafe = _Options_::contains(not_null) && _Type_::__chunks_count() == 1;
 
+        i32 __shift = __from < 0 ? 0u : u32(__from + 1);
+
         auto __chunk_op = [&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-            if (__from >= i32(_Chunk::size)) {
+            if (__shift >= i32(_Chunk::size)) {
                 __index += _Chunk::size;
-                __from -= _Chunk::size;
+                __shift -= _Chunk::size;
                 return true;
             }
 
-            auto __r = _Find_next_set<_Abi_::isa, _Chunk::size, _Value_, __unsafe>()(__storage_unwrap(__chunk), __from);
+            auto __r = _Find_next_set<_Abi_::isa, _Chunk::size, _Value_, __unsafe>()(__storage_unwrap(__chunk), __shift);
             __index += __r;
 
             if (__r != _Chunk::size) return false;
 
-            __from = -1;
+            __shift = 0;
             return true;
         };
 
