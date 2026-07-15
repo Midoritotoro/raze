@@ -42,7 +42,7 @@ struct _Remove_if : _Traits_ {
 	};
 
 	template <class _Tag_>
-	struct __vectorized_replace {
+	struct __vectorized_remove {
 		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
 		raze_always_inline _Iterator_ operator()(_Iterator_ __first, _Sentinel_ __sentinel,
 			_Predicate_ __predicate, _Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
@@ -73,8 +73,8 @@ struct _Remove_if : _Traits_ {
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			do {
-				const auto __loaded = __proj(vx::load<_Tag_>(__ptr));
-				__current_ptr = vx::compress_store(__current_ptr, __loaded, __predicate(__loaded));
+				const auto __loaded = vx::load<_Tag_>(__ptr);
+				__current_ptr = vx::compress_store(__current_ptr, __loaded, __predicate(__proj(__loaded)));
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
@@ -151,7 +151,7 @@ private:
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_replace, _Value_, _Iterator_>(
+				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_>(
 					algorithm::distance(__first, __last) * sizeof(_Value_),
 					__first, __last, __pred, __proj);
 			}
@@ -176,7 +176,7 @@ private:
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_replace, _Value_, _Iterator_>(
+				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_>(
 					__bytes, __first, __last, __pred, __proj);
 			}
 		}
