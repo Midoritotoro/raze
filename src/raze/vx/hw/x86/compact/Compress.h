@@ -31,7 +31,7 @@ struct _Compress {
 		const auto __processed_size = (__result_pointer - __start);
 		std::memcpy(__result_pointer, __source + __processed_size, sizeof(_Tp_) - __processed_size * sizeof(_Type_));
 
-		return { __processed_size, _Load<_ISA_, _Tp_>()(__result) };
+		return { __processed_size * sizeof(_Type_), _Load<_ISA_, _Tp_>()(__result)};
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _CompressMask_>
@@ -50,9 +50,9 @@ struct _Compress {
 				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
 				const auto __set_bits = math::__native_popcnt_n_bits<__size>(__not_mask);
 
-				if constexpr (sizeof(_Type_) == 8) return { __set_bits, __as<_Tp_>(_mm_mask_compress_epi64(__as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
-				else if constexpr (sizeof(_Type_) == 4) return { __set_bits, __as<_Tp_>(_mm_mask_compress_epi32( __as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
-				else if constexpr (sizeof(_Type_) == 2 && __avx512vbmi2) return { __set_bits, __as<_Tp_>(_mm_mask_compress_epi16( __as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
+				if constexpr (sizeof(_Type_) == 8) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm_mask_compress_epi64(__as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
+				else if constexpr (sizeof(_Type_) == 4) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm_mask_compress_epi32( __as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
+				else if constexpr (sizeof(_Type_) == 2 && __avx512vbmi2) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm_mask_compress_epi16( __as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
 				else if constexpr (sizeof(_Type_) == 1 && __avx512vbmi2) return { __set_bits, __as<_Tp_>(_mm_mask_compress_epi8( __as<__m128i>(__x), __not_mask, __as<__m128i>(__x))) };
 			}
 			if constexpr (__ssse3) {
@@ -87,40 +87,41 @@ struct _Compress {
 					const auto __packed_vec = _mm_load_si128(reinterpret_cast<const __m128i*>(__temp_buf));
 					const auto __result_vec = _Select<_ISA_, _Type_>()(__as<__m128i>(__x), __packed_vec, __tail_mask);
 
-					return { __total_bytes / sizeof(_Type_), __as<_Tp_>(__result_vec) };
+					return { __total_bytes, __as<_Tp_>(__result_vec) };
 				}
 				else {
 					const auto __shuffle_mask = _Load<_ISA_, __m128i>()(__tables_sse<sizeof(_Type_)>.__shuffle[__int_mask]);
 					const auto __processed_bytes = __tables_sse<sizeof(_Type_)>.__size[__int_mask];
-					return { __processed_bytes / sizeof(_Type_), __as<_Tp_>(_mm_shuffle_epi8(__as<__m128i>(__x), __shuffle_mask)) };
+					return { __processed_bytes, __as<_Tp_>(_mm_shuffle_epi8(__as<__m128i>(__x), __shuffle_mask)) };
 				}
 			}
 			else {
 				if constexpr (sizeof(_Type_) == 8) {
 					switch (__int_mask) {
-						case 0: return { 2, __x };
-						case 1: return { 1, __as<_Tp_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 0x3)) };
-						case 2: return { 1, __x };
+						case 0: return { 16, __x };
+						case 1: return { 8, __as<_Tp_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 0x3)) };
+						case 2: return { 8, __x };
+						case 3: return { 0, __x };
 						default: raze_assert_unreachable();
 					}
 				}
 				else if constexpr (sizeof(_Type_) == 4) {
 					switch (__int_mask) {
-						case 0x0: return { 4, __x };
-						case 0x1: return { 3, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xF9)) };
-						case 0x2: return { 3, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xF8)) };
-						case 0x3: return { 2, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xEE)) };
-						case 0x4: return { 3, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xF4)) };
-						case 0x5: return { 2, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xED)) };
-						case 0x6: return { 2, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xEC)) };
-						case 0x7: return { 1, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE7)) };
-						case 0x8: return { 3, __x };
-						case 0x9: return { 2, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE9)) };
-						case 0xA: return { 2, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE8)) };
-						case 0xB: return { 1, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE6)) };
-						case 0xC: return { 3, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE5)) };
-						case 0xD: return { 1, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE5)) };
-						case 0xE: return { 1, __x };
+						case 0x0: return { 16, __x };
+						case 0x1: return { 12, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xF9)) };
+						case 0x2: return { 12, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xF8)) };
+						case 0x3: return { 8, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xEE)) };
+						case 0x4: return { 12, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xF4)) };
+						case 0x5: return { 8, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xED)) };
+						case 0x6: return { 8, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xEC)) };
+						case 0x7: return { 4, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE7)) };
+						case 0x8: return { 12, __x };
+						case 0x9: return { 8, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE9)) };
+						case 0xA: return { 8, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE8)) };
+						case 0xB: return { 4, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE6)) };
+						case 0xC: return { 12, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE5)) };
+						case 0xD: return { 4, __as<_Tp_>(_mm_shuffle_ps(__as<__m128>(__x), __as<__m128>(__x), 0xE5)) };
+						case 0xE: return { 4, __x };
 						case 0xF: return { 0, __x };
 						default: raze_assert_unreachable();
 					}
@@ -132,14 +133,14 @@ struct _Compress {
 				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
 				const auto __set_bits = math::__native_popcnt_n_bits<__size>(__not_mask);
 
-				if constexpr (sizeof(_Type_) == 8) return { __set_bits, __as<_Tp_>(_mm256_mask_compress_epi64(__as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
-				else if constexpr (sizeof(_Type_) == 4) return { __set_bits, __as<_Tp_>(_mm256_mask_compress_epi32( __as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
-				else if constexpr (sizeof(_Type_) == 2 && __avx512vbmi2) return { __set_bits, __as<_Tp_>(_mm256_mask_compress_epi16( __as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
+				if constexpr (sizeof(_Type_) == 8) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm256_mask_compress_epi64(__as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
+				else if constexpr (sizeof(_Type_) == 4) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm256_mask_compress_epi32( __as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
+				else if constexpr (sizeof(_Type_) == 2 && __avx512vbmi2) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm256_mask_compress_epi16( __as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
 				else if constexpr (sizeof(_Type_) == 1 && __avx512vbmi2) return { __set_bits, __as<_Tp_>(_mm256_mask_compress_epi8( __as<__m256i>(__x), __not_mask, __as<__m256i>(__x))) };
 			}
 			if constexpr (sizeof(_Type_) >= 4 && __avx2) {
 				const auto __shuffle = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_avx<sizeof(_Type_)>.__shuffle[__int_mask]));
-				return { __tables_avx<sizeof(_Type_)>.__size[__int_mask] / sizeof(_Type_), 
+				return { __tables_avx<sizeof(_Type_)>.__size[__int_mask], 
 					__as<_Tp_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x),  _mm256_cvtepu8_epi32(__shuffle)))};
 			}
 			else if constexpr (sizeof(_Type_) == 2) {
@@ -175,7 +176,7 @@ struct _Compress {
 				const auto __packed_vec = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temp_buf));
 				const auto __result_vec = _Select<_ISA_, _Type_>()(__as<__m256i>(__x), __packed_vec, __tail_blend_mask);
 
-				return { __total_bytes / sizeof(_Type_), __as<_Tp_>(__result_vec) };
+				return { __total_bytes, __as<_Tp_>(__result_vec) };
 			}
 			else if constexpr (sizeof(_Type_) == 1) {
 				alignas(sizeof(_Tp_)) _Type_ __temp_buf[__size];
@@ -231,17 +232,17 @@ struct _Compress {
 				const auto __packed_vec = _mm256_load_si256(reinterpret_cast<const __m256i*>(__temp_buf));
 				const auto __result_vec = _Select<_ISA_, _Type_>()(__as<__m256i>(__x), __packed_vec, __tail_mask);
 
-				return { __total_bytes / sizeof(_Type_), __as<_Tp_>(__result_vec) };
+				return { __total_bytes, __as<_Tp_>(__result_vec) };
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
 			const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
 			const auto __set_bits = math::__native_popcnt_n_bits<__size>(__not_mask);
 
-			if constexpr (sizeof(_Type_) == 8) return { __set_bits, __as<_Tp_>(_mm512_mask_compress_epi64(__as<__m512i>(__x), __not_mask, __as<__m512i>(__x))) };
-			else if constexpr (sizeof(_Type_) == 4) return { __set_bits, __as<_Tp_>(_mm512_mask_compress_epi32(__as<__m512i>(__x), __not_mask, __as<__m512i>(__x))) };
+			if constexpr (sizeof(_Type_) == 8) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm512_mask_compress_epi64(__as<__m512i>(__x), __not_mask, __as<__m512i>(__x))) };
+			else if constexpr (sizeof(_Type_) == 4) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm512_mask_compress_epi32(__as<__m512i>(__x), __not_mask, __as<__m512i>(__x))) };
 			else if constexpr (sizeof(_Type_) == 2) {
-				if constexpr (__avx512vbmi2) return { __set_bits, __as<_Tp_>(_mm512_mask_compress_epi16(__as<__m512i>(__x), __not_mask, __as<__m512i>(__x))) };
+				if constexpr (__avx512vbmi2) return { __set_bits * sizeof(_Type_), __as<_Tp_>(_mm512_mask_compress_epi16(__as<__m512i>(__x), __not_mask, __as<__m512i>(__x)))};
 				else {
 					alignas(sizeof(_Tp_)) _Type_ __temp_buf[__size];
 					_Type_* __dst_ptr = __temp_buf;
@@ -292,7 +293,7 @@ struct _Compress {
 					const auto __result_vec = _Select<_ISA_, _Type_>()(
 						__as<__m512i>(__x), __packed_vec, __tail_mask);
 
-					return { __total_bytes / sizeof(_Type_), __as<_Tp_>(__result_vec)};
+					return { __total_bytes, __as<_Tp_>(__result_vec)};
 				}
 			}
 			else if constexpr (sizeof(_Type_) == 1) {
@@ -392,7 +393,7 @@ struct _Compress {
 					const auto __packed_vec = _mm512_load_si512(__stack_buffer);
 					const auto __result_vec = _Select<_ISA_, _Type_>()(__as<__m512i>(__x), __packed_vec, __tail_mask);
 
-					return { __bytes_total / sizeof(_Type_), __as<_Tp_>(__result_vec)};
+					return { __bytes_total, __as<_Tp_>(__result_vec)};
 				}
 			}
 		}

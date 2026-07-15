@@ -1,214 +1,688 @@
-#include <cassert>
-#include <algorithm>
-#include <iostream>
-#include <vector>
-#include <string>
 #include <raze/algorithm/remove/Remove.h>
 
-struct Custom {
-    int x;
-    Custom(int v = 0) : x(v) {}
-    bool operator==(const Custom& other) const { return x == other.x; }
+#include <vector>
+#include <random>
+#include <type_traits>
+#include <algorithm>
+#include <cassert>
+
+template <typename T>
+struct IntDistributionType {
+    using type = T;
 };
 
+template <>
+struct IntDistributionType<char> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<signed char> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<unsigned char> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<bool> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<wchar_t> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<char8_t> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<char16_t> {
+    using type = int;
+};
+
+template <>
+struct IntDistributionType<char32_t> {
+    using type = int;
+};
+
+template <typename T>
+using int_distribution_type_t = typename IntDistributionType<T>::type;
+
+template <typename T>
+struct RandomGenerator {
+    std::mt19937 gen;
+
+    RandomGenerator(unsigned seed = 42) : gen(seed) {}
+
+    T operator()() {
+        if constexpr (std::is_integral_v<T>) {
+            using DistType = int_distribution_type_t<T>;
+
+            if constexpr (std::is_signed_v<T>) {
+                std::uniform_int_distribution<DistType> dist(-1000, 1000);
+                return static_cast<T>(dist(gen));
+            }
+            else {
+                std::uniform_int_distribution<DistType> dist(0, 2000);
+                return static_cast<T>(dist(gen));
+            }
+        }
+        else if constexpr (std::is_floating_point_v<T>) {
+            std::uniform_real_distribution<T> dist(-1000.0, 1000.0);
+            return dist(gen);
+        }
+    }
+};
+
+template <typename T>
+std::vector<T> generate_random_vector(size_t size, unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::vector<T> vec(size);
+    for (auto& elem : vec) {
+        elem = gen();
+    }
+    return vec;
+}
+
+template <typename T>
+void test_remove_random(unsigned seed = 42) {
+    RandomGenerator<T> gen(seed);
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+
+    for (int i = 0; i < 1000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i);
+        auto vec_copy = vec;
+        T val = gen();
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), val);
+        auto new_end_copy = std::ranges::remove(vec_copy, val);
+
+        vec.erase(new_end.begin(), vec.end());
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+
+    for (int i = 0; i < 500; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 10000);
+        auto vec_copy = vec;
+
+        T val = vec.empty() ? T(0) : vec[size / 2];
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), val);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, val);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+
+        for (const auto& x : vec) {
+            raze_assert(x != val);
+        }
+    }
+
+    for (int i = 0; i < 500; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 20000);
+        auto vec_copy = vec;
+
+        T val = gen();
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), val);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, val);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+}
+
+template <typename T>
+void test_remove_ranges(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+    RandomGenerator<T> gen(seed);
+
+    for (int i = 0; i < 1000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 30000);
+        auto vec_copy = vec;
+        T val = gen();
+
+        auto subrange = raze::algorithm::remove(vec, val);
+        vec.erase(subrange.begin(), subrange.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, val);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+}
+
+template <typename T>
+void test_remove_if_random(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+
+    for (int i = 0; i < 1000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 40000);
+        auto vec_copy = vec;
+        T threshold = RandomGenerator<T>(seed + i + 40000)();
+
+        auto pred = [threshold](const T& x) { return x > threshold; };
+
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+
+    for (int i = 0; i < 500; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 60000);
+        auto vec_copy = vec;
+        T target = RandomGenerator<T>(seed + i + 60000)();
+
+        auto pred = [target](const T& x) { return x == target; };
+
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+
+    for (int i = 0; i < 100; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 80000);
+        auto vec_copy = vec;
+
+        auto pred = [](const T&) { return false; };
+
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+
+    for (int i = 0; i < 100; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 100000);
+        auto vec_copy = vec;
+
+        auto pred = [](const T&) { return true; };
+
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+}
+
+template <typename T>
+void test_remove_if_ranges(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(0, 1000);
+
+    for (int i = 0; i < 1000; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 120000);
+        auto vec_copy = vec;
+        T threshold = RandomGenerator<T>(seed + i + 120000)();
+
+        auto pred = [threshold](const T& x) { return x > threshold; };
+
+        auto subrange = raze::algorithm::remove_if(vec, pred);
+        vec.erase(subrange.begin(), subrange.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+}
+
+struct Point {
+    int x, y;
+    bool operator==(const Point&) const = default;
+};
+
+template <typename T>
+void test_remove_with_projection(unsigned seed = 42) {
+    for (int i = 0; i < 100; ++i) {
+        std::vector<Point> vec(100);
+        RandomGenerator<int> gen(seed + i + 140000);
+        for (auto& p : vec) {
+            p.x = gen();
+            p.y = gen();
+        }
+        auto vec_copy = vec;
+
+        int target_x = gen();
+
+        auto proj = [](const Point& p) { return p.x; };
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), target_x, proj);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, target_x, proj);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+
+    for (int i = 0; i < 100; ++i) {
+        std::vector<Point> vec(100);
+        RandomGenerator<int> gen(seed + i + 150000);
+        for (auto& p : vec) {
+            p.x = gen();
+            p.y = gen();
+        }
+        auto vec_copy = vec;
+
+        int threshold = gen();
+
+        auto pred = [threshold](int x) { return x > threshold; };
+        auto proj = [](const Point& p) { return p.x; };
+
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred, proj);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred, proj);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+}
+
+template <typename T>
+void test_remove_edge_cases() {
+    {
+        std::vector<T> vec;
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(42));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(42));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+
+    {
+        std::vector<T> vec = { T(42) };
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(42));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(42));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+
+    {
+        std::vector<T> vec = { T(42) };
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(99));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(99));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == 1);
+        raze_assert(vec[0] == T(42));
+    }
+
+    {
+        std::vector<T> vec(100, T(42));
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(42));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(42));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+
+    {
+        std::vector<T> vec(100, T(42));
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(99));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(99));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == 100);
+        for (const auto& x : vec) {
+            raze_assert(x == T(42));
+        }
+    }
+
+    {
+        std::vector<T> vec = { T(1), T(2), T(3), T(2), T(1), T(2), T(3) };
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(2));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(2));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == 4);
+        raze_assert(vec[0] == T(1));
+        raze_assert(vec[1] == T(3));
+        raze_assert(vec[2] == T(1));
+        raze_assert(vec[3] == T(3));
+    }
+
+    {
+        std::vector<T> vec = { T(1), T(2), T(3), T(4), T(5) };
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(1));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(1));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == 4);
+        raze_assert(vec[0] == T(2));
+    }
+
+    {
+        std::vector<T> vec = { T(1), T(2), T(3), T(4), T(5) };
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(5));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(5));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == 4);
+        raze_assert(vec[3] == T(4));
+    }
+
+    {
+        std::vector<T> vec;
+        auto vec_copy = vec;
+
+        auto pred = [](const T&) { return true; };
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+
+    if constexpr (!std::is_floating_point_v<T>) {
+        std::vector<T> vec = { T(1), T(2), T(3), T(4), T(5) };
+        auto vec_copy = vec;
+
+        auto pred = [](const T& x) { return x % 2 == 0; };
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == 3);
+        raze_assert(vec[0] == T(1));
+        raze_assert(vec[1] == T(3));
+        raze_assert(vec[2] == T(5));
+    }
+}
+
+template <typename T>
+void test_remove_simd_boundaries(unsigned seed = 42) {
+    for (size_t size : {1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256, 511, 512}) {
+        std::vector<T> vec(size, T(42));
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(42));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(42));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+
+    for (size_t size : {1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256}) {
+        auto vec = generate_random_vector<T>(size, seed + static_cast<unsigned>(size));
+        auto vec_copy = vec;
+
+        T val = vec.empty() ? T(0) : vec[0];
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), val);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, val);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+
+    for (size_t size : {1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256}) {
+        auto vec = generate_random_vector<T>(size, seed + static_cast<unsigned>(size) + 5000);
+        auto vec_copy = vec;
+
+        auto pred = [](const T& x) { return x > T(0); };
+
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+}
+
+template <typename T>
+void test_remove_large_vectors(unsigned seed = 42) {
+    for (size_t size : {10000, 50000, 100000}) {
+        auto vec = generate_random_vector<T>(size, seed + static_cast<unsigned>(size));
+        auto vec_copy = vec;
+
+        T val = vec.empty() ? T(0) : vec[size / 3];
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), val);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, val);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+
+    for (size_t size : {10000, 50000, 100000}) {
+        auto vec = generate_random_vector<T>(size, seed + static_cast<unsigned>(size) + 999);
+        auto vec_copy = vec;
+
+        auto pred = [](const T& x) { return x > T(0); };
+
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+    }
+}
+
+template <typename T>
+void test_remove_all_same(unsigned seed = 42) {
+    for (size_t size : {1, 10, 100, 1000}) {
+        std::vector<T> vec(size, T(42));
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(42));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(42));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+
+    for (size_t size : {1, 10, 100, 1000}) {
+        std::vector<T> vec(size, T(42));
+        auto vec_copy = vec;
+
+        auto pred = [](const T& x) { return x == T(42); };
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.empty());
+    }
+}
+
+template <typename T>
+void test_remove_none_match(unsigned seed = 42) {
+    for (size_t size : {1, 10, 100, 1000}) {
+        std::vector<T> vec(size, T(42));
+        auto vec_copy = vec;
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), T(99));
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, T(99));
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == size);
+        for (const auto& x : vec) {
+            raze_assert(x == T(42));
+        }
+    }
+
+    for (size_t size : {1, 10, 100, 1000}) {
+        std::vector<T> vec(size, T(42));
+        auto vec_copy = vec;
+
+        auto pred = [](const T& x) { return x == T(99); };
+        auto new_end = raze::algorithm::remove_if(vec.begin(), vec.end(), pred);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove_if(vec_copy, pred);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+        raze_assert(vec.size() == size);
+        for (const auto& x : vec) {
+            raze_assert(x == T(42));
+        }
+    }
+}
+
+template <typename T>
+void test_remove_mixed_pattern(unsigned seed = 42) {
+    std::mt19937 size_gen(seed + 1);
+    std::uniform_int_distribution<int> size_dist(10, 500);
+
+    for (int i = 0; i < 500; ++i) {
+        size_t size = size_dist(size_gen);
+        auto vec = generate_random_vector<T>(size, seed + i + 200000);
+        auto vec_copy = vec;
+
+        T val = vec[size / 4];
+
+        auto new_end = raze::algorithm::remove(vec.begin(), vec.end(), val);
+        vec.erase(new_end.begin(), vec.end());
+
+        auto new_end_copy = std::ranges::remove(vec_copy, val);
+        vec_copy.erase(new_end_copy.begin(), new_end_copy.end());
+
+        raze_assert(vec == vec_copy);
+
+        for (const auto& x : vec) {
+            raze_assert(x != val);
+        }
+    }
+}
+
+template <typename T>
+void run_all_tests_for_type() {
+    test_remove_random<T>();
+    test_remove_ranges<T>();
+    test_remove_if_random<T>();
+    test_remove_if_ranges<T>();
+    test_remove_with_projection<T>();
+    test_remove_edge_cases<T>();
+    test_remove_simd_boundaries<T>();
+    test_remove_large_vectors<T>();
+    test_remove_all_same<T>();
+    test_remove_none_match<T>();
+    test_remove_mixed_pattern<T>();
+}
+
 int main() {
-    {
-        std::vector<int> v = { 1,2,3,2,4 };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 2);
-        std::vector<int> expected = { 1,3,4 };
-        raze_assert(std::equal(v.begin(), it, expected.begin()));
-    }
+    run_all_tests_for_type<int>();
+    run_all_tests_for_type<short>();
+    run_all_tests_for_type<long long>();
+    run_all_tests_for_type<char>();
 
-    {
-        std::vector<Custom> v = { Custom(1), Custom(2), Custom(3), Custom(2) };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), Custom(2));
-        raze_assert((it - v.begin()) == 2);
-        raze_assert(v[0].x == 1 && v[1].x == 3);
-    }
+    run_all_tests_for_type<unsigned int>();
+    run_all_tests_for_type<unsigned short>();
+    run_all_tests_for_type<unsigned long long>();
+    run_all_tests_for_type<unsigned char>();
 
-    {
-        std::vector<int> v;
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 42);
-        raze_assert(it == v.begin());
-    }
+    run_all_tests_for_type<float>();
+    run_all_tests_for_type<double>();
 
-    {
-        std::vector<int> v = { 1,2,3 };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 99);
-        raze_assert(it == v.end());
-        raze_assert((v == std::vector<int>{1, 2, 3}));
-    }
-
-    {
-        std::vector<int> v = { 7,7,7 };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 7);
-        raze_assert(it == v.begin());
-    }
-
-    {
-        std::vector<int> v = { 1,2,3,2,4 };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 2);
-        raze_assert(it == v.begin() + 3);
-    }
-
-    {
-        std::vector<int> v1 = { 1,2,3,2,4 };
-        std::vector<int> v2 = v1;
-
-        auto it1 = raze::algorithm::remove(v1.begin(), v1.end(), 2);
-        auto it2 = std::remove(v2.begin(), v2.end(), 2);
-
-        raze_assert(std::equal(v1.begin(), it1, v2.begin()));
-    }
-
-    {
-        constexpr size_t N = 1'000'000;
-        std::vector<int> v(N, 1);
-        for (size_t i = 0; i < N; i += 10) v[i] = 0;
-
-        std::vector<int> v_std = v;
-
-        auto it1 = raze::algorithm::remove(v.begin(), v.end(), 0);
-        auto it2 = std::remove(v_std.begin(), v_std.end(), 0);
-
-        raze_assert(std::equal(v.begin(), it1, v_std.begin()));
-    }
-
-
- 
-    {
-        std::vector<int> v = { 1,2,3,2,4 };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 2);
-        v.erase(it, v.end());
-
-        raze_assert((v == std::vector<int>{1, 3, 4}));
-        raze_assert(std::none_of(v.begin(), v.end(), [](int x) { return x == 2; }));
-    }
-
-    {
-        std::vector<int> v = { 7,7,7 };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 7);
-        v.erase(it, v.end());
-
-        raze_assert(v.empty());
-    }
-
-    {
-        std::vector<int> v = { 1,2,3 };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 99);
-        v.erase(it, v.end());
-
-        raze_assert((v == std::vector<int>{1, 2, 3}));
-    }
-
-    {
-        std::vector<Custom> v = { Custom(1), Custom(2), Custom(3), Custom(2) };
-        auto it = raze::algorithm::remove(v.begin(), v.end(), Custom(2));
-        v.erase(it, v.end());
-
-        raze_assert(v.size() == 2);
-        raze_assert(v[0].x == 1 && v[1].x == 3);
-    }
-
-    {
-        std::vector<int> v1 = { 1,2,3,2,4 };
-        std::vector<int> v2 = v1;
-
-        auto it1 = raze::algorithm::remove(v1.begin(), v1.end(), 2);
-        v1.erase(it1, v1.end());
-
-        auto it2 = std::remove(v2.begin(), v2.end(), 2);
-        v2.erase(it2, v2.end());
-
-        raze_assert(v1 == v2);
-    }
-
-    {
-        constexpr size_t N = 1'00;
-        std::vector<int> v(N, 1);
-        for (size_t i = 0; i < N; i += 10) v[i] = 0;
-
-        auto it = raze::algorithm::remove(v.begin(), v.end(), 0);
-        v.erase(it, v.end());
-
-        raze_assert(std::none_of(v.begin(), v.end(), [](int x) { return x == 0; }));
-        raze_assert(v.size() == N - N / 10);
-    }
-
-    {
-        std::vector<int> v = { 1, 2, 3, 4, 5, 6 };
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [](int x) { return x % 2 == 0; });
-
-        std::vector<int> expected = { 1, 3, 5 };
-        raze_assert(std::equal(v.begin(), new_end, expected.begin()));
-    }
-
-    {
-        std::vector<int> v = { 7, 7, 7 };
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [](int x) { return true; });
-
-        raze_assert(new_end == v.begin());
-    }
-
-    {
-        std::vector<int> v = { 1, 2, 3 };
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [](int x) { return false; });
-
-        raze_assert(new_end == v.end());
-        raze_assert(std::equal(v.begin(), v.end(), std::vector<int>{1, 2, 3}.begin()));
-    }
-
-    {
-        std::vector<int> v;
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [](int x) { return x > 0; });
-
-        raze_assert(new_end == v.begin());
-    }
-
-    {
-        std::vector<int> v = { 10, 20, 30, 40, 50 };
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [](int x) { return x >= 30; });
-
-        std::vector<int> expected = { 10, 20 };
-        raze_assert(std::equal(v.begin(), new_end, expected.begin()));
-    }
-
-    {
-        std::vector<std::string> v = { "a", "b", "c", "b", "d" };
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [](const std::string& s) { return s == "b"; });
-
-        std::vector<std::string> expected = { "a", "c", "d" };
-        raze_assert(std::equal(v.begin(), new_end, expected.begin()));
-    }
-
-    {
-        std::vector<int> v = { 0, 1, 2, 3, 4, 5 };
-        size_t index = 0;
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [&](int) { return index++ % 2 == 0; });
-
-        std::vector<int> expected = { 1, 3, 5 };
-        raze_assert(std::equal(v.begin(), new_end, expected.begin()));
-    }
-
-    {
-        struct Item { int id; char tag; };
-        std::vector<Item> v = { {1,'a'}, {2,'b'}, {3,'a'}, {4,'c'} };
-        auto new_end = raze::algorithm::remove_if(v.begin(), v.end(), [](const Item& item) { return item.tag == 'a'; });
-
-        std::vector<Item> expected = { {2,'b'}, {4,'c'} };
-        raze_assert(std::equal(v.begin(), new_end, expected.begin(), [](const Item& a, const Item& b) {
-            return a.id == b.id && a.tag == b.tag;
-        }));
-    }
-
-    {
-        std::vector<unsigned char> v = { 0, 1, 4, 3, 4, 5, 4, 7, 4, 9, 4, 11, 4, 13, 4, 15 };
-        size_t index = 0;
-        auto new_end = raze::algorithm::remove(v.begin(), v.end(), 4);
-
-        std::vector<int> expected = { 0, 1, 3, 5, 7, 9, 11, 13, 15 };
-        raze_assert(std::equal(v.begin(), new_end, expected.begin()));
-    }
+    test_remove_with_projection<int>();
 
     return 0;
 }

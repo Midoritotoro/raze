@@ -89,135 +89,48 @@ struct _Search_n : _Traits_ {
 			auto* __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			auto __current_count = _SizeType_(0);
-			auto __current_k = 0;
-			auto __current_n = 0;
 
 			do {
 				auto __mask = __predicate(__proj(vx::load<_Tag_>(__ptr)), __v);
 
 				if (vx::none_of(__mask)) {
 					__current_count = 0;
-					__current_n = 0;
-					__current_k = 0;
 					__advance_bytes(__ptr, sizeof(_Tag_));
 					continue;
 				}
 
-				do {
-					bool __single_step = __current_count == 0;
-					__current_n = __current_k == 0 ? vx::find_first_set[vx::not_null](__mask) : 0;
+				i32 __from = -1;
 
-					if (!__single_step && __current_n != 0) __current_count = 0;
+				while (true) {
+					auto __begin = vx::find_next_set[vx::not_null](__mask, __from);
 
-					__current_k = i32(__current_n + (__count - __current_count));
+					if (__begin == _Tag_::size()) break;
+					if (__current_count != 0 && __begin != 0) __current_count = 0;
 
-					const auto __validated_k = std::min(__current_k, _Tag_::size());
+					const auto __end = std::min<i32>(__begin + (__count - __current_count), _Tag_::size());
 
-					if (vx::is_contiguous(__mask, __current_n, __validated_k)) {
-						__current_count += (__validated_k - __current_n);
+					if (vx::is_contiguous(__mask, __begin, __end)) {
+						__current_count += (__end - __begin);
 
 						if (__current_count >= __count) {
-							if (__single_step) {
-								__seek_possibly_wrapped_iterator(__first, __ptr + __current_n);
-								__seek_possibly_wrapped_iterator(__sentinel, __ptr + __current_n + __count);
-							}
-							else {
-								__seek_possibly_wrapped_iterator(__first, __ptr + __current_k - __count);
-								__seek_possibly_wrapped_iterator(__sentinel, __ptr + __current_k);
-							}
+							auto* __result = (__current_count == (__end - __begin)) ? (__ptr + __begin) : (__ptr + __end - __count);
+
+							__seek_possibly_wrapped_iterator(__first, __result);
+							__seek_possibly_wrapped_iterator(__sentinel, __result + __count);
 
 							return { __first, __sentinel };
-						};
+						}
 
-						__current_k -= __validated_k;
 						goto __next;
 					}
-					else {
-						__current_k = 0;
-						__current_n = 0;
-						__current_count = 0;
 
-						__mask = vx::clear_first(__mask);
-					}
-				} while (vx::any_of(__mask));
+					__current_count = 0;
+					__from = __begin;
+				}
 
-			__next:
-				__advance_bytes(__ptr, sizeof(_Tag_));
+				__next:
+					__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
-
-			__seek_possibly_wrapped_iterator(__first, __ptr - __current_count);
-			return (*this)(__first, __sentinel, __count, __v, __predicate, __proj);
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_, class _Iterator_, class _Sentinel_, 
-			class _SizeType_, class _ValueType_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_>
-			operator()(std::integral_constant<sizetype, _AlignedSize_>, 
-				std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first,
-				_Sentinel_ __sentinel, _SizeType_ __count, const _ValueType_& __v,
-				_Predicate_ __predicate, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr = std::to_address(__first);
-
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-			auto __left = __iterations_aligned;
-
-			_SizeType_ __current_count = 0;
-			auto __current_k = 0;
-			auto __current_n = 0;
-
-			do {
-				auto __mask = __predicate(__proj(vx::load<_Tag_>(__ptr)), __v);
-
-				if (vx::none_of(__mask)) {
-					__current_count = 0;
-					__current_n = 0;
-					__current_k = 0;
-					__advance_bytes(__ptr, sizeof(_Tag_));
-					continue;
-				}
-
-				do {
-					bool __single_step = __current_count == 0;
-					__current_n = __current_k == 0 ? vx::find_first_set[vx::not_null](__mask) : 0;
-
-					if (!__single_step && __current_n != 0) __current_count = 0;
-
-					__current_k = i32(__current_n + (__count - __current_count));
-
-					const auto __validated_k = std::min(__current_k, _Tag_::size());
-
-					if (vx::is_contiguous(__mask, __current_n, __validated_k)) {
-						__current_count += (__validated_k - __current_n);
-
-						if (__current_count >= __count) {
-							if (__single_step) {
-								__seek_possibly_wrapped_iterator(__first, __ptr + __current_n);
-								__seek_possibly_wrapped_iterator(__sentinel, __ptr + __current_n + __count);
-							}
-							else {
-								__seek_possibly_wrapped_iterator(__first, __ptr + __current_k - __count);
-								__seek_possibly_wrapped_iterator(__sentinel, __ptr + __current_k);
-							}
-
-							return { __first, __sentinel };
-						};
-
-						__current_k -= __validated_k;
-						goto __next;
-					}
-					else {
-						__current_k = 0;
-						__current_n = 0;
-						__current_count = 0;
-
-						__mask = vx::clear_first(__mask);
-					}
-				} while (vx::any_of(__mask));
-
-			__next:
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (--__left);
 
 			__seek_possibly_wrapped_iterator(__first, __ptr - __current_count);
 			return (*this)(__first, __sentinel, __count, __v, __predicate, __proj);

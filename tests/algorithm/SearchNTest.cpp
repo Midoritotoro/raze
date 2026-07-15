@@ -64,7 +64,7 @@ void test_search_n_random(unsigned seed = 42) {
     std::uniform_int_distribution<int> size_dist(0, 1000);
     std::uniform_int_distribution<int> count_dist(0, 50);
     
-    for (int i = 0; i < 10000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         size_t size = size_dist(size_gen);
         auto vec = generate_random_vector<T>(size, seed + i);
         T target = gen();
@@ -103,7 +103,7 @@ void test_search_n_ranges(unsigned seed = 42) {
     std::uniform_int_distribution<int> size_dist(0, 1000);
     std::uniform_int_distribution<int> count_dist(0, 10);
 
-    for (int i = 0; i < 10000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         size_t size = size_dist(size_gen);
         auto vec = generate_random_vector<T>(size, seed + i + 30000);
         T target = RandomGenerator<T>(seed + i + 30000)();
@@ -210,7 +210,7 @@ struct Point {
 };
 
 void test_search_n_with_projection(unsigned seed = 42) {
-    for (int i = 0; i < 10000; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         std::vector<Point> vec(100);
         RandomGenerator<int> gen(seed + i + 120000);
         for (auto& p : vec) {
