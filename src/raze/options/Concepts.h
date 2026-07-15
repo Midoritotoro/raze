@@ -23,15 +23,11 @@ concept settings = requires(const _Settings_& __settings) {
     typename _Settings_::settings_type;
 };
 
-template <
-    class _Option_,
-    auto  _Keyword_>
+template <class _Option_, auto  _Keyword_>
 concept exactly = concepts::same_as<typename _Option_::keyword_type, 
     std::remove_cvref_t<decltype(_Keyword_)>>;
 
-template <
-    class _Key_,
-    class _Type_>
+template <class _Key_, class _Type_>
 concept __checks_for = requires(_Key_) {
     { _Key_::template check<_Type_>() };
 };

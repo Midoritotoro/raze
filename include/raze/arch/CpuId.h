@@ -15,10 +15,7 @@
 
 __RAZE_ARCH_NAMESPACE_BEGIN
 
-raze_always_inline void cpuid(
-	u32 __regs[4],
-	u32 __leaf) noexcept
-{
+raze_always_inline void cpuid(u32 __regs[4], u32 __leaf) noexcept {
 #if (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 	__get_cpuid(__leaf, __regs, __regs + 1, __regs + 2, __regs + 3);
 #else
@@ -26,11 +23,7 @@ raze_always_inline void cpuid(
 #endif // (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 }
 
-raze_always_inline void cpuidex(
-    u32 __regs[4],
-    u32 __leaf,
-    u32 __subleaf) noexcept
-{
+raze_always_inline void cpuidex(u32 __regs[4], u32 __leaf, u32 __subleaf) noexcept {
 #if defined(raze_cpp_msvc) || \
     (defined(raze_cpp_clang) && raze_cpp_clang >= 1810) || \
     (defined(raze_cpp_gnu) && raze_cpp_gnu >= 1100)

@@ -5,9 +5,7 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <
-    concepts::keyword   _Type_,
-    class               _Value_> 
+template <concepts::keyword _Type_, class _Value_> 
 struct __type_or {
     raze_no_unique_address _Value_ _value;
 

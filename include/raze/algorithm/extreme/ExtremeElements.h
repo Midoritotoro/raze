@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/concurrency/Execution.h>
+
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/EqualTo.h>

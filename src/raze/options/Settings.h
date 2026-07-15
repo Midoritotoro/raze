@@ -59,16 +59,11 @@ struct settings {
         return contains(flag_keyword<_Keyword_>{});
     }
 
-    template <
-        concepts::keyword   _Key_, 
-        class               _Value_>
+    template <concepts::keyword _Key_,  class _Value_>
     constexpr raze_always_inline auto operator[](__type_or<_Key_, _Value_> __value) const {
-        if constexpr(contains(_Key_{})) 
-            return (*this)[_Key_{}];
-        else if constexpr(requires(_Value_ __t) { __t.perform(); })  
-            return __value._value.perform();
-        else 
-            return __value._value;
+        if constexpr(contains(_Key_{})) return (*this)[_Key_{}];
+        else if constexpr(requires(_Value_ __t) { __t.perform(); }) return __value._value.perform();
+        else return __value._value;
     }
         
     raze_no_unique_address base _content;

@@ -7,8 +7,6 @@
 
 // Msvc attributes
 // https://learn.microsoft.com/en-us/cpp/cpp/declspec?view=msvc-170
-// Msvc SAL
-// https://learn.microsoft.com/en-us/cpp/code-quality/using-sal-annotations-to-reduce-c-cpp-code-defects?view=msvc-170
 
 // Gcc attributes
 // https://ohse.de/uwe/articles/gcc-attributes.html and https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html

@@ -7,7 +7,6 @@
 #include <raze/arch/ProcessorDetection.h>
 
 #include <raze/compatibility/SimdCompatibility.h>
-#include <src/raze/type_traits/IsConstantEvaluated.h>
 
 #include <include/raze/math/IntegralTypesConversions.h>
 #include <src/raze/math/SignBit.h>
@@ -125,7 +124,7 @@ constexpr raze_always_inline i32 __count_trailing_zero_bits(_IntegralType_ __val
     static_assert(std::is_unsigned_v<_IntegralType_>);
 
 #if defined(raze_processor_x86) && !defined(raze_processor_arm)
-    if (!type_traits::is_constant_evaluated()) {
+    if not consteval {
         if (arch::ProcessorFeatures::AVX2())
             return __tzcnt_ctz(__value);
         else

@@ -7,8 +7,6 @@
 #include <raze/arch/ProcessorDetection.h>
 
 #include <raze/compatibility/SimdCompatibility.h>
-#include <src/raze/type_traits/IsConstantEvaluated.h>
-
 #include <include/raze/math/IntegralTypesConversions.h>
 
 raze_disable_warning_msvc(4293)
@@ -103,7 +101,7 @@ constexpr raze_always_inline i32 __population_count(_IntegralType_ __value) noex
     static_assert(std::is_unsigned_v<_IntegralType_>);
 
 #if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
-    if (!type_traits::is_constant_evaluated()) {
+    if not consteval {
         if (arch::ProcessorFeatures::POPCNT())
             return __popcnt_population_count(__value);
     }

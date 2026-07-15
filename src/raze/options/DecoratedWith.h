@@ -6,9 +6,7 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <
-    class       _OptionsValues_, 
-    class ...   _Options_>
+template <class _OptionsValues_, class ... _Options_>
 struct decorated_with: 
     _OptionsValues_, _Options_...
 {

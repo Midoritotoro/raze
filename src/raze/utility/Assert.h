@@ -24,10 +24,8 @@ struct __static_locale {
 
 static const __static_locale __lc;
 
-inline void __fail(
-	const char* __message,
-	const char* __file,
-	int			__line) noexcept
+inline void __fail(const char* __message,
+	const char* __file, int	__line) noexcept
 {
 	printf("Error: %s in File \"%s\", Line: %d\n", __message, __file, __line);
 
@@ -38,10 +36,7 @@ inline void __fail(
 	std::terminate();
 }
 
-inline const char* __extract_basename(
-	const char* __path,
-	size_t		__size) noexcept
-{
+inline const char* __extract_basename(const char* __path, size_t __size) noexcept {
 	while (__size != 0 && __path[__size - 1] != '/' && __path[__size - 1] != '\\')
 		--__size;
 

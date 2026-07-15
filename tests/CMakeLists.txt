@@ -12,6 +12,4 @@ find_package(raze)
 
 add_subdirectory(algorithm)
 add_subdirectory(math)
-add_subdirectory(concurrency)
-add_subdirectory(type_traits)
 add_subdirectory(vx)

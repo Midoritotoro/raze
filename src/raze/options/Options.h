@@ -32,12 +32,9 @@ struct options:
         return options<decltype(__dropped)>{__dropped};
     }
 
-    template <
-        concepts::keyword      _Keyword0_, 
-        concepts::keyword ...  _Keywords_>
-    constexpr raze_always_inline auto drop(
-        const _Keyword0_&       __keyword0,
-        const _Keywords_& ...   __keywords) const noexcept 
+    template <concepts::keyword _Keyword0_, concepts::keyword ... _Keywords_>
+    constexpr raze_always_inline auto drop(const _Keyword0_& __keyword0,
+        const _Keywords_& ... __keywords) const noexcept 
     {
         auto __dropped = raze::options::drop(__keyword0, *this);
         return options<decltype(__dropped)>{__dropped}.drop(__keywords...);
@@ -60,12 +57,9 @@ template <class ... _Options_>
 options(const settings<_Options_...>&) ->
     options<settings<_Options_...>>;
 
-template <
-    concepts::settings _S0_, 
-    concepts::settings _S1_>
+template <concepts::settings _S0_, concepts::settings _S1_>
 constexpr static raze_always_inline auto merge_prefer_first(
-    const options<_S0_>& __base, 
-    const options<_S1_>& __new_options) noexcept
+    const options<_S0_>& __base, const options<_S1_>& __new_options) noexcept
 {
     auto __result_options = raze::options::merge(__new_options, __base);
     return options<decltype(__result_options)>{__result_options};
@@ -79,9 +73,8 @@ concept callable_option = concepts::option<_Type_>;
 
 template<auto Decorator> 
 struct exact_option {
-    constexpr raze_always_inline auto process(
-        auto const&                                 __base, 
-        concepts::exactly<Decorator> auto const&    __options) const noexcept
+    constexpr raze_always_inline auto process(auto const& __base, 
+        concepts::exactly<Decorator> auto const& __options) const noexcept
     {
         return raze::options::merge_prefer_first(__base, options{ __options });
     }

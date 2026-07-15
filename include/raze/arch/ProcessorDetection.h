@@ -175,7 +175,6 @@
 #    define raze_byte_order raze_big_endian
 
 #  else
-// BYTE_ORDER �� ���������, ������������� �������������� ����������� ������������������ ����
 #  endif // defined(__MIPSEL__) || defined(__MIPSEB__)
 
 
@@ -221,14 +220,12 @@
 #  define raze_byte_order raze_big_endian
 
 
-// -- Web Assembly --
-#elif defined(__EMSCRIPTEN__)
 #  define raze_processor_wasm
 #  define raze_byte_order raze_little_endian
 #  define raze_processor_wordsize 8
 #ifdef raze_compiler_supports_sse2
-#  define raze_processor_x86 6   // �������� ��������� SIMD
-# define raze_processor_x86_64 // wasm64
+#  define raze_processor_x86 6  
+# define raze_processor_x86_64
 #  define raze_processor_wasm_64
 #endif
 
@@ -237,7 +234,6 @@
 
 #if !defined(raze_byte_order)
 #  if defined(__BYTE_ORDER__) && (__BYTE_ORDER__ == raze_big_endian || __BYTE_ORDER__ == raze_little_endian)
-// �������� ������������ __BYTE_ORDER__  ��� ����, ��������� ����������� *_ENDIAN ������������� ���������� ������������� �� ���������
 #    define raze_byte_order __BYTE_ORDER__
 #  elif defined(__BIG_ENDIAN__) || defined(_big_endian__) || defined(_BIG_ENDIAN)
 #    define raze_byte_order raze_big_endian

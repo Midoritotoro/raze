@@ -115,7 +115,7 @@ raze_always_inline i32 __lzcnt_clz(_IntegralType_ __value) noexcept {
 template <std::unsigned_integral _IntegralType_>
 constexpr raze_always_inline i32 __count_leading_zero_bits(_IntegralType_ __value) noexcept {
 #if defined(raze_processor_x86) && !defined(raze_processor_arm)
-    if (!type_traits::is_constant_evaluated()) {
+    if not consteval {
         if (arch::ProcessorFeatures::AVX2())
             return __lzcnt_clz(__value);
         else

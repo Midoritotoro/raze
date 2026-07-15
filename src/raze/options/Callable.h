@@ -69,10 +69,7 @@ protected:
         return static_cast<_Functor_<_OptionsValues_>const&>(*this); 
     }
 
-    template <
-        template<class> class   F2, 
-        typename                OV2, 
-        typename...             O2>
+    template <template <class> class F2, class OV2, class ... O2>
     friend raze_always_inline constexpr bool operator==(const callable&, const callable<F2,OV2,O2...>&) noexcept {
         return false; 
     }

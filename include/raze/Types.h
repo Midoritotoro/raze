@@ -66,7 +66,7 @@ using sbyte_t       = i8;
 using word_t        = u16;
 using sword_t       = i16;
 
-using dword_t       = u32;
+using dword_t       = ulong;
 using sdword_t      = i32;
 
 using qword_t       = u64;
