@@ -74,7 +74,8 @@ struct _Remove_if : _Traits_ {
 
 			do {
 				const auto __loaded = vx::load<_Tag_>(__ptr);
-				__current_ptr = vx::compress_store(__current_ptr, __loaded, __predicate(__proj(__loaded)));
+				const auto __mask = __predicate(__proj(__loaded));
+				__current_ptr = vx::compress_store(__current_ptr, __loaded, __mask);
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
