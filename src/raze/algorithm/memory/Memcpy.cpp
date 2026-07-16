@@ -7,6 +7,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 raze_always_inline void* __memcpy_scalar_impl(volatile u8* raze_restrict __dst_ch,
     const volatile u8* raze_restrict __src_ch, sizetype __bytes) noexcept
 {
+	#pragma loop(no_vector)
 	while (__bytes >= 8) {
 		*reinterpret_cast<volatile raze::i64*>(__dst_ch) = *reinterpret_cast<const volatile raze::i64*>(__src_ch);
 		__dst_ch += 8; __src_ch += 8; __bytes -= 8;
@@ -264,6 +265,10 @@ raze_always_inline void __memcpy_small(void* raze_restrict __dst, const void* ra
 raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall __raze_memcpy(void* raze_restrict __dst,
 	const void* raze_restrict __src, sizetype __bytes) noexcept
 {
+#if 1
+	std::memcpy(__dst, __src, __bytes);
+	return __bytes_pointer_offset(__dst, __bytes);
+#else
 	constexpr auto __erms_threshold = 0x1000;
 
 	u8* __ch_dst = (u8*)__dst;
@@ -280,6 +285,7 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 				}
 				else {
 					if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all_features)) {
+						#pragma loop(no_vector)
 						do {
 							_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
 							_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
@@ -292,7 +298,8 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 
 						goto __avx512_process_tail_from_0_to_256;
 					}
-					else if (arch::ProcessorFeatures::has<arch::__features::AVX2>(__all_features)) {
+					else if (arch::ProcessorFeatures::has<arch::__features::AVX>(__all_features)) {
+						#pragma loop(no_vector)
 						do {
 							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src)));
 							_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
@@ -306,6 +313,7 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 						goto __avx_process_tail_from_0_to_128;
 					}
 					else {
+						#pragma loop(no_vector)
 						do {
 							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src)));
 							_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
@@ -327,6 +335,7 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 				i32 __all_features = arch::ProcessorFeatures::all();
 
 				if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all_features)) {
+					#pragma loop(no_vector)
 					while (__bytes >= 256) {
 						_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
 						_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
@@ -340,6 +349,7 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 					goto __avx512_process_tail_from_0_to_256;
 				}
 				else if (arch::ProcessorFeatures::has<arch::__features::AVX>(__all_features)) {
+					#pragma loop(no_vector)
 					while (__bytes >= 128) {
 						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src)));
 						_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ch_dst) + 1, _mm256_loadu_si256(reinterpret_cast<const __m256i*>(__ch_src) + 1));
@@ -353,6 +363,7 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 					goto __avx_process_tail_from_0_to_128;
 				}
 				else {
+					#pragma loop(no_vector)
 					while (__bytes >= 64) {
 						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src)));
 						_mm_storeu_si128(reinterpret_cast<__m128i*>(__ch_dst) + 1, _mm_loadu_si128(reinterpret_cast<const __m128i*>(__ch_src) + 1));
@@ -376,26 +387,8 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 	}
 	else {
 		__memcpy_small(__dst, __src, __bytes);
+		return __bytes_pointer_offset(__ch_dst, __bytes);
 	}
-
-__avx512_process_tail_from_0_to_256:
-	if (__bytes >= 128) {
-		_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
-		_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
-		__ch_dst += 128;
-		__ch_src += 128;
-		__bytes -= 128;
-	}
-
-	if (__bytes >= 64) {
-		_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
-		__ch_dst += 64;
-		__ch_src += 64;
-		__bytes -= 64;
-	}
-
-	__memcpy_small_avx512f(__ch_dst, __ch_src, __bytes);
-	return __bytes_pointer_offset(__ch_dst, __bytes);
 
 __avx_process_tail_from_0_to_128:
 	if (__bytes >= 64) {
@@ -420,6 +413,26 @@ __sse2_process_tail_from_0_to_64:
 
 	__memcpy_small_sse2(__ch_dst, __ch_src, __bytes);
 	return __bytes_pointer_offset(__ch_dst, __bytes);
+
+__avx512_process_tail_from_0_to_256:
+	if (__bytes >= 128) {
+		_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
+		_mm512_storeu_si512(__ch_dst + 64, _mm512_loadu_si512(__ch_src + 64));
+		__ch_dst += 128;
+		__ch_src += 128;
+		__bytes -= 128;
+	}
+
+	if (__bytes >= 64) {
+		_mm512_storeu_si512(__ch_dst, _mm512_loadu_si512(__ch_src));
+		__ch_dst += 64;
+		__ch_src += 64;
+		__bytes -= 64;
+	}
+
+	__memcpy_small_avx512f(__ch_dst, __ch_src, __bytes);
+	return __bytes_pointer_offset(__ch_dst, __bytes);
+#endif
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

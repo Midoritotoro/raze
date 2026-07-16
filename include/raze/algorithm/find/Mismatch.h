@@ -83,7 +83,7 @@ struct _Mismatch : _Traits_ {
 			do {
 				const auto __mask = __predicate(__proj1(vx::load<_Tag_>(__ptr1)), __proj2(vx::load<_Tag_>(__ptr2)));
 				if (!vx::all_of(__mask)) {
-					const auto __mismatch = vx::find_first_not_set[vx::not_null](__mask);
+					const auto __mismatch = vx::find_first_not_set(__mask);
 					__seek_possibly_wrapped_iterator(__first1, __ptr1 + __mismatch);
 					__seek_possibly_wrapped_iterator(__first2, __ptr2 + __mismatch);
 					return { __first1, __first2 };
@@ -123,7 +123,7 @@ struct _Mismatch : _Traits_ {
 			do {
 				const auto __mask = __predicate(__proj1(vx::load<_Tag_>(__ptr1)), __proj2(vx::load<_Tag_>(__ptr2)));
 				if (!vx::all_of(__mask)) {
-					const auto __mismatch = vx::find_first_not_set[vx::not_null](__mask);
+					const auto __mismatch = vx::find_first_not_set(__mask);
 					__seek_possibly_wrapped_iterator(__first1, __ptr1 + __mismatch);
 					__seek_possibly_wrapped_iterator(__first2, __ptr2 + __mismatch);
 					return { __first1, __first2 };
