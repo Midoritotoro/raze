@@ -4,8 +4,11 @@ project(razeBenchmarks LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 
 if (MSVC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /GS- /DNDEBUG /Oy /bigobj /GL")
     add_compile_options(/O2 /GS- /DNDEBUG /Oy /bigobj /GL) 
     add_link_options(/LTCG /OPT:REF /OPT:ICF)
 endif()
@@ -28,7 +31,7 @@ add_subdirectory(benchmark EXCLUDE_FROM_ALL)
 
 macro(razeBenchmarks_add_benchmark filename)
     add_executable(${filename} ${filename}.cpp)
-    
+
     target_include_directories(${filename} PUBLIC 
         ${CMAKE_CURRENT_SOURCE_DIR}/tools
     )

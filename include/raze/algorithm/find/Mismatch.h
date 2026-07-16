@@ -82,6 +82,7 @@ struct _Mismatch : _Traits_ {
 
 			do {
 				const auto __mask = __predicate(__proj1(vx::load<_Tag_>(__ptr1)), __proj2(vx::load<_Tag_>(__ptr2)));
+
 				if (!vx::all_of(__mask)) {
 					const auto __mismatch = vx::find_first_not_set(__mask);
 					__seek_possibly_wrapped_iterator(__first1, __ptr1 + __mismatch);
@@ -239,17 +240,16 @@ private:
 		using _Value1_ = std::iter_value_t<_Iterator1_>;
 		using _Value2_ = std::iter_value_t<_Iterator2_>;
 
-		if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_> 
-			&& std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
-			vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
-			vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
-		{
-			if not consteval {
-				const auto __size = std::min(algorithm::distance(__first1, __last1), algorithm::distance(__first2, __last2));
-				return vx::__dispatch_sized_impl<__vectorized_equal, _Value1_, std::ranges::in_in_result<_Iterator1_, _Iterator2_>>(
-					__size * sizeof(_Value1_), __first1, __last1, __first2, __last2, __pred, __proj1, __proj2);
-			}
-		}
+		//if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_> 
+		//	&& std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
+		//	vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
+		//	vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
+		//{
+		//	if not consteval {
+		//		return vx::__dispatch_sized_impl<__vectorized_equal, _Value1_, std::ranges::in_in_result<_Iterator1_, _Iterator2_>>(
+		//			algorithm::distance(__first1, __last1) * sizeof(_Value1_), __first1, __last1, __first2, __last2, __pred, __proj1, __proj2);
+		//	}
+		//}
 
 		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2, __pred, __proj1, __proj2));
 	}

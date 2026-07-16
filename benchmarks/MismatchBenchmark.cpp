@@ -11,6 +11,8 @@ struct MismatchTestData {
             data1[i] = static_cast<T>(i + 1);
             data2[i] = static_cast<T>(i + 1);
         }
+
+        data1[Size - 1] = 42;
     }
 };
 
