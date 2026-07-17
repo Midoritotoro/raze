@@ -21,10 +21,9 @@ if (NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
   set(CMAKE_INSTALL_INCLUDEDIR "include")
 endif()
 
-set(CMAKE_VERBOSE_MAKEFILE ON)
-
 option(RAZE_INSTALL "" ${PROJECT_IS_TOP_LEVEL})
 option(RAZE_ENABLE_OPENMP "Enable OpenMP support in raze" OFF)
+
 
 set(RAZE_INSTALL_CMAKE_DIR "${CMAKE_INSTALL_LIBDIR}/cmake/raze")
 file(GLOB_RECURSE PRIVATE_SOURCES CONFIGURE_DEPENDS "src/raze/*.cpp" "src/raze/*.c")
@@ -79,9 +78,9 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_compile_options(/g /Ob3) 
+        add_compile_options(-g -Ob3) 
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(/O2 /GL-)
+        add_compile_options(-O2 -GL-)
     endif()
 
     target_link_options(raze PRIVATE "/LTCG;/opt:ref,icf;")

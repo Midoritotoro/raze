@@ -86,13 +86,13 @@ struct _Find_end : _Traits_ {
 				return { __last, __last };
 			}
 
-			auto __result = std::ranges::search(std::move(__first1), __sentinel1, __first2, __sentinel2, __predicate, __proj1, __proj2);
+			auto __result = algorithm::search[raze::options::scalar](std::move(__first1), __sentinel1, __first2, __sentinel2, __predicate, __proj1, __proj2);
 
 			if (__result.empty())
 				return __result;
 
 			for (;;) {
-				auto __new_result = std::ranges::search(std::next(__result.begin()), __sentinel1, __first2, __sentinel2, __predicate, __proj1, __proj2);
+				auto __new_result = algorithm::search[raze::options::scalar](std::next(__result.begin()), __sentinel1, __first2, __sentinel2, __predicate, __proj1, __proj2);
 				if (__new_result.empty()) return __result;
 				else __result = std::move(__new_result);
 			}

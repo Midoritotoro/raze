@@ -8,7 +8,6 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
 if (MSVC)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /O2 /GS- /DNDEBUG /Oy /bigobj /GL")
     add_compile_options(/O2 /GS- /DNDEBUG /Oy /bigobj /GL) 
     add_link_options(/LTCG /OPT:REF /OPT:ICF)
 endif()
@@ -41,6 +40,8 @@ macro(razeBenchmarks_add_benchmark filename)
       raze::raze
       benchmark::benchmark_main
     )
+
+    target_compile_options(${filename} PRIVATE /O2 /Ob2)
     
     add_test(NAME ${filename} COMMAND ${filename})
 endmacro(razeBenchmarks_add_benchmark)
