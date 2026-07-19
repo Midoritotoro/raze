@@ -41,12 +41,14 @@ struct compress_tests {
             mask_compress_any<Simd>(src, src, expected, mask);
 
             raze::vx::compress_store(dst, v, mask);
-            raze_assert(std::equal(dst, dst + N, expected, expected + N));
+			const auto count = raze::vx::count_set(!mask);
+            raze_assert(std::equal(dst, dst + count, expected, expected + count));
         }
     }
 
     void operator()() {
         test_size<_Width_ / (sizeof(_Type_) * 8)>();
+        test_size<_Width_ / (sizeof(_Type_) * 8) + 3>();
         test_size<1>();
     }
 };

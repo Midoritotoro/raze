@@ -29,23 +29,6 @@ struct _Broadcast {
 	{
 		using _Type_ = typename __unwrap_int<_WrappedType_>::type;
 
-#if 0
-		if constexpr (has_value_type<_WrappedType_>) {
-			constexpr size_t __count = sizeof(_Tp_) / sizeof(_Type_);
-
-			alignas(sizeof(_Tp_)) static constexpr std::array<_Type_, __count> __table = [] {
-				std::array<_Type_, __count> __result{};
-
-				for (auto& __x : __result)
-					__x = _WrappedType_::value;
-
-				return __result;
-			}();
-
-			return _Load<_ISA_, _Tp_>()(__table.data(), __aligned_policy{});
-		}
-#endif
-
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
 				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm_broadcastq_epi64(_mm_cvtsi64_si128(memory::pointer_to_integral(__value))));
@@ -110,7 +93,7 @@ struct _Broadcast {
 				}
 			}
 			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-				if constexpr (__has_avx512bw_support_v<_ISA_>) return  __as<_Tp_>(_mm512_set1_epi8(__value));
+				if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_set1_epi8(__value));
 				else return _mm512_set1_epi32(static_cast<u8>(__value) * 0x01010101u);
 			}
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_set1_ps(__value));

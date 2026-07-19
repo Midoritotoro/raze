@@ -20,8 +20,29 @@ __RAZE_ARCH_NAMESPACE_BEGIN
 enum class __features : u8 {
     ERMS, SSE, SSE2, SSE3, SSSE3, SSE41, SSE42, AVX, AVX2, FMA3,
     AVX512F, AVX512BW, AVX512PF, AVX512ER, AVX512CD, AVX512VL, 
-    AVX512DQ, AVX512VBMI, AVX512VBMI2, POPCNT
+	AVX512DQ, AVX512VBMI, AVX512VBMI2, POPCNT, UNKNOWN
 };
+
+consteval __features __feature_of(ISA __isa) noexcept {
+	switch (__isa) {
+	    case ISA::SSE: return __features::SSE;
+	    case ISA::SSE2: return __features::SSE2;
+	    case ISA::SSE3: return __features::SSE3;
+	    case ISA::SSSE3: return __features::SSSE3;
+	    case ISA::SSE41: return __features::SSE41;
+	    case ISA::SSE42: return __features::SSE42;
+	    case ISA::AVX: return __features::AVX;
+	    case ISA::FMA3: return __features::FMA3;
+	    case ISA::AVX2: return __features::AVX2;
+	    case ISA::AVX512F: return __features::AVX512F;
+	    case ISA::AVX512BW: return __features::AVX512BW;
+	    case ISA::AVX512VLF: return __features::AVX512VL;
+	    case ISA::AVX512DQ: return __features::AVX512DQ;
+	    case ISA::AVX512VBMI: return __features::AVX512VBMI;
+	    case ISA::AVX512VBMI2: return __features::AVX512VBMI2;
+	    default: raze_debug_assert_log(false, "Unsupported instruction set architecture"); return __features::UNKNOWN;
+	}
+}
 
 class ProcessorFeatures
 {

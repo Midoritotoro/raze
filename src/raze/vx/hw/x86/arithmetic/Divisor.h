@@ -20,11 +20,7 @@ public:
 		__from_divisor(__divisor);
 	}
 
-	_Divisor(
-		i32 __multiplier,
-		i32 __shift,
-		i32 __sign) noexcept
-	{
+	_Divisor(i32 __multiplier, i32 __shift, i32 __sign) noexcept {
 		__init(__multiplier, __shift, __sign);
 	}
 
@@ -66,11 +62,7 @@ private:
 		__init(__multiplier, __shift, (__divisor < 0) ? -1 : 0);
 	}
 
-	raze_always_inline void __init(
-		i32 __multiplier,
-		i32 __shift,
-		i32 __sign) noexcept 
-	{
+	raze_always_inline void __init(i32 __multiplier, i32 __shift, i32 __sign) noexcept {
 		_multiplier = _mm_set1_epi32(__multiplier);
 		_sign		= _mm_set1_epi32(__sign);
 		_shift		= _mm_cvtsi32_si128(__shift);
@@ -90,11 +82,7 @@ public:
 		__from_divisor(__divisor);
 	}
 
-	_Divisor(
-		u32 __multiplier,
-		i32 __shift1,
-		i32 __shift2) noexcept
-	{
+	_Divisor(u32 __multiplier, i32 __shift1, i32 __shift2) noexcept {
 		__init(__multiplier, __shift1, __shift2);
 	}
 
@@ -145,11 +133,7 @@ private:
 		__init(__multiplier, __shift1, __shift2);
 	}
 
-	raze_always_inline void __init(
-		u32 __multiplier,
-		i32 __shift1,
-		i32 __shift2) noexcept
-	{
+	raze_always_inline void __init(u32 __multiplier, i32 __shift1, i32 __shift2) noexcept {
 		_multiplier = _mm_set1_epi32(static_cast<i32>(__multiplier));
 		_shift1		= _mm_set_epi32(0, 0, 0, __shift1);
 		_shift2		= _mm_set_epi32(0, 0, 0, __shift2);
@@ -169,11 +153,7 @@ public:
 		__from_divisor(__divisor);
 	}
 
-	_Divisor(
-		i16 __multiplier,
-		i16 __shift,
-		i16 __sign) noexcept
-	{
+	_Divisor(i16 __multiplier, i16 __shift, i16 __sign) noexcept {
 		__init(__multiplier, __shift, __sign);
 	}
 
@@ -215,11 +195,7 @@ private:
 		__init(__multiplier, __shift, (__divisor < 0) ? -1 : 0);
 	}
 
-	raze_always_inline void __init(
-		i16 __multiplier,
-		i16 __shift,
-		i16 __sign) noexcept
-	{
+	raze_always_inline void __init(i16 __multiplier, i16 __shift, i16 __sign) noexcept {
 		_multiplier = _mm_set1_epi16(__multiplier);
 		_sign		= _mm_set1_epi32(__sign);
 		_shift		= _mm_cvtsi32_si128(__shift);
@@ -239,11 +215,7 @@ public:
 		__from_divisor(__divisor);
 	}
 
-	_Divisor(
-		u16 __multiplier,
-		i32  __shift1,
-		i32  __shift2) noexcept
-	{
+	_Divisor(u16 __multiplier, i32  __shift1, i32  __shift2) noexcept {
 		__init(__multiplier, __shift1, __shift2);
 	}
 
@@ -292,11 +264,7 @@ private:
 		__init(__multiplier, __shift1, __shift2);
 	}
 
-	raze_always_inline void __init(
-		u32 __multiplier,
-		i32 __shift1,
-		i32 __shift2) noexcept
-	{
+	raze_always_inline void __init(u32 __multiplier, i32 __shift1, i32 __shift2) noexcept {
 		_multiplier = _mm_set1_epi16(static_cast<i16>(__multiplier));
 		_shift1		= _mm_setr_epi32(__shift1, 0, 0, 0);
 		_shift2		= _mm_setr_epi32(__shift2, 0, 0, 0);

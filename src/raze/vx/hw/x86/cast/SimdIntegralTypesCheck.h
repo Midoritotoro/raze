@@ -9,21 +9,15 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-    i32 __first_,
-    i32 _Second_>
+template <i32 __first_, i32 _Second_>
 static constexpr i32 __constexpr_max() noexcept {
     return (__first_ > _Second_) ? __first_ : _Second_;
 }
 
-template <
-    class _Type_,
-    class _Abi_>
+template <class _Type_, class _Abi_>
 class simd;
 
-template <
-	arch::ISA	_ISA_, 
-	u32		_Width_> 
+template <arch::ISA	_ISA_, u32 _Width_> 
 constexpr bool __is_width_for_generation_v = __vector_default_size<_ISA_> >= _Width_;
 
 template <class _Type_>
@@ -89,9 +83,7 @@ constexpr bool __is_ps_v    = sizeof(_Element_) == 4 && std::is_same_v<_Element_
 	static_assert(raze::vx::__is_width_for_generation_v<_Generation_, _Width_>, "Simd generation does not support this register width. ");
 #endif // !defined(__verify_simd_width)
 
-template <
-	class _BasicSimd_, 
-	class = void>
+template <class _BasicSimd_, class = void>
 struct __is_valid_simd: 
 	std::false_type
 {};
@@ -115,10 +107,7 @@ struct __is_valid_simd<
 template <class _BasicSimd_>
 constexpr bool __is_valid_simd_v = __is_valid_simd<std::remove_cvref_t<_BasicSimd_>>::value;
 
-template <
-    class	_VectorType_,
-    bool	_IsSimd_	= __is_valid_simd_v<_VectorType_>,
-    bool	_IsIntrin_	= __is_intrin_type_v<_VectorType_>>
+template <class _VectorType_, bool	_IsSimd_ = __is_valid_simd_v<_VectorType_>, bool _IsIntrin_	= __is_intrin_type_v<_VectorType_>>
 struct __vector_element_t {
     using type = void;
 };

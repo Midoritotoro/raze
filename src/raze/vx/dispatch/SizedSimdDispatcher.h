@@ -5,30 +5,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Fn_, class _Tuple_, size_t... _I_>
-raze_always_inline constexpr decltype(auto) my_apply(_Fn_&& __fn, _Tuple_&& __t, std::index_sequence<_I_...>) noexcept {
-    return std::forward<_Fn_>(__fn)(std::get<_I_>(std::forward<_Tuple_>(__t))...);
-}
-
-template <class _Callable_, class _Tuple_>
-raze_always_inline constexpr decltype(auto) my_apply(_Callable_&& __obj, _Tuple_&& __tup) noexcept {
-    return vx::my_apply(std::forward<_Callable_>(__obj), std::forward<_Tuple_>(__tup),
-        std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<_Tuple_>>>{});
-}
-
-template <class _Fn_, class _Tuple_>
-raze_always_inline auto unpack(_Fn_&& __fn, _Tuple_&& __tuple) noexcept {
-    return my_apply(std::forward<_Fn_>(__fn), std::forward<_Tuple_>(__tuple));
-}
-
-template <class _Fn_, class _Tuple_, class... _Suffix_>
-raze_always_inline auto unpack_suffix(_Fn_&& __fn, _Tuple_&& __tuple, _Suffix_&&... __suffix) noexcept {
-    return my_apply([&] <class... _E_> (_E_&&... __elements) raze_always_inline_lambda {
-        return std::forward<_Fn_>(__fn)(std::forward<_E_>(__elements)..., std::forward<_Suffix_>(__suffix)...);
-    }, std::forward<_Tuple_>(__tuple));
-}
-
-template <template <class> class _Function_, class _Type_, class _Return_, arch::ISA _ForcedISA_>
+template <template <class> class _Function_, class _Type_, class _Return_, arch::ISA _ForcedISA_, arch::ISA ... _Candidates_>
 struct _Configurable_sized_isa_dispatcher {
     template <class _Options_>
     struct __impl : raze::options::strict_elementwise_callable<__impl, _Options_>{
@@ -46,7 +23,7 @@ struct _Configurable_sized_isa_dispatcher {
 
         template <sizetype _Size_, class ... _Args_>
         static raze_always_inline _Return_ deferred_call(auto __options,
-            std::integral_constant<sizetype, _Size_> __size, _Args_&& ... __args) noexcept
+            std::integral_constant<sizetype, _Size_> __size, _Args_&& ... __args) noexcept requires(sizeof...(_Candidates_) == 0)
         {
             if constexpr (_ForcedISA_ != arch::ISA::None) {
                 constexpr auto __vector_size = (vx::__default_width<_ForcedISA_> / 8);
@@ -138,7 +115,7 @@ struct _Configurable_sized_isa_dispatcher {
 
         template <class ... _Args_>
         static raze_always_inline _Return_ deferred_call(auto __options,
-            sizetype __size, _Args_&& ... __args) noexcept
+            sizetype __size, _Args_&& ... __args) noexcept requires(sizeof...(_Candidates_) == 0)
         {
            if constexpr (_ForcedISA_ != arch::ISA::None) {
                 constexpr auto __vector_size = (vx::__default_width<_ForcedISA_> / 8);
@@ -176,11 +153,45 @@ struct _Configurable_sized_isa_dispatcher {
            }
         }
 
+        template <arch::ISA _ISA_, arch::ISA ... _Rest_, class ... _Args_>
+        static raze_always_inline _Return_ __try_dispatch(sizetype __size, i32 __all, _Args_&& ... __args) noexcept {
+            constexpr auto __vector_size = vx::__default_width<_ISA_> / 8;
+
+            if (__size >= __vector_size && arch::ProcessorFeatures::has<arch::__feature_of(_ISA_)>(__all)) {
+                using _Simd_ = simd<_Type_, runtime_abi<_ISA_, __vector_size / sizeof(_Type_)>>;
+                return _Function_<_Simd_>()(__size & ~(__vector_size - 1), __size & (__vector_size - 1), std::forward<_Args_>(__args)...);
+            }
+
+            if constexpr (sizeof...(_Rest_) != 0) return __try_dispatch<_Rest_...>(__size, __all, std::forward<_Args_>(__args)...);
+            else _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+        }
+
+        template <class ... _Args_>
+        static raze_always_inline _Return_ deferred_call(auto __options,
+            sizetype __size, _Args_&& ... __args) noexcept requires(sizeof...(_Candidates_) != 0)
+        {
+            if constexpr (_ForcedISA_ != arch::ISA::None) {
+                constexpr auto __vector_size = vx::__default_width<_ForcedISA_> / 8;
+
+                if (__size < __vector_size)
+                    return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+
+                using _Simd_ = simd<_Type_, runtime_abi<_ForcedISA_, __vector_size / sizeof(_Type_)>>;
+                return _Function_<_Simd_>()(__size & ~(__vector_size - 1), __size & (__vector_size - 1), std::forward<_Args_>(__args)...);
+            }
+            else {
+                if (__size < 16) return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
+                return __try_dispatch<_Candidates_...>(__size, arch::ProcessorFeatures::all(), std::forward<_Args_>(__args)...);
+            }
+        }
+
         using callable_tag_type = __impl;
     };
 };
 
-template <template <class> class _Function_, class _Type_, class _Return_, arch::ISA _ForcedISA_ = arch::ISA::None>
-static inline constexpr auto __dispatch_sized_impl = raze::options::functor<typename _Configurable_sized_isa_dispatcher<_Function_, _Type_, _Return_, _ForcedISA_>::__impl>;
+template <template <class> class _Function_, class _Type_, class _Return_,
+    arch::ISA _ForcedISA_ = arch::ISA::None, arch::ISA ... _Candidates_>
+static inline constexpr auto __dispatch_sized_impl = raze::options::functor<typename
+    _Configurable_sized_isa_dispatcher<_Function_, _Type_, _Return_, _ForcedISA_, _Candidates_...>::__impl>;
 
 __RAZE_VX_NAMESPACE_END

@@ -78,9 +78,9 @@ endif()
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_compile_options(-g -Ob3) 
+        add_compile_options(-g) 
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
-        add_compile_options(-O2 -GL-)
+        add_compile_options(-O2 -Ob3)
     endif()
 
     target_link_options(raze PRIVATE "/LTCG;/opt:ref,icf;")

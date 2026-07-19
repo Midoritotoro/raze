@@ -110,28 +110,19 @@ public:
 		return { _reference, _index };
 	}
 
-	raze_always_inline friend void swap(
-		_Simd_element_reference& __left, 
-		_Simd_element_reference& __right) noexcept 
-	{
+	raze_always_inline friend void swap(_Simd_element_reference& __left,  _Simd_element_reference& __right) noexcept {
 		value_type __temp = static_cast<_Simd_element_reference&&>(__left);
 		static_cast<_Simd_element_reference&&>(__left) = static_cast<value_type>(__right);
 		static_cast<_Simd_element_reference&&>(__right) = std::move(__temp);
 	}
 
-	raze_always_inline friend void swap(
-		_Simd_element_reference&	__left,
-		value_type&					__right) noexcept
-	{
+	raze_always_inline friend void swap(_Simd_element_reference& __left, value_type& __right) noexcept {
 		value_type __temp = static_cast<_Simd_element_reference&&>(__left);
 		static_cast<_Simd_element_reference&&>(__left) = std::move(__right);
 		__right = std::move(__temp);
 	}
 
-	raze_always_inline friend void swap(
-		value_type&					__left,
-		_Simd_element_reference&	__right) noexcept
-	{
+	raze_always_inline friend void swap(value_type&	__left, _Simd_element_reference& __right) noexcept {
 		value_type __temp = static_cast<_Simd_element_reference&&>(__right);
 		static_cast<_Simd_element_reference&&>(__right) = std::move(__left);
 		__left = std::move(__temp);

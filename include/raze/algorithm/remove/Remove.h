@@ -152,9 +152,13 @@ private:
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_>(
-					algorithm::distance(__first, __last) * sizeof(_Value_),
-					__first, __last, __pred, __proj);
+				auto __real_first = algorithm::find_if(__first, __last, __pred, __proj);
+				if (__real_first == __last) return __real_first;
+
+				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_,
+					arch::ISA::None, arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3>(
+					algorithm::distance(__real_first, __last) * sizeof(_Value_),
+					__real_first, __last, __pred, __proj);
 			}
 		}
 
@@ -176,9 +180,12 @@ private:
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
+				auto __real_first = algorithm::find_if(__first, __last, __pred, __proj);
+				if (__real_first == __last) return __real_first;
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_>(
-					__bytes, __first, __last, __pred, __proj);
+				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_, arch::ISA::None, 
+					arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3>(
+					__bytes, __real_first, __last, __pred, __proj);
 			}
 		}
 

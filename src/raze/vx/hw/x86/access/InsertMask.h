@@ -5,17 +5,13 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-    class _VectorType_,
-    class _Type_>
+template <class _VectorType_, class _Type_>
 struct _Insert_mask {
-    _Type_  __array[(sizeof(_VectorType_) / sizeof(_Type_)) << 1];
-    i32   __offset = 0;
+    _Type_ __array[(sizeof(_VectorType_) / sizeof(_Type_)) << 1];
+    i32 __offset = 0;
 };
 
-template <
-    class _VectorType_,
-    class _Type_>
+template <class _VectorType_, class _Type_>
 constexpr auto __simd_make_insert_mask() noexcept {
     constexpr auto __length = (sizeof(_VectorType_) / sizeof(_Type_)) << 1;
     auto __mask = _Insert_mask<_VectorType_, _Type_>();

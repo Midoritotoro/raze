@@ -8,7 +8,7 @@ set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
 if (MSVC)
-    add_compile_options(/O2 /GS- /DNDEBUG /Oy /bigobj /GL) 
+    add_compile_options(/O2 /GS- /DNDEBUG /Oy /bigobj /GL-) 
     add_link_options(/LTCG /OPT:REF /OPT:ICF)
 endif()
 

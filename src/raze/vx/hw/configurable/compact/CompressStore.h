@@ -7,7 +7,6 @@
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/compact/CompressStore.h>
-#  include <src/raze/vx/hw/x86/compact/Compress.h>
 #endif // defined(raze_processor_x86)
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -33,12 +32,11 @@ struct _Configurable_compress_store : raze::options::strict_elementwise_callable
 
         __x.__for_each_chunk([&] (const auto& __chunk, const auto& __mask_chunk) raze_always_inline_lambda {
             auto __mem = std::to_address(__it);
-            const auto __compressed = _Compress<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap(__mask_chunk));
 
-            if constexpr (_Options_::contains(aligned)) _Store<_Abi_::isa>()(__mem, __compressed.second, __aligned_policy{});
-            else _Store<_Abi_::isa>()(__mem, __compressed.second);
+            if constexpr (_Options_::contains(aligned)) __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__chunk), __storage_unwrap(__mask_chunk), __aligned_policy{}));
+            else __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__chunk), __storage_unwrap(__mask_chunk)));
 
-            algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, __compressed.first));
+            algorithm::__seek_possibly_wrapped_iterator(__it, __mem);
         }, __mask.__storage().storage());
 
         return __it;
