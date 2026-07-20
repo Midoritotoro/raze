@@ -1,4 +1,4 @@
-#include <raze/algorithm/remove/Remove.h>
+#include <raze/algorithm/remove/RemoveCopy.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
 #include <numeric>
 #include <algorithm>
@@ -27,18 +27,20 @@ static void FillTestData(std::vector<T>& data) {
 }
 
 template <class T, std::size_t Size, std::size_t RemovePercent>
-static void BM_StdRemoveIf(benchmark::State& state) {
+static void BM_StdRemoveCopyIf(benchmark::State& state) {
     TestData<T, Size> src;
     FillTestData<T, Size, RemovePercent>(src.data);
+    std::vector<T> dest(Size);
 
     for (auto _ : state) {
-        auto test = src;
-
         auto start = std::chrono::high_resolution_clock::now();
-        benchmark::DoNotOptimize(test.data);
 
-        auto result = std::ranges::remove(test.data, T(0));
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
+
+        auto result = std::ranges::remove_copy(src.data, dest.begin(), T(0));
         benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
 
@@ -48,23 +50,26 @@ static void BM_StdRemoveIf(benchmark::State& state) {
         state.SetIterationTime(elapsed_seconds.count());
     }
 
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
-    state.SetLabel("remove_" + std::to_string(RemovePercent) + "%");
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+    state.SetLabel("remove_copy_" + std::to_string(RemovePercent) + "%");
 }
 
 template <class T, std::size_t Size, std::size_t RemovePercent>
-static void BM_RazeRemoveIf(benchmark::State& state) {
+static void BM_RazeRemoveCopyIf(benchmark::State& state) {
     TestData<T, Size> src;
     FillTestData<T, Size, RemovePercent>(src.data);
 
+    std::vector<T> dest(Size);
+
     for (auto _ : state) {
-        auto test = src;
-
         auto start = std::chrono::high_resolution_clock::now();
-        benchmark::DoNotOptimize(test.data);
 
-        auto result = raze::algorithm::remove(test.data, T(0));
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
+
+        auto result = raze::algorithm::remove_copy(src.data, dest.begin(), T(0));
         benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
 
@@ -74,11 +79,11 @@ static void BM_RazeRemoveIf(benchmark::State& state) {
         state.SetIterationTime(elapsed_seconds.count());
     }
 
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
-    state.SetLabel("remove_" + std::to_string(RemovePercent) + "%");
+    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+    state.SetLabel("remove_copy_" + std::to_string(RemovePercent) + "%");
 }
 
-#define RAZE_BENCHMARK_REMOVE_PERCENT(name1, name2, pct) \
+#define RAZE_BENCHMARK_REMOVE_COPY_PERCENT(name1, name2, pct) \
     BENCHMARK(name1<raze::i8, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
     BENCHMARK(name2<raze::i8, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
     BENCHMARK(name1<raze::i16, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
@@ -133,11 +138,11 @@ static void BM_RazeRemoveIf(benchmark::State& state) {
 
 void RegisterAll()
 {
-    RAZE_BENCHMARK_REMOVE_PERCENT(BM_RazeRemoveIf, BM_StdRemoveIf, 0);
-    RAZE_BENCHMARK_REMOVE_PERCENT(BM_RazeRemoveIf, BM_StdRemoveIf, 25);
-    RAZE_BENCHMARK_REMOVE_PERCENT(BM_RazeRemoveIf, BM_StdRemoveIf, 50);
-    RAZE_BENCHMARK_REMOVE_PERCENT(BM_RazeRemoveIf, BM_StdRemoveIf, 75);
-    RAZE_BENCHMARK_REMOVE_PERCENT(BM_RazeRemoveIf, BM_StdRemoveIf, 100);
+    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 0);
+    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 25);
+    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 50);
+    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 75);
+    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 100);
 }
 
 RAZE_BENCHMARK_MAIN();

@@ -169,8 +169,7 @@ private:
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& std::contiguous_iterator<_Output_>
-			&& vectorizable_unary_predicate<_Predicate_, _Iterator_>
+			&& std::contiguous_iterator<_Output_> && vectorizable_unary_predicate<_Predicate_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {

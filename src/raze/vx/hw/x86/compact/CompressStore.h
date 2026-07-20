@@ -92,7 +92,7 @@ struct _Compress_store {
 					return algorithm::__bytes_pointer_offset(__ptr, __count_lo + __count_hi);
 				}
 				else {
-					const auto __shuffle_mask = _Load<_ISA_, __m128i>()(__tables_sse<sizeof(_Type_)>.__shuffle[__int_mask]);
+					const auto __shuffle_mask = _Load<_ISA_, __m128i>()(__tables_sse<sizeof(_Type_)>.__shuffle[__int_mask], __aligned_policy{});
 					const auto __processed_bytes = __tables_sse<sizeof(_Type_)>.__size[__int_mask];
 					_mm_storeu_si128(reinterpret_cast<__m128i*>(__ptr), _mm_shuffle_epi8(__as<__m128i>(__x), __shuffle_mask));
 					return algorithm::__bytes_pointer_offset(__ptr, __processed_bytes);
@@ -190,10 +190,10 @@ struct _Compress_store {
 				const auto __packed_low = _mm_shuffle_epi8(__vec_low, __shuffle_mask_low);
 				const auto __packed_high = _mm_shuffle_epi8(__vec_high, __shuffle_mask_high);
 
-				_mm_store_si128(reinterpret_cast<__m128i*>(__write_ptr), __as<__m128i>(__packed_low));
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(__write_ptr), __as<__m128i>(__packed_low));
 				algorithm::__advance_bytes(__write_ptr, __count_bytes_low);
 
-				_mm_store_si128(reinterpret_cast<__m128i*>(__write_ptr), __as<__m128i>(__packed_high));
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(__write_ptr), __as<__m128i>(__packed_high));
 				return algorithm::__bytes_pointer_offset(__ptr, __total_bytes);
 			}
 			else if constexpr (sizeof(_Type_) == 1) {
@@ -295,16 +295,16 @@ struct _Compress_store {
 					const auto __packed3 = _mm_shuffle_epi8(__vec3, __shuffle3);
 					const auto __packed4 = _mm_shuffle_epi8(__vec4, __shuffle4);
 
-					_mm_store_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed1));
+					_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed1));
 					algorithm::__advance_bytes(__dst_ptr, __bytes1);
 
-					_mm_store_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed2));
+					_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed2));
 					algorithm::__advance_bytes(__dst_ptr, __bytes2);
 
-					_mm_store_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed3));
+					_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed3));
 					algorithm::__advance_bytes(__dst_ptr, __bytes3);
 
-					_mm_store_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed4));
+					_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), __as<__m128i>(__packed4));
 					return algorithm::__bytes_pointer_offset(__ptr, __total_bytes);
 				}
 			}

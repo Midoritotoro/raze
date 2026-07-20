@@ -147,14 +147,14 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
+		auto __real_first = algorithm::find_if(__first, __last, __pred, __proj);
+		if (__real_first == __last) return __real_first;
+
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
 			&& vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				auto __real_first = algorithm::find_if(__first, __last, __pred, __proj);
-				if (__real_first == __last) return __real_first;
-
 				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_,
 					arch::ISA::None, arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3>(
 					algorithm::distance(__real_first, __last) * sizeof(_Value_),
@@ -162,7 +162,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__real_first, __last, __pred, __proj));
 	}
 
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
@@ -175,13 +175,14 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
+		auto __real_first = algorithm::find_if(__first, __last, __pred, __proj);
+		if (__real_first == __last) return __real_first;
+
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
 			&& vectorizable_unary_predicate<_Predicate_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				auto __real_first = algorithm::find_if(__first, __last, __pred, __proj);
-				if (__real_first == __last) return __real_first;
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
 				return vx::__dispatch_sized_impl<__vectorized_remove, _Value_, _Iterator_, arch::ISA::None, 
 					arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3>(
@@ -189,7 +190,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__real_first, __last, __pred, __proj));
 	}
 };
 

@@ -3,18 +3,19 @@
 
 template <class T, std::size_t Size>
 static void BM_StdReplaceCopy(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
+    TestData<T, Size> src;
+    std::vector<T> dest(Size);
 
     constexpr T old_val = T(0);
     constexpr T new_val = T(42);
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
 
-        std::ranges::replace_copy(source.data, destination.begin(), old_val, new_val);
-        benchmark::DoNotOptimize(destination);
+        auto result = std::ranges::replace_copy(src.data, dest.begin(), old_val, new_val);
+        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
     }
@@ -24,18 +25,19 @@ static void BM_StdReplaceCopy(benchmark::State& state) {
 
 template <class T, std::size_t Size>
 static void BM_RazeReplaceCopy(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
+    TestData<T, Size> src;
+    std::vector<T> dest(Size);
 
     constexpr T old_val = T(0);
     constexpr T new_val = T(42);
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
 
-        raze::algorithm::replace_copy(source.data, destination.begin(), old_val, new_val);
-        benchmark::DoNotOptimize(destination);
+        auto result = raze::algorithm::replace_copy(src.data, dest.begin(), old_val, new_val);
+        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
     }
@@ -45,15 +47,21 @@ static void BM_RazeReplaceCopy(benchmark::State& state) {
 
 template <class T, std::size_t Size>
 static void BM_StdReplaceCopyIf(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
+    TestData<T, Size> src;
+    std::vector<T> dest(Size);
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
 
-        std::ranges::replace_copy_if(source.data, destination.begin(), [](auto x) { return x > T(0); }, T(99));
-        benchmark::DoNotOptimize(destination);
+        auto result = std::ranges::replace_copy_if(
+            src.data,
+            dest.begin(),
+            [](auto x) { return x > T(0); },
+            T(99)
+        );
+        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
     }
@@ -63,15 +71,21 @@ static void BM_StdReplaceCopyIf(benchmark::State& state) {
 
 template <class T, std::size_t Size>
 static void BM_RazeReplaceCopyIf(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
+    TestData<T, Size> src;
+    std::vector<T> dest(Size);
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
 
-        raze::algorithm::replace_copy_if(source.data, destination.begin(), [](auto x) { return x > T(0); }, T(99));
-        benchmark::DoNotOptimize(destination);
+        auto result = raze::algorithm::replace_copy_if(
+            src.data,
+            dest.begin(),
+            [](auto x) { return x > T(0); },
+            T(99)
+        );
+        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
     }
@@ -81,15 +95,21 @@ static void BM_RazeReplaceCopyIf(benchmark::State& state) {
 
 template <class T, std::size_t Size>
 static void BM_StdReplaceCopyIfComplex(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
+    TestData<T, Size> src;
+    std::vector<T> dest(Size);
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
 
-        std::ranges::replace_copy_if(source.data, destination.begin(), [](auto x) { return ((x * 3 + 7) - 5) == 0; }, T(0));
-        benchmark::DoNotOptimize(destination);
+        auto result = std::ranges::replace_copy_if(
+            src.data,
+            dest.begin(),
+            [](auto x) { return ((x * 3 + 7) - 5) == 0; },
+            T(0)
+        );
+        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
     }
@@ -99,15 +119,21 @@ static void BM_StdReplaceCopyIfComplex(benchmark::State& state) {
 
 template <class T, std::size_t Size>
 static void BM_RazeReplaceCopyIfComplex(benchmark::State& state) {
-    TestData<T, Size> source;
-    std::array<T, Size> destination{};
+    TestData<T, Size> src;
+    std::vector<T> dest(Size);
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(source.data);
-        benchmark::DoNotOptimize(destination);
+        benchmark::DoNotOptimize(src.data);
+        benchmark::DoNotOptimize(dest);
 
-        raze::algorithm::replace_copy_if(source.data, destination.begin(), [](auto x) { return ((x * 3 + 7) - 5) == 0; }, T(0));
-        benchmark::DoNotOptimize(destination);
+        auto result = raze::algorithm::replace_copy_if(
+            src.data,
+            dest.begin(),
+            [](auto x) { return ((x * 3 + 7) - 5) == 0; },
+            T(0)
+        );
+        benchmark::DoNotOptimize(result);
+        benchmark::DoNotOptimize(dest);
 
         benchmark::ClobberMemory();
     }
