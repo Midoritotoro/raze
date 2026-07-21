@@ -25,26 +25,17 @@ enum class ISA : raze::uchar {
 	AVX512VBMI2VLDQ,	// AVX512VBMI2 + AVX512BW + AVX512DQ + AVX512VL
 };
 
-template <
-	ISA	_Feature_,
-	ISA	Candidate,
-	typename	Enable = void>
+template <ISA _Feature_, ISA _Candidate_, class	_Enable_ = void>
 struct __is_in_list_helper:
 	std::false_type
 {};
 
-template <
-	ISA _Feature_,
-	ISA _Candidate_>
-struct __is_in_list_helper<
-	_Feature_, _Candidate_,
-	std::enable_if_t<(_Feature_ == _Candidate_)>>:
-		std::true_type
+template <ISA _Feature_, ISA _Candidate_>
+struct __is_in_list_helper<_Feature_, _Candidate_, std::enable_if_t<(_Feature_ == _Candidate_)>>:
+	std::true_type
 {};
 
-template <
-	ISA		_Feature_,
-	ISA ...	_List_>
+template <ISA _Feature_, ISA ... _List_>
 struct __contains {
 	static constexpr bool value = (__is_in_list_helper<_Feature_, _List_>::value || ...);
 };

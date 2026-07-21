@@ -1,10 +1,10 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/cast/As.h>
-#include <raze/memory/PointerToIntegral.h>
-#include <raze/math/IntegralTypesConversions.h>
+#include <raze/math/BitCast.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 #include <src/raze/vx/hw/x86/construct/AllOnes.h>
-#include <src/raze/vx/storage/BestMaskChunk.h>
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

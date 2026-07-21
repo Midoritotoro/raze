@@ -44,6 +44,18 @@ target_include_directories(raze PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
 )
 
+find_program(
+      CLANG_TIDY_COMMAND
+      NAMES
+         clang-tidy
+      NO_CACHE
+)
+
+message(STATUS "clang-tidy: ${CLANG_TIDY_COMMAND}")
+message(STATUS "CMAKE_CXX_CLANG_TIDY=${CMAKE_CXX_CLANG_TIDY}")
+
+set(MY_CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND};--extra-arg-before=--driver-mode=cl;--extra-arg=--std=c++17;--format-style=file" CACHE INTERNAL "")
+
 set_target_properties(
     raze PROPERTIES
     
@@ -58,6 +70,7 @@ set_target_properties(
     OUTPUT_NAME raze
 
     LINKER_LANGUAGE CXX
+    CXX_CLANG_TIDY "${MY_CXX_CLANG_TIDY}"
 )
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")

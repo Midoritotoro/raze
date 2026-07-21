@@ -1,17 +1,9 @@
 #pragma once 
 
 #include <src/raze/vx/storage/BestChunk.h>
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
-
-template <u64 _N_>
-using __mmask_for_elements_helper = std::conditional_t<_N_ <= 8, __mmask8,
-    std::conditional_t<_N_ <= 16, __mmask16,
-        std::conditional_t<_N_ <= 32, __mmask32,
-            std::conditional_t<_N_ <= 64, __mmask64, void>>>>;
-
-template <u64 _N_>
-using __mmask_for_elements_t = __mmask_for_elements_helper<_N_>;
 
 template <class _Type_, class _Abi_, u64 _Elements_, raw_mask_type _Mask_>
 struct _Mask_wrapper {

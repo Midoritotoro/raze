@@ -129,7 +129,7 @@ struct _Abs {
 		}
 		
 		if constexpr (arithmetic_type<_Tp_>) return (__mask) ? (__x < 0 ? -__x : __x) : 0;
-		else return _Select<_ISA_, _Type_>()((*this)(__x), __mask);
+		else return _Select<_ISA_, _Type_>()(_Abs()(__x), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -165,7 +165,7 @@ struct _Abs {
 		}
 		
 		if constexpr (arithmetic_type<_Tp_>) return (__mask) ? (__x < 0 ? -__x : __x) : __src;
-		else return _Select<_ISA_, _Type_>()((*this)(__x), __src, __mask);
+		else return _Select<_ISA_, _Type_>()(_Abs()(__x), __src, __mask);
 	}
 };
 

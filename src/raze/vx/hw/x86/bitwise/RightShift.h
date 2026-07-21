@@ -167,7 +167,7 @@ struct _Right_shift {
 			}
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __shift), __mask);
+		return _Select<_ISA_, _Type_>()(_Right_shift()(__x, __shift), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -203,7 +203,7 @@ struct _Right_shift {
 			}
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __shift), __src, __mask);
+		return _Select<_ISA_, _Type_>()(_Right_shift()(__x, __shift), __src, __mask);
 	}
 };
 

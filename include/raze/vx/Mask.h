@@ -13,9 +13,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-	class _FirstMaskType_,
-	class _SecondMaskType_>
+template <class _FirstMaskType_, class _SecondMaskType_>
 concept __compatible_mask = (sizeof(typename _FirstMaskType_::element_type) == sizeof(typename _SecondMaskType_::element_type)) &&
 	(_FirstMaskType_::__isa == _SecondMaskType_::__isa) && (_FirstMaskType_::__width == _SecondMaskType_::__width);
 

@@ -12,9 +12,9 @@ template <std::floating_point _Type_>
 raze_always_inline _Type_ __fast_cos(const _Type_& __x) noexcept {
     constexpr auto __sine_table_size = 256;
 
-    const auto __ci = int(__x * (_Type_(0.5) * __sine_table_size / M_PI)) & (__sine_table_size - 1);
+    const auto __ci = int(__x * (_Type_(0.5) * __sine_table_size / pi)) & (__sine_table_size - 1);
     const auto __si = int(__ci + __sine_table_size / 4) & (__sine_table_size - 1);
-    const auto __d = __x - __ci * (_Type_(2.0) * M_PI / __sine_table_size);
+    const auto __d = __x - __ci * (_Type_(2.0) * pi / __sine_table_size);
 
     return __sine_table[__si] - (__sine_table[__ci] + _Type_(0.5) * __sine_table[__si] * __d) * __d;
 }

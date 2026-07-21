@@ -11,8 +11,6 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-
-
 template <arch::ISA _ISA_, arithmetic_type _Type_>
 struct _Ternarylogic {
     template <intrin_or_arithmetic_type _Tp_, u8 _Op_>
@@ -48,7 +46,7 @@ struct _Ternarylogic {
             }
         }
        
-        return _Select<_ISA_, _Type_>()((*this)(__x, __y, __z, __imm8), __mask);
+        return _Select<_ISA_, _Type_>()(_Ternarylogic()(__x, __y, __z, __imm8), __mask);
     }
 
 
@@ -56,7 +54,7 @@ struct _Ternarylogic {
     raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y,  _Tp_ __z, 
         std::integral_constant<u8, _Op_> __imm8,  _Mask_ __mask, _Tp_ __src) const noexcept
     {
-        return _Select<_ISA_, _Type_>()((*this)(__x, __y, __z, __imm8), __src, __mask);
+        return _Select<_ISA_, _Type_>()(_Ternarylogic()(__x, __y, __z, __imm8), __src, __mask);
     }
 };
 

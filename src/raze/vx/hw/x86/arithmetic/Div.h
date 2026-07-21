@@ -339,7 +339,7 @@ struct _Div {
 			}
 		}
 
-		return (*this)(__x, _Broadcast<_ISA_, _Tp_>()(__y));
+		return _Div()(__x, _Broadcast<_ISA_, _Tp_>()(__y));
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -357,12 +357,12 @@ struct _Div {
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_maskz_div_ps(__mask, __as<__m512>(__x), __as<__m512>(__y)));
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Type_ __y, _Mask_ __mask) const noexcept {
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -380,12 +380,12 @@ struct _Div {
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_div_ps(__as<__m512>(__src), __mask, __as<__m512>(__x), __as<__m512>(__y)));
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
+		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __src, __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Type_ __y, _Mask_ __mask, _Tp_ __src) const noexcept {
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
+		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __src, __mask);
 	}
 };
 

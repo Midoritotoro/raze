@@ -21,7 +21,7 @@ struct _Mask_not {
 
 	template <raw_mask_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Mask_ __mask) raze_const_operator noexcept {
-		return _And<_ISA_, _Type_>()((*this)(__x), __mask);
+		return _And<_ISA_, _Type_>()(_Mask_not()(__x), __mask);
 	}
 };
 

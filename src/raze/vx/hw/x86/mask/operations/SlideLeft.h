@@ -1,8 +1,7 @@
 #pragma once
 
 #include <src/raze/vx/hw/x86/shuffle/SlideLeft.h>
-#include <src/raze/vx/hw/x86/mask/operations/BitAnd.h>
-#include <raze/math/IntegralTypesConversions.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -13,10 +12,8 @@ struct _Mask_slide_left {
 
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, i32 __shift) raze_const_operator noexcept {
-		if constexpr (intrin_type<_Tp_>)
-			return _Slide_left<_ISA_, _Type_>()(__x, __shift);
-		else
-			return (__shift >= __size) ? 0 : __x >> __shift;
+		if constexpr (intrin_type<_Tp_>) return _Slide_left<_ISA_, _Type_>()(__x, __shift);
+		else return (__shift >= __size) ? 0 : __x >> __shift;
 	}
 
 	template <raw_mask_type _Tp_, i32 _Shift_>

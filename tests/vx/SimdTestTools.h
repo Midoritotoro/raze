@@ -158,7 +158,7 @@ void test_all() {
     __test_all_helper<_Function_, raze::arch::ISA::SSE2, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::SSE3, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::SSSE3, 128>();
-   /* __test_all_helper<_Function_, raze::arch::ISA::SSE41, 128>();
+    __test_all_helper<_Function_, raze::arch::ISA::SSE41, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::SSE42, 128>();
 
     __test_all_helper<_Function_, raze::arch::ISA::AVX, 128>();
@@ -197,7 +197,7 @@ void test_all() {
     __test_all_helper<_Function_, raze::arch::ISA::AVX512VBMIVL, 256>();
     __test_all_helper<_Function_, raze::arch::ISA::AVX512VBMI2VL, 256>();
     __test_all_helper<_Function_, raze::arch::ISA::AVX512VBMIVLDQ, 256>();
-    __test_all_helper<_Function_, raze::arch::ISA::AVX512VBMI2VLDQ, 256>();*/
+    __test_all_helper<_Function_, raze::arch::ISA::AVX512VBMI2VLDQ, 256>();
 }
 
 template <

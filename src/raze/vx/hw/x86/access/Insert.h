@@ -2,7 +2,7 @@
 
 #include <src/raze/vx/hw/x86/construct/Broadcast.h>
 
-#include <raze/memory/PointerToIntegral.h>
+#include <raze/math/BitCast.h>
 #include <src/raze/vx/hw/x86/access/InsertMask.h>
 
 #include <src/raze/vx/hw/x86/memory/Load.h>

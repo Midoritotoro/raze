@@ -5,9 +5,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <
-	arch::ISA	    _ISA_,
-	arithmetic_type	_Type_>
+template <arch::ISA _ISA_, arithmetic_type _Type_>
 struct _Greater_equal {
 	template <intrin_or_arithmetic_type _Tp_>
 	raze_nodiscard raze_always_inline auto operator()(_Tp_ __x, _Tp_ __y) const noexcept {

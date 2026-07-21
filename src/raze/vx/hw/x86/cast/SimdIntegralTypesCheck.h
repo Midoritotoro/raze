@@ -78,11 +78,6 @@ constexpr bool __is_pd_v    = sizeof(_Element_) == 8 && type_traits::is_any_of_v
 template <typename _Element_>
 constexpr bool __is_ps_v    = sizeof(_Element_) == 4 && std::is_same_v<_Element_, f32>;
 
-#if !defined(__verify_simd_width) 
-#  define __verify_simd_width(_Generation_, _Width_) \
-	static_assert(raze::vx::__is_width_for_generation_v<_Generation_, _Width_>, "Simd generation does not support this register width. ");
-#endif // !defined(__verify_simd_width)
-
 template <class _BasicSimd_, class = void>
 struct __is_valid_simd: 
 	std::false_type

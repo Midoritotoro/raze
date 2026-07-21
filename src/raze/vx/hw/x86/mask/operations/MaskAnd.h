@@ -22,7 +22,7 @@ struct _Mask_and {
 
 	template <raw_mask_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) raze_const_operator noexcept {
-		return (*this)((*this)(__x, __y), __mask);
+		return _Mask_and()(_Mask_and()(__x, __y), __mask);
 	}
 };
 

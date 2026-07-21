@@ -44,10 +44,8 @@ struct _Mask_load {
 			}
 		}
 		
-		if constexpr (arithmetic_type<_Tp_>)
-			return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
-		else
-			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __src, __mask);
+		if constexpr (arithmetic_type<_Tp_>) return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
+		else return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __src, __mask);
 	}
 
 	template <raw_mask_type _Mask_, intrin_or_arithmetic_type _Tp_>
@@ -74,10 +72,8 @@ struct _Mask_load {
 			else return __loadu(__mem, __mask, __src);
 		}
 
-		if constexpr (arithmetic_type<_Tp_>)
-			return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
-		else
-			return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __src, __mask);
+		if constexpr (arithmetic_type<_Tp_>) return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
+		else return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __src, __mask);
 	}
 
 	template <raw_mask_type _Mask_, intrin_or_arithmetic_type _Tp_, class _AlignPolicy_ = __unaligned_policy>

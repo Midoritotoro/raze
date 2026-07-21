@@ -2,7 +2,7 @@
 
 #include <src/raze/vx/hw/x86/shuffle/SlideRight.h>
 #include <src/raze/vx/hw/x86/mask/operations/BitAnd.h>
-#include <raze/math/IntegralTypesConversions.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

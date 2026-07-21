@@ -222,7 +222,7 @@ struct _Mul {
 			}
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()(_Mul()(__x, __y), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type	_Mask_>
@@ -275,7 +275,7 @@ struct _Mul {
 			}
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
+		return _Select<_ISA_, _Type_>()(_Mul()(__x, __y), __src, __mask);
 	}
 };
 

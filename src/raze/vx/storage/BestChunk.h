@@ -1,6 +1,8 @@
 #pragma once 
 
 #include <src/raze/vx/storage/Size.h>
+#include <src/raze/vx/hw/x86/access/Insert.h>
+#include <src/raze/vx/hw/x86/access/Extract.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

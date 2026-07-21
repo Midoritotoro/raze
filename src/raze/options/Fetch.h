@@ -14,8 +14,7 @@ constexpr raze_always_inline decltype(auto) fetch(const _Keyword_& __keyword,
     return __opts[__keyword];
 }
     
-template <concepts::keyword _Keyword_, class _Value_,
-    concepts::option ... _Options_>
+template <concepts::keyword _Keyword_, class _Value_, concepts::option ... _Options_>
 constexpr raze_always_inline decltype(auto) fetch(const __type_or<_Keyword_, _Value_>& __keyword,
     const _Options_& ... __options) noexcept
 {

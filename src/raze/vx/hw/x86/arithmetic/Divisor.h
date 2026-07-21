@@ -55,8 +55,7 @@ private:
 			__multiplier = 1;
 			__shift = 0;
 
-			if (__divisor == 0)
-				__multiplier /= __divisor;
+			if (__divisor == 0) __multiplier /= __divisor;
 		}
 
 		__init(__multiplier, __shift, (__divisor < 0) ? -1 : 0);
@@ -170,11 +169,11 @@ public:
 	}
 private:
 	raze_always_inline void __from_divisor(i16 __divisor) noexcept {
-		auto __shift = i16(0), __multiplier = i16(0);
+		auto __shift = i32(0), __multiplier = i32(0);
 		const auto __absolute_divisor = std::abs(__divisor);
 
-		if (static_cast<i16>(__divisor) == 0x8000u) {
-			__multiplier = i16(0x8001);
+		if (static_cast<u16>(__divisor) == 0x8000u) {
+			__multiplier = 0x8001;
 			__shift = 14;
 		}
 		else if (__absolute_divisor > 1) {
@@ -188,8 +187,7 @@ private:
 			__multiplier = 1;
 			__shift = 0;
 
-			if (__divisor == 0)
-				__multiplier /= __divisor;
+			if (__divisor == 0) __multiplier /= __divisor;
 		}
 
 		__init(__multiplier, __shift, (__divisor < 0) ? -1 : 0);

@@ -296,7 +296,7 @@ struct _Ternarylogic_emulated {
         std::integral_constant<u8, _Op_> __imm8, _Mask_ __mask, _Select_ __select, _Or_ __or,
         _Xor_ __xor, _And_ __and, _Andnot_ __andnot, _Not_ __not, _Zero_ __zero) raze_const_operator noexcept
     {
-        return __select((*this)(__x, __y, __z, __imm8, __or, __xor, __and, __andnot, __not, __zero), __mask);
+        return __select(_Ternarylogic_emulated()(__x, __y, __z, __imm8, __or, __xor, __and, __andnot, __not, __zero), __mask);
     }
 
 
@@ -306,7 +306,7 @@ struct _Ternarylogic_emulated {
         std::integral_constant<u8, _Op_> __imm8, _Mask_ __mask, _Select_ __select, _Tp_ __src, _Or_ __or,
         _Xor_ __xor, _And_ __and, _Andnot_ __andnot, _Not_ __not, _Zero_ __zero) raze_const_operator noexcept
     {
-        return __select((*this)(__x, __y, __z, __imm8, __or, __xor, __and, __andnot, __not, __zero), __src, __mask);
+        return __select(_Ternarylogic_emulated()(__x, __y, __z, __imm8, __or, __xor, __and, __andnot, __not, __zero), __src, __mask);
     }
 };
 

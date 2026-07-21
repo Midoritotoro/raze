@@ -8,7 +8,7 @@
 
 #include <raze/compatibility/SimdCompatibility.h>
 
-#include <include/raze/math/IntegralTypesConversions.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 #include <src/raze/math/SignBit.h>
 
 __RAZE_MATH_NAMESPACE_BEGIN

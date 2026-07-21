@@ -1,7 +1,7 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/cast/As.h>
-#include <raze/memory/PointerToIntegral.h>
+#include <raze/math/BitCast.h>
 #include <src/raze/vx/hw/x86/memory/Load.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -31,12 +31,12 @@ struct _Broadcast {
 
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm_broadcastq_epi64(_mm_cvtsi64_si128(memory::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm_set1_epi64x(memory::pointer_to_integral(__value)));
+				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm_broadcastq_epi64(_mm_cvtsi64_si128(math::pointer_to_integral(__value))));
+				else return __as<_Tp_>(_mm_set1_epi64x(math::pointer_to_integral(__value)));
 			}
 			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm_broadcastd_epi32(_mm_cvtsi32_si128(memory::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm_set1_epi32(memory::pointer_to_integral(__value)));
+				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm_broadcastd_epi32(_mm_cvtsi32_si128(math::pointer_to_integral(__value))));
+				else return __as<_Tp_>(_mm_set1_epi32(math::pointer_to_integral(__value)));
 			}
 			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm_broadcastw_epi16(_mm_cvtsi32_si128(__value)));
@@ -57,12 +57,12 @@ struct _Broadcast {
 		}
 		else if constexpr (sizeof(_Tp_) == 32) {
 			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm256_broadcastq_epi64(_mm_cvtsi64_si128(memory::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm256_set1_epi64x(memory::pointer_to_integral(__value)));
+				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm256_broadcastq_epi64(_mm_cvtsi64_si128(math::pointer_to_integral(__value))));
+				else return __as<_Tp_>(_mm256_set1_epi64x(math::pointer_to_integral(__value)));
 			}
 			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm256_broadcastd_epi32(_mm_cvtsi32_si128(memory::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm256_set1_epi32(memory::pointer_to_integral(__value)));
+				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm256_broadcastd_epi32(_mm_cvtsi32_si128(math::pointer_to_integral(__value))));
+				else return __as<_Tp_>(_mm256_set1_epi32(math::pointer_to_integral(__value)));
 			}
 			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 				if constexpr (__has_avx2_support_v<_ISA_>) return __as<_Tp_>(_mm256_broadcastw_epi16(_mm_cvtsi32_si128(__value)));
@@ -82,8 +82,8 @@ struct _Broadcast {
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi64(memory::pointer_to_integral(__value))); 
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi32(memory::pointer_to_integral(__value)));
+			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi64(math::pointer_to_integral(__value))); 
+			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi32(math::pointer_to_integral(__value)));
 			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
 				if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm512_set1_epi16(__value));
 				else {

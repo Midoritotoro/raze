@@ -7,7 +7,7 @@
 #include <src/raze/algorithm/NotFn.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 #include <raze/options/Options.h>
-
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

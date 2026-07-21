@@ -39,7 +39,7 @@ struct _Xor {
 			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_mask_xor_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
+		return _Select<_ISA_, _Type_>()(_Xor()(__x, __y), __src, __mask);
 	}
 
 	template <intrin_or_arithmetic_type	_Tp_, raw_mask_type	_Mask_>
@@ -57,7 +57,7 @@ struct _Xor {
 			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_maskz_xor_epi32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()(_Xor()(__x, __y), __mask);
 	}
 };
 

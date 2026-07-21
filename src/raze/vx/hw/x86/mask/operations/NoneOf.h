@@ -11,13 +11,13 @@ struct _None_of {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_always_inline bool operator()(_Tp_ __x) const noexcept {
 		if constexpr (intrin_type<_Tp_>) {
-			//if constexpr (sizeof(_Tp_) == 16 && __has_sse41_support_v<_ISA_>) {
-			//	return _mm_testz_si128(__as<__m128i>(__x), __as<__m128i>(__x));
-			//}
-			//else if constexpr (sizeof(_Tp_) == 32) {
-			//	return _mm256_testz_si256(__as<__m256i>(__x), __as<__m256i>(__x));
-			//}
-			return _To_bitmask<_ISA_, _Type_>()(__x) == 0;
+			if constexpr (sizeof(_Tp_) == 16 && __has_sse41_support_v<_ISA_>) {
+				return _mm_testz_si128(__as<__m128i>(__x), __as<__m128i>(__x));
+			}
+			else if constexpr (sizeof(_Tp_) == 32) {
+				return _mm256_testz_si256(__as<__m256i>(__x), __as<__m256i>(__x));
+			}
+			else return _To_bitmask<_ISA_, _Type_>()(__x) == 0;
 		}
 		else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
 			if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)

@@ -3,7 +3,6 @@
 #include <src/raze/vx/hw/x86/memory/Load.h>
 #include <src/raze/vx/hw/x86/memory/Store.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
-#include <src/raze/vx/hw/x86/mask/operations/ToK.h>
 #include <array>
 
 

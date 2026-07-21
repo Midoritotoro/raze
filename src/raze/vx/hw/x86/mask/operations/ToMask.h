@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <raze/memory/PointerToIntegral.h>
-#include <raze/math/IntegralTypesConversions.h>
+#include <raze/math/BitCast.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 #include <src/raze/vx/storage/BestMaskChunk.h>
 
 __RAZE_VX_NAMESPACE_BEGIN

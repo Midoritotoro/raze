@@ -107,7 +107,7 @@ struct _Vertical_max {
 			}
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __mask);
+		return _Select<_ISA_, _Type_>()(_Vertical_max()(__x, __y), __mask);
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -155,7 +155,7 @@ struct _Vertical_max {
 			}
 		}
 
-		return _Select<_ISA_, _Type_>()((*this)(__x, __y), __src, __mask);
+		return _Select<_ISA_, _Type_>()(_Vertical_max()(__x, __y), __src, __mask);
 	}
 };
 

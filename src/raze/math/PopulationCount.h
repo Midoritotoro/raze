@@ -7,7 +7,7 @@
 #include <raze/arch/ProcessorDetection.h>
 
 #include <raze/compatibility/SimdCompatibility.h>
-#include <include/raze/math/IntegralTypesConversions.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 
 raze_disable_warning_msvc(4293)
 

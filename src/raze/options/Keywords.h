@@ -12,7 +12,7 @@ struct as_keyword {
     inline constexpr auto operator<=>(const as_keyword&) const noexcept = default;
 
     template <class _Type_>
-    static raze_always_inline constexpr bool accept() {
+    static raze_always_inline constexpr bool accept() noexcept {
         if constexpr(concepts::same_as<std::remove_cvref_t<_Type_>, _Keyword_>) return true;
         else if constexpr(concepts::__checks_for<_Keyword_, _Type_>) return _Keyword_::template check<_Type_>();
         else return true;

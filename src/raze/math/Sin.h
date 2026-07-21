@@ -12,10 +12,10 @@ template <std::floating_point _Type_>
 raze_always_inline _Type_ __fast_sin(const _Type_& __x) noexcept {
     constexpr auto __sine_table_size = 256;
 
-    auto __si = int(__x * (_Type_(0.5) * __sine_table_size / M_PI));
+    auto __si = int(__x * (_Type_(0.5) * __sine_table_size / pi));
     auto __ci = int(__si + __sine_table_size / 4);
 
-    const auto __d = _Type_(__x - __si * (_Type_(2.0) * M_PI / __sine_table_size));
+    const auto __d = _Type_(__x - __si * (_Type_(2.0) * pi / __sine_table_size));
 
     __si &= (__sine_table_size - 1);
     __ci &= (__sine_table_size - 1);

@@ -108,7 +108,7 @@ public:
     /**
      * @brief Returns a SIMD vector with all lanes set to `value`.
     */
-    raze_no_stack_protector raze_nodiscard static raze_always_inline simd broadcast(value_type __value) noexcept {
+    raze_nodiscard raze_no_stack_protector static raze_always_inline simd broadcast(value_type __value) noexcept {
         simd __result {};
         
         __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk, _Tp __value) raze_always_inline_lambda {

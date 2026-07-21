@@ -114,7 +114,7 @@ struct _Select {
 			}
 		}
 
-		return (*this)(__x, _Zero<_ISA_, _Tp_>()(), __mask);
+		return _Select()(__x, _Zero<_ISA_, _Tp_>()(), __mask);
 	}
 };
 
