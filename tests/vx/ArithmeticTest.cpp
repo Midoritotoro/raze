@@ -1,25 +1,19 @@
 #include <tests/vx/SimdTestTools.h>
 #include <raze/vx/Algorithm.h>
 
-template <
-    class _Type_,
-    raze::arch::ISA _ISA_,
-    raze::u32    _Width_>
+template <class _Type_, raze::arch::ISA _ISA_, raze::u32 _Width_>
 struct arithmetic_tests {
     template<raze::sizetype N, class Simd, class SimdOp, class ScalarOp>
     static void run(const Simd& a, const Simd& b,
-        const _Type_(&A)[N], const _Type_(&B)[N],
-        SimdOp sop, ScalarOp sc)
+        const _Type_(&A)[N], const _Type_(&B)[N], SimdOp sop, ScalarOp sc)
     {
         auto r = sop(a, b);
-        for (size_t i = 0; i < N; ++i)
+        for (size_t i = 0; i < N; ++i) 
             raze_assert(r[i] == _Type_(sc(A[i], B[i])));
     }
 
     template<raze::sizetype N, class Simd, class SimdOp, class ScalarOp>
-    static void run_unary(const Simd& a,
-        const _Type_(&A)[N],
-        SimdOp sop, ScalarOp sc)
+    static void run_unary(const Simd& a, const _Type_(&A)[N], SimdOp sop, ScalarOp sc)
     {
         auto r = sop(a);
         for (size_t i = 0; i < N; ++i)
@@ -28,8 +22,7 @@ struct arithmetic_tests {
 
     template<raze::sizetype N, class Simd, class SimdOp, class ScalarOp>
     static void run_assign(const Simd& a0, const Simd& b,
-        const _Type_(&A)[N], const _Type_(&B)[N],
-        SimdOp sop, ScalarOp sc)
+        const _Type_(&A)[N], const _Type_(&B)[N], SimdOp sop, ScalarOp sc)
     {
         Simd a = a0;
         sop(a, b);
@@ -115,19 +108,10 @@ struct arithmetic_tests {
                     }
                 );
 
-                test_where_binary<_Type_, N>(
-                    arrA, arrB, arrSrc, m,
-                    a, b, src,
-                    [m, src](Simd A, Simd B) {
-                        return raze::vx::mul[m, src](A, B);
-                    },
-                    [m](Simd A, Simd B) {
-                        return raze::vx::mul[m](A, B);
-                    },
-                    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                        return cond ? (rev ? B * A : A * B) : Src;
-                    }
-                );
+                test_where_binary<_Type_, N>(arrA, arrB, arrSrc, m, a, b, src,
+                    [m, src] (Simd A, Simd B) { return raze::vx::mul[m, src](A, B);  },
+                    [m] (Simd A, Simd B) { return raze::vx::mul[m](A, B); },
+                    [] (_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) { return cond ? (rev ? B * A : A * B) : Src; });
 
                 test_where_binary<_Type_, N>(
                     arrA, arrB, arrSrc, m,

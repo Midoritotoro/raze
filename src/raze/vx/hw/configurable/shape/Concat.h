@@ -32,9 +32,9 @@ struct _Configurable_concat: raze::options::strict_elementwise_callable<_Configu
         return raze::options::__dispatch_call(*this, __x, __xs...);
     }
 
-    template <class ... _Types_>
-    static raze_always_inline auto deferred_call(auto __options, const _Types_& ... __xs) noexcept {
-        using _Concatenated_ = concatenated_simd<_Types_...>;
+    template <simd_type _Type_, class ... _Types_>
+    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Types_& ... __xs) noexcept {
+        using _Concatenated_ = concatenated_simd<_Type_, _Types_...>;
         using _Value_ = typename _Concatenated_::value_type;
         using _Abi_ = typename _Concatenated_::abi_type;
 

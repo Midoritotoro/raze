@@ -8,6 +8,7 @@
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 #include <raze/options/Options.h>
 
+#pragma strict_gs_check(off)
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -25,7 +26,7 @@ struct _Find_if : _Traits_ {
 		{}
 
 		template <class _Tag_>
-		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
+		raze_nodiscard raze_always_inline constexpr bool operator()(_Tag_) noexcept {
 			if (_iterator == _sentinel) return true;
 			else if (_predicate(_proj(*_iterator))) return true;
 			else {
@@ -39,11 +40,10 @@ struct _Find_if : _Traits_ {
 		}
 	};
 
-	template <class _Tag_>
 	struct __vectorized_find {
 		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
 		raze_nodiscard raze_always_inline _Iterator_ operator()(_Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
-			_Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+			_Projection_ __proj) const noexcept
 		{
 			for (; __first != __sentinel; ++__first)
 				if (__predicate(__proj(*__first)))
@@ -53,10 +53,15 @@ struct _Find_if : _Traits_ {
 		}
 
 		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _Iterator_ operator()(sizetype __aligned_size,
-			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
-			_Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+		raze_always_inline _Iterator_ operator()(sizetype __size, 
+			_Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
+			_Projection_ __proj) const noexcept
 		{
+			using _Tag_ = raze::vx::simd<std::iter_value_t<_Iterator_>, vx::x86_abi<16>>;
+
+			auto __aligned_size = __size & ~(sizeof(_Tag_) - 1);
+			auto __tail_size = __size - __aligned_size;
+
 			auto* __ptr = std::to_address(__first);
 			raze_assume(__ptr != nullptr);
 
@@ -80,9 +85,9 @@ struct _Find_if : _Traits_ {
 			return __first;
 		}
 
-		template <sizetype _AlignedSize_, sizetype _TailSize_, 
+		/*template <sizetype _AlignedSize_, sizetype _TailSize_, 
 			class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _Iterator_ operator()(std::integral_constant<sizetype, _AlignedSize_>,
+		__attribute__((target_clones("avx512bw", "avx2", "default"))) raze_always_inline _Iterator_ operator()(std::integral_constant<sizetype, _AlignedSize_>,
 			std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
 			_Predicate_ __predicate, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
@@ -114,7 +119,7 @@ struct _Find_if : _Traits_ {
 			}
 
 			return __first;
-		}
+		}*/
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
@@ -132,7 +137,7 @@ struct _Find_if : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
@@ -146,7 +151,7 @@ struct _Find_if : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
@@ -173,15 +178,19 @@ private:
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
+#if defined(raze_cpp_msvc_only)
 				return vx::__dispatch_sized_impl<__vectorized_find, _Value_, _Iterator_>(
 					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __pred, __proj);
+#else
+				return __vectorized_find()(algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __pred, __proj);
+#endif
 			}
 		}
 		
 		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
 	}
 
-	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
+	/*template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ __find_unchecked(_Iterator_ __first, 
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
 	{
@@ -202,7 +211,7 @@ private:
 		}
 		
 		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
-	}
+	}*/
 };
 
 constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>;
@@ -221,7 +230,7 @@ struct _Find : _Traits_ {
 
 	template <std::ranges::input_range _Range_, class _Value_,
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_>)
 	{
@@ -232,7 +241,7 @@ struct _Find : _Traits_ {
 
 	template <std::ranges::input_range _Range_, class _Value_, 
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		const _Value_& __v, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_>)
 	{
@@ -256,7 +265,7 @@ struct _Find_if_not : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
@@ -265,7 +274,7 @@ struct _Find_if_not : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
 		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
@@ -278,3 +287,5 @@ constexpr inline auto find_if_not = raze::options::function_with_traits<_Find_if
 
 
 __RAZE_ALGORITHM_NAMESPACE_END
+
+#pragma strict_gs_check(on)

@@ -432,7 +432,7 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 			constexpr auto __mask = __expanded % std::integral_constant<sizetype, 16>{};
 
 			if constexpr (!__across_halfs(__p)) {
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p.expand<u16, u8>().template as_native<__m256i>()));
+				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p.template expand<u16, u8>().template as_native<__m256i>()));
 			}
 			else if constexpr (__avx512bw && __avx512vl) {
 				return __as<_Intrin_>(_mm256_permutexvar_epi16(__p.template as_native<__m256i>(), __as<__m256i>(__x)));

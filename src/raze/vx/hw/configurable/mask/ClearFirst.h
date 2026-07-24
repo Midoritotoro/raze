@@ -12,6 +12,9 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <arch::ISA _ISA_, arithmetic_type _Type_, sizetype _Size_, bool _Unsafe_, raw_mask_type _Tp_>
+raze_nodiscard raze_always_inline _Tp_ __clear_first(_Tp_ __x) noexcept;
+
 template <class _Options_>
 struct _Configurable_clear_first: raze::options::strict_elementwise_callable<_Configurable_clear_first, _Options_, not_null_option> {
     template <simd_mask_type _Type_>

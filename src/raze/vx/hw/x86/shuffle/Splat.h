@@ -93,20 +93,20 @@ raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __splat(const patt
 	using _Tp_ = pattern_vector_t<_Pattern_>;
 
 	if constexpr (native<_Tp_>) {
-		using _Ret = decltype(__splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(__storage_unwrap(__x.template __get<0>()), __p.at<0>()));
+		using _Ret = decltype(__splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(__storage_unwrap(__x.template __get<0>()), __p.template at<0>()));
 
 		if constexpr (!std::is_void_v<_Ret>) {
 			auto __r = __x;
 
 			auto& __storage = __r.template __get<0>();
-			__storage = __splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(__storage_unwrap(__storage), __p.at<0>());
+			__storage = __splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(__storage_unwrap(__storage), __p.template at<0>());
 
 			return __r;
 		}
 		else return __generic_shuffle(__x, __p);
 	}
 
-	return __x[__p.at<0>()];
+	return __x[__p.template at<0>()];
 }
 
 __RAZE_VX_NAMESPACE_END

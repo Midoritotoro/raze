@@ -28,7 +28,7 @@ struct _Configurable_splat {
     };
 };
 
-template <sizetype _Index_> constexpr inline auto __splat_impl = raze::options::functor<typename _Configurable_splat<_Index_>::__impl>;
+template <sizetype _Index_> constexpr inline auto __splat_impl = raze::options::functor<_Configurable_splat<_Index_>::template __impl>;
 
 
 __RAZE_VX_NAMESPACE_END

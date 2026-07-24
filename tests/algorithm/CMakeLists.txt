@@ -22,10 +22,8 @@ endif()
 macro(raze_algorithm_add_test filename)
     add_executable(${filename} ${filename}.cpp)
 
-    target_link_libraries(
-      ${filename} PRIVATE
-      raze::raze
-    )
+    target_include_directories(${filename} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/utility)
+    target_link_libraries(${filename} PRIVATE raze::raze)
 
     set_target_properties(${filename} PROPERTIES
         CXX_STANDARD 23

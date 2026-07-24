@@ -84,6 +84,6 @@ struct _Configurable_load {
     };
 };
 
-template <simd_type _Simd_> constexpr inline auto __load = raze::options::functor<typename _Configurable_load<_Simd_>::__load>;
+template <simd_type _Simd_> constexpr inline auto __load = raze::options::functor<_Configurable_load<_Simd_>::template __load>;
 
 __RAZE_VX_NAMESPACE_END

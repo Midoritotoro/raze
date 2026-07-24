@@ -40,8 +40,8 @@ struct _None_of {
 		}
 	}
 
-	template <wrapped_type _Type_>
-	raze_nodiscard raze_always_inline bool operator()(const _Type_& __x) const noexcept {
+	template <wrapped_type _Wrapped_>
+	raze_nodiscard raze_always_inline bool operator()(const _Wrapped_& __x) const noexcept {
 		return (*this)(__x.data());
 	}
 };

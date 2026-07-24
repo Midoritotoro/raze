@@ -406,7 +406,7 @@ private:
         return _storage.__extract(__i);
     }
 
-    friend _Simd_element_reference;
+    friend _Simd_element_reference<simd>;
     raze_no_unique_address storage_type _storage;
 };
 

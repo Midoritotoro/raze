@@ -27,7 +27,7 @@
 
 
 #if !defined(raze_always_inline_lambda)
-#  if defined(raze_cpp_msvc)
+#  if defined(raze_cpp_msvc_only)
 #    define raze_always_inline_lambda [[msvc::forceinline]]
 #  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 #    define raze_always_inline_lambda __attribute__((__always_inline__))

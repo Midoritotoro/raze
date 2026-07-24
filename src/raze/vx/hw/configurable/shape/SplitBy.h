@@ -92,6 +92,6 @@ struct _Configurable_split_by {
     };
 };
 
-template <sizetype _Chunks_> constexpr inline auto __split_by = raze::options::functor<typename _Configurable_split_by<_Chunks_>::__impl>;
+template <sizetype _Chunks_> constexpr inline auto __split_by = raze::options::functor<_Configurable_split_by<_Chunks_>::template __impl>;
 
 __RAZE_VX_NAMESPACE_END
