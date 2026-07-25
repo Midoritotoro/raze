@@ -35,7 +35,7 @@ struct _Find_if : _Traits_ {
 		}
 
 		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) const noexcept
+		raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) const noexcept
 			requires(!std::is_same_v<_Tag_, vx::scalar_tag>)
 		{
 			auto* __ptr = std::to_address(_iterator);
@@ -46,19 +46,14 @@ struct _Find_if : _Traits_ {
 			do {
 				if (const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr))); raze::vx::any_of(__mask)) {
 					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
-					return;
+					return false;
 				}
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
 			__seek_possibly_wrapped_iterator(_iterator, __ptr);
-
-			for (; _iterator != _sentinel; ++_iterator)
-				if (_predicate(_proj(*_iterator)))
-					break;
-
-			return;
+			return true;
 		}
 
 		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
@@ -158,7 +153,7 @@ private:
 	}
 };
 
-constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>;
+constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>[raze::options::unroll<4>];
 
 template <class _Traits_>
 struct _Find : _Traits_ {
@@ -195,7 +190,7 @@ struct _Find : _Traits_ {
 	}
 };
 
-constexpr inline auto find = raze::options::function_with_traits<_Find>;
+constexpr inline auto find = raze::options::function_with_traits<_Find>[raze::options::unroll<4>];
 
 template <class _Traits_>
 struct _Find_if_not : _Traits_ {
@@ -227,7 +222,6 @@ struct _Find_if_not : _Traits_ {
 	}
 };
 
-constexpr inline auto find_if_not = raze::options::function_with_traits<_Find_if_not>;
-
+constexpr inline auto find_if_not = raze::options::function_with_traits<_Find_if_not>[raze::options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

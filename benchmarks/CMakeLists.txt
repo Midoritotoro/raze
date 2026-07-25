@@ -7,9 +7,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_VERBOSE_MAKEFILE ON)
 
 
-if (MSVC)
+if (!MSVC)
     add_compile_options(/O2 /GS- /DNDEBUG /Oy /bigobj) 
     add_link_options(/LTCG /OPT:REF /OPT:ICF)
+else()
+    add_compile_options(/DNDEBUG /arch:AVX2 /DRAZE_FORCE_AVX2)
 endif()
 
 if (PROJECT_IS_TOP_LEVEL)
