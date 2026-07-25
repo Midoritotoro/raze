@@ -14,7 +14,7 @@ static constexpr i32 __constexpr_max() noexcept {
     return (__first_ > _Second_) ? __first_ : _Second_;
 }
 
-template <class _Type_, class _Abi_>
+template <class _Type_, class _Abi_ = x86_abi<native_size<_Type_>>>
 class simd;
 
 template <arch::ISA	_ISA_, u32 _Width_> 

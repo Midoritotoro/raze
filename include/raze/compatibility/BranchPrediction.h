@@ -59,7 +59,7 @@
 
 
 #if !defined(raze_assume) 
-#  if defined(raze_cpp_msvc)
+#  if defined(raze_cpp_msvc_only)
 #    define raze_assume(__cond) __assume(__cond)
 #  elif defined(raze_cpp_clang)
 #    define raze_assume(__cond) __builtin_assume(__cond)

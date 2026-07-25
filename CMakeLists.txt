@@ -76,6 +76,8 @@ if((CMAKE_SYSTEM_PROCESSOR STREQUAL "i686") OR (CMAKE_SYSTEM_PROCESSOR STREQUAL 
 		include(cmake/x86_Simd.cmake)
 endif()
 
+message("Compiler: ${CMAKE_CXX_COMPILER_ID}")
+
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-g) 
@@ -129,24 +131,14 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
             /W4
             /utf-8
             /MP
-            /O3
+            /O2
             /EHsc
             /Zi
             /Zc:__cplusplus
         )
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(
-        raze 
-        PRIVATE
-            /utf-8
 
-            /O3
-            /W4
-
-            /EHsc   
-
-            /Zi
-            /Zc:__cplusplus
+    target_link_libraries(raze PUBLIC
+        "C:/Program Files/Microsoft Visual Studio/18/Insiders/VC/Tools/Llvm/x64/lib/clang/22/lib/windows/clang_rt.builtins-x86_64.lib"
     )
 endif()
 
