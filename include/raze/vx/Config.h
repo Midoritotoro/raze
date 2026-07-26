@@ -228,18 +228,6 @@
 #  endif // !RAZE_HAS_SSE2_SUPPORT
 # endif // defined(RAZE_FORCE_SSE2)
 
-#if !defined(RAZE_ISA_FORCE_ENABLED)
-#  if defined(RAZE_FORCE_AVX512F) || defined(RAZE_FORCE_AVX512BW) || defined(RAZE_FORCE_AVX512CD) \
-	|| defined(RAZE_FORCE_AVX512DQ) || defined(RAZE_FORCE_AVX512VL) || defined(RAZE_FORCE_AVX512VBMI) \
-	|| defined(RAZE_FORCE_AVX512VBMI2) || defined(RAZE_FORCE_AVX2) || defined(RAZE_FORCE_AVX) \
-	|| defined(RAZE_FORCE_SSE42) || defined(RAZE_FORCE_SSE41) || defined(RAZE_FORCE_SSSE3) \
-	|| defined(RAZE_FORCE_SSE3) || defined(RAZE_FORCE_SSE2)
-#    define RAZE_ISA_FORCE_ENABLED 1 
-#  else 
-#    define RAZE_ISA_FORCE_ENABLED 0
-#  endif // defined(RAZE_FORCE_AVX512F) || defined(RAZE_FORCE_AVX512BW) || ... || defined(RAZE_FORCE_SSE2).
-#endif // defined(RAZE_ISA_FORCE_ENABLED)
-
 #if !defined(__raze_simd_algorithm_inline)
 #  if defined(RAZE_ISA_FORCE_ENABLED)
 #    define __raze_simd_algorithm_inline raze_always_inline

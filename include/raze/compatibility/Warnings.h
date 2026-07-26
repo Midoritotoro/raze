@@ -8,7 +8,7 @@
 #  if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 #    define raze_do_pragma(__text) _Pragma(#__text)
 #  elif defined(raze_cpp_msvc)
-#    define raze_do_pragma(__text) __pragma(#__text)
+#    define raze_do_pragma(__text) __pragma(__text)
 #  else
 #    define raze_do_pragma(__text)
 #  endif

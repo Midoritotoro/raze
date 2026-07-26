@@ -23,33 +23,33 @@ struct _Replace_if : _Traits_ {
 
 		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred,
 			_Projection_ __proj, const _ValueType_& __new_val) noexcept :
-			_iterator(std::move(__it)), _sentinel(__sent), _predicate(__pred), _proj(__proj), _new_value(__new_val)
+			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj), _new_value(__new_val)
 		{}
 
 		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) const noexcept
+		raze_always_inline constexpr void operator()(_Tag_) const noexcept
 			requires(std::is_same_v<_Tag_, vx::scalar_tag>)
 		{
-			if (_iterator == _sentinel) return true;
-			*_iterator = (_predicate(_proj(*_iterator))) ? _new_value : *_iterator;
-			++_iterator;
-			return false;
+			raze_disable_unrolling
+			for (; _iterator != _sentinel; ++_iterator)
+				*_iterator = (_predicate(_proj(*_iterator))) ? _new_value : *_iterator;
 		}
 
 		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) const noexcept 
+		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) const noexcept
 			requires(!std::is_same_v<_Tag_, vx::scalar_tag>) 
 		{
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
+			const auto __new_value = _Tag_(_new_value);
 
+			raze_disable_unrolling
 			do {
-				vx::store[_predicate(_proj(vx::load<_Tag_>(__ptr)))](__ptr, _Tag_(_new_value));
+				vx::store[_predicate(_proj(vx::load<_Tag_>(__ptr)))](__ptr, __new_value);
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
 			__seek_possibly_wrapped_iterator(_iterator, __ptr);
-			return true;
 		}
 	};
 

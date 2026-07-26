@@ -71,38 +71,6 @@ static void BM_RazeReplaceIf(benchmark::State& state) {
     state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
 }
 
-template <class T, std::size_t Size>
-static void BM_StdReplaceIfComplex(benchmark::State& state) {
-    TestData<T, Size> test;
-
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(test.data);
-
-        std::ranges::replace_if(test.data, [](auto x) { return ((x * 3 + 7) - 5) == 0; }, T(0));
-        benchmark::DoNotOptimize(test.data);
-
-        benchmark::ClobberMemory();
-    }
-
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
-}
-
-template <class T, std::size_t Size>
-static void BM_RazeReplaceIfComplex(benchmark::State& state) {
-    TestData<T, Size> test;
-
-    for (auto _ : state) {
-        benchmark::DoNotOptimize(test.data);
-
-        raze::algorithm::replace_if(test.data, [](auto x) { return ((x * 3 + 7) - 5) == 0; }, T(0));
-        benchmark::DoNotOptimize(test.data);
-
-        benchmark::ClobberMemory();
-    }
-
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T));
-}
-
 #define RAZE_BENCHMARK_REPLACE(name1, name2) \
     BENCHMARK(name1<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name2<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
@@ -160,7 +128,6 @@ void RegisterAll()
 {
     RAZE_BENCHMARK_REPLACE(BM_RazeReplace, BM_StdReplace);
     RAZE_BENCHMARK_REPLACE(BM_RazeReplaceIf, BM_StdReplaceIf);
-    RAZE_BENCHMARK_REPLACE(BM_RazeReplaceIfComplex, BM_StdReplaceIfComplex);
 }
 
 RAZE_BENCHMARK_MAIN();

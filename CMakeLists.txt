@@ -275,12 +275,9 @@ if(RAZE_USER_FORCE_ENABLED)
     endif()
 
     add_compile_definitions(RAZE_ISA_FORCE_ENABLED=1)
-
 else()
-
     message(STATUS "RAZE: No FORCE ISA specified — using runtime dispatch")
     add_compile_definitions(RAZE_ISA_FORCE_ENABLED=0)
-
 endif()
 
 

@@ -214,7 +214,7 @@ struct _Configurable_sized_isa_dispatcher {
 };
 
 consteval arch::ISA __forced_isa() noexcept {
-#if defined(raze_cpp_clang) || defined(raze_cpp_gnu) || defined(RAZE_ISA_FORCE_ENABLED)
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu) || RAZE_ISA_FORCE_ENABLED
 	return __best_isa_compile_time();
 #else
     return arch::ISA::None;

@@ -29,6 +29,7 @@
 #include <raze/compatibility/MsvcIntrinWorkaround.h>
 #include <raze/compatibility/AutoVectorization.h>
 #include <raze/compatibility/StackProtection.h>
+#include <raze/compatibility/Unroll.h>
 
 #include <cstddef>
 
