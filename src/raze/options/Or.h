@@ -32,12 +32,12 @@ struct or_ {
     constexpr or_& operator=(const or_&) noexcept = default;
     constexpr or_& operator=(or_&&) noexcept = default;
 
-    constexpr raze_always_inline decltype(auto) alternative() const noexcept {
+    constexpr raze_always_inline _ValueStorage_ alternative() const noexcept {
         return _alternative;
     }
 
     template <class _Type_>
-    raze_always_inline decltype(auto) mask(const as<_Type_>&) const noexcept {
+    raze_always_inline _ConditionStorage_ mask(const as<_Type_>&) const noexcept {
         return _condition;
     }
 

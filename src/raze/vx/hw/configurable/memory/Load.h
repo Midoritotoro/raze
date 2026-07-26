@@ -30,51 +30,42 @@ struct _Configurable_load {
 
             _Simd_ __x;
 
+            auto __mem = std::to_address(__it);
+
             if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
                 auto __condition = __options[raze::options::condition_key];
                 const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
                 if constexpr (_Mask_::has_alternative)
-                    __x.__for_each_chunk([&] <class _Chunk, class _MaskChunk, class _SourceChunk> (
-                        _Chunk & __chunk, const _MaskChunk & __mchunk, const _SourceChunk & __src_chunk) raze_always_inline_lambda
+                    __x.__for_each_chunk([] <class _Chunk, class _MaskChunk, class _SourceChunk> (
+                        _Chunk & __chunk, const _MaskChunk & __mchunk, const _SourceChunk& __src_chunk, auto& __memory) raze_always_inline_lambda
                 {
-                    auto __chunk_data = __storage_unwrap(__chunk);
-                    auto __mem = std::to_address(__it);
-
                     if constexpr (_Options_::contains(aligned))
-                        __chunk = _Mask_load<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk), __aligned_policy{});
+                        __chunk = _Mask_load<_Abi_::isa, _Value_>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk), __aligned_policy{});
                     else
-                        __chunk = _Mask_load<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk));
+                        __chunk = _Mask_load<_Abi_::isa, _Value_>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk));
 
-                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
-                }, __mask.__storage().storage(), __condition.alternative().__storage().storage());
+                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                }, __mask.__storage().storage(), __condition.alternative().__storage().storage(), __mem);
                 else
-                    __x.__for_each_chunk([&] <class _Chunk, class _MaskChunk> (
-                        _Chunk & __chunk, const _MaskChunk & __mchunk) raze_always_inline_lambda
+                    __x.__for_each_chunk([] <class _Chunk, class _MaskChunk> (
+                        _Chunk & __chunk, const _MaskChunk & __mchunk, auto& __memory) raze_always_inline_lambda
                 {
-                    auto __chunk_data = __storage_unwrap(__chunk);
-                    auto __mem = std::to_address(__it);
-
                     if constexpr (_Options_::contains(aligned))
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_>()(__mem, __storage_unwrap(__mchunk), __aligned_policy{});
+                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_>()(__memory, __storage_unwrap(__mchunk), __aligned_policy{});
                     else
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_>()(__mem, __storage_unwrap(__mchunk));
+                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_>()(__memory, __storage_unwrap(__mchunk));
 
-                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
-                }, __mask.__storage().storage());
+                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                }, __mask.__storage().storage(), __mem);
             }
             else {
-                __x.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk) raze_always_inline_lambda {
-                    auto __chunk_data = __storage_unwrap(__chunk);
-                    auto __mem = std::to_address(__it);
+                __x.__for_each_chunk([] <class _Chunk> (_Chunk & __chunk, auto& __memory) raze_always_inline_lambda {
+                    if constexpr (_Options_::contains(aligned)) __chunk = _Load<_Abi_::isa, typename _Chunk::unwrapped_type>()(__memory, __aligned_policy{});
+                    else __chunk = _Load<_Abi_::isa, typename _Chunk::unwrapped_type>()(__memory);
 
-                    if constexpr (_Options_::contains(aligned))
-                        __chunk = _Load<_Abi_::isa, decltype(__chunk_data)>()(__mem, __aligned_policy{});
-                    else
-                        __chunk = _Load<_Abi_::isa, decltype(__chunk_data)>()(__mem);
-
-                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
-                });
+                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                }, __mem);
             }
 
             return __x;

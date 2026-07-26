@@ -15,7 +15,7 @@ template <class _Traits_>
 struct _Replace_if : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, class _ValueType_>
 	struct __impl {
-		_Iterator_ _iterator;
+		mutable _Iterator_ _iterator;
 		_Sentinel_ _sentinel;
 		_Predicate_ _predicate;
 		_Projection_ _proj;
@@ -23,74 +23,33 @@ struct _Replace_if : _Traits_ {
 
 		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred,
 			_Projection_ __proj, const _ValueType_& __new_val) noexcept :
-			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj), _new_value(__new_val)
+			_iterator(std::move(__it)), _sentinel(__sent), _predicate(__pred), _proj(__proj), _new_value(__new_val)
 		{}
 
 		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
+		raze_always_inline constexpr bool operator()(_Tag_) const noexcept
+			requires(std::is_same_v<_Tag_, vx::scalar_tag>)
+		{
 			if (_iterator == _sentinel) return true;
-			if (_predicate(_proj(*_iterator))) *_iterator = _new_value;
+			*_iterator = (_predicate(_proj(*_iterator))) ? _new_value : *_iterator;
 			++_iterator;
 			return false;
 		}
-	};
 
-	template <class _Tag_>
-	struct __vectorized_replace {
-		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, class _ValueType_>
-		raze_always_inline void operator()(_Iterator_ __first, _Sentinel_ __sentinel,
-			_Predicate_ __predicate, _Projection_ __proj, const _ValueType_& __new_value) const noexcept requires(!vx::simd_type<_Tag_>)
+		template <class _Tag_>
+		raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) const noexcept 
+			requires(!std::is_same_v<_Tag_, vx::scalar_tag>) 
 		{
-			for (; __first != __sentinel; ++__first)
-				if (__predicate(__proj(*__first)))
-					*__first = __new_value;
-		}
-
-		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, class _ValueType_>
-		raze_always_inline void operator()(sizetype __aligned_size, sizetype __tail_size,
-			_Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
-			_Projection_ __proj, const _ValueType_& __new_value) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
-
+			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			do {
-				vx::store[__predicate(__proj(vx::load<_Tag_>(__ptr)))](__ptr, _Tag_(__new_value));
+				vx::store[_predicate(_proj(vx::load<_Tag_>(__ptr)))](__ptr, _Tag_(_new_value));
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
-
-			for (; __first != __sentinel; ++__first)
-				if (__predicate(__proj(*__first)))
-					*__first = __new_value;
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, class _ValueType_>
-		raze_always_inline void operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
-			_Predicate_ __predicate, _Projection_ __proj, const _ValueType_& __new_value) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
-
-			auto __left = __iterations_aligned;
-
-			do {
-				vx::store[__predicate(__proj(vx::load<_Tag_>(__ptr)))](__ptr, _Tag_(__new_value));
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (--__left);
-
-			__seek_possibly_wrapped_iterator(__first, __ptr);
-
-			for (; __first != __sentinel; ++__first)
-				if (__predicate(__proj(*__first)))
-					*__first = __new_value;
+			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			return true;
 		}
 	};
 
@@ -151,14 +110,14 @@ private:
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				vx::__dispatch_sized_impl<__vectorized_replace, _Value_, void>(
+				vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, _Value_, void>(
 					algorithm::distance(__first, __last) * sizeof(_Value_),
-					__first, __last, __pred, __proj, __new_value);
+					__impl(__first, __last, __pred, __proj, __new_value));
 				return;
 			}
 		}
 
-		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __pred, __proj, __new_value));
+		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(std::move(__first), __last, __pred, __proj, __new_value));
 	}
 
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _ValueType_, class _Projection_, sizetype _Size_>
@@ -177,17 +136,17 @@ private:
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				vx::__dispatch_sized_impl<__vectorized_replace, _Value_, void>(
-					__bytes, __first, __last, __pred, __proj, __new_value);
+				vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, _Value_, void>(
+					__bytes, __impl(__first, __last, __pred, __proj, __new_value));
 				return;
 			}
 		}
 
-		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __pred, __proj, __new_value));
+		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(std::move(__first), __last, __pred, __proj, __new_value));
 	}
 };
 
-constexpr inline auto replace_if = raze::options::function_with_traits<_Replace_if>;
+constexpr inline auto replace_if = raze::options::function_with_traits<_Replace_if>[raze::options::unroll<4>];
 
 template <class _Traits_>
 struct _Replace : _Traits_ {
@@ -213,6 +172,6 @@ struct _Replace : _Traits_ {
 	}
 };
 
-constexpr inline auto replace = raze::options::function_with_traits<_Replace>;
+constexpr inline auto replace = raze::options::function_with_traits<_Replace>[raze::options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

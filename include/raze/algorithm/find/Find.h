@@ -171,18 +171,6 @@ struct _Find : _Traits_ {
 		class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
-		requires(!constexpr_sized_range<_Range_>)
-	{
-		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			type_traits::__pass_function(__proj));
-	}
-
-	template <std::ranges::input_range _Range_, class _Value_,
-		class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
-		const _Value_& __v, _Projection_ __proj = {}) const noexcept
-		requires(constexpr_sized_range<_Range_>)
 	{
 		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
@@ -206,17 +194,7 @@ struct _Find_if_not : _Traits_ {
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-		requires(!constexpr_sized_range<_Range_>&& std::indirect_unary_predicate<
-			_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
-	{
-		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
-	}
-
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
-		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-		requires(constexpr_sized_range<_Range_>&& std::indirect_unary_predicate<
-			_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+		requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
 	}

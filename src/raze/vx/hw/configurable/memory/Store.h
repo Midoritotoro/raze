@@ -68,6 +68,8 @@ struct _Configurable_store : raze::options::strict_elementwise_callable<_Configu
         using _Value_ = typename _Type_::value_type;
         using _Abi_ = typename _Type_::abi_type;
 
+		auto __mem = std::to_address(__it);
+
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
             static_assert(!_Options_::contains(nt), "The nt option is incompatible with masked load/store.");
 
@@ -75,53 +77,40 @@ struct _Configurable_store : raze::options::strict_elementwise_callable<_Configu
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
             if constexpr (_Mask_::has_alternative)
-                return __x.__for_each_chunk([&] <class _Chunk, class _MaskChunk, class _SourceChunk> (
-                    _Chunk& __chunk, const _MaskChunk& __mchunk, const _SourceChunk& __src_chunk) raze_always_inline_lambda
+                return __x.__for_each_chunk([] <class _Chunk, class _MaskChunk, class _SourceChunk> (
+                    _Chunk& __chunk, const _MaskChunk& __mchunk, const _SourceChunk& __src_chunk, auto& __memory) raze_always_inline_lambda
                 {
-                    auto __mem = std::to_address(__it);
+                    if constexpr (_Options_::contains(aligned)) _Store<_Abi_::isa>()(__memory, _Select<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk),
+                        __storage_unwrap(__src_chunk), __storage_unwrap(__mchunk)), __aligned_policy{});
+                    else _Store<_Abi_::isa>()(__memory, _Select<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk),
+                        __storage_unwrap(__src_chunk), __storage_unwrap(__mchunk)));
 
-                    if constexpr (_Options_::contains(aligned)) 
-                        _Store<_Abi_::isa>()(__mem, _Select<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk),
-                            __storage_unwrap(__src_chunk), __storage_unwrap(__mchunk)), __aligned_policy{});
-                    else 
-                        _Store<_Abi_::isa>()(__mem, _Select<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk),
-                            __storage_unwrap(__src_chunk), __storage_unwrap(__mchunk)));
-
-                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
-                }, __mask.__storage().storage(), __condition.alternative().__storage().storage());
+                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                }, __mask.__storage().storage(), __condition.alternative().__storage().storage(), __mem);
             else
-                return __x.__for_each_chunk([&] <class _Chunk, class _MaskChunk> (
-                    _Chunk& __chunk, const _MaskChunk& __mchunk) raze_always_inline_lambda 
+                return __x.__for_each_chunk([] <class _Chunk, class _MaskChunk> (
+                    _Chunk& __chunk, const _MaskChunk& __mchunk, auto& __memory) raze_always_inline_lambda
                 {
-                    auto __mem = std::to_address(__it);
+                    if constexpr (_Options_::contains(aligned)) _Mask_store<_Abi_::isa, _Value_>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__chunk), __aligned_policy{});
+                    else _Mask_store<_Abi_::isa, _Value_>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__chunk));
 
-                    if constexpr (_Options_::contains(aligned))
-                        _Mask_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__mchunk), __storage_unwrap(__chunk), __aligned_policy{});
-                    else
-                        _Mask_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__mchunk), __storage_unwrap(__chunk));
-
-                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
-                }, __mask.__storage().storage());
+                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                }, __mask.__storage().storage(), __mem);
         }
         else {
             if constexpr (_Options_::contains(nt)) {
-                return __x.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk) raze_always_inline_lambda {
-                    auto __mem = std::to_address(__it);
-                    _Store_nt<_Abi_::isa>()(__mem, __storage_unwrap(__chunk));
-                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
-                });
+                return __x.__for_each_chunk([] <class _Chunk> (_Chunk & __chunk, auto& __memory) raze_always_inline_lambda {
+                    _Store_nt<_Abi_::isa>()(__memory, __storage_unwrap(__chunk));
+                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                }, __mem);
             }
             else {
-                return __x.__for_each_chunk([&] <class _Chunk> (_Chunk & __chunk) raze_always_inline_lambda {
-                    auto __mem = std::to_address(__it);
+                return __x.__for_each_chunk([] <class _Chunk> (_Chunk & __chunk, auto& __memory) raze_always_inline_lambda {
+                    if constexpr (_Options_::contains(aligned)) _Store<_Abi_::isa>()(__memory, __storage_unwrap(__chunk), __aligned_policy{});
+                    else _Store<_Abi_::isa>()(__memory, __storage_unwrap(__chunk));
 
-                    if constexpr (_Options_::contains(aligned))
-                        _Store<_Abi_::isa>()(__mem, __storage_unwrap(__chunk), __aligned_policy{});
-                    else
-                        _Store<_Abi_::isa>()(__mem, __storage_unwrap(__chunk));
-
-                    algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
-                });
+                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                }, __mem);
             }
         }
     }

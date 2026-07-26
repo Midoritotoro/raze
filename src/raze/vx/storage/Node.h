@@ -9,9 +9,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 struct _Simd_tuple_nil 
 {};
 
-template <
-    class _Head_, 
-    class _Tail_ = _Simd_tuple_nil>
+template <class _Head_, class _Tail_ = _Simd_tuple_nil>
 struct _Simd_tuple_node {
     raze_no_unique_address _Head_ _head;
     raze_no_unique_address _Tail_ _tail;
@@ -37,9 +35,7 @@ struct __is_simd_tuple:
     std::false_type 
 {};
 
-template <
-    class _H_,
-    class _T_> 
+template <class _H_, class _T_> 
 struct __is_simd_tuple<_Simd_tuple_node<_H_, _T_>>: 
     std::true_type 
 {};

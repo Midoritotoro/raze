@@ -143,7 +143,7 @@ public:
 		return !(__x != __y);
 	}
 
-	raze_nodiscard raze_always_inline storage_type __storage() const noexcept {
+	raze_nodiscard raze_always_inline const storage_type& __storage() const noexcept {
 		return _storage;
 	}
 

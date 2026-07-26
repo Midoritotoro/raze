@@ -13,7 +13,7 @@ struct if_ {
     using _ConditionStorage_ = __storage_selector_t<_Condition_>;
 
     if_(const _Condition_& __condition) noexcept:
-        _condition(__condition) 
+        _condition(__condition)
     {}
 
     template <class _Value_>
@@ -22,7 +22,7 @@ struct if_ {
     }
 
     template <class _Type_>
-    raze_always_inline decltype(auto) mask(const as<_Type_>&) const noexcept {
+    raze_always_inline _ConditionStorage_ mask(const as<_Type_>&) const noexcept {
         return _condition;
     }
 
