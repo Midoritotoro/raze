@@ -9,6 +9,9 @@ template <class _Traits_>
 struct _Unroller {
 	template <class _Tag_>
 	struct __impl {
+		constexpr __impl() noexcept = default;
+		constexpr ~__impl() noexcept = default;
+
 		template <class _Function_, class ... _Args_>
 		constexpr raze_always_inline auto operator()(sizetype __aligned_size, sizetype __tail_size, _Function_&& __f, _Args_&& ... __args) const noexcept
 			requires(!std::is_same_v<_Tag_, vx::scalar_tag>) 
@@ -74,9 +77,7 @@ struct _Unroller {
 			}
 #endif // defined(raze_cpp_msvc)
 
-			if constexpr (__has_early_exit) while (!__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...));
-			else __f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
-
+			__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
 			if constexpr (requires { __f.result(); }) return __f.result();
 		}
 
@@ -84,11 +85,7 @@ struct _Unroller {
 		constexpr raze_always_inline auto operator()(_Function_&& __f, _Args_&& ... __args) const noexcept 
 			requires(std::is_same_v<_Tag_, vx::scalar_tag>)
 		{
-			constexpr auto __has_early_exit = concepts::same_as<decltype(__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...)), bool>;
-
-			if constexpr (__has_early_exit) while (!__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...));
-			else __f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
-
+			__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
 			if constexpr (requires { __f.result(); }) return __f.result();
 		}
 	};
@@ -96,5 +93,9 @@ struct _Unroller {
 
 template <class _Traits_, class _Simd_>
 static inline constexpr auto __unroller = typename _Unroller<_Traits_>::template __impl<_Simd_>{};
+
+#if !defined(traits_unroller_t)
+#  define traits_unroller_t(_Traits_) raze::options::_Unroller<_Traits_>::template __impl
+#endif // !defined(traits_unroller_t)
 
 __RAZE_OPTIONS_NAMESPACE_END

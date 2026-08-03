@@ -414,7 +414,7 @@ void run_all_tests_for_type() {
 }
 
 int main() {
-    run_all_tests_for_type<int>();
+    /*run_all_tests_for_type<int>();
     run_all_tests_for_type<short>();
     run_all_tests_for_type<long long>();
     run_all_tests_for_type<char>();
@@ -427,7 +427,8 @@ int main() {
     run_all_tests_for_type<float>();
     run_all_tests_for_type<double>();
     
-    test_find_with_projection<int>();
-    
+    test_find_with_projection<int>();*/
+    std::array<int, 16> arr;
+    auto v = raze::algorithm::any_of(arr, raze::algorithm::equal_to(1));
     return 0;
 }

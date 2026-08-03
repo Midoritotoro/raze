@@ -11,7 +11,7 @@ if (!MSVC)
     add_compile_options(/O2 /GS- /DNDEBUG /Oy /bigobj) 
     add_link_options(/LTCG /OPT:REF /OPT:ICF)
 else()
-    add_compile_options(/DNDEBUG /arch:AVX512 /DRAZE_FORCE_AVX512BW)
+    add_compile_options(/DNDEBUG -march=native)
 endif()
 
 if (PROJECT_IS_TOP_LEVEL)

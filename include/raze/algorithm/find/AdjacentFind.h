@@ -15,7 +15,8 @@ template <class _Traits_>
 struct _Adjacent_find : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
 	struct __impl {
-		_Iterator_ _iterator;
+		mutable _Iterator_ _iterator;
+		mutable _Iterator_ _next;
 		_Sentinel_ _sentinel;
 		_Predicate_ _predicate;
 		_Projection_ _proj;
@@ -25,125 +26,53 @@ struct _Adjacent_find : _Traits_ {
 		{}
 
 		template <class _Tag_>
-		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
-			if (_iterator == _sentinel) return true;
-
-			auto __next = _iterator;
-			++__next;
-
-			if (__next == _sentinel) {
-				++_iterator;
-				return true;
-			}
-			else if (_predicate(_proj(*_iterator), _proj(*__next))) return true;
-			else {
-				++_iterator;
-				return false;
-			}
-		}
-
-		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
-			return _iterator;
-		}
-	};
-
-	template <class _Tag_>
-	struct __vectorized_adjacent_find {
-		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _Iterator_ operator()(_Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
-			_Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+		raze_always_inline constexpr void operator()(_Tag_) const noexcept
+			requires(options::concepts::same_as<_Tag_, vx::scalar_tag>)
 		{
-			if (__first == __sentinel)
-				return __first;
+			if (_iterator == _sentinel)
+				return;
 
-			for (auto __next = __first; ++__next != __sentinel; __first = __next)
-				if (__predicate(__proj(*__first), __proj(*__next)))
-					return __first;
+			_next = _iterator;
 
-			return __sentinel;
+			raze_disable_unrolling
+			for (; ++_next != _sentinel; _iterator = _next)
+				if (_predicate(_proj(*_iterator), _proj(*_next)))
+					return;
+
+			_iterator = _next;
 		}
 
-		template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _Iterator_ operator()(sizetype __aligned_size,
-			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
-			_Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+		template <class _Tag_>
+		raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size) const noexcept
+			requires(!options::concepts::same_as<_Tag_, vx::scalar_tag>)
 		{
-			auto* __ptr = std::to_address(__first);
-			auto* __end = __bytes_pointer_offset(__ptr, __aligned_size + __tail_size);
-
-			raze_assume(__ptr != __nullptr);
+			auto* __ptr = std::to_address(_iterator);
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 			auto __next_ptr = __bytes_pointer_offset(__ptr, sizeof(typename _Tag_::value_type));
 
+			raze_disable_unrolling
 			do {
-				const auto __current = __proj(raze::vx::load<_Tag_>(__ptr));
-				const auto __next = __proj(raze::vx::load<_Tag_>(__next_ptr));
-				
-				const auto __mask = __predicate(__current, __next);
+				const auto __current = _proj(raze::vx::load<_Tag_>(__ptr));
+				const auto __next = _proj(raze::vx::load<_Tag_>(__next_ptr));
+
+				const auto __mask = _predicate(__current, __next);
 
 				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(__first, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
-					return __first;
+					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
+					return false;
 				}
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 				__advance_bytes(__next_ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
-
-			if (__first == __sentinel)
-				return __first;
-
-			for (auto __next = __first; ++__next != __sentinel; __first = __next)
-				if (__predicate(__proj(*__first), __proj(*__next)))
-					return __first;
-
-			return __sentinel;
+			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			return true;
 		}
 
-		template <sizetype _AlignedSize_, sizetype _TailSize_, 
-			class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _Iterator_ operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
-			_Predicate_ __predicate, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __ptr = std::to_address(__first);
-			auto* __end = __bytes_pointer_offset(__ptr, _AlignedSize_ + _TailSize_);
-
-			raze_assume(__ptr != nullptr);
-
-			auto __next_ptr = __bytes_pointer_offset(__ptr, sizeof(typename _Tag_::value_type));
-			auto __left = __iterations_aligned;
-
-			do {
-				const auto __current = __proj(raze::vx::load<_Tag_>(__ptr));
-				const auto __next = __proj(raze::vx::load<_Tag_>(__next_ptr));
-				
-				const auto __mask = __predicate(__current, __next);
-
-				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(__first, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
-					return __first;
-				}
-
-				__advance_bytes(__ptr, sizeof(_Tag_));
-				__advance_bytes(__next_ptr, sizeof(_Tag_));
-			} while (--__left);
-			
-			__seek_possibly_wrapped_iterator(__first, __ptr);
-
-			if constexpr (_TailSize_ == 0)
-				return __first;
-
-			for (auto __next = __first; ++__next != __sentinel; __first = __next)
-				if (__predicate(__proj(*__first), __proj(*__next)))
-					return __first;
-
-			return __sentinel;
+		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
+			return _iterator;
 		}
 	};
 
@@ -201,17 +130,20 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
+		if (__first == __last) return __first;
+		auto __work = __impl(__first, __last, __pred, __proj);
+
 		if constexpr (!options::always_scalar<_TraitsType>() && 
 			std::contiguous_iterator<_Iterator_> && vectorizable_binary_predicate<_Predicate_, _Iterator_> &&
 			vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_adjacent_find, _Value_, _Iterator_>(
-					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __pred, __proj);
+				return vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, _Value_, _Iterator_>(
+					algorithm::distance(__first, __last) * sizeof(_Value_) - sizeof(_Value_), __work);
 			}
 		}
 
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
+		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__work);
 	}
 
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
@@ -223,18 +155,20 @@ private:
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
+		if constexpr (_Size_ == 0) return __first;
+		auto __work = __impl(__first, __last, __pred, __proj);
+
 		if constexpr (!options::always_scalar<_TraitsType>() && 
 			std::contiguous_iterator<_Iterator_> && vectorizable_binary_predicate<_Predicate_, _Iterator_>
 			&& vectorizable_projection<_Projection_, _Iterator_>)
 		{
 			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_adjacent_find,
-					_Value_, _Iterator_>(__bytes, __first, __last, __pred, __proj);
+				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_) - sizeof(_Value_)>{};
+				return vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, _Value_, _Iterator_>(__bytes, __work);
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __pred, __proj));
+		return options::__unroller<_TraitsType, vx::scalar_tag>(__work);
 	}
 };
 

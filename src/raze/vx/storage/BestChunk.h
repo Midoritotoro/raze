@@ -20,13 +20,6 @@ struct _Vector_wrapper {
     {}
 
     _Vector_wrapper() noexcept = default;
-    _Vector_wrapper(const _Vector_wrapper&) noexcept = default;
-    _Vector_wrapper(_Vector_wrapper&&) noexcept = default;
-
-    ~_Vector_wrapper() = default;
-
-    _Vector_wrapper& operator=(const _Vector_wrapper&) noexcept = default;
-    _Vector_wrapper& operator=(_Vector_wrapper&&) noexcept = default;
 
     template <sizetype _I_, intrin_type _OtherIntrin_>
     raze_always_inline void insert(_OtherIntrin_ __intrin) noexcept {
@@ -59,16 +52,7 @@ struct _Scalar_wrapper {
     static constexpr auto size = 1;
 
     _Scalar_wrapper(_Type_ __v) noexcept : _data(__v) {}
-
     _Scalar_wrapper() noexcept = default;
-    _Scalar_wrapper(const _Scalar_wrapper&) noexcept = default;
-    _Scalar_wrapper(_Scalar_wrapper&&) noexcept = default;
-
-    ~_Scalar_wrapper() = default;
-
-    _Scalar_wrapper& operator=(const _Scalar_wrapper&) noexcept = default;
-    _Scalar_wrapper& operator=(_Scalar_wrapper&&) noexcept = default;
-
 
     raze_nodiscard raze_always_inline unwrapped_type data() const noexcept {
         return _data;
@@ -91,11 +75,11 @@ struct best_chunk {
         (__total_bytes >= 32) ? 256 : (__total_bytes >= 16) ? 128 : 0;
 
     static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
-    static constexpr auto __length = __width / (sizeof(_Type_) * 8);
+    static constexpr auto __length = __width / raze_sizeof_in_bits(_Type_);
 
-    using _deduced_type = type_traits::__deduce_simd_vector_type<_Type_, __width>;
-    using type = std::conditional_t<__width != 0 && intrin_type<_deduced_type>,
-        _Vector_wrapper<_Type_, _Abi_, __length, _deduced_type>, _Scalar_wrapper<_Type_, _Abi_>>;
+    using __intrin_type = type_traits::__deduce_simd_vector_type<_Type_, __width>;
+    using type = std::conditional_t<__width != 0 && intrin_type<__intrin_type>,
+        _Vector_wrapper<_Type_, _Abi_, __length, __intrin_type>, _Scalar_wrapper<_Type_, _Abi_>>;
 };
 
 template <class _Type_, class _Abi_, i32 _Remaining_>

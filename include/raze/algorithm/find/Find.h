@@ -20,22 +20,22 @@ struct _Find_if : _Traits_ {
 		_Predicate_ _predicate;
 		_Projection_ _proj;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept :
+		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept:
 			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
 		{}
 
 		template <class _Tag_>
-		raze_nodiscard raze_always_inline constexpr bool operator()(_Tag_) const noexcept requires(std::is_same_v<_Tag_, vx::scalar_tag>) {
-			if (_iterator == _sentinel) return true;
-			else if (_predicate(_proj(*_iterator))) return true;
-			else {
-				++_iterator;
-				return false;
-			}
+		raze_always_inline constexpr void operator()(_Tag_) const noexcept 
+			requires(std::is_same_v<_Tag_, vx::scalar_tag>) 
+		{
+			raze_disable_unrolling
+			for (; _iterator != _sentinel; ++_iterator)
+				if (_predicate(_proj(*_iterator)))
+					break;
 		}
 
 		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size, sizetype __tail_size) const noexcept
+		raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) const noexcept
 			requires(!std::is_same_v<_Tag_, vx::scalar_tag>)
 		{
 			auto* __ptr = std::to_address(_iterator);
@@ -43,6 +43,7 @@ struct _Find_if : _Traits_ {
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
+			raze_disable_unrolling
 			do {
 				if (const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr))); raze::vx::any_of(__mask)) {
 					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));

@@ -8,6 +8,7 @@
 
 #include <src/raze/utility/Assert.h>
 #include <src/raze/algorithm/MsvcIteratorUnwrap.h>
+#include <src/raze/algorithm/RangesSize.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -85,6 +86,26 @@ constexpr raze_always_inline _Type_* __bytes_pointer_offset(
 {
     return reinterpret_cast<_Type_*>(const_cast<unsigned char*>(
         reinterpret_cast<const volatile unsigned char*>(__target)) + __offset);
+}
+
+template <constexpr_sized_range _Range_>
+constexpr std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)> __bytes_distance(_Range_&& __r) noexcept {
+    return std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)>{};
+}
+
+template <std::ranges::range _Range_>
+constexpr auto __bytes_distance(_Range_&& __r) noexcept requires(!constexpr_sized_range<_Range_>) {
+    return __r.size() * sizeof(std::ranges::range_value_t<_Range_>);
+}
+
+template <class _It_, class _Sent_>
+constexpr auto __bytes_distance(_It_ __it, _Sent_ __sent) noexcept {
+    return std::ranges::distance(__it, __sent) * sizeof(std::iter_value_t<_It_>);
+}
+
+template <class _It_>
+constexpr auto __bytes_distance(_It_ __first, _It_ __last) noexcept {
+    return algorithm::distance(__first, __last) * sizeof(std::iter_value_t<_It_>);
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

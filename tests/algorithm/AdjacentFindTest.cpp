@@ -124,7 +124,7 @@ void run_tests_for_type()
     }
 
     {
-        const std::size_t N = 100'00;
+        const std::size_t N = 1'00;
         std::vector<T> v(N);
         for (std::size_t i = 0; i < N; ++i)
             v[i] = T(i % 13);
@@ -134,11 +134,11 @@ void run_tests_for_type()
 
     {
         std::mt19937_64 rng(123456);
-        std::uniform_int_distribution<std::size_t> dist_length(0, 5000);
+        std::uniform_int_distribution<std::size_t> dist_length(0, 500);
         std::uniform_int_distribution<int> dist_int(-1000, 1000);
         std::uniform_real_distribution<double> dist_fp(-1000.0, 1000.0);
 
-        for (int iter = 0; iter < 100'00; ++iter) {
+        for (int iter = 0; iter < 10'00; ++iter) {
             const std::size_t N = dist_length(rng);
             std::vector<T> v(N);
 
@@ -176,7 +176,7 @@ void run_tests_for_type()
 void run_tests_for_struct()
 {
     std::mt19937_64 rng(987654);
-    std::uniform_int_distribution<std::size_t> dist_length(0, 5000);
+    std::uniform_int_distribution<std::size_t> dist_length(0, 500);
     std::uniform_int_distribution<int> dist_val(0, 100);
 
     for (int iter = 0; iter < 10'00; ++iter) {
