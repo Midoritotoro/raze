@@ -13,7 +13,7 @@ struct _Unroller {
 		constexpr ~__impl() noexcept = default;
 
 		template <class _Function_, class ... _Args_>
-		constexpr raze_always_inline auto operator()(sizetype __aligned_size, sizetype __tail_size, _Function_&& __f, _Args_&& ... __args) const noexcept
+		constexpr raze_always_inline auto operator()(sizetype __aligned_size, sizetype __tail_size, _Function_ __f, _Args_&& ... __args) const noexcept
 			requires(!std::is_same_v<_Tag_, vx::scalar_tag>) 
 		{
 			constexpr auto __has_early_exit = concepts::same_as<decltype(__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...)), bool>;
@@ -82,7 +82,7 @@ struct _Unroller {
 		}
 
 		template <class _Function_, class ... _Args_>
-		constexpr raze_always_inline auto operator()(_Function_&& __f, _Args_&& ... __args) const noexcept 
+		constexpr raze_always_inline auto operator()(_Function_ __f, _Args_&& ... __args) const noexcept 
 			requires(std::is_same_v<_Tag_, vx::scalar_tag>)
 		{
 			__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);

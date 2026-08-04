@@ -106,7 +106,7 @@ void test_any_of_random(unsigned seed = 42) {
         auto vec = generate_random_vector<T>(100, seed + i + 200000);
         T threshold = RandomGenerator<T>(seed + i + 200000)();
         
-        auto pred = [threshold](T x) { return x > threshold; };
+        auto pred = [threshold](auto x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::any_of(vec.begin(), vec.end(), pred);
         auto std_result = std::any_of(vec.begin(), vec.end(), pred);
@@ -143,7 +143,7 @@ void test_any_of_ranges(unsigned seed = 42) {
         auto vec = generate_random_vector<T>(100, seed + i + 230000);
         T threshold = RandomGenerator<T>(seed + i + 230000)();
         
-        auto pred = [threshold](T x) { return x > threshold; };
+        auto pred = [threshold](auto x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::any_of(vec, pred);
         auto std_result = std::ranges::any_of(vec, pred);
@@ -152,15 +152,13 @@ void test_any_of_ranges(unsigned seed = 42) {
     }
 }
 
-// ==================== ТЕСТЫ ДЛЯ none_of ====================
-
 template <typename T>
 void test_none_of_random(unsigned seed = 42) {
     for (int i = 0; i < 1000; ++i) {
         auto vec = generate_random_vector<T>(100, seed + i + 300000);
         T threshold = RandomGenerator<T>(seed + i + 300000)();
         
-        auto pred = [threshold](T x) { return x > threshold; };
+        auto pred = [threshold](auto x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::none_of(vec.begin(), vec.end(), pred);
         auto std_result = std::none_of(vec.begin(), vec.end(), pred);
@@ -197,7 +195,7 @@ void test_none_of_ranges(unsigned seed = 42) {
         auto vec = generate_random_vector<T>(100, seed + i + 330000);
         T threshold = RandomGenerator<T>(seed + i + 330000)();
         
-        auto pred = [threshold](T x) { return x > threshold; };
+        auto pred = [threshold](auto x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::none_of(vec, pred);
         auto std_result = std::ranges::none_of(vec, pred);
@@ -206,15 +204,13 @@ void test_none_of_ranges(unsigned seed = 42) {
     }
 }
 
-// ==================== ТЕСТЫ ДЛЯ all_of ====================
-
 template <typename T>
 void test_all_of_random(unsigned seed = 42) {
     for (int i = 0; i < 1000; ++i) {
         auto vec = generate_random_vector<T>(100, seed + i + 400000);
         T threshold = RandomGenerator<T>(seed + i + 400000)();
         
-        auto pred = [threshold](T x) { return x > threshold; };
+        auto pred = [threshold](auto x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::all_of(vec.begin(), vec.end(), pred);
         auto std_result = std::all_of(vec.begin(), vec.end(), pred);
@@ -251,7 +247,7 @@ void test_all_of_ranges(unsigned seed = 42) {
         auto vec = generate_random_vector<T>(100, seed + i + 430000);
         T threshold = RandomGenerator<T>(seed + i + 430000)();
         
-        auto pred = [threshold](T x) { return x > threshold; };
+        auto pred = [threshold](auto x) { return x > threshold; };
         
         auto simd_result = raze::algorithm::all_of(vec, pred);
         auto std_result = std::ranges::all_of(vec, pred);
@@ -259,8 +255,6 @@ void test_all_of_ranges(unsigned seed = 42) {
         raze_assert(simd_result == std_result);
     }
 }
-
-// ==================== ГРАНИЧНЫЕ СЛУЧАИ ====================
 
 template <typename T>
 void test_any_of_edge_cases() {
@@ -373,32 +367,6 @@ struct Point {
 };
 
 template <typename T>
-void test_find_with_projection(unsigned seed = 42) {
-    for (int i = 0; i < 100; ++i) {
-        std::vector<Point> vec(100);
-        RandomGenerator<int> gen(seed + i + 120000);
-        for (auto& p : vec) {
-            p.x = gen();
-            p.y = gen();
-        }
-        
-        int target_x = gen();
-        
-        auto simd_result = raze::algorithm::find_if(vec.begin(), vec.end(), 
-            [target_x](const Point& p) { return p.x == target_x; },
-            [](const Point& p) { return p; });
-        
-        auto std_result = std::find_if(vec.begin(), vec.end(), 
-            [target_x](const Point& p) { return p.x == target_x; });
-        
-        raze_assert(simd_result == std_result);
-        if (simd_result != vec.end()) {
-            raze_assert(*simd_result == *std_result);
-        }
-    }
-}
-
-template <typename T>
 void run_all_tests_for_type() {
     test_any_of_random<T>();
     test_any_of_ranges<T>();
@@ -414,7 +382,7 @@ void run_all_tests_for_type() {
 }
 
 int main() {
-    /*run_all_tests_for_type<int>();
+    run_all_tests_for_type<int>();
     run_all_tests_for_type<short>();
     run_all_tests_for_type<long long>();
     run_all_tests_for_type<char>();
@@ -426,9 +394,4 @@ int main() {
     
     run_all_tests_for_type<float>();
     run_all_tests_for_type<double>();
-    
-    test_find_with_projection<int>();*/
-    std::array<int, 16> arr;
-    auto v = raze::algorithm::any_of(arr, raze::algorithm::equal_to(1));
-    return 0;
 }

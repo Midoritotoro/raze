@@ -1,9 +1,7 @@
 #pragma once 
 
-
+#include <raze/vx/Algorithm.h>
 #include <src/raze/algorithm/RangesSize.h>
-#include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -25,10 +23,8 @@ struct _All_of : _Traits_ {
 			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
 		{}
 
-		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_) noexcept
-			requires(options::concepts::same_as<_Tag_, vx::scalar_tag>)
-		{
+		template <scalar_tag _Tag_>
+		raze_always_inline constexpr void operator()(_Tag_) noexcept {
 			raze_disable_unrolling
 			for (; _iterator != _sentinel; ++_iterator) {
 				if (!_predicate(_proj(*_iterator))) {
@@ -38,16 +34,16 @@ struct _All_of : _Traits_ {
 			}
 		}
 
-		template <class _Tag_>
-		raze_nodiscard raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size) noexcept
-			requires(!options::concepts::same_as<_Tag_, vx::scalar_tag>)
-		{
+		template <vectorizable_tag _Tag_>
+		raze_nodiscard raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			raze_disable_unrolling
 			do {
-				if (!vx::all_of(_predicate(_proj(vx::load<_Tag_>(__ptr))))) return false;
+				if (!vx::all_of(_predicate(_proj(vx::load<_Tag_>(__ptr)))))
+					return _result = false;
+
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
@@ -64,23 +60,22 @@ struct _All_of : _Traits_ {
 		class _Predicate_, class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline bool operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
+			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
 		auto __size = __bytes_distance(__first, __last);
-		return __raze_unchecked_call(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_Iterator_>(std::move(__last)), traits::__fwd_fn(__pred),
-			traits::__fwd_fn(__proj), __size);
+		return __raze_kernel_dispatch_call(__size, traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline bool operator()(_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+	constexpr raze_always_inline bool operator()(_Range_&& __r, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __raze_unchecked_call(traits::__ubegin(__range), traits::__uend(__range),
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj), __bytes_distance(__range));
+		return __raze_kernel_dispatch_call(__bytes_distance(__r), traits::__ubegin(__r), 
+			traits::__uend(__r), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 private:
-	__raze_define_unchecked(bool);
+	__raze_define_kernel_dispatch()
 };
 
 constexpr inline auto all_of = raze::options::function_with_traits<_All_of>;
