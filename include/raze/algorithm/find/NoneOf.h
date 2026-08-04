@@ -10,8 +10,9 @@ template <class _Traits_>
 struct _None_of : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
 	struct __kernel {
-		static constexpr auto can_enable_vectorization = std::contiguous_iterator<_Iterator_> &&
-			vectorizable_unary_predicate<_Predicate_, _Iterator_>&& vectorizable_projection<_Projection_, _Iterator_>;
+		static constexpr auto vectorizable = std::contiguous_iterator<_Iterator_> &&
+			vectorizable_unary_predicate<_Predicate_, _Iterator_>&&
+			vectorizable_projection<_Projection_, _Iterator_>;
 
 		_Iterator_ _iterator;
 		_Sentinel_ _sentinel;
@@ -62,17 +63,16 @@ struct _None_of : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		auto __size = __bytes_distance(__first, __last);
-		return __raze_kernel_dispatch_call(__size, traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_Iterator_>(std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+		return __raze_kernel_dispatch_call(std::move(__first), std::move(__last),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Range_&& __r, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __raze_kernel_dispatch_call(__bytes_distance(__r), traits::__ubegin(__r),
-			traits::__uend(__r), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+		return __raze_kernel_dispatch_call(std::forward<_Range_>(__r),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 private:
 	__raze_define_kernel_dispatch()

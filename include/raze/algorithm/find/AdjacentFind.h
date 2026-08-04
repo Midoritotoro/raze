@@ -9,7 +9,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class _Traits_>
 struct _Adjacent_find : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-	struct __impl {
+	struct __kernel {
 		static constexpr auto can_enable_vectorization = std::contiguous_iterator<_Iterator_> && 
 			vectorizable_binary_predicate<_Predicate_, _Iterator_> && vectorizable_projection<_Projection_, _Iterator_>;
 
@@ -19,7 +19,7 @@ struct _Adjacent_find : _Traits_ {
 		_Predicate_ _predicate;
 		_Projection_ _proj;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept :
+		constexpr explicit __kernel(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept :
 			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
 		{}
 
@@ -77,7 +77,7 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<_Iterator_, _Projection_>>)
 	{
 		if (__first == __last) return __first;
-		auto __size = __bytes_distance(__first, __last);
+		auto __size = __bytes_distance(__first, __last) - sizeof(std::iter_value_t<_Iterator_>);
 
 		__seek_iter(__first, __raze_kernel_dispatch_call(__size, traits::__uiter<_Sentinel_>(std::move(__first)),
 			traits::__usent<_Iterator_>(std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
@@ -87,7 +87,7 @@ struct _Adjacent_find : _Traits_ {
 	template <std::ranges::input_range _Range_, class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
 	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
 		_Range_&& __r, _Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::indirect_binary_predicate<_Predicate_, 
+			requires(std::indirect_binary_predicate<_Predicate_, 
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>,
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
@@ -95,8 +95,9 @@ struct _Adjacent_find : _Traits_ {
 		auto __last = std::ranges::end(__r);
 		if (__first == __last) return __first;
 
-		__seek_iter(__first, __raze_kernel_dispatch_call(__bytes_distance(__r), traits::__r_uiter<_Range_>(std::move(__first)),
-			traits::__r_usent<_Range_>(std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
+		__seek_iter(__first, __raze_kernel_dispatch_call(__bytes_distance(__r) - sizeof(std::ranges::range_value_t<_Range_>), 
+			traits::__r_uiter<_Range_>(std::move(__first)), traits::__r_usent<_Range_>(std::move(__last)), 
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
 		return __first;
 	}
 private:

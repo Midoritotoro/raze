@@ -1,13 +1,8 @@
 #pragma once 
 
-
+#include <raze/vx/Algorithm.h>
 #include <src/raze/algorithm/RangesSize.h>
-#include <src/raze/algorithm/VectorizablePredicate.h>
-#include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
-#include <algorithm>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -15,7 +10,7 @@ template <class _Traits_>
 struct _For_each : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Function_, class _Projection_>
 	struct __impl {
-		mutable _Iterator_ _iterator;
+		_Iterator_ _iterator;
 		_Sentinel_ _sentinel;
 		_Function_ _function;
 		_Projection_ _proj;
@@ -24,19 +19,15 @@ struct _For_each : _Traits_ {
 			_iterator(__it), _sentinel(__sent), _function(__f), _proj(__proj)
 		{}
 
-		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_) const noexcept 
-			requires(options::concepts::same_as<_Tag_, vx::scalar_tag>)
-		{
+		template <scalar_tag _Tag_>
+		raze_always_inline constexpr void operator()(_Tag_) noexcept {
 			raze_disable_unrolling
 			for (; _iterator != _sentinel; ++_iterator)
 				_function(_proj(*_iterator));
 		}
 
-		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) const noexcept
-			requires(!options::concepts::same_as<_Tag_, vx::scalar_tag>)
-		{
+		template <vectorizable_tag _Tag_>
+		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
@@ -61,8 +52,8 @@ struct _For_each : _Traits_ {
 	constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Function_ __f, _Projection_ __proj = {}) const noexcept
 	{
-		auto __r = __for_each_unchecked(
-			traits::__uiter<_Sentinel_>(std::move(__first)),
+		auto __size = __bytes_distance(__first, __last);
+		auto __r = __raze_kernel_dispatch_call(traits::__uiter<_Sentinel_>(std::move(__first)),
 			traits::__usent<_Iterator_>(std::move(__last)),
 			traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
 
