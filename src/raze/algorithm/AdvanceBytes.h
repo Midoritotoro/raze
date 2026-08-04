@@ -3,7 +3,7 @@
 #include <raze/compatibility/Inline.h>
 #include <raze/RazeNamespace.h>
 
-#include <src/raze/type_traits/IteratorCheck.h>
+#include <src/raze/traits/IteratorCheck.h>
 #include <raze/Types.h>
 
 #include <src/raze/utility/Assert.h>
@@ -55,21 +55,21 @@ raze_always_inline sizetype __byte_length(const volatile void* __first, const vo
 }
 
 template <class _InputIterator_> 
-constexpr inline bool __is_nothrow_distance_v = type_traits::is_iterator_random_ranges_v<_InputIterator_> 
+constexpr inline bool __is_nothrow_distance_v = std::random_access_iterator<_InputIterator_> 
     || std::bool_constant<noexcept(std::declval<std::remove_reference_t<_InputIterator_>&>()++)>::value;
 
-template <class _InputIterator_, class _DifferenceType_ = type_traits::iterator_difference_type<_InputIterator_>>
-raze_nodiscard raze_always_inline constexpr type_traits::iterator_difference_type<_InputIterator_> distance(
+template <class _InputIterator_, class _DifferenceType_ = std::iter_difference_t<_InputIterator_>>
+raze_nodiscard raze_always_inline constexpr std::iter_difference_t<_InputIterator_> distance(
     _InputIterator_ __first, _InputIterator_ __last) noexcept(__is_nothrow_distance_v<_InputIterator_>)
 {
-    if constexpr (type_traits::is_iterator_random_ranges_v<_InputIterator_>) {
+    if constexpr (std::random_access_iterator<_InputIterator_>) {
         return static_cast<_DifferenceType_>(__last - __first);
     }
     else {
         __verify_range(__first, __last);
 
-        auto __first_unwrapped = __unwrap_iterator(__first);
-        const auto __last_unwrapped = __unwrap_iterator(__last);
+        auto __first_unwrapped = __uiter(__first);
+        const auto __last_unwrapped = __uiter(__last);
 
         auto __distance = _DifferenceType_(0);
 

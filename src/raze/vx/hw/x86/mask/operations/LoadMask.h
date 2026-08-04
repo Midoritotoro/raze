@@ -22,7 +22,7 @@ struct _Load_mask {
 			return *__mem;
 		else if constexpr (_Size_ >= 16)
 			return _To_mask<_ISA_, byte>()(_Negate<_ISA_, byte>()(_Load<_ISA_, 
-				type_traits::__deduce_simd_vector_type<_Signed, _Size_ * 8>>()(__mem, __policy)));
+				traits::__deduce_simd_vector_type<_Signed, _Size_ * 8>>()(__mem, __policy)));
 		else {
 			_Mask_ __mask = 0;
 

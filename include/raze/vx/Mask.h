@@ -19,7 +19,7 @@ concept __compatible_mask = (sizeof(typename _FirstMaskType_::element_type) == s
 
 template <class _Type_, class _Abi_>
 class simd_mask {
-	static_assert(type_traits::__is_vector_type_supported_v<_Type_>);
+	static_assert(traits::__is_vector_type_supported_v<_Type_>);
 public:
 	using storage_type = _Mask_storage<_Type_, _Abi_>;
 	using element_type = _Type_;
@@ -45,7 +45,7 @@ public:
 
 	template <class _ForwardIterator_, class _AlignmentPolicy_ = __unaligned_policy>
 	raze_no_stack_protector raze_always_inline simd_mask(const _ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
-		requires(type_traits::is_iterator_v<_ForwardIterator_> && type_traits::is_iterator_forward_ranges_v<_ForwardIterator_>)
+		requires(traits::is_iterator_v<_ForwardIterator_> && std::forward_iterator<_ForwardIterator_>)
 	{
 		copy_from(__first, __alignment_policy);
 	}
@@ -57,7 +57,7 @@ public:
 		using _ItType = algorithm::__unwrapped_iterator_type<_ForwardIterator_>;
 		using _ItValueType = std::iter_value_t<_ItType>;
 
-		if constexpr (sizeof(_ItValueType) == 1 && type_traits::is_iterator_contiguous_v<_ItType> && sizeof(_Type_) == 1) {
+		if constexpr (sizeof(_ItValueType) == 1 && std::contiguous_iterator<_ItType> && sizeof(_Type_) == 1) {
 			auto __current = reinterpret_cast<const bool*>(std::to_address(__first));
 
 			__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
@@ -76,7 +76,7 @@ public:
 		using _ItType = algorithm::__unwrapped_iterator_type<_OutputIterator_>;
 		using _ItValueType = std::iter_value_t<_ItType>;
 
-		if constexpr (sizeof(_ItValueType) == 1 && type_traits::is_iterator_contiguous_v<_ItType> && sizeof(_Type_) == 1) {
+		if constexpr (sizeof(_ItValueType) == 1 && std::contiguous_iterator<_ItType> && sizeof(_Type_) == 1) {
 			auto __current = reinterpret_cast<bool*>(std::to_address(__first));
 
 			__for_each_chunk([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {

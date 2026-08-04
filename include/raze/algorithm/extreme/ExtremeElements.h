@@ -179,9 +179,9 @@ struct _Extreme_elements : _Traits_ {
 			}
 
 			_Iterator_ __first_extreme_it, __last_extreme_it;
-			__seek_possibly_wrapped_iterator(__first, __ptr);
-			__seek_possibly_wrapped_iterator(__first_extreme_it, __first_extreme);
-			__seek_possibly_wrapped_iterator(__last_extreme_it, __last_extreme);
+			__seek_iter(__first, __ptr);
+			__seek_iter(__first_extreme_it, __first_extreme);
+			__seek_iter(__last_extreme_it, __last_extreme);
 
 			for (; __first != __sentinel; ++__first) {
 				if (__comp(__proj(*__first), __proj(*__first_extreme_it))) __first_extreme_it = __first;
@@ -197,14 +197,14 @@ struct _Extreme_elements : _Traits_ {
 	raze_nodiscard constexpr raze_always_inline std::pair<_Iterator_, _Iterator_> operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
 	{
-		auto __r = __extreme_elements_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)), type_traits::__pass_function(__comp), 
-			type_traits::__pass_function(__proj));
+		auto __r = __extreme_elements_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)), traits::__fwd_fn(__comp), 
+			traits::__fwd_fn(__proj));
 
 		auto __first_uninitialized = std::move(__first);
 
-		__seek_possibly_wrapped_iterator(__first, std::move(__r.first));
-		__seek_possibly_wrapped_iterator(__first_uninitialized, std::move(__r.second));
+		__seek_iter(__first, std::move(__r.first));
+		__seek_iter(__first_uninitialized, std::move(__r.second));
 
 		return { __first, __first_uninitialized };
 	}
@@ -214,13 +214,13 @@ struct _Extreme_elements : _Traits_ {
 		operator()(_Range_&& __range, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept requires(!constexpr_sized_range<_Range_>)
 	{
 		auto __begin = std::ranges::begin(__range);
-		auto __r = __extreme_elements_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp), type_traits::__pass_function(__proj));
+		auto __r = __extreme_elements_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), traits::__fwd_fn(__comp), traits::__fwd_fn(__proj));
 
 		auto __begin_uninitialized = std::move(__begin);
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.first));
-		__seek_possibly_wrapped_iterator(__begin_uninitialized, std::move(__r.second));
+		__seek_iter(__begin, std::move(__r.first));
+		__seek_iter(__begin_uninitialized, std::move(__r.second));
 
 		return { __begin, __begin_uninitialized };
 	}
@@ -230,14 +230,14 @@ struct _Extreme_elements : _Traits_ {
 		operator()(_Range_&& __range, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
 	{
 		auto __begin = std::ranges::begin(__range);
-		auto __r = __extreme_elements_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp), 
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		auto __r = __extreme_elements_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), traits::__fwd_fn(__comp), 
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
 		auto __begin_uninitialized = std::move(__begin);
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.first));
-		__seek_possibly_wrapped_iterator(__begin_uninitialized, std::move(__r.second));
+		__seek_iter(__begin, std::move(__r.first));
+		__seek_iter(__begin_uninitialized, std::move(__r.second));
 
 		return { __begin, __begin_uninitialized };
 	}

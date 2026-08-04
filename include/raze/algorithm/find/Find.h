@@ -46,14 +46,14 @@ struct _Find_if : _Traits_ {
 			raze_disable_unrolling
 			do {
 				if (const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>(__ptr))); raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
+					__seek_iter(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
 					return false;
 				}
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			__seek_iter(_iterator, __ptr);
 			return true;
 		}
 
@@ -68,10 +68,10 @@ struct _Find_if : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		__seek_possibly_wrapped_iterator(__first, __find_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)));
+		__seek_iter(__first, __find_unchecked(
+			traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
 
 		return __first;
 	}
@@ -83,10 +83,10 @@ struct _Find_if : _Traits_ {
 			_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		auto __first = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__first, __find_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
-			type_traits::__pass_function(__proj)));
+		__seek_iter(__first, __find_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__first)),
+			traits::__uend(__range), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj)));
 		return __first;
 	}
 
@@ -97,10 +97,10 @@ struct _Find_if : _Traits_ {
 			_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		auto __first = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__first, __find_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+		__seek_iter(__first, __find_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__first)),
+			traits::__uend(__range), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
 		return __first;
 	}
 private:
@@ -165,7 +165,7 @@ struct _Find : _Traits_ {
 	{
 		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
 			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_,
@@ -175,7 +175,7 @@ struct _Find : _Traits_ {
 	{
 		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 };
 
@@ -189,7 +189,7 @@ struct _Find_if_not : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -197,7 +197,7 @@ struct _Find_if_not : _Traits_ {
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 };
 

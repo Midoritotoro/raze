@@ -68,7 +68,7 @@ struct _Count_if : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 
 			for (; __first != __sentinel; ++__first)
 				__count += __predicate(__proj(*__first));
@@ -95,7 +95,7 @@ struct _Count_if : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (--__left);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 
 			if constexpr (_TailSize_ != 0) {
 				do {
@@ -114,9 +114,9 @@ struct _Count_if : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return __count_unchecked<std::iter_difference_t<_Iterator_>>(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+		return __count_unchecked<std::iter_difference_t<_Iterator_>>(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -125,8 +125,8 @@ struct _Count_if : _Traits_ {
 			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __count_unchecked<std::ranges::range_difference_t<_Range_>>(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(std::ranges::begin(__range))),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+		return __count_unchecked<std::ranges::range_difference_t<_Range_>>(traits::__r_uiter<_Range_>(std::move(std::ranges::begin(__range))),
+			traits::__uend(__range), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -135,9 +135,9 @@ struct _Count_if : _Traits_ {
 			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __count_unchecked<std::ranges::range_difference_t<_Range_>>(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(std::ranges::begin(__range))),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		return __count_unchecked<std::ranges::range_difference_t<_Range_>>(traits::__r_uiter<_Range_>(std::move(std::ranges::begin(__range))),
+			traits::__uend(__range), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 	}
 private:
 	template <class _DiffType_, class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
@@ -196,7 +196,7 @@ struct _Count : _Traits_ {
 	{
 		return count_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
 			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_, class _Projection_ = std::identity>
@@ -206,7 +206,7 @@ struct _Count : _Traits_ {
 	{
 		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_, class _Projection_ = std::identity>
@@ -216,7 +216,7 @@ struct _Count : _Traits_ {
 	{
 		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 };
 
@@ -230,7 +230,7 @@ struct _Count_if_not : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return count_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return count_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -239,7 +239,7 @@ struct _Count_if_not : _Traits_ {
 			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -248,7 +248,7 @@ struct _Count_if_not : _Traits_ {
 			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 };
 

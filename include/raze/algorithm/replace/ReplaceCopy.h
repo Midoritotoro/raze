@@ -72,8 +72,8 @@ struct _Replace_copy_if : _Traits_ {
 				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
 			} while (__in_ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__first, __in_ptr);
+			__seek_iter(__result, __out_ptr);
 
 			for (; __first != __last; ++__first, ++__result)
 				*__result = __predicate(__proj(*__first)) ? __new_value : *__first;
@@ -101,8 +101,8 @@ struct _Replace_copy_if : _Traits_ {
 				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
 			} while (--__left);
 
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__first, __in_ptr);
+			__seek_iter(__result, __out_ptr);
 
 			for (; __first != __last; ++__first, ++__result)
 				*__result = __predicate(__proj(*__first)) ? __new_value : *__first;
@@ -121,13 +121,13 @@ struct _Replace_copy_if : _Traits_ {
 				std::indirectly_writable<_OutIterator_, const _ValueType_&>)
 	{
 		auto __r = __replace_copy_if_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_InputIterator_>(std::move(__last)),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__pred), __new_value, type_traits::__pass_function(__proj));
+			traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_InputIterator_>(std::move(__last)),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__first, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__first, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__first), std::move(__result) };
 	}
@@ -146,13 +146,13 @@ struct _Replace_copy_if : _Traits_ {
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __replace_copy_if_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(std::move(__end)),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__pred), __new_value, type_traits::__pass_function(__proj));
+			traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__r_usent<_Range_>(std::move(__end)),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__begin, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__begin), std::move(__result) };
 	}
@@ -171,14 +171,14 @@ struct _Replace_copy_if : _Traits_ {
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __replace_copy_if_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(std::move(__end)),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__pred), __new_value, type_traits::__pass_function(__proj),
+			traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__r_usent<_Range_>(std::move(__end)),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__begin, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__begin), std::move(__result) };
 	}
@@ -250,7 +250,7 @@ struct _Replace_copy : _Traits_ {
 	{
 		return replace_copy_if[_Traits_::traits()](std::move(__first), std::move(__last), std::move(__result),
 			algorithm::equal_to(function_return_type<_Projection_, std::iter_value_t<_InputIterator_>>(__old_value)),
-			__new_value, type_traits::__pass_function(__proj));
+			__new_value, traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, std::weakly_incrementable _OutIterator_,
@@ -263,7 +263,7 @@ struct _Replace_copy : _Traits_ {
 	{
 		return replace_copy_if[_Traits_::traits()](std::forward<_Range_>(__range), std::move(__result),
 			algorithm::equal_to(function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__old_value)),
-			__new_value, type_traits::__pass_function(__proj));
+			__new_value, traits::__fwd_fn(__proj));
 	}
 };
 

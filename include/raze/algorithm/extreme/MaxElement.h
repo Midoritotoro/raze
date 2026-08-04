@@ -142,8 +142,8 @@ struct _Max_element : _Traits_ {
 
 			_Iterator_ __largest_value_iterator;
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
-			__seek_possibly_wrapped_iterator(__largest_value_iterator, __max_element);
+			__seek_iter(__first, __ptr);
+			__seek_iter(__largest_value_iterator, __max_element);
 
 			for (; __first != __sentinel; ++__first)
 				if (__proj(*__largest_value_iterator) < __proj(*__first))
@@ -157,10 +157,10 @@ struct _Max_element : _Traits_ {
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Projection_ __proj = {}) const noexcept
 	{
-		__seek_possibly_wrapped_iterator(__first, __max_element_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__proj)));
+		__seek_iter(__first, __max_element_unchecked(
+			traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__proj)));
 
 		return __first;
 	}
@@ -171,9 +171,9 @@ struct _Max_element : _Traits_ {
 			requires(!constexpr_sized_range<_Range_>)
 	{
 		auto __begin = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__begin, __max_element_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj)));
+		__seek_iter(__begin, __max_element_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), traits::__fwd_fn(__proj)));
 		return __begin;
 	}
 
@@ -182,9 +182,9 @@ struct _Max_element : _Traits_ {
 		_Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
 	{
 		auto __begin = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__begin, __max_element_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj),
+		__seek_iter(__begin, __max_element_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), traits::__fwd_fn(__proj),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
 		return __begin;
 	}

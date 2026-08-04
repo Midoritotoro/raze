@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <src/raze/type_traits/TypeCheck.h>
-#include <src/raze/type_traits/IsVirtualBaseOf.h>
+#include <src/raze/traits/TypeCheck.h>
+#include <src/raze/traits/IsVirtualBaseOf.h>
 #include <raze/vx/Config.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -41,7 +41,7 @@ struct __is_simd_mask<
     std::void_t<simd_mask<typename _SimdMask_::element_type,
                 typename _SimdMask_::abi_type>>>
     : std::bool_constant<
-        type_traits::is_virtual_base_of_v<
+        traits::is_virtual_base_of_v<
             simd_mask<typename _SimdMask_::element_type,
                 typename _SimdMask_::abi_type>,
             _SimdMask_> ||

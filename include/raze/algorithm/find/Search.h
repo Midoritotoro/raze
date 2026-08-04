@@ -121,7 +121,7 @@ struct _Search : _Traits_ {
 						const auto __main_match = __bytes_pointer_offset(__haystack, __match_bytes);
 
 						if (memcmp(__main_match, __bytes_pointer_offset(__needle, sizeof(_Value_)), __needle_bytes - 2 * sizeof(_Value_)) == 0) {
-							__seek_possibly_wrapped_iterator(__first1, __main_match - 1);
+							__seek_iter(__first1, __main_match - 1);
 							return { __first1, __first1 + __needle_length };
 						}
 
@@ -136,7 +136,7 @@ struct _Search : _Traits_ {
 			const auto __remaining_bytes = __haystack_bytes - __processed_bytes;
 
 			if (__remaining_bytes >= __needle_bytes) {
-				__seek_possibly_wrapped_iterator(__first1, __haystack);
+				__seek_iter(__first1, __haystack);
 				return (*this)(__first1, __sentinel1, __first2, __sentinel2, __predicate, __proj1, __proj2);
 			}
 			else return { __sentinel1, __sentinel1 };
@@ -152,15 +152,15 @@ struct _Search : _Traits_ {
 		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		auto __result = __search_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator1_>(std::move(__last1)),
-			type_traits::__ranges_unwrap_iterator<_Sentinel2_>(std::move(__first2)), 
-			type_traits::__ranges_unwrap_sentinel<_Iterator2_>(std::move(__last2)), 
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		auto __result = __search_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
+			traits::__usent<_Iterator1_>(std::move(__last1)),
+			traits::__uiter<_Sentinel2_>(std::move(__first2)), 
+			traits::__usent<_Iterator2_>(std::move(__last2)), 
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 
-		__seek_possibly_wrapped_iterator(__first1, __result.begin());
-		__seek_possibly_wrapped_iterator(__last1, __result.end());
+		__seek_iter(__first1, __result.begin());
+		__seek_iter(__last1, __result.end());
 
 		return { __first1, __last1 };
 	}
@@ -177,13 +177,13 @@ struct _Search : _Traits_ {
 		auto __first1 = std::ranges::begin(__range1);
 		auto __last1 = std::ranges::end(__range1);
 
-		auto __result = __search_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range1_>(std::move(__last1)), type_traits::__unchecked_begin(__range2),
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		auto __result = __search_unchecked(traits::__r_uiter<_Range1_>(std::move(__first1)),
+			traits::__r_usent<_Range1_>(std::move(__last1)), traits::__ubegin(__range2),
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 
-		__seek_possibly_wrapped_iterator(__first1, __result.begin());
-		__seek_possibly_wrapped_iterator(__last1, __result.end());
+		__seek_iter(__first1, __result.begin());
+		__seek_iter(__last1, __result.end());
 
 		return { __first1, __last1 };
 	}
@@ -200,14 +200,14 @@ struct _Search : _Traits_ {
 		auto __first1 = std::ranges::begin(__range1);
 		auto __last1 = std::ranges::end(__range1);
 
-		auto __result = __search_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range1_>(std::move(__last1)), type_traits::__unchecked_begin(__range2),
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{},
+		auto __result = __search_unchecked(traits::__r_uiter<_Range1_>(std::move(__first1)),
+			traits::__r_usent<_Range1_>(std::move(__last1)), traits::__ubegin(__range2),
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{},
 			std::integral_constant<sizetype, __range_constexpr_size<_Range2_>()>{});
 
-		__seek_possibly_wrapped_iterator(__first1, __result.begin());
-		__seek_possibly_wrapped_iterator(__last1, __result.end());
+		__seek_iter(__first1, __result.begin());
+		__seek_iter(__last1, __result.end());
 
 		return { __first1, __last1 };
 	}

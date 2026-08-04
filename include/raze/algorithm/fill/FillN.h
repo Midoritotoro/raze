@@ -49,7 +49,7 @@ struct _Fill_n : _Traits_ {
 				for (; __size != 0; --__size, ++__reinterpret_ptr)
 					*__reinterpret_ptr = __v;
 
-				__seek_possibly_wrapped_iterator(__first, reinterpret_cast<std::iter_value_t<_Iterator_>*>(__reinterpret_ptr));
+				__seek_iter(__first, reinterpret_cast<std::iter_value_t<_Iterator_>*>(__reinterpret_ptr));
 			}
 			else {
 				for (; __size != 0; --__size, ++__first)
@@ -73,7 +73,7 @@ struct _Fill_n : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, __tail_size / sizeof(_ValueType_), __v);
 		}
 
@@ -95,7 +95,7 @@ struct _Fill_n : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (--__left);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, _TailSize_ / sizeof(_ValueType_), __v);
 		}
 	};
@@ -105,8 +105,8 @@ struct _Fill_n : _Traits_ {
 		std::iter_difference_t<_Iterator_> __size, const std::type_identity_t<_Value_>& __v) const noexcept
 			requires(std::output_iterator<_Iterator_, _Value_>)
 	{
-		__seek_possibly_wrapped_iterator(__first, __fill_n_unchecked(
-			algorithm::__unwrap_iterator(std::move(__first)), __size, __v));
+		__seek_iter(__first, __fill_n_unchecked(
+			algorithm::__uiter(std::move(__first)), __size, __v));
 		return __first;
 	}
 
@@ -115,8 +115,8 @@ struct _Fill_n : _Traits_ {
 		std::integral_constant<sizetype, _Size_> __size, const std::type_identity_t<_Value_>& __v) const noexcept
 		requires(std::output_iterator<_Iterator_, _Value_>)
 	{
-		__seek_possibly_wrapped_iterator(__first, __fill_n_unchecked(
-			algorithm::__unwrap_iterator(std::move(__first)), __size, __v));
+		__seek_iter(__first, __fill_n_unchecked(
+			algorithm::__uiter(std::move(__first)), __size, __v));
 		return __first;
 	}
 private:

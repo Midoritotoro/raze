@@ -1,7 +1,7 @@
 #pragma once
 
 #include <raze/Types.h>
-#include <src/raze/type_traits/IntegralProperties.h>
+#include <src/raze/traits/IntegralProperties.h>
 
 #include <raze/arch/ProcessorFeatures.h>
 #include <raze/arch/ProcessorDetection.h>

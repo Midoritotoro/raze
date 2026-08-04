@@ -49,7 +49,7 @@ struct _Replace_if : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			__seek_iter(_iterator, __ptr);
 		}
 	};
 
@@ -60,9 +60,9 @@ struct _Replace_if : _Traits_ {
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
 		__replace_if_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__pred), __new_value, type_traits::__pass_function(__proj));
+			traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _ValueType_,
@@ -74,9 +74,9 @@ struct _Replace_if : _Traits_ {
 				&& std::permutable<std::ranges::iterator_t<_Range_>>)
 	{
 		__replace_if_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::ranges::begin(__range)),
-			type_traits::__unchecked_end(__range),
-			type_traits::__pass_function(__pred), __new_value, type_traits::__pass_function(__proj));
+			traits::__r_uiter<_Range_>(std::ranges::begin(__range)),
+			traits::__uend(__range),
+			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _ValueType_,
@@ -88,9 +88,9 @@ struct _Replace_if : _Traits_ {
 				&& std::permutable<std::ranges::iterator_t<_Range_>>)
 	{
 		__replace_if_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::ranges::begin(__range)),
-			type_traits::__unchecked_end(__range),
-			type_traits::__pass_function(__pred), __new_value, type_traits::__pass_function(__proj),
+			traits::__r_uiter<_Range_>(std::ranges::begin(__range)),
+			traits::__uend(__range),
+			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 	}
 
@@ -157,7 +157,7 @@ struct _Replace : _Traits_ {
 	{
 		replace_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
 			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__old_value)),
-			__new_value, type_traits::__pass_function(__proj));
+			__new_value, traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _ValueType1_, class _ValueType2_,
@@ -168,7 +168,7 @@ struct _Replace : _Traits_ {
 	{
 		replace_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__old_value)),
-			__new_value, type_traits::__pass_function(__proj));
+			__new_value, traits::__fwd_fn(__proj));
 	}
 };
 

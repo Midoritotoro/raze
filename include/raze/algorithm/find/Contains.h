@@ -12,7 +12,7 @@ struct _Contains : _Traits_ {
 		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
 	{
 		return algorithm::any_of[_Traits_::traits()](std::move(__first), std::move(__last),
-			algorithm::equal_to(__v), type_traits::__pass_function(__proj));
+			algorithm::equal_to(__v), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_,
@@ -21,7 +21,7 @@ struct _Contains : _Traits_ {
 		const _Value_& __v, _Projection_ __proj = {}) const noexcept
 	{
 		return algorithm::any_of[_Traits_::traits()](std::forward<_Range_>(__range),
-			algorithm::equal_to(__v), type_traits::__pass_function(__proj));
+			algorithm::equal_to(__v), traits::__fwd_fn(__proj));
 	}
 };
 

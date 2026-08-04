@@ -143,12 +143,12 @@ struct _Equal : _Traits_ {
 		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		return __equal_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator1_>(std::move(__last1)),
-			type_traits::__ranges_unwrap_iterator<_Sentinel2_>(std::move(__first2)), 
-			type_traits::__ranges_unwrap_sentinel<_Iterator2_>(std::move(__last2)), 
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		return __equal_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
+			traits::__usent<_Iterator1_>(std::move(__last1)),
+			traits::__uiter<_Sentinel2_>(std::move(__first2)), 
+			traits::__usent<_Iterator2_>(std::move(__last2)), 
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
@@ -160,10 +160,10 @@ struct _Equal : _Traits_ {
 				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
 					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		return __equal_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::ranges::begin(__range1)),
-			type_traits::__unchecked_end(__range1), type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::ranges::begin(__range2)), 
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		return __equal_unchecked(traits::__r_uiter<_Range1_>(std::ranges::begin(__range1)),
+			traits::__uend(__range1), traits::__r_uiter<_Range2_>(std::ranges::begin(__range2)), 
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
@@ -176,10 +176,10 @@ struct _Equal : _Traits_ {
 					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
 	{
 		if constexpr (__range_constexpr_size<_Range1_>() != __range_constexpr_size<_Range2_>()) return false;
-		else return __equal_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::ranges::begin(__range1)),
-			type_traits::__unchecked_end(__range1), type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::ranges::begin(__range2)),
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{});
+		else return __equal_unchecked(traits::__r_uiter<_Range1_>(std::ranges::begin(__range1)),
+			traits::__uend(__range1), traits::__r_uiter<_Range2_>(std::ranges::begin(__range2)),
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{});
 	}
 private:
 	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,

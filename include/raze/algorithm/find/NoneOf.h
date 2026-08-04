@@ -53,7 +53,7 @@ struct _None_of : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			__seek_iter(_iterator, __ptr);
 			return true;
 		}
 
@@ -69,17 +69,17 @@ struct _None_of : _Traits_ {
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
 		auto __size = __bytes_distance(__first, __last);
-		return __none_of_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj), __size);
+		return __none_of_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj), __size);
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __none_of_unchecked(type_traits::__unchecked_begin(__range), type_traits::__unchecked_end(__range),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj), __bytes_distance(__range));
+		return __none_of_unchecked(traits::__ubegin(__range), traits::__uend(__range),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj), __bytes_distance(__range));
 	}
 private:
 	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, class _Size_>

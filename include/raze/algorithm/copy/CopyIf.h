@@ -14,7 +14,7 @@ struct _Copy_if : _Traits_ {
 			std::indirectly_copyable<_Iterator_, _Output_>)
 	{
 		return raze::algorithm::remove_copy_if[_Traits_::traits()](std::move(__first), std::move(__last),
-			std::move(__output), algorithm::make_not_fn(__pred), type_traits::__pass_function(__proj));
+			std::move(__output), algorithm::make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, std::weakly_incrementable _Output_,
@@ -25,7 +25,7 @@ struct _Copy_if : _Traits_ {
 			&& std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _Output_>)
 	{
 		return raze::algorithm::remove_copy_if[_Traits_::traits()](std::forward<_Range_>(__range),
-			std::move(__output), algorithm::make_not_fn(__pred), type_traits::__pass_function(__proj));
+			std::move(__output), algorithm::make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 };
 

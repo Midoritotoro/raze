@@ -1,6 +1,6 @@
 #pragma once
 
-#include <src/raze/type_traits/TypeTraits.h>
+#include <src/raze/traits/TypeTraits.h>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 

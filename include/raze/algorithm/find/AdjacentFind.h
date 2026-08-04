@@ -59,7 +59,7 @@ struct _Adjacent_find : _Traits_ {
 				const auto __mask = _predicate(__current, __next);
 
 				if (raze::vx::any_of(__mask)) {
-					__seek_possibly_wrapped_iterator(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
+					__seek_iter(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
 					return false;
 				}
 
@@ -67,7 +67,7 @@ struct _Adjacent_find : _Traits_ {
 				__advance_bytes(__next_ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			__seek_iter(_iterator, __ptr);
 			return true;
 		}
 
@@ -83,10 +83,10 @@ struct _Adjacent_find : _Traits_ {
 			requires(std::indirect_binary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>,
 				std::projected<_Iterator_, _Projection_>>)
 	{
-		__seek_possibly_wrapped_iterator(__first, __adjacent_find_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)));
+		__seek_iter(__first, __adjacent_find_unchecked(
+			traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
 
 		return __first;
 	}
@@ -99,10 +99,10 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		auto __first = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__first, __adjacent_find_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)), 
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
-			type_traits::__pass_function(__proj)));
+		__seek_iter(__first, __adjacent_find_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__first)), 
+			traits::__uend(__range), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj)));
 		return __first;
 	}
 
@@ -114,10 +114,10 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		auto __first = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__first, __adjacent_find_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__pred),
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+		__seek_iter(__first, __adjacent_find_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__first)),
+			traits::__uend(__range), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
 		return __first;
 	}
 private:

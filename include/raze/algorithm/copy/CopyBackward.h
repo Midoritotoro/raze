@@ -70,7 +70,7 @@ struct _Copy_backward : _Traits_ {
 				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
 			} while (__in_ptr != __aligned_start);
 
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__result, __out_ptr);
 			return { __last, __result };
 		}
 
@@ -104,7 +104,7 @@ struct _Copy_backward : _Traits_ {
 				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
 			} while (--__left);
 
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__result, __out_ptr);
 			return { __last, __result };
 		}
 	};
@@ -115,12 +115,12 @@ struct _Copy_backward : _Traits_ {
 		operator()(_InputIterator_ __first, _Sentinel_ __sent, _OutIterator_ __result) const noexcept
 		requires(std::indirectly_copyable<_InputIterator_, _OutIterator_>)
 	{
-		auto __r = __copy_backward_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_InputIterator_>(std::move(__sent)),
-			algorithm::__unwrap_iterator(std::move(__result)));
+		auto __r = __copy_backward_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_InputIterator_>(std::move(__sent)),
+			algorithm::__uiter(std::move(__result)));
 
-		__seek_possibly_wrapped_iterator(__first, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__first, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__first), std::move(__result) };
 	}
@@ -131,11 +131,11 @@ struct _Copy_backward : _Traits_ {
 		requires(!constexpr_sized_range<_Range_>&& std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _OutIterator_>)
 	{
 		auto __begin = std::ranges::begin(__range);
-		auto __r = __copy_backward_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), algorithm::__unwrap_iterator(std::move(__result)));
+		auto __r = __copy_backward_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), algorithm::__uiter(std::move(__result)));
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__begin, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__begin), std::move(__result) };
 	}
@@ -147,12 +147,12 @@ struct _Copy_backward : _Traits_ {
 	{
 		auto __begin = std::ranges::begin(__range);
 
-		auto __r = __copy_backward_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), algorithm::__unwrap_iterator(std::move(__result)),
+		auto __r = __copy_backward_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), algorithm::__uiter(std::move(__result)),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__begin, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__begin), std::move(__result) };
 	}

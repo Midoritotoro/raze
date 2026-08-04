@@ -82,10 +82,10 @@ struct _Reverse : _Traits_ {
 				__advance_bytes(__ptr_front, sizeof(_Tag_));
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr_front);
+			__seek_iter(__first, __ptr_front);
 			
 			_Iterator_ __back_it;
-			__seek_possibly_wrapped_iterator(__back_it, __ptr_back);
+			__seek_iter(__back_it, __ptr_back);
 
 			while (__first < __back_it) {
 				--__back_it;
@@ -124,7 +124,7 @@ struct _Reverse : _Traits_ {
 				__advance_bytes(__ptr_front, sizeof(_Tag_));
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr_front);
+			__seek_iter(__first, __ptr_front);
 			
 			if constexpr (_TailSize_ > 0) {
 				_Iterator_ __back_it = __first + (__ptr_back - __ptr);
@@ -142,8 +142,8 @@ struct _Reverse : _Traits_ {
 	constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first, _Sentinel_ __sent) const noexcept
 		requires(std::permutable<_Iterator_>)
 	{
-		__reverse_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(__sent));
+		__reverse_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(__sent));
 		return std::ranges::next(__first, __sent);
 	}
 
@@ -161,8 +161,8 @@ struct _Reverse : _Traits_ {
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
-		__reverse_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)), 
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(__end),
+		__reverse_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)), 
+			traits::__r_usent<_Range_>(__end),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
 		return std::ranges::next(__begin, __end);

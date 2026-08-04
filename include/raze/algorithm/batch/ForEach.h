@@ -48,7 +48,7 @@ struct _For_each : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			__seek_iter(_iterator, __ptr);
 		}
 
 		constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> result() const noexcept {
@@ -62,11 +62,11 @@ struct _For_each : _Traits_ {
 		_Sentinel_ __last, _Function_ __f, _Projection_ __proj = {}) const noexcept
 	{
 		auto __r = __for_each_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__f), type_traits::__pass_function(__proj));
+			traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__first, __r.in);
+		__seek_iter(__first, __r.in);
 		return { __first, __unwrap_function(std::move(__r.fun)) };
 	}
 
@@ -76,11 +76,11 @@ struct _For_each : _Traits_ {
 			requires(!constexpr_sized_range<_Range_>)
 	{
 		auto __begin = std::ranges::begin(__range);
-		auto __r = __for_each_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__f),
-			type_traits::__pass_function(__proj));
+		auto __r = __for_each_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), traits::__fwd_fn(__f),
+			traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__begin, __r.in);
+		__seek_iter(__begin, __r.in);
 		return { __begin, __unwrap_function(std::move(__r.fun)) };
 	}
 
@@ -90,11 +90,11 @@ struct _For_each : _Traits_ {
 			requires(constexpr_sized_range<_Range_>)
 	{
 		auto __begin = std::ranges::begin(__range);
-		auto __r = __for_each_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__f),
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		auto __r = __for_each_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__uend(__range), traits::__fwd_fn(__f),
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-		__seek_possibly_wrapped_iterator(__begin, __r.in);
+		__seek_iter(__begin, __r.in);
 		return { __begin, __unwrap_function(std::move(__r.fun)) };
 	}
 private:
@@ -111,7 +111,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
 			&& vectorizable_unary_function<_Function_, _Iterator_> &&
-			vectorizable_projection<_Projection_, _Iterator_> && type_traits::__is_lightweight_callable_v<_Function_>)
+			vectorizable_projection<_Projection_, _Iterator_> && traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
 				return vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, _Value_, 
@@ -135,7 +135,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
 			&& vectorizable_unary_function<_Function_, _Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_> && type_traits::__is_lightweight_callable_v<_Function_>)
+			&& vectorizable_projection<_Projection_, _Iterator_> && traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};

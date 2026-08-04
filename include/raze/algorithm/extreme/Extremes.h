@@ -98,7 +98,7 @@ struct _Extremes : _Traits_ {
 			auto __extreme_lower_value = vx::fold(__extreme_lower_vertical, [&] (const auto& __x, const auto& __y) 
 				raze_always_inline_lambda { return vx::select[__comp(__x, __y), __y](__x); });
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 
 			for (; __first != __sentinel; ++__first) {
 				if (__comp(__proj(*__first), __proj(__extreme_lower_value))) __extreme_lower_value = *__first;
@@ -146,7 +146,7 @@ struct _Extremes : _Traits_ {
 				raze_always_inline_lambda { return vx::select[__comp(__x, __y), __y](__x); });
 
 			if constexpr (_TailSize_ > 0) {
-				__seek_possibly_wrapped_iterator(__first, __ptr);
+				__seek_iter(__first, __ptr);
 
 				do {
 					if (__comp(__proj(*__first), __proj(__extreme_lower_value))) __extreme_lower_value = *__first;
@@ -164,9 +164,9 @@ struct _Extremes : _Traits_ {
 	raze_nodiscard constexpr raze_always_inline std::optional<std::pair<std::iter_value_t<_Iterator_>, std::iter_value_t<_Iterator_>>> operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
 	{
-		return __extremes_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__comp), type_traits::__pass_function(__proj));
+		return __extremes_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__comp), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Comp_ = std::greater<>, class _Projection_ = std::identity>
@@ -174,18 +174,18 @@ struct _Extremes : _Traits_ {
 		_Range_&& __range, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
 		requires(!constexpr_sized_range<_Range_>)
 	{
-		return __extremes_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp), 
-			type_traits::__pass_function(__proj));
+		return __extremes_unchecked(traits::__ubegin(__range),
+			traits::__uend(__range), traits::__fwd_fn(__comp), 
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Comp_ = std::greater<>, class _Projection_ = std::identity>
 	constexpr raze_always_inline std::optional<std::pair<std::ranges::range_value_t<_Range_>, std::ranges::range_value_t<_Range_>>> operator()(_Range_&& __range,
 		_Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
 	{
-		return __extremes_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj),
-			type_traits::__pass_function(__comp),
+		return __extremes_unchecked(traits::__ubegin(__range),
+			traits::__uend(__range), traits::__fwd_fn(__proj),
+			traits::__fwd_fn(__comp),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 	}
 private:

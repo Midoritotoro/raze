@@ -58,7 +58,7 @@ struct _Configurable_store : raze::options::strict_elementwise_callable<_Configu
         return __x.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
             auto __mem = std::to_address(__it);
             _Store_nt<_Abi_::isa>()(__mem, __storage_unwrap(__chunk));
-            algorithm::__seek_possibly_wrapped_iterator(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
+            algorithm::__seek_iter(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
         });
     }
 

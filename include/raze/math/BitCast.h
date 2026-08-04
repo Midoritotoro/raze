@@ -1,7 +1,7 @@
 #pragma once
 
 #include <raze/compatibility/Compatibility.h>
-#include <src/raze/type_traits/TypeCheck.h>
+#include <src/raze/traits/TypeCheck.h>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 

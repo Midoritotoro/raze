@@ -1,7 +1,7 @@
 #pragma once 
 
 #include <raze/options/Options.h>
-#include <src/raze/type_traits/FunctionPass.h>
+#include <src/raze/traits/FunctionPass.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Add.h>
 #include <src/raze/vx/hw/configurable/reduce/HorizontalSum.h>
@@ -25,14 +25,14 @@ struct _Configurable_fold : raze::options::strict_elementwise_callable<_Configur
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, _Callable_ __callable) const noexcept
         requires(_Options_::contains(broadcast))
     {
-        return raze::options::__dispatch_call(*this, __x, type_traits::__pass_function(__callable));
+        return raze::options::__dispatch_call(*this, __x, traits::__fwd_fn(__callable));
     }
 
     template <simd_type _Type_, class _Callable_>
     raze_nodiscard raze_always_inline typename _Type_::value_type operator()(const _Type_& __x, _Callable_ __callable) const noexcept
         requires(!_Options_::contains(broadcast))
     {
-        return raze::options::__dispatch_call(*this, __x, type_traits::__pass_function(__callable));
+        return raze::options::__dispatch_call(*this, __x, traits::__fwd_fn(__callable));
     }
 
     template <simd_type _Type_, class _Callable_>

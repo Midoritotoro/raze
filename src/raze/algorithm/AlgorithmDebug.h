@@ -3,8 +3,8 @@
 #include <src/raze/utility/Assert.h>
 #include <raze/compatibility/Inline.h>
 
-#include <src/raze/type_traits/IteratorCheck.h>
-#include <src/raze/type_traits/IntegralProperties.h>
+#include <src/raze/traits/IteratorCheck.h>
+#include <src/raze/traits/IntegralProperties.h>
 
 #include <src/raze/math/IntegralTypesConversions.h>
 
@@ -20,7 +20,7 @@ raze_constexpr_cxx20 void __verify_range__(const _Iterator_& __first, const _Sen
 #if !defined(NDEBUG)
 	if constexpr (std::is_pointer_v<_Iterator_> && std::is_pointer_v<_Sentinel_>)
 		raze_debug_assert_log(__first <= __last, "transposed pointer range");
-	else if constexpr (type_traits::__is_range_verifiable_v<_Iterator_, _Sentinel_>)
+	else if constexpr (traits::__is_range_verifiable_v<_Iterator_, _Sentinel_>)
 		__verify_range__(const_cast<const char*>(reinterpret_cast<const volatile char*>(std::to_address(__first))),
 			const_cast<const char*>(reinterpret_cast<const volatile char*>(std::to_address(__last))));
 #endif

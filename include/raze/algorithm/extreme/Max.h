@@ -81,7 +81,7 @@ struct _Max_value : _Traits_ {
 				__vmax = __proj(__vmax);
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			auto __largest_value = vx::horizontal_max(__vmax);
 
 			for (; __first != __sentinel; ++__first)
@@ -117,7 +117,7 @@ struct _Max_value : _Traits_ {
 				__vmax = __proj(__vmax);
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			auto __largest_value = vx::horizontal_max(__vmax);
 
 			if constexpr (_TailSize_ > 0) {
@@ -134,9 +134,9 @@ struct _Max_value : _Traits_ {
 	raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<_Iterator_>> operator()(_Iterator_ __first,
 		_Sentinel_ __last, _Projection_ __proj = {}) const noexcept
 	{
-		return __max_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__proj));
+		return __max_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
@@ -144,16 +144,16 @@ struct _Max_value : _Traits_ {
 		_Range_&& __range, _Projection_ __proj = {}) const noexcept
 			requires(!constexpr_sized_range<_Range_>)
 	{
-		return __max_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj));
+		return __max_unchecked(traits::__ubegin(__range),
+			traits::__uend(__range), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
 	constexpr raze_always_inline std::optional<std::ranges::range_value_t<_Range_>> operator()(_Range_&& __range,
 		_Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
 	{
-		return __max_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__proj),
+		return __max_unchecked(traits::__ubegin(__range),
+			traits::__uend(__range), traits::__fwd_fn(__proj),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 	}
 private:

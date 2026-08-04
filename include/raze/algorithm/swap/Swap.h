@@ -46,13 +46,13 @@ struct _Swap_ranges : _Traits_ {
 		_Iterator1_ __first1, _Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2) const noexcept
 			requires(std::indirectly_swappable<_Iterator1_, _Iterator2_>)
 	{
-		auto __r = __swap_ranges_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator1_>(std::move(__last1)),
-			type_traits::__ranges_unwrap_iterator<_Sentinel2_>(std::move(__first2)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator2_>(std::move(__last2)));
+		auto __r = __swap_ranges_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
+			traits::__usent<_Iterator1_>(std::move(__last1)),
+			traits::__uiter<_Sentinel2_>(std::move(__first2)),
+			traits::__usent<_Iterator2_>(std::move(__last2)));
 
-		__seek_possibly_wrapped_iterator(__first1, std::move(__r.in1));
-		__seek_possibly_wrapped_iterator(__first2, std::move(__r.in2));
+		__seek_iter(__first1, std::move(__r.in1));
+		__seek_iter(__first2, std::move(__r.in2));
 
 		return { std::move(__first1), std::move(__first2) };
 	}
@@ -67,13 +67,13 @@ struct _Swap_ranges : _Traits_ {
 		auto __begin1 = std::ranges::begin(__range1);
 		auto __begin2 = std::ranges::begin(__range2);
 
-		auto __r = __swap_ranges_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__begin1)),
-			type_traits::__unchecked_end(__range1),
-			type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::move(__begin2)),
-			type_traits::__unchecked_end(__range2));
+		auto __r = __swap_ranges_unchecked(traits::__r_uiter<_Range1_>(std::move(__begin1)),
+			traits::__uend(__range1),
+			traits::__r_uiter<_Range2_>(std::move(__begin2)),
+			traits::__uend(__range2));
 
-		__seek_possibly_wrapped_iterator(__begin1, std::move(__r.in1));
-		__seek_possibly_wrapped_iterator(__begin2, std::move(__r.in2));
+		__seek_iter(__begin1, std::move(__r.in1));
+		__seek_iter(__begin2, std::move(__r.in2));
 
 		return { std::move(__begin1), std::move(__begin2) };
 	}
@@ -92,14 +92,14 @@ struct _Swap_ranges : _Traits_ {
 		auto __begin1 = std::ranges::begin(__range1);
 		auto __begin2 = std::ranges::begin(__range2);
 
-		auto __r = __swap_ranges_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__begin1)),
-			type_traits::__unchecked_end(__range1),
-			type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::move(__begin2)),
-			type_traits::__unchecked_end(__range2),
+		auto __r = __swap_ranges_unchecked(traits::__r_uiter<_Range1_>(std::move(__begin1)),
+			traits::__uend(__range1),
+			traits::__r_uiter<_Range2_>(std::move(__begin2)),
+			traits::__uend(__range2),
 			std::integral_constant<sizetype, __min_size>{});
 
-		__seek_possibly_wrapped_iterator(__begin1, std::move(__r.in1));
-		__seek_possibly_wrapped_iterator(__begin2, std::move(__r.in2));
+		__seek_iter(__begin1, std::move(__r.in1));
+		__seek_iter(__begin2, std::move(__r.in2));
 
 		return { std::move(__begin1), std::move(__begin2) };
 	}
@@ -126,8 +126,8 @@ private:
 				const auto __offset = algorithm::__swap_ranges[_Traits_::traits()](__f1_ptr, std::to_address(__last1),
 					__f2_ptr, std::to_address(__last2));
 
-				__seek_possibly_wrapped_iterator(__first1, __bytes_pointer_offset(__f1_ptr, __offset));
-				__seek_possibly_wrapped_iterator(__first2, __bytes_pointer_offset(__f2_ptr, __offset));
+				__seek_iter(__first1, __bytes_pointer_offset(__f1_ptr, __offset));
+				__seek_iter(__first2, __bytes_pointer_offset(__f2_ptr, __offset));
 
 				return std::ranges::swap_ranges_result(__first1, __first2);
 			}
@@ -158,8 +158,8 @@ private:
 				const auto __offset = algorithm::__swap_ranges[_Traits_::traits()](__f1_ptr, std::to_address(__last1),
 					__f2_ptr, std::to_address(__last2), std::integral_constant<sizetype, _Size_ * sizeof(_Value1_)>{});
 
-				__seek_possibly_wrapped_iterator(__first1, __bytes_pointer_offset(__f1_ptr, __offset));
-				__seek_possibly_wrapped_iterator(__first2, __bytes_pointer_offset(__f2_ptr, __offset));
+				__seek_iter(__first1, __bytes_pointer_offset(__f1_ptr, __offset));
+				__seek_iter(__first2, __bytes_pointer_offset(__f2_ptr, __offset));
 
 				return std::ranges::swap_ranges_result(__first1, __first2);
 			}

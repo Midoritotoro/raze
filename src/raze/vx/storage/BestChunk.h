@@ -77,7 +77,7 @@ struct best_chunk {
     static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
     static constexpr auto __length = __width / raze_sizeof_in_bits(_Type_);
 
-    using __intrin_type = type_traits::__deduce_simd_vector_type<_Type_, __width>;
+    using __intrin_type = traits::__deduce_simd_vector_type<_Type_, __width>;
     using type = std::conditional_t<__width != 0 && intrin_type<__intrin_type>,
         _Vector_wrapper<_Type_, _Abi_, __length, __intrin_type>, _Scalar_wrapper<_Type_, _Abi_>>;
 };

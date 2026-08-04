@@ -85,8 +85,8 @@ struct _Mismatch : _Traits_ {
 
 				if (!vx::all_of(__mask)) {
 					const auto __mismatch = vx::find_first_not_set(__mask);
-					__seek_possibly_wrapped_iterator(__first1, __ptr1 + __mismatch);
-					__seek_possibly_wrapped_iterator(__first2, __ptr2 + __mismatch);
+					__seek_iter(__first1, __ptr1 + __mismatch);
+					__seek_iter(__first2, __ptr2 + __mismatch);
 					return { __first1, __first2 };
 				}
 
@@ -98,8 +98,8 @@ struct _Mismatch : _Traits_ {
 				if (!__predicate(__proj1(*__ptr1), __proj2(*__ptr2)))
 					break;
 
-			__seek_possibly_wrapped_iterator(__first1, __ptr1);
-			__seek_possibly_wrapped_iterator(__first2, __ptr2);
+			__seek_iter(__first1, __ptr1);
+			__seek_iter(__first2, __ptr2);
 
 			return { __first1, __first2 };
 		}	
@@ -125,8 +125,8 @@ struct _Mismatch : _Traits_ {
 				const auto __mask = __predicate(__proj1(vx::load<_Tag_>(__ptr1)), __proj2(vx::load<_Tag_>(__ptr2)));
 				if (!vx::all_of(__mask)) {
 					const auto __mismatch = vx::find_first_not_set(__mask);
-					__seek_possibly_wrapped_iterator(__first1, __ptr1 + __mismatch);
-					__seek_possibly_wrapped_iterator(__first2, __ptr2 + __mismatch);
+					__seek_iter(__first1, __ptr1 + __mismatch);
+					__seek_iter(__first2, __ptr2 + __mismatch);
 					return { __first1, __first2 };
 				}
 
@@ -147,8 +147,8 @@ struct _Mismatch : _Traits_ {
 				} while (--__tail_left);
 			}
 
-			__seek_possibly_wrapped_iterator(__first1, __ptr1);
-			__seek_possibly_wrapped_iterator(__first2, __ptr2);
+			__seek_iter(__first1, __ptr1);
+			__seek_iter(__first2, __ptr2);
 
 			return { __first1, __first2 };
 		}
@@ -163,15 +163,15 @@ struct _Mismatch : _Traits_ {
 		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		auto __result = __mismatch_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator1_>(std::move(__last1)),
-			type_traits::__ranges_unwrap_iterator<_Sentinel2_>(std::move(__first2)), 
-			type_traits::__ranges_unwrap_sentinel<_Iterator2_>(std::move(__last2)), 
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		auto __result = __mismatch_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
+			traits::__usent<_Iterator1_>(std::move(__last1)),
+			traits::__uiter<_Sentinel2_>(std::move(__first2)), 
+			traits::__usent<_Iterator2_>(std::move(__last2)), 
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 
-		__seek_possibly_wrapped_iterator(__first1, __result.in1);
-		__seek_possibly_wrapped_iterator(__first2, __result.in2);
+		__seek_iter(__first1, __result.in1);
+		__seek_iter(__first2, __result.in2);
 
 		return { __first1, __first2 };
 	}
@@ -189,13 +189,13 @@ struct _Mismatch : _Traits_ {
 		auto __first1 = std::ranges::begin(__range1);
 		auto __first2 = std::ranges::begin(__range2);
 
-		auto __result = __mismatch_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__first1)),
-			type_traits::__unchecked_end(__range1), type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::move(__first2)), 
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		auto __result = __mismatch_unchecked(traits::__r_uiter<_Range1_>(std::move(__first1)),
+			traits::__uend(__range1), traits::__r_uiter<_Range2_>(std::move(__first2)), 
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 
-		__seek_possibly_wrapped_iterator(__first1, __result.in1);
-		__seek_possibly_wrapped_iterator(__first2, __result.in2);
+		__seek_iter(__first1, __result.in1);
+		__seek_iter(__first2, __result.in2);
 
 		return { __first1, __first2 };
 	}
@@ -215,13 +215,13 @@ struct _Mismatch : _Traits_ {
 		auto __first1 = std::ranges::begin(__range1);
 		auto __first2 = std::ranges::begin(__range2);
 
-		auto __result = __mismatch_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__first1)),
-			type_traits::__unchecked_end(__range1), type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::move(__first2)),
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2), std::integral_constant<sizetype, __min_size>{});
+		auto __result = __mismatch_unchecked(traits::__r_uiter<_Range1_>(std::move(__first1)),
+			traits::__uend(__range1), traits::__r_uiter<_Range2_>(std::move(__first2)),
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2), std::integral_constant<sizetype, __min_size>{});
 
-		__seek_possibly_wrapped_iterator(__first1, __result.in1);
-		__seek_possibly_wrapped_iterator(__first2, __result.in2);
+		__seek_iter(__first1, __result.in1);
+		__seek_iter(__first2, __result.in2);
 
 		return { __first1, __first2 };
 	}

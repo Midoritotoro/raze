@@ -80,8 +80,8 @@ struct _Remove_if : _Traits_ {
 			} while (__ptr != __aligned_end);
 
 			_Iterator_ __current_it;
-			__seek_possibly_wrapped_iterator(__first, __ptr);
-			__seek_possibly_wrapped_iterator(__current_it, __current_ptr);
+			__seek_iter(__first, __ptr);
+			__seek_iter(__current_it, __current_ptr);
 
 			for (; __first != __sentinel; ++__first )
 				if (!__predicate(__proj(*__first))) 
@@ -97,11 +97,11 @@ struct _Remove_if : _Traits_ {
 		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		auto __r = __remove_if_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(__last),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+		auto __r = __remove_if_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(__last),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__first, std::move(__r));
+		__seek_iter(__first, std::move(__r));
 		return { __first, __last };
 	}
 
@@ -113,11 +113,11 @@ struct _Remove_if : _Traits_ {
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
-		auto __r = __remove_if_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(__end), type_traits::__pass_function(__pred),
-			type_traits::__pass_function(__proj));
+		auto __r = __remove_if_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__r_usent<_Range_>(__end), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r));
+		__seek_iter(__begin, std::move(__r));
 		return { __begin, __end };
 	}
 
@@ -129,11 +129,11 @@ struct _Remove_if : _Traits_ {
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
-		auto __r = __remove_if_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(__end), type_traits::__pass_function(__pred),
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		auto __r = __remove_if_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__r_usent<_Range_>(__end), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r));
+		__seek_iter(__begin, std::move(__r));
 		return { __begin, __end };
 	}
 
@@ -204,7 +204,7 @@ struct _Remove : _Traits_ {
 		_Iterator_ __first, _Sentinel_ __last, const _ValueType_& __v, _Projection_ __proj = {}) const noexcept
 	{
 		return remove_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
-			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)), type_traits::__pass_function(__proj));
+			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _ValueType_, class _Projection_ = std::identity>
@@ -213,7 +213,7 @@ struct _Remove : _Traits_ {
 		requires(std::permutable<std::ranges::iterator_t<_Range_>>)
 	{
 		return remove_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)), type_traits::__pass_function(__proj));
+			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)), traits::__fwd_fn(__proj));
 	}
 };
 

@@ -99,8 +99,8 @@ struct _Transform : _Traits_ {
 				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
 			} while (__in_ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__first, __in_ptr);
+			__seek_iter(__result, __out_ptr);
 
 			for (; __first != __last; ++__first, ++__result)
 				*__result = __f(__proj(*__first));
@@ -130,8 +130,8 @@ struct _Transform : _Traits_ {
 				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
 			} while (--__left);
 
-			__seek_possibly_wrapped_iterator(__first, __in_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__first, __in_ptr);
+			__seek_iter(__result, __out_ptr);
 
 			for (; __first != __last; ++__first, ++__result)
 				*__result = __f(__proj(*__first));
@@ -177,9 +177,9 @@ struct _Transform : _Traits_ {
 				__advance_bytes(__out_ptr, sizeof(_Tag_));
 			} while (__in1_ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first1, __in1_ptr);
-			__seek_possibly_wrapped_iterator(__first2, __in2_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__first1, __in1_ptr);
+			__seek_iter(__first2, __in2_ptr);
+			__seek_iter(__result, __out_ptr);
 
 			for (; __first1 != __last1 && __first2 != __last2; ++__first1, ++__first2, ++__result)
 				*__result = __f(__proj1(*__first1), __proj2(*__first2));
@@ -213,9 +213,9 @@ struct _Transform : _Traits_ {
 				__advance_bytes(__out_ptr, sizeof(_Tag_));
 			} while (--__left);
 
-			__seek_possibly_wrapped_iterator(__first1, __in1_ptr);
-			__seek_possibly_wrapped_iterator(__first2, __in2_ptr);
-			__seek_possibly_wrapped_iterator(__result, __out_ptr);
+			__seek_iter(__first1, __in1_ptr);
+			__seek_iter(__first2, __in2_ptr);
+			__seek_iter(__result, __out_ptr);
 
 			for (; __first1 != __last1 && __first2 != __last2; ++__first1, ++__first2, ++__result)
 				*__result = __f(__proj1(*__first1), __proj2(*__first2));
@@ -230,13 +230,13 @@ struct _Transform : _Traits_ {
 		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, _Projection_ __proj = {}) const noexcept
 			requires(std::indirectly_writable<_OutIterator_, std::indirect_result_t<_Function_, std::projected<_InputIterator_, _Projection_>>>)
 	{
-		auto __r = __transform_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_InputIterator_>(std::move(__last)), 
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__f), type_traits::__pass_function(__proj));
+		auto __r = __transform_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_InputIterator_>(std::move(__last)), 
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__first, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__first, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__first), std::move(__result) };
 	}
@@ -252,13 +252,13 @@ struct _Transform : _Traits_ {
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __transform_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(std::move(__end)),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__f), type_traits::__pass_function(__proj));
+			traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__r_usent<_Range_>(std::move(__end)),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__begin, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__begin), std::move(__result) };
 	}
@@ -274,14 +274,14 @@ struct _Transform : _Traits_ {
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __transform_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(std::move(__end)),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__f), type_traits::__pass_function(__proj),
+			traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__r_usent<_Range_>(std::move(__end)),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__f), traits::__fwd_fn(__proj),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-		__seek_possibly_wrapped_iterator(__begin, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__end, std::move(__r.out));
+		__seek_iter(__begin, std::move(__r.in));
+		__seek_iter(__end, std::move(__r.out));
 
 		return { std::move(__begin), std::move(__end) };
 	}
@@ -295,17 +295,17 @@ struct _Transform : _Traits_ {
 		_Function_ __f, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept requires(std::indirectly_writable<_OutIterator_,
 			std::indirect_result_t<_Function_, std::projected<_InputIterator1_, _Projection1_>, std::projected<_InputIterator2_, _Projection2_>>>)
 	{
-		auto __r = __binary_transform_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_sentinel<_InputIterator1_>(std::move(__last1)),
-			type_traits::__ranges_unwrap_iterator<_Sentinel2_>(std::move(__first2)),
-			type_traits::__ranges_unwrap_sentinel<_InputIterator2_>(std::move(__last2)),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__f), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		auto __r = __binary_transform_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
+			traits::__usent<_InputIterator1_>(std::move(__last1)),
+			traits::__uiter<_Sentinel2_>(std::move(__first2)),
+			traits::__usent<_InputIterator2_>(std::move(__last2)),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__f), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 
-		__seek_possibly_wrapped_iterator(__first1, std::move(__r.in1));
-		__seek_possibly_wrapped_iterator(__first2, std::move(__r.in2));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__first1, std::move(__r.in1));
+		__seek_iter(__first2, std::move(__r.in2));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__first1), std::move(__first2), std::move(__result) };
 	}
@@ -327,17 +327,17 @@ struct _Transform : _Traits_ {
 		auto __begin2 = std::ranges::begin(__range2);
 
 		auto __r = __binary_transform_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__begin1)),
-			type_traits::__unchecked_end(__range1),
-			type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::move(__begin2)),
-			type_traits::__unchecked_end(__range2),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__f),
-			type_traits::__pass_function(__proj1), type_traits::__pass_function(__proj2));
+			traits::__r_uiter<_Range1_>(std::move(__begin1)),
+			traits::__uend(__range1),
+			traits::__r_uiter<_Range2_>(std::move(__begin2)),
+			traits::__uend(__range2),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__f),
+			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2));
 
-		__seek_possibly_wrapped_iterator(__begin1, std::move(__r.in1));
-		__seek_possibly_wrapped_iterator(__begin2, std::move(__r.in2));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__begin1, std::move(__r.in1));
+		__seek_iter(__begin2, std::move(__r.in2));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__begin1), std::move(__begin2), std::move(__result) };
 	}
@@ -363,18 +363,18 @@ struct _Transform : _Traits_ {
 		auto __begin2 = std::ranges::begin(__range2);
 
 		auto __r = __binary_transform_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range1_>(std::move(__begin1)),
-			type_traits::__unchecked_end(__range1),
-			type_traits::__ranges_unwrap_range_iterator<_Range2_>(std::move(__begin2)),
-			type_traits::__unchecked_end(__range2),
-			algorithm::__unwrap_iterator(std::move(__result)),
-			type_traits::__pass_function(__f),
-			type_traits::__pass_function(__proj1), type_traits::__pass_function(__proj2),
+			traits::__r_uiter<_Range1_>(std::move(__begin1)),
+			traits::__uend(__range1),
+			traits::__r_uiter<_Range2_>(std::move(__begin2)),
+			traits::__uend(__range2),
+			algorithm::__uiter(std::move(__result)),
+			traits::__fwd_fn(__f),
+			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2),
 			std::integral_constant<sizetype, __min_size>{});
 
-		__seek_possibly_wrapped_iterator(__begin1, std::move(__r.in1));
-		__seek_possibly_wrapped_iterator(__begin2, std::move(__r.in2));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__begin1, std::move(__r.in1));
+		__seek_iter(__begin2, std::move(__r.in2));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__begin1), std::move(__begin2), std::move(__result) };
 	}
@@ -392,7 +392,7 @@ private:
 		if constexpr (!options::always_scalar<_TraitsType>() && 
 			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
 			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<_Projection_, _InputIterator_> &&
-			type_traits::__is_lightweight_callable_v<_Function_>)
+			traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
 				return vx::__dispatch_sized_impl<__vectorized_unary_transform, _InValue_,
@@ -418,7 +418,7 @@ private:
 		if constexpr (!options::always_scalar<_TraitsType>() && 
 			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
 			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<_Projection_, _InputIterator_> &&
-			type_traits::__is_lightweight_callable_v<_Function_>)
+			traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_InValue_)>{};
@@ -450,7 +450,7 @@ private:
 			std::contiguous_iterator<_OutIterator_> && std::same_as<_InValue1_, _InValue2_> &&
 			vectorizable_binary_function<_Function_, _InputIterator1_, _InputIterator2_> &&
 			vectorizable_projection<_Projection1_, _InputIterator1_> && vectorizable_projection<_Projection2_, _InputIterator2_> &&
-			type_traits::__is_lightweight_callable_v<_Function_>)
+			traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
 				const auto __dist1 = algorithm::distance(__first1, __last1);
@@ -488,7 +488,7 @@ private:
 			vectorizable_binary_function<_Function_, _InputIterator1_, _InputIterator2_> &&
 			vectorizable_projection<_Projection1_, _InputIterator1_> &&
 			vectorizable_projection<_Projection2_, _InputIterator2_> &&
-			type_traits::__is_lightweight_callable_v<_Function_>)
+			traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_InValue1_)>{};

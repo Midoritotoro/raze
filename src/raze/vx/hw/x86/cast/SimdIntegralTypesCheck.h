@@ -2,8 +2,8 @@
 
 #include <raze/arch/CpuFeature.h>
 
-#include <src/raze/type_traits/TypeCheck.h>
-#include <src/raze/type_traits/IsVirtualBaseOf.h>
+#include <src/raze/traits/TypeCheck.h>
+#include <src/raze/traits/IsVirtualBaseOf.h>
 #include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 
 
@@ -21,7 +21,7 @@ template <arch::ISA	_ISA_, u32 _Width_>
 constexpr bool __is_width_for_generation_v = __vector_default_size<_ISA_> >= _Width_;
 
 template <class _Type_>
-constexpr bool __is_intrin_type_v = type_traits::is_any_of_v<std::remove_cvref_t<_Type_>,
+constexpr bool __is_intrin_type_v = traits::is_any_of_v<std::remove_cvref_t<_Type_>,
 	__m128, __m128i, __m128d, __m256, __m256i, __m256d, __m512, __m512i, __m512d>;
 
 template <class _IntrinType_>
@@ -73,7 +73,7 @@ template <typename _Element_>
 constexpr bool __is_epu8_v  = sizeof(_Element_) == 1 && std::is_unsigned_v<_Element_> && !std::is_floating_point_v<_Element_>;
 
 template <typename _Element_>
-constexpr bool __is_pd_v    = sizeof(_Element_) == 8 && type_traits::is_any_of_v<_Element_, f64, long double>;
+constexpr bool __is_pd_v    = sizeof(_Element_) == 8 && traits::is_any_of_v<_Element_, f64, long double>;
 
 template <typename _Element_>
 constexpr bool __is_ps_v    = sizeof(_Element_) == 4 && std::is_same_v<_Element_, f32>;
@@ -89,7 +89,7 @@ struct __is_valid_simd<
     std::void_t<simd<typename _BasicSimd_::value_type,
         typename _BasicSimd_::abi_type>>>
     : std::bool_constant<
-        type_traits::is_virtual_base_of_v<
+        traits::is_virtual_base_of_v<
             simd<typename _BasicSimd_::value_type,
                     typename _BasicSimd_::abi_type>,
             _BasicSimd_> ||
@@ -109,9 +109,9 @@ struct __vector_element_t {
 
 template <class _VectorType_>
 struct __vector_element_t<_VectorType_, false, true> {
-    using type = std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128i, __m256i, __m512i>, int, 
-		std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128d, __m256d, __m512d>, f64, 
-			std::conditional_t<type_traits::is_any_of_v<_VectorType_, __m128, __m256, __m512>, f32, void>>>;
+    using type = std::conditional_t<traits::is_any_of_v<_VectorType_, __m128i, __m256i, __m512i>, int, 
+		std::conditional_t<traits::is_any_of_v<_VectorType_, __m128d, __m256d, __m512d>, f64, 
+			std::conditional_t<traits::is_any_of_v<_VectorType_, __m128, __m256, __m512>, f32, void>>>;
 };
 
 template <class _VectorType_>

@@ -130,13 +130,13 @@ struct _Find_last_if : _Traits_ {
                 const auto __mask = __predicate(__proj(raze::vx::load<_Tag_>(__ptr)));
 
                 if (raze::vx::any_of(__mask)) {
-                    __seek_possibly_wrapped_iterator(__first, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
+                    __seek_iter(__first, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
                     return { __first, __iterator_last };
                 }
             } while (__ptr != __stop_at);
         
             auto __tail_it = __iterator_last;
-            __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+            __seek_iter(__tail_it, __ptr);
 
             while (true) {
                 if (__predicate(__proj(*__tail_it))) {
@@ -172,13 +172,13 @@ struct _Find_last_if : _Traits_ {
                 const auto __mask = __predicate(__proj(raze::vx::load<_Tag_>(__ptr)));
 
                 if (raze::vx::any_of(__mask)) {
-                    __seek_possibly_wrapped_iterator(__first, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
+                    __seek_iter(__first, __ptr + _Tag_::size() - vx::find_last_set[vx::not_null](__mask) - 1);
                     return { __first, __iterator_last };
                 }
             } while (--__left);
         
             auto __tail_it = __iterator_last;
-            __seek_possibly_wrapped_iterator(__tail_it, __ptr);
+            __seek_iter(__tail_it, __ptr);
 
             if constexpr (_TailSize_ != 0) {
                 do {
@@ -201,22 +201,22 @@ struct _Find_last_if : _Traits_ {
         _Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
             requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
     {
-        auto __unwrapped_first = type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first));
+        auto __unwrapped_first = traits::__uiter<_Sentinel_>(std::move(__first));
 
         if constexpr (std::bidirectional_iterator<_Iterator_>) {
-            auto __unwrapped_last = type_traits::__find_final_unwrapped_iterator<_Iterator_>(__unwrapped_first, std::move(__last));
+            auto __unwrapped_last = traits::__last_uiter<_Iterator_>(__unwrapped_first, std::move(__last));
             auto __unwrapped_result = __find_last_unchecked(
                 std::move(__unwrapped_first), std::move(__unwrapped_last),
-                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 
-            return type_traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
+            return traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
         }
         else {
             auto __unwrapped_result = __find_last_unchecked(std::move(__unwrapped_first),
-                type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+                traits::__usent<_Iterator_>(std::move(__last)),
+                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 
-            return type_traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
+            return traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
         }
     }
 
@@ -227,14 +227,14 @@ struct _Find_last_if : _Traits_ {
                 _Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
     {
         if constexpr (std::ranges::bidirectional_range<_Range_>) {
-            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
-                type_traits::__unchecked_begin(__range), type_traits::__find_final_unwrapped_iterator(__range),
-                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)));
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                traits::__ubegin(__range), traits::__last_uiter(__range),
+                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
         }
         else {
-            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
-                type_traits::__unchecked_begin(__range), type_traits::__unchecked_end(__range),
-                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj)));
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                traits::__ubegin(__range), traits::__uend(__range),
+                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
         }
 
     }
@@ -246,15 +246,15 @@ struct _Find_last_if : _Traits_ {
                 _Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
     {
         if constexpr (std::ranges::bidirectional_range<_Range_>) {
-            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
-                type_traits::__unchecked_begin(__range), type_traits::__find_final_unwrapped_iterator(__range),
-                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj),
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                traits::__ubegin(__range), traits::__last_uiter(__range),
+                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj),
                 std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
         }
         else {
-            return type_traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
-                type_traits::__unchecked_begin(__range), type_traits::__unchecked_end(__range),
-                type_traits::__pass_function(__pred), type_traits::__pass_function(__proj),
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+                traits::__ubegin(__range), traits::__uend(__range),
+                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj),
                 std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
         }
     }
@@ -316,7 +316,7 @@ struct _Find_last : _Traits_ {
 	{
 		return find_last_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
 			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_,
@@ -327,7 +327,7 @@ struct _Find_last : _Traits_ {
 	{
 		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_, 
@@ -338,7 +338,7 @@ struct _Find_last : _Traits_ {
 	{
 		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			type_traits::__pass_function(__proj));
+			traits::__fwd_fn(__proj));
 	}
 };
 
@@ -352,7 +352,7 @@ struct _Find_last_if_not : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return find_last_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_last_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -361,7 +361,7 @@ struct _Find_last_if_not : _Traits_ {
 			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
@@ -370,7 +370,7 @@ struct _Find_last_if_not : _Traits_ {
 			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
 				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), type_traits::__pass_function(__proj));
+		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 };
 

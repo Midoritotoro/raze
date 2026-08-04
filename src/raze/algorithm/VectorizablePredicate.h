@@ -35,7 +35,7 @@ raze_always_inline constexpr __function_unwrapped<_Function_> __unwrap_function(
 }
 
 template <class _Type_>
-concept vectorizable_value_type = type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>;
+concept vectorizable_value_type = traits::__is_vector_type_supported_v<std::decay_t<_Type_>>;
 
 template <class _Predicate_, class _Iterator_>
 concept always_scalar_unary = vectorizable_value_type<std::iter_value_t<_Iterator_>> && (

@@ -51,7 +51,7 @@ concept __correct_simd_binary_op = simd_type<_Simd_> &&
 
 template <class _Type_, class _Abi_>
 class simd {
-    static_assert(type_traits::__is_vector_type_supported_v<std::decay_t<_Type_>>, "Unsupported element type. ");
+    static_assert(traits::__is_vector_type_supported_v<std::decay_t<_Type_>>, "Unsupported element type. ");
 public:
     static constexpr auto __isa = _Abi_::isa;
     static constexpr auto __width = (_Abi_::size * sizeof(_Type_) * 8);

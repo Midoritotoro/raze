@@ -134,7 +134,7 @@ struct _Contains_subrange : _Traits_ {
 			const auto __remaining_bytes = __haystack_bytes - __processed_bytes;
 
 			if (__remaining_bytes >= __needle_bytes) {
-				__seek_possibly_wrapped_iterator(__first1, __haystack);
+				__seek_iter(__first1, __haystack);
 				return (*this)(__first1, __sentinel1, __first2, __sentinel2, __predicate, __proj1, __proj2);
 			}
 			else return false;
@@ -150,12 +150,12 @@ struct _Contains_subrange : _Traits_ {
 		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		return __contains_subrange_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel1_>(std::move(__first1)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator1_>(std::move(__last1)),
-			type_traits::__ranges_unwrap_iterator<_Sentinel2_>(std::move(__first2)), 
-			type_traits::__ranges_unwrap_sentinel<_Iterator2_>(std::move(__last2)), 
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		return __contains_subrange_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
+			traits::__usent<_Iterator1_>(std::move(__last1)),
+			traits::__uiter<_Sentinel2_>(std::move(__first2)), 
+			traits::__usent<_Iterator2_>(std::move(__last2)), 
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
@@ -167,10 +167,10 @@ struct _Contains_subrange : _Traits_ {
 				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
 					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		return __contains_subrange_unchecked(type_traits::__unchecked_begin(__range1),
-			type_traits::__unchecked_end(__range1), type_traits::__unchecked_begin(__range2),
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2));
+		return __contains_subrange_unchecked(traits::__ubegin(__range1),
+			traits::__uend(__range1), traits::__ubegin(__range2),
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2));
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
@@ -182,10 +182,10 @@ struct _Contains_subrange : _Traits_ {
 				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
 					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		return __search_unchecked(type_traits::__unchecked_begin(__range1),
-			type_traits::__unchecked_end(__range1), type_traits::__unchecked_begin(__range2),
-			type_traits::__unchecked_end(__range2), type_traits::__pass_function(__pred), type_traits::__pass_function(__proj1),
-			type_traits::__pass_function(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{},
+		return __search_unchecked(traits::__ubegin(__range1),
+			traits::__uend(__range1), traits::__ubegin(__range2),
+			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
+			traits::__fwd_fn(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{},
 			std::integral_constant<sizetype, __range_constexpr_size<_Range2_>()>{});
 	}
 private:

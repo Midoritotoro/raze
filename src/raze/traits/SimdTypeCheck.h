@@ -3,13 +3,13 @@
 #include <raze/arch/CpuFeature.h>
 #include <raze/compatibility/SimdCompatibility.h>
 
-#include <src/raze/type_traits/IntegralProperties.h>
-#include <src/raze/type_traits/TypeCheck.h>
+#include <src/raze/traits/IntegralProperties.h>
+#include <src/raze/traits/TypeCheck.h>
 
 #include <src/raze/vx/hw/Cast.h>
 
 
-__RAZE_TYPE_TRAITS_NAMESPACE_BEGIN
+__RAZE_TRAITS_NAMESPACE_BEGIN
 
 template <arch::ISA _ISA_>
 constexpr inline bool __is_generation_supported_v =
@@ -78,4 +78,4 @@ constexpr bool __is_zeroupper_required_v = arch::__is_ymm_v<_ISA_> || arch::__is
 template <arch::ISA _SimdGenerationFirst_, arch::ISA _SimdGenerationSecond_>
 constexpr bool __is_simd_feature_superior_v = (static_cast<u8>(_SimdGenerationFirst_) > static_cast<u8>(_SimdGenerationSecond_));
 
-__RAZE_TYPE_TRAITS_NAMESPACE_END
+__RAZE_TRAITS_NAMESPACE_END

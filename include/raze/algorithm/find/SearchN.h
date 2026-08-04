@@ -115,8 +115,8 @@ struct _Search_n : _Traits_ {
 						if (__current_count >= __count) {
 							auto* __result = (__current_count == (__end - __begin)) ? (__ptr + __begin) : (__ptr + __end - __count);
 
-							__seek_possibly_wrapped_iterator(__first, __result);
-							__seek_possibly_wrapped_iterator(__sentinel, __result + __count);
+							__seek_iter(__first, __result);
+							__seek_iter(__sentinel, __result + __count);
 
 							return { __first, __sentinel };
 						}
@@ -132,7 +132,7 @@ struct _Search_n : _Traits_ {
 					__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr - __current_count);
+			__seek_iter(__first, __ptr - __current_count);
 			return (*this)(__first, __sentinel, __count, __v, __predicate, __proj);
 		}
 	};
@@ -147,17 +147,17 @@ struct _Search_n : _Traits_ {
 		if (raze_unlikely(__count <= 0)) return { __first, __first };
 		else if (__count == 1) {
 			auto __r = algorithm::find_if(std::move(__first), __last, [&__v](auto __x) raze_always_inline_lambda{
-				return __x == __v; }, type_traits::__pass_function(__proj));
+				return __x == __v; }, traits::__fwd_fn(__proj));
 
 			return { __r, __r != __last ? std::ranges::next(__r) : __r };
 		}
 		else {
-			auto __r = __search_n_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-				type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)), __count, __v,
-				type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+			auto __r = __search_n_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+				traits::__usent<_Iterator_>(std::move(__last)), __count, __v,
+				traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 
-			__seek_possibly_wrapped_iterator(__first, __r.begin());
-			__seek_possibly_wrapped_iterator(__last, __r.end());
+			__seek_iter(__first, __r.begin());
+			__seek_iter(__last, __r.end());
 
 			return { __first, __last };
 		}
@@ -177,18 +177,18 @@ struct _Search_n : _Traits_ {
 		if (raze_unlikely(__count <= 0)) return { __first, __first };
 		else if (__count == 1) {
 			auto __r = algorithm::find_if(std::move(__first), __last, [&__v] (auto __x) raze_always_inline_lambda {
-				return __x == __v; }, type_traits::__pass_function(__proj));
+				return __x == __v; }, traits::__fwd_fn(__proj));
 
 			return { __r, __r != __last ? std::ranges::next(__r) : __r };
 		}
 		else {
-			auto __r = __search_n_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
-				type_traits::__ranges_unwrap_range_sentinel<_Range_>(std::move(__last)),
-				__count, __v, type_traits::__pass_function(__pred),
-				type_traits::__pass_function(__proj));
+			auto __r = __search_n_unchecked(traits::__r_uiter<_Range_>(std::move(__first)),
+				traits::__r_usent<_Range_>(std::move(__last)),
+				__count, __v, traits::__fwd_fn(__pred),
+				traits::__fwd_fn(__proj));
 
-			__seek_possibly_wrapped_iterator(__first, __r.begin());
-			__seek_possibly_wrapped_iterator(__last, __r.end());
+			__seek_iter(__first, __r.begin());
+			__seek_iter(__last, __r.end());
 
 			return { __first, __last };
 		}
@@ -208,18 +208,18 @@ struct _Search_n : _Traits_ {
 		if (raze_unlikely(__count <= 0)) return { __first, __first };
 		else if (__count == 1) {
 			auto __r = algorithm::find_if(std::forward<_Range_>(__range), [&__v](auto __x) raze_always_inline_lambda{
-				return __x == __v; }, type_traits::__pass_function(__proj));
+				return __x == __v; }, traits::__fwd_fn(__proj));
 
 			return { __r, __r != __last ? std::ranges::next(__r) : __r };
 		}
 		else {
-			auto __r = __search_n_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
-				type_traits::__ranges_unwrap_range_sentinel<_Range_>(std::move(__last)),
-				__count, __v, type_traits::__pass_function(__pred), type_traits::__pass_function(__proj),
+			auto __r = __search_n_unchecked(traits::__r_uiter<_Range_>(std::move(__first)),
+				traits::__r_usent<_Range_>(std::move(__last)),
+				__count, __v, traits::__fwd_fn(__pred), traits::__fwd_fn(__proj),
 				std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-			__seek_possibly_wrapped_iterator(__first, __r.begin());
-			__seek_possibly_wrapped_iterator(__last, __r.end());
+			__seek_iter(__first, __r.begin());
+			__seek_iter(__last, __r.end());
 
 			return { __first, __last };
 		}

@@ -48,7 +48,7 @@ struct _For_each_n : _Traits_ {
 				__ptr += _Tag_::size();
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(_iterator, __ptr);
+			__seek_iter(_iterator, __ptr);
 		}
 
 		constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> result() const noexcept {
@@ -63,10 +63,10 @@ struct _For_each_n : _Traits_ {
 		if (__n == 0) return { std::move(__first), std::move(__f) };
 
 		auto __r = __for_each_n_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Iterator_>(std::move(__first)),
-			__n, type_traits::__pass_function(__f), type_traits::__pass_function(__proj));
+			traits::__uiter<_Iterator_>(std::move(__first)),
+			__n, traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__first, __r.in);
+		__seek_iter(__first, __r.in);
 		return { __first, __unwrap_function(std::move(__r.fun)) };
 	}
 
@@ -82,7 +82,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
 			&& vectorizable_unary_function<_Function_, _Iterator_> &&
-			vectorizable_projection<_Projection_, _Iterator_> && type_traits::__is_lightweight_callable_v<_Function_>)
+			vectorizable_projection<_Projection_, _Iterator_> && traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
 				return vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, 

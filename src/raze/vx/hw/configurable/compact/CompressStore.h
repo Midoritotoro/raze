@@ -36,7 +36,7 @@ struct _Configurable_compress_store : raze::options::strict_elementwise_callable
             if constexpr (_Options_::contains(aligned)) __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__chunk), __storage_unwrap(__mask_chunk), __aligned_policy{}));
             else __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__chunk), __storage_unwrap(__mask_chunk)));
 
-            algorithm::__seek_possibly_wrapped_iterator(__it, __mem);
+            algorithm::__seek_iter(__it, __mem);
         }, __mask.__storage().storage());
 
         return __it;

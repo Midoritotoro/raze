@@ -69,8 +69,8 @@ struct _Remove_copy_if : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__output, __out_ptr);
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__output, __out_ptr);
+			__seek_iter(__first, __ptr);
 
 			for (; __first != __sentinel; ++__first) {
 				if (!__predicate(__proj(*__first))) {
@@ -90,11 +90,11 @@ struct _Remove_copy_if : _Traits_ {
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>> &&
 			std::indirectly_copyable<_Iterator_, _Output_>)
 	{
-		auto __result_out = __remove_copy_if_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(__last), std::move(__output),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+		auto __result_out = __remove_copy_if_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(__last), std::move(__output),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__output, std::move(__result_out));
+		__seek_iter(__output, std::move(__result_out));
 		return { __last, __output };
 	}
 
@@ -107,11 +107,11 @@ struct _Remove_copy_if : _Traits_ {
 			std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _Output_>)
 	{
 		auto __end = std::ranges::end(__range);
-		auto __result_out = __remove_copy_if_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(__end), std::move(__output),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj));
+		auto __result_out = __remove_copy_if_unchecked(traits::__ubegin(__range),
+			traits::__r_usent<_Range_>(__end), std::move(__output),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 
-		__seek_possibly_wrapped_iterator(__output, std::move(__result_out));
+		__seek_iter(__output, std::move(__result_out));
 		return { __end, __result_out };
 	}
 
@@ -124,12 +124,12 @@ struct _Remove_copy_if : _Traits_ {
 			std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _Output_>)
 	{
 		auto __end = std::ranges::end(__range);
-		auto __result_out = __remove_copy_if_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(__end), std::move(__output),
-			type_traits::__pass_function(__pred), type_traits::__pass_function(__proj),
+		auto __result_out = __remove_copy_if_unchecked(traits::__ubegin(__range),
+			traits::__r_usent<_Range_>(__end), std::move(__output),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-		__seek_possibly_wrapped_iterator(__output, std::move(__result_out));
+		__seek_iter(__output, std::move(__result_out));
 		return { __end, __result_out };
 	}
 
@@ -194,7 +194,7 @@ struct _Remove_copy : _Traits_ {
 		requires(std::indirectly_copyable<_Iterator_, _Output_>)
 	{
 		return remove_copy_if[_Traits_::traits()](std::move(__first), std::move(__last), std::move(__output), algorithm::equal_to(
-			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)), type_traits::__pass_function(__proj));
+			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, std::weakly_incrementable _Output_,
@@ -204,7 +204,7 @@ struct _Remove_copy : _Traits_ {
 		requires(std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _Output_>)
 	{
 		return remove_copy_if[_Traits_::traits()](std::forward<_Range_>(__range), std::move(__output), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)), type_traits::__pass_function(__proj));
+			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)), traits::__fwd_fn(__proj));
 	}
 };
 

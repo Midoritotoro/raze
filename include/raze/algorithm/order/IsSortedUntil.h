@@ -76,7 +76,7 @@ struct _Is_sorted_until : _Traits_ {
 					const auto __mask = __comp(__next, __current);
 
 					if (vx::any_of(__mask)) {
-						__seek_possibly_wrapped_iterator(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
+						__seek_iter(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
 						return __first;
 					}
 
@@ -91,7 +91,7 @@ struct _Is_sorted_until : _Traits_ {
 					const auto __mask = __comp(__next, __current);
 
 					if (vx::any_of(__mask)) {
-						__seek_possibly_wrapped_iterator(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
+						__seek_iter(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
 						return __first;
 					}
 
@@ -101,7 +101,7 @@ struct _Is_sorted_until : _Traits_ {
 #endif
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, __sentinel, __comp, __proj);
 		}
 
@@ -124,7 +124,7 @@ struct _Is_sorted_until : _Traits_ {
 					const auto __mask = __comp(__next, __current);
 
 					if (vx::any_of(__mask)) {
-						__seek_possibly_wrapped_iterator(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
+						__seek_iter(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
 						return __first;
 					}
 
@@ -139,7 +139,7 @@ struct _Is_sorted_until : _Traits_ {
 					const auto __mask = __comp(__next, __current);
 
 					if (vx::any_of(__mask)) {
-						__seek_possibly_wrapped_iterator(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
+						__seek_iter(__first, __ptr + 1 + vx::find_first_set[vx::not_null](__mask));
 						return __first;
 					}
 
@@ -149,7 +149,7 @@ struct _Is_sorted_until : _Traits_ {
 #endif
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, __sentinel, __comp, __proj);
 		}
 	};
@@ -160,10 +160,10 @@ struct _Is_sorted_until : _Traits_ {
 		_Sentinel_ __last, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_strict_weak_order<_Comp_, std::projected<_Iterator_, _Projection_>>)
 	{
-		__seek_possibly_wrapped_iterator(__first, __is_sorted_until_unchecked(
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__comp), type_traits::__pass_function(__proj)));
+		__seek_iter(__first, __is_sorted_until_unchecked(
+			traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__comp), traits::__fwd_fn(__proj)));
 
 		return __first;
 	}
@@ -175,10 +175,10 @@ struct _Is_sorted_until : _Traits_ {
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		auto __first = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__first, __is_sorted_until_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)), 
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp),
-			type_traits::__pass_function(__proj)));
+		__seek_iter(__first, __is_sorted_until_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__first)), 
+			traits::__uend(__range), traits::__fwd_fn(__comp),
+			traits::__fwd_fn(__proj)));
 		return __first;
 	}
 
@@ -189,10 +189,10 @@ struct _Is_sorted_until : _Traits_ {
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		auto __first = std::ranges::begin(__range);
-		__seek_possibly_wrapped_iterator(__first, __is_sorted_until_unchecked(
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__first)),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp),
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+		__seek_iter(__first, __is_sorted_until_unchecked(
+			traits::__r_uiter<_Range_>(std::move(__first)),
+			traits::__uend(__range), traits::__fwd_fn(__comp),
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
 		return __first;
 	}
 private:

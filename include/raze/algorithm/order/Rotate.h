@@ -135,12 +135,12 @@ struct _Rotate : _Traits_ {
 	constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(
 		_Iterator_ __first, _Iterator_ __middle, _Sentinel_ __sent) const noexcept
 	{
-		auto __r = __rotate_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__middle)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(__sent));
+		auto __r = __rotate_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__uiter<_Sentinel_>(std::move(__middle)),
+			traits::__usent<_Iterator_>(__sent));
 
-		__seek_possibly_wrapped_iterator(__first, __r.begin());
-		__seek_possibly_wrapped_iterator(__sent, __r.end());
+		__seek_iter(__first, __r.begin());
+		__seek_iter(__sent, __r.end());
 
 		return { std::move(__first), std::move(__sent) };
 	}
@@ -161,13 +161,13 @@ struct _Rotate : _Traits_ {
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
-		auto __r = __rotate_unchecked(type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__begin)),
-			type_traits::__ranges_unwrap_range_iterator<_Range_>(std::move(__middle)),
-			type_traits::__ranges_unwrap_range_sentinel<_Range_>(__end),
+		auto __r = __rotate_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
+			traits::__r_uiter<_Range_>(std::move(__middle)),
+			traits::__r_usent<_Range_>(__end),
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 
-		__seek_possibly_wrapped_iterator(__begin, __r.begin());
-		__seek_possibly_wrapped_iterator(__end, __r.end());
+		__seek_iter(__begin, __r.begin());
+		__seek_iter(__end, __r.end());
 
 		return { std::move(__begin), std::move(__end) };
 	}

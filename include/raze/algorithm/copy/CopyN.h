@@ -42,11 +42,11 @@ struct _Copy_n : _Traits_ {
 	operator()(_InIterator_ __first, std::iter_difference_t<_InIterator_> __n, _OutIterator_ __result) const noexcept
 		requires(std::indirectly_copyable<_InIterator_, _OutIterator_>)
 	{
-		auto __r = __copy_n_unchecked(type_traits::__ranges_unwrap_iterator<_InIterator_>(std::move(__first)),
-			static_cast<sizetype>(__n), algorithm::__unwrap_iterator(std::move(__result)));
+		auto __r = __copy_n_unchecked(traits::__uiter<_InIterator_>(std::move(__first)),
+			static_cast<sizetype>(__n), algorithm::__uiter(std::move(__result)));
 
-		__seek_possibly_wrapped_iterator(__first, std::move(__r.in));
-		__seek_possibly_wrapped_iterator(__result, std::move(__r.out));
+		__seek_iter(__first, std::move(__r.in));
+		__seek_iter(__result, std::move(__r.out));
 
 		return { std::move(__first), std::move(__result) };
 	}
@@ -69,8 +69,8 @@ private:
 
 				auto __e = __raze_memcpy(__r_ptr, __first_ptr, __n * sizeof(_Value_));
 
-				__seek_possibly_wrapped_iterator(__first, __first_ptr + __n);
-				__seek_possibly_wrapped_iterator(__result, static_cast<decltype(__r_ptr)>(__e));
+				__seek_iter(__first, __first_ptr + __n);
+				__seek_iter(__result, static_cast<decltype(__r_ptr)>(__e));
 
 				return std::ranges::in_out_result(__first, __result);
 			}

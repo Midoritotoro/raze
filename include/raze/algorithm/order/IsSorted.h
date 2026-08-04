@@ -92,7 +92,7 @@ struct _Is_sorted: _Traits_ {
 #endif
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, __sentinel, __comp, __proj);
 		}
 
@@ -131,7 +131,7 @@ struct _Is_sorted: _Traits_ {
 #endif
 			}
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, __sentinel, __comp, __proj);
 		}
 	};
@@ -142,9 +142,9 @@ struct _Is_sorted: _Traits_ {
 		_Sentinel_ __last, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_strict_weak_order<_Comp_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return __is_sorted_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(std::move(__last)),
-			type_traits::__pass_function(__comp), type_traits::__pass_function(__proj));
+		return __is_sorted_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(std::move(__last)),
+			traits::__fwd_fn(__comp), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Comp_ = std::less<>, class _Projection_ = std::identity>
@@ -153,9 +153,9 @@ struct _Is_sorted: _Traits_ {
 			requires(!constexpr_sized_range<_Range_> && std::indirect_strict_weak_order<_Comp_,
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __is_sorted_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp),
-			type_traits::__pass_function(__proj));
+		return __is_sorted_unchecked(traits::__ubegin(__range),
+			traits::__uend(__range), traits::__fwd_fn(__comp),
+			traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Comp_ = std::less<>, class _Projection_ = std::identity>
@@ -164,9 +164,9 @@ struct _Is_sorted: _Traits_ {
 			requires(constexpr_sized_range<_Range_> && std::indirect_strict_weak_order<_Comp_,
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __is_sorted_unchecked(type_traits::__unchecked_begin(__range),
-			type_traits::__unchecked_end(__range), type_traits::__pass_function(__comp),
-			type_traits::__pass_function(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		return __is_sorted_unchecked(traits::__ubegin(__range),
+			traits::__uend(__range), traits::__fwd_fn(__comp),
+			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 	}
 private:
 	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>

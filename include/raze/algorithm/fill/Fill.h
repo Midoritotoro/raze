@@ -67,7 +67,7 @@ struct _Fill : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, __sentinel, __v);
 		}
 
@@ -89,7 +89,7 @@ struct _Fill : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (--__left);
 
-			__seek_possibly_wrapped_iterator(__first, __ptr);
+			__seek_iter(__first, __ptr);
 			return (*this)(__first, __sentinel, __v);
 		}
 	};
@@ -100,8 +100,8 @@ struct _Fill : _Traits_ {
 		_Sentinel_ __last, const std::type_identity_t<_Value_>& __v) const noexcept
 			requires(std::output_iterator<_Iterator_, _Value_>)
 	{
-		__fill_unchecked(type_traits::__ranges_unwrap_iterator<_Sentinel_>(std::move(__first)),
-			type_traits::__ranges_unwrap_sentinel<_Iterator_>(__last), __v);
+		__fill_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
+			traits::__usent<_Iterator_>(__last), __v);
 		return __last;
 	}
 
@@ -111,7 +111,7 @@ struct _Fill : _Traits_ {
 			requires(!constexpr_sized_range<_Range_> && std::ranges::output_range<_Range_, _Value_>)
 	{
 		auto __last = std::ranges::end(__r);
-		__fill_unchecked(type_traits::__unchecked_begin(__r), type_traits::__unchecked_end(__r), __v);
+		__fill_unchecked(traits::__ubegin(__r), traits::__uend(__r), __v);
 		return __last;
 	}
 
@@ -121,7 +121,7 @@ struct _Fill : _Traits_ {
 			requires(constexpr_sized_range<_Range_> && std::ranges::output_range<_Range_, _Value_>)
 	{
 		auto __last = std::ranges::end(__r);
-		__fill_unchecked(type_traits::__unchecked_begin(__r), type_traits::__unchecked_end(__r), __v,
+		__fill_unchecked(traits::__ubegin(__r), traits::__uend(__r), __v,
 			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
 		return __last;
 	}

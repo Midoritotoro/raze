@@ -23,7 +23,7 @@ struct _Store_mask {
 			*__mem = __mask;
 		else if constexpr (_Size_ >= 16)
 			_Store<_ISA_>()(__mem, _Negate<_ISA_, byte>()(_To_vector<_ISA_, 
-				type_traits::__deduce_simd_vector_type<_Signed, _Size_ * 8>, byte>()(__mask)), __policy);
+				traits::__deduce_simd_vector_type<_Signed, _Size_ * 8>, byte>()(__mask)), __policy);
 		else {
 			for (auto __i = 0; __i < _Size_; ++__i)
 				*__mem++ = static_cast<bool>(math::__bit_test(__mask, __i));
