@@ -9,6 +9,7 @@
 #include <src/raze/utility/Assert.h>
 #include <src/raze/algorithm/MsvcIteratorUnwrap.h>
 #include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/options/As.h>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -89,7 +90,16 @@ constexpr raze_always_inline _Type_* __bytes_pointer_offset(
 }
 
 template <std::ranges::contiguous_range _Range_>
-constexpr std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)> __bytes_distance(_Range_&& __r) noexcept {
+constexpr std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)>
+__bytes_distance(const options::as<_Range_>&) noexcept requires(constexpr_sized_range<_Range_>)
+{
+    return std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)>{};
+}
+
+template <std::ranges::contiguous_range _Range_>
+constexpr std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)> 
+    __bytes_distance(_Range_&& __r) noexcept  requires(constexpr_sized_range<_Range_>)
+{
     return std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)>{};
 }
 

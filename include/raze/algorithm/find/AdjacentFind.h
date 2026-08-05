@@ -8,20 +8,26 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Adjacent_find : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
+	template <source _Source_, class _Predicate_, class _Projection_>
 	struct __kernel {
-		static constexpr auto can_enable_vectorization = std::contiguous_iterator<_Iterator_> && 
-			vectorizable_binary_predicate<_Predicate_, _Iterator_> && vectorizable_projection<_Projection_, _Iterator_>;
+		using source_type = std::remove_cvref_t<_Source_>;
+		using iterator_type = typename source_type::iterator_type;
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
-		_Iterator_ _iterator;
-		_Iterator_ _next;
-		_Sentinel_ _sentinel;
+		_Source_ _source;
+		unchecked_iterator_type _iterator;
+		unchecked_sentinel_type _sentinel;
+		unchecked_iterator_type _next;
 		_Predicate_ _predicate;
 		_Projection_ _proj;
 
-		constexpr explicit __kernel(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept :
-			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
-		{}
+		constexpr explicit __kernel(_Source_&& __source, _Predicate_ __pred, _Projection_ __proj) noexcept :
+			_source(std::forward<_Source_>(__source)), _predicate(__pred), _proj(__proj)
+		{
+			_iterator = _source.ubegin();
+			_sentinel = _source.uend();
+		}
 
 		template <scalar_tag _Tag_>
 		raze_always_inline constexpr void operator()(_Tag_) noexcept {
@@ -47,25 +53,37 @@ struct _Adjacent_find : _Traits_ {
 
 			raze_disable_unrolling
 			do {
-				const auto __current = _proj(raze::vx::load<_Tag_>(__ptr));
-				const auto __next = _proj(raze::vx::load<_Tag_>(__next_ptr));
+				const auto __current = _proj(vx::load<_Tag_>(__ptr));
+				const auto __next = _proj(vx::load<_Tag_>(__next_ptr));
 
 				const auto __mask = _predicate(__current, __next);
 
-				if (raze::vx::any_of(__mask)) {
-					__seek_iter(_iterator, __ptr + raze::vx::find_first_set[vx::not_null](__mask));
+				if (vx::any_of(__mask)) {
+					source_type::from_ptr(_iterator, __ptr + vx::find_first_set[vx::not_null](__mask));
 					return false;
 				}
 
 				__advance_bytes(__ptr, __next_ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_iter(_iterator, __ptr);
+			source_type::from_ptr(_iterator, __ptr);
 			return true;
 		}
+		
+		raze_nodiscard constexpr raze_always_inline auto get_size() const noexcept {
+			if constexpr (source_type::constexpr_sized())
+				return std::integral_constant<sizetype, _source.size() - sizeof(std::iter_value_t<unchecked_iterator_type>)>{};
+			else return _source.size() - sizeof(std::iter_value_t<unchecked_iterator_type>);
+		}
 
-		raze_nodiscard constexpr raze_always_inline _Iterator_ result() const noexcept {
-			return _iterator;
+		raze_nodiscard constexpr raze_always_inline iterator_type result() const noexcept {
+			return _source.wrap(_iterator);
+		}
+
+		static consteval bool vectorizable() noexcept {
+			return std::contiguous_iterator<unchecked_iterator_type> &&
+				vectorizable_binary_predicate<_Predicate_, unchecked_iterator_type> &&
+				vectorizable_projection<_Projection_, unchecked_iterator_type>;
 		}
 	};
 
@@ -77,11 +95,8 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<_Iterator_, _Projection_>>)
 	{
 		if (__first == __last) return __first;
-		auto __size = __bytes_distance(__first, __last) - sizeof(std::iter_value_t<_Iterator_>);
-
-		__seek_iter(__first, __raze_kernel_dispatch_call(__size, traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_Iterator_>(std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
-		return __first;
+		return __raze_kernel_dispatch_call(get_source(std::move(__first),
+			std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
@@ -91,14 +106,8 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>,
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		auto __first = std::ranges::begin(__r);
-		auto __last = std::ranges::end(__r);
-		if (__first == __last) return __first;
-
-		__seek_iter(__first, __raze_kernel_dispatch_call(__bytes_distance(__r) - sizeof(std::ranges::range_value_t<_Range_>), 
-			traits::__r_uiter<_Range_>(std::move(__first)), traits::__r_usent<_Range_>(std::move(__last)), 
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
-		return __first;
+		if (std::ranges::begin(__r) == std::ranges::end(__r)) return std::ranges::begin(__r);
+		return __raze_kernel_dispatch_call(get_source(__r), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 private:
 	__raze_define_kernel_dispatch()

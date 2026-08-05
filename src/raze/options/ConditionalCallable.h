@@ -12,7 +12,7 @@ concept boolean_condition = std::is_same_v<std::remove_cvref_t<_Type_>, bool>;
 
 template <template <class> class _Function_, class _OptionsValues_, class ... _Options_>
 struct __conditional_callable:  callable<_Function_, _OptionsValues_, _Options_...> {
-    using func_t =  _Function_<_OptionsValues_>;
+    using func_t = _Function_<_OptionsValues_>;
 
     template <callable_options __Options_, class _Type_, class ... _Types_>
     constexpr raze_always_inline auto behavior(const __Options_& __options, const _Type_& __first, const _Types_& ... __args) const noexcept {
