@@ -8,21 +8,26 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Any_of : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
+	template <class _Source_, class _Predicate_, class _Projection_>
 	struct __kernel {
-		static constexpr auto vectorizable = std::contiguous_iterator<_Iterator_> &&
-			vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
-			vectorizable_projection<_Projection_, _Iterator_>;
+		using source_type = std::remove_cvref_t<_Source_>;
+		using iterator_type = typename source_type::iterator_type;
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
-		_Iterator_ _iterator;
-		_Sentinel_ _sentinel;
+		_Source_ _source;
+		unchecked_iterator_type _iterator;
+		unchecked_sentinel_type _sentinel;
 		_Predicate_ _predicate;
 		_Projection_ _proj;
 		bool _result = false;
 
-		constexpr explicit __kernel(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept :
-			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
-		{}
+		constexpr explicit __kernel(_Source_&& __src, _Predicate_ __pred, _Projection_ __proj) noexcept :
+			_source(std::forward<_Source_>(__src)), _predicate(__pred), _proj(__proj)
+		{
+			_iterator = _source.ubegin();
+			_sentinel = _source.uend();
+		}
 
 		template <scalar_tag _Tag_>
 		raze_always_inline constexpr void operator()(_Tag_) noexcept {
@@ -50,12 +55,22 @@ struct _Any_of : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_iter(_iterator, __ptr);
+			source_type::from_ptr(_iterator, __ptr);
 			return true;
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto get_size() const noexcept {
+			return _source.size();
 		}
 
 		raze_nodiscard constexpr raze_always_inline bool result() const noexcept {
 			return _result;
+		}
+
+		static consteval bool vectorizable() noexcept {
+			return std::contiguous_iterator<unchecked_iterator_type> &&
+				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type>&&
+				vectorizable_projection<_Projection_, unchecked_iterator_type>;
 		}
 	};
 
@@ -65,7 +80,7 @@ struct _Any_of : _Traits_ {
 		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return __raze_kernel_dispatch_call(std::move(__first), std::move(__last), 
+		return __raze_kernel_dispatch_call(get_source(std::move(__first), std::move(__last)), 
 			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
@@ -73,7 +88,7 @@ struct _Any_of : _Traits_ {
 	constexpr raze_always_inline bool operator()(_Range_&& __r, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __raze_kernel_dispatch_call(std::forward<_Range_>(__r), 
+		return __raze_kernel_dispatch_call(get_source(std::forward<_Range_>(__r)), 
 			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 private:

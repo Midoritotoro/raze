@@ -107,7 +107,8 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		if (std::ranges::begin(__r) == std::ranges::end(__r)) return std::ranges::begin(__r);
-		return __raze_kernel_dispatch_call(get_source(__r), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+		return __raze_kernel_dispatch_call(get_source(std::forward<_Range_>(__r)),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 private:
 	__raze_define_kernel_dispatch()
