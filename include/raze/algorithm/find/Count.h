@@ -254,5 +254,4 @@ struct _Count_if_not : _Traits_ {
 
 constexpr inline auto count_if_not = raze::options::function_with_traits<_Count_if_not>;
 
-
 __RAZE_ALGORITHM_NAMESPACE_END

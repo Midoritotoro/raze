@@ -1,12 +1,14 @@
 #pragma once 
 
-#include <raze/algorithm/find/Find.h>
+#include <raze/vx/Algorithm.h>
+#include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Equal : _Traits_ {
-	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
+	template <source _Source1_, source _Source2_,
 		class _Predicate_, class _Projection1_, class _Projection2_>
 	struct __impl {
 		_Iterator1_ _iterator1;
@@ -182,72 +184,7 @@ struct _Equal : _Traits_ {
 			traits::__fwd_fn(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{});
 	}
 private:
-	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
-		class _Predicate_, class _Projection1_, class _Projection2_>
-	constexpr raze_always_inline bool __equal_unchecked(_Iterator1_ __first1,
-		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
-		_Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept
-	{
-		__verify_range(__first1, __last1);
-		__verify_range(__first2, __last2);
-
-		using _TraitsType = decltype(this->traits());
-
-		using _Value1_ = std::iter_value_t<_Iterator1_>;
-		using _Value2_ = std::iter_value_t<_Iterator2_>;
-
-		const auto __first_size = algorithm::distance(__first1, __last1);
-
-		if constexpr (std::random_access_iterator<_Iterator1_> && std::same_as<_Iterator1_, _Sentinel1_> &&
-			std::random_access_iterator<_Iterator2_> && std::same_as<_Iterator1_, _Sentinel2_>)
-		{
-			if (__first_size != algorithm::distance(__first2, __last2)) return false;
-		}
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_> && 
-			std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
-			vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
-			vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
-		{
-			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_equal, _Value1_, bool>(
-					__first_size * sizeof(_Value1_), __first1, __last1,
-					__first2, __last2, __pred, __proj1, __proj2);
-			}
-		}
-
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2, __pred, __proj1, __proj2));
-	}
-
-	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
-		class _Predicate_, class _Projection1_, class _Projection2_, sizetype _Size_>
-	constexpr raze_always_inline bool __equal_unchecked(_Iterator1_ __first1,
-		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
-		_Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2,
-		std::integral_constant<sizetype, _Size_>) const noexcept
-	{
-		__verify_range(__first1, __last1);
-		__verify_range(__first2, __last2);
-
-		using _TraitsType = decltype(this->traits());
-
-		using _Value1_ = std::iter_value_t<_Iterator1_>;
-		using _Value2_ = std::iter_value_t<_Iterator2_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_> && 
-			std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
-			vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
-			vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
-		{
-			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_equal, _Value1_, bool>(
-					std::integral_constant<sizetype, _Size_ * sizeof(_Value1_)>{}, 
-					__first1, __last1, __first2, __last2, __pred, __proj1, __proj2);
-			}
-		}
-
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2, __pred, __proj1, __proj2));
-	}
+	__raze_define_kernel_dispatch()
 };
 
 constexpr inline auto equal = raze::options::function_with_traits<_Equal>;

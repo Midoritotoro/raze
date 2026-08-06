@@ -57,7 +57,11 @@ struct _None_of : _Traits_ {
 			return true;
 		}
 
-		raze_nodiscard constexpr raze_always_inline auto get_size() const noexcept {
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {
+			return _Source_::static_size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const noexcept {
 			return _source.size();
 		}
 
@@ -67,7 +71,7 @@ struct _None_of : _Traits_ {
 
 		static consteval bool vectorizable() noexcept {
 			return std::contiguous_iterator<unchecked_iterator_type> &&
-				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type>&&
+				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type> &&
 				vectorizable_projection<_Projection_, unchecked_iterator_type>;
 		}
 	};
@@ -93,6 +97,6 @@ private:
 	__raze_define_kernel_dispatch()
 };
 
-constexpr inline auto none_of = raze::options::function_with_traits<_None_of>;
+constexpr inline auto none_of = raze::options::function_with_traits<_None_of>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

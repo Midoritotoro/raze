@@ -16,14 +16,14 @@ struct _Contains : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_, class _Projection_ = std::identity>
-	constexpr raze_always_inline bool operator()(_Range_&& __range, 
+	constexpr raze_always_inline bool operator()(_Range_&& __r, 
 		const _Value_& __v, _Projection_ __proj = {}) const noexcept
 	{
-		return algorithm::any_of[_Traits_::traits()](std::forward<_Range_>(__range),
+		return algorithm::any_of[_Traits_::traits()](std::forward<_Range_>(__r),
 			algorithm::equal_to(__v), traits::__fwd_fn(__proj));
 	}
 };
 
-constexpr inline auto contains = raze::options::function_with_traits<_Contains>;
+constexpr inline auto contains = raze::options::function_with_traits<_Contains>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -36,8 +36,32 @@ struct __function_reference {
 };
 
 template <class _Function_>
-raze_nodiscard raze_always_inline constexpr auto __fwd_fn(_Function_& __function) noexcept {
-    if constexpr (__is_lightweight_callable_v<_Function_>) return __function;
+concept __has_function_unwrapped_type = requires {
+    typename _Function_::function_unwrapped_type;
+};
+
+template <class _Function_>
+struct __function_unwrapped_impl {
+    using type = _Function_;
+};
+
+template <__has_function_unwrapped_type _Function_>
+struct __function_unwrapped_impl<_Function_> {
+    using type = typename _Function_::function_unwrapped_type;
+};
+
+template <class _Function_>
+using __function_unwrapped = typename __function_unwrapped_impl<_Function_>::type;
+
+template <class _Function_>
+raze_always_inline constexpr __function_unwrapped<_Function_> __unwrap_function(_Function_&& __f) noexcept {
+    return static_cast<__function_unwrapped<_Function_>>(std::forward<_Function_>(__f));
+}
+
+template <class _Function_>
+raze_nodiscard raze_always_inline constexpr decltype(auto) __fwd_fn(_Function_& __function) noexcept {
+    if constexpr (__has_function_unwrapped_type<_Function_>) return __function;
+    else if constexpr (__is_lightweight_callable_v<_Function_>) return __function;
     else return __function_reference<_Function_>(__function);
 }
 
