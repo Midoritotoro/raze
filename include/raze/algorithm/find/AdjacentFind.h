@@ -70,10 +70,12 @@ struct _Adjacent_find : _Traits_ {
 			return true;
 		}
 		
-		raze_nodiscard constexpr raze_always_inline auto get_size() const noexcept {
-			if constexpr (source_type::constexpr_sized())
-				return std::integral_constant<sizetype, _source.size() - sizeof(std::iter_value_t<unchecked_iterator_type>)>{};
-			else return _source.size() - sizeof(std::iter_value_t<unchecked_iterator_type>);
+		raze_nodiscard constexpr raze_always_inline auto size() const noexcept {
+			return _source.size() - sizeof(std::iter_value_t<unchecked_iterator_type>);
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {	
+			return std::integral_constant<sizetype, source_type::static_size() - sizeof(std::iter_value_t<unchecked_iterator_type>)>{};
 		}
 
 		raze_nodiscard constexpr raze_always_inline iterator_type result() const noexcept {
@@ -114,6 +116,6 @@ private:
 	__raze_define_kernel_dispatch()
 };
 
-constexpr inline auto adjacent_find = raze::options::function_with_traits<_Adjacent_find>;
+constexpr inline auto adjacent_find = raze::options::function_with_traits<_Adjacent_find>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -18,7 +18,12 @@
         using _ReturnType_ = decltype(__work.result()); \
         if constexpr (!options::always_scalar<_TraitsType_>() && _WorkType_::vectorizable()) { \
             if not consteval { \
-                return raze::vx::__dispatch_sized_impl<traits_unroller_t(_TraitsType_), _Value_, _ReturnType_>(__work.get_size(), __work); \
+                if constexpr (requires { _WorkType_::static_size(); }) { \
+                    return raze::vx::__dispatch_sized_impl<traits_unroller_t(_TraitsType_), _Value_, _ReturnType_>(_WorkType_::static_size(), __work); \
+                } \
+                else { \
+                    return raze::vx::__dispatch_sized_impl<traits_unroller_t(_TraitsType_), _Value_, _ReturnType_>(__work.size(), __work); \
+                } \
             } \
         } \
         return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work); \

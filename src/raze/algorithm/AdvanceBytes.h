@@ -97,17 +97,8 @@ __bytes_distance(const options::as<_Range_>&) noexcept requires(constexpr_sized_
 }
 
 template <std::ranges::contiguous_range _Range_>
-constexpr std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)> 
-    __bytes_distance(_Range_&& __r) noexcept  requires(constexpr_sized_range<_Range_>)
-{
-    return std::integral_constant<sizetype, __range_constexpr_size<_Range_>() * sizeof(std::ranges::range_value_t<_Range_>)>{};
-}
-
-template <std::ranges::contiguous_range _Range_>
-constexpr auto __bytes_distance(_Range_&& __r) noexcept 
-    requires(!constexpr_sized_range<_Range_>) 
-{
-    return __r.size() * sizeof(std::ranges::range_value_t<_Range_>);
+constexpr auto __bytes_distance(_Range_&& __r) noexcept {
+    return std::ranges::size(__r) * sizeof(std::ranges::range_value_t<_Range_>);
 }
 
 template <std::contiguous_iterator _It_, std::sentinel_for<_It_> _Sent_>
@@ -118,16 +109,6 @@ constexpr auto __bytes_distance(_It_ __it, _Sent_ __sent) noexcept {
 template <std::contiguous_iterator _It_>
 constexpr auto __bytes_distance(_It_ __first, _It_ __last) noexcept {
     return algorithm::distance(__first, __last) * sizeof(std::iter_value_t<_It_>);
-}
-
-template <class _It_, class _Sent_>
-constexpr auto __bytes_distance(_It_ __it, _Sent_ __sent) noexcept {
-    return 0;
-}
-
-template <class _Range_>
-constexpr auto __bytes_distance(_Range_&& __r) noexcept {
-    return 0;
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END

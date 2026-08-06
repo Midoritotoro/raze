@@ -14,33 +14,38 @@ struct range_data_source {
 	using unchecked_iterator_type = decltype(traits::__ubegin(std::declval<_Range_>()));
 	using unchecked_sentinel_type = decltype(traits::__uend(std::declval<_Range_>()));
 
-	constexpr explicit range_data_source(const _Range_& __r) noexcept :
-		_it(std::ranges::begin(__r)), _sent(std::ranges::end(__r))
+	constexpr explicit range_data_source(_Range_&& __r) noexcept :
+		_range(std::forward<_Range_>(__r))
 	{}
 
 	raze_nodiscard raze_always_inline constexpr bool empty() const noexcept {
-		return _it == _sent;
+		return ubegin() == uend();
+	}
+	
+	raze_nodiscard raze_always_inline constexpr auto size() const noexcept {
+		return __bytes_distance(_range);
 	}
 
-	raze_nodiscard raze_always_inline constexpr auto size() const noexcept {
-		if constexpr (constexpr_sized_range<_Range_>) return __bytes_distance(options::as<_Range_>{});
-		else return __bytes_distance(_it, _sent);
+	raze_nodiscard static raze_always_inline constexpr auto static_size() noexcept
+		requires(constexpr_sized_range<_Range_>)
+	{
+		return __bytes_distance(options::as<std::remove_cvref_t<_Range_>>());
 	}
 
 	raze_nodiscard raze_always_inline constexpr iterator_type begin() const noexcept {
-		return _it;
+		return std::ranges::begin(_range);
 	}
 
 	raze_nodiscard raze_always_inline constexpr sentinel_type end() const noexcept {
-		return _sent;
+		return std::ranges::end(_range);
 	}
 
 	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const noexcept {
-		return traits::__r_uiter<_Range_>(_it);
+		return traits::__ubegin(_range);
 	}
 
 	raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const noexcept {
-		return traits::__r_usent<_Range_>(_sent);
+		return traits::__uend(_range);
 	}
 
 	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
@@ -68,7 +73,7 @@ struct range_data_source {
 	raze_nodiscard raze_always_inline constexpr iterator_type
 		wrap(unchecked_iterator_type __uit) const noexcept
 	{
-		iterator_type __it = _it;
+		iterator_type __it = std::ranges::begin(_range);
 		__seek_iter(__it, __uit);
 		return __it;
 	}
@@ -97,12 +102,7 @@ struct range_data_source {
 		__seek_iter(__uit, __ptr);
 	}
 
-	static consteval bool constexpr_sized() noexcept {
-		return constexpr_sized_range<_Range_>;
-	}
-
-	iterator_type _it;
-	sentinel_type _sent;
+	_Range_ _range;
 };
 
 template <class _Iterator_, class _Sentinel_>
@@ -195,10 +195,6 @@ struct iter_data_source {
 		__seek_iter(__uit, __ptr);
 	}
 
-	static consteval bool constexpr_sized() noexcept {
-		return false;
-	}
-
 	iterator_type _it;
 	sentinel_type _sent;
 };
@@ -246,6 +242,11 @@ concept source = requires(
 
 	{ _Source_::from_ptr(__it, __ptr) } noexcept -> std::same_as<void>;
 	{ _Source_::from_ptr(__it, __cptr) } noexcept -> std::same_as<void>;
+};
+
+template <class _Source_>
+concept constexpr_sized_source = source<_Source_> && requires(_Source_ __src) {
+	{ _Source_::static_size() } noexcept -> std::convertible_to<sizetype>;
 };
 
 __RAZE_ALGORITHM_NAMESPACE_END
