@@ -11,17 +11,8 @@ struct _All_of {
 	template <raw_mask_type _Tp_>
 	raze_nodiscard raze_always_inline bool operator()(_Tp_ __x) const noexcept {
 		if constexpr (intrin_type<_Tp_>) {
-			if constexpr (sizeof(_Tp_) == 16) {
-				if constexpr (__has_sse41_support_v<_ISA_>) return _mm_testc_si128(__as<__m128i>(__x), _All_ones<_ISA_, __m128i>()());
-				else {
-					const auto __all_ones = _Equal<arch::ISA::SSE2, i32>()(__x, __x);
-					const auto __compared = _Equal<arch::ISA::SSE2, i32>()(__x, __all_ones);
-
-					return _To_bitmask<arch::ISA::SSE2, i32>()(__compared) == 0xF;
-				}
-			}
-			else if constexpr (sizeof(_Tp_) == 32) return _mm256_testc_si256(__as<__m256i>(__x), _All_ones<_ISA_, __m256i>()());
-			else if constexpr (sizeof(_Tp_) == 64) return _Equal<_ISA_, i32>()(__x, _All_ones<_ISA_, _Tp_>()()) == 0xFFFF;
+			constexpr auto __size = u64((u64(1) << (sizeof(_Tp_) / sizeof(i32))) - 1);
+			return _To_bitmask<_ISA_, i32>()(__x) == __size;
 		}
 		else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
 			raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(_Tp_) * 8) == _Size_)

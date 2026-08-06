@@ -12,8 +12,11 @@ struct _Any_of : _Traits_ {
 	struct __kernel {
 		using source_type = std::remove_cvref_t<_Source_>;
 		using iterator_type = typename source_type::iterator_type;
+
 		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+
+		using vector_value_type = std::iter_value_t<iterator_type>;
 
 		_Source_ _source;
 		unchecked_iterator_type _iterator;

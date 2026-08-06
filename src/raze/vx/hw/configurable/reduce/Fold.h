@@ -7,6 +7,7 @@
 #include <src/raze/vx/hw/configurable/reduce/HorizontalSum.h>
 #include <src/raze/vx/hw/configurable/shuffle/SwapAdjacent.h>
 #include <src/raze/vx/hw/configurable/merge/Select.h>
+#include <src/raze/traits/FunctionPass.h>
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/reduce/Fold.h>
@@ -37,14 +38,14 @@ struct _Configurable_fold : raze::options::strict_elementwise_callable<_Configur
 
     template <simd_type _Type_, class _Callable_>
     static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, _Callable_ __callable) noexcept
-        requires(std::is_same_v<algorithm::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
+        requires(std::is_same_v<traits::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
     {
         return __hsum[__options](__x);
     }
 
     template <simd_type _Type_, class _Callable_>
     static raze_always_inline auto deferred_call(auto __options, _Type_ __x, _Callable_ __callable) noexcept
-        requires(!std::is_same_v<algorithm::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
+        requires(!std::is_same_v<traits::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
     {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
         using _Value_ = typename _Type_::value_type;

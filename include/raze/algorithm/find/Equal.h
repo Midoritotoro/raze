@@ -10,129 +10,99 @@ template <class _Traits_>
 struct _Equal : _Traits_ {
 	template <source _Source1_, source _Source2_,
 		class _Predicate_, class _Projection1_, class _Projection2_>
-	struct __impl {
-		_Iterator1_ _iterator1;
-		_Iterator2_ _iterator2;
-		_Sentinel1_ _sentinel1;
-		_Sentinel2_ _sentinel2;
+	struct __kernel {
+		using source1_type = std::remove_cvref_t<_Source1_>;
+		using source2_type = std::remove_cvref_t<_Source2_>;
+
+		using unchecked_iterator1_type = typename source1_type::unchecked_iterator_type;
+		using unchecked_iterator2_type = typename source2_type::unchecked_iterator_type;
+
+		using unchecked_sentinel1_type = typename source1_type::unchecked_sentinel_type;
+		using vector_value_type = std::iter_value_t<unchecked_iterator1_type>;
+
+		_Source1_ _source1;
+		_Source2_ _source2;
+
+		unchecked_iterator1_type _iterator1;
+		unchecked_iterator2_type _iterator2;
+		unchecked_sentinel1_type _sentinel1;
+
 		_Predicate_ _predicate;
 		_Projection1_ _proj1;
 		_Projection2_ _proj2;
-		bool _result = false;
 
-		constexpr explicit __impl(_Iterator1_ __it1, _Sentinel1_ __sent1, _Iterator2_ __it2,
-			_Sentinel2_ __sent2, _Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) noexcept:
-				_iterator1(__it1), _sentinel1(__sent1), _iterator2(__it2), _sentinel2(__sent2),
-				_predicate(__pred), _proj1(__proj1), _proj2(__proj2)
-		{}
+		bool _result = true;
 
-		template <class _Tag_>
-		constexpr raze_always_inline bool operator()(_Tag_) noexcept {
-			if (_iterator1 == _sentinel1 || _iterator2 == _sentinel2) {
-				_result = (_iterator1 == _sentinel1 && _iterator2 == _sentinel2);
-				return true;
+		constexpr explicit __kernel(_Source1_&& __src1, _Source2_&& __src2, _Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) noexcept:
+			_source1(std::forward<_Source1_>(__src1)), _source2(std::forward<_Source2_>(__src2)), _predicate(__pred), _proj1(__proj1), _proj2(__proj2)
+		{
+			_iterator1 = _source1.ubegin();
+			_iterator2 = _source2.ubegin();
+			_sentinel1 = _source1.uend();
+		}
+
+		template <scalar_tag _Tag_>
+		constexpr raze_always_inline void operator()(_Tag_) noexcept {
+			raze_disable_unrolling
+			for (; _iterator1 != _sentinel1; ++_iterator1, ++_iterator2) {
+				if (!_predicate(_proj1(*_iterator1), _proj2(*_iterator2))) {
+					_result = false;
+					break;
+				}
 			}
+		}
 
-			if (!_predicate(_proj1(*_iterator1), _proj2(*_iterator2))) {
-				_result = false;
-				return true;
-			}
+		template <vectorizable_tag _Tag_>
+		constexpr raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
+			auto* __ptr1 = std::to_address(_iterator1);
+			auto* __ptr2 = std::to_address(_iterator2);
 
-			++_iterator1;
-			++_iterator2;
+			const auto __aligned_end = __bytes_pointer_offset(__ptr1, __aligned_size);
+			
+			raze_disable_unrolling
+			do {
+				const auto __mask = _predicate(_proj1(vx::load<_Tag_>(__ptr1)), _proj2(vx::load<_Tag_>(__ptr2)));
+
+				if (!vx::all_of(__mask))
+					return _result = false;
+
+				__advance_bytes(__ptr1, __ptr2, sizeof(_Tag_));
+			} while (__ptr1 != __aligned_end);
+
+			_Source1_::from_ptr(_iterator1, __ptr1);
+			_Source2_::from_ptr(_iterator2, __ptr2);
+
+			return true;
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept 
+			requires(constexpr_sized_source<source1_type> || constexpr_sized_source<source2_type>)
+		{
+			if constexpr (constexpr_sized_source<source1_type>) return source1_type::static_size();
+			else return source2_type::static_size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const noexcept {
+			return _source1.size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline bool exit() const noexcept {
+			return _source1.size() != _source2.size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline bool result() const noexcept {
+			return _result;
+		}
+
+		raze_nodiscard constexpr raze_always_inline bool default_result() const noexcept {
 			return false;
 		}
 
-		raze_always_inline constexpr bool result() const noexcept {
-			return _result;
-		}
-	};
-
-	template <class _Tag_>
-	struct __vectorized_equal {
-		template <class _Iterator1_, class _Sentinel1_, class _Iterator2_,
-			class _Sentinel2_, class _Predicate_, class _Projection1_, class _Projection2_>
-		raze_nodiscard raze_always_inline bool operator()(_Iterator1_ __first1,
-			_Sentinel1_ __sentinel1, _Iterator2_ __first2, _Sentinel2_ __sentinel2, 
-			_Predicate_ __predicate, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(!vx::simd_type<_Tag_>)
-		{
-			for (; __first1 != __sentinel1; ++__first1, (void)++__first2)
-				if (!__predicate(__proj1(*__first1), __proj2(*__first2)))
-					return false;
-
-			return true;
-		}
-
-		template <class _Iterator1_, class _Sentinel1_, class _Iterator2_,
-			class _Sentinel2_, class _Predicate_, class _Projection1_, class _Projection2_>
-		raze_nodiscard raze_always_inline bool operator()(sizetype __aligned_size,
-			sizetype __tail_size, _Iterator1_ __first1, _Sentinel1_ __sentinel1, 
-			_Iterator2_ __first2, _Sentinel2_ __sentinel2, _Predicate_ __predicate, 
-			_Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr1 = std::to_address(__first1);
-			auto* __ptr2 = std::to_address(__first2);
-
-			raze_assume(__ptr1 != nullptr);
-			raze_assume(__ptr2 != nullptr);
-			
-			const auto __aligned_end = __bytes_pointer_offset(__ptr1, __aligned_size);
-
-			do {
-				const auto __mask = __predicate(__proj1(vx::load<_Tag_>(__ptr1)), __proj2(vx::load<_Tag_>(__ptr2)));
-				if (!vx::all_of(__mask)) return false;
-
-				__advance_bytes(__ptr1, sizeof(_Tag_));
-				__advance_bytes(__ptr2, sizeof(_Tag_));
-			} while (__ptr1 != __aligned_end);
-
-
-			for (; __tail_size != 0; ++__ptr1, (void)++__ptr2, __tail_size -= sizeof(typename _Tag_::value_type))
-				if (!__predicate(__proj1(*__ptr1), __proj2(*__ptr2)))
-					return false;
-
-			return true;
-		}	
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_, class _Iterator1_, 
-			class _Sentinel1_, class _Iterator2_, class _Sentinel2_, class _Predicate_,
-			class _Projection1_, class _Projection2_>
-		raze_nodiscard raze_always_inline bool operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>, _Iterator1_ __first1, _Sentinel1_ __sentinel1, 
-			_Iterator2_ __first2, _Sentinel2_ __sentinel2, _Predicate_ __predicate, 
-			_Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr1 = std::to_address(__first1);
-			auto* __ptr2 = std::to_address(__first2);
-
-			raze_assume(__ptr1 != nullptr);
-			raze_assume(__ptr2 != nullptr);
-			
-			constexpr auto __iterations = _AlignedSize_ / sizeof(_Tag_);
-			auto __left = __iterations;
-
-			do {
-				const auto __mask = __predicate(__proj1(vx::load<_Tag_>(__ptr1)), __proj2(vx::load<_Tag_>(__ptr2)));
-				if (!vx::all_of(__mask)) return false;
-
-				__advance_bytes(__ptr1, sizeof(_Tag_));
-				__advance_bytes(__ptr2, sizeof(_Tag_));
-			} while (--__left);
-
-			if constexpr (_TailSize_ != 0) {
-				constexpr auto __tail_iterations = _TailSize_ / sizeof(typename _Tag_::value_type);
-				auto __tail_left = __tail_iterations;
-
-				do {
-					if (!__predicate(__proj1(*__ptr1), __proj2(*__ptr2)))
-						return false;
-
-					++__ptr1;
-					++__ptr2;
-				} while (--__tail_left);
-			}
-
-			return true;
+		static consteval bool vectorizable() noexcept {
+			return options::concepts::same_as<std::iter_value_t<unchecked_iterator1_type>, std::iter_value_t<unchecked_iterator2_type>> &&
+				std::contiguous_iterator<unchecked_iterator1_type> && std::contiguous_iterator<unchecked_iterator2_type> &&
+				vectorizable_binary_predicate<_Predicate_, unchecked_iterator1_type, unchecked_iterator2_type> &&
+				vectorizable_projection<_Projection1_, unchecked_iterator1_type> && vectorizable_projection<_Projection2_, unchecked_iterator2_type>;
 		}
 	};
 
@@ -141,52 +111,31 @@ struct _Equal : _Traits_ {
 		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Iterator1_ __first1,
-		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
+		_Sentinel1_ __sent1, _Iterator2_ __first2, _Sentinel2_ __sent2,
 		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		return __equal_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
-			traits::__usent<_Iterator1_>(std::move(__last1)),
-			traits::__uiter<_Sentinel2_>(std::move(__first2)), 
-			traits::__usent<_Iterator2_>(std::move(__last2)), 
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
-			traits::__fwd_fn(__proj2));
+		return __raze_kernel_dispatch_call(get_source(std::move(__first1), std::move(__sent1)),
+			get_source(std::move(__first2), std::move(__sent2)), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2));
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
 		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
-	constexpr raze_always_inline bool operator()(_Range1_&& __range1, _Range2_&& __range2, 
+	constexpr raze_always_inline bool operator()(_Range1_&& __r1, _Range2_&& __r2, 
 		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires((!constexpr_sized_range<_Range1_> || !constexpr_sized_range<_Range2_>) &&
-				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
-					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
+			requires(std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
+				std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
 	{
-		return __equal_unchecked(traits::__r_uiter<_Range1_>(std::ranges::begin(__range1)),
-			traits::__uend(__range1), traits::__r_uiter<_Range2_>(std::ranges::begin(__range2)), 
-			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
-			traits::__fwd_fn(__proj2));
-	}
-
-	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
-		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
-		class _Projection2_ = std::identity>
-	constexpr raze_always_inline bool operator()(_Range1_&& __range1, _Range2_&& __range2, 
-		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires(constexpr_sized_range<_Range1_> && constexpr_sized_range<_Range2_> &&
-				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
-					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
-	{
-		if constexpr (__range_constexpr_size<_Range1_>() != __range_constexpr_size<_Range2_>()) return false;
-		else return __equal_unchecked(traits::__r_uiter<_Range1_>(std::ranges::begin(__range1)),
-			traits::__uend(__range1), traits::__r_uiter<_Range2_>(std::ranges::begin(__range2)),
-			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
-			traits::__fwd_fn(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{});
+		return __raze_kernel_dispatch_call(get_source(std::forward<_Range1_>(__r1)),
+			get_source(std::forward<_Range2_>(__r2)), traits::__fwd_fn(__pred),
+			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2));
 	}
 private:
 	__raze_define_kernel_dispatch()
 };
 
-constexpr inline auto equal = raze::options::function_with_traits<_Equal>;
+constexpr inline auto equal = raze::options::function_with_traits<_Equal>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

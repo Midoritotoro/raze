@@ -8,14 +8,17 @@
 
 #if !defined(__raze_define_kernel_dispatch)
 #  define __raze_define_kernel_dispatch() \
-    template <source _Source_, class ... _Args_> \
+    template <class ... _Args_> \
     raze_nodiscard constexpr raze_always_inline auto \
-    __unchecked_kernel_dispatch(_Source_&& __src, _Args_&& ... __args) const noexcept { \
+    __unchecked_kernel_dispatch(_Args_&& ... __args) const noexcept { \
         using _TraitsType_ = decltype(this->traits()); \
-        using _Value_ = std::iter_value_t<typename std::remove_cvref_t<_Source_>::iterator_type>; \
-        auto __work = __kernel(std::forward<_Source_>(__src), std::forward<_Args_>(__args)...); \
+        auto __work = __kernel(std::forward<_Args_>(__args)...); \
         using _WorkType_ = decltype(__work); \
+        using _Value_ = typename _WorkType_::vector_value_type; \
         using _ReturnType_ = decltype(__work.result()); \
+        if constexpr (requires { __work.exit(); } && requires { __work.default_result(); }) { \
+            if (__work.exit()) [[unlikely]] { return __work.default_result(); } \
+        } \
         if constexpr (!options::always_scalar<_TraitsType_>() && _WorkType_::vectorizable()) { \
             if not consteval { \
                 if constexpr (requires { _WorkType_::static_size(); }) { \
