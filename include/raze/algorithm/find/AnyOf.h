@@ -44,7 +44,7 @@ struct _Any_of : _Traits_ {
 		}
 
 		template <vectorizable_tag _Tag_>
-		raze_nodiscard raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size) noexcept {
+		raze_nodiscard raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
@@ -61,6 +61,17 @@ struct _Any_of : _Traits_ {
 			source_type::from_ptr(_iterator, __ptr);
 			return true;
 		}
+
+		/*template <tail_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, sizetype __tail_size) noexcept {
+			using _Mask_ = typename _Tag_::mask_type;
+			auto* __ptr = std::to_address(_iterator);
+
+			const auto __first_n_mask = raze::vx::first_n(__tail_size / sizeof(vector_value_type), options::as(_Mask_{}));
+			const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>[__first_n_mask][raze::vx::safe](__ptr)));
+
+			_result = vx::any_of[__first_n_mask](__mask);
+		}*/
 
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {
 			return _Source_::static_size();

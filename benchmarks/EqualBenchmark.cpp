@@ -3,10 +3,10 @@
 
 template <class T, std::size_t Size>
 struct EqualTestData {
-    std::array<T, Size> data1;
-    std::array<T, Size> data2;
+    std::vector<T> data1;
+    std::vector<T> data2;
 
-    EqualTestData() {
+    EqualTestData(): data1(Size), data2(Size) {
         for (std::size_t i = 0; i < Size; ++i) {
             data1[i] = static_cast<T>(i + 1);
             data2[i] = static_cast<T>(i + 1);

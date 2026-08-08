@@ -10,6 +10,11 @@ struct scalar_tag {};
 template <class _Simd_>
 concept simd_type = __is_valid_simd_v<_Simd_>;
 
+template <simd_type _Simd_>
+struct tail_tag : _Simd_ {
+	using original_type = _Simd_;
+};
+
 template <class _Type_>
 concept simd_or_arithmetic_type = simd_type<_Type_> || arithmetic_type<_Type_>;
 

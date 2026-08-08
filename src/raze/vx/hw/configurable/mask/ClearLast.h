@@ -33,7 +33,7 @@ struct _Configurable_clear_last : raze::options::strict_elementwise_callable<_Co
                 return true;
             }
             else {
-                if (_Any_of<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk))) {
+                if (__any_of<_Abi_::isa, _Value_>(__storage_unwrap(__chunk))) {
                     __chunk = __clear_last<_Abi_::isa, _Value_, _Chunk::size, __unsafe>(__storage_unwrap(__chunk));
                     return true;
                 }

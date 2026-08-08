@@ -2,7 +2,7 @@
 
 #include <raze/math/BitCast.h>
 #include <src/raze/vx/hw/x86/memory/Load.h>
-
+#include <src/raze/vx/hw/x86/memory/Store.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

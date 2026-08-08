@@ -7,7 +7,6 @@
 #  include <src/raze/vx/hw/x86/mask/operations/NoneOf.h>
 #endif // defined(raze_processor_x86)
 
-
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
@@ -24,17 +23,16 @@ struct _Configurable_none_of: raze::options::strict_elementwise_callable<_Config
         using _Abi_ = typename _Type_::abi_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (const _Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            return _None_of<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+            return __none_of<_Abi_::isa, _Value_>(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
         };
 
         if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
+            static_assert(!_Mask_::has_alternative, "Not supported. ");
+
             auto __condition = __options[raze::options::condition_key];
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 
-            if constexpr (_Mask_::has_alternative)
-                return __x.__for_each_chunk_all_of(__chunk_op, __mask.__storage().storage(), __condition.alternative().__storage().storage());
-            else
-                return __x.__for_each_chunk_all_of(__chunk_op, __mask.__storage().storage());
+            return __x.__for_each_chunk_all_of(__chunk_op, __mask.__storage().storage());
         }
         else {
             return __x.__for_each_chunk_all_of(__chunk_op);

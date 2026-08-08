@@ -36,7 +36,6 @@ constexpr inline auto horizontal_max = raze::options::functor<_Configurable_hmax
 constexpr inline auto all_of = raze::options::functor<_Configurable_all_of>;
 constexpr inline auto none_of = raze::options::functor<_Configurable_none_of>;
 constexpr inline auto any_of = raze::options::functor<_Configurable_any_of>;
-constexpr inline auto some_of = raze::options::functor<_Configurable_some_of>;
 constexpr inline auto find_first_set = raze::options::functor<_Configurable_find_first_set>;
 constexpr inline auto find_next_set = raze::options::functor<_Configurable_find_next_set>;
 constexpr inline auto find_last_set = raze::options::functor<_Configurable_find_last_set>;

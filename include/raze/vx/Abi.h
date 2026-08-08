@@ -69,4 +69,7 @@ struct resize_abi {
 template <class	_Abi_, sizetype	_Elements_>
 using resize_abi_t = typename resize_abi<_Abi_, _Elements_>::type;
 
+template <class _Type_>
+using native_abi = x86_abi<native_size<_Type_>>;
+
 __RAZE_VX_NAMESPACE_END
