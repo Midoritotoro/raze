@@ -43,6 +43,7 @@ constexpr inline auto find_first_not_set = raze::options::functor<_Configurable_
 constexpr inline auto find_last_not_set = raze::options::functor<_Configurable_find_last_not_set>;
 constexpr inline auto count_set = raze::options::functor<_Configurable_count_set>;
 constexpr inline auto is_contiguous = raze::options::functor<_Configurable_is_contiguous>;
+constexpr inline auto first_n = raze::options::functor<_Configurable_first_n>;
 constexpr inline auto is_less = raze::options::functor<_Configurable_is_less>;
 constexpr inline auto is_greater = raze::options::functor<_Configurable_is_greater>;
 constexpr inline auto is_less_equal = raze::options::functor<_Configurable_is_less_equal>;

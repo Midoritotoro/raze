@@ -58,6 +58,13 @@ struct _None_of : _Traits_ {
 			return true;
 		}
 
+		template <tail_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, auto const& __ignore) noexcept {
+			using _Simd_ = typename _Tag_::original_type;
+			const auto __mask = _predicate(_proj(raze::vx::load<_Simd_>[__ignore](std::to_address(_iterator))));
+			_result = vx::none_of[__ignore](__mask);
+		}
+
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {
 			return _Source_::static_size();
 		}

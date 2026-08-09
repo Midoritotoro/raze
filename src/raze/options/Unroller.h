@@ -2,6 +2,9 @@
 
 #include <src/raze/options/Traits.h>
 #include <src/raze/options/SameAs.h>
+#include <src/raze/vx/hw/x86/memory/ConditionalMemAccessNative.h>
+#include <src/raze/options/As.h>
+#include <src/raze/vx/hw/configurable/mask/FirstN.h>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
@@ -77,7 +80,17 @@ struct _Unroller {
 			}
 #endif // defined(raze_cpp_msvc)
 
-			__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
+			if constexpr (vx::native_conditional_memory_access<vx::abi_t<_Tag_>::isa, typename _Tag_::value_type>
+				&& requires { __f(vx::tail_tag<_Tag_>{}, raze::vx::__first_n(__tail_size / sizeof(typename _Tag_::value_type),
+					as(typename _Tag_::mask_type{})), std::forward<_Args_>(__args)...); })
+			{
+				__f(vx::tail_tag<_Tag_>{}, raze::vx::__first_n(__tail_size / sizeof(typename _Tag_::value_type),
+					as(typename _Tag_::mask_type{})), std::forward<_Args_>(__args)...);
+			}
+			else {
+				__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
+			}
+
 			if constexpr (requires { __f.result(); }) return __f.result();
 		}
 

@@ -138,17 +138,143 @@ struct variable_length_memory_tests {
                     raze_assert(dst[i] == expected);
                 }
             }
-        };
+            };
+
+        auto tests_for_safe_mask = [=](auto mask, auto fallback) {
+            {
+                alignas(64) _Type_ src[N];
+                for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 3 + 1);
+
+                Simd v = raze::vx::load<Simd>[mask][raze::vx::safe](src);
+                for (size_t i = 0; i < N; ++i) {
+                    if (mask[i]) raze_assert(v[i] == src[i]);
+                }
+            }
+
+            {
+                alignas(64) _Type_ buf[N * 2 + PAD];
+                _Type_* src = buf + 1;
+                for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 5 + 3);
+
+                Simd v = raze::vx::load<Simd>[mask][raze::vx::safe](src);
+                for (size_t i = 0; i < N; ++i) {
+                    if (mask[i]) raze_assert(v[i] == src[i]);
+                }
+            }
+
+            {
+                alignas(64) _Type_ src[N];
+                for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 7 + 2);
+
+                Simd v = raze::vx::load<Simd>[mask, fallback][raze::vx::safe](src);
+                for (size_t i = 0; i < N; ++i) {
+                    _Type_ expected = mask[i] ? src[i] : fallback[i];
+                    raze_assert(v[i] == expected);
+                }
+            }
+
+            {
+                alignas(64) _Type_ buf[N * 2 + PAD];
+                _Type_* src = buf + 1;
+                for (size_t i = 0; i < N; ++i) src[i] = static_cast<_Type_>(i * 11 + 4);
+
+                Simd v = raze::vx::load<Simd>[mask, fallback][raze::vx::safe](src);
+                for (size_t i = 0; i < N; ++i) {
+                    _Type_ expected = mask[i] ? src[i] : fallback[i];
+                    raze_assert(v[i] == expected);
+                }
+            }
+
+            {
+                alignas(64) _Type_ dst[N];
+                for (size_t i = 0; i < N; ++i) dst[i] = static_cast<_Type_>(0xDEADBEEF);
+
+                Simd val;
+                {
+                    alignas(64) _Type_ tmp[N];
+                    for (size_t j = 0; j < N; ++j) tmp[j] = static_cast<_Type_>(j * 13 + 5);
+                    val = raze::vx::load<Simd>(tmp);
+                }
+
+                raze::vx::store[mask][raze::vx::safe](dst, val);
+
+                for (size_t i = 0; i < N; ++i) {
+                    if (mask[i]) raze_assert(dst[i] == val[i]);
+                    else raze_assert(dst[i] == static_cast<_Type_>(0xDEADBEEF));
+                }
+            }
+
+            {
+                alignas(64) _Type_ buf[N * 2 + PAD];
+                _Type_* dst = buf + 1;
+                for (size_t i = 0; i < N; ++i) dst[i] = static_cast<_Type_>(0xCAFEBABE);
+
+                Simd val;
+                {
+                    alignas(64) _Type_ tmp[N];
+                    for (size_t j = 0; j < N; ++j) tmp[j] = static_cast<_Type_>(j * 17 + 7);
+                    val = raze::vx::load<Simd>(tmp);
+                }
+
+                raze::vx::store[mask][raze::vx::safe](dst, val);
+
+                for (size_t i = 0; i < N; ++i) {
+                    if (mask[i]) raze_assert(dst[i] == val[i]);
+                    else raze_assert(dst[i] == static_cast<_Type_>(0xCAFEBABE));
+                }
+            }
+
+            {
+                alignas(64) _Type_ dst[N];
+                for (size_t i = 0; i < N; ++i) dst[i] = static_cast<_Type_>(0x12345678);
+
+                Simd val;
+                {
+                    alignas(64) _Type_ tmp[N];
+                    for (size_t j = 0; j < N; ++j) tmp[j] = static_cast<_Type_>(j * 19 + 9);
+                    val = raze::vx::load<Simd>(tmp);
+                }
+
+                raze::vx::store[mask, fallback][raze::vx::safe](dst, val);
+
+                for (size_t i = 0; i < N; ++i) {
+                    _Type_ expected = mask[i] ? val[i] : fallback[i];
+                    raze_assert(dst[i] == expected);
+                }
+            }
+
+            {
+                alignas(64) _Type_ buf[N * 2 + PAD];
+                _Type_* dst = buf + 1;
+                for (size_t i = 0; i < N; ++i) dst[i] = static_cast<_Type_>(0x87654321);
+
+                Simd val;
+                {
+                    alignas(64) _Type_ tmp[N];
+                    for (size_t j = 0; j < N; ++j) tmp[j] = static_cast<_Type_>(j * 23 + 11);
+                    val = raze::vx::load<Simd>(tmp);
+                }
+
+                raze::vx::store[mask, fallback][raze::vx::safe](dst, val);
+
+                for (size_t i = 0; i < N; ++i) {
+                    _Type_ expected = mask[i] ? val[i] : fallback[i];
+                    raze_assert(dst[i] == expected);
+                }
+            }
+            };
 
         for (auto i = 0; i < std::min(int(std::pow(2, N)), 100); ++i) {
-            tests_for_mask(make_random_mask<Mask>(), fbk_v);
+            auto m = make_random_mask<Mask>();
+            tests_for_mask(m, fbk_v);
+            tests_for_safe_mask(m, fbk_v);
         }
     }
 
     void operator()() const {
         test_size<_Width_ / (sizeof(_Type_) * 8)>();
-        //test_size<_Width_ / (sizeof(_Type_) * 8) + 1>();
-        //test_size<1>();
+        test_size<_Width_ / (sizeof(_Type_) * 8) + 1>();
+        test_size<1>();
     }
 };
 

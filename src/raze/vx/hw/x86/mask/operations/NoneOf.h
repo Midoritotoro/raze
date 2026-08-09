@@ -31,7 +31,13 @@ raze_nodiscard raze_always_inline bool __none_of(_Tp_ __x, _Mask_ __mask) noexce
 	requires((intrin_type<_Tp_> && intrin_type<_Mask_>) || (std::unsigned_integral<_Tp_> && std::unsigned_integral<_Mask_>))
 {
 	if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) { return !__mask || !__x; }
-	else return __none_of<_ISA_, _Type_>(_Mask_and<_ISA_, _Type_>()(__x, __mask));
+	else {
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+		return __none_of<_ISA_, _Type_>(_Mask_and<_ISA_, _Type_>()(__x, __mask));
+#elif defined(raze_cpp_msvc)
+		return _To_bitmask<_ISA_, _Type_>()(_Mask_and<_ISA_, _Type_>()(__x, __mask)) == 0;
+#endif
+	}
 }
 
 __RAZE_VX_NAMESPACE_END

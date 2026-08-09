@@ -11,7 +11,7 @@ template <class _Simd_>
 concept simd_type = __is_valid_simd_v<_Simd_>;
 
 template <simd_type _Simd_>
-struct tail_tag : _Simd_ {
+struct tail_tag {
 	using original_type = _Simd_;
 };
 

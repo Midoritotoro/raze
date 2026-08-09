@@ -13,4 +13,8 @@ struct nt_mode {};
 constexpr inline auto nt = raze::options::flag(nt_mode{});
 struct nt_option : raze::options::exact_option<nt> {};
 
+struct safe_mode {};
+constexpr inline auto safe = raze::options::flag(safe_mode{});
+struct safe_option : raze::options::exact_option<safe> {};
+
 __RAZE_VX_NAMESPACE_END

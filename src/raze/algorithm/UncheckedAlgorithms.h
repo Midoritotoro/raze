@@ -48,6 +48,6 @@ concept scalar_tag = options::concepts::same_as<_Type_, vx::scalar_tag>;
 template <class _Type_>
 concept tail_tag = requires(_Type_) {
     typename _Type_::original_type;
-};
+} && !vx::simd_type<_Type_>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

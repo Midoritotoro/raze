@@ -4,29 +4,11 @@
 #include <src/raze/vx/hw/x86/memory/Store.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
 #include <array>
+#include <src/raze/vx/hw/x86/shuffle/SlideRight.h>
+#include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
-
-template <sizetype _VectorLength_>
-consteval auto __first_n_ktable() noexcept {
-    using _MaskType = __mmask_for_elements_t<_VectorLength_>;
-    auto __table = std::array<_MaskType, _VectorLength_ + 1>{};
-
-    for (auto __i = 0; __i <= _VectorLength_; ++__i) {
-        if (__i == _VectorLength_) {
-            if (_VectorLength_ >= 8)
-                __table[__i] = math::__maximum_integral_limit<_MaskType>();
-            else
-                __table[__i] = _MaskType((_MaskType(1) << __i) - 1);
-        }
-        else {
-            __table[__i] = _MaskType((_MaskType(1) << __i) - 1);
-        }
-    }
-
-    return __table;
-}
 
 template <sizetype _VectorLength_, arithmetic_type _Type_>
 consteval auto __first_n_vtable() noexcept {
@@ -51,21 +33,28 @@ struct _First_n {
             return __elements != 0;
         }
         else if constexpr (__kmask) {
-            constexpr auto __ktable = __first_n_ktable<_Size_>();
-            return __ktable[__elements];
+            if constexpr (_Size_ == 8 || _Size_ == 16 || _Size_ == 32 || _Size_ == 64) {
+                auto __a = _Tp_(_Tp_(_Tp_(1) << __elements) - 1);
+                auto __b = _Tp_(-1);
+                return __elements == raze_sizeof_in_bits(_Tp_) ? __b : __a;
+            }
+            else {
+                return _Tp_((_Tp_(1) << __elements) - 1);
+            }
         }
         else {
-            constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();
-            return _Load<_ISA_, _Tp_>()(algorithm::__bytes_pointer_offset(__vtable.data(), 64 - (__elements * sizeof(_Type_))));
+            static constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();
+            auto* raze_restrict __addr = algorithm::__bytes_pointer_offset(__vtable.data(), sizeof(_Tp_) - (__elements * sizeof(_Type_)));
+            const auto __loaded = _Load<_ISA_, _Tp_>()(__addr, __aligned_policy{});
+            return __loaded;
         }
     }
 };
 
-
 template <sizetype _Bits_, class _Type_>
 consteval auto __max_for_bits() noexcept {
-    static constexpr auto __table = __first_n_ktable<raze_sizeof_in_bits(_Type_)>();
-    return static_cast<_Type_>(__table[_Bits_]);
+    if constexpr (_Bits_ == raze_sizeof_in_bits(_Type_)) return _Type_(-1);
+    else return _Type_(_Type_(_Type_(1) << _Bits_) - 1);
 }
 
 __RAZE_VX_NAMESPACE_END

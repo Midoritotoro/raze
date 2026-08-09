@@ -9,6 +9,7 @@
 #include <src/raze/vx/Storage.h>
 #include <src/raze/vx/reference/SimdMaskReference.h>
 #include <bitset>
+#include <src/raze/utility/UninitializedTag.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -36,6 +37,8 @@ public:
 	simd_mask(const simd_mask&) = default;
 	simd_mask(simd_mask&&) = default;
 	~simd_mask() = default;
+
+	raze_always_inline simd_mask(uninitialized_tag) noexcept {}
 
 	raze_no_stack_protector raze_always_inline explicit simd_mask(bool __value) noexcept {
 		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {

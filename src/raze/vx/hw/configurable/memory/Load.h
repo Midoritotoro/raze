@@ -16,7 +16,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <simd_type _Simd_>
 struct _Configurable_load {
     template <class _Options_>
-    struct __load : raze::options::strict_elementwise_callable<__load, _Options_, aligned_option> {
+    struct __load : raze::options::strict_elementwise_callable<__load, _Options_, aligned_option, safe_option> {
         template <any_iterator_or_pointer _Mem_>
         raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ operator()(_Mem_ __it) const noexcept {
             return raze::options::__dispatch_call(*this, __it);
@@ -27,6 +27,8 @@ struct _Configurable_load {
             using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
             using _Value_ = typename _Simd_::value_type;
             using _Abi_ = typename _Simd_::abi_type;
+
+            constexpr auto __safe = _Options_::contains(safe);
 
             _Simd_ __x;
 
@@ -41,9 +43,9 @@ struct _Configurable_load {
                         _Chunk & __chunk, const _MaskChunk & __mchunk, const _SourceChunk& __src_chunk, auto& __memory) raze_always_inline_lambda
                 {
                     if constexpr (_Options_::contains(aligned))
-                        __chunk = _Mask_load<_Abi_::isa, _Value_>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk), __aligned_policy{});
+                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk), __aligned_policy{});
                     else
-                        __chunk = _Mask_load<_Abi_::isa, _Value_>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk));
+                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk));
 
                     algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
                 }, __mask.__storage().storage(), __condition.alternative().__storage().storage(), __mem);
@@ -52,9 +54,9 @@ struct _Configurable_load {
                         _Chunk & __chunk, const _MaskChunk & __mchunk, auto& __memory) raze_always_inline_lambda
                 {
                     if constexpr (_Options_::contains(aligned))
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_>()(__memory, __storage_unwrap(__mchunk), __aligned_policy{});
+                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk), __aligned_policy{});
                     else
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_>()(__memory, __storage_unwrap(__mchunk));
+                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk));
 
                     algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
                 }, __mask.__storage().storage(), __mem);

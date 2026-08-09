@@ -6,7 +6,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA	_ISA_, intrin_or_arithmetic_type _Tp_, arithmetic_type _Type_>
+template <arch::ISA	_ISA_, intrin_or_arithmetic_type _Tp_, arithmetic_type _Type_, bool _Safe_ = false>
 struct _Maskz_load {
 	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
 	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
@@ -74,8 +74,31 @@ struct _Maskz_load {
 			}
 		}
 		
-		if constexpr  (arithmetic_type<_Tp_>) return __mask ? *static_cast<const _Tp_*>(__mem) : 0;
-		else return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
+		if constexpr (arithmetic_type<_Tp_>) return __mask ? *static_cast<const _Tp_*>(__mem) : 0;
+		else {
+			if constexpr (_Safe_) {
+				constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
+				alignas(sizeof(_Tp_)) _Type_ __array[__size];
+				_Store<_ISA_>()(__array, _Zero<_ISA_, _Tp_>()(), __aligned_policy{});
+
+				if constexpr (intrin_type<_Mask_>) {
+					alignas(sizeof(_Tp_)) typename IntegerForSizeof<_Type_>::Signed __marray[__size];
+					_Store<_ISA_>()(__marray, __mask, __aligned_policy{});
+
+					for (auto __i = 0; __i < __size; ++__i)
+						__array[__i] = __marray[__i] == 0 ? 0 : static_cast<const _Type_*>(__mem)[__i];
+				}
+				else {
+					for (auto __i = 0; __i < __size; ++__i)
+						__array[__i] = math::__bit_test(__mask, __i) ? static_cast<const _Type_*>(__mem)[__i] : 0;
+				}
+
+				return _Load<_ISA_, _Tp_>()(__array, __aligned_policy{});
+			}
+			else {
+				return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
+			}
+		}
 	}
 
 	template <raw_mask_type _Mask_>
@@ -103,7 +126,30 @@ struct _Maskz_load {
 		}
 
 		if constexpr (arithmetic_type<_Tp_>) return __mask ? *static_cast<const _Tp_*>(__mem) : 0;
-		else return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __mask);
+		else {
+			if constexpr (_Safe_) {
+				constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
+				alignas(sizeof(_Tp_)) _Type_ __array[__size];
+				_Store<_ISA_>()(__array, _Zero<_ISA_, _Tp_>()(), __aligned_policy{});
+
+				if constexpr (intrin_type<_Mask_>) {
+					alignas(sizeof(_Tp_)) typename IntegerForSizeof<_Type_>::Signed __marray[__size];
+					_Store<_ISA_>()(__marray, __mask, __aligned_policy{});
+
+					for (auto __i = 0; __i < __size; ++__i)
+						__array[__i] = __marray[__i] == 0 ? 0 : static_cast<const _Type_*>(__mem)[__i];
+				}
+				else {
+					for (auto __i = 0; __i < __size; ++__i)
+						__array[__i] = math::__bit_test(__mask, __i) ? static_cast<const _Type_*>(__mem)[__i] : 0;
+				}
+
+				return _Load<_ISA_, _Tp_>()(__array, __aligned_policy{});
+			}
+			else {
+				return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem, __aligned_policy{}), __mask);
+			}
+		}
 	}
 
 	template <raw_mask_type _Mask_, class _AlignPolicy_ = __unaligned_policy>

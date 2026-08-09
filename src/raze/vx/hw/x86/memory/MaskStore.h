@@ -3,11 +3,11 @@
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/vx/hw/x86/memory/Load.h>
 #include <src/raze/vx/hw/x86/memory/Store.h>
-
+#include <src/raze/math/BitTest.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA	_ISA_, class _Type_>
+template <arch::ISA	_ISA_, class _Type_, bool _Safe_ = false>
 struct _Mask_store {
 	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
 	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
@@ -39,7 +39,30 @@ struct _Mask_store {
 		}
 
 		if constexpr (arithmetic_type<_Tp_>) { if (__mask) *static_cast<_Tp_*>(__mem) = __x; }
-		else { _Store<_ISA_>()(__mem, _Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask), __aligned_policy{}); }
+		else { 
+			if constexpr (_Safe_) {
+				constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
+				alignas(sizeof(_Tp_)) _Type_ __array[__size];
+				_Store<_ISA_>()(__array, __x, __aligned_policy{});
+
+				if constexpr (intrin_type<_Mask_>) {
+					alignas(sizeof(_Tp_)) typename IntegerForSizeof<_Type_>::Signed __marray[__size];
+					_Store<_ISA_>()(__marray, __mask, __aligned_policy{});
+
+					for (auto __i = 0; __i < __size; ++__i)
+						if (__marray[__i] != 0)
+							static_cast<_Type_*>(__mem)[__i] = __array[__i];
+				}
+				else {
+					for (auto __i = 0; __i < __size; ++__i)
+						if (math::__bit_test(__mask, __i))
+							static_cast<_Type_*>(__mem)[__i] = __array[__i];
+				}
+			}
+			else {
+				_Store<_ISA_>()(__mem, _Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask), __aligned_policy{});
+			}
+		}
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
@@ -104,7 +127,30 @@ struct _Mask_store {
 		}
 
 		if constexpr (arithmetic_type<_Tp_>) { if (__mask) *static_cast<_Tp_*>(__mem) = __x; }
-		else { _Store<_ISA_>()(__mem, _Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask)); }
+		else {
+			if constexpr (_Safe_) {
+				constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
+				alignas(sizeof(_Tp_)) _Type_ __array[__size];
+				_Store<_ISA_>()(__array, __x, __aligned_policy{});
+
+				if constexpr (intrin_type<_Mask_>) {
+					alignas(sizeof(_Tp_)) typename IntegerForSizeof<_Type_>::Signed __marray[__size];
+					_Store<_ISA_>()(__marray, __mask, __aligned_policy{});
+
+					for (auto __i = 0; __i < __size; ++__i)
+						if (__marray[__i] != 0)
+							static_cast<_Type_*>(__mem)[__i] = __array[__i];
+				}
+				else {
+					for (auto __i = 0; __i < __size; ++__i)
+						if (math::__bit_test(__mask, __i))
+							static_cast<_Type_*>(__mem)[__i] = __array[__i];
+				}
+			}
+			else {
+				_Store<_ISA_>()(__mem, _Select<_ISA_, _Type_>()(__x, _Load<_ISA_, _Tp_>()(__mem), __mask));
+			}
+		}
 	}
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, class _AligntPolicy_ = __unaligned_policy>
@@ -115,8 +161,5 @@ struct _Mask_store {
 		else __storeu(__mem, __mask, __x);
 	}
 };
-
-template <arch::ISA  _ISA_, arithmetic_type _Type_>
-inline constexpr bool __is_native_mask_store_supported_v = (__has_avx_support_v<_ISA_> && sizeof(_Type_) >= 4) || __has_avx512bw_support_v<_ISA_>;
 
 __RAZE_VX_NAMESPACE_END
