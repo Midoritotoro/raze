@@ -12,6 +12,12 @@ struct _Find_last_not_set {
 		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) return __x;
 		else return math::__clz_not_n_bits<_ISA_, _Size_, _Unsafe_>(_To_mask<_ISA_, _Type_>()(__x));
 	}
+
+	template <raw_mask_type _Tp_, raw_mask_type _Mask_>
+	raze_nodiscard raze_always_inline i32 operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
+		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) return !__mask || __x;
+		else return math::__clz_not_n_bits<_ISA_, _Size_, _Unsafe_>(_To_mask<_ISA_, _Type_>()(_Mask_or<_ISA_, _Type_>()(__x, _Mask_not<_ISA_, _Type_>()(__mask))));
+	}
 };
 
 __RAZE_VX_NAMESPACE_END
