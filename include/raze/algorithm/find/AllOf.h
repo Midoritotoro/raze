@@ -52,10 +52,8 @@ struct _All_of : _Traits_ {
 
 			raze_disable_unrolling
 			do {
-				if (!vx::all_of(_predicate(_proj(vx::load<_Tag_>(__ptr))))) {
-					 _result = false;
-					 return false;
-				}
+				if (!vx::all_of(_predicate(_proj(vx::load<_Tag_>(__ptr)))))
+					return _result = false;
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);

@@ -12,8 +12,8 @@ raze_nodiscard raze_always_inline bool __none_of(_Tp_ __x) noexcept;
 template <arch::ISA _ISA_, u64 _Size_, arithmetic_type _Type_, raw_mask_type _Tp_>
 raze_nodiscard raze_always_inline bool __all_of(_Tp_ __x) noexcept {
 	if constexpr (intrin_type<_Tp_>) {
-		constexpr auto __size = u64((u64(1) << (sizeof(_Tp_) / sizeof(i32))) - 1);
-		return _To_bitmask<_ISA_, i32>()(__x) == __size;
+		constexpr auto __size = (sizeof(_Tp_) / sizeof(_Type_)) == 64 ? 0xFFFFFFFFFFFFFFFFULL : u64((u64(1) << (sizeof(_Tp_) / sizeof(_Type_))) - 1);
+		return _To_bitmask<_ISA_, _Type_>()(__x) == __size;
 	}
 	else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
 		raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(_Tp_) * 8) == _Size_)
