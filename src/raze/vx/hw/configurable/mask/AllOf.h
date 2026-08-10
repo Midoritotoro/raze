@@ -7,6 +7,7 @@
 #  include <src/raze/vx/hw/x86/mask/operations/AllOf.h>
 #endif // defined(raze_processor_x86)
 
+#include <src/raze/algorithm/TailMask.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -15,6 +16,10 @@ struct _Configurable_all_of: raze::options::strict_elementwise_callable<_Configu
     template <simd_mask_type _Type_>
     raze_nodiscard raze_always_inline bool operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);
+    }
+
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x) const noexcept {
+        return (*this)(__x());
     }
 
     template <simd_mask_type _Type_>

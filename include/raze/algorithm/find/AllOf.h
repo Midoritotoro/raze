@@ -35,8 +35,7 @@ struct _All_of : _Traits_ {
 			_sentinel = _source.uend();
 		}
 
-		template <scalar_tag _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_) noexcept {
+		raze_always_inline constexpr void operator()() noexcept {
 			raze_disable_unrolling
 			for (; _iterator != _sentinel; ++_iterator) {
 				if (!_predicate(_proj(*_iterator))) {
@@ -47,14 +46,16 @@ struct _All_of : _Traits_ {
 		}
 
 		template <vectorizable_tag _Tag_>
-		raze_nodiscard raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size) noexcept {
+		raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
 			raze_disable_unrolling
 			do {
-				if (!vx::all_of(_predicate(_proj(vx::load<_Tag_>(__ptr)))))
-					return _result = false;
+				if (!vx::all_of(_predicate(_proj(vx::load<_Tag_>(__ptr))))) {
+					 _result = false;
+					 return false;
+				}
 
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
@@ -63,17 +64,10 @@ struct _All_of : _Traits_ {
 			return true;
 		}
 
-		template <tail_tag _Tag_>
-		raze_always_inline void operator()(_Tag_, sizetype __tail_size) noexcept {
-			using _Simd_ = typename _Tag_::original_type;
-			using _Mask_ = typename _Simd_::mask_type;
-
-			auto* __ptr = std::to_address(_iterator);
-
-			const auto __first_n_mask = raze::vx::first_n(__tail_size / sizeof(vector_value_type), options::as(_Mask_{}));
-			const auto __mask = _predicate(_proj(raze::vx::load<_Simd_>[__first_n_mask](__ptr)));
-
-			_result = vx::all_of[__first_n_mask](__mask);
+		template <vectorizable_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, tail_mask_type auto const& __ignore) noexcept {
+			const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>[__ignore](std::to_address(_iterator))));
+			_result = vx::all_of[__ignore](__mask);
 		}
 
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {

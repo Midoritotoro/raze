@@ -9,6 +9,7 @@
 #  include <src/raze/vx/hw/x86/mask/operations/NoneOf.h>
 #endif // defined(raze_processor_x86)
 
+#include <src/raze/algorithm/TailMask.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -17,6 +18,10 @@ struct _Configurable_find_next_set : raze::options::strict_elementwise_callable<
     template <simd_mask_type _Type_>
     raze_nodiscard raze_always_inline i32 operator()(const _Type_& __x, i32 __from) const noexcept {
         return raze::options::__dispatch_call(*this, __x, __from);
+    }
+
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x, i32 __from) const noexcept {
+        return (*this)(__x(), __from);
     }
 
     template <simd_mask_type _Type_>

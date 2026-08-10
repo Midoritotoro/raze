@@ -3,6 +3,7 @@
 #include <raze/vx/Algorithm.h>
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <raze/math/Math.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -32,8 +33,7 @@ struct _Adjacent_find : _Traits_ {
 			_sentinel = _source.uend();
 		}
 
-		template <scalar_tag _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_) noexcept {
+		raze_always_inline constexpr void operator()() noexcept {
 			if (_iterator == _sentinel)
 				return;
 
@@ -48,7 +48,7 @@ struct _Adjacent_find : _Traits_ {
 		}
 
 		template <vectorizable_tag _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size) noexcept {
+		raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
@@ -72,7 +72,7 @@ struct _Adjacent_find : _Traits_ {
 			source_type::from_ptr(_iterator, __ptr);
 			return true;
 		}
-		
+
 		raze_nodiscard constexpr raze_always_inline auto size() const noexcept {
 			return _source.size() - sizeof(std::iter_value_t<unchecked_iterator_type>);
 		}

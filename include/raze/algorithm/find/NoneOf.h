@@ -30,8 +30,7 @@ struct _None_of : _Traits_ {
 			_sentinel = _source.uend();
 		}
 
-		template <scalar_tag _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_) noexcept {
+		raze_always_inline constexpr void operator()() noexcept {
 			raze_disable_unrolling
 			for (; _iterator != _sentinel; ++_iterator) {
 				if (_predicate(_proj(*_iterator))) {
@@ -42,7 +41,7 @@ struct _None_of : _Traits_ {
 		}
 
 		template <vectorizable_tag _Tag_>
-		raze_nodiscard raze_always_inline constexpr bool operator()(_Tag_, sizetype __aligned_size) noexcept {
+		raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
@@ -58,10 +57,9 @@ struct _None_of : _Traits_ {
 			return true;
 		}
 
-		template <tail_tag _Tag_>
-		raze_always_inline void operator()(_Tag_, auto const& __ignore) noexcept {
-			using _Simd_ = typename _Tag_::original_type;
-			const auto __mask = _predicate(_proj(raze::vx::load<_Simd_>[__ignore](std::to_address(_iterator))));
+		template <vectorizable_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, tail_mask_type auto const& __ignore) noexcept {
+			const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>[__ignore](std::to_address(_iterator))));
 			_result = vx::none_of[__ignore](__mask);
 		}
 

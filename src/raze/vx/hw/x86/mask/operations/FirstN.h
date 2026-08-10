@@ -24,6 +24,14 @@ consteval auto __first_n_vtable() noexcept {
     return __table;
 }
 
+template <class _MaskType_>
+raze_nodiscard raze_always_inline _MaskType_ __bzhi_mask_first_n(u32 __elements) noexcept {
+    if constexpr (sizeof(_MaskType_) == 1) return static_cast<_MaskType_>(_bzhi_u32(0xFF, __elements));
+    else if constexpr (sizeof(_MaskType_) == 2) return static_cast<_MaskType_>(_bzhi_u32(0xFFFF, __elements));
+    else if constexpr (sizeof(_MaskType_) == 4) return static_cast<_MaskType_>(_bzhi_u32(0xFFFFFFFF, __elements));
+    else if constexpr (sizeof(_MaskType_) == 8) return static_cast<_MaskType_>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, __elements));
+}
+
 template <arch::ISA	_ISA_, u32 _Size_, raw_mask_type _Tp_, arithmetic_type _Type_>
 struct _First_n {
     raze_nodiscard raze_always_inline auto operator()(u32 __elements) const noexcept {
@@ -33,19 +41,12 @@ struct _First_n {
             return __elements != 0;
         }
         else if constexpr (__kmask) {
-            if constexpr (_Size_ == 8 || _Size_ == 16 || _Size_ == 32 || _Size_ == 64) {
-                auto __a = _Tp_(_Tp_(_Tp_(1) << __elements) - 1);
-                auto __b = _Tp_(-1);
-                return __elements == raze_sizeof_in_bits(_Tp_) ? __b : __a;
-            }
-            else {
-                return _Tp_((_Tp_(1) << __elements) - 1);
-            }
+            return __bzhi_mask_first_n<_Tp_>(__elements);
         }
         else {
             static constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();
             auto* raze_restrict __addr = algorithm::__bytes_pointer_offset(__vtable.data(), sizeof(_Tp_) - (__elements * sizeof(_Type_)));
-            const auto __loaded = _Load<_ISA_, _Tp_>()(__addr, __aligned_policy{});
+            const auto __loaded = _Load<_ISA_, _Tp_>()(__addr);
             return __loaded;
         }
     }

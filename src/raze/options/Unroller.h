@@ -5,6 +5,7 @@
 #include <src/raze/vx/hw/x86/memory/ConditionalMemAccessNative.h>
 #include <src/raze/options/As.h>
 #include <src/raze/vx/hw/configurable/mask/FirstN.h>
+#include <src/raze/algorithm/TailMask.h>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
@@ -15,24 +16,24 @@ struct _Unroller {
 		constexpr __impl() noexcept = default;
 		constexpr ~__impl() noexcept = default;
 
-		template <class _Function_, class ... _Args_>
-		constexpr raze_always_inline auto operator()(sizetype __aligned_size, sizetype __tail_size, _Function_ __f, _Args_&& ... __args) const noexcept
+		template <class _Function_>
+		constexpr raze_always_inline auto operator()(sizetype __aligned_size, sizetype __tail_size, _Function_ __f) const noexcept
 			requires(!std::is_same_v<_Tag_, vx::scalar_tag>) 
 		{
-			constexpr auto __has_early_exit = concepts::same_as<decltype(__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...)), bool>;
+			constexpr auto __has_early_exit = concepts::same_as<decltype(__f(_Tag_{}, __aligned_size)), bool>;
 			constexpr auto __unrolling = get_unrolling<_Traits_>();
 			const auto __guard = vx::make_guard<_Tag_>();
 
 #if defined(raze_cpp_msvc_only)
 			// Ignore unrolling
 			if constexpr (__has_early_exit) {
-				if (!__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...)) {
+				if (!__f(_Tag_{}, __aligned_size)) {
 					if constexpr (requires { __f.result(); }) return __f.result();
 					else return;
 				}
 			}
 			else {
-				__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...);
+				__f(_Tag_{}, __aligned_size);
 			}
 #else
 			if constexpr (__unrolling > 1) {
@@ -41,7 +42,7 @@ struct _Unroller {
 				 if (__unrolled_size != 0) {
 					 if constexpr (__has_early_exit) {
 						 if (!__f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, _Tag_::size()
-							 * __unrolling>>{}, __unrolled_size, std::forward<_Args_>(__args)...))
+							 * __unrolling>>{}, __unrolled_size))
 						 {
 							 if constexpr (requires { __f.result(); }) return __f.result();
 							 else return;
@@ -49,7 +50,7 @@ struct _Unroller {
 					 }
 					 else {
 						 __f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, _Tag_::size()
-							 * __unrolling>>{}, __unrolled_size, std::forward<_Args_>(__args)...);
+							 * __unrolling>>{}, __unrolled_size);
 					 }
 				 }
 
@@ -57,48 +58,48 @@ struct _Unroller {
 
 				if (__aligned_size >= sizeof(_Tag_)) {
 					if constexpr (__has_early_exit) {
-						if (!__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...)) {
+						if (!__f(_Tag_{}, __aligned_size)) {
 							if constexpr (requires { __f.result(); }) return __f.result();
 							else return;
 						}
 					}
 					else {
-						__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...);
+						__f(_Tag_{}, __aligned_size);
 					}
 				}
 			}
 			else {
 				if constexpr (__has_early_exit) {
-					if (!__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...)) {
+					if (!__f(_Tag_{}, __aligned_size)) {
 						if constexpr (requires { __f.result(); }) return __f.result();
 						else return;
 					}
 				}
 				else {
-					__f(_Tag_{}, __aligned_size, std::forward<_Args_>(__args)...);
+					__f(_Tag_{}, __aligned_size);
 				}
 			}
 #endif // defined(raze_cpp_msvc)
 
 			if constexpr (vx::native_conditional_memory_access<vx::abi_t<_Tag_>::isa, typename _Tag_::value_type>
-				&& requires { __f(vx::tail_tag<_Tag_>{}, raze::vx::__first_n(__tail_size / sizeof(typename _Tag_::value_type),
-					as(typename _Tag_::mask_type{})), std::forward<_Args_>(__args)...); })
+				&& requires { __f(_Tag_{}, algorithm::tail_mask(__tail_size, [__tail = __tail_size] () raze_always_inline_lambda {
+					return raze::vx::__first_n(__tail / sizeof(typename _Tag_::value_type), as(typename _Tag_::mask_type{})); })); })
 			{
-				__f(vx::tail_tag<_Tag_>{}, raze::vx::__first_n(__tail_size / sizeof(typename _Tag_::value_type),
-					as(typename _Tag_::mask_type{})), std::forward<_Args_>(__args)...);
+				__f(_Tag_{}, algorithm::tail_mask(__tail_size, [__tail = __tail_size] () raze_always_inline_lambda {
+					return raze::vx::__first_n(__tail / sizeof(typename _Tag_::value_type), as(typename _Tag_::mask_type{})); }));
 			}
 			else {
-				__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
+				__f();
 			}
 
 			if constexpr (requires { __f.result(); }) return __f.result();
 		}
 
-		template <class _Function_, class ... _Args_>
-		constexpr raze_always_inline auto operator()(_Function_ __f, _Args_&& ... __args) const noexcept 
+		template <class _Function_>
+		constexpr raze_always_inline auto operator()(_Function_ __f) const noexcept 
 			requires(std::is_same_v<_Tag_, vx::scalar_tag>)
 		{
-			__f(vx::scalar_tag{}, std::forward<_Args_>(__args)...);
+			__f();
 			if constexpr (requires { __f.result(); }) return __f.result();
 		}
 	};

@@ -31,9 +31,12 @@ struct callable:
 
     template <class _Type_>
     raze_always_inline constexpr auto operator[](const _Type_& __t) const noexcept
-        requires(requires(const base& __base) { __base[__t];}) 
+        requires(requires(const base& __base) { __base[__t];} || requires(const base & __base) { __base[__t()]; })
     {
-        return _Functor_<decltype(base::operator[](__t))>{ base::operator[](__t)};
+        if constexpr (requires(const base & __base) { __base[__t]; }) 
+            return _Functor_<decltype(base::operator[](__t))>{ base::operator[](__t)};
+        else
+            return _Functor_<decltype(base::operator[](__t()))>{ base::operator[](__t())};
     }
 
     template <condition_type _Condition_, class _Alternative_>
@@ -52,7 +55,8 @@ struct callable:
 
     template <class _Type_>
     raze_always_inline void operator[](const _Type_& __t) const noexcept
-        requires(!callable_options<_Type_> && !requires(const base& __base) { __base[__t]; }) = delete;
+        requires(!callable_options<_Type_> && !requires(const base& __base) { __base[__t]; }
+            && !requires(const base& __base) { __base[__t()]; }) = delete;
 
     template <class ... Args>
     raze_always_inline constexpr auto behavior(Args&& ... __args) const noexcept {

@@ -7,6 +7,7 @@
 #  include <src/raze/vx/hw/x86/mask/operations/IsContiguous.h>
 #endif // defined(raze_processor_x86)
 
+#include <src/raze/algorithm/TailMask.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -16,6 +17,10 @@ struct _Configurable_is_contiguous: raze::options::strict_elementwise_callable<_
     raze_nodiscard raze_always_inline bool operator()(const _Type_& __x, i32 __n, i32 __k) const noexcept {
         raze_debug_assert(__n < _Type_::size() && __k <= _Type_::size() && __n <= __k);
         return raze::options::__dispatch_call(*this, __x, __n, __k);
+    }
+
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x, i32 __n, i32 __k) const noexcept {
+        return (*this)(__x(), __n, __k);
     }
 
     template <simd_mask_type _Type_>
