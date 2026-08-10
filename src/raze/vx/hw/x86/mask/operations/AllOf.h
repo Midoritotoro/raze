@@ -12,8 +12,8 @@ raze_nodiscard raze_always_inline bool __none_of(_Tp_ __x) noexcept;
 template <arch::ISA _ISA_, u64 _Size_, arithmetic_type _Type_, raw_mask_type _Tp_>
 raze_nodiscard raze_always_inline bool __all_of(_Tp_ __x) noexcept {
 	if constexpr (intrin_type<_Tp_>) {
-		constexpr auto __size = (sizeof(_Tp_) / sizeof(_Type_)) == 64 ? 0xFFFFFFFFFFFFFFFFULL : u64((u64(1) << (sizeof(_Tp_) / sizeof(_Type_))) - 1);
-		return _To_bitmask<_ISA_, _Type_>()(__x) == __size;
+		constexpr auto __size = (sizeof(_Tp_)) == 64 ? 0xFFFFFFFFFFFFFFFFULL : u64((u64(1) << (sizeof(_Tp_))) - 1);
+		return _To_bitmask<_ISA_, i8>()(__x) == __size;
 	}
 	else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
 		raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(_Tp_) * 8) == _Size_)
@@ -34,8 +34,23 @@ raze_nodiscard raze_always_inline bool __all_of(_Tp_ __x, _Mask_ __mask) noexcep
 	requires((intrin_type<_Tp_> && intrin_type<_Mask_>) || (std::unsigned_integral<_Tp_> && std::unsigned_integral<_Mask_>
 		&& !std::is_same_v<_Tp_, bool> && !std::is_same_v<_Tp_, bool>) || (std::is_same_v<_Tp_, bool> && std::is_same_v<_Tp_, _Mask_>))
 {
-	if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) { return !__mask || __x; }
-	else return __none_of<_ISA_, _Type_>(_Mask_andnot<_ISA_, _Type_>()(__x, __mask));
+    if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
+        return !__mask || __x;
+    }
+    else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
+        if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)
+            return _ktestc_mask8_u8(__x, __mask);
+        else if constexpr (sizeof(_Tp_) == 2 && __has_avx512f_support_v<_ISA_>)
+            return _ktestc_mask16_u8(__x, __mask);
+        else if constexpr (sizeof(_Tp_) == 4 && __has_avx512bw_support_v<_ISA_>)
+            return _ktestc_mask32_u8(__x, __mask);
+        else if constexpr (sizeof(_Tp_) == 8 && __has_avx512bw_support_v<_ISA_>)
+            return _ktestc_mask64_u8(__x, __mask);
+        else
+            return (__x & __mask) == __mask;
+    }
+	
+	return __none_of<_ISA_, _Type_>(_Mask_andnot<_ISA_, _Type_>()(__x, __mask));
 }
 
 __RAZE_VX_NAMESPACE_END

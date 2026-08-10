@@ -155,7 +155,7 @@ void __test_all_helper() {
 
 template <template <class, raze::arch::ISA, raze::u32> class _Function_>
 void test_all() { 
-   /* __test_all_helper<_Function_, raze::arch::ISA::SSE2, 128>();
+    __test_all_helper<_Function_, raze::arch::ISA::SSE2, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::SSE3, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::SSSE3, 128>();
     __test_all_helper<_Function_, raze::arch::ISA::SSE41, 128>();
@@ -168,7 +168,7 @@ void test_all() {
     __test_all_helper<_Function_, raze::arch::ISA::AVX2, 256>();
     __test_all_helper<_Function_, raze::arch::ISA::AVX, 256>();
     __test_all_helper<_Function_, raze::arch::ISA::FMA3, 256>();
-    __test_all_helper<_Function_, raze::arch::ISA::AVX2FMA3, 256>();*/
+    __test_all_helper<_Function_, raze::arch::ISA::AVX2FMA3, 256>();
 
     __test_all_helper<_Function_, raze::arch::ISA::AVX512F, 512>();
     __test_all_helper<_Function_, raze::arch::ISA::AVX512BW, 512>();
