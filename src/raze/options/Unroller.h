@@ -81,12 +81,14 @@ struct _Unroller {
 			}
 #endif // defined(raze_cpp_msvc)
 
+			constexpr auto __shift = std::countr_zero(sizeof(typename _Tag_::value_type));
+
 			if constexpr (vx::native_conditional_memory_access<vx::abi_t<_Tag_>::isa, typename _Tag_::value_type>
 				&& requires { __f(_Tag_{}, algorithm::tail_mask(__tail_size, [__tail = __tail_size] () raze_always_inline_lambda {
-					return raze::vx::__first_n(__tail / sizeof(typename _Tag_::value_type), as(typename _Tag_::mask_type{})); })); })
+					return raze::vx::__first_n(__tail >> __shift, as(typename _Tag_::mask_type{})); })); })
 			{
 				__f(_Tag_{}, algorithm::tail_mask(__tail_size, [__tail = __tail_size] () raze_always_inline_lambda {
-					return raze::vx::__first_n(__tail / sizeof(typename _Tag_::value_type), as(typename _Tag_::mask_type{})); }));
+					return raze::vx::__first_n(__tail >> __shift, as(typename _Tag_::mask_type{})); }));
 			}
 			else {
 				__f();

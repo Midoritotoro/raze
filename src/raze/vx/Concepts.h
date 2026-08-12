@@ -67,7 +67,7 @@ struct __zeroupper_at_destroy_guard {
 	__zeroupper_at_destroy_guard(__zeroupper_at_destroy_guard&&) noexcept = default;
 
 	~__zeroupper_at_destroy_guard() noexcept {
-		if constexpr (__has_avx2_support_v<abi_t<_Simd_>::isa>)
+		if constexpr (__has_avx_support_v<abi_t<_Simd_>::isa>)
 			_mm256_zeroupper();
 	}
 

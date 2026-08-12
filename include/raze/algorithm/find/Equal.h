@@ -41,8 +41,7 @@ struct _Equal : _Traits_ {
 			_sentinel1 = _source1.uend();
 		}
 
-		template <scalar_tag _Tag_>
-		constexpr raze_always_inline void operator()(_Tag_) noexcept {
+		constexpr raze_always_inline void operator()() noexcept {
 			raze_disable_unrolling
 			for (; _iterator1 != _sentinel1; ++_iterator1, ++_iterator2) {
 				if (!_predicate(_proj1(*_iterator1), _proj2(*_iterator2))) {
@@ -53,7 +52,7 @@ struct _Equal : _Traits_ {
 		}
 
 		template <vectorizable_tag _Tag_>
-		constexpr raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
+		raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr1 = std::to_address(_iterator1);
 			auto* __ptr2 = std::to_address(_iterator2);
 
@@ -73,6 +72,14 @@ struct _Equal : _Traits_ {
 			_Source2_::from_ptr(_iterator2, __ptr2);
 
 			return true;
+		}
+
+		template <vectorizable_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, tail_mask_type auto const& __ignore) noexcept {
+			const auto __mask = _predicate(_proj1(vx::load<_Tag_>[__ignore](std::to_address(_iterator1))),
+				_proj2(vx::load<_Tag_>[__ignore](std::to_address(_iterator2))));
+
+			_result = vx::all_of[__ignore](__mask);
 		}
 
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept 

@@ -1,191 +1,106 @@
 #pragma once 
 
-
+#include <raze/vx/Algorithm.h>
 #include <src/raze/algorithm/RangesSize.h>
-#include <src/raze/algorithm/VectorizablePredicate.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/EqualTo.h>
 #include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
-
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Count_if : _Traits_ {
-	template <class _DiffType_, class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-	struct __impl {
-		_Iterator_ _iterator;
-		_Sentinel_ _sentinel;
+	template <class _DiffType_, source _Source_, class _Predicate_, class _Projection_>
+	struct __kernel {
+		using source_type = std::remove_cvref_t<_Source_>;
+		using iterator_type = typename source_type::iterator_type;
+
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+
+		using vector_value_type = std::iter_value_t<iterator_type>;
+
+		_Source_ _source;
+		unchecked_iterator_type _iterator;
+		unchecked_sentinel_type _sentinel;
 		_Predicate_ _predicate;
 		_Projection_ _proj;
 		_DiffType_ _count = 0;
 
-		constexpr explicit __impl(options::as<_DiffType_>, _Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj) noexcept :
-			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj)
-		{}
-
-		template <class _Tag_>
-		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
-			if (_iterator == _sentinel) return true;
-			_count += _predicate(_proj(*_iterator));
-			++_iterator;
-			return false;
-		}
-
-		raze_nodiscard constexpr raze_always_inline _DiffType_ result() const noexcept {
-			return _count;
-		}
-	};
-
-	template <class _Tag_>
-	struct __vectorized_count {
-		template <class _DiffType_, class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _DiffType_ operator()(options::as<_DiffType_>, _Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
-			_Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+		constexpr explicit __kernel(options::as<_DiffType_>, _Source_&& __src, _Predicate_ __pred, _Projection_ __proj) noexcept :
+			_source(std::forward<_Source_>(__src)), _predicate(__pred), _proj(__proj)
 		{
-			_DiffType_ __count = 0;
-
-			for (; __first != __sentinel; ++__first)
-				__count += __predicate(__proj(*__first));
-
-			return __count;
+			_iterator = _source.ubegin();
+			_sentinel = _source.uend();
 		}
 
-		template <class _DiffType_, class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _DiffType_ operator()(sizetype __aligned_size,
-			sizetype __tail_size, options::as<_DiffType_>, _Iterator_ __first, _Sentinel_ __sentinel, _Predicate_ __predicate,
-			_Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
+		raze_always_inline constexpr void operator()() noexcept {
+			raze_disable_unrolling
+			for (; _iterator != _sentinel; ++_iterator)
+				_count += _predicate(_proj(*_iterator));
+		}
 
+		template <vectorizable_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, sizetype __aligned_size) noexcept {
+			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
-			_DiffType_ __count = 0;
 
+			raze_disable_unrolling
 			do {
-				__count += raze::vx::count_set(__predicate(__proj(raze::vx::load<_Tag_>(__ptr))));
+				_count += vx::count_set(_predicate(_proj(vx::load<_Tag_>(__ptr))));
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_iter(__first, __ptr);
-
-			for (; __first != __sentinel; ++__first)
-				__count += __predicate(__proj(*__first));
-
-			return __count;
+			source_type::from_ptr(_iterator, __ptr);
 		}
 
-		template <sizetype _AlignedSize_, sizetype _TailSize_, class _DiffType_,
-			class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-		raze_nodiscard raze_always_inline _DiffType_ operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>, options::as<_DiffType_>, _Iterator_ __first, _Sentinel_ __sentinel,
-			_Predicate_ __predicate, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
+		template <vectorizable_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, tail_mask_type auto const& __ignore) noexcept {
+			_count += vx::count_set[__ignore](_predicate(_proj(vx::load<_Tag_>[__ignore](std::to_address(_iterator)))));
+		}
 
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {
+			return _Source_::static_size();
+		}
 
-			auto __left = __iterations_aligned;
-			_DiffType_ __count = 0;
+		raze_nodiscard constexpr raze_always_inline auto size() const noexcept {
+			return _source.size();
+		}
 
-			do {
-				__count += raze::vx::count_set(__predicate(__proj(raze::vx::load<_Tag_>(__ptr))));
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (--__left);
+		static consteval bool vectorizable() noexcept {
+			return std::contiguous_iterator<unchecked_iterator_type> &&
+				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type>&&
+				vectorizable_projection<_Projection_, unchecked_iterator_type>;
+		}
 
-			__seek_iter(__first, __ptr);
-
-			if constexpr (_TailSize_ != 0) {
-				do {
-					__count += __predicate(__proj(*__first));
-					++__first;
-				} while (__first != __sentinel);
-			}
-
-			return __count;
+		constexpr raze_always_inline _DiffType_ result() const noexcept {
+			return _count;
 		}
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
 		class _Predicate_, class _Projection_ = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::iter_difference_t<_Iterator_> operator()(_Iterator_ __first,
-		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return __count_unchecked<std::iter_difference_t<_Iterator_>>(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_Iterator_>(std::move(__last)),
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+		return __raze_kernel_dispatch_call(options::as(std::iter_difference_t<_Iterator_>{}),
+			get_source(std::move(__first), std::move(__sent)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(
-		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(_Range_&& __r, 
+		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept requires(std::indirect_unary_predicate<
+			_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __count_unchecked<std::ranges::range_difference_t<_Range_>>(traits::__r_uiter<_Range_>(std::move(std::ranges::begin(__range))),
-			traits::__uend(__range), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
-	}
-
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(_Range_&& __range,
-		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
-	{
-		return __count_unchecked<std::ranges::range_difference_t<_Range_>>(traits::__r_uiter<_Range_>(std::move(std::ranges::begin(__range))),
-			traits::__uend(__range), traits::__fwd_fn(__pred),
-			traits::__fwd_fn(__proj), std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		return __raze_kernel_dispatch_call(options::as(std::ranges::range_difference_t<_Range_>{}),
+			get_source(std::forward<_Range_>(__r)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 private:
-	template <class _DiffType_, class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_>
-	raze_nodiscard constexpr raze_always_inline auto __count_unchecked(
-		_Iterator_ __first, _Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj) const noexcept
-	{
-		__verify_range(__first, __last);
-		
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_Iterator_> && vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
-			vectorizable_projection<_Projection_, _Iterator_>)
-		{
-			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_count, _Value_, _DiffType_>(
-					algorithm::distance(__first, __last) * sizeof(_Value_), options::as<_DiffType_>{}, __first, __last, __pred, __proj);
-			}
-		}
-		
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(options::as<_DiffType_>{}, __first, __last, __pred, __proj));
-	}
-
-	template <class _DiffType_, class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, sizetype _Size_>
-	raze_nodiscard constexpr raze_always_inline auto __count_unchecked(_Iterator_ __first, 
-		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_unary_predicate<_Predicate_, _Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_>)
-		{
-			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_count, _Value_, _DiffType_>(__bytes, options::as<_DiffType_>{}, __first, __last, __pred, __proj);
-			}
-		}
-		
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(options::as<_DiffType_>{}, __first, __last, __pred, __proj));
-	}
+	__raze_define_kernel_dispatch()
 };
 
-constexpr inline auto count_if = raze::options::function_with_traits<_Count_if>;
+constexpr inline auto count_if = raze::options::function_with_traits<_Count_if>[options::unroll<4>];
 
 template <class _Traits_>
 struct _Count : _Traits_ {
@@ -200,19 +115,8 @@ struct _Count : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Value_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(
+	raze_nodiscard constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(
 		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_>)
-	{
-		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			traits::__fwd_fn(__proj));
-	}
-
-	template <std::ranges::input_range _Range_, class _Value_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(_Range_&& __range,
-		const _Value_& __v, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_>)
 	{
 		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
@@ -220,7 +124,7 @@ struct _Count : _Traits_ {
 	}
 };
 
-constexpr inline auto count = raze::options::function_with_traits<_Count>;
+constexpr inline auto count = raze::options::function_with_traits<_Count>[options::unroll<4>];
 
 template <class _Traits_>
 struct _Count_if_not : _Traits_ {
@@ -234,24 +138,14 @@ struct _Count_if_not : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(
+	raze_nodiscard constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(
 		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
-	{
-		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
-	}
-
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(_Range_&& __range,
-		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+			requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
 	}
 };
 
-constexpr inline auto count_if_not = raze::options::function_with_traits<_Count_if_not>;
+constexpr inline auto count_if_not = raze::options::function_with_traits<_Count_if_not>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END
