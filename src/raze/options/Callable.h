@@ -9,13 +9,6 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _ConditionType_>
-concept condition_type = vx::simd_mask_type<_ConditionType_> || std::is_same_v<std::remove_cvref_t<_ConditionType_>, bool>;
-
-template <class _ConditionType_, class _AlternativeType_>
-concept alternative_type = (vx::simd_mask_type<_ConditionType_> && vx::simd_type<_AlternativeType_>) ||
-    (std::is_same_v<std::remove_cvref_t<_ConditionType_>, bool> && (std::integral<_AlternativeType_> || std::floating_point<_AlternativeType_>));
-
 template <template <class> class _Functor_, class _OptionsValues_, class ... _Options_>
 struct callable:
     decorated_with<_OptionsValues_, _Options_...>
@@ -37,20 +30,6 @@ struct callable:
             return _Functor_<decltype(base::operator[](__t))>{ base::operator[](__t)};
         else
             return _Functor_<decltype(base::operator[](__t()))>{ base::operator[](__t())};
-    }
-
-    template <condition_type _Condition_, class _Alternative_>
-    raze_always_inline constexpr auto operator[](const _Condition_& __condition, const _Alternative_& __source) const noexcept
-        requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
-    {
-        return _Functor_<decltype(base::operator[](or_(__condition, __source)))>{base::operator[](or_(__condition, __source))};
-    }
-
-    template <class _Alternative_, condition_type _Condition_>
-    raze_always_inline constexpr auto operator[](const _Alternative_& __source, const _Condition_& __condition) const noexcept
-        requires(alternative_type<_Condition_, _Alternative_> && requires(const base& __base) { __base[or_(__condition, __source)]; })
-    {
-        return _Functor_<decltype(base::operator[](or_(__condition, __source)))>{base::operator[](or_(__condition, __source))};
     }
 
     template <class _Type_>

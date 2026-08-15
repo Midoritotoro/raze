@@ -10,7 +10,7 @@ struct settings;
 
 template <concepts::option ... _Keys1_, concepts::option ... _Keys2_>
 constexpr raze_always_inline auto merge(const settings<_Keys1_...>& __options, 
-    const settings<_Keys2_...>& __definition) noexcept
+    const settings<_Keys2_...>& __defaults) noexcept
 {
     auto __selector = [] <class _Key_, class _Options_> (
         const _Key_&, const _Options_& __opts, const auto& __d)
@@ -26,7 +26,7 @@ constexpr raze_always_inline auto merge(const settings<_Keys1_...>& __options,
     };
 
     return __select(typename uniques<keys<typename _Keys1_::keyword_type...>,
-        keys<typename _Keys2_::keyword_type...>>::type{}, __options, __definition);
+        keys<typename _Keys2_::keyword_type...>>::type{}, __options, __defaults);
 }
 
 __RAZE_OPTIONS_NAMESPACE_END
