@@ -11,7 +11,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_slide_right_merge : raze::options::strict_elementwise_callable<_Configurable_slide_right_merge, _Options_> {
+struct _Configurable_slide_right_merge : raze::options::conditional_callable<_Configurable_slide_right_merge, _Options_> {
     template <simd_type _Type_, sizetype _Elements_>
     raze_nodiscard raze_no_stack_protector raze_always_inline _Type_ operator()(const _Type_& __x,
         const _Type_& __y, std::integral_constant<sizetype, _Elements_> __i) const noexcept

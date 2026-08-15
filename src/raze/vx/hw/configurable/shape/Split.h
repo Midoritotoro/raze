@@ -12,7 +12,7 @@ using pair_type = std::pair<simd<typename _Simd_::value_type, resize_abi_t<abi_t
     simd<typename _Simd_::value_type, resize_abi_t<abi_t<_Simd_>, _Simd_::size() - (_Simd_::size() / 2)>>>;
 
 template <class _Options_>
-struct _Configurable_split : raze::options::strict_elementwise_callable<_Configurable_split, _Options_> {
+struct _Configurable_split : raze::options::conditional_callable<_Configurable_split, _Options_> {
     template <simd_type _Type_>
     raze_nodiscard raze_always_inline pair_type<_Type_> operator()(const _Type_& __x) const noexcept
         requires(_Type_::size() > 1)

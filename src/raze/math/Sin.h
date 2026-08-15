@@ -41,7 +41,7 @@ raze_always_inline _Simd_ __sin(const _Simd_& __x) noexcept
 }
 
 template <class _Options_>
-struct _Configurable_sin: raze::options::strict_elementwise_callable<_Configurable_sin, _Options_> {
+struct _Configurable_sin: raze::options::conditional_callable<_Configurable_sin, _Options_> {
     template <vx::floating_point_simd_or_scalar_type _Type_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);

@@ -11,7 +11,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_sfence: options::strict_elementwise_callable<_Configurable_sfence, _Options_> {
+struct _Configurable_sfence: options::conditional_callable<_Configurable_sfence, _Options_> {
     raze_always_inline void operator()() const noexcept {
         return raze::options::__dispatch_call(*this);
     }

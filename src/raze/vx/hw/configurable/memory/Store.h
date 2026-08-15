@@ -39,7 +39,7 @@ template <class _Type_>
 struct stream_ptr;
 
 template <class _Options_>
-struct _Configurable_store : raze::options::strict_elementwise_callable<_Configurable_store, _Options_, aligned_option, nt_option, safe_option> {
+struct _Configurable_store : raze::options::conditional_callable<_Configurable_store, _Options_, aligned_option, nt_option, safe_option> {
     template <any_iterator_or_pointer _Mem_, simd_type _Type_>
     raze_no_stack_protector raze_always_inline void operator()(_Mem_ __it, const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __it, __x);

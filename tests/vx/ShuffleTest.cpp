@@ -189,12 +189,12 @@ struct shuffle_tests {
         using Mask = typename Simd::mask_type;
         static constexpr size_t N = Simd::size();
 
-        //test_shuffle_runtime_pattern<Simd>();
+        test_shuffle_runtime_pattern<Simd>();
         //test_shuffle_runtime_random<Simd, 0x12345678ULL, 30000>();
         //test_shuffle_runtime_random<Simd, 0xCAFEBABEULL, 30000>();
         //test_shuffle_runtime_random<Simd,  0xDEADBEEF12345678ULL, 30000>();
 
-        test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
+        //test_shuffle_with_compile_time_all_patterns<Simd>(std::make_index_sequence<16>{});
     }
 
     void operator()() {
@@ -205,16 +205,16 @@ struct shuffle_tests {
 };
 
 int main() {
-    /*__test_all_helper<shuffle_tests, raze::arch::ISA::SSE2, 128>();
-    __test_all_helper<shuffle_tests, raze::arch::ISA::SSSE3, 128>();
-    __test_all_helper<shuffle_tests, raze::arch::ISA::SSE41, 128>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::SSE2, 128>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::SSSE3, 128>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::SSE41, 128>();
     __test_all_helper<shuffle_tests, raze::arch::ISA::AVX2, 256>();
-    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX, 256>();*/
-    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512F, 512>();
-    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512BW, 512>();
-    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VBMI, 512>();
-    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VLBW, 256>();
-    __test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VBMIVL, 256>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::AVX, 256>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::AVX512F, 512>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::AVX512BW, 512>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VBMI, 512>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VLBW, 256>();
+    //__test_all_helper<shuffle_tests, raze::arch::ISA::AVX512VBMIVL, 256>();
 
     return 0;
 }

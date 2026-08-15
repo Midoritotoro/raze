@@ -12,7 +12,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_compress_store : raze::options::strict_elementwise_callable<_Configurable_compress_store, _Options_, aligned_option> {
+struct _Configurable_compress_store : raze::options::conditional_callable<_Configurable_compress_store, _Options_, aligned_option> {
     template <any_iterator_or_pointer _Mem_, simd_type _Type_, simd_mask_type _Mask_>
     raze_no_stack_protector raze_always_inline _Mem_ operator()(_Mem_ __it, const _Type_& __x, const _Mask_& __mask) const noexcept {
         return raze::options::__dispatch_call(*this, __it, __x, __mask);

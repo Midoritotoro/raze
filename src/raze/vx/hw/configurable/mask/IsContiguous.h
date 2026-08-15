@@ -12,7 +12,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_is_contiguous: raze::options::strict_elementwise_callable<_Configurable_is_contiguous, _Options_> {
+struct _Configurable_is_contiguous: raze::options::conditional_callable<_Configurable_is_contiguous, _Options_> {
     template <simd_mask_type _Type_>
     raze_nodiscard raze_always_inline bool operator()(const _Type_& __x, i32 __n, i32 __k) const noexcept {
         raze_debug_assert(__n < _Type_::size() && __k <= _Type_::size() && __n <= __k);

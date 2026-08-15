@@ -17,7 +17,7 @@ template <arch::ISA _ISA_, arithmetic_type _Type_, sizetype _Size_, bool _Unsafe
 raze_nodiscard raze_always_inline _Tp_ __clear_first(_Tp_ __x) noexcept;
 
 template <class _Options_>
-struct _Configurable_clear_first: raze::options::strict_elementwise_callable<_Configurable_clear_first, _Options_, not_null_option> {
+struct _Configurable_clear_first: raze::options::conditional_callable<_Configurable_clear_first, _Options_, not_null_option> {
     template <simd_mask_type _Type_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);

@@ -87,12 +87,4 @@ struct conditional_callable: __conditional_callable<_Function_, _OptionsValues_,
     }
 };
 
-struct ignore { 
-    template <class _Type_> 
-    operator _Type_() { 
-        return _Type_{}; 
-    }
-};
-
-
 __RAZE_OPTIONS_NAMESPACE_END

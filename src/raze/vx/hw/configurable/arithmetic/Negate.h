@@ -10,7 +10,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_neg: raze::options::strict_elementwise_callable<_Configurable_neg, _Options_> {
+struct _Configurable_neg: raze::options::conditional_callable<_Configurable_neg, _Options_> {
     template <simd_type _Type_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);
@@ -43,8 +43,6 @@ struct _Configurable_neg: raze::options::strict_elementwise_callable<_Configurab
 
         return __result;
     }
-
-    using callable_tag_type = _Configurable_neg;
 };
 
 __RAZE_VX_NAMESPACE_END

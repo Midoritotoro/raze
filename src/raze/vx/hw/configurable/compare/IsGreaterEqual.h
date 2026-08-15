@@ -10,7 +10,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_is_greater_equal: raze::options::strict_elementwise_callable<_Configurable_is_greater_equal, _Options_> {
+struct _Configurable_is_greater_equal: raze::options::conditional_callable<_Configurable_is_greater_equal, _Options_> {
     template <simd_type _Type_>
     raze_nodiscard raze_always_inline simd_mask<typename _Type_::value_type, typename _Type_::abi_type> 
         operator()(const _Type_& __x, const _Type_& __y) const noexcept 

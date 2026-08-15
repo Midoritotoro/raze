@@ -15,7 +15,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_find_first_not_set: raze::options::strict_elementwise_callable<_Configurable_find_first_not_set, _Options_, not_null_option> {
+struct _Configurable_find_first_not_set: raze::options::conditional_callable<_Configurable_find_first_not_set, _Options_, not_null_option> {
     template <simd_mask_type _Type_>
     raze_nodiscard raze_always_inline i32 operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);

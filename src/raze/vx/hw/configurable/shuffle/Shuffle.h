@@ -15,7 +15,7 @@ constexpr auto within_chunks = raze::options::flag(within_chunks_mode{});
 struct within_chunks_option : raze::options::exact_option<within_chunks> {};
 
 template <class _Options_>
-struct _Configurable_shuffle: raze::options::strict_elementwise_callable<_Configurable_shuffle, _Options_, within_chunks_option> {
+struct _Configurable_shuffle: raze::options::conditional_callable<_Configurable_shuffle, _Options_, within_chunks_option> {
     template <class _Pattern_>
     raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> operator()(
         const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) const noexcept

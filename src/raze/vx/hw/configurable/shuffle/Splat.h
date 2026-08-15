@@ -13,7 +13,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <sizetype _Index_>
 struct _Configurable_splat {
     template <class _Options_>
-    struct __impl: raze::options::strict_elementwise_callable<__impl, _Options_> {
+    struct __impl: raze::options::conditional_callable<__impl, _Options_> {
         template <simd_type _Type_>
         raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
             return raze::options::__dispatch_call(*this, __x);

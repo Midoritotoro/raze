@@ -16,7 +16,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <simd_type _Simd_>
 struct _Configurable_load {
     template <class _Options_>
-    struct __load : raze::options::strict_elementwise_callable<__load, _Options_, aligned_option, safe_option> {
+    struct __load : raze::options::conditional_callable<__load, _Options_, aligned_option, safe_option> {
         template <any_iterator_or_pointer _Mem_>
         raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ operator()(_Mem_ __it) const noexcept {
             return raze::options::__dispatch_call(*this, __it);

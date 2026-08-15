@@ -48,7 +48,7 @@ typename __split_by_return_impl<
 template <sizetype _Chunks_>
 struct _Configurable_split_by {
     template <class _Options_>
-    struct __impl : raze::options::strict_elementwise_callable<__impl, _Options_> {
+    struct __impl : raze::options::conditional_callable<__impl, _Options_> {
         template <simd_type _Simd_> requires(_Chunks_ > 0)
         raze_nodiscard raze_always_inline split_by_return_type<_Chunks_, _Simd_> operator()(const _Simd_& __x) const noexcept {
             return raze::options::__dispatch_call(*this, __x);

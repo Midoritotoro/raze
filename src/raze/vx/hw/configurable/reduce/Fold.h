@@ -21,7 +21,7 @@ constexpr inline auto broadcast = raze::options::flag(broadcast_mode{});
 struct broadcast_option : raze::options::exact_option<broadcast> {};
 
 template <class _Options_>
-struct _Configurable_fold : raze::options::strict_elementwise_callable<_Configurable_fold, _Options_, broadcast_option> {
+struct _Configurable_fold : raze::options::conditional_callable<_Configurable_fold, _Options_, broadcast_option> {
     template <simd_type _Type_, class _Callable_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, _Callable_ __callable) const noexcept
         requires(_Options_::contains(broadcast))

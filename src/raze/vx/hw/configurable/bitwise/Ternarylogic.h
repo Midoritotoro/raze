@@ -11,7 +11,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_ternarylogic: raze::options::strict_elementwise_callable<_Configurable_ternarylogic, _Options_> {
+struct _Configurable_ternarylogic: raze::options::conditional_callable<_Configurable_ternarylogic, _Options_> {
     template <simd_or_mask_type _Type_, u8 _Op_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, 
         const _Type_& __y, const _Type_& __z, std::integral_constant<u8, _Op_> __op) const noexcept

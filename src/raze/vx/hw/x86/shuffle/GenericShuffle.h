@@ -381,7 +381,7 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 4) {
-			if constexpr (!__across_halfs(__p))
+			if constexpr (!__across_halfs(__p) && __is_halfs_equal(__p))
 				return __as<_Intrin_>(_mm256_shuffle_ps(__as<__m256>(__x), __as<__m256>(__x), __to_pshufd_mask(__p)));
 			else if constexpr (__can_widen_shuffle(__p) && __avx2)
 				return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __to_pshufd_mask(__p.widen())));
@@ -712,8 +712,12 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle_native_size(co
 	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p));
 
 	if constexpr (__is_fallback<_Ret>) {
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+		__storage = _Pattern_::__llvm_shufflevector_builtin_apply(__storage_unwrap(__storage));
+#else
 		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p)._data;
 		return _Fallback_result{ __result };
+#endif
 	}
 	else {
 		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p);
@@ -747,6 +751,16 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_
 	if constexpr (__is_identity(__p)) return __x;
 	else if constexpr (native<_Simd_>) return __generic_shuffle_native_size(__x, __p);
 	else if constexpr (!has_any_scalar_chunks<_Simd_> && _Simd_::__chunks_count() == 2 && trivially_chunk_swappable<_Simd_>) {
+#if defined (raze_cpp_clang) || defined(raze_cpp_gnu)
+		auto& __storage1 = __x.template __get<0>();
+		auto& __storage2 = __x.template __get<1>();
+
+		auto __vec = _Pattern_::__llvm_shufflevector_builtin_apply(__storage_unwrap(__storage1), __storage_unwrap(__storage2));
+		alignas(sizeof(_Simd_)) typename _Simd_::value_type __arr[_Simd_::size()];
+		using _VecType_ = decltype(__vec);
+		*reinterpret_cast<_VecType_*>(__arr) = __vec;
+		return raze::vx::__load<_Simd_>[raze::vx::aligned](__arr);
+#else
 		_Simd_ __dup_1;
 		__dup_1.template __get<0>() = __x.template __get<0>();
 		__dup_1.template __get<1>() = __x.template __get<0>();
@@ -755,7 +769,7 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_
 		__dup_2.template __get<0>() = __x.template __get<1>();
 		__dup_2.template __get<1>() = __x.template __get<1>();
 
-		constexpr auto __new_p = __p.split();
+		static constexpr auto __new_p = __p.split();
 
 		[&] <sizetype... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
 			([&](auto __i) raze_always_inline_lambda {
@@ -781,6 +795,7 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_
 
 		const auto __mask = __p.to_mask([](auto __idx) { return __idx >= (_Simd_::size() / 2); });
 		return vx::__select[__dup_1, __mask](__dup_2);
+#endif
 	}
 	else return __generic_shuffle_scalar_fallback(__x, __p);
 }

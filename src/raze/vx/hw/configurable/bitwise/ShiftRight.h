@@ -10,7 +10,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_shr: raze::options::strict_elementwise_callable<_Configurable_shr, _Options_> {
+struct _Configurable_shr: raze::options::conditional_callable<_Configurable_shr, _Options_> {
     template <simd_type _Simd_>
     raze_nodiscard raze_always_inline _Simd_ operator()(const _Simd_& __x, u32 __shift) const noexcept {
         return raze::options::__dispatch_call(*this, __x, __shift);

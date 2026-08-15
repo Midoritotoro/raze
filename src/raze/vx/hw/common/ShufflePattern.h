@@ -70,9 +70,9 @@ struct _Shuffle_pattern {
 	}
 
 	template <intrin_type _Intrin_>
-    raze_no_stack_protector raze_always_inline static auto as_native() noexcept {
+    raze_no_stack_protector raze_always_inline static auto as_native() noexcept requires((sizeof(_Intrin_) / size()) != 0) {
 		using _IdxType = typename IntegerForSize<sizeof(_Intrin_) / size()>::Unsigned;
-		alignas(sizeof(_Intrin_)) static constexpr _IdxType __idx[size()] { _Indices_ ... };
+		alignas(sizeof(_Intrin_)) static constexpr _IdxType __idx[size()] { _IdxType(_Indices_)... };
 		return _Load<abi_t<_Simd_>::isa, _Intrin_>()(__idx, __aligned_policy{});
 	}
 
@@ -319,6 +319,27 @@ struct _Shuffle_pattern {
             return _Shuffle_pattern<_Simd_, (((__at<I>() / __lane_size) != (I / __lane_size)) ? static_cast<sizetype>(-1) : __at<I>())...>{};
         }(std::make_index_sequence<size()>{});
     }
+
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+    template <intrin_type _Intrin_>
+    raze_always_inline static auto __llvm_shufflevector_builtin_apply(_Intrin_ __v, _Intrin_ __v2) noexcept {
+        using _Elem = typename IntegerForSize<sizeof(_Intrin_) / size()>::Unsigned;
+        using _ExtVec = _Elem __attribute__((vector_size(sizeof(_Intrin_))));
+
+        _ExtVec __ext = __builtin_bit_cast(_ExtVec, __v);
+        _ExtVec __ext2 = __builtin_bit_cast(_ExtVec, __v2);
+        return __builtin_shufflevector(__ext, __ext2, _Indices_...);
+    }
+
+    template <intrin_type _Intrin_>
+    raze_always_inline static auto __llvm_shufflevector_builtin_apply(_Intrin_ __v) noexcept {
+        using _Elem = typename IntegerForSize<sizeof(_Intrin_) / size()>::Unsigned;
+        using _ExtVec = _Elem __attribute__((vector_size(sizeof(_Intrin_))));
+
+        _ExtVec __ext = __builtin_bit_cast(_ExtVec, __v);
+        return __builtin_shufflevector(__ext, __ext, _Indices_...);
+    }
+#endif
 };
 
 template <class _Pattern_>

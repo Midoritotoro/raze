@@ -12,7 +12,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_none_of: raze::options::strict_elementwise_callable<_Configurable_none_of, _Options_> {
+struct _Configurable_none_of: raze::options::conditional_callable<_Configurable_none_of, _Options_> {
     template <simd_mask_type _Type_>
     raze_nodiscard raze_always_inline bool operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);

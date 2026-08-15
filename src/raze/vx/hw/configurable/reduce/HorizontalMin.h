@@ -10,7 +10,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_hmin : raze::options::strict_elementwise_callable<_Configurable_hmin, _Options_> {
+struct _Configurable_hmin : raze::options::conditional_callable<_Configurable_hmin, _Options_> {
     template <simd_type _Type_>
     raze_nodiscard raze_always_inline typename _Type_::value_type operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);

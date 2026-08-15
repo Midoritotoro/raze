@@ -11,7 +11,7 @@
 __RAZE_MATH_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_abs: raze::options::strict_elementwise_callable<_Configurable_abs, _Options_> {
+struct _Configurable_abs: raze::options::conditional_callable<_Configurable_abs, _Options_> {
     template <vx::arithmetic_type _Type_>
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
         return raze::options::__dispatch_call(*this, __x);

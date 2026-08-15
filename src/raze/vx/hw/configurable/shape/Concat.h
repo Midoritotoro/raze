@@ -23,7 +23,7 @@ concept effective_concatenation_available = same_abi_isa<_Types_...> && !has_any
 // concat(tuple(__m512i, __m128i), tuple(__m128i, __m256i)) = tuple(__m512i, __m512i) - just insert two regs(xmm, ymm) into casted __m128i to __m512i
 
 template <class _Options_>
-struct _Configurable_concat: raze::options::strict_elementwise_callable<_Configurable_concat, _Options_> {
+struct _Configurable_concat: raze::options::conditional_callable<_Configurable_concat, _Options_> {
     template <simd_type _Type_, class ... _Types_>
     raze_nodiscard raze_always_inline concatenated_simd<_Type_, _Types_...> operator()(
         const _Type_& __x, const _Types_& ... __xs) const noexcept

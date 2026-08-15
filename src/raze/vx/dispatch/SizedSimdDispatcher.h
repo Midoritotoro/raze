@@ -32,7 +32,7 @@ raze_always_inline auto __unpack_suffix(_Fn_&& __fn, _Tuple_&& __tuple, _Suffix_
 template <template <class> class _Function_, class _Type_, class _Return_, arch::ISA _ForcedISA_, arch::ISA ... _Candidates_>
 struct _Configurable_sized_isa_dispatcher {
     template <class _Options_>
-    struct __impl : raze::options::strict_elementwise_callable<__impl, _Options_>{
+    struct __impl : raze::options::conditional_callable<__impl, _Options_>{
         template <class ... _Args_>
         raze_always_inline _Return_ operator()(sizetype __size, _Args_&& ... __args) const noexcept {
             return raze::options::__dispatch_call(*this, __size, std::forward<_Args_>(__args)...);

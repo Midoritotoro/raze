@@ -11,7 +11,7 @@
 __RAZE_MATH_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_fnma: raze::options::strict_elementwise_callable<_Configurable_fnma, _Options_> {
+struct _Configurable_fnma: raze::options::conditional_callable<_Configurable_fnma, _Options_> {
     template <class _A_, class _B_, class _C_>
         requires (vx::simd_type<std::remove_cvref_t<_A_>> ||
             vx::simd_type<std::remove_cvref_t<_B_>> ||

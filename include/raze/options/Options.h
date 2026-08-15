@@ -23,7 +23,7 @@
 #include <src/raze/options/SameAs.h>
 #include <src/raze/options/SelectKeys.h>
 #include <src/raze/options/Settings.h>
-#include <src/raze/options/StrictElementwiseCallable.h>
+#include <src/raze/options/DispatchCall.h>
 #include <src/raze/options/TypeOr.h>
 #include <src/raze/options/Traits.h>
 #include <src/raze/options/Unroller.h>
