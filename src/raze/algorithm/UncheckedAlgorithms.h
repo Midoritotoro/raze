@@ -7,7 +7,7 @@
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 
 #if !defined(__raze_define_kernel_dispatch)
-#  define __raze_define_kernel_dispatch() \
+#  define __raze_define_kernel_dispatch(...) \
     template <class ... _Args_> \
     raze_nodiscard constexpr raze_always_inline auto \
     __unchecked_kernel_dispatch(_Args_&& ... __args) const noexcept { \
@@ -22,10 +22,10 @@
         if constexpr (!options::always_scalar<_TraitsType_>() && _WorkType_::vectorizable()) { \
             if not consteval { \
                 if constexpr (requires { _WorkType_::static_size(); }) { \
-                    return raze::vx::__dispatch_sized_impl<traits_unroller_t(_TraitsType_), _Value_, _ReturnType_>(_WorkType_::static_size(), __work); \
+                    return raze::vx::__dispatch_sized_impl<traits_unroller_t(_TraitsType_), _Value_, _ReturnType_ __VA_ARGS__>(_WorkType_::static_size(), __work); \
                 } \
                 else { \
-                    return raze::vx::__dispatch_sized_impl<traits_unroller_t(_TraitsType_), _Value_, _ReturnType_>(__work.size(), __work); \
+                    return raze::vx::__dispatch_sized_impl<traits_unroller_t(_TraitsType_), _Value_, _ReturnType_ __VA_ARGS__>(__work.size(), __work); \
                 } \
             } \
         } \

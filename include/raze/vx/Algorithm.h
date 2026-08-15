@@ -163,4 +163,55 @@ raze_always_inline constexpr auto as_ternary_mask() noexcept {
 	return __as_ternary_mask<_Expression_>();
 }
 
+template <trivially_chunk_swappable _Simd_>
+struct counter {
+    using mask_type = typename _Simd_::mask_type;
+    using value_type = typename _Simd_::value_type;
+    using index_type = typename IntegerForSizeof<value_type>::Signed;
+    static constexpr auto __isa = abi_t<_Simd_>::isa;
+    using __storage_type = std::conditional_t<(__has_avx512f_support_v<__isa> && sizeof(value_type) >= 4)
+        || (__has_avx512bw_support_v<__isa>), sizetype, simd<index_type, abi_t<_Simd_>>>;
+
+    counter() noexcept {
+        if constexpr (simd_type<__storage_type>) _storage = __storage_type::zero();
+        else _storage = 0;
+    }
+
+    raze_always_inline static constexpr auto portion_size() noexcept {
+        return math::__maximum_integral_limit<index_type>();
+    }
+
+    raze_always_inline void count(const mask_type& __mask) noexcept {
+        /*auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk & __chunk, _Args_&& ... __args) raze_always_inline_lambda {
+            __chunk = _Op()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+        };
+
+        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
+            auto __condition = __options[raze::options::condition_key];
+            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+
+            if constexpr (_Mask_::has_alternative)
+                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage(), __condition.alternative().__storage().storage());
+            else
+                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage());
+        }
+        else {
+            __result.__for_each_chunk(__chunk_op, __y.__storage().storage());
+        }*/
+
+
+        if constexpr (std::integral<__storage_type>) _storage += count_set(__mask);
+        else _storage.__for_each_chunk([&] <class _Chunk_, class _Chunk2_> (_Chunk_ & __chunk, const _Chunk2_ & __ch2) raze_always_inline_lambda {
+            __chunk = _Sub<__isa, index_type>()(__storage_unwrap(__chunk), __storage_unwrap(__ch2));
+        }, __mask.__storage().storage());
+    }
+
+    raze_always_inline auto result() const noexcept {
+        if constexpr (std::integral<__storage_type>) return _storage;
+        else return horizontal_sum(_storage);
+    }
+
+    __storage_type _storage;
+};
+
 __RAZE_VX_NAMESPACE_END

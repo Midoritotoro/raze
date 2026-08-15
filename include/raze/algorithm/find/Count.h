@@ -42,14 +42,23 @@ struct _Count_if : _Traits_ {
 
 		template <vectorizable_tag _Tag_>
 		raze_always_inline void operator()(_Tag_, sizetype __aligned_size) noexcept {
+			vx::counter<_Tag_> __counter;
+				
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 
-			raze_disable_unrolling
-			do {
-				_count += vx::count_set(_predicate(_proj(vx::load<_Tag_>(__ptr))));
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (__ptr != __aligned_end);
+			while (__ptr != __aligned_end) {
+				auto __current_portion_size = __counter.portion_size();
+
+				raze_disable_unrolling
+				while (__ptr != __aligned_end && __current_portion_size > 0) {
+					__counter.count(_predicate(_proj(vx::load<_Tag_>(__ptr))));
+					__advance_bytes(__ptr, sizeof(_Tag_));
+					--__current_portion_size;
+				}
+
+				_count += __counter.result();
+			}
 
 			source_type::from_ptr(_iterator, __ptr);
 		}
