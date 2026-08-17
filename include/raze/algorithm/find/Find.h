@@ -9,6 +9,18 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+// Although GCC does not vectorize find/find_if quite as efficiently as
+// our manual SIMD library, its autovectorizer performs well enough to
+// safely enable `target_clones` by default. This provides excellent
+// dynamic dispatch across multiple ISAs without a significant drop in
+// performance. Users can override this behavior via [scalar] or by
+// explicitly requesting manual SIMD dispatch.
+#if defined(raze_cpp_gnu)
+  constexpr inline auto __find_auto_vectorization = options::autovec;
+#else
+  constexpr inline auto __find_auto_vectorization = options::none;
+#endif
+
 template <class _Traits_>
 struct _Find_if : _Traits_, dispatchable<_Find_if<_Traits_>> {
 	template <source _Source_, class _Predicate_, class _Projection_>
@@ -34,12 +46,11 @@ struct _Find_if : _Traits_, dispatchable<_Find_if<_Traits_>> {
 			_sentinel = _source.uend();
 		}
 
-		raze_always_inline constexpr void operator()() noexcept {
-			raze_disable_unrolling
+		raze_kernel_scalar_paths (
 			for (; _iterator != _sentinel; ++_iterator)
 				if (_predicate(_proj(*_iterator)))
 					break;
-		}
+		)
 
 		template <vectorizable_tag _Tag_>
 		raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
@@ -110,7 +121,7 @@ struct _Find_if : _Traits_, dispatchable<_Find_if<_Traits_>> {
 	}
 };
 
-constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>[raze::options::unroll<4>];
+constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>[raze::options::unroll<4>][__find_auto_vectorization];
 
 template <class _Traits_>
 struct _Find : _Traits_ {
@@ -135,7 +146,7 @@ struct _Find : _Traits_ {
 	}
 };
 
-constexpr inline auto find = raze::options::function_with_traits<_Find>[raze::options::unroll<4>];
+constexpr inline auto find = raze::options::function_with_traits<_Find>[raze::options::unroll<4>][__find_auto_vectorization];
 
 template <class _Traits_>
 struct _Find_if_not : _Traits_ {
@@ -157,6 +168,6 @@ struct _Find_if_not : _Traits_ {
 	}
 };
 
-constexpr inline auto find_if_not = raze::options::function_with_traits<_Find_if_not>[raze::options::unroll<4>];
+constexpr inline auto find_if_not = raze::options::function_with_traits<_Find_if_not>[raze::options::unroll<4>][__find_auto_vectorization];
 
 __RAZE_ALGORITHM_NAMESPACE_END

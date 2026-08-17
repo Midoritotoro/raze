@@ -38,7 +38,60 @@
 #  define __raze_kernel_dispatch_call(...) __unchecked_kernel_dispatch(__VA_ARGS__)
 #endif // !defined(__raze_kernel_dispatch_call)
 
+
+#if !defined(raze_kernel_scalar_paths)
+#  define raze_kernel_scalar_paths(__code) \
+    raze_always_inline constexpr void operator()() noexcept { \
+        raze_disable_unrolling \
+        __code \
+    } \
+    raze_always_inline void autovec_run() noexcept { \
+        __code \
+    }
+#endif // !defined(raze_kernel_scalar_paths)
+
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
+
+#pragma strict_gs_check(off)
+
+#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
+
+template <class _Work_>
+struct __llvm_invoke_autovec_helper_t {
+    using value_type = typename _Work_::vector_value_type;
+
+    __llvm_invoke_autovec_helper_t(_Work_ __work) noexcept :
+        _work(__work) {}
+
+    raze_targets("avx512f", "avx2", "default") void operator()() noexcept requires(sizeof(value_type) >= 4) {
+        _work.autovec_run();
+    }
+
+#if defined(raze_cpp_clang)
+    raze_targets("avx512bw", "avx2", "default")
+#elif defined(raze_cpp_gnu)
+    raze_targets("arch=x86-64-v4", "avx2", "default")
+#endif
+    void operator()() noexcept requires(sizeof(value_type) < 4) {
+        _work.autovec_run();
+    }
+
+    _Work_ _work;
+};
+
+template <class _Work_>
+auto __invoke_scalar_autovec_impl(_Work_& __work) noexcept {
+    auto __c = __llvm_invoke_autovec_helper_t<_Work_>(__work);
+    __c();
+}
+
+template <class _Work_>
+raze_always_inline auto __invoke_scalar_autovec(_Work_&& __work) noexcept {
+    __invoke_scalar_autovec_impl(__work);
+    if constexpr (requires { __work.result(); }) return __work.result();
+}
+
+#endif // (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
 
 template <class _Function_, arch::ISA _Default_ = arch::ISA::None, arch::ISA ... _Other_>
 struct dispatchable {
@@ -56,6 +109,14 @@ struct dispatchable {
             }
         }
 
+        if constexpr (options::is_autovec<_TraitsType_>()) {
+#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
+            return __invoke_scalar_autovec(__work);
+#else 
+            return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
+#endif
+        }
+      
         if constexpr (!raze::options::always_scalar<_TraitsType_>() && _WorkType_::vectorizable()) {
             if not consteval {
                 if constexpr (requires { _WorkType_::static_size(); }) {
@@ -72,6 +133,8 @@ struct dispatchable {
         return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
     }
 };
+
+#pragma strict_gs_check(on)
 
 template <class _Type_>
 concept vectorizable_tag = !options::concepts::same_as<_Type_, vx::scalar_tag> && vx::simd_type<_Type_>;

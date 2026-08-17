@@ -35,6 +35,9 @@ constexpr inline auto index = std::integral_constant<sizetype, _N_>{};
 template <sizetype _N_>
 constexpr inline auto unroll = (unroll_key = index<_N_>);
 
+struct none_mode {};
+constexpr inline auto none = raze::options::flag(none_mode{});
+
 template <class _Traits_>
 constexpr sizetype get_unrolling() {
     return raze::options::fetch_t<(unroll_key | index<1>), _Traits_>{};
@@ -54,6 +57,14 @@ constexpr inline auto compact = raze::options::flag(compact_mode{});
 template <class _Traits_>
 constexpr bool is_compact() {
     return _Traits_::contains(compact);
+}
+
+struct autovec_mode {};
+constexpr inline auto autovec = raze::options::flag(autovec_mode{});
+
+template <class _Traits_>
+constexpr bool is_autovec() {
+    return _Traits_::contains(autovec);
 }
 
 struct __force_isa_key_t : as_keyword<__force_isa_key_t> {
