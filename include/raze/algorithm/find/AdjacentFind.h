@@ -8,7 +8,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
-struct _Adjacent_find : _Traits_ {
+struct _Adjacent_find : _Traits_, dispatchable<_Adjacent_find<_Traits_>> {
 	template <source _Source_, class _Predicate_, class _Projection_>
 	struct __kernel {
 		using source_type = std::remove_cvref_t<_Source_>;
@@ -100,7 +100,7 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<_Iterator_, _Projection_>>)
 	{
 		if (__first == __last) return __first;
-		return __raze_kernel_dispatch_call(get_source(std::move(__first),
+		return this->dispatch(get_source(std::move(__first),
 			std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
@@ -112,11 +112,9 @@ struct _Adjacent_find : _Traits_ {
 				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
 		if (std::ranges::begin(__r) == std::ranges::end(__r)) return std::ranges::begin(__r);
-		return __raze_kernel_dispatch_call(get_source(std::forward<_Range_>(__r)),
+		return this->dispatch(get_source(std::forward<_Range_>(__r)),
 			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
-private:
-	__raze_define_kernel_dispatch()
 };
 
 constexpr inline auto adjacent_find = raze::options::function_with_traits<_Adjacent_find>[options::unroll<4>];

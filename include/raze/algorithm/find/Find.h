@@ -10,7 +10,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
-struct _Find_if : _Traits_ {
+struct _Find_if : _Traits_, dispatchable<_Find_if<_Traits_>> {
 	template <source _Source_, class _Predicate_, class _Projection_>
 	struct __kernel {
 		using source_type = std::remove_cvref_t<_Source_>;
@@ -85,7 +85,7 @@ struct _Find_if : _Traits_ {
 
 		static consteval bool vectorizable() noexcept {
 			return std::contiguous_iterator<unchecked_iterator_type> &&
-				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type>&&
+				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type> &&
 				vectorizable_projection<_Projection_, unchecked_iterator_type>;
 		}
 	};
@@ -96,7 +96,7 @@ struct _Find_if : _Traits_ {
 		_Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		return __raze_kernel_dispatch_call(get_source(std::move(__first), std::move(__sent)),
+		return this->dispatch(get_source(std::move(__first), std::move(__sent)),
 			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
 
@@ -105,11 +105,9 @@ struct _Find_if : _Traits_ {
 		_Range_&& __r, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
 	{
-		return __raze_kernel_dispatch_call(get_source(std::forward<_Range_>(__r)),
+		return this->dispatch(get_source(std::forward<_Range_>(__r)),
 			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
 	}
-private:
-	__raze_define_kernel_dispatch()
 };
 
 constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>[raze::options::unroll<4>];

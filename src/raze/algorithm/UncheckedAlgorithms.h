@@ -5,6 +5,7 @@
 #include <src/raze/algorithm/AlgorithmDebug.h>
 #include <src/raze/algorithm/DataSource.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
+#include <raze/arch/CpuFeature.h>
 
 #if !defined(__raze_define_kernel_dispatch)
 #  define __raze_define_kernel_dispatch(...) \
@@ -17,7 +18,7 @@
         using _Value_ = typename _WorkType_::vector_value_type; \
         using _ReturnType_ = decltype(__work.result()); \
         if constexpr (requires { __work.exit(); } && requires { __work.default_result(); }) { \
-            if (__work.exit()) [[unlikely]] { return __work.default_result(); } \
+            if (__work.exit()) { return __work.default_result(); } \
         } \
         if constexpr (!options::always_scalar<_TraitsType_>() && _WorkType_::vectorizable()) { \
             if not consteval { \
@@ -38,6 +39,39 @@
 #endif // !defined(__raze_kernel_dispatch_call)
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
+
+template <class _Function_, arch::ISA _Default_ = arch::ISA::None, arch::ISA ... _Other_>
+struct dispatchable {
+    template <class ... _Args_>
+    constexpr raze_always_inline auto dispatch(_Args_&& ... __args) const noexcept {
+        using _TraitsType_ = decltype(static_cast<const _Function_*>(this)->traits());
+        auto __work = typename _Function_::__kernel(std::forward<_Args_>(__args)...);
+        using _WorkType_ = decltype(__work);
+        using _Value_ = typename _WorkType_::vector_value_type;
+        using _ReturnType_ = decltype(__work.result());
+
+        if constexpr (requires { __work.exit(); } && requires { __work.default_result(); }) {
+            if (__work.exit()) {
+                return __work.default_result();
+            }
+        }
+
+        if constexpr (!raze::options::always_scalar<_TraitsType_>() && _WorkType_::vectorizable()) {
+            if not consteval {
+                if constexpr (requires { _WorkType_::static_size(); }) {
+                    return raze::vx::__dispatch_sized_impl<raze::options::_Unroller<_TraitsType_>::
+                        template __impl, _Value_, _ReturnType_>(_WorkType_::static_size(), __work);
+                }
+                else {
+                    return raze::vx::__dispatch_sized_impl<raze::options::_Unroller<_TraitsType_>::
+                        template __impl, _Value_, _ReturnType_>(__work.size(), __work);
+                }
+            }
+        }
+
+        return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
+    }
+};
 
 template <class _Type_>
 concept vectorizable_tag = !options::concepts::same_as<_Type_, vx::scalar_tag> && vx::simd_type<_Type_>;

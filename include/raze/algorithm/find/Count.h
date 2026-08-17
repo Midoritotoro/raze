@@ -9,7 +9,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
-struct _Count_if : _Traits_ {
+struct _Count_if : _Traits_, dispatchable<_Count_if<_Traits_>> {
 	template <class _DiffType_, source _Source_, class _Predicate_, class _Projection_>
 	struct __kernel {
 		using source_type = std::remove_cvref_t<_Source_>;

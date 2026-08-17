@@ -182,24 +182,6 @@ struct counter {
     }
 
     raze_always_inline void count(const mask_type& __mask) noexcept {
-        /*auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk & __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Op()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
-        };
-
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
-
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage(), __condition.alternative().__storage().storage());
-            else
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage());
-        }
-        else {
-            __result.__for_each_chunk(__chunk_op, __y.__storage().storage());
-        }*/
-
-
         if constexpr (std::integral<__storage_type>) _storage += count_set(__mask);
         else _storage.__for_each_chunk([&] <class _Chunk_, class _Chunk2_> (_Chunk_ & __chunk, const _Chunk2_ & __ch2) raze_always_inline_lambda {
             __chunk = _Sub<__isa, index_type>()(__storage_unwrap(__chunk), __storage_unwrap(__ch2));
