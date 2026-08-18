@@ -215,4 +215,28 @@ constexpr inline bool __has_avx512vl_support_v = static_cast<int>(_ISA_) == stat
     || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVL)
     || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
 
+
+#if defined(__BMI2__)
+#  if defined(raze_cpp_clang)
+#    if __has_feature(bmi2)
+       template <arch::ISA _ISA_>
+       constexpr inline bool __has_bmi2_v = true;
+#    else
+       template <arch::ISA _ISA_>
+       constexpr inline bool __has_bmi2_v = false;
+#    endif // __has_feature(bmi2)
+#  else
+    template <arch::ISA _ISA_>
+    constexpr inline bool __has_bmi2_v = true;
+#  endif
+#else
+#  if defined(raze_cpp_msvc_only)
+    template <arch::ISA _ISA_>
+    constexpr inline bool __has_bmi2_v = __has_avx2_support_v<_ISA_>;
+#  else 
+    template <arch::ISA _ISA_>
+    constexpr inline bool __has_bmi2_v = false;
+#  endif // defined(raze_cpp_msvc_only)
+#endif // defined(__BMI2__)
+
 __RAZE_VX_NAMESPACE_END

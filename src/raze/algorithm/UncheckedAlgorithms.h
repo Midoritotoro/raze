@@ -6,6 +6,7 @@
 #include <src/raze/algorithm/DataSource.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 #include <raze/arch/CpuFeature.h>
+#include <raze/vx/Config.h>
 
 #if !defined(__raze_define_kernel_dispatch)
 #  define __raze_define_kernel_dispatch(...) \
@@ -45,7 +46,7 @@
         raze_disable_unrolling \
         __code \
     } \
-    raze_always_inline void autovec_run() noexcept { \
+    void autovec_run() noexcept { \
         __code \
     }
 #endif // !defined(raze_kernel_scalar_paths)
@@ -54,29 +55,36 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 #pragma strict_gs_check(off)
 
+struct autovectorizable {};
+
+template <class _Work_>
+concept autovectorizable_kernel = requires(_Work_& __w) {
+    __w(autovectorizable{});
+};
+
 #if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
 
 template <class _Work_>
 struct __llvm_invoke_autovec_helper_t {
     using value_type = typename _Work_::vector_value_type;
 
-    __llvm_invoke_autovec_helper_t(_Work_ __work) noexcept :
+    __llvm_invoke_autovec_helper_t(_Work_& __work) noexcept :
         _work(__work) {}
 
-    raze_targets("avx512f", "avx2", "default") void operator()() noexcept requires(sizeof(value_type) >= 4) {
-        _work.autovec_run();
+    raze_targets("avx512f", "avx2", "sse4.2", "default") void operator()() noexcept requires(sizeof(value_type) >= 4) {
+        _work(autovectorizable{});
     }
 
 #if defined(raze_cpp_clang)
-    raze_targets("avx512bw", "avx2", "default")
+    raze_targets("avx512bw", "avx2", "sse4.2", "default")
 #elif defined(raze_cpp_gnu)
-    raze_targets("arch=x86-64-v4", "avx2", "default")
+    raze_targets("arch=x86-64-v4", "avx2", "sse4.2", "default")
 #endif
     void operator()() noexcept requires(sizeof(value_type) < 4) {
-        _work.autovec_run();
+        _work(autovectorizable{});
     }
 
-    _Work_ _work;
+    _Work_& _work;
 };
 
 template <class _Work_>
@@ -86,12 +94,24 @@ auto __invoke_scalar_autovec_impl(_Work_& __work) noexcept {
 }
 
 template <class _Work_>
-raze_always_inline auto __invoke_scalar_autovec(_Work_&& __work) noexcept {
-    __invoke_scalar_autovec_impl(__work);
+raze_always_inline constexpr auto __invoke_scalar_autovec(_Work_&& __work) noexcept {
+    if not consteval {
+        __invoke_scalar_autovec_impl(__work);
+    }
+    else {
+        __work();
+    }
+
     if constexpr (requires { __work.result(); }) return __work.result();
 }
 
 #endif // (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
+
+template <class _Work_> requires(requires (_Work_ __w) { __w.result(); })
+decltype(std::declval<_Work_>().result()) __get_result_type() noexcept;
+
+template <class _Work_> requires(!requires (_Work_ __w) { __w.result(); })
+void __get_result_type() noexcept;
 
 template <class _Function_, arch::ISA _Default_ = arch::ISA::None, arch::ISA ... _Other_>
 struct dispatchable {
@@ -101,24 +121,25 @@ struct dispatchable {
         auto __work = typename _Function_::__kernel(std::forward<_Args_>(__args)...);
         using _WorkType_ = decltype(__work);
         using _Value_ = typename _WorkType_::vector_value_type;
-        using _ReturnType_ = decltype(__work.result());
 
-        if constexpr (requires { __work.exit(); } && requires { __work.default_result(); }) {
+        if constexpr (requires { __work.exit(); }&& requires { __work.default_result(); }) {
             if (__work.exit()) {
                 return __work.default_result();
             }
         }
 
-        if constexpr (options::is_autovec<_TraitsType_>()) {
-#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
-            return __invoke_scalar_autovec(__work);
-#else 
-            return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
-#endif
-        }
-      
-        if constexpr (!raze::options::always_scalar<_TraitsType_>() && _WorkType_::vectorizable()) {
+        static constexpr auto __have_best_isa =vx::__has_avx512bw_support_v<vx::__best_isa_compile_time()> ||
+            (vx::__has_avx512f_support_v<vx::__best_isa_compile_time()> && sizeof(_Value_) >= 4);
+
+        static constexpr auto __use_autovec = options::is_autovec<_TraitsType_>() ||
+            options::get_strategy<_TraitsType_>().is_autovec();
+
+        if constexpr (!raze::options::always_scalar<_TraitsType_>() &&
+            _WorkType_::vectorizable() && __have_best_isa)
+        {
             if not consteval {
+                using _ReturnType_ = decltype(__get_result_type<_WorkType_>());
+
                 if constexpr (requires { _WorkType_::static_size(); }) {
                     return raze::vx::__dispatch_sized_impl<raze::options::_Unroller<_TraitsType_>::
                         template __impl, _Value_, _ReturnType_>(_WorkType_::static_size(), __work);
@@ -129,8 +150,31 @@ struct dispatchable {
                 }
             }
         }
+#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
+        else if constexpr (autovectorizable_kernel<_WorkType_> && __use_autovec)
+        {
+            return __invoke_scalar_autovec(__work);
+        }
+#endif
+        else if constexpr (!raze::options::always_scalar<_TraitsType_>() &&
+            options::get_strategy<_TraitsType_>().is_manual() && _WorkType_::vectorizable())
+        {
+            if not consteval {
+                using _ReturnType_ = decltype(__get_result_type<_WorkType_>());
 
-        return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
+                if constexpr (requires { _WorkType_::static_size(); }) {
+                    return raze::vx::__dispatch_sized_impl<raze::options::_Unroller<_TraitsType_>::
+                        template __impl, _Value_, _ReturnType_>(_WorkType_::static_size(), __work);
+                }
+                else {
+                    return raze::vx::__dispatch_sized_impl<raze::options::_Unroller<_TraitsType_>::
+                        template __impl, _Value_, _ReturnType_>(__work.size(), __work);
+                }
+            }
+        }
+        else {
+            return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
+        }
     }
 };
 

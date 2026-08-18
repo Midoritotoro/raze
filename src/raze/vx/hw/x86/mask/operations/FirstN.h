@@ -24,14 +24,6 @@ consteval auto __first_n_vtable() noexcept {
     return __table;
 }
 
-template <class _MaskType_>
-raze_nodiscard raze_always_inline _MaskType_ __bzhi_mask_first_n(u32 __elements) noexcept {
-    if constexpr (sizeof(_MaskType_) == 1) return static_cast<_MaskType_>(_bzhi_u32(0xFF, __elements));
-    else if constexpr (sizeof(_MaskType_) == 2) return static_cast<_MaskType_>(_bzhi_u32(0xFFFF, __elements));
-    else if constexpr (sizeof(_MaskType_) == 4) return static_cast<_MaskType_>(_bzhi_u32(0xFFFFFFFF, __elements));
-    else if constexpr (sizeof(_MaskType_) == 8) return static_cast<_MaskType_>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, __elements));
-}
-
 template <arch::ISA	_ISA_, u32 _Size_, raw_mask_type _Tp_, arithmetic_type _Type_>
 struct _First_n {
     raze_nodiscard raze_always_inline auto operator()(u32 __elements) const noexcept {
@@ -41,7 +33,21 @@ struct _First_n {
             return __elements != 0;
         }
         else if constexpr (__kmask) {
-            return __bzhi_mask_first_n<_Tp_>(__elements);
+            if constexpr (__has_bmi2_v<_ISA_>) {
+                if constexpr (sizeof(_Tp_) == 1) return static_cast<_Tp_>(_bzhi_u32(0xFF, __elements));
+                else if constexpr (sizeof(_Tp_) == 2) return static_cast<_Tp_>(_bzhi_u32(0xFFFF, __elements));
+                else if constexpr (sizeof(_Tp_) == 4) return static_cast<_Tp_>(_bzhi_u32(0xFFFFFFFF, __elements));
+                else if constexpr (sizeof(_Tp_) == 8) return static_cast<_Tp_>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, __elements));
+            }
+            else {
+                if constexpr (_Size_ == raze_sizeof_in_bits(_Tp_)) {
+                    auto __r = _Tp_((_Tp_(1) << __elements) - 1);
+                    return __elements == _Size_ ? math::__maximum_integral_limit<_Tp_>() : __r;
+                }
+                else {
+                    return _Tp_((_Tp_(1) << __elements) - 1);
+                }
+            }
         }
         else {
             static constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();

@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/options/Callable.h>
+#include <src/raze/algorithm/StrategyBuilder.h>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
@@ -34,6 +35,23 @@ constexpr inline auto index = std::integral_constant<sizetype, _N_>{};
 
 template <sizetype _N_>
 constexpr inline auto unroll = (unroll_key = index<_N_>);
+
+struct strategy_key_t : as_keyword<strategy_key_t> {
+    template <class _Value_>
+    constexpr auto operator=(const _Value_& __value) const noexcept {
+        return option<strategy_key_t, _Value_>{};
+    }
+};
+
+constexpr inline strategy_key_t strategy_key;
+
+template <algorithm::strategy _Strategy_>
+constexpr inline auto strategy = (strategy_key = _Strategy_);
+
+template <class _Traits_>
+constexpr auto get_strategy() noexcept {
+    return raze::options::fetch_t<(strategy_key | algorithm::strategy{}), _Traits_>{};
+}
 
 struct none_mode {};
 constexpr inline auto none = raze::options::flag(none_mode{});

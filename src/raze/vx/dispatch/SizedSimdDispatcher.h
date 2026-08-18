@@ -5,30 +5,6 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Fn_, class _Tuple_, size_t... _I_>
-raze_always_inline constexpr decltype(auto) __apply(_Fn_&& __fn, _Tuple_&& __t, std::index_sequence<_I_...>) noexcept {
-    return std::forward<_Fn_>(__fn)(std::get<_I_>(std::forward<_Tuple_>(__t))...);
-}
-
-template <class _Callable_, class _Tuple_>
-raze_always_inline constexpr decltype(auto) __apply(_Callable_&& __obj, _Tuple_&& __tup) noexcept {
-    return __apply(std::forward<_Callable_>(__obj), std::forward<_Tuple_>(__tup),
-        std::make_index_sequence<std::tuple_size_v<std::remove_reference_t<_Tuple_>>>{});
-}
-
-template <class _Fn_, class _Tuple_>
-raze_always_inline auto __unpack(_Fn_&& __fn, _Tuple_&& __tuple) noexcept {
-    return __apply(std::forward<_Fn_>(__fn), std::forward<_Tuple_>(__tuple));
-}
-
-template <class _Fn_, class _Tuple_, class... _Suffix_>
-raze_always_inline auto __unpack_suffix(_Fn_&& __fn, _Tuple_&& __tuple, _Suffix_&&... __suffix) noexcept {
-    return __apply([&] <class... _E_> (_E_&&... __elements) raze_always_inline_lambda {
-        return std::forward<_Fn_>(__fn)(std::forward<_E_>(__elements)..., std::forward<_Suffix_>(__suffix)...);
-    }, std::forward<_Tuple_>(__tuple));
-}
-
-
 template <template <class> class _Function_, class _Type_, class _Return_, arch::ISA _ForcedISA_, arch::ISA ... _Candidates_>
 struct _Configurable_sized_isa_dispatcher {
     template <class _Options_>

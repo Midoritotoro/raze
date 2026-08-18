@@ -4,42 +4,64 @@
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
-
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+constexpr auto replace_strategy = options::strategy<strategy<>()
+	.for_gcc<strategy_mode::autovec>()
+	.for_clang<strategy_mode::autovec>()>;
+
 template <class _Traits_>
-struct _Replace_if : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _Projection_, class _ValueType_>
-	struct __impl {
-		mutable _Iterator_ _iterator;
-		_Sentinel_ _sentinel;
+struct _Replace_if : _Traits_, dispatchable<_Replace_if<_Traits_>>{
+	template <source _Source_, class _Predicate_, class _Projection_, class _ValueType_>
+	struct __kernel {
+		using source_type = std::remove_cvref_t<_Source_>;
+		using iterator_type = typename source_type::iterator_type;
+
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+
+		using vector_value_type = std::iter_value_t<iterator_type>;
+
+		static consteval bool vectorizable() noexcept {
+			return std::contiguous_iterator<unchecked_iterator_type> &&
+				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type>&&
+				vectorizable_projection<_Projection_, unchecked_iterator_type>;
+		}
+
+		_Source_ _source;
+		unchecked_iterator_type _iterator;
+		unchecked_sentinel_type _sentinel;
 		_Predicate_ _predicate;
 		_Projection_ _proj;
-		const _ValueType_& _new_value;
+		_ValueType_ _new_value;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Predicate_ __pred,
-			_Projection_ __proj, const _ValueType_& __new_val) noexcept :
-			_iterator(__it), _sentinel(__sent), _predicate(__pred), _proj(__proj), _new_value(__new_val)
-		{}
-
-		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_) const noexcept
-			requires(std::is_same_v<_Tag_, vx::scalar_tag>)
+		constexpr __kernel(_Source_&& __src, _Predicate_ __pred,
+			_Projection_ __proj, _ValueType_ __new_val) noexcept :
+				_source(std::forward<_Source_>(__src)), _predicate(__pred), _proj(__proj), _new_value(__new_val)
 		{
-			raze_disable_unrolling
-			for (; _iterator != _sentinel; ++_iterator)
+			_iterator = _source.ubegin();
+			_sentinel = _source.uend();
+		}
+	
+		void operator()(autovectorizable) noexcept requires(vectorizable()) {
+			auto* raze_restrict __b = std::to_address(_iterator);
+			auto* raze_restrict __e = std::to_address(_sentinel);
+
+			for (; __b != __e; ++__b)
+				*__b = (_predicate(_proj(*__b))) ? _new_value : *__b;
+		}
+
+		raze_always_inline constexpr void operator()() noexcept {
+			for (; _iterator != _sentinel; ++_iterator) 
 				*_iterator = (_predicate(_proj(*_iterator))) ? _new_value : *_iterator;
 		}
 
-		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) const noexcept
-			requires(!std::is_same_v<_Tag_, vx::scalar_tag>) 
-		{
+		template <vectorizable_tag _Tag_>
+		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
+
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
 			const auto __new_value = _Tag_(_new_value);
 
@@ -49,104 +71,48 @@ struct _Replace_if : _Traits_ {
 				__advance_bytes(__ptr, sizeof(_Tag_));
 			} while (__ptr != __aligned_end);
 
-			__seek_iter(_iterator, __ptr);
+			source_type::from_ptr(_iterator, __ptr);
+		}
+
+		template <vectorizable_tag _Tag_>
+		raze_always_inline void operator()(_Tag_, tail_mask_type auto const& __ignore) noexcept {
+			auto* __ptr = std::to_address(_iterator);
+			vx::store[_predicate(_proj(vx::load<_Tag_>[__ignore](__ptr)))](__ptr, _Tag_(_new_value));
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {
+			return _Source_::static_size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const noexcept {
+			return _source.size();
 		}
 	};
 
 	template <std::permutable _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
 		class _Predicate_, class _ValueType_, class _Projection_ = std::identity>
-	constexpr raze_always_inline void operator()(_Iterator_ __first, _Sentinel_ __last,
-		_Predicate_ __pred, const _ValueType_& __new_value, _Projection_ __proj = {}) const noexcept
+	constexpr raze_always_inline void operator()(_Iterator_ __first, _Sentinel_ __sent,
+		_Predicate_ __pred, _ValueType_ __new_value, _Projection_ __proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
 	{
-		__replace_if_unchecked(
-			traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_Iterator_>(std::move(__last)),
-			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj));
+		this->dispatch(get_source(std::move(__first), std::move(__sent)),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj), __new_value);
 	}
 
 	template <std::ranges::input_range _Range_, class _Predicate_, class _ValueType_,
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline void operator()(_Range_&& __range, _Predicate_ __pred,
-		const _ValueType_& __new_value, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>
+	constexpr raze_always_inline void operator()(_Range_&& __r, _Predicate_ __pred,
+		_ValueType_ __new_value, _Projection_ __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<_Predicate_,
+				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>
 				&& std::permutable<std::ranges::iterator_t<_Range_>>)
 	{
-		__replace_if_unchecked(
-			traits::__r_uiter<_Range_>(std::ranges::begin(__range)),
-			traits::__uend(__range),
-			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj));
-	}
-
-	template <std::ranges::input_range _Range_, class _Predicate_, class _ValueType_,
-		class _Projection_ = std::identity>
-	constexpr raze_always_inline void operator()(_Range_&& __range, _Predicate_ __pred,
-		const _ValueType_& __new_value, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-				_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>
-				&& std::permutable<std::ranges::iterator_t<_Range_>>)
-	{
-		__replace_if_unchecked(
-			traits::__r_uiter<_Range_>(std::ranges::begin(__range)),
-			traits::__uend(__range),
-			traits::__fwd_fn(__pred), __new_value, traits::__fwd_fn(__proj),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
-	}
-
-private:
-	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _ValueType_, class _Projection_>
-	constexpr raze_always_inline void __replace_if_unchecked(
-		_Iterator_ __first, _Sentinel_ __last, _Predicate_ __pred,
-		const _ValueType_& __new_value, _Projection_ __proj) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
-			&& vectorizable_unary_predicate<_Predicate_, _Iterator_> &&
-			vectorizable_projection<_Projection_, _Iterator_>)
-		{
-			if not consteval {
-				vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, _Value_, void>(
-					algorithm::distance(__first, __last) * sizeof(_Value_),
-					__impl(__first, __last, __pred, __proj, __new_value));
-				return;
-			}
-		}
-
-		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(std::move(__first), __last, __pred, __proj, __new_value));
-	}
-
-	template <class _Iterator_, class _Sentinel_, class _Predicate_, class _ValueType_, class _Projection_, sizetype _Size_>
-	constexpr raze_always_inline void __replace_if_unchecked(_Iterator_ __first, _Sentinel_ __last,
-		_Predicate_ __pred, const _ValueType_& __new_value, _Projection_ __proj,
-		std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_unary_predicate<_Predicate_, _Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_>)
-		{
-			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, _Value_, void>(
-					__bytes, __impl(__first, __last, __pred, __proj, __new_value));
-				return;
-			}
-		}
-
-		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(std::move(__first), __last, __pred, __proj, __new_value));
+		this->dispatch(get_source(std::forward<_Range_>(__r)),
+			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj), __new_value);
 	}
 };
 
-constexpr inline auto replace_if = raze::options::function_with_traits<_Replace_if>[raze::options::unroll<4>];
+constexpr inline auto replace_if = raze::options::function_with_traits<_Replace_if>[raze::options::unroll<4>][replace_strategy];
 
 template <class _Traits_>
 struct _Replace : _Traits_ {
@@ -162,16 +128,16 @@ struct _Replace : _Traits_ {
 
 	template <std::ranges::input_range _Range_, class _ValueType1_, class _ValueType2_,
 		class _Projection_ = std::identity>
-	constexpr raze_always_inline void operator()(_Range_&& __range, const _ValueType1_& __old_value,
+	constexpr raze_always_inline void operator()(_Range_&& __r, const _ValueType1_& __old_value,
 		const _ValueType2_& __new_value, _Projection_ __proj = {}) const noexcept
 			requires(std::permutable<std::ranges::iterator_t<_Range_>>)
 	{
-		replace_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
+		replace_if[_Traits_::traits()](std::forward<_Range_>(__r), algorithm::equal_to(
 			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__old_value)),
 			__new_value, traits::__fwd_fn(__proj));
 	}
 };
 
-constexpr inline auto replace = raze::options::function_with_traits<_Replace>[raze::options::unroll<4>];
+constexpr inline auto replace = raze::options::function_with_traits<_Replace>[raze::options::unroll<4>][replace_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END
