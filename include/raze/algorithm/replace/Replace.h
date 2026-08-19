@@ -50,16 +50,19 @@ struct _Replace_if : _Traits_, dispatchable<_Replace_if<_Traits_>>{
 			auto* raze_restrict __e = std::to_address(_sentinel);
 
 			for (; __b != __e; ++__b)
-				*__b = (_predicate(_proj(*__b))) ? _new_value : *__b;
+				*__b = _predicate(_proj(*__b)) ? _new_value : *__b;
+
+			source_type::from_ptr(_iterator, __b);
 		}
 
 		raze_always_inline constexpr void operator()() noexcept {
+			raze_disable_unrolling
 			for (; _iterator != _sentinel; ++_iterator) 
 				*_iterator = (_predicate(_proj(*_iterator))) ? _new_value : *_iterator;
 		}
 
 		template <vectorizable_tag _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) noexcept {
+		raze_always_inline void operator()(_Tag_, sizetype __aligned_size) noexcept {
 			auto* __ptr = std::to_address(_iterator);
 
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
@@ -77,7 +80,7 @@ struct _Replace_if : _Traits_, dispatchable<_Replace_if<_Traits_>>{
 		template <vectorizable_tag _Tag_>
 		raze_always_inline void operator()(_Tag_, tail_mask_type auto const& __ignore) noexcept {
 			auto* __ptr = std::to_address(_iterator);
-			vx::store[_predicate(_proj(vx::load<_Tag_>[__ignore](__ptr)))](__ptr, _Tag_(_new_value));
+			vx::store[_predicate(_proj(vx::load<_Tag_>[__ignore](__ptr))) & __ignore()](__ptr, _Tag_(_new_value));
 		}
 
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {
@@ -112,7 +115,7 @@ struct _Replace_if : _Traits_, dispatchable<_Replace_if<_Traits_>>{
 	}
 };
 
-constexpr inline auto replace_if = raze::options::function_with_traits<_Replace_if>[raze::options::unroll<4>][replace_strategy];
+constexpr inline auto replace_if = raze::options::function_with_traits<_Replace_if>[raze::options::unroll<1>][replace_strategy];
 
 template <class _Traits_>
 struct _Replace : _Traits_ {
@@ -138,6 +141,6 @@ struct _Replace : _Traits_ {
 	}
 };
 
-constexpr inline auto replace = raze::options::function_with_traits<_Replace>[raze::options::unroll<4>][replace_strategy];
+constexpr inline auto replace = raze::options::function_with_traits<_Replace>[raze::options::unroll<1>][replace_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

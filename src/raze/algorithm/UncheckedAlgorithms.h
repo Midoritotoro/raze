@@ -128,14 +128,15 @@ struct dispatchable {
             }
         }
 
-        static constexpr auto __have_best_isa =vx::__has_avx512bw_support_v<vx::__best_isa_compile_time()> ||
+        static constexpr auto __have_best_isa = vx::__has_avx512bw_support_v<vx::__best_isa_compile_time()> ||
             (vx::__has_avx512f_support_v<vx::__best_isa_compile_time()> && sizeof(_Value_) >= 4);
 
         static constexpr auto __use_autovec = options::is_autovec<_TraitsType_>() ||
             options::get_strategy<_TraitsType_>().is_autovec();
 
         if constexpr (!raze::options::always_scalar<_TraitsType_>() &&
-            _WorkType_::vectorizable() && __have_best_isa)
+            _WorkType_::vectorizable() && (options::get_strategy<_TraitsType_>().is_manual()
+            || (__have_best_isa && __use_autovec)))
         {
             if not consteval {
                 using _ReturnType_ = decltype(__get_result_type<_WorkType_>());
@@ -156,25 +157,8 @@ struct dispatchable {
             return __invoke_scalar_autovec(__work);
         }
 #endif
-        else if constexpr (!raze::options::always_scalar<_TraitsType_>() &&
-            options::get_strategy<_TraitsType_>().is_manual() && _WorkType_::vectorizable())
-        {
-            if not consteval {
-                using _ReturnType_ = decltype(__get_result_type<_WorkType_>());
-
-                if constexpr (requires { _WorkType_::static_size(); }) {
-                    return raze::vx::__dispatch_sized_impl<raze::options::_Unroller<_TraitsType_>::
-                        template __impl, _Value_, _ReturnType_>(_WorkType_::static_size(), __work);
-                }
-                else {
-                    return raze::vx::__dispatch_sized_impl<raze::options::_Unroller<_TraitsType_>::
-                        template __impl, _Value_, _ReturnType_>(__work.size(), __work);
-                }
-            }
-        }
-        else {
-            return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
-        }
+        
+        return raze::options::__unroller<_TraitsType_, raze::vx::scalar_tag>(__work);
     }
 };
 

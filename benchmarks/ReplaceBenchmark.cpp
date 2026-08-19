@@ -10,10 +10,7 @@ static void BM_StdReplace(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
         std::ranges::replace(test.data, old_val, new_val);
-        benchmark::DoNotOptimize(test.data);
-
         benchmark::ClobberMemory();
     }
 
@@ -29,10 +26,7 @@ static void BM_RazeReplace(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
         raze::algorithm::replace(test.data, old_val, new_val);
-        benchmark::DoNotOptimize(test.data);
-
         benchmark::ClobberMemory();
     }
 
@@ -45,10 +39,7 @@ static void BM_StdReplaceIf(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
         std::ranges::replace_if(test.data, [](auto x) { return x > T(0); }, T(99));
-        benchmark::DoNotOptimize(test.data);
-
         benchmark::ClobberMemory();
     }
 
@@ -61,10 +52,7 @@ static void BM_RazeReplaceIf(benchmark::State& state) {
 
     for (auto _ : state) {
         benchmark::DoNotOptimize(test.data);
-
         raze::algorithm::replace_if(test.data, [](auto x) { return x > T(0); }, T(99));
-        benchmark::DoNotOptimize(test.data);
-
         benchmark::ClobberMemory();
     }
 
@@ -85,6 +73,19 @@ static void BM_RazeReplaceIf(benchmark::State& state) {
     BENCHMARK(name1<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name2<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
         \
+    BENCHMARK(name1<raze::i8, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
     BENCHMARK(name1<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name2<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name1<raze::i16, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
@@ -97,6 +98,19 @@ static void BM_RazeReplaceIf(benchmark::State& state) {
     BENCHMARK(name2<raze::f32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name1<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name2<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
+        \
+    BENCHMARK(name1<raze::i8, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i8, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i16, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i16, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::i64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::i64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name1<raze::f64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
+    BENCHMARK(name2<raze::f64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
         \
     BENCHMARK(name1<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
     BENCHMARK(name2<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\

@@ -172,7 +172,7 @@ void test_replace_if_random(unsigned seed = 42) {
         auto vec_copy = vec;
         T threshold = RandomGenerator<T>(seed + i + 40000)();
         
-        auto pred = [threshold](const T& x) { return x > threshold; };
+        auto pred = [threshold] (T x) { return x > threshold; };
         T new_val = RandomGenerator<T>(seed + i + 50000)();
         
         raze::algorithm::replace_if(vec.begin(), vec.end(), pred, new_val);
@@ -426,7 +426,7 @@ void test_replace_simd_boundaries(unsigned seed = 42) {
     for (size_t size : {1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256, 511, 512}) {
         std::vector<T> vec(size, T(42));
         auto vec_copy = vec;
-        
+
         raze::algorithm::replace(vec.begin(), vec.end(), T(42), T(99));
         std::ranges::replace(vec_copy.begin(), vec_copy.end(), T(42), T(99));
         

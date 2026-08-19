@@ -116,8 +116,6 @@ struct _Configurable_store : raze::options::conditional_callable<_Configurable_s
             }
         }
     }
-
-    using callable_tag_type = _Configurable_store;
 };
 
 constexpr inline auto __store = raze::options::functor<_Configurable_store>;

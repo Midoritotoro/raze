@@ -4,23 +4,12 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Type_>
-struct __storage_selector {
-    using type = std::conditional_t<sizeof(_Type_) <= 8, _Type_, const _Type_&>;
-};
-
-template <class _Type_>
-using __storage_selector_t = typename __storage_selector<_Type_>::type;
-
 template <class _Condition_, class _Value_>
 struct or_ {
     static constexpr bool has_alternative = true;
 
     using alternative_type = _Value_;
     using condition_type = _Condition_;
-    
-    using _ValueStorage_ = __storage_selector_t<_Value_>;
-    using _ConditionStorage_ = __storage_selector_t<_Condition_>;
 
     constexpr or_(const _Condition_& __condition, const _Value_& __value) noexcept:
         _condition(__condition), _alternative(__value)
@@ -32,17 +21,17 @@ struct or_ {
     constexpr or_& operator=(const or_&) noexcept = default;
     constexpr or_& operator=(or_&&) noexcept = default;
 
-    constexpr raze_always_inline _ValueStorage_ alternative() const noexcept {
+    constexpr raze_always_inline _Value_ alternative() const noexcept {
         return _alternative;
     }
 
     template <class _Type_>
-    raze_always_inline _ConditionStorage_ mask(const as<_Type_>&) const noexcept {
+    raze_always_inline _Condition_ mask(const as<_Type_>&) const noexcept {
         return _condition;
     }
 
-    raze_no_unique_address _ConditionStorage_ _condition;
-    raze_no_unique_address _ValueStorage_ _alternative;
+    _Condition_ _condition;
+    _Value_ _alternative;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END

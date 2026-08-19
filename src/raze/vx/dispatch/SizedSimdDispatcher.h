@@ -32,7 +32,7 @@ struct _Configurable_sized_isa_dispatcher {
                     return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
                 }
 
-                constexpr auto __aligned_size = _Size_ & ~(__vector_size - 1);
+                constexpr auto __aligned_size = _Size_ & ~sizetype(__vector_size - 1);
                 using _Simd_ = simd<_Type_, runtime_abi<_ForcedISA_, __vector_size / sizeof(_Type_)>>;
                 return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                     std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
@@ -123,7 +123,7 @@ struct _Configurable_sized_isa_dispatcher {
                 if (__size < __vector_size)
                     return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
 
-                const auto __aligned_size = __size & ~(__vector_size - 1);
+                const auto __aligned_size = __size & ~sizetype(__vector_size - 1);
                 using _Simd_ = simd<_Type_, runtime_abi<_ForcedISA_, __vector_size / sizeof(_Type_)>>;
                 return _Function_<_Simd_>()(__aligned_size, __size - __aligned_size, std::forward<_Args_>(__args)...);
            }
@@ -177,7 +177,7 @@ struct _Configurable_sized_isa_dispatcher {
                     return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);
 
                 using _Simd_ = simd<_Type_, runtime_abi<_ForcedISA_, __vector_size / sizeof(_Type_)>>;
-                return _Function_<_Simd_>()(__size & ~(__vector_size - 1), __size & (__vector_size - 1), std::forward<_Args_>(__args)...);
+                return _Function_<_Simd_>()(__size & ~sizetype(__vector_size - 1), __size & (__vector_size - 1), std::forward<_Args_>(__args)...);
             }
             else {
                 if (__size < 16) return _Function_<vx::scalar_tag>()(std::forward<_Args_>(__args)...);

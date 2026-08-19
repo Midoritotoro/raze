@@ -13,10 +13,14 @@ endif()
 
 enable_testing()
 
-if(MSVC)
-    add_compile_options(/Od /Zi /bigobj /D NDEBUG=0) 
-else()
-    add_compile_options(-O0 -g -D NDEBUG=0)
+if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    if (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "MSVC")
+        add_compile_options(-march=native /Zi /O0 /GS- /Oy /bigobj)
+    elseif (CMAKE_CXX_COMPILER_FRONTEND_VARIANT STREQUAL "GNU")
+        add_compile_options(-O0 -march=native)
+    endif()
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    add_compile_options(/O0 /Zi /GS- /DNDEBUG /Oy /bigobj) 
 endif()
 
 macro(raze_algorithm_add_test filename)
