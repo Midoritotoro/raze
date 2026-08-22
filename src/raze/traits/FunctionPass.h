@@ -12,57 +12,57 @@
 
 __RAZE_TRAITS_NAMESPACE_BEGIN
 
-template <class _Function_> 
-constexpr inline bool __is_lightweight_callable_v = std::conjunction_v<std::bool_constant<sizeof(_Function_) <= sizeof(void*)>,
-    std::is_trivially_copy_constructible<_Function_>, std::is_trivially_destructible<_Function_>>;
+template <class Function> 
+constexpr inline bool is_lightweight_callable_v = std::conjunction_v<std::bool_constant<sizeof(Function) <= sizeof(void*)>,
+    std::is_trivially_copy_constructible<Function>, std::is_trivially_destructible<Function>>;
 
-template <class _Function_>
-struct __function_reference {
-    using function_unwrapped_type = _Function_;
+template <class Function>
+struct function_reference {
+    using function_unwrapped_type = Function;
 
-    constexpr raze_always_inline operator _Function_&() noexcept {
+    constexpr raze_always_inline operator function_unwrapped_type&() noexcept {
         return _function;
     }
 
-    template <class ... _Args_>
-    constexpr raze_always_inline decltype(auto) operator()(_Args_&& ... __values) const
-        noexcept(std::is_nothrow_invocable_v<_Function_&, _Args_...>) requires(std::invocable<_Function_, _Args_...>)
+    template <class ... Args>
+    constexpr raze_always_inline decltype(auto) operator()(Args&& ... args) const
+        noexcept(std::is_nothrow_invocable_v<Function&, Args...>) requires(std::invocable<Function, Args...>)
     {
-        if constexpr (std::is_member_pointer_v<_Function_>) return std::invoke(_function, std::forward<_Args_>(__values)...);
-        else return _function(std::forward<_Args_>(__values)...);
+        if constexpr (std::is_member_pointer_v<Function>) return std::invoke(_function, std::forward<Args>(args)...);
+        else return _function(std::forward<Args>(args)...);
     }
 
-    _Function_& _function;
+    Function& _function;
 };
 
-template <class _Function_>
-concept __has_function_unwrapped_type = requires {
-    typename _Function_::function_unwrapped_type;
+template <class Function>
+concept has_function_unwrapped_type = requires {
+    typename Function::function_unwrapped_type;
 };
 
-template <class _Function_>
-struct __function_unwrapped_impl {
-    using type = _Function_;
+template <class Function>
+struct function_unwrapped_impl {
+    using type = Function;
 };
 
-template <__has_function_unwrapped_type _Function_>
-struct __function_unwrapped_impl<_Function_> {
-    using type = typename _Function_::function_unwrapped_type;
+template <has_function_unwrapped_type Function>
+struct function_unwrapped_impl<Function> {
+    using type = typename Function::function_unwrapped_type;
 };
 
-template <class _Function_>
-using __function_unwrapped = typename __function_unwrapped_impl<_Function_>::type;
+template <class Function>
+using function_unwrapped = typename function_unwrapped_impl<Function>::type;
 
-template <class _Function_>
-raze_always_inline constexpr __function_unwrapped<_Function_> __unwrap_function(_Function_&& __f) noexcept {
-    return static_cast<__function_unwrapped<_Function_>>(std::forward<_Function_>(__f));
+template <class Function>
+raze_always_inline constexpr function_unwrapped<Function> unwrap_function(Function&& f) noexcept {
+    return static_cast<function_unwrapped<Function>>(std::forward<Function>(f));
 }
 
-template <class _Function_>
-raze_nodiscard raze_always_inline constexpr decltype(auto) __fwd_fn(_Function_& __function) noexcept {
-    if constexpr (__has_function_unwrapped_type<_Function_>) return __function;
-    else if constexpr (__is_lightweight_callable_v<_Function_>) return __function;
-    else return __function_reference<_Function_>(__function);
+template <class Function>
+raze_nodiscard raze_always_inline constexpr decltype(auto) fwd_fn(_Function_& function) noexcept {
+    if constexpr (has_function_unwrapped_type<Function>) return function;
+    else if constexpr (is_lightweight_callable_v<Function>) return function;
+    else return function_reference<Function>(function);
 }
 
 __RAZE_TRAITS_NAMESPACE_END

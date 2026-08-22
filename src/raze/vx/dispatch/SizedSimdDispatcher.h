@@ -199,7 +199,7 @@ consteval arch::ISA __forced_isa() noexcept {
 
 template <template <class> class _Function_, class _Type_, class _Return_,
     arch::ISA _ForcedISA_ = __forced_isa(), arch::ISA ... _Candidates_>
-static inline constexpr auto __dispatch_sized_impl = raze::options::functor<
+static inline constexpr auto dispatch = raze::options::functor<
     _Configurable_sized_isa_dispatcher<_Function_, _Type_, _Return_, _ForcedISA_, _Candidates_...>::template __impl>;
 
 __RAZE_VX_NAMESPACE_END
