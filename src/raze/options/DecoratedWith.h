@@ -6,30 +6,29 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _OptionsValues_, class ... _Options_>
+template <class OptionsValues, class ... Options>
 struct decorated_with: 
-    _OptionsValues_, _Options_...
+    OptionsValues, Options...
 {
-    using _Options_::process...;
+    using Options::process...;
 
     constexpr decorated_with() noexcept {}
-    constexpr decorated_with(const _OptionsValues_& __values) noexcept:
-        _OptionsValues_(__values) 
+    constexpr decorated_with(const OptionsValues& values) noexcept:
+        OptionsValues(values) 
     {}
 
-    template <class __Options_>
-    raze_nodiscard constexpr raze_always_inline auto operator[](const __Options_& __options) const noexcept
-        requires(requires(const _OptionsValues_& __values) { 
-            this->process(__values, __options);
+    raze_nodiscard constexpr raze_always_inline auto operator[](auto const& opts) const noexcept
+        requires(requires(const OptionsValues& values) { 
+            this->process(values, opts);
         })
     {
-        auto __values = static_cast<const _OptionsValues_&>(*this);
-        return process(__values, __options);
+        auto values = static_cast<const OptionsValues&>(*this);
+        return process(values, opts);
     }
 
     raze_nodiscard constexpr raze_always_inline auto options() const noexcept {
-        return fold_left(accumulate_decorations{}, std::tuple<_Options_...>{},
-            static_cast<const _OptionsValues_&>(*this));
+        return fold_left(accumulate_decorations{}, std::tuple<Options...>{},
+            static_cast<const OptionsValues&>(*this));
     }
 };
 

@@ -146,7 +146,7 @@ __generic_shuffle_scalar_fallback(const _Simd_& __x, const _Index_& __idx) noexc
 
 template <arch::ISA _ISA_, intrin_type _Intrin_>
 raze_no_stack_protector raze_always_inline _Intrin_ __byte_shuffle_mask_avx2(_Intrin_ __x) noexcept {
-	static_assert(__has_avx2_support_v<_ISA_>);
+	static_assert(has_avx2<_ISA_>);
 
 	// Multiplication by 0x0202 (= {0x02, 0x02} as a pair of bytes) creates pairs {2*i, 2*i}
 	// Adding 0x0100 increments the high byte of each pair (resulting in {2*i, 2*i+1}).
@@ -159,10 +159,10 @@ template <arch::ISA _ISA_, intrin_type _Intrin_, intrin_type _Index_>
 raze_no_stack_protector raze_always_inline _Intrin_ __shuffle_i8x64_avx512(_Intrin_ __x, _Index_ __idx) noexcept {
 	static_assert(sizeof(_Intrin_) == sizeof(__m512i));
 
-	if constexpr (__has_avx512vbmi_support_v<_ISA_>) {
+	if constexpr (has_avx512vbmi<_ISA_>) {
 		return __as<_Intrin_>(_mm512_permutexvar_epi8(__as<__m512i>(__idx), __as<__m512i>(__x)));
 	}
-	else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+	else if constexpr (has_avx512bw<_ISA_>) {
 		auto __src_part = _mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0);
 		auto __result = _mm512_shuffle_epi8(__src_part, __as<__m512i>(__idx));
 
@@ -224,7 +224,7 @@ template <arch::ISA _ISA_, intrin_type _Intrin_, intrin_type _Index_>
 raze_no_stack_protector raze_always_inline _Intrin_ __shuffle_i16x32_avx512(_Intrin_ __x, _Index_ __idx) noexcept {
 	static_assert(sizeof(_Intrin_) == sizeof(__m512i));
 
-	if constexpr (__has_avx512bw_support_v<_ISA_>) {
+	if constexpr (has_avx512bw<_ISA_>) {
 		return __as<_Intrin_>(_mm512_permutexvar_epi16(__as<__m512i>(__idx), __as<__m512i>(__x)));
 	}
 	else {
@@ -276,12 +276,12 @@ raze_no_stack_protector raze_always_inline _Intrin_ __shuffle_i16x32_avx512(_Int
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, class _Pattern_>
 raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Pattern_ __p) noexcept {
-	static constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
-	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-	static constexpr auto __avx512f = __has_avx512f_support_v<_ISA_>;
-	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-	static constexpr auto __avx512vbmi = __has_avx512vbmi_support_v<_ISA_>;
+	static constexpr auto __ssse3 = has_ssse3<_ISA_>;
+	static constexpr auto __avx2 = has_avx2<_ISA_>;
+	static constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+	static constexpr auto __avx512f = has_avx512f<_ISA_>;
+	static constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+	static constexpr auto __avx512vbmi = has_avx512vbmi<_ISA_>;
 
 	if constexpr (sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {
@@ -535,12 +535,12 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Intrin_, intrin_type _Index_>
 raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin_ __x, _Index_ __idx) noexcept {
-	static constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
-	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-	static constexpr auto __avx512f = __has_avx512f_support_v<_ISA_>;
-	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-	static constexpr auto __avx512vbmi = __has_avx512vbmi_support_v<_ISA_>;
+	static constexpr auto __ssse3 = has_ssse3<_ISA_>;
+	static constexpr auto __avx2 = has_avx2<_ISA_>;
+	static constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+	static constexpr auto __avx512f = has_avx512f<_ISA_>;
+	static constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+	static constexpr auto __avx512vbmi = has_avx512vbmi<_ISA_>;
 
 	if constexpr (sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {

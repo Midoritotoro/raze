@@ -28,7 +28,7 @@ struct _Configurable_hmax: raze::options::conditional_callable<_Configurable_hma
             __result = std::max(_Horizontal_max<_Abi_::isa, _Value_>()(__storage_unwrap<_Args_>(__args)...), __result);
         };
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
+        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
             auto __condition = __options[raze::options::condition_key];
             auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 

@@ -9,111 +9,107 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Unroller {
-	template <class _Tag_>
-	struct __impl {
-		constexpr __impl() noexcept = default;
-		constexpr ~__impl() noexcept = default;
+template <class Traits>
+struct unroller_t {
+	template <class Tag>
+	struct impl {
+		constexpr impl() noexcept = default;
+		constexpr ~impl() noexcept = default;
 
-		static raze_always_inline auto __make_mask_generator(i32 __n) noexcept {
-			return [__tail = __n] () raze_always_inline_lambda { return raze::vx::__first_n(__tail, as(typename _Tag_::mask_type{})); };
+		static raze_always_inline auto make_mask_generator(i32 n) noexcept {
+			return [tail = n] () raze_always_inline_lambda { return raze::vx::first_n(tail, as(typename Tag::mask_type{})); };
 		}
 
-		template <class _Function_>
-		constexpr raze_always_inline auto operator()(sizetype __aligned_size, sizetype __tail_size, _Function_ __f) const noexcept
-			requires(!std::is_same_v<_Tag_, vx::scalar_tag>) 
+		template <class F>
+		constexpr raze_always_inline auto operator()(sizetype aligned_size, sizetype tail_size, F f) const noexcept
+			requires(!std::same_as<Tag, vx::scalar_tag>) 
 		{
-			constexpr auto __has_early_exit = concepts::same_as<decltype(__f(_Tag_{}, __aligned_size)), bool>;
-			constexpr auto __unrolling = get_unrolling<_Traits_>();
-			const auto __guard = vx::make_guard<_Tag_>();
+			constexpr auto has_early_exit = std::same_as<decltype(f(Tag{}, aligned_size)), bool>;
+			constexpr auto unrolling = get_unrolling<Traits>();
+			const auto guard = vx::make_guard<Tag>();
 
 #if defined(raze_cpp_msvc_only)
 			// Ignore unrolling
-			if constexpr (__has_early_exit) {
-				if (!__f(_Tag_{}, __aligned_size)) {
-					if constexpr (requires { __f.result(); }) return __f.result();
+			if constexpr (has_early_exit) {
+				if (!f(Tag{}, aligned_size)) {
+					if constexpr (requires { f.result(); }) return f.result();
 					else return;
 				}
 			}
 			else {
-				__f(_Tag_{}, __aligned_size);
+				f(Tag{}, aligned_size);
 			}
 #else
-			if constexpr (__unrolling > 1) {
-				 auto __unrolled_size = __aligned_size - (__aligned_size % (sizeof(_Tag_) * __unrolling));
+			if constexpr (unrolling > 1) {
+				 auto unrolled_size = aligned_size - (aligned_size % (sizeof(Tag) * unrolling));
 
-				 if (__unrolled_size != 0) {
-					 if constexpr (__has_early_exit) {
-						 if (!__f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, _Tag_::size()
-							 * __unrolling>>{}, __unrolled_size))
+				 if (unrolled_size != 0) {
+					 if constexpr (has_early_exit) {
+						 if (!f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
+							 * unrolling>>{}, unrolled_size))
 						 {
-							 if constexpr (requires { __f.result(); }) return __f.result();
+							 if constexpr (requires { f.result(); }) return f.result();
 							 else return;
 						 }
 					 }
 					 else {
-						 __f(vx::simd<typename _Tag_::value_type, vx::resize_abi_t<typename _Tag_::abi_type, _Tag_::size()
-							 * __unrolling>>{}, __unrolled_size);
+						 f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
+							 * unrolling>>{}, unrolled_size);
 					 }
 				 }
 
-				__aligned_size -= __unrolled_size;
+				aligned_size -= unrolled_size;
 
-				if (__aligned_size >= sizeof(_Tag_)) {
-					if constexpr (__has_early_exit) {
-						if (!__f(_Tag_{}, __aligned_size)) {
-							if constexpr (requires { __f.result(); }) return __f.result();
+				if (aligned_size >= sizeof(Tag)) {
+					if constexpr (has_early_exit) {
+						if (!f(Tag{}, aligned_size)) {
+							if constexpr (requires { f.result(); }) return f.result();
 							else return;
 						}
 					}
 					else {
-						__f(_Tag_{}, __aligned_size);
+						f(Tag{}, aligned_size);
 					}
 				}
 			}
 			else {
-				if constexpr (__has_early_exit) {
-					if (!__f(_Tag_{}, __aligned_size)) {
-						if constexpr (requires { __f.result(); }) return __f.result();
+				if constexpr (has_early_exit) {
+					if (!f(Tag{}, aligned_size)) {
+						if constexpr (requires { f.result(); }) return f.result();
 						else return;
 					}
 				}
 				else {
-					__f(_Tag_{}, __aligned_size);
+					f(Tag{}, aligned_size);
 				}
 			}
 #endif // defined(raze_cpp_msvc)
 
-			constexpr auto __shift = std::countr_zero(sizeof(typename _Tag_::value_type));
-			constexpr auto __can_process_tail = requires { __f(_Tag_{}, algorithm::tail_mask(__tail_size,
-				__make_mask_generator(__tail_size >> __shift))); };
+			constexpr auto shift = std::countr_zero(sizeof(typename Tag::value_type));
+			constexpr auto can_process_tail = requires { f(Tag{}, algorithm::tail_mask(tail_size,
+				make_mask_generator(tail_size >> shift))); };
 
-			if constexpr (vx::native_conditional_memory_access<vx::abi_t<_Tag_>::isa, typename _Tag_::value_type> && __can_process_tail) {
-				__f(_Tag_{}, algorithm::tail_mask(__tail_size, __make_mask_generator(__tail_size >> __shift)));
+			if constexpr (vx::native_conditional_memory_access<vx::abi_t<Tag>::isa, typename Tag::value_type> && can_process_tail) {
+				f(Tag{}, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
 			}
 			else {
-				__f();
+				f();
 			}
 
-			if constexpr (requires { __f.result(); }) return __f.result();
+			if constexpr (requires { f.result(); }) return f.result();
 		}
 
-		template <class _Function_>
-		constexpr raze_always_inline auto operator()(_Function_ __f) const noexcept 
-			requires(std::is_same_v<_Tag_, vx::scalar_tag>)
+		template <class F>
+		constexpr raze_always_inline auto operator()(F f) const noexcept 
+			requires(std::same_as<Tag, vx::scalar_tag>)
 		{
-			__f();
-			if constexpr (requires { __f.result(); }) return __f.result();
+			f();
+			if constexpr (requires { f.result(); }) return f.result();
 		}
 	};
 };
 
-template <class _Traits_, class _Simd_>
-static inline constexpr auto __unroller = typename _Unroller<_Traits_>::template __impl<_Simd_>{};
-
-#if !defined(traits_unroller_t)
-#  define traits_unroller_t(_Traits_) raze::options::_Unroller<_Traits_>::template __impl
-#endif // !defined(traits_unroller_t)
+template <class Traits, class V>
+static inline constexpr auto unroller_t = typename unroller_t<Traits>::template impl<V>{};
 
 __RAZE_OPTIONS_NAMESPACE_END

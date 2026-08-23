@@ -13,8 +13,8 @@ template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_>
 raze_nodiscard raze_always_inline auto __zmm_broadcast_low(_Tp_ __x) noexcept {
 	if constexpr (sizeof(_Type_) == 8) return _mm512_broadcastq_epi64(__as<__m128i>(__x));
 	else if constexpr (sizeof(_Type_) == 4) return _mm512_broadcastd_epi32(__as<__m128i>(__x));
-	else if constexpr (sizeof(_Type_) == 2 && __has_avx512bw_support_v<_ISA_>) return _mm512_broadcastw_epi16(__as<__m128i>(__x));
-	else if constexpr (sizeof(_Type_) == 1 && __has_avx512bw_support_v<_ISA_>) return _mm512_broadcastb_epi8(__as<__m128i>(__x));
+	else if constexpr (sizeof(_Type_) == 2 && has_avx512bw<_ISA_>) return _mm512_broadcastw_epi16(__as<__m128i>(__x));
+	else if constexpr (sizeof(_Type_) == 1 && has_avx512bw<_ISA_>) return _mm512_broadcastb_epi8(__as<__m128i>(__x));
 	return _Broadcast<_ISA_, __m512i>()(_Extract<_ISA_, _Type_>()(__x, std::integral_constant<sizetype, 0>{}));
 }
 
@@ -30,10 +30,10 @@ raze_nodiscard raze_always_inline _Tp_ __splat_native(_Tp_ __x, std::integral_co
 			else return __as<_Tp_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 0x03));
 		}
 		else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__i)));
-		else if constexpr (sizeof(_Type_) == 2 && __has_avx2_support_v<_ISA_> && __i == 0) return __as<_Tp_>(_mm_broadcastw_epi16(__as<__m128i>(__x)));
+		else if constexpr (sizeof(_Type_) == 2 && has_avx2<_ISA_> && __i == 0) return __as<_Tp_>(_mm_broadcastw_epi16(__as<__m128i>(__x)));
 		else if constexpr (sizeof(_Type_) == 1) {
-			if constexpr (__has_avx2_support_v<_ISA_> && __i == 0) return __as<_Tp_>(_mm_broadcastb_epi8(__as<__m128i>(__x)));
-			else if constexpr (!__has_ssse3_support_v<_ISA_>) {
+			if constexpr (has_avx2<_ISA_> && __i == 0) return __as<_Tp_>(_mm_broadcastb_epi8(__as<__m128i>(__x)));
+			else if constexpr (!has_ssse3<_ISA_>) {
 				__m128i __combined;
 
 				if constexpr (__i < 8) __combined = _mm_unpacklo_epi8(__as<__m128i>(__x), __as<__m128i>(__x));
@@ -47,7 +47,7 @@ raze_nodiscard raze_always_inline _Tp_ __splat_native(_Tp_ __x, std::integral_co
 	else if constexpr (sizeof(_Tp_) == 32) {
 		constexpr auto __index = std::integral_constant<sizetype, __i % (__size / 2)>{};
 
-		if constexpr (__i == 0 && __has_avx2_support_v<_ISA_>) {
+		if constexpr (__i == 0 && has_avx2<_ISA_>) {
 			if constexpr (sizeof(_Type_) == 8)		return __as<_Tp_>(_mm256_broadcastq_epi64(__as<__m128i>(__x)));
 			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm256_broadcastd_epi32(__as<__m128i>(__x)));
 			else if constexpr (sizeof(_Type_) == 2) return __as<_Tp_>(_mm256_broadcastw_epi16(__as<__m128i>(__x)));

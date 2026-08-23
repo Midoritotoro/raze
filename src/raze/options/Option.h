@@ -5,10 +5,10 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <concepts::keyword _Keyword_, class _Value_>
+template <concepts::keyword Keyword, class Value>
 struct option {
-    using stored_value_type = std::decay_t<_Value_>;
-    using keyword_type = _Keyword_;
+    using stored_value_type = std::decay_t<Value>;
+    using keyword_type = Keyword;
 
     constexpr raze_always_inline stored_value_type operator()(const keyword_type&) const noexcept {
         return _contents;

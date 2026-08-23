@@ -42,7 +42,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline auto __make_rotate_lef
 
     if constexpr (sizeof(_Intrin_) == 16) return _Rotate_indices<_Intrin_, u8> { _Load<_ISA_, _Intrin_>()(__table_u8[__sh].data(), __aligned_policy{}) };
     else if constexpr (__vector_bytes == 32) {
-        if constexpr (__has_avx2_support_v<_ISA_> && !(__has_avx512bw_support_v<_ISA_> && __has_avx512vl_support_v<_ISA_>)) {
+        if constexpr (has_avx2<_ISA_> && !(has_avx512bw<_ISA_> && has_avx512vl<_ISA_>)) {
             if constexpr (sizeof(_IdxType) >= 4) {
                 alignas(sizeof(_Intrin_)) static constexpr auto __table_u32 = __make_rotate_left_shuffle_table<__vector_bytes, __element_bytes, u32>();
                 return _Rotate_indices<_Intrin_, u32>{ _Load<_ISA_, _Intrin_>()(__table_u32[__sh].data(), __aligned_policy{}) };

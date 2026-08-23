@@ -25,19 +25,19 @@ enum class ISA : raze::uchar {
 	AVX512VBMI2VLDQ,	// AVX512VBMI2 + AVX512BW + AVX512DQ + AVX512VL
 };
 
-template <ISA _Feature_, ISA _Candidate_, class	_Enable_ = void>
-struct __is_in_list_helper:
+template <ISA Feature, ISA Candidate, class	Enable = void>
+struct is_in_list_helper:
 	std::false_type
 {};
 
-template <ISA _Feature_, ISA _Candidate_>
-struct __is_in_list_helper<_Feature_, _Candidate_, std::enable_if_t<(_Feature_ == _Candidate_)>>:
+template <ISA Feature, ISA Candidate>
+struct is_in_list_helper<Feature, Candidate, std::enable_if_t<(Feature == Candidate)>>:
 	std::true_type
 {};
 
-template <ISA _Feature_, ISA ... _List_>
-struct __contains {
-	static constexpr bool value = (__is_in_list_helper<_Feature_, _List_>::value || ...);
+template <ISA Feature, ISA ... List>
+struct contains {
+	static constexpr bool value = (is_in_list_helper<Feature, List>::value || ...);
 };
 
 #define __xmm_features arch::ISA::SSE, arch::ISA::SSE2, arch::ISA::SSE3, arch::ISA::SSSE3, arch::ISA::SSE41, arch::ISA::SSE42
@@ -47,13 +47,13 @@ struct __contains {
 	arch::ISA::AVX512VLBWDQ, arch::ISA::AVX512VBMI, arch::ISA::AVX512VBMI2, arch::ISA::AVX512VBMIDQ,\
 	arch::ISA::AVX512VBMI2DQ, arch::ISA::AVX512VBMIVL, arch::ISA::AVX512VBMI2VL, arch::ISA::AVX512VBMIVLDQ, arch::ISA::AVX512VBMI2VLDQ
 
-template <arch::ISA _SimdGeneration_> 
-constexpr inline bool __is_xmm_v = __contains<_SimdGeneration_, __xmm_features>::value;
+template <arch::ISA ISA> 
+constexpr inline bool is_xmm_v = contains<ISA, __xmm_features>::value;
 
-template <arch::ISA _SimdGeneration_>
-constexpr inline bool __is_ymm_v = __contains<_SimdGeneration_, __ymm_features>::value;
+template <arch::ISA ISA>
+constexpr inline bool is_ymm_v = contains<ISA, __ymm_features>::value;
 
-template <arch::ISA _SimdGeneration_>
-constexpr inline bool __is_zmm_v = __contains<_SimdGeneration_, __zmm_features>::value;
+template <arch::ISA ISA>
+constexpr inline bool is_zmm_v = contains<ISA, __zmm_features>::value;
 
 __RAZE_ARCH_NAMESPACE_END

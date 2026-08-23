@@ -11,55 +11,55 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype _VectorLength_, arithmetic_type _Type_>
-consteval auto __first_n_vtable() noexcept {
+consteval auto first_n_vtable() noexcept {
     using _MaskType = typename IntegerForSizeof<_Type_>::Unsigned;
-    auto __table = std::array<_MaskType, _VectorLength_ * 2>{};
+    auto table = std::array<_MaskType, _VectorLength_ * 2>{};
 
-    for (auto __i = 0; __i < _VectorLength_; ++__i)
-        __table[__i] = ~_MaskType(0);
+    for (auto i = 0; i < _VectorLength_; ++i)
+        table[i] = ~_MaskType(0);
 
-    for (auto __i = _VectorLength_; __i < _VectorLength_ * 2; ++__i)
-        __table[__i] = 0;
+    for (auto i = _VectorLength_; i < _VectorLength_ * 2; ++i)
+        table[i] = 0;
 
-    return __table;
+    return table;
 }
 
 template <arch::ISA	_ISA_, u32 _Size_, raw_mask_type _Tp_, arithmetic_type _Type_>
 struct _First_n {
-    raze_nodiscard raze_always_inline auto operator()(u32 __elements) const noexcept {
-        constexpr auto __kmask = (__has_avx512f_support_v<_ISA_> && sizeof(_Type_) >= 4) || (__has_avx512bw_support_v<_ISA_>);
+    raze_nodiscard raze_always_inline auto operator()(u32 elements) const noexcept {
+        constexpr auto kmask = (has_avx512f<_ISA_> && sizeof(_Type_) >= 4) || (has_avx512bw<_ISA_>);
 
         if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-            return __elements != 0;
+            return elements != 0;
         }
-        else if constexpr (__kmask) {
-            if constexpr (__has_bmi2_v<_ISA_>) {
-                if constexpr (sizeof(_Tp_) == 1) return static_cast<_Tp_>(_bzhi_u32(0xFF, __elements));
-                else if constexpr (sizeof(_Tp_) == 2) return static_cast<_Tp_>(_bzhi_u32(0xFFFF, __elements));
-                else if constexpr (sizeof(_Tp_) == 4) return static_cast<_Tp_>(_bzhi_u32(0xFFFFFFFF, __elements));
-                else if constexpr (sizeof(_Tp_) == 8) return static_cast<_Tp_>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, __elements));
+        else if constexpr (kmask) {
+            if constexpr (has_bmi2<_ISA_>) {
+                if constexpr (sizeof(_Tp_) == 1) return static_cast<_Tp_>(_bzhi_u32(0xFF, elements));
+                else if constexpr (sizeof(_Tp_) == 2) return static_cast<_Tp_>(_bzhi_u32(0xFFFF, elements));
+                else if constexpr (sizeof(_Tp_) == 4) return static_cast<_Tp_>(_bzhi_u32(0xFFFFFFFF, elements));
+                else if constexpr (sizeof(_Tp_) == 8) return static_cast<_Tp_>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, elements));
             }
             else {
                 if constexpr (_Size_ == raze_sizeof_in_bits(_Tp_)) {
-                    auto __r = _Tp_((_Tp_(1) << __elements) - 1);
-                    return __elements == _Size_ ? math::__maximum_integral_limit<_Tp_>() : __r;
+                    auto r = _Tp_((_Tp_(1) << elements) - 1);
+                    return elements == _Size_ ? math::max_limit<_Tp_>() : r;
                 }
                 else {
-                    return _Tp_((_Tp_(1) << __elements) - 1);
+                    return _Tp_((_Tp_(1) << elements) - 1);
                 }
             }
         }
         else {
-            static constexpr auto __vtable = __first_n_vtable<_Size_, _Type_>();
-            auto* raze_restrict __addr = algorithm::__bytes_pointer_offset(__vtable.data(), sizeof(_Tp_) - (__elements * sizeof(_Type_)));
-            const auto __loaded = _Load<_ISA_, _Tp_>()(__addr);
-            return __loaded;
+            static constexpr auto vtable = first_n_vtable<_Size_, _Type_>();
+            auto* raze_restrict addr = algorithm::bytes_pointer_offset(vtable.data(), sizeof(_Tp_) - (elements * sizeof(_Type_)));
+            const auto loaded = _Load<_ISA_, _Tp_>()(addr);
+            return loaded;
         }
     }
 };
 
 template <sizetype _Bits_, class _Type_>
-consteval auto __max_for_bits() noexcept {
+consteval auto max_for_bits() noexcept {
     if constexpr (_Bits_ == raze_sizeof_in_bits(_Type_)) return _Type_(-1);
     else return _Type_(_Type_(_Type_(1) << _Bits_) - 1);
 }

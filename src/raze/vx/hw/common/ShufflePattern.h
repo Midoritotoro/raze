@@ -286,8 +286,8 @@ struct _Shuffle_pattern {
         return __split_by_impl<_Chunks_>(std::make_index_sequence<_Chunks_>{});
     }
 
-    template <class _Predicate_>
-    raze_no_stack_protector raze_always_inline static auto to_mask(_Predicate_ __pred) noexcept {
+    template <class Predicate>
+    raze_no_stack_protector raze_always_inline static auto to_mask(Predicate __pred) noexcept {
         using mask_type = simd_mask<typename _Simd_::value_type, abi_t<_Simd_>>;
         alignas(64) static constexpr bool __mask[size()] { __pred(_Indices_)... };
         return mask_type(__mask, __aligned_policy{});

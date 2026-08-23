@@ -30,7 +30,7 @@ struct _Configurable_not: raze::options::conditional_callable<_Configurable_not,
             __chunk = _Op()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
         };
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
+        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
             auto __condition = __options[raze::options::condition_key];
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 

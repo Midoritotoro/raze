@@ -8,20 +8,20 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class _Traits_>
 struct _Search : _Traits_ {
 	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
-		class _Predicate_, class _Projection1_, class _Projection2_>
+		class Predicate, class _Projection1_, class _Projection2_>
 	struct __impl {
 		_Iterator1_ _iterator1;
 		_Iterator2_ _iterator2;
 		_Sentinel1_ _sentinel1;
 		_Sentinel2_ _sentinel2;
-		_Predicate_ _predicate;
+		Predicate _predicate;
 		_Projection1_ _proj1;
 		_Projection2_ _proj2;
 		_Iterator1_ _start_iterator1;
 		_Iterator2_ _start_iterator2;
 
 		constexpr explicit __impl(_Iterator1_ __it1, _Sentinel1_ __sent1, _Iterator2_ __it2,
-			_Sentinel2_ __sent2, _Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) noexcept :
+			_Sentinel2_ __sent2, Predicate __pred, _Projection1_ __proj1, _Projection2_ __proj2) noexcept :
 			_iterator1(__it1), _sentinel1(__sent1), _iterator2(__it2), _sentinel2(__sent2),
 			_predicate(__pred), _proj1(__proj1), _proj2(__proj2),
 			_start_iterator1(__it1), _start_iterator2(__it2)
@@ -59,10 +59,10 @@ struct _Search : _Traits_ {
 	template <class _Tag_>
 	struct __vectorized_search {
 		template <class _Iterator1_, class _Sentinel1_, class _Iterator2_,
-			class _Sentinel2_, class _Predicate_, class _Projection1_, class _Projection2_>
+			class _Sentinel2_, class Predicate, class _Projection1_, class _Projection2_>
 		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator1_> operator()(_Iterator1_ __first1,
 			_Sentinel1_ __sentinel1, _Iterator2_ __first2, _Sentinel2_ __sentinel2, 
-			_Predicate_ __predicate, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept
+			Predicate __predicate, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept
 		{
 			for (;; ++__first1) {
 				auto __it1 = __first1;
@@ -75,10 +75,10 @@ struct _Search : _Traits_ {
 		}
 
 		template <class _Iterator1_, class _Sentinel1_, class _Iterator2_,
-			class _Sentinel2_, class _Predicate_, class _Projection1_, class _Projection2_>
+			class _Sentinel2_, class Predicate, class _Projection1_, class _Projection2_>
 		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator1_> operator()(sizetype __aligned_size,
 			sizetype __tail_size, _Iterator1_ __first1, _Sentinel1_ __sentinel1, 
-			_Iterator2_ __first2, _Sentinel2_ __sentinel2, _Predicate_ __predicate, 
+			_Iterator2_ __first2, _Sentinel2_ __sentinel2, Predicate __predicate, 
 			_Projection1_ __proj1, _Projection2_ __proj2) const noexcept
 		{
 			using _Value_ = std::iter_value_t<_Iterator1_>;
@@ -145,19 +145,19 @@ struct _Search : _Traits_ {
 
 	template <std::input_iterator _Iterator1_, std::sentinel_for<_Iterator1_> _Sentinel1_,
 		std::input_iterator _Iterator2_, std::sentinel_for<_Iterator2_> _Sentinel2_,
-		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
+		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline std::ranges::subrange<_Iterator1_> operator()(_Iterator1_ __first1,
 		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
-		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
+		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, Predicate, _Projection1_, _Projection2_>)
 	{
 		auto __result = __search_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
 			traits::__usent<_Iterator1_>(std::move(__last1)),
 			traits::__uiter<_Sentinel2_>(std::move(__first2)), 
 			traits::__usent<_Iterator2_>(std::move(__last2)), 
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
-			traits::__fwd_fn(__proj2));
+			traits::fwd_fn(__pred), traits::fwd_fn(__proj1),
+			traits::fwd_fn(__proj2));
 
 		__seek_iter(__first1, __result.begin());
 		__seek_iter(__last1, __result.end());
@@ -166,21 +166,21 @@ struct _Search : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
-		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
+		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline std::ranges::subrange<std::ranges::borrowed_iterator_t<_Range1_>> operator()(_Range1_&& __range1, _Range2_&& __range2,
-		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires((!constexpr_sized_range<_Range1_> || !constexpr_sized_range<_Range2_>) &&
 				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
-					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
+					std::ranges::iterator_t<_Range2_>, Predicate, _Projection1_, _Projection2_>)
 	{
 		auto __first1 = std::ranges::begin(__range1);
 		auto __last1 = std::ranges::end(__range1);
 
 		auto __result = __search_unchecked(traits::__r_uiter<_Range1_>(std::move(__first1)),
 			traits::__r_usent<_Range1_>(std::move(__last1)), traits::__ubegin(__range2),
-			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
-			traits::__fwd_fn(__proj2));
+			traits::__uend(__range2), traits::fwd_fn(__pred), traits::fwd_fn(__proj1),
+			traits::fwd_fn(__proj2));
 
 		__seek_iter(__first1, __result.begin());
 		__seek_iter(__last1, __result.end());
@@ -189,21 +189,21 @@ struct _Search : _Traits_ {
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
-		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
+		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline std::ranges::subrange<std::ranges::borrowed_iterator_t<_Range1_>> operator()(_Range1_&& __range1, _Range2_&& __range2,
-		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires(constexpr_sized_range<_Range1_> && constexpr_sized_range<_Range2_> &&
 				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
-					std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
+					std::ranges::iterator_t<_Range2_>, Predicate, _Projection1_, _Projection2_>)
 	{
 		auto __first1 = std::ranges::begin(__range1);
 		auto __last1 = std::ranges::end(__range1);
 
 		auto __result = __search_unchecked(traits::__r_uiter<_Range1_>(std::move(__first1)),
 			traits::__r_usent<_Range1_>(std::move(__last1)), traits::__ubegin(__range2),
-			traits::__uend(__range2), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj1),
-			traits::__fwd_fn(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{},
+			traits::__uend(__range2), traits::fwd_fn(__pred), traits::fwd_fn(__proj1),
+			traits::fwd_fn(__proj2), std::integral_constant<sizetype, __range_constexpr_size<_Range1_>()>{},
 			std::integral_constant<sizetype, __range_constexpr_size<_Range2_>()>{});
 
 		__seek_iter(__first1, __result.begin());
@@ -213,10 +213,10 @@ struct _Search : _Traits_ {
 	}
 private:
 	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
-		class _Predicate_, class _Projection1_, class _Projection2_>
+		class Predicate, class _Projection1_, class _Projection2_>
 	constexpr raze_always_inline std::ranges::subrange<_Iterator1_> __search_unchecked(_Iterator1_ __first1,
 		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
-		_Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept
+		Predicate __pred, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept
 	{
 		__verify_range(__first1, __last1);
 		__verify_range(__first2, __last2);
@@ -228,7 +228,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_> && 
 			std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
-			vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
+			vectorizable_binary_predicate<Predicate, _Iterator1_, _Iterator2_> &&
 			vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
 		{
 			if not consteval {
@@ -250,16 +250,16 @@ private:
 			}
 		}
 
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(
+		return options::_unroller_t<decltype(this->traits()), vx::scalar_tag>(__impl(
 			__first1, __last1, __first2, __last2, __pred, __proj1, __proj2));
 	}
 
 	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_,
-		class _Predicate_, class _Projection1_, class _Projection2_, sizetype _HaystackSize_,
+		class Predicate, class _Projection1_, class _Projection2_, sizetype _HaystackSize_,
 		sizetype _NeedleSize_>
 	constexpr raze_always_inline std::ranges::subrange<_Iterator1_> __search_unchecked(_Iterator1_ __first1,
 		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
-		_Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2,
+		Predicate __pred, _Projection1_ __proj1, _Projection2_ __proj2,
 		std::integral_constant<sizetype, _HaystackSize_>,
 		std::integral_constant<sizetype, _NeedleSize_>) const noexcept
 	{
@@ -273,7 +273,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::same_as<_Value1_, _Value2_>
 			&& std::contiguous_iterator<_Iterator1_> && std::contiguous_iterator<_Iterator2_> &&
-			vectorizable_binary_predicate<_Predicate_, _Iterator1_, _Iterator2_> &&
+			vectorizable_binary_predicate<Predicate, _Iterator1_, _Iterator2_> &&
 			vectorizable_projection<_Projection1_, _Iterator1_> && vectorizable_projection<_Projection2_, _Iterator2_>)
 		{
 			if not consteval {
@@ -294,7 +294,7 @@ private:
 			}
 		}
 
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(
+		return options::_unroller_t<decltype(this->traits()), vx::scalar_tag>(__impl(
 			__first1, __last1, __first2, __last2, __pred, __proj1, __proj2));
 	}
 };

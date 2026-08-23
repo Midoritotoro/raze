@@ -67,8 +67,8 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
     constexpr auto __size = __p.size();
 
     if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_srli_si128(__as<__m128i>(__x), __shift_bytes));
-    else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
-        if constexpr (__has_avx512vl_support_v<__isa> && (__shift_bytes % 4) == 0) {
+    else if constexpr (sizeof(_Intrin_) == 32 && has_avx2<__isa>) {
+        if constexpr (has_avx512vl<__isa> && (__shift_bytes % 4) == 0) {
             return __as<_Intrin_>(_mm256_alignr_epi32(_mm256_setzero_si256(), __as<__m256i>(__x), (__shift_bytes >> 2) & 7));
         }
         else {
@@ -107,7 +107,7 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
         }
         else return _Zero<__isa, _Intrin_>()();
 
-        if constexpr (__has_avx512bw_support_v<__isa>) {
+        if constexpr (has_avx512bw<__isa>) {
             return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
         }
         else {
@@ -156,12 +156,12 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_left(co
 	using _Value_ = typename _Simd_::value_type;
 
     static constexpr auto __select_isa = []() constexpr noexcept {
-        if constexpr (sizeof(_Simd_) == 16 && __has_ssse3_support_v<_Abi_::isa>) return arch::ISA::SSSE3;
-        else if constexpr (sizeof(_Simd_) == 32 && __has_avx2_support_v<_Abi_::isa>) return arch::ISA::AVX2;
+        if constexpr (sizeof(_Simd_) == 16 && has_ssse3<_Abi_::isa>) return arch::ISA::SSSE3;
+        else if constexpr (sizeof(_Simd_) == 32 && has_avx2<_Abi_::isa>) return arch::ISA::AVX2;
     };
 
-	if constexpr (native<_Simd_> && ((sizeof(_Simd_) == 16 && __has_ssse3_support_v<_Abi_::isa>)
-        || (sizeof(_Simd_) == 32 && __has_avx2_support_v<_Abi_::isa>)))
+	if constexpr (native<_Simd_> && ((sizeof(_Simd_) == 16 && has_ssse3<_Abi_::isa>)
+        || (sizeof(_Simd_) == 32 && has_avx2<_Abi_::isa>)))
     {
         constexpr auto __isa = __select_isa();
 

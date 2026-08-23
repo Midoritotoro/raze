@@ -135,7 +135,7 @@ struct _Fold {
                     return _mm512_cvtsi512_si32(__folded);
             }
             else if constexpr (sizeof(_Type_) == 2) {
-                if constexpr (__has_avx512bw_support_v<_ISA_>) {
+                if constexpr (has_avx512bw<_ISA_>) {
                     auto __shuffled = _mm512_permutexvar_epi64(_mm512_setr_epi64(7, 6, 5, 4, 3, 2, 1, 0), __as<__m512i>(__x));
                     __x = __reduce(__x, __as<_Tp_>(__shuffled));
 
@@ -186,7 +186,7 @@ struct _Fold {
                 }
             }
             else if constexpr (sizeof(_Type_) == 1) {
-                if constexpr (__has_avx512bw_support_v<_ISA_>) {
+                if constexpr (has_avx512bw<_ISA_>) {
                     const auto __shuffle_words = _mm512_set_epi8(
                         61, 60, 63, 62, 57, 56, 59, 58, 53, 52, 55, 54, 49, 48, 51, 50,
                         45, 44, 47, 46, 41, 40, 43, 42, 37, 36, 39, 38, 33, 32, 35, 34,

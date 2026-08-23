@@ -7,20 +7,20 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Contains : _Traits_ {
-	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, class _Value_, class _Projection_ = std::identity>
+	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, class _Value_, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline bool operator()(_Iterator_ __first,
-		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __last, const _Value_& __v, Projection __proj = {}) const noexcept
 	{
 		return algorithm::any_of[_Traits_::traits()](std::move(__first), std::move(__last),
-			algorithm::equal_to(__v), traits::__fwd_fn(__proj));
+			algorithm::equal_to(__v), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_, class _Projection_ = std::identity>
-	constexpr raze_always_inline bool operator()(_Range_&& __r, 
-		const _Value_& __v, _Projection_ __proj = {}) const noexcept
+	template <std::ranges::input_range Range, class _Value_, class Projection = std::identity>
+	constexpr raze_always_inline bool operator()(Range&& __r, 
+		const _Value_& __v, Projection __proj = {}) const noexcept
 	{
-		return algorithm::any_of[_Traits_::traits()](std::forward<_Range_>(__r),
-			algorithm::equal_to(__v), traits::__fwd_fn(__proj));
+		return algorithm::any_of[_Traits_::traits()](std::forward<Range>(__r),
+			algorithm::equal_to(__v), traits::fwd_fn(__proj));
 	}
 };
 

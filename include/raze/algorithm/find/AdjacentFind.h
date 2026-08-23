@@ -9,7 +9,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Adjacent_find : _Traits_, dispatchable<_Adjacent_find<_Traits_>> {
-	template <source _Source_, class _Predicate_, class _Projection_>
+	template <source _Source_, class Predicate, class Projection>
 	struct __kernel {
 		using source_type = std::remove_cvref_t<_Source_>;
 		using iterator_type = typename source_type::iterator_type;
@@ -23,10 +23,10 @@ struct _Adjacent_find : _Traits_, dispatchable<_Adjacent_find<_Traits_>> {
 		unchecked_iterator_type _iterator;
 		unchecked_sentinel_type _sentinel;
 		unchecked_iterator_type _next;
-		_Predicate_ _predicate;
-		_Projection_ _proj;
+		Predicate _predicate;
+		Projection _proj;
 
-		constexpr explicit __kernel(_Source_&& __source, _Predicate_ __pred, _Projection_ __proj) noexcept :
+		constexpr explicit __kernel(_Source_&& __source, Predicate __pred, Projection __proj) noexcept :
 			_source(std::forward<_Source_>(__source)), _predicate(__pred), _proj(__proj)
 		{
 			_iterator = _source.ubegin();
@@ -87,33 +87,33 @@ struct _Adjacent_find : _Traits_, dispatchable<_Adjacent_find<_Traits_>> {
 
 		static consteval bool vectorizable() noexcept {
 			return std::contiguous_iterator<unchecked_iterator_type> &&
-				vectorizable_binary_predicate<_Predicate_, unchecked_iterator_type> &&
-				vectorizable_projection<_Projection_, unchecked_iterator_type>;
+				vectorizable_binary_predicate<Predicate, unchecked_iterator_type> &&
+				vectorizable_projection<Projection, unchecked_iterator_type>;
 		}
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
+		class Predicate = std::equal_to<>, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
-		_Sentinel_ __last, _Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_binary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>,
-				std::projected<_Iterator_, _Projection_>>)
+		_Sentinel_ __last, Predicate __pred = {}, Projection __proj = {}) const noexcept
+			requires(std::indirect_binary_predicate<Predicate, std::projected<_Iterator_, Projection>,
+				std::projected<_Iterator_, Projection>>)
 	{
 		if (__first == __last) return __first;
 		return this->dispatch(get_source(std::move(__first),
-			std::move(__last)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+			std::move(__last)), traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
-		_Range_&& __r, _Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_binary_predicate<_Predicate_, 
-				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>,
-				std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+	template <std::ranges::input_range Range, class Predicate = std::equal_to<>, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
+		Range&& __r, Predicate __pred = {}, Projection __proj = {}) const noexcept
+			requires(std::indirect_binary_predicate<Predicate, 
+				std::projected<std::ranges::iterator_t<Range>, Projection>,
+				std::projected<std::ranges::iterator_t<Range>, Projection>>)
 	{
 		if (std::ranges::begin(__r) == std::ranges::end(__r)) return std::ranges::begin(__r);
-		return this->dispatch(get_source(std::forward<_Range_>(__r)),
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+		return this->dispatch(get_source(std::forward<Range>(__r)),
+			traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 	}
 };
 

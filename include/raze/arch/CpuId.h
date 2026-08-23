@@ -15,25 +15,25 @@
 
 __RAZE_ARCH_NAMESPACE_BEGIN
 
-raze_always_inline void cpuid(u32 __regs[4], u32 __leaf) noexcept {
+raze_always_inline void cpuid(u32 regs[4], u32 leaf) noexcept {
 #if (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
-	__get_cpuid(__leaf, __regs, __regs + 1, __regs + 2, __regs + 3);
+	__get_cpuid(leaf, regs, regs + 1, regs + 2, regs + 3);
 #else
-	__cpuid(reinterpret_cast<int*>(__regs), __leaf);
+	__cpuid(reinterpret_cast<int*>(regs), leaf);
 #endif // (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 }
 
-raze_always_inline void cpuidex(u32 __regs[4], u32 __leaf, u32 __subleaf) noexcept {
+raze_always_inline void cpuidex(u32 regs[4], u32 leaf, u32 subleaf) noexcept {
 #if defined(raze_cpp_msvc) || \
     (defined(raze_cpp_clang) && raze_cpp_clang >= 1810) || \
     (defined(raze_cpp_gnu) && raze_cpp_gnu >= 1100)
-    __cpuidex(reinterpret_cast<int*>(__regs), __leaf, __subleaf);
+    __cpuidex(reinterpret_cast<int*>(regs), leaf, subleaf);
 #else
-    u32* __eax = &__regs[0], *__ebx = &__regs[1], *__ecx = &__regs[2], *__edx = &__regs[3];
+    u32* eax = &regs[0], *ebx = &regs[1], *ecx = &regs[2], *edx = &regs[3];
     __asm__ __volatile__(
         "cpuid"
-        : "=a"(*__eax), "=b"(*__ebx), "=c"(*__ecx), "=d"(*__edx)
-        : "a"(__leaf), "c"(__subleaf)
+        : "=a"(*eax), "=b"(*ebx), "=c"(*ecx), "=d"(*edx)
+        : "a"(leaf), "c"(subleaf)
     );
 #endif
 }

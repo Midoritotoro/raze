@@ -26,26 +26,26 @@ struct _Configurable_fold : raze::options::conditional_callable<_Configurable_fo
     raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, _Callable_ __callable) const noexcept
         requires(_Options_::contains(broadcast))
     {
-        return raze::options::__dispatch_call(*this, __x, traits::__fwd_fn(__callable));
+        return raze::options::__dispatch_call(*this, __x, traits::fwd_fn(__callable));
     }
 
     template <simd_type _Type_, class _Callable_>
     raze_nodiscard raze_always_inline typename _Type_::value_type operator()(const _Type_& __x, _Callable_ __callable) const noexcept
         requires(!_Options_::contains(broadcast))
     {
-        return raze::options::__dispatch_call(*this, __x, traits::__fwd_fn(__callable));
+        return raze::options::__dispatch_call(*this, __x, traits::fwd_fn(__callable));
     }
 
     template <simd_type _Type_, class _Callable_>
     static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, _Callable_ __callable) noexcept
-        requires(std::is_same_v<traits::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
+        requires(std::is_same_v<traits::function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
     {
         return __hsum[__options](__x);
     }
 
     template <simd_type _Type_, class _Callable_>
     static raze_always_inline auto deferred_call(auto __options, _Type_ __x, _Callable_ __callable) noexcept
-        requires(!std::is_same_v<traits::__function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
+        requires(!std::is_same_v<traits::function_unwrapped<std::remove_cvref_t<_Callable_>>, std::remove_cvref_t<decltype(__add)>>)
     {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
         using _Value_ = typename _Type_::value_type;

@@ -65,8 +65,8 @@ __slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
         return __x;
 
     if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_slli_si128(__as<__m128i>(__x), __shift_bytes));
-    else if constexpr (sizeof(_Intrin_) == 32 && __has_avx2_support_v<__isa>) {
-        if constexpr (__has_avx512vl_support_v<__isa> && (__shift_bytes % 4) == 0) {
+    else if constexpr (sizeof(_Intrin_) == 32 && has_avx2<__isa>) {
+        if constexpr (has_avx512vl<__isa> && (__shift_bytes % 4) == 0) {
             return __as<_Intrin_>(_mm256_alignr_epi32(__as<__m256i>(__x), _mm256_setzero_si256(), (8 - (__shift_bytes >> 2)) & 7));
         }
         else {
@@ -113,7 +113,7 @@ __slide_right_native(_Intrin_ __x, _Pattern_ __p) noexcept
         if constexpr ((__shift_bytes % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(
             __as<__m512i>(__x), _mm512_setzero_si512(), (16 - (__shift_bytes >> 2)) & 15));
 
-        if constexpr (__has_avx512bw_support_v<__isa>) return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift_bytes & 0xF)));
+        if constexpr (has_avx512bw<__isa>) return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, 16 - (__shift_bytes & 0xF)));
         else {
             const auto __low = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), 16 - (__shift_bytes & 0xF));
             const auto __high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__low_part), 1),
@@ -157,12 +157,12 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right(c
     using _Value_ = typename _Simd_::value_type;
 
     static constexpr auto __select_isa = []() constexpr noexcept {
-        if constexpr (sizeof(_Simd_) == 16 && __has_ssse3_support_v<_Abi_::isa>) return arch::ISA::SSSE3;
-        else if constexpr (sizeof(_Simd_) == 32 && __has_avx2_support_v<_Abi_::isa>) return arch::ISA::AVX2;
+        if constexpr (sizeof(_Simd_) == 16 && has_ssse3<_Abi_::isa>) return arch::ISA::SSSE3;
+        else if constexpr (sizeof(_Simd_) == 32 && has_avx2<_Abi_::isa>) return arch::ISA::AVX2;
     };
 
-    if constexpr (native<_Simd_> && ((sizeof(_Simd_) == 16 && __has_ssse3_support_v<_Abi_::isa>)
-        || (sizeof(_Simd_) == 32 && __has_avx2_support_v<_Abi_::isa>)))
+    if constexpr (native<_Simd_> && ((sizeof(_Simd_) == 16 && has_ssse3<_Abi_::isa>)
+        || (sizeof(_Simd_) == 32 && has_avx2<_Abi_::isa>)))
     {
         constexpr auto __isa = __select_isa();
 

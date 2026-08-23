@@ -9,47 +9,44 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <template <class> class _Functor_, class _OptionsValues_, class ... _Options_>
-struct callable:
-    decorated_with<_OptionsValues_, _Options_...>
-{
-    using base = decorated_with<_OptionsValues_, _Options_...>;
+template <template <class> class F, class OptionsValues, class ... Options>
+struct callable: decorated_with<OptionsValues, Options...> {
+    using base_t = decorated_with<OptionsValues, Options...>;
 
-    template <callable_options __Options_> 
-    raze_always_inline constexpr auto operator[](const __Options_& __options) const noexcept {
-        auto __merged = merge(__options, this->options());
-        options<decltype(__merged)> __new{ __merged };
-        return _Functor_<decltype(__new)>{__new};
+    raze_always_inline constexpr auto operator[](callable_options auto const& opts) const noexcept {
+        auto merged = merge(opts, this->options());
+        options<decltype(merged)> new_obj{ merged };
+        return F<decltype(new_obj)>{new_obj};
     }
 
-    template <class _Type_>
-    raze_always_inline constexpr auto operator[](const _Type_& __t) const noexcept
-        requires(requires(const base& __base) { __base[__t];} || requires(const base & __base) { __base[__t()]; })
+    template <class T>
+    raze_always_inline constexpr auto operator[](const T& t) const noexcept
+        requires(requires(const base_t& base) { base[t];} || requires(const base_t& base) { base[t()]; })
     {
-        if constexpr (requires(const base & __base) { __base[__t]; }) 
-            return _Functor_<decltype(base::operator[](__t))>{ base::operator[](__t)};
+        if constexpr (requires(const base_t& base) { base[t]; }) 
+            return F<decltype(base_t::operator[](t))>{ base_t::operator[](t)};
         else
-            return _Functor_<decltype(base::operator[](__t()))>{ base::operator[](__t())};
+            return F<decltype(base_t::operator[](t()))>{ base_t::operator[](t())};
     }
 
-    template <class _Type_>
-    raze_always_inline void operator[](const _Type_& __t) const noexcept
-        requires(!callable_options<_Type_> && !requires(const base& __base) { __base[__t]; }
-            && !requires(const base& __base) { __base[__t()]; }) = delete;
+    template <class T>
+    raze_always_inline void operator[](const T& t) const noexcept
+        requires(!callable_options<T> && !requires(const base_t& base) { base[t]; }
+            && !requires(const base_t& base) { base[t()]; }) = delete;
 
     template <class ... Args>
-    raze_always_inline constexpr auto behavior(Args&& ... __args) const noexcept {
-        return _Functor_<_OptionsValues_>::deferred_call(std::forward<Args>(__args)...);
+    raze_always_inline constexpr auto behavior(Args&& ... args) const noexcept {
+        return F<OptionsValues>::deferred_call(std::forward<Args>(args)...);
     }
 
     template <class ... Args>
-    raze_always_inline constexpr auto retarget(Args&& ... __args) const noexcept {
-        return _Functor_<_OptionsValues_>::deferred_call(this->options(), std::forward<Args>(__args)...);
+    raze_always_inline constexpr auto retarget(Args&& ... args) const noexcept {
+        return F<OptionsValues>::deferred_call(this->options(), std::forward<Args>(args)...);
     }
 
 protected:
-    raze_always_inline constexpr _Functor_<_OptionsValues_> const& derived() const noexcept {
-        return static_cast<_Functor_<_OptionsValues_>const&>(*this); 
+    raze_always_inline constexpr F<OptionsValues> const& derived() const noexcept {
+        return static_cast<F<OptionsValues>const&>(*this); 
     }
 
     template <template <class> class F2, class OV2, class ... O2>

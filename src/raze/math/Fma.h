@@ -10,79 +10,71 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_fma: raze::options::conditional_callable<_Configurable_fma, _Options_> {
-    template <class _A_, class _B_, class _C_>
-        requires (vx::simd_type<std::remove_cvref_t<_A_>> ||
-            vx::simd_type<std::remove_cvref_t<_B_>> ||
-            vx::simd_type<std::remove_cvref_t<_C_>>)
-    raze_nodiscard raze_always_inline std::conditional_t<vx::simd_type<std::remove_cvref_t<_A_>>, std::remove_cvref_t<_A_>,
-        std::conditional_t<vx::simd_type<std::remove_cvref_t<_B_>>, std::remove_cvref_t<_B_>,
-        std::remove_cvref_t<_C_>>> operator()(_A_&& __x, _B_&& __y, _C_&& __z) const noexcept {
-        using _Simd_ = std::conditional_t<vx::simd_type<std::remove_cvref_t<_A_>>, std::remove_cvref_t<_A_>,
-            std::conditional_t<vx::simd_type<std::remove_cvref_t<_B_>>, std::remove_cvref_t<_B_>,
-            std::remove_cvref_t<_C_>>>;
+template <class Options>
+struct configurable_fma_t: options::conditional_callable<configurable_fma_t, Options> {
+    template <class A, class B, class C>
+        requires (vx::simd_type<A> || vx::simd_type<B> || vx::simd_type<C>)
+    raze_nodiscard raze_always_inline std::conditional_t<vx::simd_type<A>, std::remove_cvref_t<A>,
+        std::conditional_t<vx::simd_type<B>, std::remove_cvref_t<B>,
+        std::remove_cvref_t<C>>> operator()(const A& x, const B& y, const C& z) const noexcept {
+        using V = std::conditional_t<vx::simd_type<A>, std::remove_cvref_t<A>,
+            std::conditional_t<vx::simd_type<B>, std::remove_cvref_t<B>,
+            std::remove_cvref_t<C>>>;
 
-        return raze::options::__dispatch_call(*this,
-            _Simd_(std::forward<_A_>(__x)),
-            _Simd_(std::forward<_B_>(__y)),
-            _Simd_(std::forward<_C_>(__z)));
+        return options::dispatch_call(*this, V(x), V(y), V(z));
     }
 
-    template <vx::arithmetic_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, const _Type_& __y, const _Type_& __z) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, __y, __z);
+    template <vx::arithmetic_type T>
+    raze_nodiscard raze_always_inline T operator()(const T& x, const T& y, const T& z) const noexcept {
+        return options::dispatch_call(*this, x, y, z);
     }
 
-    template <vx::arithmetic_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Type_& __y, const _Type_& __z) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+    template <vx::arithmetic_type T>
+    static raze_always_inline auto deferred_call(auto opts, const T& x, const T& y, const T& z) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
-                return vx::_Fma<arch::ISA::SSE2, _Type_>()(__x, __y, __z, __mask, __condition.alternative());
+            if constexpr (Mask::has_alternative)
+                return vx::_Fma<arch::ISA::SSE2, T>()(x, y, z, condition.mask(), condition.alternative());
             else
-                return vx::_Fma<arch::ISA::SSE2, _Type_>()(__x, __y, __z, __mask);
+                return vx::_Fma<arch::ISA::SSE2, T>()(x, y, z, condition.mask());
         }
-        else return vx::_Fma<arch::ISA::SSE2, _Type_>()(__x, __y, __z);
+        else return vx::_Fma<arch::ISA::SSE2, T>()(x, y, z);
     }
 
-    template <vx::simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Type_& __y, const _Type_& __z) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <vx::simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x, const V& y, const V& z) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        _Type_ __result = __x;
+        _Type_ r = x;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = vx::_Fma<_Abi_::isa, _Value_>()(vx::__storage_unwrap(__chunk), vx::__storage_unwrap<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            chunk = vx::_Fma<Abi::isa, Value>()(vx::__storage_unwrap(__chunk), vx::__storage_unwrap<Args>(args)...);
         };
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __z.__storage().storage(), __mask.__storage().storage(),
-                     __condition.alternative().__storage().storage());
+            if constexpr (Mask::has_alternative)
+                r.__for_each_chunk(chunk_op, __y.__storage().storage(), __z.__storage().storage(), 
+                    condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __z.__storage().storage(), __mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, __y.__storage().storage(), __z.__storage().storage(),
+                    condition.mask().__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __z.__storage().storage());
+            r.__for_each_chunk(chunk_op, __y.__storage().storage(), __z.__storage().storage());
         }
 
-        return __result;
+        return r;
     }
-
-    using callable_tag_type = _Configurable_fma;
 };
 
-constexpr inline auto __fma = raze::options::functor<_Configurable_fma>;
+constexpr inline auto fma = raze::options::functor<configurable_fma_t>;
 
 __RAZE_MATH_NAMESPACE_END
 

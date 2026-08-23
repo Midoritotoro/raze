@@ -5,24 +5,24 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-template <typename _Type_>
-constexpr raze_always_inline _Type_ clear_left_most_set(const _Type_ __value) {
-    return __value & (__value - 1);
+template <class T>
+constexpr raze_always_inline T clear_left_most_set(T v) {
+    return v & (v - 1);
 }
 
-template <typename _IntegralType_>
-constexpr raze_always_inline i32 count_trailing_zero_bits(_IntegralType_ __value) noexcept {
-    return __count_trailing_zero_bits(__value);
+template <class T>
+constexpr raze_always_inline i32 count_trailing_zero_bits(T v) noexcept {
+    return count_trailing_zero_bits_impl(v);
 }
 
-template <typename _IntegralType_>
-constexpr raze_always_inline i32 count_leading_zero_bits(_IntegralType_ __value) noexcept {
-    return __count_leading_zero_bits(__value);
+template <class T>
+constexpr raze_always_inline i32 count_leading_zero_bits(T v) noexcept {
+    return count_leading_zero_bits_impl(v);
 }
  
-template <typename _IntegralType_>
-constexpr raze_always_inline i32 population_count(_IntegralType_ __value) noexcept {
-    return __population_count(__value);
+template <class T>
+constexpr raze_always_inline i32 population_count(T v) noexcept {
+    return population_count_impl(v);
 }
 
 __RAZE_MATH_NAMESPACE_END

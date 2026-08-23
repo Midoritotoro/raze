@@ -17,10 +17,10 @@ struct _Ternarylogic {
     raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(
         _Tp_ __x, _Tp_ __y,  _Tp_ __z, std::integral_constant<u8, _Op_> __imm8) raze_const_operator noexcept
     {
-        if constexpr (__has_avx512f_support_v<_ISA_> && intrin_type<_Tp_>) {
+        if constexpr (has_avx512f<_ISA_> && intrin_type<_Tp_>) {
             if constexpr (sizeof(_Tp_) == 64)  return __as<_Tp_>(_mm512_ternarylogic_epi32(__as<__m512i>(__x), __as<__m512i>(__y), __as<__m512i>(__z), __imm8));
-            else if constexpr (__has_avx512vl_support_v<_ISA_> && sizeof(_Tp_) == 32) return __as<_Tp_>(_mm256_ternarylogic_epi32(__as<__m256i>(__x), __as<__m256i>(__y), __as<__m256i>(__z), __imm8));
-            else if constexpr (__has_avx512vl_support_v<_ISA_> && sizeof(_Tp_) == 16) return __as<_Tp_>(_mm_ternarylogic_epi32(__as<__m128i>(__x), __as<__m128i>(__y),  __as<__m128i>(__z), __imm8));
+            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 32) return __as<_Tp_>(_mm256_ternarylogic_epi32(__as<__m256i>(__x), __as<__m256i>(__y), __as<__m256i>(__z), __imm8));
+            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 16) return __as<_Tp_>(_mm_ternarylogic_epi32(__as<__m128i>(__x), __as<__m128i>(__y),  __as<__m128i>(__z), __imm8));
         }
 
         return _Ternarylogic_emulated()(__x, __y, __z, __imm8, _Or<_ISA_, _Type_>(), _Xor<_ISA_, _Type_>(),
@@ -31,16 +31,16 @@ struct _Ternarylogic {
     raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y,  _Tp_ __z, 
         std::integral_constant<u8, _Op_> __imm8,  _Mask_ __mask) const noexcept
     {
-        if constexpr (__has_avx512f_support_v<_ISA_> && std::is_integral_v<_Mask_> && intrin_type<_Tp_>) {
+        if constexpr (has_avx512f<_ISA_> && std::is_integral_v<_Mask_> && intrin_type<_Tp_>) {
             if constexpr (sizeof(_Tp_) == 64) {
                 if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm512_maskz_ternarylogic_epi64(__mask, __as<__m512i>(__x), __as<__m512i>(__y), __as<__m512i>(__z), __imm8));
                 else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_maskz_ternarylogic_epi32(__mask, __as<__m512i>(__x), __as<__m512i>(__y), __as<__m512i>(__z), __imm8));
             }
-            else if constexpr (__has_avx512vl_support_v<_ISA_> && sizeof(_Tp_) == 32) {
+            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 32) {
                 if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm256_maskz_ternarylogic_epi64(__mask, __as<__m256i>(__x),  __as<__m256i>(__y), __as<__m256i>(__z), __imm8));
                 else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm256_maskz_ternarylogic_epi32(__mask, __as<__m256i>(__x), __as<__m256i>(__y), __as<__m256i>(__z), __imm8));
             }
-            else if constexpr (__has_avx512vl_support_v<_ISA_> && sizeof(_Tp_) == 16) {
+            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 16) {
                 if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm_maskz_ternarylogic_epi64(__mask, __as<__m128i>(__x), __as<__m128i>(__y), __as<__m128i>(__z), __imm8));
                 else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm_maskz_ternarylogic_epi32(__mask, __as<__m128i>(__x), __as<__m128i>(__y), __as<__m128i>(__z), __imm8));
             }

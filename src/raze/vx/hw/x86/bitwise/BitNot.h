@@ -7,8 +7,8 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA	_ISA_, class _Tp_>
-concept native_ternarylogic = intrin_type<_Tp_> && ((__has_avx512f_support_v<_ISA_> && sizeof(_Tp_) == 64) || 
-	(__has_avx512vl_support_v<_ISA_> && (sizeof(_Tp_) == 32 || sizeof(_Tp_) == 16)));
+concept native_ternarylogic = intrin_type<_Tp_> && ((has_avx512f<_ISA_> && sizeof(_Tp_) == 64) || 
+	(has_avx512vl<_ISA_> && (sizeof(_Tp_) == 32 || sizeof(_Tp_) == 16)));
 
 template <arch::ISA	_ISA_, arithmetic_type _Type_>
 struct _Not {

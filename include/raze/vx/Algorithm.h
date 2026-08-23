@@ -80,23 +80,23 @@ constexpr inline auto hmin = horizontal_min;
 constexpr inline auto hmax = horizontal_max;
 
 
-template <class _Type_>
+template <class T>
 struct stream_ptr {
-    using value_type = _Type_;
-    using pointer = _Type_*;
-    using const_pointer = const _Type_*;
-    using reference = _Type_&;
-    using const_reference = const _Type_&;
+    using value_type = T;
+    using pointer = T*;
+    using const_pointer = const T*;
+    using reference = T&;
+    using const_reference = const T&;
 
     pointer _ptr = nullptr;
 
     stream_ptr() noexcept {}
-    explicit stream_ptr(pointer __p) noexcept:  
-        _ptr(__p) 
+    explicit stream_ptr(pointer p) noexcept:  
+        _ptr(p) 
     {}
 
-    stream_ptr(const std::remove_const_t<_Type_>* __p) noexcept:
-        _ptr(const_cast<pointer>(__p)) 
+    stream_ptr(const std::remove_const_t<T>* p) noexcept:
+        _ptr(const_cast<pointer>(p)) 
     {}
 
     ~stream_ptr() noexcept {
@@ -107,21 +107,21 @@ struct stream_ptr {
         return _ptr;
     }
 
-    raze_always_inline stream_ptr operator+(std::ptrdiff_t __offset) const noexcept {
-        return stream_ptr(_ptr + __offset);
+    raze_always_inline stream_ptr operator+(std::ptrdiff_t offset) const noexcept {
+        return stream_ptr(_ptr + offset);
     }
 
-    raze_always_inline stream_ptr operator-(std::ptrdiff_t __offset) const noexcept {
-        return stream_ptr(_ptr - __offset);
+    raze_always_inline stream_ptr operator-(std::ptrdiff_t offset) const noexcept {
+        return stream_ptr(_ptr - offset);
     }
 
-    raze_always_inline stream_ptr& operator+=(std::ptrdiff_t __offset) noexcept {
-        _ptr += __offset;
+    raze_always_inline stream_ptr& operator+=(std::ptrdiff_t offset) noexcept {
+        _ptr += offset;
         return *this;
     }
 
-    raze_always_inline stream_ptr& operator-=(std::ptrdiff_t __offset) noexcept {
-        _ptr -= __offset;
+    raze_always_inline stream_ptr& operator-=(std::ptrdiff_t offset) noexcept {
+        _ptr -= offset;
         return *this;
     }
 
@@ -131,69 +131,68 @@ struct stream_ptr {
     }
 
     raze_always_inline stream_ptr operator++(int) noexcept {
-        stream_ptr __tmp = *this;
+        stream_ptr tmp = *this;
         ++_ptr;
-        return __tmp;
+        return tmp;
     }
 
-    raze_always_inline bool operator==(const stream_ptr& __other) const noexcept {
-        return _ptr == __other._ptr;
+    raze_always_inline bool operator==(const stream_ptr& other) const noexcept {
+        return _ptr == other._ptr;
     }
 
-    raze_always_inline bool operator!=(const stream_ptr& __other) const noexcept {
-        return _ptr != __other._ptr;
+    raze_always_inline bool operator!=(const stream_ptr& other) const noexcept {
+        return _ptr != other._ptr;
     }
 
-    raze_always_inline bool operator<(const stream_ptr& __other) const noexcept {
-        return _ptr < __other._ptr;
+    raze_always_inline bool operator<(const stream_ptr& other) const noexcept {
+        return _ptr < other._ptr;
     }
 
-    raze_always_inline void advance_bytes(sizetype __bytes) noexcept {
-        algorithm::__advance_bytes(_ptr, __bytes);
+    raze_always_inline void advance_bytes(sizetype bytes) noexcept {
+        algorithm::advance_bytes(_ptr, bytes);
     }
 };
 
-template <class _Type_>
-raze_always_inline constexpr stream_ptr<std::remove_cv_t<_Type_>> stream(_Type_* __ptr) noexcept {
-    return stream_ptr<std::remove_cv_t<_Type_>>(__ptr);
+template <class T>
+raze_always_inline constexpr stream_ptr<std::remove_cv_t<T>> stream(T* ptr) noexcept {
+    return stream_ptr<std::remove_cv_t<T>>(ptr);
 }
 
-template <ternary_mask_expression_type _Expression_>
+template <ternary_mask_expression_type Expression>
 raze_always_inline constexpr auto as_ternary_mask() noexcept {
-	return __as_ternary_mask<_Expression_>();
+	return __as_ternary_mask<Expression>();
 }
 
-template <trivially_chunk_swappable _Simd_>
+template <trivially_chunk_swappable V>
 struct counter {
-    using mask_type = typename _Simd_::mask_type;
-    using value_type = typename _Simd_::value_type;
+    using mask_type = typename V::mask_type;
+    using value_type = typename V::value_type;
     using index_type = typename IntegerForSizeof<value_type>::Signed;
-    static constexpr auto __isa = abi_t<_Simd_>::isa;
-    using __storage_type = std::conditional_t<(__has_avx512f_support_v<__isa> && sizeof(value_type) >= 4)
-        || (__has_avx512bw_support_v<__isa>), sizetype, simd<index_type, abi_t<_Simd_>>>;
+    using storage_type = std::conditional_t<(has_avx512f<abi_t<V>::isa> && sizeof(value_type) >= 4)
+        || (has_avx512bw<abi_t<V>::isa>), sizetype, simd<index_type, abi_t<V>>>;
 
     counter() noexcept {
-        if constexpr (simd_type<__storage_type>) _storage = __storage_type::zero();
+        if constexpr (simd_type<storage_type>) _storage = storage_type::zero();
         else _storage = 0;
     }
 
     raze_always_inline static constexpr auto portion_size() noexcept {
-        return math::__maximum_integral_limit<index_type>();
+        return math::max_limit<index_type>();
     }
 
-    raze_always_inline void count(const mask_type& __mask) noexcept {
-        if constexpr (std::integral<__storage_type>) _storage += count_set(__mask);
-        else _storage.__for_each_chunk([&] <class _Chunk_, class _Chunk2_> (_Chunk_ & __chunk, const _Chunk2_ & __ch2) raze_always_inline_lambda {
-            __chunk = _Sub<__isa, index_type>()(__storage_unwrap(__chunk), __storage_unwrap(__ch2));
-        }, __mask.__storage().storage());
+    raze_always_inline void count(const mask_type& mask) noexcept {
+        if constexpr (std::integral<storage_type>) _storage += count_set(mask);
+        else _storage.__for_each_chunk([&] <class _Chunk_, class _Chunk2_> (_Chunk_ & chunk, const _Chunk2_ & ch2) raze_always_inline_lambda {
+            chunk = _Sub<abi_t<V>::isa, index_type>()(__storage_unwrap(chunk), __storage_unwrap(ch2));
+        }, mask.__storage().storage());
     }
 
     raze_always_inline auto result() const noexcept {
-        if constexpr (std::integral<__storage_type>) return _storage;
+        if constexpr (std::integral<storage_type>) return _storage;
         else return horizontal_sum(_storage);
     }
 
-    __storage_type _storage;
+    storage_type _storage;
 };
 
 __RAZE_VX_NAMESPACE_END

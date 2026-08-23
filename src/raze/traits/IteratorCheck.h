@@ -145,20 +145,20 @@ raze_nodiscard raze_always_inline constexpr decltype(auto) __usent(_Sentinel_&& 
 	else return static_cast<_Sentinel_&&>(__sentinel);
 }
 
-template <std::ranges::range _Range_, class _Iterator_>
+template <std::ranges::range Range, class _Iterator_>
 raze_nodiscard raze_always_inline constexpr decltype(auto) __r_uiter(_Iterator_&& __iterator)
-	noexcept(noexcept(__uiter<std::ranges::sentinel_t<_Range_>>(static_cast<_Iterator_&&>(__iterator))))
+	noexcept(noexcept(__uiter<std::ranges::sentinel_t<Range>>(static_cast<_Iterator_&&>(__iterator))))
 {
-	static_assert(std::same_as<std::remove_cvref_t<_Iterator_>, std::ranges::iterator_t<_Range_>>);
-	return __uiter<std::ranges::sentinel_t<_Range_>>(static_cast<_Iterator_&&>(__iterator));
+	static_assert(std::same_as<std::remove_cvref_t<_Iterator_>, std::ranges::iterator_t<Range>>);
+	return __uiter<std::ranges::sentinel_t<Range>>(static_cast<_Iterator_&&>(__iterator));
 }
 
-template <std::ranges::range _Range_, class _Sentinel_>
+template <std::ranges::range Range, class _Sentinel_>
 raze_nodiscard raze_always_inline constexpr decltype(auto) __r_usent(_Sentinel_&& __sentinel)
-	noexcept(noexcept(__usent<std::ranges::iterator_t<_Range_>>(static_cast<_Sentinel_&&>(__sentinel))))
+	noexcept(noexcept(__usent<std::ranges::iterator_t<Range>>(static_cast<_Sentinel_&&>(__sentinel))))
 {
-	static_assert(std::same_as<std::remove_cvref_t<_Sentinel_>, std::ranges::sentinel_t<_Range_>>);
-	return __usent<std::ranges::iterator_t<_Range_>>(static_cast<_Sentinel_&&>(__sentinel));
+	static_assert(std::same_as<std::remove_cvref_t<_Sentinel_>, std::ranges::sentinel_t<Range>>);
+	return __usent<std::ranges::iterator_t<Range>>(static_cast<_Sentinel_&&>(__sentinel));
 }
 
 template <class _Iterator_, class _Sentinel_>
@@ -167,11 +167,11 @@ using __ranges_unwrap_iter_t = std::remove_cvref_t<decltype(__uiter<_Sentinel_>(
 template <class _Sentinel_, class _Iterator_>
 using __ranges_unwrap_sent_t = std::remove_cvref_t<decltype(__usent<_Iterator_>(std::declval<_Sentinel_>()))>;
 
-template <std::ranges::range _Range_>
-using __unwrapped_iterator_t = __ranges_unwrap_iter_t<std::ranges::iterator_t<_Range_>, std::ranges::sentinel_t<_Range_>>;
+template <std::ranges::range Range>
+using __unwrapped_iterator_t = __ranges_unwrap_iter_t<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>;
 
-template <std::ranges::range _Range_>
-using __unwrapped_sentinel_t = __ranges_unwrap_sent_t<std::ranges::sentinel_t<_Range_>, std::ranges::iterator_t<_Range_>>;
+template <std::ranges::range Range>
+using __unwrapped_sentinel_t = __ranges_unwrap_sent_t<std::ranges::sentinel_t<Range>, std::ranges::iterator_t<Range>>;
 
 #if defined(raze_cpp_msvc)
   constexpr inline auto __ubegin = std::ranges::_Ubegin;
@@ -191,13 +191,13 @@ raze_nodiscard raze_always_inline constexpr __ranges_unwrap_iter_t<_Iterator_, _
 	  else return std::ranges::next(__first, __usent<_Iterator_>(std::forward<_Sentinel_>(__last)));
   }
 
-template <std::ranges::forward_range _Range_>
-raze_nodiscard raze_always_inline constexpr auto __last_uiter(_Range_& __range) {
-	  if constexpr (std::ranges::common_range<_Range_>) {
-		  if constexpr (std::same_as<decltype(__uend(__range)), __unwrapped_iterator_t<_Range_>>) return __uend(__range);
-		  else return __usent<_Range_>(std::ranges::end(__range));
+template <std::ranges::forward_range Range>
+raze_nodiscard raze_always_inline constexpr auto __last_uiter(Range& __range) {
+	  if constexpr (std::ranges::common_range<Range>) {
+		  if constexpr (std::same_as<decltype(__uend(__range)), __unwrapped_iterator_t<Range>>) return __uend(__range);
+		  else return __usent<Range>(std::ranges::end(__range));
 	  }
-	  else if constexpr (std::ranges::sized_range<_Range_>) return std::ranges::next(__ubegin(__range), std::ranges::distance(__range));
+	  else if constexpr (std::ranges::sized_range<Range>) return std::ranges::next(__ubegin(__range), std::ranges::distance(__range));
 	  else return std::ranges::next(__ubegin(__range), __uend(__range));
   }
 

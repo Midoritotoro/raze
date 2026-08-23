@@ -5,7 +5,7 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-inline constexpr f64 __sine_table[256] = {
+inline constexpr f64 sine_table[256] = {
     f64(0.0),
     f64(0.024541228522912288),
     f64(0.049067674327418015),

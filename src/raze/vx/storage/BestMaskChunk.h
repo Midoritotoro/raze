@@ -40,16 +40,16 @@ private:
 
 template <class _Type_, class _Abi_, i32 _Remaining_>
 struct best_mask_chunk {
-    static constexpr auto __max_isa_width = __has_avx512f_support_v<_Abi_::isa> ? 512 : __has_avx_support_v<_Abi_::isa> 
-        ? 256 : __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
+    static constexpr auto __max_isa_width = has_avx512f<_Abi_::isa> ? 512 : has_avx<_Abi_::isa> 
+        ? 256 : has_sse2<_Abi_::isa> ? 128 : 0;
 
     static constexpr auto __bytes = _Remaining_ * sizeof(_Type_);
     static constexpr auto __data_width = (__bytes >= 64) ? 512 : (__bytes >= 32) ? 256 : (__bytes >= 16) ? 128 : 0;
     
     static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
-    static constexpr auto __use_kmask = (__has_avx512f_support_v<_Abi_::isa> && __width == 512 && sizeof(_Type_) >= 4) ||
-        (__has_avx512bw_support_v<_Abi_::isa> && __width == 512) || (__has_avx512vl_support_v<_Abi_::isa> && sizeof(_Type_) >= 4) ||
-        (__has_avx512bw_support_v<_Abi_::isa> && __has_avx512vl_support_v<_Abi_::isa>);
+    static constexpr auto __use_kmask = (has_avx512f<_Abi_::isa> && __width == 512 && sizeof(_Type_) >= 4) ||
+        (has_avx512bw<_Abi_::isa> && __width == 512) || (has_avx512vl<_Abi_::isa> && sizeof(_Type_) >= 4) ||
+        (has_avx512bw<_Abi_::isa> && has_avx512vl<_Abi_::isa>);
 
     static constexpr auto __fits = (__width != 0);
 

@@ -27,7 +27,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
     constexpr auto __size = sizeof(_Intrin_) / sizeof(_Type_);
 
     if constexpr (sizeof(_Intrin_) == 16) {
-        if constexpr (__has_ssse3_support_v<_ISA_>) return __as<_Intrin_>(_mm_alignr_epi8(__as<__m128i>(__x), __as<__m128i>(__y), 16 - __shift_bytes));
+        if constexpr (has_ssse3<_ISA_>) return __as<_Intrin_>(_mm_alignr_epi8(__as<__m128i>(__x), __as<__m128i>(__y), 16 - __shift_bytes));
         else {
             __x = __as<_Intrin_>(_mm_slli_si128(__as<__m128i>(__x), __shift_bytes));
             __y = __as<_Intrin_>(_mm_srli_si128(__as<__m128i>(__y), 16 - __shift_bytes));
@@ -35,10 +35,10 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
         }
     }
     else if constexpr (sizeof(_Intrin_) == 32) {
-        if constexpr (__has_avx512vl_support_v<_ISA_> && (__shift_bytes % 4) == 0) {
+        if constexpr (has_avx512vl<_ISA_> && (__shift_bytes % 4) == 0) {
             return __as<_Intrin_>(_mm256_alignr_epi32(__as<__m256i>(__x), __as<__m256i>(__y), 8 - __shift_bytes / 4));
         }
-        else if constexpr (__has_avx2_support_v<_ISA_>) {
+        else if constexpr (has_avx2<_ISA_>) {
             const auto __mid = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__y), 0x03);
 
             if constexpr (__shift_bytes == 16) return __as<_Intrin_>(__mid);
@@ -82,7 +82,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
             return __as<_Intrin_>(_mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 16 - __shift_bytes / 4));
         }
         else if constexpr (__shift_bytes < 16) {
-            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(__as<__m512i>(__x), 
+            if constexpr (has_avx512bw<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(__as<__m512i>(__x), 
                 _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 12), 16 - __shift_bytes));
             else {
                 const auto __first = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 12);
@@ -94,7 +94,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
             }
         }
         else if constexpr (__shift_bytes < 32) {
-            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
+            if constexpr (has_avx512bw<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
                 _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 12),
                 _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 8), 32 - __shift_bytes));
             else {
@@ -108,7 +108,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
             }
         }
         else if constexpr (__shift_bytes < 48) {
-            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
+            if constexpr (has_avx512bw<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
                 _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 8),
                 _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 4), 48 - __shift_bytes));
             else {
@@ -122,7 +122,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Intrin_ __slide_right
             }
         }
         else if constexpr (__shift_bytes < 64) {
-            if constexpr (__has_avx512bw_support_v<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
+            if constexpr (has_avx512bw<_ISA_>) return __as<_Intrin_>(_mm512_alignr_epi8(
                 _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 4), __as<__m512i>(__y), 64 - __shift_bytes));
             else {
                 const auto __first = _mm512_alignr_epi32(__as<__m512i>(__x), __as<__m512i>(__y), 4);

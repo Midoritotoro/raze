@@ -14,14 +14,14 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Max_element : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class _Projection_>
+	template <class _Iterator_, class _Sentinel_, class Projection>
 	struct __impl {
 		_Iterator_ _iterator;
 		_Sentinel_ _sentinel;
-		_Projection_ _proj;
+		Projection _proj;
 		_Iterator_ _largest_value_iterator;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Projection_ __proj) noexcept :
+		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, Projection __proj) noexcept :
 			_iterator(__it), _sentinel(__sent),  _proj(__proj), _largest_value_iterator(__it)
 		{
 			++_iterator;
@@ -45,9 +45,9 @@ struct _Max_element : _Traits_ {
 
 	template <class _Tag_>
 	struct __vectorized_max_element {
-		template <class _Iterator_, class _Sentinel_, class _Projection_>
+		template <class _Iterator_, class _Sentinel_, class Projection>
 		raze_nodiscard raze_always_inline _Iterator_ operator()(_Iterator_ __first, 
-			_Sentinel_ __sentinel, _Projection_ __proj) const noexcept
+			_Sentinel_ __sentinel, Projection __proj) const noexcept
 		{
 			if (__first == __sentinel) return __first;
 			_Iterator_ __largest_value_iterator = __first;
@@ -59,10 +59,10 @@ struct _Max_element : _Traits_ {
 			return __largest_value_iterator;
 		}
 
-		template <class _Iterator_, class _Sentinel_, class _Projection_>
+		template <class _Iterator_, class _Sentinel_, class Projection>
 		raze_nodiscard raze_always_inline auto operator()(sizetype __aligned_size,
 			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel,
-			_Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+			Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			using _Value_ = std::iter_value_t<_Iterator_>;
 
@@ -79,11 +79,11 @@ struct _Max_element : _Traits_ {
 			auto __current_values = __proj(vx::load<_Tag_>(__ptr));
 			auto __current_values_max = __current_values;
 
-			constexpr auto __integer_max = math::__maximum_integral_limit<_UnsignedValueType>();
+			constexpr auto __integer_max = math::max_limit<_UnsignedValueType>();
 			constexpr auto __max_portion_size = std::max(static_cast<u64>(__integer_max)
 				+ 1, static_cast<u64>(__integer_max)) * sizeof(_Tag_);
 
-			constexpr auto __has_portion_max_value = (math::__maximum_integral_limit<u64>() != __max_portion_size);
+			constexpr auto __has_portion_max_value = (math::max_limit<u64>() != __max_portion_size);
 			auto __aligned_portion_size = std::min(__max_portion_size, __aligned_size);
 
 			auto __portion_begin = __max_element;
@@ -153,45 +153,45 @@ struct _Max_element : _Traits_ {
 		}
 	};
 
-	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, class _Projection_ = std::identity>
+	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
-		_Sentinel_ __last, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __last, Projection __proj = {}) const noexcept
 	{
 		__seek_iter(__first, __max_element_unchecked(
 			traits::__uiter<_Sentinel_>(std::move(__first)),
 			traits::__usent<_Iterator_>(std::move(__last)),
-			traits::__fwd_fn(__proj)));
+			traits::fwd_fn(__proj)));
 
 		return __first;
 	}
 
-	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
-		_Range_&& __range, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_>)
+	template <std::ranges::input_range Range, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
+		Range&& __range, Projection __proj = {}) const noexcept
+			requires(!constexpr_sized_range<Range>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		__seek_iter(__begin, __max_element_unchecked(
-			traits::__r_uiter<_Range_>(std::move(__begin)),
-			traits::__uend(__range), traits::__fwd_fn(__proj)));
+			traits::__r_uiter<Range>(std::move(__begin)),
+			traits::__uend(__range), traits::fwd_fn(__proj)));
 		return __begin;
 	}
 
-	template <std::ranges::input_range _Range_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range,
-		_Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
+	template <std::ranges::input_range Range, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(Range&& __range,
+		Projection __proj = {}) const noexcept requires(constexpr_sized_range<Range>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		__seek_iter(__begin, __max_element_unchecked(
-			traits::__r_uiter<_Range_>(std::move(__begin)),
-			traits::__uend(__range), traits::__fwd_fn(__proj),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+			traits::__r_uiter<Range>(std::move(__begin)),
+			traits::__uend(__range), traits::fwd_fn(__proj),
+			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{}));
 		return __begin;
 	}
 private:
-	template <class _Iterator_, class _Sentinel_, class _Projection_>
+	template <class _Iterator_, class _Sentinel_, class Projection>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ __max_element_unchecked(
-		_Iterator_ __first, _Sentinel_ __last, _Projection_ __proj) const noexcept
+		_Iterator_ __first, _Sentinel_ __last, Projection __proj) const noexcept
 	{
 		__verify_range(__first, __last);
 
@@ -199,7 +199,7 @@ private:
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_>)
+			&& vectorizable_projection<Projection, _Iterator_>)
 		{
 			if not consteval {
 				return vx::__dispatch_sized_impl<__vectorized_max_element, _Value_, _Iterator_>(
@@ -207,12 +207,12 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj));
 	}
 
-	template <class _Iterator_, class _Sentinel_, class _Projection_, sizetype _Size_>
+	template <class _Iterator_, class _Sentinel_, class Projection, sizetype _Size_>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ __max_element_unchecked(_Iterator_ __first,
-		_Sentinel_ __last, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
+		_Sentinel_ __last, Projection __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
 	{
 		__verify_range(__first, __last);
 
@@ -220,7 +220,7 @@ private:
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_>)
+			&& vectorizable_projection<Projection, _Iterator_>)
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
@@ -229,7 +229,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj));
 	}
 };
 

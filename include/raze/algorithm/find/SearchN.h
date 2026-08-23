@@ -7,19 +7,19 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class _Traits_>
 struct _Search_n : _Traits_ {
 	template <class _Iterator_, class _Sentinel_, class _Size_,
-		class _ValueType_, class _Predicate_, class _Projection_>
+		class _ValueType_, class Predicate, class Projection>
 	struct __impl {
 		_Iterator_ _iterator;
 		_Sentinel_ _sentinel;
 		_Size_ _count;
 		_Size_ _current_count;
 		_ValueType_ _value;
-		_Predicate_ _predicate;
-		_Projection_ _proj;
+		Predicate _predicate;
+		Projection _proj;
 		_Iterator_ _candidate;
 
 		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Size_ __count,
-			const _ValueType_& __value, _Predicate_ __pred, _Projection_ __proj) noexcept: 
+			const _ValueType_& __value, Predicate __pred, Projection __proj) noexcept: 
 			_iterator(__it), _sentinel(__sent), _count(__count), _current_count(0),
 			_value(__value), _predicate(__pred), _proj(__proj), _candidate(__it)
 		{}
@@ -54,10 +54,10 @@ struct _Search_n : _Traits_ {
 	template <class _Tag_>
 	struct __vectorized_search_n {
 		template <class _Iterator_, class _Sentinel_, class _Value_, 
-			class _SizeType_, class _Predicate_, class _Projection_>
+			class _SizeType_, class Predicate, class Projection>
 		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first, 
-			_Sentinel_ __sentinel, _SizeType_ __count, const _Value_& __v, _Predicate_ __predicate, 
-			_Projection_ __proj) const noexcept
+			_Sentinel_ __sentinel, _SizeType_ __count, const _Value_& __v, Predicate __predicate, 
+			Projection __proj) const noexcept
 		{
 			if (__count <= 0)
 				return { __first, __first };
@@ -79,11 +79,11 @@ struct _Search_n : _Traits_ {
 		}
 
 		template <class _Iterator_, class _Sentinel_, class _SizeType_,
-			class _ValueType_, class _Predicate_, class _Projection_>
+			class _ValueType_, class Predicate, class Projection>
 		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_>
 			operator()(sizetype __aligned_size, sizetype __tail_size, _Iterator_ __first,
 				_Sentinel_ __sentinel, _SizeType_ __count, const _ValueType_& __v,
-				_Predicate_ __predicate, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+				Predicate __predicate, Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			auto* __ptr = std::to_address(__first);
 			auto* __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
@@ -138,23 +138,23 @@ struct _Search_n : _Traits_ {
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Value_, class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
+		class _Value_, class Predicate = std::equal_to<>, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
 		_Sentinel_ __last, std::iter_difference_t<_Iterator_> __count, const _Value_& __v,
-		_Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
-            requires (std::indirectly_comparable<_Iterator_, const _Value_*, _Predicate_, _Projection_>)
+		Predicate __pred = {}, Projection __proj = {}) const noexcept
+            requires (std::indirectly_comparable<_Iterator_, const _Value_*, Predicate, Projection>)
 	{
 		if (raze_unlikely(__count <= 0)) return { __first, __first };
 		else if (__count == 1) {
 			auto __r = algorithm::find_if(std::move(__first), __last, [&__v](auto __x) raze_always_inline_lambda{
-				return __x == __v; }, traits::__fwd_fn(__proj));
+				return __x == __v; }, traits::fwd_fn(__proj));
 
 			return { __r, __r != __last ? std::ranges::next(__r) : __r };
 		}
 		else {
 			auto __r = __search_n_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
 				traits::__usent<_Iterator_>(std::move(__last)), __count, __v,
-				traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+				traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 
 			__seek_iter(__first, __r.begin());
 			__seek_iter(__last, __r.end());
@@ -163,13 +163,13 @@ struct _Search_n : _Traits_ {
 		}
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_,
-		class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
-		_Range_&& __range, std::ranges::range_difference_t<_Range_> __count, 
-		const _Value_& __v, _Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::indirectly_comparable<
-				std::ranges::iterator_t<_Range_>, const _Value_*, _Predicate_, _Projection_>)
+	template <std::ranges::input_range Range, class _Value_,
+		class Predicate = std::equal_to<>, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(
+		Range&& __range, std::ranges::range_difference_t<Range> __count, 
+		const _Value_& __v, Predicate __pred = {}, Projection __proj = {}) const noexcept
+			requires(!constexpr_sized_range<Range> && std::indirectly_comparable<
+				std::ranges::iterator_t<Range>, const _Value_*, Predicate, Projection>)
 	{
 		auto __first = std::ranges::begin(__range);
 		auto __last = std::ranges::end(__range);
@@ -177,15 +177,15 @@ struct _Search_n : _Traits_ {
 		if (raze_unlikely(__count <= 0)) return { __first, __first };
 		else if (__count == 1) {
 			auto __r = algorithm::find_if(std::move(__first), __last, [&__v] (auto __x) raze_always_inline_lambda {
-				return __x == __v; }, traits::__fwd_fn(__proj));
+				return __x == __v; }, traits::fwd_fn(__proj));
 
 			return { __r, __r != __last ? std::ranges::next(__r) : __r };
 		}
 		else {
-			auto __r = __search_n_unchecked(traits::__r_uiter<_Range_>(std::move(__first)),
-				traits::__r_usent<_Range_>(std::move(__last)),
-				__count, __v, traits::__fwd_fn(__pred),
-				traits::__fwd_fn(__proj));
+			auto __r = __search_n_unchecked(traits::__r_uiter<Range>(std::move(__first)),
+				traits::__r_usent<Range>(std::move(__last)),
+				__count, __v, traits::fwd_fn(__pred),
+				traits::fwd_fn(__proj));
 
 			__seek_iter(__first, __r.begin());
 			__seek_iter(__last, __r.end());
@@ -194,29 +194,29 @@ struct _Search_n : _Traits_ {
 		}
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_,
-		class _Predicate_ = std::equal_to<>, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
-		_Range_&& __range, std::ranges::range_difference_t<_Range_> __count,
-		const _Value_& __v, _Predicate_ __pred = {}, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_> && std::indirectly_comparable<
-				std::ranges::iterator_t<_Range_>, const _Value_*, _Predicate_, _Projection_>)
+	template <std::ranges::input_range Range, class _Value_,
+		class Predicate = std::equal_to<>, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(
+		Range&& __range, std::ranges::range_difference_t<Range> __count,
+		const _Value_& __v, Predicate __pred = {}, Projection __proj = {}) const noexcept
+			requires(constexpr_sized_range<Range> && std::indirectly_comparable<
+				std::ranges::iterator_t<Range>, const _Value_*, Predicate, Projection>)
 	{
 		auto __first = std::ranges::begin(__range);
 		auto __last = std::ranges::end(__range);
 
 		if (raze_unlikely(__count <= 0)) return { __first, __first };
 		else if (__count == 1) {
-			auto __r = algorithm::find_if(std::forward<_Range_>(__range), [&__v](auto __x) raze_always_inline_lambda{
-				return __x == __v; }, traits::__fwd_fn(__proj));
+			auto __r = algorithm::find_if(std::forward<Range>(__range), [&__v](auto __x) raze_always_inline_lambda{
+				return __x == __v; }, traits::fwd_fn(__proj));
 
 			return { __r, __r != __last ? std::ranges::next(__r) : __r };
 		}
 		else {
-			auto __r = __search_n_unchecked(traits::__r_uiter<_Range_>(std::move(__first)),
-				traits::__r_usent<_Range_>(std::move(__last)),
-				__count, __v, traits::__fwd_fn(__pred), traits::__fwd_fn(__proj),
-				std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+			auto __r = __search_n_unchecked(traits::__r_uiter<Range>(std::move(__first)),
+				traits::__r_usent<Range>(std::move(__last)),
+				__count, __v, traits::fwd_fn(__pred), traits::fwd_fn(__proj),
+				std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
 
 			__seek_iter(__first, __r.begin());
 			__seek_iter(__last, __r.end());
@@ -226,10 +226,10 @@ struct _Search_n : _Traits_ {
 	}
 private:
 	template <class _Iterator_, class _Sentinel_, class _ValueType_, 
-		class _SizeType_, class _Predicate_, class _Projection_>
+		class _SizeType_, class Predicate, class Projection>
 	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> __search_n_unchecked(_Iterator_ __first, 
-		_Sentinel_ __last, _SizeType_ __count, const _ValueType_& __v, _Predicate_ __pred,
-		_Projection_ __proj) const noexcept
+		_Sentinel_ __last, _SizeType_ __count, const _ValueType_& __v, Predicate __pred,
+		Projection __proj) const noexcept
 	{
 		__verify_range(__first, __last);
 		
@@ -237,8 +237,8 @@ private:
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
-			&& vectorizable_binary_predicate<_Predicate_, _Iterator_> &&
-			vectorizable_projection<_Projection_, _Iterator_>)
+			&& vectorizable_binary_predicate<Predicate, _Iterator_> &&
+			vectorizable_projection<Projection, _Iterator_>)
 		{
 			if not consteval {
 				const auto __size = algorithm::distance(__first, __last);
@@ -248,14 +248,14 @@ private:
 			}
 		}
 		
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__impl(__first, __last, __count, __v, __pred, __proj));
+		return options::_unroller_t<decltype(this->traits()), vx::scalar_tag>(__impl(__first, __last, __count, __v, __pred, __proj));
 	}
 
 	template <class _Iterator_, class _Sentinel_, class _ValueType_,
-		class _SizeType_, class _Predicate_, class _Projection_, sizetype _Size_>
+		class _SizeType_, class Predicate, class Projection, sizetype _Size_>
 	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> __search_n_unchecked(_Iterator_ __first,
-		_Sentinel_ __last, _SizeType_ __count, const _ValueType_& __v, _Predicate_ __pred,
-		_Projection_ __proj, std::integral_constant<sizetype, _Size_>) const noexcept
+		_Sentinel_ __last, _SizeType_ __count, const _ValueType_& __v, Predicate __pred,
+		Projection __proj, std::integral_constant<sizetype, _Size_>) const noexcept
 	{
 		__verify_range(__first, __last);
 
@@ -263,8 +263,8 @@ private:
 		using _Value_ = std::iter_value_t<_Iterator_>;
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_binary_predicate<_Predicate_, _Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_>)
+			&& vectorizable_binary_predicate<Predicate, _Iterator_>
+			&& vectorizable_projection<Projection, _Iterator_>)
 		{
 			if not consteval {
 				return vx::__dispatch_sized_impl<__vectorized_search_n, _Value_, std::ranges::subrange<_Iterator_>>(
@@ -272,7 +272,7 @@ private:
 			}
 		}
 		
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __count, __v, __pred, __proj));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __count, __v, __pred, __proj));
 	}
 };
 

@@ -17,13 +17,13 @@ raze_nodiscard raze_always_inline bool __all_of(_Tp_ __x) noexcept {
 	}
 	else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
 		raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(_Tp_) * 8) == _Size_)
-			? math::__maximum_integral_limit<_Tp_>() : _Tp_(((_Tp_(1) << _Size_) - 1));
+			? math::max_limit<_Tp_>() : _Tp_(((_Tp_(1) << _Size_) - 1));
 
-		if constexpr (_Size_ < 8 && __has_avx512dq_support_v<_ISA_>) return _ktestc_mask8_u8(__x, _cvtu32_mask8(__max_for_bits));
-		else if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>) return _kortestc_mask8_u8(__x, __x);
-		else if constexpr (sizeof(_Tp_) == 2 && __has_avx512f_support_v<_ISA_>) return _kortestc_mask16_u8(__x, __x);
-		else if constexpr (sizeof(_Tp_) == 4 && __has_avx512bw_support_v<_ISA_>) return _kortestc_mask32_u8(__x, __x);
-		else if constexpr (sizeof(_Tp_) == 8 && __has_avx512bw_support_v<_ISA_>) return _kortestc_mask64_u8(__x, __x);
+		if constexpr (_Size_ < 8 && has_avx512dq<_ISA_>) return _ktestc_mask8_u8(__x, _cvtu32_mask8(__max_for_bits));
+		else if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>) return _kortestc_mask8_u8(__x, __x);
+		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>) return _kortestc_mask16_u8(__x, __x);
+		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>) return _kortestc_mask32_u8(__x, __x);
+		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>) return _kortestc_mask64_u8(__x, __x);
 		else return (__x == __max_for_bits);
 	}
 	else return __x;
@@ -38,13 +38,13 @@ raze_nodiscard raze_always_inline bool __all_of(_Tp_ __x, _Mask_ __mask) noexcep
         return !__mask || __x;
     }
     else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
-        if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)
+        if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>)
             return _ktestc_mask8_u8(__x, __mask);
-        else if constexpr (sizeof(_Tp_) == 2 && __has_avx512f_support_v<_ISA_>)
+        else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>)
             return _ktestc_mask16_u8(__x, __mask);
-        else if constexpr (sizeof(_Tp_) == 4 && __has_avx512bw_support_v<_ISA_>)
+        else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>)
             return _ktestc_mask32_u8(__x, __mask);
-        else if constexpr (sizeof(_Tp_) == 8 && __has_avx512bw_support_v<_ISA_>)
+        else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>)
             return _ktestc_mask64_u8(__x, __mask);
         else
             return (__x & __mask) == __mask;

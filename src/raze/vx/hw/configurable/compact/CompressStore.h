@@ -26,7 +26,7 @@ struct _Configurable_compress_store : raze::options::conditional_callable<_Confi
         using _Value_ = typename _Type_::value_type;
         using _Abi_ = typename _Type_::abi_type;
 
-        static_assert(options::concepts::same_as<_Mask_, options::unknown_key>,
+        static_assert(std::same_as<_Mask_, options::unknown_key>,
             "compress_store does not support masks passed via options. "
             "The mask must be supplied as the last function argument.");
 

@@ -15,71 +15,51 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-//struct reuse_load_key_t : options::as_keyword<reuse_load_key_t> {
-//    using as_keyword<reuse_load_key_t>::operator=;
-//};
-//
-//constexpr inline reuse_load_key_t reuse_load_key = {};
-//
-//struct conditional_option {
-//    raze_always_inline constexpr auto process(const auto& __base, options::concepts::exactly<reuse_load_key> auto __options) const {
-//        return raze::options::merge_prefer_first(__base, options::options{ __options });
-//    }
-//
-//    raze_always_inline constexpr auto process(const auto& __base, raze::vx::simd_type auto __option) const noexcept {
-//        return process(__base, reuse_load_key = __option);
-//    }
-//
-//    raze_always_inline constexpr auto default_to(const auto& __base) const {
-//        return raze::options::merge_prefer_first(options::options{ reuse_load_key = ignore_reuse }, __base);
-//    }
-//};
-
 template <class _Type_>
 struct stream_ptr;
 
-template <class _Options_>
-struct _Configurable_store : raze::options::conditional_callable<_Configurable_store, _Options_, aligned_option, nt_option, safe_option> {
-    template <any_iterator_or_pointer _Mem_, simd_type _Type_>
-    raze_no_stack_protector raze_always_inline void operator()(_Mem_ __it, const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __it, __x);
+template <class Options>
+struct configurable_store_t : raze::options::conditional_callable<configurable_store_t, Options, aligned_option, nt_option, safe_option> {
+    template <any_iterator_or_pointer Mem, simd_type V>
+    raze_no_stack_protector raze_always_inline void operator()(_Mem_ it, const V& x) const noexcept {
+        return raze::options::__dispatch_call(*this, it, x);
     }
 
-    template <class _Mem_, simd_type _Type_>
-    raze_no_stack_protector raze_always_inline void operator()(stream_ptr<_Mem_> __it, const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __it, __x);
+    template <class Mem, simd_type V>
+    raze_no_stack_protector raze_always_inline void operator()(stream_ptr<_Mem_> it, const V& x) const noexcept {
+        return raze::options::__dispatch_call(*this, it, x);
     }
 
-    template <class _Mem_, simd_type _Type_>
-    static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, stream_ptr<_Mem_> __it, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <class Mem, simd_type V>
+    static raze_no_stack_protector raze_always_inline auto deferred_call(auto opts, stream_ptr<Mem> it, const V& x) noexcept {
+        using Mask = raze::options::fetch_t<raze::options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        return __x.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            auto __mem = std::to_address(__it);
-            _Store_nt<_Abi_::isa>()(__mem, __storage_unwrap(__chunk));
-            algorithm::__seek_iter(__it, algorithm::__bytes_pointer_offset(__mem, sizeof(_Value_) * _Chunk::size));
+        return x.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+            auto mem = std::to_address(it);
+            _Store_nt<_Abi_::isa>()(mem, __storage_unwrap(chunk));
+            algorithm::__seek_iter(it, algorithm::bytes_pointer_offset(mem, sizeof(Value) * Chunk::size));
         });
     }
 
-    template <any_iterator_or_pointer _Mem_, simd_type _Type_>
-    static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, _Mem_ __it, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <any_iterator_or_pointer Mem, simd_type V>
+    static raze_no_stack_protector raze_always_inline auto deferred_call(auto opts, Mem it, const V& x) noexcept {
+        using Mask = raze::options::fetch_t<raze::options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        constexpr auto __safe = _Options_::contains(safe);
-		auto __mem = std::to_address(__it);
+        constexpr auto __safe = Options::contains(safe);
+		auto mem = std::to_address(it);
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
-            static_assert(!_Options_::contains(nt), "The nt option is incompatible with masked load/store.");
+        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+            static_assert(!Options::contains(nt), "The nt option is incompatible with masked load/store.");
 
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+            auto __condition = opts[options::condition_key];
+            const auto __mask = __condition.mask(options::as<typename _Mask_::condition_type>{});
 
-            if constexpr (_Mask_::has_alternative)
-                return __x.__for_each_chunk([] <class _Chunk, class _MaskChunk, class _SourceChunk> (
+            if constexpr (Mask::has_alternative)
+                return x.__for_each_chunk([] <class Chunk, class MaskChunk, class SourceChunk> (
                     _Chunk& __chunk, const _MaskChunk& __mchunk, const _SourceChunk& __src_chunk, auto& __memory) raze_always_inline_lambda
                 {
                     if constexpr (_Options_::contains(aligned)) _Store<_Abi_::isa>()(__memory, _Select<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk),

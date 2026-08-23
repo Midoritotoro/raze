@@ -13,7 +13,7 @@ struct _Abs {
 
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_>) {
-				if constexpr (__has_avx512vl_support_v<_ISA_>) return __as<_Tp_>(_mm_abs_epi64(__as<__m128i>(__x)));
+				if constexpr (has_avx512vl<_ISA_>) return __as<_Tp_>(_mm_abs_epi64(__as<__m128i>(__x)));
 				else {
 					const auto __high_sign = _mm_srai_epi32(__as<__m128i>(__x), 31);
 					const auto __sign = _mm_shuffle_epi32(__high_sign, 0xF5);
@@ -23,7 +23,7 @@ struct _Abs {
 				}
 			}
 			else if constexpr (__is_epi32_v<_Type_>) {
-				if constexpr (__has_ssse3_support_v<_ISA_>) return __as<_Tp_>(_mm_abs_epi32(__as<__m128i>(__x)));
+				if constexpr (has_ssse3<_ISA_>) return __as<_Tp_>(_mm_abs_epi32(__as<__m128i>(__x)));
 				else {
 					const auto __sign = _mm_srai_epi32(__as<__m128i>(__x), 31);
 					const auto __invert = _mm_xor_si128(__as<__m128i>(__x), __sign);
@@ -32,14 +32,14 @@ struct _Abs {
 				}
 			}
 			else if constexpr (__is_epi16_v<_Type_>) {
-				if constexpr (__has_ssse3_support_v<_ISA_>) return __as<_Tp_>(_mm_abs_epi16(__as<__m128i>(__x)));
+				if constexpr (has_ssse3<_ISA_>) return __as<_Tp_>(_mm_abs_epi16(__as<__m128i>(__x)));
 				else {
 					const auto __negate = _mm_sub_epi16(_mm_setzero_si128(), __as<__m128i>(__x));
 					return _mm_max_epi16(__as<__m128i>(__x), __negate);
 				}
 			}
 			else if constexpr (__is_epi8_v<_Type_>) {
-				if constexpr (__has_ssse3_support_v<_ISA_>) return __as<_Tp_>(_mm_abs_epi8(__as<__m128i>(__x)));
+				if constexpr (has_ssse3<_ISA_>) return __as<_Tp_>(_mm_abs_epi8(__as<__m128i>(__x)));
 				else {
 					const auto __negate = _mm_sub_epi8(_mm_setzero_si128(), __as<__m128i>(__x));
 					return __as<_Tp_>(_mm_min_epu8(__as<__m128i>(__x), __negate));
@@ -52,9 +52,9 @@ struct _Abs {
 			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_and_pd(__as<__m256d>(__x), __as<__m256d>(_mm256_setr_epi32(
 				0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu))));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_and_ps(__as<__m256>(__x), __as<__m256>(_mm256_set1_epi32(0x7FFFFFFFu))));
-			else if constexpr (__has_avx2_support_v<_ISA_>) {
+			else if constexpr (has_avx2<_ISA_>) {
 				if constexpr (__is_epi64_v<_Type_>) {
-					if constexpr (__has_avx512vl_support_v<_ISA_>) return __as<_Tp_>(_mm256_abs_epi64(__as<__m256i>(__x)));
+					if constexpr (has_avx512vl<_ISA_>) return __as<_Tp_>(_mm256_abs_epi64(__as<__m256i>(__x)));
 					else {
 						const auto __sign = _mm256_cmpgt_epi64(_mm256_setzero_si256(), __x);
 						const auto __inverted = _mm256_xor_si256(__as<__m256i>(__x), __sign);
@@ -78,7 +78,7 @@ struct _Abs {
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_abs_epi32(__as<__m512i>(__x)));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_abs_ps(__as<__m512>(__x)));
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_abs_pd(__as<__m512d>(__x)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_abs_epi16(__as<__m512i>(__x)));
 				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_abs_epi8(__as<__m512i>(__x)));
 			}
@@ -101,18 +101,18 @@ struct _Abs {
 		if constexpr (std::is_unsigned_v<_Type_>)
 			return _Select<_ISA_, _Type_>()(__x, __mask);
 		
-		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_maskz_abs_epi64(__mask, __as<__m128i>(__x)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_maskz_abs_epi32(__mask, __as<__m128i>(__x)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_maskz_abs_epi16(__mask, __as<__m128i>(__x)));
 				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_maskz_abs_epi8(__mask, __as<__m128i>(__x)));
 			}
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_abs_epi64(__mask, __as<__m256i>(__x)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_abs_epi32(__mask, __as<__m256i>(__x)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_abs_epi16(__mask, __as<__m256i>(__x)));
 				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_maskz_abs_epi8(__mask, __as<__m256i>(__x)));
 			}
@@ -122,7 +122,7 @@ struct _Abs {
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_abs_epi32(__mask, __as<__m512i>(__x)));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_maskz_abs_ps(__mask, __as<__m512>(__x)));
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_maskz_abs_pd(__mask, __as<__m512d>(__x)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_abs_epi16(__mask, __as<__m512i>(__x)));
 				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_maskz_abs_epi8(__mask, __as<__m512i>(__x)));
 			}
@@ -137,18 +137,18 @@ struct _Abs {
 		if constexpr (std::is_unsigned_v<_Type_>)
 			return _Select<_ISA_, _Type_>()(__x, __src, __mask);
 
-		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_mask_abs_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_mask_abs_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_mask_abs_epi16(__as<__m128i>(__src), __mask, __as<__m128i>(__x)));
 				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_mask_abs_epi8(__as<__m128i>(__src), __mask, __as<__m128i>(__x)));
 			}
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_mask_abs_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_mask_abs_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_mask_abs_epi16(__as<__m256i>(__src), __mask, __as<__m256i>(__x)));
 				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_mask_abs_epi8(__as<__m256i>(__src), __mask, __as<__m256i>(__x)));
 			}
@@ -158,7 +158,7 @@ struct _Abs {
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_mask_abs_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x)));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_abs_ps(__as<__m512>(__src), __mask, __as<__m512>(__x)));
 			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_abs_pd(__as<__m512d>(__src), __mask, __as<__m512d>(__x)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_mask_abs_epi16(__as<__m512i>(__src), __mask, __as<__m512i>(__x)));
 				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_mask_abs_epi8(__as<__m512i>(__src), __mask, __as<__m512i>(__x)));
 			}

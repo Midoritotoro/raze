@@ -17,131 +17,125 @@ __RAZE_MATH_NAMESPACE_BEGIN
 
 #  if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 
-#    if !defined(__raze_popcnt_u32)
-#      define __raze_popcnt_u32 __builtin_popcount
-#    endif // !defined(__raze_popcnt_u32)
+#    if !defined(raze_popcnt_u32)
+#      define raze_popcnt_u32 __builtin_popcount
+#    endif // !defined(raze_popcnt_u32)
 
-#    if !defined(__raze_popcnt_u64)
-#      define __raze_popcnt_u64 __builtin_popcountll
-#    endif // !defined(__raze_popcnt_u64)
+#    if !defined(raze_popcnt_u64)
+#      define raze_popcnt_u64 __builtin_popcountll
+#    endif // !defined(raze_popcnt_u64)
 
 #  elif defined(raze_cpp_msvc) 
 
-#    if !defined(__raze_popcnt_u32)
-#      define __raze_popcnt_u32 __popcnt
-#    endif // !defined(__raze_popcnt_u32)
+#    if !defined(raze_popcnt_u32)
+#      define raze_popcnt_u32 __popcnt
+#    endif // !defined(raze_popcnt_u32)
 
-#    if !defined(__raze_popcnt_u64)
-#      define __raze_popcnt_u64 __popcnt64
-#    endif // !defined(__raze_popcnt_u64)
+#    if !defined(raze_popcnt_u64)
+#      define raze_popcnt_u64 __popcnt64
+#    endif // !defined(raze_popcnt_u64)
 
 #  endif // defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
 
 
-template <std::unsigned_integral _IntegralType_>
-constexpr raze_always_inline i32 __bit_hacks_population_count(_IntegralType_ __value) noexcept {
-    if      constexpr (sizeof(_IntegralType_) == 8) {
-        return (((__value) & 0xfff) * static_cast<u64>(0x1001001001001)
+template <std::unsigned_integral T>
+constexpr raze_always_inline i32 bit_hacks_population_count(T v) noexcept {
+    if constexpr (sizeof(T) == 8) {
+        return (((v) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-        (((__value >> 12) & 0xfff) * static_cast<u64>(0x1001001001001)
+        (((v >> 12) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-        (((__value >> 24) & 0xfff) * static_cast<u64>(0x1001001001001)
+        (((v >> 24) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-        (((__value >> 36) & 0xfff) * static_cast<u64>(0x1001001001001)
+        (((v >> 36) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-        (((__value >> 48) & 0xfff) * static_cast<u64>(0x1001001001001)
+        (((v >> 48) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-        (((__value >> 60) & 0xfff) * static_cast<u64>(0x1001001001001)
+        (((v >> 60) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f;
     }
-    else if constexpr (sizeof(_IntegralType_) == 4) {
-        return (((__value) & 0xfff) * static_cast<u64>(0x1001001001001)
+    else if constexpr (sizeof(T) == 4) {
+        return (((v) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-        (((__value >> 12) & 0xfff) * static_cast<u64>(0x1001001001001)
+        (((v >> 12) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-        (((__value >> 24) & 0xfff) * static_cast<u64>(0x1001001001001)
+        (((v >> 24) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f;
     }
-    else if constexpr (sizeof(_IntegralType_) == 2) {
-        return (((__value) & 0xfff) * static_cast<u64>(0x1001001001001)
+    else if constexpr (sizeof(T) == 2) {
+        return (((v) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f +
-            (((__value >> 12) & 0xfff) * static_cast<u64>(0x1001001001001)
+            (((v >> 12) & 0xfff) * static_cast<u64>(0x1001001001001)
                 & static_cast<u64>(0x84210842108421)) % 0x1f;
     }
-    else if constexpr (sizeof(_IntegralType_) == 1) {
-        return (((__value) & 0xfff) * static_cast<u64>(0x1001001001001)
+    else if constexpr (sizeof(T) == 1) {
+        return (((v) & 0xfff) * static_cast<u64>(0x1001001001001)
             & static_cast<u64>(0x84210842108421)) % 0x1f;
     }
 }
 
-#if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
+#if defined(raze_processor_x86)
 
-template <std::unsigned_integral _IntegralType_>
-raze_always_inline i32 __popcnt_population_count(_IntegralType_ __value) noexcept {
-    constexpr auto __digits = std::numeric_limits<_IntegralType_>::digits;
+template <std::unsigned_integral T>
+raze_always_inline i32 popcnt_population_count(T v) noexcept {
+    constexpr auto digits = std::numeric_limits<T>::digits;
 
-    if      constexpr (__digits == 64)
-        return static_cast<int>(__raze_popcnt_u64(static_cast<u64>(__value)));
-    else if constexpr (__digits == 32)
-        return static_cast<int>(__raze_popcnt_u32(static_cast<u32>(__value)));
-    else if constexpr (__digits <= 16)
+    if constexpr (digits == 64)
+        return static_cast<int>(raze_popcnt_u64(static_cast<u64>(v)));
+    else if constexpr (digits == 32)
+        return static_cast<int>(raze_popcnt_u32(static_cast<u32>(v)));
+    else if constexpr (digits <= 16)
 #if defined(raze_cpp_msvc)
-        return static_cast<int>(__popcnt16(static_cast<u16>(__value)));
+        return static_cast<int>(__popcnt16(static_cast<u16>(v)));
 #elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
-        return __bit_hacks_population_count(__value);
+        return bit_hacks_population_count(v);
 #endif // defined(raze_cpp_msvc) // defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 }
 
-#endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
+#endif // defined(raze_processor_x86)
 
-template <std::unsigned_integral _IntegralType_>
-constexpr raze_always_inline i32 __population_count(_IntegralType_ __value) noexcept {
-    static_assert(std::is_unsigned_v<_IntegralType_>);
-
+template <std::unsigned_integral T>
+constexpr raze_always_inline i32 population_count_impl(T v) noexcept {
 #if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
     if not consteval {
         if (arch::ProcessorFeatures::POPCNT())
-            return __popcnt_population_count(__value);
+            return popcnt_population_count(v);
     }
     else
 #endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
     {
-        return __bit_hacks_population_count(__value);
+        return bit_hacks_population_count(v);
     }
 }
 
-template <
-    sizetype                _Bits_,
-    std::unsigned_integral  _IntegralType_>
-constexpr raze_always_inline i32 __popcnt_n_bits(_IntegralType_ __value) noexcept {
-    static_assert(_Bits_ <= 64);
-    static_assert(_Bits_ <= (sizeof(_IntegralType_) * 8));
+template <sizetype Bits, std::unsigned_integral T>
+constexpr raze_always_inline i32 popcnt_n_bits(T v) noexcept {
+    static_assert(Bits <= 64);
+    static_assert(Bits <= raze_sizeof_in_bits(T));
 
-    constexpr auto __max_for_n_bits = (_Bits_ == (sizeof(_IntegralType_) * 8))
-        ? math::__maximum_integral_limit<_IntegralType_>()
-        : _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
-    constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
+    constexpr auto max_for_n_bits = (Bits == raze_sizeof_in_bits(T))
+        ? math::max_limit<T>()
+        : T(((T(1) << Bits) - 1));
+    constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
 
-    using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
-    return __population_count(static_cast<_UintForBits>(__value & __max_for_n_bits));
+    using UT = typename IntegerForSize<mask_size>::Unsigned;
+    return population_count_impl(static_cast<UT>(v & max_for_n_bits));
 }
 
-template <
-    sizetype                _Bits_,
-    std::unsigned_integral  _IntegralType_>
-constexpr raze_always_inline i32 __native_popcnt_n_bits(_IntegralType_ __value) noexcept {
-    static_assert(_Bits_ <= 64);
-    static_assert(_Bits_ <= (sizeof(_IntegralType_) * 8));
+template <sizetype Bits, std::unsigned_integral T>
+constexpr raze_always_inline i32 native_popcnt_n_bits(T v) noexcept {
+    static_assert(Bits <= 64);
+    static_assert(Bits <= raze_sizeof_in_bits(T));
 
-    constexpr auto __max_for_n_bits = (_Bits_ == (sizeof(_IntegralType_) * 8))
-        ? math::__maximum_integral_limit<_IntegralType_>()
-        : _IntegralType_(((_IntegralType_(1) << _Bits_) - 1));
-    constexpr auto __mask_size = (_Bits_ / 8) > 1 ? (_Bits_ / 8) : 1;
+    constexpr auto max_for_n_bits = (Bits == raze_sizeof_in_bits(T))
+        ? math::max_limit<T>()
+        : T(((T(1) << Bits) - 1));
+    constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
 
-    using _UintForBits = typename IntegerForSize<__mask_size>::Unsigned;
-    return __popcnt_population_count(static_cast<_UintForBits>(__value & __max_for_n_bits));
+    using UT = typename IntegerForSize<mask_size>::Unsigned;
+    return popcnt_population_count(static_cast<UT>(v & max_for_n_bits));
 }
 
 __RAZE_MATH_NAMESPACE_END

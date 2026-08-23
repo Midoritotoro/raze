@@ -37,9 +37,8 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>>{
 		Projection _proj;
 		Value _new_value;
 
-		constexpr __kernel(Source&& src, Predicate pred,
-			Projection proj, Value new_val) noexcept :
-				_source(std::forward<Source>(src)), _predicate(pred), _proj(proj), _new_value(new_val)
+		constexpr kernel(Source&& src, Predicate pred, Projection proj, Value new_val) noexcept :
+			_source(std::forward<Source>(src)), _predicate(pred), _proj(proj), _new_value(new_val)
 		{
 			_iterator = _source.ubegin();
 			_sentinel = _source.uend();
@@ -65,13 +64,13 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>>{
 		raze_always_inline void operator()(Tag, sizetype aligned_size) noexcept {
 			auto* ptr = std::to_address(_iterator);
 
-			const auto aligned_end = __bytes_pointer_offset(ptr, aligned_size);
+			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 			const auto new_value = Tag(_new_value);
 
 			raze_disable_unrolling
 			do {
 				vx::store[_predicate(_proj(vx::load<Tag>(ptr)))](ptr, new_value);
-				__advance_bytes(__ptr, sizeof(Tag));
+				advance_bytes(ptr, sizeof(Tag));
 			} while (ptr != aligned_end);
 
 			source_type::from_ptr(_iterator, ptr);
@@ -99,48 +98,48 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>>{
 			requires(std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>)
 	{
 		this->dispatch(get_source(std::move(first), std::move(sent)),
-			traits::__fwd_fn(__pred), traits::__fwd_fn(proj), new_value);
+			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
 	}
 
-	template <std::ranges::input_range _Range_, class Predicate, class Value,
+	template <std::ranges::input_range Range, class Predicate, class Value,
 		class Projection = std::identity>
-	constexpr raze_always_inline void operator()(_Range_&& __r, Predicate __pred,
-		Value __new_value, Projection __proj = {}) const noexcept
+	constexpr raze_always_inline void operator()(Range&& r, Predicate pred,
+		Value new_value, Projection proj = {}) const noexcept
 			requires(std::indirect_unary_predicate<Predicate,
-				std::projected<std::ranges::iterator_t<_Range_>, Projection>>
-				&& std::permutable<std::ranges::iterator_t<_Range_>>)
+				std::projected<std::ranges::iterator_t<Range>, Projection>>
+				&& std::permutable<std::ranges::iterator_t<Range>>)
 	{
-		this->dispatch(get_source(std::forward<_Range_>(__r)),
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj), __new_value);
+		this->dispatch(get_source(std::forward<Range>(r)),
+			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
 	}
 };
 
-constexpr inline auto replace_if = raze::options::function_with_traits<_Replace_if>[raze::options::unroll<1>][replace_strategy];
+constexpr inline auto replace_if = raze::options::function_with_traits<replace_if_t>[raze::options::unroll<4>][replace_strategy];
 
 template <class _Traits_>
 struct _Replace : _Traits_ {
 	template <std::permutable _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
 		class _ValueType1_, class _ValueType2_, class Projection = std::identity>
-	constexpr raze_always_inline void operator()(_Iterator_ __first, _Sentinel_ __last,
-		const _ValueType1_& __old_value, const _ValueType2_& __new_value, Projection __proj = {}) const noexcept
+	constexpr raze_always_inline void operator()(_Iterator_ first, _Sentinel_ last,
+		const _ValueType1_& old_value, const _ValueType2_& new_value, Projection proj = {}) const noexcept
 	{
-		replace_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
-			function_return_type<Projection, std::iter_value_t<_Iterator_>>(__old_value)),
-			__new_value, traits::__fwd_fn(__proj));
+		replace_if[_Traits_::traits()](std::move(first), std::move(last), algorithm::equal_to(
+			function_return_type<Projection, std::iter_value_t<_Iterator_>>(old_value)),
+			new_value, traits::fwd_fn(proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _ValueType1_, class _ValueType2_,
+	template <std::ranges::input_range Range, class _ValueType1_, class _ValueType2_,
 		class Projection = std::identity>
-	constexpr raze_always_inline void operator()(_Range_&& __r, const _ValueType1_& __old_value,
-		const _ValueType2_& __new_value, Projection __proj = {}) const noexcept
-			requires(std::permutable<std::ranges::iterator_t<_Range_>>)
+	constexpr raze_always_inline void operator()(Range&& r, const _ValueType1_& old_value,
+		const _ValueType2_& new_value, Projection proj = {}) const noexcept
+			requires(std::permutable<std::ranges::iterator_t<Range>>)
 	{
-		replace_if[_Traits_::traits()](std::forward<_Range_>(__r), algorithm::equal_to(
-			function_return_type<Projection, std::ranges::range_value_t<_Range_>>(__old_value)),
-			__new_value, traits::__fwd_fn(__proj));
+		replace_if[_Traits_::traits()](std::forward<Range>(r), algorithm::equal_to(
+			function_return_type<Projection, std::ranges::range_value_t<Range>>(old_value)),
+			new_value, traits::fwd_fn(proj));
 	}
 };
 
-constexpr inline auto replace = raze::options::function_with_traits<_Replace>[raze::options::unroll<1>][replace_strategy];
+constexpr inline auto replace = raze::options::function_with_traits<_Replace>[raze::options::unroll<4>][replace_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

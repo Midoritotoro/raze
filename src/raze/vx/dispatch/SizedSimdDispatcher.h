@@ -50,13 +50,13 @@ struct _Configurable_sized_isa_dispatcher {
                     if constexpr (sizeof(_Type_) >= 4) {
                         using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>;
 
-                        if constexpr (__has_avx512f_support_v<__best_isa_compile_time()>) {
+                        if constexpr (has_avx512f<target_isa()>) {
                             return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                                 std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                         }
                         else {
                             __all = arch::ProcessorFeatures::all();
-                            if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all)) {
+                            if (arch::ProcessorFeatures::has<arch::features::AVX512F>(__all)) {
                                 return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                                     std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                             }
@@ -65,13 +65,13 @@ struct _Configurable_sized_isa_dispatcher {
                     else {
                         using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>;
 
-                        if constexpr (__has_avx512bw_support_v<__best_isa_compile_time()>) {
+                        if constexpr (has_avx512bw<target_isa()>) {
                             return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                                 std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                         }
                         else {
                             __all = arch::ProcessorFeatures::all();
-                            if (arch::ProcessorFeatures::has<arch::__features::AVX512BW>(__all)) {
+                            if (arch::ProcessorFeatures::has<arch::features::AVX512BW>(__all)) {
                                 return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                                     std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                             }
@@ -83,13 +83,13 @@ struct _Configurable_sized_isa_dispatcher {
                     constexpr auto __aligned_size = _Size_ & ~0x1F;
                     using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::AVX2, 32 / sizeof(_Type_)>>;
 
-                    if constexpr (__has_avx2_support_v<__best_isa_compile_time()>) {
+                    if constexpr (has_avx2<target_isa()>) {
                         return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                             std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                     }
                     else {
                         __all = arch::ProcessorFeatures::all();
-                        if (arch::ProcessorFeatures::has<arch::__features::AVX2>(__all))
+                        if (arch::ProcessorFeatures::has<arch::features::AVX2>(__all))
                             return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                                 std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                     }
@@ -99,13 +99,13 @@ struct _Configurable_sized_isa_dispatcher {
                     constexpr auto __aligned_size = _Size_ & ~0xF;
                     using _Simd_ = simd<_Type_, runtime_abi<arch::ISA::SSE42, 16 / sizeof(_Type_)>>;
 
-                    if constexpr (__has_sse42_support_v<__best_isa_compile_time()>) {
+                    if constexpr (has_sse42<target_isa()>) {
                         return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                             std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                     }
                     else {
                         __all = arch::ProcessorFeatures::all();
-                        if (arch::ProcessorFeatures::has<arch::__features::SSE42>(__all))
+                        if (arch::ProcessorFeatures::has<arch::features::SSE42>(__all))
                             return _Function_<_Simd_>()(std::integral_constant<sizetype, __aligned_size>{},
                                 std::integral_constant<sizetype, _Size_ - __aligned_size>{}, std::forward<_Args_>(__args)...);
                     }
@@ -133,18 +133,18 @@ struct _Configurable_sized_isa_dispatcher {
 
                 if (__size >= 64) {
                     if constexpr (sizeof(_Type_) >= 4) {
-                        if (arch::ProcessorFeatures::has<arch::__features::AVX512F>(__all))
+                        if (arch::ProcessorFeatures::has<arch::features::AVX512F>(__all))
                             return _Function_<simd<_Type_, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(_Type_)>>>()(
                                 __size & ~0x3F, __size & 0x3F, std::forward<_Args_>(__args)...);
                     }
                     else {
-                        if (arch::ProcessorFeatures::has<arch::__features::AVX512BW>(__all))
+                        if (arch::ProcessorFeatures::has<arch::features::AVX512BW>(__all))
                             return _Function_<simd<_Type_, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(_Type_)>>>()(
                                 __size & ~0x3F, __size & 0x3F, std::forward<_Args_>(__args)...);
                     }
                 }
 
-                if (__size >= 32 && arch::ProcessorFeatures::has<arch::__features::AVX2>(__all))
+                if (__size >= 32 && arch::ProcessorFeatures::has<arch::features::AVX2>(__all))
                     return _Function_<simd<_Type_, runtime_abi<arch::ISA::AVX2, 32 / sizeof(_Type_)>>>()(
                         __size & ~0x1F, __size & 0x1F, std::forward<_Args_>(__args)...);
 
@@ -191,7 +191,7 @@ struct _Configurable_sized_isa_dispatcher {
 
 consteval arch::ISA __forced_isa() noexcept {
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu) || RAZE_ISA_FORCE_ENABLED
-	return __best_isa_compile_time();
+	return target_isa();
 #else
     return arch::ISA::None;
 #endif

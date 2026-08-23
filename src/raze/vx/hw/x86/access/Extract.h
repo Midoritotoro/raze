@@ -47,9 +47,9 @@ struct _Extract {
 		if constexpr (arithmetic_type<_Tp_>) return __x;
 		else if constexpr (__index == 0) return __extract_first<_ISA_, _Element_>(__x);
 		else if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (sizeof(_Element_) == 8 && std::is_integral_v<_Element_> && __has_sse41_support_v<_ISA_>) return _mm_extract_epi64(__as<__m128i>(__x), __index);
+			if constexpr (sizeof(_Element_) == 8 && std::is_integral_v<_Element_> && has_sse41<_ISA_>) return _mm_extract_epi64(__as<__m128i>(__x), __index);
 			else if constexpr (sizeof(_Element_) == 4) {
-				if constexpr(__has_sse41_support_v<_ISA_> && !std::is_floating_point_v<_Element_>) return _mm_extract_epi32(__as<__m128i>(__x), __index);
+				if constexpr(has_sse41<_ISA_> && !std::is_floating_point_v<_Element_>) return _mm_extract_epi32(__as<__m128i>(__x), __index);
 				else if constexpr (std::is_floating_point_v<_Element_>) return _mm_cvtss_f32(__as<__m128>(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__index))));
 				else if constexpr (std::is_floating_point_v<_Element_>) return _mm_cvtsi128_si32(_mm_shuffle_epi32(__as<__m128i>(__x), __broadcast_pshufd_index(__index)));
 			}
@@ -59,8 +59,8 @@ struct _Extract {
 		else if constexpr (sizeof(_Tp_) == 32) {
 			if constexpr (sizeof(_Element_) == 8 && std::is_integral_v<_Element_>) return _mm256_extract_epi64(__as<__m256i>(__x), __index);
 			else if constexpr (sizeof(_Element_) == 4 && std::is_integral_v<_Element_>) return _mm256_extract_epi32(__as<__m256i>(__x), __index);
-			else if constexpr (sizeof(_Element_) == 2 && __has_avx2_support_v<_ISA_>) return _mm256_extract_epi16(__as<__m256i>(__x), __index);
-			else if constexpr (sizeof(_Element_) == 1 && __has_avx2_support_v<_ISA_>) return _mm256_extract_epi8(__as<__m256i>(__x), __index);
+			else if constexpr (sizeof(_Element_) == 2 && has_avx2<_ISA_>) return _mm256_extract_epi16(__as<__m256i>(__x), __index);
+			else if constexpr (sizeof(_Element_) == 1 && has_avx2<_ISA_>) return _mm256_extract_epi8(__as<__m256i>(__x), __index);
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
 			constexpr auto __mask = 1u << _I_;

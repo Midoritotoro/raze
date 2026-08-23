@@ -6,174 +6,172 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Keyword_>
+template <class Keyword>
 struct as_keyword {
-    using tag_type = _Keyword_;
+    using tag_type = Keyword;
     inline constexpr auto operator<=>(const as_keyword&) const noexcept = default;
 
-    template <class _Type_>
+    template <class T>
     static raze_always_inline constexpr bool accept() noexcept {
-        if constexpr(concepts::same_as<std::remove_cvref_t<_Type_>, _Keyword_>) return true;
-        else if constexpr(concepts::__checks_for<_Keyword_, _Type_>) return _Keyword_::template check<_Type_>();
+        if constexpr(std::same_as<std::remove_cvref_t<T>, Keyword>) return true;
+        else if constexpr(concepts::checks_for<Keyword, T>) return Keyword::template check<T>();
         else return true;
     }
 
-    template <class _Type_>
-    constexpr raze_always_inline auto operator=(_Type_&& __value) const noexcept
-        requires(accept<_Type_>())
+    template <class T>
+    constexpr raze_always_inline auto operator=(T&& v) const noexcept
+        requires(accept<T>())
     {
-        return option<_Keyword_, _Type_>{std::forward<_Type_>(__value)};
+        return option<Keyword, T>{std::forward<T>(v)};
     }
 
-    template <class _Type_>
-    constexpr raze_always_inline auto operator|(_Type_&& __value) const noexcept
-        requires(accept<_Type_>()) 
+    template <class T>
+    constexpr raze_always_inline auto operator|(T&& v) const noexcept
+        requires(accept<T>()) 
     {
-        return __type_or<_Keyword_, std::remove_cvref_t<_Type_>>{std::forward<_Type_>(__value)};
+        return type_or<Keyword, std::remove_cvref_t<T>>{std::forward<T>(v)};
     }
 
-    template <class _Function_> 
-    constexpr raze_always_inline auto operator|(call<_Function_>&& __callable) const noexcept
+    template <class F> 
+    constexpr raze_always_inline auto operator|(call<F>&& f) const noexcept
     {
-        return __type_or<_Keyword_, call<_Function_>>{std::forward<_Function_>(__callable)};
+        return type_or<_eyword, call<F>>{std::forward<F>(f)};
     }
 
-    template <concepts::option ... _Options_>
-    constexpr raze_always_inline decltype(auto) operator()(_Options_&& ... __options) const {
-        return fetch(_Keyword_{}, std::forward<_Options_>(__options)...); 
+    template <concepts::option ... Options>
+    constexpr raze_always_inline decltype(auto) operator()(Options&& ... opts) const {
+        return fetch(Keyword{}, std::forward<Options>(opts)...); 
     }
 };
 
-template <class _ID_, template <class> class _Checker_>
-struct checked_keyword: as_keyword<checked_keyword<_ID_, _Checker_>> 
-{
-    using as_keyword<checked_keyword<_ID_, _Checker_>>::operator=;
+template <class ID, template <class> class Checker>
+struct checked_keyword: as_keyword<checked_keyword<ID, Checker>> {
+    using as_keyword<checked_keyword<ID, Checker>>::operator=;
 
-    template <class _Type_> 
+    template <class T> 
     static raze_always_inline constexpr bool check() {
-        return _Checker_<_Type_>::value; 
+        return Checker<T>::value; 
     }
 };
 
-template <class _ID_, class _Type_>
-struct typed_keyword: as_keyword<typed_keyword<_ID_, _Type_>>
-{
-    using as_keyword<typed_keyword<_ID_, _Type_>>::operator=;
+template <class ID, class T>
+struct typed_keyword: as_keyword<typed_keyword<ID, T>> {
+    using as_keyword<typed_keyword<ID, T>>::operator=;
 
-    template <class _T_>
+    template <class Tp>
     static raze_always_inline constexpr bool check() {
-        return std::is_same_v<std::remove_cvref_t<_T_>, _Type_>; 
+        return std::is_same_v<std::remove_cvref_t<Tp>, T>; 
     }
 };
     
-template <class _ID_>
-struct any_keyword: as_keyword<any_keyword<_ID_>> {
-    using as_keyword<any_keyword<_ID_>>::operator=;
-    using id_type = _ID_;
+template <class ID>
+struct any_keyword: as_keyword<any_keyword<ID>> {
+    using as_keyword<any_keyword<ID>>::operator=;
+    using id_type = ID;
 };
     
-template <class _ID_> 
+template <class ID> 
 struct flag_keyword {
     constexpr flag_keyword() {}
-    constexpr flag_keyword(const _ID_&) {}
-    using id_type = _ID_;
+    constexpr flag_keyword(const ID&) {}
+    using id_type = ID;
 
-    template<class _Type_>
+    template <class T>
     static raze_always_inline constexpr bool accept() {
-        return std::is_same_v<std::true_type, _Type_>;
+        return std::is_same_v<std::true_type, T>;
     }
 
     using tag_type          = _ID_;
     using keyword_type      = flag_keyword;
     using stored_value_type = bool;
         
-    template <class _Type_>
-    constexpr raze_always_inline auto operator=(_Type_&&) const noexcept {
+    template <class T>
+    constexpr raze_always_inline auto operator=(T&&) const noexcept {
         return *this; 
     }
 
-    template <class _Type_>
-    constexpr raze_always_inline auto operator|(_Type_&& __value) const noexcept {
-        return __type_or<flag_keyword, std::remove_cvref_t<_Type_>>{std::forward<_Type_>(__value)};
+    template <class T>
+    constexpr raze_always_inline auto operator|(T&& v) const noexcept {
+        return type_or<flag_keyword, std::remove_cvref_t<T>>{std::forward<T>(v)};
     }
 
-    template <class _Function_> 
-    constexpr raze_always_inline auto operator|(call<_Function_>&& __callable) const noexcept {
-        return __type_or<flag_keyword, call<_Function_>>{std::forward<_Function_>(__callable)};
+    template <class F> 
+    constexpr raze_always_inline auto operator|(call<F>&& f) const noexcept {
+        return type_or<flag_keyword, call<F>>{std::forward<F>(f)};
     }
 
     constexpr raze_always_inline auto operator()(const keyword_type&) const noexcept {
         return true; 
     }
 
-    template <class _Option0_, class _Option1_, class ... _Options_>
-    constexpr raze_always_inline decltype(auto) operator()(_Option0_&&, _Option1_&&, _Options_&& ...) const {
-        return  concepts::same_as<keyword_type, typename std::remove_cvref_t<_Option0_>::keyword_type>
-            || concepts::same_as<keyword_type, typename std::remove_cvref_t<_Option1_>::keyword_type>
-            || (concepts::same_as<keyword_type, typename std::remove_cvref_t<_Options_>::keyword_type> || ...);
+    template <class O0, class O1, class ... Os>
+    constexpr raze_always_inline decltype(auto) operator()(O0&&, O1&&, Os&& ...) const {
+        return  std::same_as<keyword_type, typename std::remove_cvref_t<O0>::keyword_type>
+            || std::same_as<keyword_type, typename std::remove_cvref_t<O1>::keyword_type>
+            || (std::same_as<keyword_type, typename std::remove_cvref_t<Os>::keyword_type> || ...);
     }
 };
 
-template <class _Tag_>
-constexpr raze_always_inline flag_keyword<_Tag_> flag(_Tag_ __id) noexcept {
+template <class Tag>
+constexpr raze_always_inline flag_keyword<Tag> flag(Tag) noexcept {
     return {}; 
 }
 
-template <class _ID_>
-constexpr raze_always_inline any_keyword<_ID_> keyword(_ID_ __id) noexcept {
+template <class ID>
+constexpr raze_always_inline any_keyword<ID> keyword(ID) noexcept {
     return {}; 
 }
 
-template <template <class> class  _Checker_, class _ID_>
-constexpr raze_always_inline checked_keyword<_ID_, _Checker_> keyword(_ID_ __id) noexcept {
+template <template <class> class Checker, class ID>
+constexpr raze_always_inline checked_keyword<ID, Checker> keyword(ID) noexcept {
     return {}; 
 }
 
-template <class _Type_, class _ID_>
-constexpr raze_always_inline typed_keyword<_ID_, _Type_> keyword(_ID_ __id) noexcept {
+template <class T, class ID>
+constexpr raze_always_inline typed_keyword<ID, T> keyword(ID) noexcept {
     return {};
 }
 
-template <typename... T> struct types {};
+template <class ... Ts> struct types {};
 
-template <class _Settings_, template <class...> class _List_ = types> 
-struct __keywords;
+template <class Settings, template <class...> class List = types> 
+struct keywords_impl;
 
-template <class _Settings_, template <class...> class _List_ = types> 
-struct __values;
+template <class Settings, template <class...> class List = types> 
+struct values_impl;
         
-template <class ... _Options_, template <class...> class _List_>
-struct __keywords<settings<_Options_...>, _List_> {
-    using type = _List_<typename _Options_::keyword_type...>;
+template <class ... Options, template <class...> class List>
+struct keywords_impl<settings<Options...>, List> {
+    using type = List<typename Options::keyword_type...>;
 };
 
-template <class ... _Options_, template <class...> class _List_>
-struct __values<settings<_Options_...>, _List_> {
-    using type = _List_<typename _Options_::stored_value_type...>;
+template <class ... Options, template <class...> class List>
+struct values_impl<settings<Options...>, List> {
+    using type = List<typename Options::stored_value_type...>;
 };
 
-template <class _Settings_, template <class...> class _List_ = types>
-using __keywords_t = typename __keywords<_Settings_, _List_>::type;
+template <class Settings, template <class...> class List = types>
+using keywords_impl_t = typename keywords_impl<Settings, List>::type;
 
-template <class _Settings_, template <class...> class _List_ = types>
-using __values_t = typename __values<_Settings_, _List_>::type;
+template <class Settings, template <class...> class List = types>
+using values_impl_t = typename values_impl<Settings, List>::type;
 
-template <template <class...> class _List_, class ... _Options_>
-constexpr raze_always_inline auto keywords(const settings<_Options_...>&) noexcept {
-    return __keywords_t<settings<_Options_...>, _List_>{ typename _Options_::__keyword_type{}...};
+template <template <class...> class List, class ... Options>
+constexpr raze_always_inline auto keywords(const settings<Options...>&) noexcept {
+    return keywords_impl_t<settings<Options...>, List>{ typename Options::keyword_type{}...};
 }
 
-template <template <class...> class _List_, class ... _Options_>
-constexpr raze_always_inline auto values(const settings<_Options_...>& __settings) noexcept {
-    return __values_t<settings<_Options_...>, _List_>{ __settings[typename _Options_::keyword_type{}]... };
+template <template <class...> class List, class ... Options>
+constexpr raze_always_inline auto values(const settings<Options...>& s) noexcept {
+    return values_impl_t<settings<Options...>, List>{ s[typename Options::keyword_type{}]... };
 }
 
-template <concepts::settings _S1_, concepts::settings _S2_>
-struct is_equivalent_settings: std::bool_constant<is_equivalent<__keywords_t<_S1_, keys>, __keywords_t<_S2_, keys>>::value &&  
-    is_equivalent<__keywords_t<_S2_, keys>,  __keywords_t<_S1_, keys>>::value>
+template <concepts::settings S1, concepts::settings S2>
+struct is_equivalent_settings: std::bool_constant<is_equivalent<keywords_impl_t<S1, keys>, keywords_impl_t<S2, keys>>::value &&  
+    is_equivalent<keywords_impl_t<S2, keys>,  keywords_impl_t<S1, keys>>::value>
 {};
 
-template <concepts::settings _S1_, concepts::settings _S2_>
-constexpr inline bool is_equivalent_settings_v = is_equivalent<_S1_, _S2_>::value;
+template <concepts::settings S1, concepts::settings S2>
+constexpr inline bool is_equivalent_settings_v = is_equivalent<S1, S2>::value;
 
 __RAZE_OPTIONS_NAMESPACE_END

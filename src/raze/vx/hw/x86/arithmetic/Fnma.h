@@ -11,11 +11,11 @@ template <arch::ISA	_ISA_, arithmetic_type _Type_>
 struct _Fnma {
 	template <intrin_or_arithmetic_type _Tp_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Tp_ __z) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && __has_fma3_support<_ISA_>) {
+		if constexpr (sizeof(_Tp_) == 16 && has_fma3<_ISA_>) {
 			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_fnmadd_pd(__as<__m128d>(__x), __as<__m128d>(__y), __as<__m128d>(__z)));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_fnmadd_ps(__as<__m128>(__x), __as<__m128>(__y), __as<__m128>(__z)));
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && __has_fma3_support<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 32 && has_fma3<_ISA_>) {
 			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_fnmadd_pd(__as<__m256d>(__x), __as<__m256d>(__y), __as<__m256d>(__z)));
 			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_fnmadd_ps(__as<__m256>(__x), __as<__m256>(__y), __as<__m256>(__z)));
 		}

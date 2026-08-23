@@ -34,7 +34,7 @@ struct _Configurable_load {
 
             auto __mem = std::to_address(__it);
 
-            if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
+            if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
                 auto __condition = __options[raze::options::condition_key];
                 const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
 

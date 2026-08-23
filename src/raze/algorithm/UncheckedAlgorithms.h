@@ -73,14 +73,14 @@ struct dispatchable {
 
         using TraitsType = decltype(static_cast<const Function*>(this)->traits());
         using WorkType = decltype(work);
-        using Value = typename _WorkType_::vector_value_type;
+        using Value = typename WorkType::vector_value_type;
 
         if constexpr (requires { work.exit(); } && requires { work.default_result(); }) {
             if (work.exit()) return work.default_result();
         }
 
-        constexpr auto have_best_isa = vx::__has_avx512bw_support_v<vx::__best_isa_compile_time()> ||
-            (vx::__has_avx512f_support_v<vx::__best_isa_compile_time()> && sizeof(Value) >= 4);
+        constexpr auto have_best_isa = vx::has_avx512bw<vx::target_isa()> ||
+            (vx::has_avx512f<vx::target_isa()> && sizeof(Value) >= 4);
 
         constexpr auto use_autovec = options::is_autovec<TraitsType>() ||
             options::get_strategy<TraitsType>().is_autovec();
@@ -91,7 +91,7 @@ struct dispatchable {
         {
             if not consteval {
                 using ReturnType = decltype(get_result_type<WorkType>());
-                constexpr auto dispatch = vx::dispatch<options::_Unroller<TraitsType>::template __impl, Value, ReturnType, Other...>;
+                constexpr auto dispatch = vx::dispatch<options::unroller_t<TraitsType>::template __impl, Value, ReturnType, Other...>;
 
                 if constexpr (requires { WorkType::static_size(); })
                     return dispatch(WorkType::static_size(), work);
@@ -105,17 +105,17 @@ struct dispatchable {
         }
 #endif
         
-        return options::__unroller<TraitsType, vx::scalar_tag>(work);
+        return options::unroller<TraitsType, vx::scalar_tag>(work);
     }
 };
 
 #pragma strict_gs_check(on)
 
 template <class _Type_>
-concept vectorizable_tag = !options::concepts::same_as<_Type_, vx::scalar_tag> && vx::simd_type<_Type_>;
+concept vectorizable_tag = !std::same_as<_Type_, vx::scalar_tag> && vx::simd_type<_Type_>;
 
 template <class _Type_>
-concept scalar_tag = options::concepts::same_as<_Type_, vx::scalar_tag>;
+concept scalar_tag = std::same_as<_Type_, vx::scalar_tag>;
 
 template <class _Type_>
 concept tail_tag = requires(_Type_) {

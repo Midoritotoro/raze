@@ -12,11 +12,11 @@ struct _To_mask {
 	raze_nodiscard raze_always_inline auto operator()(_Tp_ __x) const noexcept {
         using _MaskType = __mmask_for_elements_t<sizeof(_Tp_) / sizeof(_Type_)>;
 
-        constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-        constexpr auto __avx512dq = __has_avx512dq_support_v<_ISA_>;
-        constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-        constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-        constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
+        constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+        constexpr auto __avx512dq = has_avx512dq<_ISA_>;
+        constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+        constexpr auto __avx2 = has_avx2<_ISA_>;
+        constexpr auto __ssse3 = has_ssse3<_ISA_>;
 
         if constexpr (std::is_integral_v<_Tp_>) { return __x; }
 		else if constexpr (sizeof(_Tp_) == 16) {

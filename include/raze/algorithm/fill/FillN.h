@@ -138,7 +138,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __size, __v));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __size, __v));
 	}
 
 	template <class _Iterator_, sizetype _Size_, class _ValueType_>
@@ -158,7 +158,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __size, __v));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __size, __v));
 	}
 };
 

@@ -8,7 +8,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA _ISA_, arithmetic_type _Value_, intrin_or_arithmetic_type _Intrin_, class _Pattern_>
 raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexcept {
-	if constexpr (!__has_ssse3_support_v<_ISA_> && sizeof(_Intrin_) == 16) {
+	if constexpr (!has_ssse3<_ISA_> && sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Value_) == 2) {
 			__x = __as<_Intrin_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 1));
 			__x = __as<_Intrin_>(_mm_shufflehi_epi16(__as<__m128i>(__x), 0x1B));
@@ -22,19 +22,19 @@ raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexce
 		}
 	}
 	else if constexpr (sizeof(_Intrin_) == 32) {
-		if constexpr (sizeof(_Value_) == 2 && !(__has_avx512bw_support_v<_ISA_> && __has_avx512vl_support_v<_ISA_>)) {
+		if constexpr (sizeof(_Value_) == 2 && !(has_avx512bw<_ISA_> && has_avx512vl<_ISA_>)) {
 			const auto __reversed_lanes = _mm256_shuffle_epi8(__as<__m256i>(__x), 
 				(__p % std::integral_constant<sizetype, 16>{}).template expand<u16, u8>().template as_native<__m256i>());
 			return __as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
 		}
-		else if constexpr (sizeof(_Value_) == 1 && !(__has_avx512vbmi_support_v<_ISA_> && __has_avx512vl_support_v<_ISA_>)) {
+		else if constexpr (sizeof(_Value_) == 1 && !(has_avx512vbmi<_ISA_> && has_avx512vl<_ISA_>)) {
 			const auto __reversed_lanes = _mm256_shuffle_epi8(__as<__m256i>(__x),
 				(__p % std::integral_constant<sizetype, 16>{}).template as_native<__m256i>());
 			return __as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
 		}
 	}
 	else if constexpr (sizeof(_Intrin_) == 64) {
-		if constexpr ((sizeof(_Value_) == 2 && !__has_avx512bw_support_v<_ISA_>) || (sizeof(_Value_) == 1 && !__has_avx512vbmi_support_v<_ISA_>)) {
+		if constexpr ((sizeof(_Value_) == 2 && !has_avx512bw<_ISA_>) || (sizeof(_Value_) == 1 && !has_avx512vbmi<_ISA_>)) {
 			constexpr auto __p_offset = __p.offset(std::integral_constant<sizetype, __p.size() / 2>{});
 			__m256i __native;
 			

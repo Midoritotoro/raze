@@ -5,19 +5,19 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Function_>
+template <class F>
 struct call {
-    constexpr call(_Function_ __function) noexcept :
-        _callable(__function)
+    constexpr call(F f) noexcept :
+        _callable(f)
     {}
 
     constexpr raze_always_inline auto perform() const
-        noexcept(std::is_nothrow_invocable_v<_Function_>) 
+        noexcept(std::is_nothrow_invocable_v<F>) 
     {
         return _callable();
     }
 
-    raze_no_unique_address _Function_ _callable;
+    raze_no_unique_address F _callable;
 };
 
 __RAZE_OPTIONS_NAMESPACE_END

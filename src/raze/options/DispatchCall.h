@@ -7,14 +7,12 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Callable_, class ... _Args_>
-constexpr raze_no_stack_protector raze_always_inline auto __dispatch_call(
-    const _Callable_& __callable, _Args_&& ... __args) noexcept 
-{
-    using _ReturnType = decltype(__callable(std::forward<_Args_>(__args)...));
+template <class F, class ... Args>
+constexpr raze_no_stack_protector raze_always_inline auto dispatch_call(const F& f, Args&& ... args) noexcept {
+    using ReturnType = decltype(f(std::forward<Args>(args)...));
 
-    if constexpr (std::is_void_v<_ReturnType>) __callable.behavior(__callable.options(), std::forward<_Args_>(__args)...);
-    else return __callable.behavior(__callable.options(), std::forward<_Args_>(__args)...);
+    if constexpr (std::is_void_v<ReturnType>) f.behavior(f.options(), std::forward<Args>(args)...);
+    else return f.behavior(f.options(), std::forward<Args>(args)...);
 }
 
 __RAZE_OPTIONS_NAMESPACE_END

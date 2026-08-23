@@ -13,20 +13,20 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _For_each_n : _Traits_ {
-	template <class _Iterator_, class _Function_, class _Projection_>
+	template <class _Iterator_, class _Function_, class Projection>
 	struct __impl {
 		mutable _Iterator_ _iterator;
 		_Function_ _function;
-		_Projection_ _proj;
+		Projection _proj;
 		sizetype _count;
 
-		constexpr explicit __impl(_Iterator_ __it, sizetype __n, _Function_ __f, _Projection_ __proj) noexcept :
+		constexpr explicit __impl(_Iterator_ __it, sizetype __n, _Function_ __f, Projection __proj) noexcept :
 			_iterator(__it), _function(__f), _proj(__proj), _count(__n)
 		{}
 
 		template <class _Tag_>
 		raze_always_inline constexpr void operator()(_Tag_) const noexcept
-			requires(options::concepts::same_as<_Tag_, vx::scalar_tag>)
+			requires(std::same_as<_Tag_, vx::scalar_tag>)
 		{
 			raze_disable_unrolling
 			for (sizetype __i = 0; __i < _count; ++__i, ++_iterator)
@@ -35,7 +35,7 @@ struct _For_each_n : _Traits_ {
 
 		template <class _Tag_>
 		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) const noexcept
-			requires(!options::concepts::same_as<_Tag_, vx::scalar_tag>)
+			requires(!std::same_as<_Tag_, vx::scalar_tag>)
 		{
 			auto* __ptr = std::to_address(_iterator);
 			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
@@ -56,24 +56,24 @@ struct _For_each_n : _Traits_ {
 		}
 	};
 
-	template <std::input_iterator _Iterator_, class _Function_, class _Projection_ = std::identity>
+	template <std::input_iterator _Iterator_, class _Function_, class Projection = std::identity>
 	constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> operator()(_Iterator_ __first,
-		sizetype __n, _Function_ __f, _Projection_ __proj = {}) const noexcept
+		sizetype __n, _Function_ __f, Projection __proj = {}) const noexcept
 	{
 		if (__n == 0) return { std::move(__first), std::move(__f) };
 
 		auto __r = __for_each_n_unchecked(
 			traits::__uiter<_Iterator_>(std::move(__first)),
-			__n, traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
+			__n, traits::fwd_fn(__f), traits::fwd_fn(__proj));
 
 		__seek_iter(__first, __r.in);
 		return { __first, __unwrap_function(std::move(__r.fun)) };
 	}
 
 private:
-	template <class _Iterator_, class _Function_, class _Projection_>
+	template <class _Iterator_, class _Function_, class Projection>
 	constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> __for_each_n_unchecked(
-		_Iterator_ __first, sizetype __n, _Function_ __f, _Projection_ __proj) const noexcept
+		_Iterator_ __first, sizetype __n, _Function_ __f, Projection __proj) const noexcept
 	{
 		using _TraitsType = decltype(this->traits());
 		using _Value_ = std::iter_value_t<_Iterator_>;
@@ -82,15 +82,15 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
 			&& vectorizable_unary_function<_Function_, _Iterator_> &&
-			vectorizable_projection<_Projection_, _Iterator_> && traits::__is_lightweight_callable_v<_Function_>)
+			vectorizable_projection<Projection, _Iterator_> && traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
-				return vx::__dispatch_sized_impl<options::_Unroller<_TraitsType>::template __impl, 
+				return vx::__dispatch_sized_impl<options::unroller_t<_TraitsType>::template __impl, 
 					_Value_, std::ranges::for_each_result<_Iterator_, _Function_>>(__n * sizeof(_Value_), __work);
 			}
 		}
 		
-		return options::__unroller<decltype(this->traits()), vx::scalar_tag>(__work);
+		return options::_unroller_t<decltype(this->traits()), vx::scalar_tag>(__work);
 	}
 };
 

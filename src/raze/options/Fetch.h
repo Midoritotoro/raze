@@ -6,43 +6,41 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <concepts::keyword _Keyword_, concepts::option ... _Options_>
-constexpr raze_always_inline decltype(auto) fetch(const _Keyword_& __keyword,
-    const _Options_& ... __options) noexcept
+template <concepts::keyword Keyword, concepts::option ... Options>
+constexpr raze_always_inline decltype(auto) fetch(const Keyword& kw,
+    const Options& ... opts) noexcept
 {
-    const auto __opts = settings(__options...);
-    return __opts[__keyword];
+    return settings(opts...)[kw];
 }
     
-template <concepts::keyword _Keyword_, class _Value_, concepts::option ... _Options_>
-constexpr raze_always_inline decltype(auto) fetch(const __type_or<_Keyword_, _Value_>& __keyword,
-    const _Options_& ... __options) noexcept
+template <concepts::keyword Keyword, class Value, concepts::option ... Options>
+constexpr raze_always_inline decltype(auto) fetch(const type_or<Keyword, Value>& kw,
+    const Options& ... opts) noexcept
 {
-    const auto __opts = settings(__options...);
-    return __opts[__keyword];
+    return settings(opts)[kw];
 }
 
-template <class _Key_, concepts::settings  _Settings_>
-constexpr raze_always_inline decltype(auto) fetch(const _Key_& __key,
-    const _Settings_& __settings) noexcept
+template <class Key, concepts::settings Settings>
+constexpr raze_always_inline decltype(auto) fetch(const Key& key,
+    const Settings& s) noexcept
 {
-    return __settings[__key];
+    return s[key];
 }
 
-template <auto _Keyword_, class ... _Sources_> 
-struct __fetch_t;
+template <auto Keyword, class ... Sources> 
+struct fetch_t_impl;
 
-template <auto _Keyword_, concepts::option ... _Options_>
-struct __fetch_t<_Keyword_, _Options_...>  {
-    using type = decltype(fetch(_Keyword_, std::declval<_Options_>()...));
+template <auto Keyword, concepts::option ... Options>
+struct fetch_t_impl<Keyword, Options...>  {
+    using type = decltype(fetch(Keyword, std::declval<Options>()...));
 };
 
-template <auto _Keyword_, concepts::settings _Settings_>
-struct __fetch_t<_Keyword_, _Settings_>  {
-    using type = decltype(fetch(_Keyword_, std::declval<_Settings_>()));
+template <auto Keyword, concepts::settings Settings>
+struct fetch_t_impl<Keyword, Settings>  {
+    using type = decltype(fetch(Keyword, std::declval<Settings>()));
 };
 
-template <auto _Keyword_, class ... _Sources_>
-using fetch_t = typename __fetch_t<_Keyword_, _Sources_...>::type;
+template <auto Keyword, class ... Sources>
+using fetch_t = typename fetch_t_impl<Keyword, Sources...>::type;
 
 __RAZE_OPTIONS_NAMESPACE_END

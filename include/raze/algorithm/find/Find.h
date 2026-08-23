@@ -19,7 +19,7 @@ constexpr auto find_strategy = options::strategy<strategy<>().for_gcc<strategy_m
 
 template <class _Traits_>
 struct _Find_if : _Traits_, dispatchable<_Find_if<_Traits_>> {
-	template <source _Source_, class _Predicate_, class _Projection_>
+	template <source _Source_, class Predicate, class Projection>
 	struct __kernel {
 		using source_type = std::remove_cvref_t<_Source_>;
 		using iterator_type = typename source_type::iterator_type;
@@ -32,10 +32,10 @@ struct _Find_if : _Traits_, dispatchable<_Find_if<_Traits_>> {
 		_Source_ _source;
 		unchecked_iterator_type _iterator;
 		unchecked_sentinel_type _sentinel;
-		_Predicate_ _predicate;
-		_Projection_ _proj;
+		Predicate _predicate;
+		Projection _proj;
 
-		constexpr explicit __kernel(_Source_&& __src, _Predicate_ __pred, _Projection_ __proj) noexcept:
+		constexpr explicit __kernel(_Source_&& __src, Predicate __pred, Projection __proj) noexcept:
 			_source(std::forward<_Source_>(__src)), _predicate(__pred), _proj(__proj)
 		{
 			_iterator = _source.ubegin();
@@ -92,28 +92,28 @@ struct _Find_if : _Traits_, dispatchable<_Find_if<_Traits_>> {
 
 		static consteval bool vectorizable() noexcept {
 			return std::contiguous_iterator<unchecked_iterator_type> &&
-				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type> &&
-				vectorizable_projection<_Projection_, unchecked_iterator_type>;
+				vectorizable_unary_predicate<Predicate, unchecked_iterator_type> &&
+				vectorizable_projection<Projection, unchecked_iterator_type>;
 		}
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Predicate_, class _Projection_ = std::identity>
+		class Predicate, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
-		_Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
+		_Sentinel_ __sent, Predicate __pred, Projection __proj = {}) const noexcept
+		requires(std::indirect_unary_predicate<Predicate, std::projected<_Iterator_, Projection>>)
 	{
 		return this->dispatch(get_source(std::move(__first), std::move(__sent)),
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+			traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
-		_Range_&& __r, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+	template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
+		Range&& __r, Predicate __pred, Projection __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>)
 	{
-		return this->dispatch(get_source(std::forward<_Range_>(__r)),
-			traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+		return this->dispatch(get_source(std::forward<Range>(__r)),
+			traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 	}
 };
 
@@ -122,23 +122,23 @@ constexpr inline auto find_if = raze::options::function_with_traits<_Find_if>[ra
 template <class _Traits_>
 struct _Find : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Value_, class _Projection_ = std::identity>
+		class _Value_, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
-		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __last, const _Value_& __v, Projection __proj = {}) const noexcept
 	{
 		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
-			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
-			traits::__fwd_fn(__proj));
+			function_return_type<Projection, std::iter_value_t<_Iterator_>>(__v)),
+			traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_,
-		class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
-		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
+	template <std::ranges::input_range Range, class _Value_,
+		class Projection = std::identity>
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
+		Range&& __range, const _Value_& __v, Projection __proj = {}) const noexcept
 	{
-		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			traits::__fwd_fn(__proj));
+		return find_if[_Traits_::traits()](std::forward<Range>(__range), algorithm::equal_to(
+			function_return_type<Projection, std::ranges::range_value_t<Range>>(__v)),
+			traits::fwd_fn(__proj));
 	}
 };
 
@@ -147,20 +147,20 @@ constexpr inline auto find = raze::options::function_with_traits<_Find>[raze::op
 template <class _Traits_>
 struct _Find_if_not : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Predicate_, class _Projection_ = std::identity>
+		class Predicate, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first,
-		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-		requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
+		_Sentinel_ __last, Predicate __pred, Projection __proj = {}) const noexcept
+		requires(std::indirect_unary_predicate<Predicate, std::projected<_Iterator_, Projection>>)
 	{
-		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::__fwd_fn(__proj));
+		return find_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
-		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-		requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+	template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
+	raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
+		Range&& __range, Predicate __pred, Projection __proj = {}) const noexcept
+		requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>)
 	{
-		return find_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
+		return find_if[_Traits_::traits()](std::forward<Range>(__range), make_not_fn(__pred), traits::fwd_fn(__proj));
 	}
 };
 

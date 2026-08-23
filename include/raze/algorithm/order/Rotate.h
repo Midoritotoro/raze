@@ -145,26 +145,26 @@ struct _Rotate : _Traits_ {
 		return { std::move(__first), std::move(__sent) };
 	}
 
-	template <std::ranges::forward_range _Range_>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(_Range_&& __range, 
-		std::ranges::iterator_t<_Range_> __middle) const noexcept
-		requires(!constexpr_sized_range<_Range_> && std::permutable<std::ranges::iterator_t<_Range_>>)
+	template <std::ranges::forward_range Range>
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(Range&& __range, 
+		std::ranges::iterator_t<Range> __middle) const noexcept
+		requires(!constexpr_sized_range<Range> && std::permutable<std::ranges::iterator_t<Range>>)
 	{
 		return (*this)(std::ranges::begin(__range), __middle, std::ranges::end(__range));
 	}
 
-	template <std::ranges::forward_range _Range_>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(_Range_&& __range,
-		std::ranges::iterator_t<_Range_> __middle) const noexcept
-		requires(constexpr_sized_range<_Range_> && std::permutable<std::ranges::iterator_t<_Range_>>)
+	template <std::ranges::forward_range Range>
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(Range&& __range,
+		std::ranges::iterator_t<Range> __middle) const noexcept
+		requires(constexpr_sized_range<Range> && std::permutable<std::ranges::iterator_t<Range>>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
-		auto __r = __rotate_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)),
-			traits::__r_uiter<_Range_>(std::move(__middle)),
-			traits::__r_usent<_Range_>(__end),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		auto __r = __rotate_unchecked(traits::__r_uiter<Range>(std::move(__begin)),
+			traits::__r_uiter<Range>(std::move(__middle)),
+			traits::__r_usent<Range>(__end),
+			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
 
 		__seek_iter(__begin, __r.begin());
 		__seek_iter(__end, __r.end());

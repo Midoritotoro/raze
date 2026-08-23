@@ -133,7 +133,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2));
 	}
 
 	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_, sizetype _Size_>
@@ -165,7 +165,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2));
 	}
 };
 

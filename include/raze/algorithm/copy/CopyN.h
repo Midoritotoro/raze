@@ -76,7 +76,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __n, __result));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __n, __result));
 	}
 };
 

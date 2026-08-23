@@ -5,13 +5,13 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <concepts::keyword _Type_, class _Value_> 
-struct __type_or {
-    raze_no_unique_address _Value_ _value;
+template <concepts::keyword T, class Value> 
+struct type_or {
+    raze_no_unique_address Value _value;
 
-    template <concepts::option ... _Options_>
-    constexpr raze_always_inline decltype(auto) operator()(_Options_&&... __options) const noexcept {
-        return fetch(*this, std::forward<_Options_>(__options)...); 
+    template <concepts::option ... Options>
+    constexpr raze_always_inline decltype(auto) operator()(Options&&... opts) const noexcept {
+        return fetch(*this, std::forward<Options>(opts)...); 
     }
 };
 

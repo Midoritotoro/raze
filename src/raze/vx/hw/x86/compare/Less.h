@@ -8,10 +8,10 @@ template <arch::ISA _ISA_, arithmetic_type _Type_>
 struct _Less {
 	template <intrin_or_arithmetic_type _Tp_>
 	raze_nodiscard raze_always_inline auto operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-        constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-        constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-        constexpr auto __sse41 = __has_sse41_support_v<_ISA_>;
-        constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
+        constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+        constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+        constexpr auto __sse41 = has_sse41<_ISA_>;
+        constexpr auto __avx2 = has_avx2<_ISA_>;
 
 		if constexpr (sizeof(_Tp_) == 16) {
             if constexpr (__is_pd_v<_Type_>) {
@@ -188,7 +188,7 @@ struct _Less {
             else if constexpr (__is_epu32_v<_Type_>) return _mm512_cmplt_epu32_mask(__as<__m512i>(__x), __as<__m512i>(__y));
             else if constexpr (__is_ps_v<_Type_>) return _mm512_cmplt_ps_mask(__as<__m512>(__x), __as<__m512>(__y));
             else if constexpr (__is_pd_v<_Type_>) return _mm512_cmplt_pd_mask(__as<__m512d>(__x), __as<__m512d>(__y));
-            else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+            else if constexpr (has_avx512bw<_ISA_>) {
                 if constexpr (__is_epi16_v<_Type_>) return _mm512_cmplt_epi16_mask(__as<__m512i>(__x), __as<__m512i>(__y));
                 else if constexpr (__is_epu16_v<_Type_>) return _mm512_cmplt_epu16_mask(__as<__m512i>(__x), __as<__m512i>(__y));
                 else if constexpr (__is_epi8_v<_Type_>) return _mm512_cmplt_epi8_mask(__as<__m512i>(__x), __as<__m512i>(__y));

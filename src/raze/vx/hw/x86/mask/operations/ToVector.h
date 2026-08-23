@@ -12,11 +12,11 @@ template <arch::ISA	_ISA_, intrin_type _Vector_, arithmetic_type _Type_>
 struct _To_vector {
     template <raw_mask_type _Mask_>
     raze_nodiscard raze_always_inline auto operator()(_Mask_ __mask) const noexcept {
-        constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-        constexpr auto __avx512dq = __has_avx512dq_support_v<_ISA_>;
-        constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-        constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-        constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
+        constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+        constexpr auto __avx512dq = has_avx512dq<_ISA_>;
+        constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+        constexpr auto __avx2 = has_avx2<_ISA_>;
+        constexpr auto __ssse3 = has_ssse3<_ISA_>;
         
         if constexpr (intrin_type<_Mask_>)
             return __as<_Vector_>(__mask);

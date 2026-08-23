@@ -9,10 +9,10 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA	_ISA_, class _Type_, bool _Safe_ = false>
 struct _Mask_store {
-	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-	static constexpr auto __avx = __has_avx_support_v<_ISA_>;
+	static constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+	static constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+	static constexpr auto __avx2 = has_avx2<_ISA_>;
+	static constexpr auto __avx = has_avx<_ISA_>;
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_static_operator raze_no_stack_protector raze_always_inline void __store(void* raze_restrict __mem, _Mask_ __mask, _Tp_ __x) raze_const_operator noexcept {

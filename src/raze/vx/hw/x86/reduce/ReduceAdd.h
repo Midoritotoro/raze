@@ -24,7 +24,7 @@ struct _Reduce_add {
 #endif // defined(raze_processor_x86_32)
             }
             else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-                if constexpr (__has_ssse3_support_v<_ISA_>) {
+                if constexpr (has_ssse3<_ISA_>) {
                     const auto __reduce4 = _mm_hadd_epi32(__as<__m128i>(__x), __as<__m128i>(__x));
                     return static_cast<_ReduceType>(_mm_cvtsi128_si32(_mm_hadd_epi32(__reduce4, __reduce4)));
                 }
@@ -39,7 +39,7 @@ struct _Reduce_add {
                 }
             }
             else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-                if constexpr (__has_ssse3_support_v<_ISA_>) {
+                if constexpr (has_ssse3<_ISA_>) {
                     const auto __zeros = _mm_setzero_si128();
 
                     const auto __reduce2 = _mm_hadd_epi16(__as<__m128i>(__x), __zeros);
@@ -76,7 +76,7 @@ struct _Reduce_add {
 #endif // defined(raze_processor_x86_32)
             }
             else if constexpr (__is_ps_v<_Type_>) {
-                if constexpr (__has_sse3_support_v<_ISA_>) {
+                if constexpr (has_sse3<_ISA_>) {
                     const auto __reduce4 = _mm_hadd_ps(__as<__m128>(__x), __as<__m128>(__x));
                     return static_cast<_ReduceType>(_mm_cvtss_f32(_mm_hadd_ps(__reduce4, __reduce4)));
                 }
@@ -89,12 +89,12 @@ struct _Reduce_add {
                 }
             }
             else if constexpr (__is_pd_v<_Type_>) {
-                if constexpr (__has_sse3_support_v<_ISA_>) return _mm_cvtsd_f64(_mm_hadd_pd(__as<__m128d>(__x), __as<__m128d>(__x)));
+                if constexpr (has_sse3<_ISA_>) return _mm_cvtsd_f64(_mm_hadd_pd(__as<__m128d>(__x), __as<__m128d>(__x)));
                 else return _mm_cvtsd_f64(_mm_add_sd(__as<__m128d>(__x), _mm_unpackhi_pd(__as<__m128d>(__x), __as<__m128d>(__x))));
             }
         }
         else if constexpr (sizeof(_Tp_) == 32) {
-            if constexpr (__has_avx2_support_v<_ISA_>) {
+            if constexpr (has_avx2<_ISA_>) {
                 if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
                     const auto __low64 = __as<__m128i>(__x);
                     const auto __high64 = _mm256_extracti128_si256(__as<__m256i>(__x), 1);

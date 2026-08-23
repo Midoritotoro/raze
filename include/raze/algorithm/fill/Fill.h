@@ -105,24 +105,24 @@ struct _Fill : _Traits_ {
 		return __last;
 	}
 
-	template <class _Range_, class _Value_ = std::ranges::range_value_t<_Range_>>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
-		_Range_&& __r, const std::type_identity_t<_Value_>& __v) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::ranges::output_range<_Range_, _Value_>)
+	template <class Range, class _Value_ = std::ranges::range_value_t<Range>>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
+		Range&& __r, const std::type_identity_t<_Value_>& __v) const noexcept
+			requires(!constexpr_sized_range<Range> && std::ranges::output_range<Range, _Value_>)
 	{
 		auto __last = std::ranges::end(__r);
 		__fill_unchecked(traits::__ubegin(__r), traits::__uend(__r), __v);
 		return __last;
 	}
 
-	template <class _Range_, class _Value_ = std::ranges::range_value_t<_Range_>>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(
-		_Range_&& __r, const std::type_identity_t<_Value_>& __v) const noexcept
-			requires(constexpr_sized_range<_Range_> && std::ranges::output_range<_Range_, _Value_>)
+	template <class Range, class _Value_ = std::ranges::range_value_t<Range>>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
+		Range&& __r, const std::type_identity_t<_Value_>& __v) const noexcept
+			requires(constexpr_sized_range<Range> && std::ranges::output_range<Range, _Value_>)
 	{
 		auto __last = std::ranges::end(__r);
 		__fill_unchecked(traits::__ubegin(__r), traits::__uend(__r), __v,
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
 		return __last;
 	}
 private:
@@ -146,7 +146,7 @@ private:
 			}
 		}
 
-		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __v));
+		options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __v));
 	}
 
 	template <class _Iterator_, class _Sentinel_, class _ValueType_, sizetype _Size_>
@@ -170,7 +170,7 @@ private:
 			}
 		}
 
-		options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __v));
+		options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __v));
 	}
 };
 

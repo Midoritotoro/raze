@@ -25,7 +25,7 @@ struct _Configurable_is_contiguous: raze::options::conditional_callable<_Configu
 
     template <simd_mask_type _Type_>
     static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, i32 __n, i32 __k) noexcept {
-        static_assert(raze::options::concepts::same_as<raze::options::fetch_t<raze::options::condition_key, _Options_>,
+        static_assert(std::same_as<raze::options::fetch_t<raze::options::condition_key, _Options_>,
             raze::options::unknown_key>, "is_contiguous does not support conditional masks via []. ");
 
         using _Value_ = typename _Type_::value_type;

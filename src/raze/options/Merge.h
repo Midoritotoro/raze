@@ -5,28 +5,27 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <concepts::option ... _Options_>
+template <concepts::option ... Options>
 struct settings;
 
-template <concepts::option ... _Keys1_, concepts::option ... _Keys2_>
-constexpr raze_always_inline auto merge(const settings<_Keys1_...>& __options, 
-    const settings<_Keys2_...>& __defaults) noexcept
+template <concepts::option ... Keys1, concepts::option ... Keys2>
+constexpr raze_always_inline auto merge(const settings<Keys1...>& opts, 
+    const settings<_Keys2_...>& defaults) noexcept
 {
-    auto __selector = [] <class _Key_, class _Options_> (
-        const _Key_&, const _Options_& __opts, const auto& __d)
+    auto selector = [] <class Key, class Options> (
+        const Key&, const Options& os, const auto& d)
     {
-        constexpr _Key_ __key;
-
-        if constexpr(_Options_::contains(__key)) return (__key = __opts[__key]);
-        else return (__key = __d[__key]);
+        constexpr Key key;
+        if constexpr(Options::contains(key)) return (key = os[key]);
+        else return (key = d[key]);
     };
 
-    auto __select = [&] <class ... _Keys_> (const keys<_Keys_...>&, const auto& __os, const auto& __ds) {
-        return settings(__selector(_Keys_{}, __os, __ds)...);
+    auto select = [&] <class ... Keys> (const keys<Keys...>&, const auto& os, const auto& ds) {
+        return settings(selector(Keys{}, os, ds)...);
     };
 
-    return __select(typename uniques<keys<typename _Keys1_::keyword_type...>,
-        keys<typename _Keys2_::keyword_type...>>::type{}, __options, __defaults);
+    return select(typename uniques<keys<typename Keys1::keyword_type...>,
+        keys<typename Keys2::keyword_type...>>::type{}, opts, defaults);
 }
 
 __RAZE_OPTIONS_NAMESPACE_END

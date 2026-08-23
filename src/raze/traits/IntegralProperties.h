@@ -7,10 +7,10 @@
 
 __RAZE_TRAITS_NAMESPACE_BEGIN
 
-template <class _Type_>
-constexpr inline bool is_nonbool_integral_v = std::is_integral_v<_Type_> && !std::is_same_v<std::remove_cv_t<_Type_>, bool>;
+template <class T>
+constexpr inline bool is_nonbool_integral_v = std::is_integral_v<T> && !std::is_same_v<std::remove_cv_t<T>, bool>;
 
-template <class _Type_> struct is_character: std::false_type {};
+template <class T> struct is_character: std::false_type {};
 template <> struct is_character<char>: std::true_type {};
 template <> struct is_character<signed char>: std::true_type {};
 template <> struct is_character<unsigned char>: std::true_type {};
@@ -19,22 +19,22 @@ template <> struct is_character<unsigned char>: std::true_type {};
   template <> struct is_character<char8_t>: std::true_type {};
 #endif // defined(__cpp_char8_t)
 
-template <class _Type_> struct is_character_or_bool: is_character<_Type_>::type {};
+template <class T> struct is_character_or_bool: is_character<T>::type {};
 template <> struct is_character_or_bool<bool>: std::true_type {};
-template <class _Type_> struct is_character_or_byte_or_bool: is_character_or_bool<_Type_>::type {};
+template <class T> struct is_character_or_byte_or_bool: is_character_or_bool<T>::type {};
 
 #if defined(__cpp_lib_byte)
   template <> struct is_character_or_byte_or_bool<std::byte>: std::true_type {};
 #endif // defined(__cpp_lib_byte)
 
-template <class _Type_>
-constexpr inline bool is_character_v = is_character<_Type_>::value;
+template <class T>
+constexpr inline bool is_character_v = is_character<T>::value;
 
-template <class _Type_>
-constexpr inline bool is_character_or_bool_v = is_character_or_bool<_Type_>::value;
+template <class T>
+constexpr inline bool is_character_or_bool_v = is_character_or_bool<T>::value;
 
-template <class _Type_>
-constexpr inline bool is_character_or_byte_or_bool_v = is_character_or_byte_or_bool<_Type_>::value;
+template <class T>
+constexpr inline bool is_character_or_byte_or_bool_v = is_character_or_byte_or_bool<T>::value;
 
 __RAZE_TRAITS_NAMESPACE_END
 

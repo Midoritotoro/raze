@@ -12,10 +12,10 @@ struct _Mask_not {
 	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x) raze_const_operator noexcept {
 		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) return !__x;
 		else if constexpr (intrin_type<_Tp_>) return _Not<_ISA_, _Type_>()(__x);
-		else if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>) return _knot_mask8(__x);
-		else if constexpr (sizeof(_Tp_) == 2 && __has_avx512f_support_v<_ISA_>) return _knot_mask16(__x);
-		else if constexpr (sizeof(_Tp_) == 4 && __has_avx512bw_support_v<_ISA_>) return _knot_mask32(__x);
-		else if constexpr (sizeof(_Tp_) == 8 && __has_avx512bw_support_v<_ISA_>) return _knot_mask64(__x);
+		else if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>) return _knot_mask8(__x);
+		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>) return _knot_mask16(__x);
+		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>) return _knot_mask32(__x);
+		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>) return _knot_mask64(__x);
 		else return ~__x;
 	}
 

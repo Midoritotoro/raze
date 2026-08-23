@@ -147,23 +147,23 @@ struct _Reverse : _Traits_ {
 		return std::ranges::next(__first, __sent);
 	}
 
-	template <std::ranges::bidirectional_range _Range_>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range) const noexcept
-		requires(!constexpr_sized_range<_Range_> && std::permutable<std::ranges::iterator_t<_Range_>>)
+	template <std::ranges::bidirectional_range Range>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(Range&& __range) const noexcept
+		requires(!constexpr_sized_range<Range> && std::permutable<std::ranges::iterator_t<Range>>)
 	{
 		return (*this)(std::ranges::begin(__range), std::ranges::end(__range));
 	}
 
-	template <std::ranges::bidirectional_range _Range_>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<_Range_> operator()(_Range_&& __range) const noexcept
-		requires(constexpr_sized_range<_Range_> && std::permutable<std::ranges::iterator_t<_Range_>>)
+	template <std::ranges::bidirectional_range Range>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(Range&& __range) const noexcept
+		requires(constexpr_sized_range<Range> && std::permutable<std::ranges::iterator_t<Range>>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
-		__reverse_unchecked(traits::__r_uiter<_Range_>(std::move(__begin)), 
-			traits::__r_usent<_Range_>(__end),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+		__reverse_unchecked(traits::__r_uiter<Range>(std::move(__begin)), 
+			traits::__r_usent<Range>(__end),
+			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
 
 		return std::ranges::next(__begin, __end);
 	}
@@ -186,7 +186,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last));
 	}
 
 	template <class _Iterator_, class _Sentinel_, sizetype _Size_>
@@ -209,7 +209,7 @@ private:
 			}
 		}
 		
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last));
 	}
 };
 

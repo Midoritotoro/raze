@@ -9,18 +9,18 @@ struct unknown_key {
     using type = unknown_key; 
 };
 
-template <concepts::option ... _Options_> 
+template <concepts::option ... Options> 
 struct aggregator:
-    _Options_...
+    Options...
 {
-    constexpr aggregator(const _Options_& ... __options) noexcept:
-        _Options_(__options)... 
+    constexpr aggregator(const Options& ... opts) noexcept:
+        Options(opts)... 
     {}
 
-    using _Options_::operator()...;
+    using Options::operator()...;
 
-    template <concepts::keyword _Keyword_> 
-    constexpr raze_always_inline auto operator()(const _Keyword_&) const noexcept {
+    template <concepts::keyword Keyword> 
+    constexpr raze_always_inline auto operator()(const Keyword&) const noexcept {
         return unknown_key{};
     }
 };

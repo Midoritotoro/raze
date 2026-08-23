@@ -44,7 +44,7 @@ struct _Configurable_is_greater_equal: raze::options::conditional_callable<_Conf
             __chunk = _Greater_equal<_Abi_::isa, _Value_>()(__storage_unwrap<_Args_>(__args)...);
         };
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
+        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
             auto __condition = __options[raze::options::condition_key];
             const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
             __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage(), __mask.__storage().storage());

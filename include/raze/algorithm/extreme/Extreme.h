@@ -14,15 +14,15 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Extreme : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+	template <class _Iterator_, class _Sentinel_, class _Comp_, class Projection>
 	struct __impl {
 		_Iterator_ _iterator;
 		_Sentinel_ _sentinel;
-		_Projection_ _proj;
+		Projection _proj;
 		_Comp_ _comp;
 		std::iter_value_t<_Iterator_> _extreme_value;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Comp_ __comp, _Projection_ __proj) noexcept :
+		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Comp_ __comp, Projection __proj) noexcept :
 			_iterator(__it), _sentinel(__sent), _proj(__proj), _comp(__comp), _extreme_value(*__it)
 		{
 			++_iterator;
@@ -45,9 +45,9 @@ struct _Extreme : _Traits_ {
 
 	template <class _Tag_>
 	struct __vectorized_extreme {
-		template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+		template <class _Iterator_, class _Sentinel_, class _Comp_, class Projection>
 		raze_nodiscard raze_always_inline std::iter_value_t<_Iterator_> operator()(_Iterator_ __first,
-			_Sentinel_ __sentinel, _Comp_ __comp, _Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+			_Sentinel_ __sentinel, _Comp_ __comp, Projection __proj) const noexcept requires(!vx::simd_type<_Tag_>)
 		{
 			std::iter_value_t<_Iterator_> __extreme_value = *__first;
 
@@ -58,10 +58,10 @@ struct _Extreme : _Traits_ {
 			return __extreme_value;
 		}
 
-		template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+		template <class _Iterator_, class _Sentinel_, class _Comp_, class Projection>
 		raze_nodiscard raze_always_inline auto operator()(sizetype __aligned_size,
 			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel,
-			_Comp_ __comp, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+			_Comp_ __comp, Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			auto* __ptr = std::to_address(__first);
 			raze_assume(__ptr != nullptr);
@@ -97,10 +97,10 @@ struct _Extreme : _Traits_ {
 		}
 
 		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+			class _Iterator_, class _Sentinel_, class _Comp_, class Projection>
 		raze_nodiscard raze_always_inline auto operator()(std::integral_constant<sizetype, _AlignedSize_>,
 			std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
-			_Comp_ __comp, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+			_Comp_ __comp, Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
 			
@@ -139,38 +139,38 @@ struct _Extreme : _Traits_ {
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Comp_ = std::greater<>, class _Projection_ = std::identity>
+		class _Comp_ = std::greater<>, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<_Iterator_>> operator()(_Iterator_ __first,
-		_Sentinel_ __last, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __last, _Comp_ __comp = {}, Projection __proj = {}) const noexcept
 	{
 		return __extreme_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
 			traits::__usent<_Iterator_>(std::move(__last)),
-			traits::__fwd_fn(__comp), traits::__fwd_fn(__proj));
+			traits::fwd_fn(__comp), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Comp_ = std::greater<>, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::optional<std::ranges::range_value_t<_Range_>> operator()(
-		_Range_&& __range, _Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept
-		requires(!constexpr_sized_range<_Range_>)
+	template <std::ranges::input_range Range, class _Comp_ = std::greater<>, class Projection = std::identity>
+	constexpr raze_always_inline std::optional<std::ranges::range_value_t<Range>> operator()(
+		Range&& __range, _Comp_ __comp = {}, Projection __proj = {}) const noexcept
+		requires(!constexpr_sized_range<Range>)
 	{
 		return __extreme_unchecked(traits::__ubegin(__range),
-			traits::__uend(__range), traits::__fwd_fn(__comp), 
-			traits::__fwd_fn(__proj));
+			traits::__uend(__range), traits::fwd_fn(__comp), 
+			traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Comp_ = std::greater<>, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::optional<std::ranges::range_value_t<_Range_>> operator()(_Range_&& __range,
-		_Comp_ __comp = {}, _Projection_ __proj = {}) const noexcept requires(constexpr_sized_range<_Range_>)
+	template <std::ranges::input_range Range, class _Comp_ = std::greater<>, class Projection = std::identity>
+	constexpr raze_always_inline std::optional<std::ranges::range_value_t<Range>> operator()(Range&& __range,
+		_Comp_ __comp = {}, Projection __proj = {}) const noexcept requires(constexpr_sized_range<Range>)
 	{
 		return __extreme_unchecked(traits::__ubegin(__range),
-			traits::__uend(__range), traits::__fwd_fn(__proj),
-			traits::__fwd_fn(__comp),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+			traits::__uend(__range), traits::fwd_fn(__proj),
+			traits::fwd_fn(__comp),
+			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
 	}
 private:
-	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_>
+	template <class _Iterator_, class _Sentinel_, class _Comp_, class Projection>
 	raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<_Iterator_>> __extreme_unchecked(
-		_Iterator_ __first, _Sentinel_ __last, _Comp_ __comp, _Projection_ __proj) const noexcept
+		_Iterator_ __first, _Sentinel_ __last, _Comp_ __comp, Projection __proj) const noexcept
 	{
 		__verify_range(__first, __last);
 
@@ -181,7 +181,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
 			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_>)
+			&& vectorizable_projection<Projection, _Iterator_>)
 		{
 			if not consteval {
 				return std::optional<_Value_> { vx::__dispatch_sized_impl<__vectorized_extreme, _Value_, _Value_>(
@@ -189,12 +189,12 @@ private:
 			}
 		}
 
-		return std::optional<_Value_> { options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __comp, __proj)) };
+		return std::optional<_Value_> { options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __comp, __proj)) };
 	}
 
-	template <class _Iterator_, class _Sentinel_, class _Comp_, class _Projection_, sizetype _Size_>
+	template <class _Iterator_, class _Sentinel_, class _Comp_, class Projection, sizetype _Size_>
 	raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<_Iterator_>> __extreme_unchecked(_Iterator_ __first,
-		_Sentinel_ __last, _Comp_ __comp, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
+		_Sentinel_ __last, _Comp_ __comp, Projection __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
 	{
 		__verify_range(__first, __last);
 
@@ -205,7 +205,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
 			&& vectorizable_binary_predicate<_Comp_, _Iterator_>
-			&& vectorizable_projection<_Projection_, _Iterator_>)
+			&& vectorizable_projection<Projection, _Iterator_>)
 		{
 			if not consteval {
 				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
@@ -214,7 +214,7 @@ private:
 			}
 		}
 
-		return std::optional<_Value_> { options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __comp, __proj)) };
+		return std::optional<_Value_> { options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __comp, __proj)) };
 	}
 };
 

@@ -24,11 +24,11 @@ struct _Load {
     }
 
     static raze_no_stack_protector raze_always_inline _Type_ __loadu(const void* raze_restrict __mem) noexcept {
-        if constexpr (__has_sse3_support_v<_ISA_> && sizeof(_Type_) == 16) return __as<_Type_>(_mm_lddqu_si128(static_cast<const __m128i*>(__mem)));
+        if constexpr (has_sse3<_ISA_> && sizeof(_Type_) == 16) return __as<_Type_>(_mm_lddqu_si128(static_cast<const __m128i*>(__mem)));
         else if constexpr (std::is_same_v<_Type_, __m128i>) return _mm_loadu_si128(static_cast<const __m128i*>(__mem));
         else if constexpr (std::is_same_v<_Type_, __m128d>) return _mm_loadu_pd(static_cast<const f64*>(__mem));
         else if constexpr (std::is_same_v<_Type_, __m128>)  return _mm_loadu_ps(static_cast<const f32*>(__mem));
-        else if constexpr (__has_avx2_support_v<_ISA_> && sizeof(_Type_) == 32) return __as<_Type_>(_mm256_lddqu_si256(static_cast<const __m256i*>(__mem)));
+        else if constexpr (has_avx2<_ISA_> && sizeof(_Type_) == 32) return __as<_Type_>(_mm256_lddqu_si256(static_cast<const __m256i*>(__mem)));
         else if constexpr (std::is_same_v<_Type_, __m256i>) return _mm256_loadu_si256(static_cast<const __m256i*>(__mem));
         else if constexpr (std::is_same_v<_Type_, __m256d>) return _mm256_loadu_pd(static_cast<const f64*>(__mem));
         else if constexpr (std::is_same_v<_Type_, __m256>)  return _mm256_loadu_ps(static_cast<const f32*>(__mem));

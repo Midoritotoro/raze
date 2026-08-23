@@ -14,23 +14,19 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _FirstMaskType_, class _SecondMaskType_>
-concept __compatible_mask = (sizeof(typename _FirstMaskType_::element_type) == sizeof(typename _SecondMaskType_::element_type)) &&
-	(_FirstMaskType_::__isa == _SecondMaskType_::__isa) && (_FirstMaskType_::__width == _SecondMaskType_::__width);
-
-template <class _Type_, class _Abi_>
+template <class T, class Abi>
 class simd_mask {
-	static_assert(traits::__is_vector_type_supported_v<_Type_>);
+	static_assert(traits::is_vector_type_supported_v<T>);
 public:
-	using storage_type = _Mask_storage<_Type_, _Abi_>;
-	using element_type = _Type_;
+	using storage_type = _Mask_storage<T, Abi>;
+	using element_type = T;
 	using reference_type = _Simd_mask_reference<simd_mask>;
-	using value_type = _Type_;
-	using abi_type = _Abi_;
+	using value_type = T;
+	using abi_type = Abi;
 
 	raze_always_inline simd_mask() noexcept {
-		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-			__chunk = _Mask_zero<abi_type::isa, typename _Chunk::unwrapped_type>()();
+		_storage.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+			chunk = _Mask_zero<abi_type::isa, typename Chunk::unwrapped_type>()();
 		});
 	}
 
@@ -40,110 +36,108 @@ public:
 
 	raze_always_inline simd_mask(uninitialized_tag) noexcept {}
 
-	raze_no_stack_protector raze_always_inline explicit simd_mask(bool __value) noexcept {
-		_storage.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-			__chunk = _Mask_broadcast<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(__value);
+	raze_no_stack_protector raze_always_inline explicit simd_mask(bool v) noexcept {
+		_storage.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+			chunk = _Mask_broadcast<abi_type::isa, Chunk::size, typename Chunk::unwrapped_type, value_type>()(v);
 		});
 	}
 
-	template <class _ForwardIterator_, class _AlignmentPolicy_ = __unaligned_policy>
-	raze_no_stack_protector raze_always_inline simd_mask(const _ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
-		requires(traits::is_iterator_v<_ForwardIterator_> && std::forward_iterator<_ForwardIterator_>)
-	{
-		copy_from(__first, __alignment_policy);
+	template <std::forward_iterator FwdIt, class Policy = __unaligned_policy>
+	raze_no_stack_protector raze_always_inline simd_mask(FwdIt it, Policy&& policy = {}) noexcept {
+		copy_from(it, policy);
 	}
 
-	template <class _ForwardIterator_, class _AlignmentPolicy_ = __unaligned_policy>
-	raze_no_stack_protector raze_always_inline void copy_from(_ForwardIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept
+	template <std::forward_iterator FwdIt, class Policy = __unaligned_policy>
+	raze_no_stack_protector raze_always_inline void copy_from(FwdIt it, Policy&& policy = {}) noexcept
 		requires(std::convertible_to<std::iter_value_t<_ForwardIterator_>, bool>)
 	{
-		using _ItType = algorithm::__unwrapped_iterator_type<_ForwardIterator_>;
-		using _ItValueType = std::iter_value_t<_ItType>;
+		using Unwrapped = algorithm::unwrapped_iterator_type<FwdIt>;
+		using Value = std::iter_value_t<Unwrapped>;
 
-		if constexpr (sizeof(_ItValueType) == 1 && std::contiguous_iterator<_ItType> && sizeof(_Type_) == 1) {
-			auto __current = reinterpret_cast<const bool*>(std::to_address(__first));
+		if constexpr (sizeof(Value) == 1 && std::contiguous_iterator<Unwrapped> && sizeof(T) == 1) {
+			auto current = reinterpret_cast<const bool*>(std::to_address(it));
 
-			__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-				__chunk = _Load_mask<abi_type::isa, _Chunk::size, typename _Chunk::unwrapped_type, value_type>()(__current, __alignment_policy);
-				algorithm::__advance_bytes(__current, _Chunk::size * sizeof(value_type));
+			__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+				chunk = _Load_mask<abi_type::isa, Chunk::size, typename Chunk::unwrapped_type, value_type>()(current, policy);
+				algorithm::advance_bytes(current, Chunk::size * sizeof(value_type));
 			});
 		}
 		else {
-			for (auto __i = 0; __i < size(); ++__i)
-				__insert(__i, static_cast<bool>(*__first++));
+			for (auto i = 0; i < size(); ++i)
+				insert(i, static_cast<bool>(*it++));
 		}
 	}
 
-	template <class _OutputIterator_, class _AlignmentPolicy_ = __unaligned_policy>
-	raze_always_inline void copy_to(_OutputIterator_ __first, _AlignmentPolicy_&& __alignment_policy = {}) noexcept {
-		using _ItType = algorithm::__unwrapped_iterator_type<_OutputIterator_>;
-		using _ItValueType = std::iter_value_t<_ItType>;
+	template <class OutIt, class Policy = __unaligned_policy>
+	raze_always_inline void copy_to(OutIt out, Policy&& policy = {}) noexcept {
+		using Unwrapped = algorithm::unwrapped_iterator_type<OutIt>;
+		using Value = std::iter_value_t<Unwrapped>;
 
-		if constexpr (sizeof(_ItValueType) == 1 && std::contiguous_iterator<_ItType> && sizeof(_Type_) == 1) {
-			auto __current = reinterpret_cast<bool*>(std::to_address(__first));
+		if constexpr (sizeof(Value) == 1 && std::contiguous_iterator<Unwrapped> && sizeof(T) == 1) {
+			auto current = reinterpret_cast<bool*>(std::to_address(out));
 
-			__for_each_chunk([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-				_Store_mask<abi_type::isa, _Chunk::size, value_type>()(__current, __chunk.data(), __alignment_policy);
-				algorithm::__advance_bytes(__current, _Chunk::size * sizeof(value_type));
+			__for_each_chunk([&] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
+				_Store_mask<abi_type::isa, Chunk::size, value_type>()(current, chunk.data(), policy);
+				algorithm::advance_bytes(current, Chunk::size * sizeof(value_type));
 			});
 		}
 		else {
-			for (auto __i = 0; __i < size(); ++__i)
-				*__first++ = __extract(__i);
+			for (auto i = 0; i < size(); ++i)
+				*out++ = __extract(i);
 		}
 	}
 
-	raze_always_inline bool operator[](i32 __index) const noexcept {
-		return __extract(__index);
+	raze_always_inline bool operator[](i32 i) const noexcept {
+		return __extract(i);
 	}
 
-	raze_always_inline auto operator[](i32 __index) noexcept {
-		return reference_type(*this, __index);
+	raze_always_inline auto operator[](i32 i) noexcept {
+		return reference_type(*this, i);
 	}
 
 	raze_nodiscard raze_always_inline static constexpr auto size() noexcept {
 		return abi_type::size;
 	}
 
-	raze_always_inline simd_mask& operator=(const simd_mask& __other) noexcept {
-		_storage = __other._storage;
+	raze_always_inline simd_mask& operator=(const simd_mask& other) noexcept {
+		_storage = other._storage;
 		return *this;
 	}
 
-	friend raze_always_inline simd_mask operator&(const simd_mask& __x, const simd_mask& __y) noexcept {
-		return bit_and(__x, __y);
+	friend raze_always_inline simd_mask operator&(const simd_mask& x, const simd_mask& y) noexcept {
+		return bit_and(x, y);
 	}
 
-	friend raze_always_inline simd_mask operator|(const simd_mask&__x, const simd_mask& __y) noexcept {
-		return bit_or(__x, __y);
+	friend raze_always_inline simd_mask operator|(const simd_mask& x, const simd_mask& y) noexcept {
+		return bit_or(x, y);
 	}
 
-	friend raze_always_inline simd_mask operator^(const simd_mask&__x, const simd_mask& __y) noexcept {
-		return bit_xor(__x, __y);
+	friend raze_always_inline simd_mask operator^(const simd_mask& x, const simd_mask& y) noexcept {
+		return bit_xor(x, y);
 	}
 
-	raze_always_inline simd_mask& operator&=(const simd_mask& __other) noexcept {
-		return *this = (*this & __other);
+	raze_always_inline simd_mask& operator&=(const simd_mask& other) noexcept {
+		return *this = (*this & other);
 	}
 
-	raze_always_inline simd_mask& operator|=(const simd_mask& __other) noexcept {
-		return *this = (*this | __other);
+	raze_always_inline simd_mask& operator|=(const simd_mask& other) noexcept {
+		return *this = (*this | other);
 	}
 
-	raze_always_inline simd_mask& operator^=(const simd_mask& __other) noexcept {
-		return *this = (*this ^ __other);
+	raze_always_inline simd_mask& operator^=(const simd_mask& other) noexcept {
+		return *this = (*this ^ other);
 	}
 
 	raze_always_inline simd_mask operator!() const noexcept {
 		return bit_not(*this);
 	}
 
-	friend raze_always_inline simd_mask operator!=(const simd_mask& __x, const simd_mask& __y) noexcept {
-		return bit_xor(__x, __y);
+	friend raze_always_inline simd_mask operator!=(const simd_mask& x, const simd_mask& y) noexcept {
+		return bit_xor(x, y);
 	}
 
-	friend raze_always_inline simd_mask operator==(const simd_mask& __x, const simd_mask& __y) noexcept {
-		return !(__x != __y);
+	friend raze_always_inline simd_mask operator==(const simd_mask& x, const simd_mask& y) noexcept {
+		return !(x != y);
 	}
 
 	raze_nodiscard raze_always_inline const storage_type& __storage() const noexcept {
@@ -228,11 +222,11 @@ public:
 	}
 
 	raze_always_inline void __insert(i32 __i, bool __v) noexcept {
-		_storage.__insert(__i, __v);
+		_storage.insert(__i, __v);
     }
 
-    raze_nodiscard raze_always_inline bool __extract(i32 __i) const noexcept {
-		return _storage.__extract(__i);
+    raze_nodiscard raze_always_inline bool __extract(i32 i) const noexcept {
+		return _storage.extract(i);
     }
 private:
 	raze_no_unique_address storage_type _storage;

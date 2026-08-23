@@ -8,10 +8,10 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA	_ISA_, intrin_or_arithmetic_type _Tp_, arithmetic_type _Type_, bool _Safe_ = false>
 struct _Maskz_load {
-	static constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-	static constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-	static constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-	static constexpr auto __avx = __has_avx_support_v<_ISA_>;
+	static constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+	static constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+	static constexpr auto __avx2 = has_avx2<_ISA_>;
+	static constexpr auto __avx = has_avx<_ISA_>;
 
 	template <raw_mask_type _Mask_>
 	raze_nodiscard static raze_always_inline _Tp_ __loadu(const void* raze_restrict __mem, _Mask_ __mask) noexcept {

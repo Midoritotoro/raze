@@ -10,7 +10,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Count_if : _Traits_, dispatchable<_Count_if<_Traits_>> {
-	template <class _DiffType_, source _Source_, class _Predicate_, class _Projection_>
+	template <class _DiffType_, source _Source_, class Predicate, class Projection>
 	struct __kernel {
 		using source_type = std::remove_cvref_t<_Source_>;
 		using iterator_type = typename source_type::iterator_type;
@@ -23,11 +23,11 @@ struct _Count_if : _Traits_, dispatchable<_Count_if<_Traits_>> {
 		_Source_ _source;
 		unchecked_iterator_type _iterator;
 		unchecked_sentinel_type _sentinel;
-		_Predicate_ _predicate;
-		_Projection_ _proj;
+		Predicate _predicate;
+		Projection _proj;
 		_DiffType_ _count = 0;
 
-		constexpr explicit __kernel(options::as<_DiffType_>, _Source_&& __src, _Predicate_ __pred, _Projection_ __proj) noexcept :
+		constexpr explicit __kernel(options::as<_DiffType_>, _Source_&& __src, Predicate __pred, Projection __proj) noexcept :
 			_source(std::forward<_Source_>(__src)), _predicate(__pred), _proj(__proj)
 		{
 			_iterator = _source.ubegin();
@@ -78,8 +78,8 @@ struct _Count_if : _Traits_, dispatchable<_Count_if<_Traits_>> {
 
 		static consteval bool vectorizable() noexcept {
 			return std::contiguous_iterator<unchecked_iterator_type> &&
-				vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type>&&
-				vectorizable_projection<_Projection_, unchecked_iterator_type>;
+				vectorizable_unary_predicate<Predicate, unchecked_iterator_type>&&
+				vectorizable_projection<Projection, unchecked_iterator_type>;
 		}
 
 		constexpr raze_always_inline _DiffType_ result() const noexcept {
@@ -88,22 +88,22 @@ struct _Count_if : _Traits_, dispatchable<_Count_if<_Traits_>> {
 	};
 
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Predicate_, class _Projection_ = std::identity>
+		class Predicate, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::iter_difference_t<_Iterator_> operator()(_Iterator_ __first,
-		_Sentinel_ __sent, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
+		_Sentinel_ __sent, Predicate __pred, Projection __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<Predicate, std::projected<_Iterator_, Projection>>)
 	{
 		return __raze_kernel_dispatch_call(options::as(std::iter_difference_t<_Iterator_>{}),
-			get_source(std::move(__first), std::move(__sent)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+			get_source(std::move(__first), std::move(__sent)), traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(_Range_&& __r, 
-		_Predicate_ __pred, _Projection_ __proj = {}) const noexcept requires(std::indirect_unary_predicate<
-			_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+	template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::range_difference_t<Range> operator()(Range&& __r, 
+		Predicate __pred, Projection __proj = {}) const noexcept requires(std::indirect_unary_predicate<
+			Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>)
 	{
-		return __raze_kernel_dispatch_call(options::as(std::ranges::range_difference_t<_Range_>{}),
-			get_source(std::forward<_Range_>(__r)), traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+		return __raze_kernel_dispatch_call(options::as(std::ranges::range_difference_t<Range>{}),
+			get_source(std::forward<Range>(__r)), traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 	}
 private:
 	__raze_define_kernel_dispatch()
@@ -114,22 +114,22 @@ constexpr inline auto count_if = raze::options::function_with_traits<_Count_if>[
 template <class _Traits_>
 struct _Count : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Value_, class _Projection_ = std::identity>
+		class _Value_, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::iter_difference_t<_Iterator_> operator()(_Iterator_ __first,
-		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __last, const _Value_& __v, Projection __proj = {}) const noexcept
 	{
 		return count_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
-			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
-			traits::__fwd_fn(__proj));
+			function_return_type<Projection, std::iter_value_t<_Iterator_>>(__v)),
+			traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_, class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(
-		_Range_&& __range, const _Value_& __v, _Projection_ __proj = {}) const noexcept
+	template <std::ranges::input_range Range, class _Value_, class Projection = std::identity>
+	raze_nodiscard constexpr raze_always_inline std::ranges::range_difference_t<Range> operator()(
+		Range&& __range, const _Value_& __v, Projection __proj = {}) const noexcept
 	{
-		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			traits::__fwd_fn(__proj));
+		return count_if[_Traits_::traits()](std::forward<Range>(__range), algorithm::equal_to(
+			function_return_type<Projection, std::ranges::range_value_t<Range>>(__v)),
+			traits::fwd_fn(__proj));
 	}
 };
 
@@ -138,20 +138,20 @@ constexpr inline auto count = raze::options::function_with_traits<_Count>[option
 template <class _Traits_>
 struct _Count_if_not : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Predicate_, class _Projection_ = std::identity>
+		class Predicate, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::iter_difference_t<_Iterator_> operator()(_Iterator_ __first,
-		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
+		_Sentinel_ __last, Predicate __pred, Projection __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<Predicate, std::projected<_Iterator_, Projection>>)
 	{
-		return count_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::__fwd_fn(__proj));
+		return count_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::range_difference_t<_Range_> operator()(
-		_Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_unary_predicate<_Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+	template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
+	raze_nodiscard constexpr raze_always_inline std::ranges::range_difference_t<Range> operator()(
+		Range&& __range, Predicate __pred, Projection __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>)
 	{
-		return count_if[_Traits_::traits()](std::forward<_Range_>(__range), make_not_fn(__pred), traits::__fwd_fn(__proj));
+		return count_if[_Traits_::traits()](std::forward<Range>(__range), make_not_fn(__pred), traits::fwd_fn(__proj));
 	}
 };
 

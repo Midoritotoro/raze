@@ -21,14 +21,14 @@ struct alignment_policy {
     static constexpr bool __alignment = _Alignment_;
 };
 
-template <class _Simd_, class _Left_, class _Right_>
-concept __correct_simd_binary_op = simd_type<_Simd_> &&
-    (std::same_as<std::remove_cvref_t<_Left_>, _Simd_> && (
-        std::convertible_to<std::remove_cvref_t<_Right_>, typename _Simd_::value_type> ||
-        std::same_as<std::remove_cvref_t<_Right_>, _Simd_>)) ||
-    (std::same_as<std::remove_cvref_t<_Right_>, _Simd_> && (
-        std::convertible_to<std::remove_cvref_t<_Left_>, typename _Simd_::value_type> ||
-        std::same_as<std::remove_cvref_t<_Left_>, _Simd_>));
+template <class V, class L, class R>
+concept correct_simd_binary_op = simd_type<V> &&
+    (std::same_as<std::remove_cvref_t<L>, V> && (
+        std::convertible_to<std::remove_cvref_t<R>, typename V::value_type> ||
+        std::same_as<std::remove_cvref_t<R>, V>)) ||
+    (std::same_as<std::remove_cvref_t<R>, V> && (
+        std::convertible_to<std::remove_cvref_t<L>, typename V::value_type> ||
+        std::same_as<std::remove_cvref_t<L>, V>));
 
 /**
  * @class simd
@@ -45,24 +45,24 @@ concept __correct_simd_binary_op = simd_type<_Simd_> &&
  * - All operations are performed element-wise.
  *
  * ## Template Parameters
- * @tparam _Type_  The scalar element type (e.g., i32, f32, f64).
- * @tparam _Abi_   ABI descriptor specifying ISA and register width.
+ * @tparam T  The scalar element type (e.g., i32, f32, f64).
+ * @tparam Abi   ABI descriptor specifying ISA and register width.
 */
 
-template <class _Type_, class _Abi_>
+template <class T, class Abi>
 class simd {
-    static_assert(traits::__is_vector_type_supported_v<std::decay_t<_Type_>>, "Unsupported element type. ");
+    static_assert(traits::is_vector_type_supported_v<std::decay_t<T>>, "Unsupported element type. ");
 public:
-    static constexpr auto __isa = _Abi_::isa;
-    static constexpr auto __width = (_Abi_::size * sizeof(_Type_) * 8);
-    static constexpr auto __size = _Abi_::size;
-    static constexpr auto __has_scalar_chunks = (_Abi_::size % 16) != 0;
+    static constexpr auto __isa = Abi::isa;
+    static constexpr auto __width = (Abi::size * sizeof(T) * 8);
+    static constexpr auto __size = Abi::size;
+    static constexpr auto __has_scalar_chunks = (Abi::size % 16) != 0;
 
-    using storage_type  = _Vector_storage<_Type_, _Abi_>;
+    using storage_type  = _Vector_storage<T, Abi>;
     using reference     = _Simd_element_reference<simd>;
-    using value_type    = _Type_;
-    using mask_type     = simd_mask<_Type_, _Abi_>;
-    using abi_type      = _Abi_;
+    using value_type    = T;
+    using mask_type     = simd_mask<T, Abi>;
+    using abi_type      = Abi;
 
     /**
      * @brief Constructs an uninitialized SIMD vector.
@@ -83,51 +83,51 @@ public:
      *
      * @param value  The scalar value to broadcast into all lanes.
     */
-    raze_no_stack_protector raze_always_inline explicit(false) simd(value_type __value) noexcept {
-        fill(__value);
+    raze_no_stack_protector raze_always_inline explicit(false) simd(value_type v) noexcept {
+        fill(v);
     }
 
-    raze_no_stack_protector raze_always_inline simd(const storage_type& __storage) noexcept {
-        _storage = __storage;
+    raze_no_stack_protector raze_always_inline simd(const storage_type& s) noexcept {
+        _storage = s;
     }
 
     /**
      * @brief Returns a SIMD vector with all lanes set to zero.
     */
     raze_nodiscard static raze_no_stack_protector raze_always_inline simd zero() noexcept {
-        simd __result;
+        simd r;
 
-        __result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
-            __chunk = _Zero<__isa, _StorageType>()();
+        r.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+            using Storage = std::remove_cvref_t<decltype(__storage_unwrap(chunk))>;
+            chunk = _Zero<__isa, Storage>()();
         });
 
-        return __result;
+        return r;
     }
 
     /**
      * @brief Returns a SIMD vector with all lanes set to `value`.
     */
-    raze_nodiscard raze_no_stack_protector static raze_always_inline simd broadcast(value_type __value) noexcept {
-        simd __result {};
+    raze_nodiscard raze_no_stack_protector static raze_always_inline simd broadcast(value_type v) noexcept {
+        simd r {};
         
-        __result.__for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk& __chunk, _Tp __value) raze_always_inline_lambda {
-            using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
-            __chunk = _Broadcast<__isa, _StorageType>()(__value);
-        }, __value);
+        r.__for_each_chunk([&] <class Chunk> (_Chunk& chunk) raze_always_inline_lambda {
+            using Storage = std::remove_cvref_t<decltype(__storage_unwrap(chunk))>;
+            chunk = _Broadcast<__isa, Storage>()(v);
+        });
 
-        return __result;
+        return r;
     }
 
     /**
      * @brief Fills all lanes with `value`.
      * @return Reference to `*this`.
     */
-    raze_no_stack_protector raze_always_inline simd& fill(value_type __value) noexcept {
-        __for_each_chunk([&] <class _Chunk, class _Tp> (_Chunk & __chunk, _Tp __value) raze_always_inline_lambda {
-            using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
-            __chunk = _Broadcast<__isa, _StorageType>()(__value);
-        }, __value);
+    raze_no_stack_protector raze_always_inline simd& fill(value_type v) noexcept {
+        __for_each_chunk([&] <class Chunk> (_Chunk& chunk) raze_always_inline_lambda {
+            using Storage = std::remove_cvref_t<decltype(__storage_unwrap(chunk))>;
+            chunk = _Broadcast<__isa, Storage>()(v);
+        });
 
         return *this;
     }
@@ -142,8 +142,8 @@ public:
      *  Logical shift for all element types.
      *  If `shift >= bit_width(value_type)`, the result is zero.
     */
-    raze_always_inline friend simd operator<<(const simd& __x, u32 __shift) noexcept {
-        return bit_shl(__x, __shift);
+    raze_always_inline friend simd operator<<(const simd& x, u32 shift) noexcept {
+        return bit_shl(x, shift);
     }
 
     /**
@@ -160,139 +160,139 @@ public:
      *  If `shift >= bit_width(value_type)`, the result is zero or
      *  sign-extended depending on type.
     */
-    raze_always_inline friend simd operator>>(const simd& __x, u32 __shift) noexcept {
-        return bit_shr(__x, __shift);
+    raze_always_inline friend simd operator>>(const simd& x, u32 shift) noexcept {
+        return bit_shr(x, shift);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend simd operator-(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    template <class L, class R>
+    raze_always_inline friend simd operator-(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>)
     {
-        return sub(__x, __y);
+        return sub(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend simd operator+(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    template <class L, class R>
+    raze_always_inline friend simd operator+(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>)
     {
-        return add(__x, __y);
+        return add(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend simd operator*(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    template <class L, class R>
+    raze_always_inline friend simd operator*(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>)
     {
-        return mul(__x, __y);
+        return mul(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend simd operator/(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    template <class L, class R>
+    raze_always_inline friend simd operator/(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>) 
     {
-        return div(__x, __y);
+        return div(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend simd operator&(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    template <class L, class R>
+    raze_always_inline friend simd operator&(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>) 
     {
-        return bit_and(__x, __y);
+        return bit_and(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend simd operator|(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    template <class L, class R>
+    raze_always_inline friend simd operator|(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>)
     {
-        return bit_or(__x, __y);
+        return bit_or(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend simd operator^(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    template <class L, class R>
+    raze_always_inline friend simd operator^(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>) 
     {
-        return bit_xor(__x, __y);
+        return bit_xor(x, y);
     }
 
     raze_always_inline simd operator~() const noexcept {
         return bit_not(*this);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend mask_type operator==(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    template <class L, class R>
+    raze_always_inline friend mask_type operator==(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>) 
     {
-        return is_equal(__x, __y);
+        return is_equal(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend mask_type operator!=(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    template <class L, class R>
+    raze_always_inline friend mask_type operator!=(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>) 
     {
-        return is_not_equal(__x, __y);
+        return is_not_equal(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend mask_type operator<(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    template <class L, class R>
+    raze_always_inline friend mask_type operator<(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>) 
     {
-        return is_less(__x, __y);
+        return is_less(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend mask_type operator<=(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    template <class L, class R>
+    raze_always_inline friend mask_type operator<=(const L& x, const R& y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>)
     {
-        return is_less_equal(__x, __y);
+        return is_less_equal(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend mask_type operator>(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>)
+    template <class L, class R>
+    raze_always_inline friend mask_type operator>(const L& __x, const R& __y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>)
     {
-        return is_greater(__x, __y);
+        return is_greater(x, y);
     }
 
-    template <class _Left_, class _Right_>
-    raze_always_inline friend mask_type operator>=(const _Left_& __x, const _Right_& __y) noexcept
-        requires(__correct_simd_binary_op<simd, _Left_, _Right_>) 
+    template <class L, class R>
+    raze_always_inline friend mask_type operator>=(const L& __x, const R& __y) noexcept
+        requires(correct_simd_binary_op<simd, L, R>) 
     {
-        return is_greater_equal(__x, __y);
+        return is_greater_equal(x, y);
     }
 
-    raze_always_inline simd& operator>>=(u32 __shift) noexcept {
-        return *this = (*this >> __shift);
+    raze_always_inline simd& operator>>=(u32 shift) noexcept {
+        return *this = (*this >> shift);
     }
 
-    raze_always_inline simd& operator<<=(u32 __shift) noexcept {
-        return *this = (*this << __shift);
+    raze_always_inline simd& operator<<=(u32 shift) noexcept {
+        return *this = (*this << shift);
     }
 
-    raze_always_inline simd& operator&=(const simd& __other) noexcept {
-        return *this = (*this & __other);
+    raze_always_inline simd& operator&=(const simd& other) noexcept {
+        return *this = (*this & other);
     }
 
-    raze_always_inline simd& operator|=(const simd& __other) noexcept {
-        return *this = (*this | __other);
+    raze_always_inline simd& operator|=(const simd& other) noexcept {
+        return *this = (*this | other);
     }
 
-    raze_always_inline simd& operator^=(const simd& __other) noexcept {
-        return *this = (*this ^ __other);
+    raze_always_inline simd& operator^=(const simd& other) noexcept {
+        return *this = (*this ^ other);
     }
 
-    raze_always_inline simd& operator+=(const simd& __other) noexcept {
-        return *this = (*this + __other);
+    raze_always_inline simd& operator+=(const simd& other) noexcept {
+        return *this = (*this + other);
     }
 
-    raze_always_inline simd& operator-=(const simd& __other) noexcept {
-        return *this = (*this - __other);
+    raze_always_inline simd& operator-=(const simd& other) noexcept {
+        return *this = (*this - other);
     }
 
-    raze_always_inline simd& operator*=(const simd& __other) noexcept {
-        return *this = (*this * __other);
+    raze_always_inline simd& operator*=(const simd& other) noexcept {
+        return *this = (*this * other);
     }
 
-    raze_always_inline simd& operator/=(const simd& __other) noexcept {
-        return *this = (*this / __other);
+    raze_always_inline simd& operator/=(const simd& other) noexcept {
+        return *this = (*this / other);
     }
 
     raze_always_inline simd operator+() const noexcept {
@@ -304,9 +304,9 @@ public:
     }
 
     raze_nodiscard raze_always_inline simd operator++(int) noexcept {
-        simd __self = *this;
+        simd self = *this;
         *this += simd(1);
-        return __self;
+        return self;
     }
 
     raze_always_inline simd& operator++() noexcept {
@@ -314,31 +314,31 @@ public:
     }
 
     raze_always_inline simd operator--(int) noexcept {
-        simd __self = *this;
+        simd self = *this;
         *this -= simd(1);
-        return __self;
+        return self;
     }
 
     raze_always_inline simd& operator--() noexcept {
         return *this -= simd(1);
     }
 
-    raze_nodiscard raze_always_inline _Type_ operator[](i32 __i) const noexcept {
-        return __extract(__i);
+    raze_nodiscard raze_always_inline T operator[](i32 i) const noexcept {
+        return __extract(i);
     }
 
-    raze_nodiscard raze_always_inline reference operator[](i32 __i) noexcept {
-        return reference(*this, __i);
+    raze_nodiscard raze_always_inline reference operator[](i32 i) noexcept {
+        return reference(*this, i);
     }
 
     template <sizetype _I_>
-    raze_nodiscard raze_always_inline reference operator[](std::integral_constant<sizetype, _I_> __i) noexcept {
+    raze_nodiscard raze_always_inline reference operator[](std::integral_constant<sizetype, _I_>) noexcept {
         return reference(*this, _I_);
     }
 
     template <sizetype _I_>
-    raze_nodiscard raze_always_inline _Type_ operator[](std::integral_constant<sizetype, _I_> __i) const noexcept {
-        return __extract(__i);
+    raze_nodiscard raze_always_inline T operator[](std::integral_constant<sizetype, _I_> i) const noexcept {
+        return __extract(i);
     }
 
     raze_nodiscard static raze_always_inline constexpr i32 size() noexcept {
@@ -397,12 +397,12 @@ private:
         _storage.__insert(__position, __value);
     }
 
-    raze_nodiscard raze_always_inline _Type_ __extract(i32 __i) const noexcept {
+    raze_nodiscard raze_always_inline T __extract(i32 __i) const noexcept {
         return _storage.__extract(__i);
     }
 
     template <sizetype _I_>
-    raze_nodiscard raze_always_inline _Type_ __extract(std::integral_constant<sizetype, _I_> __i) const noexcept {
+    raze_nodiscard raze_always_inline T __extract(std::integral_constant<sizetype, _I_> __i) const noexcept {
         return _storage.__extract(__i);
     }
 

@@ -8,71 +8,67 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-template <std::floating_point _Type_>
-raze_always_inline _Type_ __fast_cos(const _Type_& __x) noexcept {
-    constexpr auto __sine_table_size = 256;
+template <std::floating_point T>
+raze_always_inline T fast_cos_impl(T x) noexcept {
+    constexpr auto sine_table_size = 256;
 
-    const auto __ci = int(__x * (_Type_(0.5) * __sine_table_size / pi)) & (__sine_table_size - 1);
-    const auto __si = int(__ci + __sine_table_size / 4) & (__sine_table_size - 1);
-    const auto __d = __x - __ci * (_Type_(2.0) * pi / __sine_table_size);
+    const auto ci = int(x * (T(0.5) * sine_table_size / pi)) & (sine_table_size - 1);
+    const auto si = int(ci + sine_table_size / 4) & (sine_table_size - 1);
+    const auto d = x - ci * (T(2.0) * pi / sine_table_size);
 
-    return __sine_table[__si] - (__sine_table[__ci] + _Type_(0.5) * __sine_table[__si] * __d) * __d;
+    return sine_table[si] - (sine_table[ci] + T(0.5) * sine_table[si] * d) * d;
 }
 
-template <std::floating_point _Type_>
-raze_always_inline _Type_ __cos(const _Type_& __x) noexcept {
-    return std::cos(__x);
+template <std::floating_point T>
+raze_always_inline T cos_impl(const T& x) noexcept {
+    return std::cos(x);
 }
 
-template <vx::simd_type _Simd_>
-raze_always_inline _Simd_ __cos(const _Simd_& __x) noexcept
-    requires(std::floating_point<typename _Simd_::value_type>)
-{
-    _Simd_ __r;
+template <vx::floating_point_simd V>
+raze_always_inline V cos_impl(const V& x) noexcept {
+    V r;
 
-    for (auto __i = 0; __i < __x.size(); ++__i)
-        __r[__i] = __cos(__x[__i]);
+    for (auto i = 0; i < x.size(); ++i)
+        r[i] = cos_impl(x[i]);
 
-    return __r;
+    return r;
 }
 
-template <class _Options_>
-struct _Configurable_cos: raze::options::conditional_callable<_Configurable_cos, _Options_> {
-    template <vx::floating_point_simd_or_scalar_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_cos_t: raze::options::conditional_callable<configurable_cos_t, Options> {
+    template <vx::floating_point_simd_or_scalar_type T>
+    raze_nodiscard raze_always_inline T operator()(const T& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    template <std::floating_point _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+    template <std::floating_point T>
+    static raze_always_inline auto deferred_call(auto opts, T x) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+            auto condition = opts[options::condition_key];
+            const auto mask = condition.mask();
 
-            if constexpr (_Mask_::has_alternative) return __mask ? __cos(__x) : __condition.alternative();
-            else return __mask ? __cos(__x) : 0;
+            if constexpr (Mask::has_alternative) return mask ? cos_impl(x) : condition.alternative();
+            else return mask ? cos_impl(x) : 0;
         }
-        else return __cos(__x);
+        else return cos_impl(x);
     }
 
-    template <vx::floating_point_simd _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
+    template <vx::floating_point_simd V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+            auto condition = opts[options::condition_key];
+            const auto mask = condition.mask();
 
-            if constexpr (_Mask_::has_alternative) 
-                return vx::__select[__mask.__storage().storage(), __condition.alternative().__storage().storage()](__cos(__x));
-            else return vx::__select[__mask.__storage().storage()](__cos(__x));
+            if constexpr (Mask::has_alternative) 
+                return vx::__select[mask, condition.alternative()](cos_impl(x));
+            else return vx::__select[mask](cos_impl(__x));
         }
-        else return __cos(__x);
+        else return cos_impl(__x);
     }
-
-    using callable_tag_type = _Configurable_cos;
 };
 
 __RAZE_MATH_NAMESPACE_END

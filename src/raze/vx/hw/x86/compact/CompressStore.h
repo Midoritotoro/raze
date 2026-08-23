@@ -37,11 +37,11 @@ struct _Compress_store {
 	raze_nodiscard raze_static_operator raze_always_inline void* operator()(void* __ptr, _Tp_ __x, 
 		_CompressMask_ __compress_mask, _AlignmentPolicy_ __policy = {}) raze_const_operator noexcept
 	{
-		constexpr auto __ssse3 = __has_ssse3_support_v<_ISA_>;
-		constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
-		constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-		constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-		constexpr auto __avx512vbmi2 = __has_avx512vbmi2_support_v<_ISA_>;
+		constexpr auto __ssse3 = has_ssse3<_ISA_>;
+		constexpr auto __avx2 = has_avx2<_ISA_>;
+		constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+		constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+		constexpr auto __avx512vbmi2 = has_avx512vbmi2<_ISA_>;
 		constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
 
 		const auto __int_mask = _To_mask<_ISA_, _Type_>()(__compress_mask);

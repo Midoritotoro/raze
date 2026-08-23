@@ -7,35 +7,35 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class>
-constexpr inline auto __is_std_array_v = false;
+constexpr inline auto is_std_array_v = false;
 
-template <class _Type_, sizetype _N_>
-constexpr inline auto __is_std_array_v<std::array<_Type_, _N_>> = true;
+template <class T, sizetype N>
+constexpr inline auto is_std_array_v<std::array<T, N>> = true;
 
 template <class>
-constexpr inline auto __is_std_span_v = false;
+constexpr inline auto is_std_span_v = false;
 
-template <class _Type_, sizetype _N_>
-inline constexpr bool __is_std_span_v<std::span<_Type_, _N_>> = true;
+template <class T, sizetype N>
+inline constexpr bool is_std_span_v<std::span<T, N>> = true;
 
 template <auto> 
-struct __require_constant;
+struct require_constant;
 
-template <class _Range_>
-constexpr auto __range_constexpr_size() noexcept {
-    using _Raw_ = std::remove_cvref_t<_Range_>;
+template <class Range>
+constexpr auto range_constexpr_size() noexcept {
+    using Raw = std::remove_cvref_t<Range>;
 
-    if constexpr (std::is_bounded_array_v<_Raw_>) return std::extent_v<_Raw_>;
-    else if constexpr (__is_std_array_v<_Raw_>) return std::tuple_size_v<_Raw_>;
-    else if constexpr (__is_std_span_v<_Raw_>) return _Raw_::extent;
-    else if constexpr (std::ranges::sized_range<_Raw_> && requires { typename __require_constant<_Raw_::size()>; }) return _Raw_::size();
+    if constexpr (std::is_bounded_array_v<Raw>) return std::extent_v<Raw>;
+    else if constexpr (is_std_array_v<Raw>) return std::tuple_size_v<Raw>;
+    else if constexpr (is_std_span_v<Raw>) return Raw::extent;
+    else if constexpr (std::ranges::sized_range<Raw> && requires { typename require_constant<Raw::size()>; }) return Raw::size();
     else return std::dynamic_extent;
 }
 
-template <class _Range_>
-concept constexpr_sized_range = std::ranges::range<std::remove_cvref_t<_Range_>> && __range_constexpr_size<_Range_>() != std::dynamic_extent;
+template <class Range>
+concept constexpr_sized_range = std::ranges::range<std::remove_cvref_t<Range>> && range_constexpr_size<Range>() != std::dynamic_extent;
 
-template <class _Func_, class ... _Args_>
-using function_return_type = decltype(std::invoke(std::declval<_Func_>(), std::declval<_Args_>()...));
+template <class F, class ... Args>
+using function_return_type = decltype(std::invoke(std::declval<F>(), std::declval<Args>()...));
 
 __RAZE_ALGORITHM_NAMESPACE_END

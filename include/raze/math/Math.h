@@ -22,14 +22,14 @@ constexpr inline auto fnms = __fnms;
 constexpr inline auto sin = raze::options::functor<_Configurable_sin>;
 constexpr inline auto cos = raze::options::functor<_Configurable_cos>;
 
-template <vx::arithmetic_type _Type1_, vx::arithmetic_type _Type2_>
-raze_always_inline constexpr auto max(const _Type1_& __x, const _Type2_& __y) noexcept {
-	return (__x < __y) ? __y : __x;
+template <vx::arithmetic_type T1, vx::arithmetic_type T2>
+raze_always_inline constexpr auto max(const T1& x, const T2& y) noexcept {
+	return (x < y) ? y : x;
 }
 
-template <class _Type1_, class _Type2_>
-raze_always_inline constexpr auto min(const _Type1_& __x, const _Type2_& __y) noexcept {
-	return (__x > __y) ? __y : __x;
+template <class T1, class T2>
+raze_always_inline constexpr auto min(const T1& x, const T2& y) noexcept {
+	return (x > y) ? y : x;
 }
 
 __RAZE_MATH_NAMESPACE_END

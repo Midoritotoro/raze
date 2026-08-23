@@ -6,31 +6,20 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-struct __ignore_none {
+struct ignore_none_ {
     static constexpr bool has_alternative = false;
     
-    __ignore_none() noexcept = default;
-    __ignore_none(const __ignore_none&) noexcept = default;
-    __ignore_none(__ignore_none&&) noexcept = default;
-    ~__ignore_none() noexcept = default;
+    ignore_none_() noexcept = default;
+    ignore_none_(const ignore_none_&) noexcept = default;
+    ignore_none_(ignore_none_&&) noexcept = default;
+    ~ignore_none_() noexcept = default;
 
-    __ignore_none& operator=(const __ignore_none&) noexcept = default;
-    __ignore_none& operator=(__ignore_none&&) noexcept = default;
+    ignore_none_& operator=(const ignore_none_&) noexcept = default;
+    ignore_none_& operator=(ignore_none_&&) noexcept = default;
 
-    template <class _Value_>
-    constexpr raze_always_inline auto else_(_Value_ __value) const noexcept {
-        return *this;  
-    }
-
-    template <class _Type_> 
-    raze_always_inline _Type_ mask(const as<_Type_>& __target) const noexcept {
-        return _Type_{};
-    }
-
-    raze_always_inline constexpr bool friend operator==(__ignore_none const&, __ignore_none const&) noexcept = default;
+    raze_always_inline constexpr bool friend operator==(ignore_none_ const&, ignore_none_ const&) noexcept = default;
 };
 
-constexpr inline __ignore_none ignore_none = {};
-
+constexpr inline ignore_none_ ignore_none = {};
 
 __RAZE_OPTIONS_NAMESPACE_END

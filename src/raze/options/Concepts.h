@@ -6,30 +6,30 @@
 
 __RAZE_OPTIONS_CONCEPTS_NAMESPACE_BEGIN
 
-template <class _Key_>
-concept keyword = requires(_Key_ __key) {
-    typename _Key_::tag_type;
-    { _Key_::template accept<int>() } -> concepts::same_as<bool>;
+template <class Key>
+concept keyword = requires(Key key) {
+    typename Key::tag_type;
+    { Key::template accept<int>() } -> std::same_as<bool>;
 };
 
-template <class _Option_>
-concept option = requires(const _Option_& __option) {
-    { __option(typename std::remove_cvref_t<_Option_>::keyword_type{}) }
-        -> concepts::same_as<typename std::remove_cvref_t<_Option_>::stored_value_type>;
+template <class Option>
+concept option = requires(const Option& opt) {
+    { opt(typename std::remove_cvref_t<Option>::keyword_type{}) }
+        -> std::same_as<typename std::remove_cvref_t<Option>::stored_value_type>;
 };
 
-template <class _Settings_> 
-concept settings = requires(const _Settings_& __settings) {
-    typename _Settings_::settings_type;
+template <class Settings> 
+concept settings = requires(const Settings&) {
+    typename Settings::settings_type;
 };
 
-template <class _Option_, auto  _Keyword_>
-concept exactly = concepts::same_as<typename _Option_::keyword_type, 
-    std::remove_cvref_t<decltype(_Keyword_)>>;
+template <class Option, auto Keyword>
+concept exactly = std::same_as<typename Option::keyword_type, 
+    std::remove_cvref_t<decltype(Keyword)>>;
 
-template <class _Key_, class _Type_>
-concept __checks_for = requires(_Key_) {
-    { _Key_::template check<_Type_>() };
+template <class Key, class T>
+concept checks_for = requires(Key) {
+    { Key::template check<T>() };
 };
 
 __RAZE_OPTIONS_CONCEPTS_NAMESPACE_END

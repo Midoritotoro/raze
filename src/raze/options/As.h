@@ -5,12 +5,12 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Type_>
+template <class T>
 struct as {
-    using type = _Type_;
+    using type = T;
 
     constexpr as() noexcept {}
-    explicit constexpr as(const _Type_&)  noexcept {}
+    explicit constexpr as(const T&)  noexcept {}
 };
 
 template <>

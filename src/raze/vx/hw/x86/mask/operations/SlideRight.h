@@ -26,16 +26,16 @@ struct _Mask_slide_rigth {
 		if constexpr (__shift >= __size)
 			return 0;
 
-		if constexpr (sizeof(_Tp_) == 1 && __has_avx512dq_support_v<_ISA_>)
+		if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>)
 			return _kshiftri_mask8(__x, __shift);
 
-		else if constexpr (sizeof(_Tp_) == 2 && __has_avx512f_support_v<_ISA_>)
+		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>)
 			return _kshiftri_mask16(__x, __shift);
 
-		else if constexpr (sizeof(_Tp_) == 4 && __has_avx512bw_support_v<_ISA_>)
+		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>)
 			return _kshiftri_mask32(__x, __shift);
 
-		else if constexpr (sizeof(_Tp_) == 8 && __has_avx512bw_support_v<_ISA_>)
+		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>)
 			return _kshiftri_mask64(__x, __shift);
 
 		else if constexpr (intrin_type<_Tp_>)

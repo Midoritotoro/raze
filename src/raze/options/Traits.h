@@ -5,139 +5,111 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Settings_>
-struct traits : _Settings_ {
-    template <concepts::option ... _Options_>
-    constexpr explicit traits(_Options_ && ... __options) noexcept: 
-        _Settings_(std::forward<_Options_>(__options)...) 
+template <class Settings>
+struct traits : Settings {
+    template <concepts::option ... Options>
+    constexpr explicit traits(Options && ... opts) noexcept: 
+        Settings(std::forward<Options>(opts)...) 
     {}
 
-    template <class ... _Options_>
-    constexpr traits(const settings<_Options_...>& __options) noexcept:
-        _Settings_(__options)
+    template <class ... Options>
+    constexpr traits(const settings<Options...>& opts) noexcept:
+        Settings(opts)
     {}
 };
 
-template <concepts::option ... _Options_>
-traits(_Options_&& ... __options) -> traits<decltype(settings(std::forward<_Options_>(__options) ...))>;
+template <concepts::option ... Options>
+traits(Options&& ... opts) -> traits<decltype(settings(std::forward<Options>(opts) ...))>;
 
 struct unroll_key_t: as_keyword<unroll_key_t> {
-    template <class _Value_> 
-    constexpr auto operator=(const _Value_&) const noexcept {
-        return option<unroll_key_t, _Value_>{};
+    template <class Value> 
+    constexpr auto operator=(const Value&) const noexcept {
+        return option<unroll_key_t, Value>{};
     }
 };
   
 constexpr inline unroll_key_t unroll_key;
 
-template <sizetype _N_>
-constexpr inline auto index = std::integral_constant<sizetype, _N_>{};
+template <sizetype N>
+constexpr inline auto index = std::integral_constant<sizetype, N>{};
 
-template <sizetype _N_>
-constexpr inline auto unroll = (unroll_key = index<_N_>);
+template <sizetype N>
+constexpr inline auto unroll = (unroll_key = index<N>);
 
 struct strategy_key_t : as_keyword<strategy_key_t> {
-    template <class _Value_>
-    constexpr auto operator=(const _Value_& __value) const noexcept {
-        return option<strategy_key_t, _Value_>{};
+    template <class Value>
+    constexpr auto operator=(const Value& v) const noexcept {
+        return option<strategy_key_t, Value>{};
     }
 };
 
 constexpr inline strategy_key_t strategy_key;
 
-template <algorithm::strategy _Strategy_>
-constexpr inline auto strategy = (strategy_key = _Strategy_);
+template <algorithm::strategy Strategy>
+constexpr inline auto strategy = (strategy_key = Strategy);
 
-template <class _Traits_>
+template <class Traits>
 constexpr auto get_strategy() noexcept {
-    return raze::options::fetch_t<(strategy_key | algorithm::strategy{}), _Traits_>{};
+    return raze::options::fetch_t<(strategy_key | algorithm::strategy{}), Traits>{};
 }
 
 struct none_mode {};
 constexpr inline auto none = raze::options::flag(none_mode{});
 
-template <class _Traits_>
+template <class Traits>
 constexpr sizetype get_unrolling() {
-    return raze::options::fetch_t<(unroll_key | index<1>), _Traits_>{};
+    return raze::options::fetch_t<(unroll_key | index<1>), Traits>{};
 }
 
 struct scalar_mode {};
 constexpr inline auto scalar = raze::options::flag(scalar_mode{});
 
-template <class _Traits_>
+template <class Traits>
 constexpr bool always_scalar() {
-    return _Traits_::contains(scalar);
-}
-
-struct compact_mode {};
-constexpr inline auto compact = raze::options::flag(compact_mode{});
-
-template <class _Traits_>
-constexpr bool is_compact() {
-    return _Traits_::contains(compact);
+    return Traits::contains(scalar);
 }
 
 struct autovec_mode {};
 constexpr inline auto autovec = raze::options::flag(autovec_mode{});
 
-template <class _Traits_>
+template <class Traits>
 constexpr bool is_autovec() {
-    return _Traits_::contains(autovec);
-}
-
-struct __force_isa_key_t : as_keyword<__force_isa_key_t> {
-    template <class _Value_>
-    constexpr auto operator=(const _Value_&) const noexcept {
-        return option<__force_isa_key_t, _Value_>{};
-    }
-};
-
-constexpr inline __force_isa_key_t __force_isa_key;
-
-template <arch::ISA _ISA_>
-constexpr inline auto __isa = std::integral_constant<arch::ISA, _ISA_>{};
-
-template <arch::ISA _ISA_>
-constexpr inline auto __force_isa = (__force_isa_key = __isa<_ISA_>);
-
-template <class _Traits_>
-constexpr arch::ISA __get_forced_isa() {
-    return raze::options::fetch_t<(__force_isa_key | __isa<arch::ISA::None>), _Traits_>{};
+    return Traits::contains(autovec);
 }
 
 constexpr inline auto no_traits = traits();
 
-template <template <class> class _Function_, class _Traits_>
-struct __supports_traits {
-    using traits_type = _Traits_;
+template <template <class> class F, class Traits>
+struct supports_traits {
+    using traits_type = Traits;
 
-    raze_always_inline constexpr _Traits_ traits() const noexcept {
+    raze_always_inline constexpr Traits traits() const noexcept {
         return _traits;
     }
 
-    constexpr __supports_traits() {}
-    constexpr explicit __supports_traits(_Traits_ __traits) noexcept:
+    constexpr supports_traits() {}
+    constexpr explicit supports_traits(Traits __traits) noexcept:
         _traits(__traits) 
     {}
 
-    template <class _Settings_>
-    raze_always_inline constexpr auto operator[](raze::options::traits<_Settings_> __traits) const noexcept {
-        using _SettingsType = decltype(raze::options::merge(__traits, _traits));
-        auto __sum = raze::options::traits<_SettingsType>(raze::options::merge(__traits, _traits));
+    template <class Settings>
+    raze_always_inline constexpr auto operator[](raze::options::traits<Settings> tr) const noexcept {
+        using SettingsType = decltype(raze::options::merge(tr, _traits));
+        auto sum = raze::options::traits<SettingsType>(raze::options::merge(tr, _traits));
 
-        using _ReboundType = __supports_traits<_Function_, decltype(__sum)>;
-        return _Function_<_ReboundType>(_ReboundType(__sum));
+        using ReboundType = supports_traits<F, decltype(sum)>;
+        return F<ReboundType>(ReboundType(sum));
     }
 
-    template <concepts::option _Trait_>
-    raze_always_inline constexpr auto operator[](_Trait_ __trait) const noexcept {
-        return operator[](raze::options::traits(__trait));
+    template <concepts::option Trait>
+    raze_always_inline constexpr auto operator[](Trait tr) const noexcept {
+        return operator[](raze::options::traits(tr));
     }
 private:
-    raze_no_unique_address _Traits_ _traits;
+    raze_no_unique_address Traits _traits;
 };
 
-template <template <class> class _Function_>
-static inline constexpr auto function_with_traits = _Function_<__supports_traits<_Function_, decltype(no_traits)>>();
+template <template <class> class F>
+static inline constexpr auto function_with_traits = F<supports_traits<F, decltype(no_traits)>>();
 
 __RAZE_OPTIONS_NAMESPACE_END

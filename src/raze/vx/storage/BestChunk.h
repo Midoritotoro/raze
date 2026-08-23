@@ -68,8 +68,8 @@ private:
 template <class _Type_, class _Abi_, i32 _Remaining_>
 struct best_chunk {
     static constexpr auto __total_bytes = _Remaining_ * sizeof(_Type_);
-    static constexpr auto __max_isa_width = __has_avx512f_support_v<_Abi_::isa> ? 512 :
-        __has_avx_support_v<_Abi_::isa> ? 256 : __has_sse2_support_v<_Abi_::isa> ? 128 : 0;
+    static constexpr auto __max_isa_width = has_avx512f<_Abi_::isa> ? 512 :
+        has_avx<_Abi_::isa> ? 256 : has_sse2<_Abi_::isa> ? 128 : 0;
 
     static constexpr auto __data_width = (__total_bytes >= 64) ? 512 :
         (__total_bytes >= 32) ? 256 : (__total_bytes >= 16) ? 128 : 0;

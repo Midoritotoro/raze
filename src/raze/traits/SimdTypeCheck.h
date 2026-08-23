@@ -13,19 +13,19 @@ __RAZE_TRAITS_NAMESPACE_BEGIN
 
 template <arch::ISA _ISA_>
 constexpr inline bool __is_generation_supported_v =
-    arch::__contains<_ISA_, __ymm_features, __xmm_features, __zmm_features>::value;
+    arch::contains<_ISA_, __ymm_features, __xmm_features, __zmm_features>::value;
 
 template <typename _VectorElementType_>
 constexpr inline bool __is_pointer_decay_v = std::is_pointer_v<std::decay_t<_VectorElementType_>>;
 
 template <typename _VectorElementType_>
-constexpr inline bool __is_vector_type_supported_v =
+constexpr inline bool is_vector_type_supported_v =
     std::is_arithmetic_v<std::decay_t<_VectorElementType_>> ||
     __is_pointer_decay_v<_VectorElementType_> || 
     std::is_same_v<std::decay_t<_VectorElementType_>, std::nullptr_t>;
 
 template <>
-constexpr inline bool __is_vector_type_supported_v<bool> = false;
+constexpr inline bool is_vector_type_supported_v<bool> = false;
 
 template <class _VectorElementType_, u32 _Width_>
 struct __deduce_simd_vector_type__ {
@@ -73,7 +73,7 @@ template <typename _VectorElementType_, u32 _Width_>
 using __deduce_simd_vector_type = typename __deduce_simd_vector_type__<_VectorElementType_, _Width_>::type;
 
 template <arch::ISA _ISA_> 
-constexpr bool __is_zeroupper_required_v = arch::__is_ymm_v<_ISA_> || arch::__is_zmm_v<_ISA_>;
+constexpr bool __is_zeroupper_required_v = arch::is_ymm_v<_ISA_> || arch::is_zmm_v<_ISA_>;
 
 template <arch::ISA _SimdGenerationFirst_, arch::ISA _SimdGenerationSecond_>
 constexpr bool __is_simd_feature_superior_v = (static_cast<u8>(_SimdGenerationFirst_) > static_cast<u8>(_SimdGenerationSecond_));

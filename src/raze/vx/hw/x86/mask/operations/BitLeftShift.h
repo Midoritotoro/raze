@@ -16,7 +16,7 @@ struct _Mask_lshift {
 		}
 		else if constexpr (std::is_integral_v<_Tp_>) {
 			raze_maybe_unused_attribute constexpr auto __all_mask = ((sizeof(_Tp_) * 8) == _Size_)
-				? math::__maximum_integral_limit<_Tp_>() : _Tp_(((_Tp_(1) << _Size_) - 1));
+				? math::max_limit<_Tp_>() : _Tp_(((_Tp_(1) << _Size_) - 1));
 
 			if constexpr (_Size_ < 8) return (__x << __shift) & __all_mask;
 			else return (__x << __shift);

@@ -4,7 +4,7 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-raze_unmangled raze_declare_const_function void* raze_cdecl __raze_memcpy(void* raze_restrict __dst,
-	const void* raze_restrict __src, sizetype __bytes) noexcept;
+raze_unmangled raze_declare_const_function void* raze_cdecl raze_memcpy(
+	void* raze_restrict dst, const void* raze_restrict src, sizetype bytes) noexcept;
 
 __RAZE_ALGORITHM_NAMESPACE_END

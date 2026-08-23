@@ -13,7 +13,7 @@ raze_nodiscard raze_always_inline _Tp_ __clear_first(_Tp_ __x) noexcept {
 		return 0;
 	}
 	else if constexpr (std::is_integral_v<_Tp_>) {
-		if constexpr (__has_avx2_support_v<_ISA_>) {
+		if constexpr (has_avx2<_ISA_>) {
 			if constexpr (_Size_ == 64) return _blsr_u64(__x);
 			else return _blsr_u32(__x);
 		}

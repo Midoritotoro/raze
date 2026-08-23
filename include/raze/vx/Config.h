@@ -228,17 +228,9 @@
 #  endif // !RAZE_HAS_SSE2_SUPPORT
 # endif // defined(RAZE_FORCE_SSE2)
 
-#if !defined(__raze_simd_algorithm_inline)
-#  if defined(RAZE_ISA_FORCE_ENABLED)
-#    define __raze_simd_algorithm_inline raze_always_inline
-#  else 
-#    define __raze_simd_algorithm_inline raze_never_inline
-#  endif // defined(RAZE_ISA_FORCE_ENABLED)
-#endif // !defined(__raze_simd_algorithm_inline)
-
 __RAZE_VX_NAMESPACE_BEGIN
 
-constexpr arch::ISA __best_isa_compile_time() noexcept {
+constexpr arch::ISA target_isa() noexcept {
 #if RAZE_HAS_AVX512VBMI2_SUPPORT && RAZE_HAS_AVX512VL_SUPPORT && RAZE_HAS_AVX512DQ_SUPPORT && RAZE_HAS_AVX512BW_SUPPORT
     return arch::ISA::AVX512VBMI2VLDQ;
 #elif RAZE_HAS_AVX512VBMI_SUPPORT && RAZE_HAS_AVX512VL_SUPPORT && RAZE_HAS_AVX512DQ_SUPPORT && RAZE_HAS_AVX512BW_SUPPORT

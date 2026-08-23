@@ -11,7 +11,7 @@ struct _Right_shift {
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, u32 __shift) const noexcept {
 		if constexpr (sizeof(_Tp_) == 16) {
 			if constexpr (__is_epi64_v<_Type_>) {
-				if constexpr (__has_avx512vl_support_v<_ISA_>) return __as<_Tp_>(_mm_sra_epi64(__as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
+				if constexpr (has_avx512vl<_ISA_>) return __as<_Tp_>(_mm_sra_epi64(__as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 				else {
 					auto __high_shifted = _mm_setzero_si128();
 					auto __low_shifted = _mm_setzero_si128();
@@ -41,14 +41,14 @@ struct _Right_shift {
 				const auto __even_shifted = _mm_sra_epi16(_mm_slli_epi16(__as<__m128i>(__x), 8), _mm_cvtsi32_si128(__shift + 8));
 				const auto __odd_shifted = _mm_sra_epi16(__as<__m128i>(__x), _mm_cvtsi32_si128(__shift));
 
-				if constexpr (__has_avx512vl_support_v<_ISA_> && __has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm_mask_mov_epi8(__odd_shifted, 0x5555, __even_shifted));
+				if constexpr (has_avx512vl<_ISA_> && has_avx512bw<_ISA_>) return __as<_Tp_>(_mm_mask_mov_epi8(__odd_shifted, 0x5555, __even_shifted));
 				else return __as<_Tp_>(_Select<_ISA_, _Type_>()(__even_shifted, __odd_shifted, _mm_set1_epi32(0x00FF00FF)));
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__has_avx2_support_v<_ISA_>) {
+			if constexpr (has_avx2<_ISA_>) {
 				if constexpr (__is_epi64_v<_Type_>) {
-					if constexpr (__has_avx512vl_support_v<_ISA_>) return __as<_Tp_>(_mm256_sra_epi64(__as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
+					if constexpr (has_avx512vl<_ISA_>) return __as<_Tp_>(_mm256_sra_epi64(__as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 					else {
 						auto __high_shifted = _mm256_setzero_si256();
 						auto __low_shifted = _mm256_setzero_si256();
@@ -75,7 +75,7 @@ struct _Right_shift {
 					const auto __even_shifted = _mm256_sra_epi16(_mm256_slli_epi16(__as<__m256i>(__x), 8), _mm_cvtsi32_si128(__shift + 8));
 					const auto __odd_shifted = _mm256_sra_epi16(__as<__m256i>(__x), _mm_cvtsi32_si128(__shift));
 
-					if constexpr (__has_avx512vl_support_v<_ISA_> && __has_avx512bw_support_v<_ISA_>) return __as<_Tp_>(_mm256_mask_mov_epi8(__odd_shifted, 0x55555555, __even_shifted));
+					if constexpr (has_avx512vl<_ISA_> && has_avx512bw<_ISA_>) return __as<_Tp_>(_mm256_mask_mov_epi8(__odd_shifted, 0x55555555, __even_shifted));
 					else return __as<_Tp_>(_Select<_ISA_, _Type_>()(__even_shifted, __odd_shifted, _mm256_set1_epi32(0x00FF00FF)));
 				}
 				else if constexpr (__is_epu8_v<_Type_>) {
@@ -95,7 +95,7 @@ struct _Right_shift {
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_srl_epi64(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_sra_epi32(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_srl_epi32(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_sra_epi16(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_srl_epi16(__as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_srl_epi16(
@@ -136,22 +136,22 @@ struct _Right_shift {
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, u32 __shift, _Mask_ __mask) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_maskz_sra_epi64(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_maskz_srl_epi64(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_maskz_sra_epi32(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_maskz_srl_epi32(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_maskz_sra_epi16(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_maskz_srl_epi16(__mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			}
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_sra_epi64(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_srl_epi64(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_sra_epi32(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_srl_epi32(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_sra_epi16(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_srl_epi16(__mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			}
@@ -161,7 +161,7 @@ struct _Right_shift {
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_maskz_srl_epi64(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_sra_epi32(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_srl_epi32(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_sra_epi16(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_srl_epi16(__mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			}
@@ -172,22 +172,22 @@ struct _Right_shift {
 
 	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
 	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, u32 __shift, _Mask_ __mask, _Tp_ __src) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && __has_avx512vl_support_v<_ISA_>) {
+		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_mask_sra_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_mask_srl_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_mask_sra_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_srl_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_mask_sra_epi16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_mask_srl_epi16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), _mm_cvtsi32_si128(__shift)));
 			}
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && __has_avx512vl_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
 			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_mask_sra_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_mask_srl_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_mask_sra_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mask_srl_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_mask_sra_epi16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_mask_srl_epi16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), _mm_cvtsi32_si128(__shift)));
 			}
@@ -197,7 +197,7 @@ struct _Right_shift {
 			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_mask_srl_epi64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_mask_sra_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_srl_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
-			else if constexpr (__has_avx512bw_support_v<_ISA_>) {
+			else if constexpr (has_avx512bw<_ISA_>) {
 				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_mask_sra_epi16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_mask_srl_epi16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), _mm_cvtsi32_si128(__shift)));
 			}

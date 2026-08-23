@@ -9,7 +9,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class _Traits_>
 struct _Equal : _Traits_, dispatchable<_Equal<_Traits_>> {
 	template <source _Source1_, source _Source2_,
-		class _Predicate_, class _Projection1_, class _Projection2_>
+		class Predicate, class _Projection1_, class _Projection2_>
 	struct __kernel {
 		using source1_type = std::remove_cvref_t<_Source1_>;
 		using source2_type = std::remove_cvref_t<_Source2_>;
@@ -27,13 +27,13 @@ struct _Equal : _Traits_, dispatchable<_Equal<_Traits_>> {
 		unchecked_iterator2_type _iterator2;
 		unchecked_sentinel1_type _sentinel1;
 
-		_Predicate_ _predicate;
+		Predicate _predicate;
 		_Projection1_ _proj1;
 		_Projection2_ _proj2;
 
 		bool _result = true;
 
-		constexpr explicit __kernel(_Source1_&& __src1, _Source2_&& __src2, _Predicate_ __pred, _Projection1_ __proj1, _Projection2_ __proj2) noexcept:
+		constexpr explicit __kernel(_Source1_&& __src1, _Source2_&& __src2, Predicate __pred, _Projection1_ __proj1, _Projection2_ __proj2) noexcept:
 			_source1(std::forward<_Source1_>(__src1)), _source2(std::forward<_Source2_>(__src2)), _predicate(__pred), _proj1(__proj1), _proj2(__proj2)
 		{
 			_iterator1 = _source1.ubegin();
@@ -106,38 +106,38 @@ struct _Equal : _Traits_, dispatchable<_Equal<_Traits_>> {
 		}
 
 		static consteval bool vectorizable() noexcept {
-			return options::concepts::same_as<std::iter_value_t<unchecked_iterator1_type>, std::iter_value_t<unchecked_iterator2_type>> &&
+			return std::same_as<std::iter_value_t<unchecked_iterator1_type>, std::iter_value_t<unchecked_iterator2_type>> &&
 				std::contiguous_iterator<unchecked_iterator1_type> && std::contiguous_iterator<unchecked_iterator2_type> &&
-				vectorizable_binary_predicate<_Predicate_, unchecked_iterator1_type, unchecked_iterator2_type> &&
+				vectorizable_binary_predicate<Predicate, unchecked_iterator1_type, unchecked_iterator2_type> &&
 				vectorizable_projection<_Projection1_, unchecked_iterator1_type> && vectorizable_projection<_Projection2_, unchecked_iterator2_type>;
 		}
 	};
 
 	template <std::input_iterator _Iterator1_, std::sentinel_for<_Iterator1_> _Sentinel1_,
 		std::input_iterator _Iterator2_, std::sentinel_for<_Iterator2_> _Sentinel2_,
-		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
+		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Iterator1_ __first1,
 		_Sentinel1_ __sent1, _Iterator2_ __first2, _Sentinel2_ __sent2,
-		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, _Predicate_, _Projection1_, _Projection2_>)
+		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, Predicate, _Projection1_, _Projection2_>)
 	{
 		return this->dispatch(get_source(std::move(__first1), std::move(__sent1)),
-			get_source(std::move(__first2), std::move(__sent2)), traits::__fwd_fn(__pred),
-			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2));
+			get_source(std::move(__first2), std::move(__sent2)), traits::fwd_fn(__pred),
+			traits::fwd_fn(__proj1), traits::fwd_fn(__proj2));
 	}
 
 	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
-		class _Predicate_ = std::equal_to<>, class _Projection1_ = std::identity,
+		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Range1_&& __r1, _Range2_&& __r2, 
-		_Predicate_ __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
 			requires(std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
-				std::ranges::iterator_t<_Range2_>, _Predicate_, _Projection1_, _Projection2_>)
+				std::ranges::iterator_t<_Range2_>, Predicate, _Projection1_, _Projection2_>)
 	{
 		return this->dispatch(get_source(std::forward<_Range1_>(__r1)),
-			get_source(std::forward<_Range2_>(__r2)), traits::__fwd_fn(__pred),
-			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2));
+			get_source(std::forward<_Range2_>(__r2)), traits::fwd_fn(__pred),
+			traits::fwd_fn(__proj1), traits::fwd_fn(__proj2));
 	}
 };
 

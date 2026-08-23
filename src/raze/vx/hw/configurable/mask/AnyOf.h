@@ -32,7 +32,7 @@ struct _Configurable_any_of: raze::options::conditional_callable<_Configurable_a
             return __any_of<_Abi_::isa, _Value_>(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
         };
 
-        if constexpr (!options::concepts::same_as<_Mask_, options::unknown_key> && !std::same_as<_Mask_, options::__ignore_none>) {
+        if constexpr (!std::same_as<_Mask_, options::unknown_key> && !std::same_as<_Mask_, options::__ignore_none>) {
             static_assert(!_Mask_::has_alternative, "Not supported. ");
 
             auto __condition = __options[raze::options::condition_key];

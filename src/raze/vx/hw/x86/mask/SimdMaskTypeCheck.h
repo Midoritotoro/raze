@@ -19,10 +19,10 @@ template <u64 _N_>
 using __mmask_for_elements_t = __mmask_for_elements_helper<_N_>;
 
 template <arch::ISA _ISA_>
-constexpr auto __default_width = arch::__is_xmm_v<_ISA_> ? 128 : arch::__is_ymm_v<_ISA_> ? 256 : arch::__is_zmm_v<_ISA_> ? 512 : -1;
+constexpr auto __default_width = arch::is_xmm_v<_ISA_> ? 128 : arch::is_ymm_v<_ISA_> ? 256 : arch::is_zmm_v<_ISA_> ? 512 : -1;
 
 template <class _Type_>
-constexpr auto native_size = (__default_width<__best_isa_compile_time()> / 8) / sizeof(_Type_);
+constexpr auto native_size = (__default_width<target_isa()> / 8) / sizeof(_Type_);
 
 template <arch::ISA _ISA_>
 constexpr auto __vector_default_size = __default_width<_ISA_>;

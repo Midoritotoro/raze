@@ -12,10 +12,10 @@ template <
 struct _Less_equal {
 	template <intrin_or_arithmetic_type _Tp_>
 	raze_nodiscard raze_always_inline auto operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-        constexpr auto __avx512bw = __has_avx512bw_support_v<_ISA_>;
-        constexpr auto __avx512vl = __has_avx512vl_support_v<_ISA_>;
-        constexpr auto __sse41 = __has_sse41_support_v<_ISA_>;
-        constexpr auto __avx2 = __has_avx2_support_v<_ISA_>;
+        constexpr auto __avx512bw = has_avx512bw<_ISA_>;
+        constexpr auto __avx512vl = has_avx512vl<_ISA_>;
+        constexpr auto __sse41 = has_sse41<_ISA_>;
+        constexpr auto __avx2 = has_avx2<_ISA_>;
 
 		if constexpr (sizeof(_Tp_) == 16) {
             if constexpr (__is_pd_v<_Type_>) {

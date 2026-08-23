@@ -8,79 +8,79 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <concepts::settings _Settings_ = settings<>>
+template <concepts::settings Settings = settings<>>
 struct options: 
-    _Settings_
+    Settings
 {
     constexpr raze_always_inline options() noexcept:
-        _Settings_{} 
+        Settings{} 
     {}
 
-    template <concepts::option ... _Options_>
-    constexpr raze_always_inline explicit options(_Options_ && ... __options) noexcept:
-        _Settings_(std::forward<_Options_>(__options) ...) 
+    template <concepts::option ... Options>
+    constexpr raze_always_inline explicit options(Options&& ... opts) noexcept:
+        Settings(std::forward<Options>(opts)...) 
     {}
 
-    template <class ... _Options_>
-    constexpr raze_always_inline explicit options(const settings<_Options_...>& __options) noexcept :
-        _Settings_(__options) 
+    template <class ... Options>
+    constexpr raze_always_inline explicit options(const settings<Options...>& opts) noexcept :
+        Settings(opts) 
     {}
 
-    template <concepts::keyword _Keyword_>
-    constexpr raze_always_inline auto drop(const _Keyword_& __keyword) const noexcept {
-        auto __dropped = raze::options::drop(__keyword, *this);
-        return options<decltype(__dropped)>{__dropped};
+    template <concepts::keyword Keyword>
+    constexpr raze_always_inline auto drop(const Keyword& kw) const noexcept {
+        auto dropped = raze::options::drop(kw, *this);
+        return options<decltype(dropped)>{dropped};
     }
 
-    template <concepts::keyword _Keyword0_, concepts::keyword ... _Keywords_>
-    constexpr raze_always_inline auto drop(const _Keyword0_& __keyword0,
-        const _Keywords_& ... __keywords) const noexcept 
+    template <concepts::keyword Keyword0, concepts::keyword ... Keywords>
+    constexpr raze_always_inline auto drop(const Keyword0& kw0,
+        const _Keywords_& ... kws) const noexcept 
     {
-        auto __dropped = raze::options::drop(__keyword0, *this);
-        return options<decltype(__dropped)>{__dropped}.drop(__keywords...);
+        auto dropped = raze::options::drop(kw0, *this);
+        return options<decltype(dropped)>{dropped}.drop(kws...);
     }
 
-    template <concepts::keyword _Keywords_>
-    constexpr raze_always_inline auto extract(const _Keywords_& __keywords) const noexcept {
-        auto __value = (*this)[__keywords];
-        auto __dropped = raze::options::drop(__keywords, *this);
+    template <concepts::keyword Keyword>
+    constexpr raze_always_inline auto extract(const Keyword& kw) const noexcept {
+        auto value = (*this)[kw];
+        auto dropped = raze::options::drop(kw, *this);
 
-        return std::tuple{__value, options<decltype(__dropped)>{__dropped}};
+        return std::tuple{value, options<decltype(dropped)>{dropped}};
     }
 };
 
-template <concepts::option ... _Options_>
-options(_Options_&& ... __options) -> 
-    options<decltype(settings(std::forward<_Options_>(__options) ...))>;
+template <concepts::option ... Options>
+options(Options&& ... opts) -> 
+    options<decltype(settings(std::forward<Options>(opts)...))>;
 
-template <class ... _Options_>
-options(const settings<_Options_...>&) ->
-    options<settings<_Options_...>>;
+template <class ... Options>
+options(const settings<Options...>&) ->
+    options<settings<Options...>>;
 
-template <concepts::settings _S0_, concepts::settings _S1_>
+template <concepts::settings S0, concepts::settings S1>
 constexpr static raze_always_inline auto merge_prefer_first(
-    const options<_S0_>& __base, const options<_S1_>& __new_options) noexcept
+    const options<S0>& base, const options<S1>& new_options) noexcept
 {
-    auto __result_options = raze::options::merge(__new_options, __base);
-    return options<decltype(__result_options)>{__result_options};
+    auto result_options = raze::options::merge(new_options, base);
+    return options<decltype(result_options)>{result_options};
 }
 
-template <class _Type_>
-concept callable_options = concepts::settings<_Type_>;
+template <class T>
+concept callable_options = concepts::settings<T>;
 
-template <class _Type_>
-concept callable_option = concepts::option<_Type_>;
+template <class T>
+concept callable_option = concepts::option<T>;
 
-template<auto Decorator> 
+template <auto Decorator> 
 struct exact_option {
-    constexpr raze_always_inline auto process(auto const& __base, 
-        concepts::exactly<Decorator> auto const& __options) const noexcept
+    constexpr raze_always_inline auto process(auto const& base, 
+        concepts::exactly<Decorator> auto const& opts) const noexcept
     {
-        return raze::options::merge_prefer_first(__base, options{ __options });
+        return merge_prefer_first(base, options{ opts });
     }
 
-     constexpr raze_always_inline auto default_to(auto const& __base) const {
-         return __base;
+     constexpr raze_always_inline auto default_to(auto const& base) const {
+         return base;
      }
 };
 

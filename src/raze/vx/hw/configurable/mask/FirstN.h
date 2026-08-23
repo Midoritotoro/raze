@@ -21,7 +21,7 @@ struct _Configurable_first_n : raze::options::conditional_callable<_Configurable
     template <simd_mask_type _Type_>
     static raze_always_inline auto deferred_call(auto __options, i32 __n, const options::as<_Type_>&) noexcept {
         using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        static_assert(options::concepts::same_as<_Mask_, options::unknown_key>, "Not supported. ");
+        static_assert(std::same_as<_Mask_, options::unknown_key>, "Not supported. ");
 
         using _Value_ = typename _Type_::value_type;
         using _Abi_ = typename _Type_::abi_type;

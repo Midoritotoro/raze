@@ -17,8 +17,8 @@ static constexpr i32 __constexpr_max() noexcept {
 template <class _Type_, class _Abi_ = x86_abi<native_size<_Type_>>>
 class simd;
 
-template <arch::ISA	_ISA_, u32 _Width_> 
-constexpr bool __is_width_for_generation_v = __vector_default_size<_ISA_> >= _Width_;
+template <arch::ISA	ISA, u32 _Width_> 
+constexpr bool __is_width_for_generation_v = __vector_default_size<ISA> >= _Width_;
 
 template <class _Type_>
 constexpr bool __is_intrin_type_v = traits::is_any_of_v<std::remove_cvref_t<_Type_>,
@@ -143,99 +143,99 @@ struct __unwrapped_vector_t<_VectorType_, true, false> {
 template <class _VectorType_>
 using __unwrapped_vector_type = typename __unwrapped_vector_t<_VectorType_>::type;
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_sse2_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::SSE2);
+template <arch::ISA ISA>
+concept has_sse2 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::SSE2);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_sse3_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::SSE3);
+template <arch::ISA ISA>
+concept has_sse3 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::SSE3);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_ssse3_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::SSSE3);
+template <arch::ISA ISA>
+concept has_ssse3 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::SSSE3);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_sse41_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::SSE41);
+template <arch::ISA ISA>
+concept has_sse41 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::SSE41);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_sse42_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::SSE42);
+template <arch::ISA ISA>
+concept has_sse42 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::SSE42);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_avx_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX);
+template <arch::ISA ISA>
+concept has_avx = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::AVX);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_fma3_support = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::FMA3) 
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX2FMA3)
-    || static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX512F);
+template <arch::ISA ISA>
+concept has_fma3 = static_cast<int>(ISA) == static_cast<int>(arch::ISA::FMA3) 
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX2FMA3)
+    || static_cast<int>(ISA) >= static_cast<int>(arch::ISA::AVX512F);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_avx2_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX2);
+template <arch::ISA ISA>
+concept has_avx2 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::AVX2);
 
-template <arch::ISA _ISA_> 
-constexpr inline bool __has_avx512f_support_v = static_cast<int>(_ISA_) >= static_cast<int>(arch::ISA::AVX512F);
+template <arch::ISA ISA> 
+concept has_avx512f = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::AVX512F);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_avx512vbmi_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVL) 
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
+template <arch::ISA ISA>
+concept has_avx512vbmi = static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIVL) 
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_avx512vbmi2_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
+template <arch::ISA ISA>
+concept has_avx512vbmi2 = static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_avx512bw_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512BW)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512BWDQ)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBW)
-    || __has_avx512vbmi_support_v<_ISA_> || __has_avx512vbmi2_support_v<_ISA_>;
+template <arch::ISA ISA>
+concept has_avx512bw = static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512BW)
+	|| static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512BWDQ)
+	|| static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
+	|| static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLBW)
+    || has_avx512vbmi<ISA> || has_avx512vbmi2<ISA>;
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_avx512dq_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512DQ)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512BWDQ)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
-	|| static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ);
+template <arch::ISA ISA>
+concept has_avx512dq = static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512DQ)
+	|| static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512BWDQ)
+	|| static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
+	|| static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2DQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ);
 
-template <arch::ISA _ISA_>
-constexpr inline bool __has_avx512vl_support_v = static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLF)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBW)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMIVL)
-    || static_cast<int>(_ISA_) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
+template <arch::ISA ISA>
+concept has_avx512vl = static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIVLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VLDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLF)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLBW)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VLBWDQ)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIVL)
+    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
 
 
 #if defined(__BMI2__)
 #  if defined(raze_cpp_clang)
 #    if __has_feature(bmi2)
-       template <arch::ISA _ISA_>
-       constexpr inline bool __has_bmi2_v = true;
+       template <arch::ISA ISA>
+       concept has_bmi2 = true;
 #    else
-       template <arch::ISA _ISA_>
-       constexpr inline bool __has_bmi2_v = false;
+       template <arch::ISA ISA>
+       concept has_bmi2 = false;
 #    endif // __has_feature(bmi2)
 #  else
-    template <arch::ISA _ISA_>
-    constexpr inline bool __has_bmi2_v = true;
+    template <arch::ISA ISA>
+    concept has_bmi2 = true;
 #  endif
 #else
 #  if defined(raze_cpp_msvc_only)
-    template <arch::ISA _ISA_>
-    constexpr inline bool __has_bmi2_v = __has_avx2_support_v<_ISA_>;
+    template <arch::ISA ISA>
+    concept has_bmi2 = has_avx2<ISA>;
 #  else 
-    template <arch::ISA _ISA_>
-    constexpr inline bool __has_bmi2_v = false;
+    template <arch::ISA ISA>
+    concept has_bmi2 = false;
 #  endif // defined(raze_cpp_msvc_only)
 #endif // defined(__BMI2__)
 

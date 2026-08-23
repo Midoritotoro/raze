@@ -21,13 +21,13 @@ struct _Mask_slide_left {
 		std::integral_constant<i32, _Shift_> __shift) raze_const_operator noexcept
 	{
 		raze_maybe_unused_attribute constexpr auto __all_mask = ((sizeof(_Tp_) * 8) == __size)
-			? math::__maximum_integral_limit<_Tp_>() : _Tp_(((_Tp_(1) << __size) - 1));
+			? math::max_limit<_Tp_>() : _Tp_(((_Tp_(1) << __size) - 1));
 
 		if constexpr (__shift >= __size)
 			return 0;
 
 		if constexpr (sizeof(_Tp_) == 1) {
-			if constexpr (&& __has_avx512dq_support_v<_ISA_>) {
+			if constexpr (&& has_avx512dq<_ISA_>) {
 				if constexpr (__size < 8)
 					return _Mask_and<_ISA_, _Intrin_, _Type_>()(_kshiftli_mask8(__mask, __shift), __to_k<_ISA_>(__all_mask));
 				else
@@ -38,13 +38,13 @@ struct _Mask_slide_left {
 					return (__mask << __shift) & __all_mask;
 			}
 		}
-		else if constexpr (sizeof(_Tp_) == 2 && __has_avx512f_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>) {
 			return _kshiftli_mask16(__mask, __shift);
 		}
-		else if constexpr (sizeof(_Tp_) == 4 && __has_avx512bw_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>) {
 			return _kshiftli_mask32(__mask, __shift);
 		}
-		else if constexpr (sizeof(_Tp_) == 8 && __has_avx512bw_support_v<_ISA_>) {
+		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>) {
 			return _kshiftli_mask64(__mask, __shift);
 		}
 		

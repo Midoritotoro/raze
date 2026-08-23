@@ -4,15 +4,15 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Condition_, class _Value_>
+template <class Condition, class Value>
 struct or_ {
     static constexpr bool has_alternative = true;
 
-    using alternative_type = _Value_;
-    using condition_type = _Condition_;
+    using alternative_type = Value;
+    using condition_type = Condition;
 
-    constexpr or_(const _Condition_& __condition, const _Value_& __value) noexcept:
-        _condition(__condition), _alternative(__value)
+    constexpr or_(const Condition& condition, const Value& v) noexcept:
+        _condition(condition), _alternative(v)
     {}
 
     constexpr or_(const or_&) noexcept = default;
@@ -25,8 +25,7 @@ struct or_ {
         return _alternative;
     }
 
-    template <class _Type_>
-    raze_always_inline _Condition_ mask(const as<_Type_>&) const noexcept {
+    raze_always_inline _Condition_ mask() const noexcept {
         return _condition;
     }
 

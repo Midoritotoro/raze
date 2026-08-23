@@ -13,16 +13,16 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Transform : _Traits_ {
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class _Projection_>
+	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
 	struct __unary_impl {
 		_InputIterator_ _in_iterator;
 		_Sentinel_ _in_sentinel;
 		_OutIterator_ _out_iterator;
 		_Function_ _function;
-		_Projection_ _proj;
+		Projection _proj;
 
 		constexpr explicit __unary_impl(_InputIterator_ __in_it, _Sentinel_ __in_sent,
-			_OutIterator_ __out_it, _Function_ __f, _Projection_ __proj) noexcept:
+			_OutIterator_ __out_it, _Function_ __f, Projection __proj) noexcept:
 				_in_iterator(__in_it), _in_sentinel(__in_sent), _out_iterator(__out_it), _function(__f), _proj(__proj)
 		{}
 
@@ -70,10 +70,10 @@ struct _Transform : _Traits_ {
 
 	template <class _Tag_>
 	struct __vectorized_unary_transform {
-		template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class _Projection_>
+		template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
 		raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
 			_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f,
-			_Projection_ __proj) const noexcept requires(!vx::simd_type<_Tag_>)
+			Projection __proj) const noexcept requires(!vx::simd_type<_Tag_>)
 		{
 			for (; __first != __last; ++__first, ++__result)
 				*__result = __f(__proj(*__first));
@@ -81,10 +81,10 @@ struct _Transform : _Traits_ {
 			return { std::move(__first), std::move(__result) };
 		}
 	
-		template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class _Projection_>
+		template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
 		raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
 			sizetype __aligned_size, sizetype __tail_size, _InputIterator_ __first, _Sentinel_ __last,
-			_OutIterator_ __result, _Function_ __f, _Projection_ __proj) const noexcept requires(vx::simd_type<_Tag_>)
+			_OutIterator_ __result, _Function_ __f, Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			auto* __in_ptr = std::to_address(__first);
 			auto* __out_ptr = std::to_address(__result);
@@ -109,10 +109,10 @@ struct _Transform : _Traits_ {
 		}
 
 		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class _Projection_>
+			class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
 		raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
 			std::integral_constant<sizetype, _AlignedSize_>, std::integral_constant<sizetype, _TailSize_>,
-			_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, _Projection_ __proj)
+			_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, Projection __proj)
 				const noexcept requires(vx::simd_type<_Tag_>)
 		{
 			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
@@ -225,15 +225,15 @@ struct _Transform : _Traits_ {
 	};
 
 	template <std::input_iterator _InputIterator_, std::sentinel_for<_InputIterator_> _Sentinel_,
-		std::weakly_incrementable _OutIterator_, class _Function_, class _Projection_ = std::identity>
+		std::weakly_incrementable _OutIterator_, class _Function_, class Projection = std::identity>
 	constexpr raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
-		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, _Projection_ __proj = {}) const noexcept
-			requires(std::indirectly_writable<_OutIterator_, std::indirect_result_t<_Function_, std::projected<_InputIterator_, _Projection_>>>)
+		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, Projection __proj = {}) const noexcept
+			requires(std::indirectly_writable<_OutIterator_, std::indirect_result_t<_Function_, std::projected<_InputIterator_, Projection>>>)
 	{
 		auto __r = __transform_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
 			traits::__usent<_InputIterator_>(std::move(__last)), 
 			algorithm::__uiter(std::move(__result)),
-			traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
+			traits::fwd_fn(__f), traits::fwd_fn(__proj));
 
 		__seek_iter(__first, std::move(__r.in));
 		__seek_iter(__result, std::move(__r.out));
@@ -241,21 +241,21 @@ struct _Transform : _Traits_ {
 		return { std::move(__first), std::move(__result) };
 	}
 
-	template <std::ranges::input_range _Range_, std::weakly_incrementable _OutIterator_,
-		class _Function_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<_Range_>, _OutIterator_> operator()(
-		_Range_&& __range, _OutIterator_ __result, _Function_ __f, _Projection_ __proj = {}) const noexcept
-			requires(!constexpr_sized_range<_Range_> && std::indirectly_writable<_OutIterator_,
-				std::indirect_result_t<_Function_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>>)
+	template <std::ranges::input_range Range, std::weakly_incrementable _OutIterator_,
+		class _Function_, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<Range>, _OutIterator_> operator()(
+		Range&& __range, _OutIterator_ __result, _Function_ __f, Projection __proj = {}) const noexcept
+			requires(!constexpr_sized_range<Range> && std::indirectly_writable<_OutIterator_,
+				std::indirect_result_t<_Function_, std::projected<std::ranges::iterator_t<Range>, Projection>>>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __transform_unchecked(
-			traits::__r_uiter<_Range_>(std::move(__begin)),
-			traits::__r_usent<_Range_>(std::move(__end)),
+			traits::__r_uiter<Range>(std::move(__begin)),
+			traits::__r_usent<Range>(std::move(__end)),
 			algorithm::__uiter(std::move(__result)),
-			traits::__fwd_fn(__f), traits::__fwd_fn(__proj));
+			traits::fwd_fn(__f), traits::fwd_fn(__proj));
 
 		__seek_iter(__begin, std::move(__r.in));
 		__seek_iter(__result, std::move(__r.out));
@@ -263,22 +263,22 @@ struct _Transform : _Traits_ {
 		return { std::move(__begin), std::move(__result) };
 	}
 
-	template <std::ranges::input_range _Range_, std::weakly_incrementable _OutIterator_,
-		class _Function_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<_Range_>, _OutIterator_> operator()(
-		_Range_&& __range, _OutIterator_ __result, _Function_ __f, _Projection_ __proj = {}) const noexcept
-			requires(constexpr_sized_range<_Range_> && std::indirectly_writable<_OutIterator_,
-				std::indirect_result_t<_Function_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>>)
+	template <std::ranges::input_range Range, std::weakly_incrementable _OutIterator_,
+		class _Function_, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<Range>, _OutIterator_> operator()(
+		Range&& __range, _OutIterator_ __result, _Function_ __f, Projection __proj = {}) const noexcept
+			requires(constexpr_sized_range<Range> && std::indirectly_writable<_OutIterator_,
+				std::indirect_result_t<_Function_, std::projected<std::ranges::iterator_t<Range>, Projection>>>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __transform_unchecked(
-			traits::__r_uiter<_Range_>(std::move(__begin)),
-			traits::__r_usent<_Range_>(std::move(__end)),
+			traits::__r_uiter<Range>(std::move(__begin)),
+			traits::__r_usent<Range>(std::move(__end)),
 			algorithm::__uiter(std::move(__result)),
-			traits::__fwd_fn(__f), traits::__fwd_fn(__proj),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+			traits::fwd_fn(__f), traits::fwd_fn(__proj),
+			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
 
 		__seek_iter(__begin, std::move(__r.in));
 		__seek_iter(__end, std::move(__r.out));
@@ -300,8 +300,8 @@ struct _Transform : _Traits_ {
 			traits::__uiter<_Sentinel2_>(std::move(__first2)),
 			traits::__usent<_InputIterator2_>(std::move(__last2)),
 			algorithm::__uiter(std::move(__result)),
-			traits::__fwd_fn(__f), traits::__fwd_fn(__proj1),
-			traits::__fwd_fn(__proj2));
+			traits::fwd_fn(__f), traits::fwd_fn(__proj1),
+			traits::fwd_fn(__proj2));
 
 		__seek_iter(__first1, std::move(__r.in1));
 		__seek_iter(__first2, std::move(__r.in2));
@@ -332,8 +332,8 @@ struct _Transform : _Traits_ {
 			traits::__r_uiter<_Range2_>(std::move(__begin2)),
 			traits::__uend(__range2),
 			algorithm::__uiter(std::move(__result)),
-			traits::__fwd_fn(__f),
-			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2));
+			traits::fwd_fn(__f),
+			traits::fwd_fn(__proj1), traits::fwd_fn(__proj2));
 
 		__seek_iter(__begin1, std::move(__r.in1));
 		__seek_iter(__begin2, std::move(__r.in2));
@@ -368,8 +368,8 @@ struct _Transform : _Traits_ {
 			traits::__r_uiter<_Range2_>(std::move(__begin2)),
 			traits::__uend(__range2),
 			algorithm::__uiter(std::move(__result)),
-			traits::__fwd_fn(__f),
-			traits::__fwd_fn(__proj1), traits::__fwd_fn(__proj2),
+			traits::fwd_fn(__f),
+			traits::fwd_fn(__proj1), traits::fwd_fn(__proj2),
 			std::integral_constant<sizetype, __min_size>{});
 
 		__seek_iter(__begin1, std::move(__r.in1));
@@ -380,9 +380,9 @@ struct _Transform : _Traits_ {
 	}
 
 private:
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class _Projection_>
+	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
 	constexpr raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> __transform_unchecked(
-		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, _Projection_ __proj) const noexcept
+		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, Projection __proj) const noexcept
 	{
 		__verify_range(__first, __last);
 
@@ -391,7 +391,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && 
 			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<_Projection_, _InputIterator_> &&
+			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<Projection, _InputIterator_> &&
 			traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
@@ -402,13 +402,13 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__unary_impl(__first, __last, __result, __f, __proj));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__unary_impl(__first, __last, __result, __f, __proj));
 	}
 
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class _Projection_, sizetype _Size_>
+	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection, sizetype _Size_>
 	constexpr raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> __transform_unchecked(
 		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result,
-		_Function_ __f, _Projection_ __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
+		_Function_ __f, Projection __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
 	{
 		__verify_range(__first, __last);
 
@@ -417,7 +417,7 @@ private:
 
 		if constexpr (!options::always_scalar<_TraitsType>() && 
 			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<_Projection_, _InputIterator_> &&
+			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<Projection, _InputIterator_> &&
 			traits::__is_lightweight_callable_v<_Function_>)
 		{
 			if not consteval {
@@ -428,7 +428,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__unary_impl(__first, __last, __result, __f, __proj));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__unary_impl(__first, __last, __result, __f, __proj));
 	}
 
 	template <class _InputIterator1_, class _Sentinel1_, class _InputIterator2_, class _Sentinel2_,
@@ -464,7 +464,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(
 			__binary_impl(__first1, __last1, __first2, __last2, __result, __f, __proj1, __proj2));
 	}
 
@@ -498,7 +498,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(
 			__binary_impl(__first1, __last1, __first2, __last2, __result, __f, __proj1, __proj2));
 	}
 };

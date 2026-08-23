@@ -6,25 +6,25 @@
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
-template <class _Key_, concepts::keyword ... _Keywors_>
+template <class Key, concepts::keyword ... Keywords>
 struct filter {
-    using type = keys<_Keywors_...>;
+    using type = keys<Keywors...>;
 
-    template <class _Type_> 
-    constexpr raze_always_inline auto operator+(const keys<_Type_>&) const noexcept {
-        using kw_t = typename _Type_::keyword_type;
+    template <class T> 
+    constexpr raze_always_inline auto operator+(const keys<T>&) const noexcept {
+        using kw_t = typename T::keyword_type;
 
-        if constexpr (!concepts::same_as<_Key_, typename kw_t::tag_type>) return filter<_Key_, _Keywors_..., kw_t>{};
+        if constexpr (!std::same_as<Key, typename kw_t::tag_type>) return filter<Key, Keywors..., kw_t>{};
         else return *this;
     }
 };
 
-template <class _Key_, class _Select_>
+template <class Key, class Select>
 struct select_keys;
 
-template <class _Key_, concepts::option ... _Options_>
-struct select_keys<_Key_, settings<_Options_...>> :
-    decltype((filter<typename _Key_::tag_type>{} + ... + keys<_Options_>{}))
+template <class Key, concepts::option ... Options>
+struct select_keys<Key, settings<Options...>> :
+    decltype((filter<typename Key::tag_type>{} + ... + keys<Options>{}))
 {};
 
 __RAZE_OPTIONS_NAMESPACE_END

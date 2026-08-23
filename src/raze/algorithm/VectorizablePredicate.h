@@ -6,62 +6,62 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Iterator_>
-using __simd_value_t = vx::simd<std::iter_value_t<_Iterator_>, vx::default_abi>;
+template <class It>
+using simd_value_t = vx::simd<std::iter_value_t<It>, vx::default_abi>;
 
-template <class _Iterator_>
-using __simd_mask_value_t = vx::simd_mask<std::iter_value_t<_Iterator_>, vx::default_abi>;
+template <class It>
+using simd_mask_value_t = vx::simd_mask<std::iter_value_t<It>, vx::default_abi>;
 
-template <class _Type_>
-concept vectorizable_value_type = traits::__is_vector_type_supported_v<std::decay_t<_Type_>>;
+template <class T>
+concept vectorizable_value_type = traits::is_vector_type_supported_v<std::decay_t<T>>;
 
-template <class _Predicate_, class _Iterator_>
-concept always_scalar_unary = vectorizable_value_type<std::iter_value_t<_Iterator_>> && (
-    !std::invocable<std::remove_cvref_t<_Predicate_>, __simd_value_t<_Iterator_>> ||
-    requires { { std::invoke(std::declval<std::remove_cvref_t<_Predicate_>>(), std::declval<__simd_value_t<_Iterator_>>()) } -> std::convertible_to<bool>; });
+template <class Pred, class It>
+concept always_scalar_unary = vectorizable_value_type<std::iter_value_t<It>> && (
+    !std::invocable<std::remove_cvref_t<Pred>, simd_value_t<It>> ||
+    requires { { std::invoke(std::declval<std::remove_cvref_t<Pred>>(), std::declval<simd_value_t<It>>()) } -> std::convertible_to<bool>; });
 
-template <class _Predicate_, class _Iterator1_, class _Iterator2_ = _Iterator1_>
-concept always_scalar_binary = vectorizable_value_type<std::iter_value_t<_Iterator1_>> && 
-    vectorizable_value_type<std::iter_value_t<_Iterator2_>> && (
-    !std::invocable<std::remove_cvref_t<_Predicate_>, __simd_value_t<_Iterator1_>, __simd_value_t<_Iterator2_>> ||
-        requires { { std::invoke(std::declval<std::remove_cvref_t<_Predicate_>>(), 
-            std::declval<__simd_value_t<_Iterator1_>>(), std::declval<__simd_value_t<_Iterator2_>>()) } -> std::convertible_to<bool>; });
+template <class Pred, class It1, class It2 = It1>
+concept always_scalar_binary = vectorizable_value_type<std::iter_value_t<It1>> && 
+    vectorizable_value_type<std::iter_value_t<It2>> && (
+    !std::invocable<std::remove_cvref_t<Pred>, simd_value_t<It1>, simd_value_t<It2>> ||
+        requires { { std::invoke(std::declval<std::remove_cvref_t<Pred>>(), 
+            std::declval<simd_value_t<It1>>(), std::declval<simd_value_t<It2>>()) } -> std::convertible_to<bool>; });
 
-template <class _Predicate_, class _Iterator_>
-concept vectorizable_unary_predicate = !always_scalar_unary<_Predicate_, _Iterator_> && 
-    vectorizable_value_type<std::iter_value_t<_Iterator_>> && requires {
-        { std::invoke(std::declval<traits::__function_unwrapped<std::remove_cvref_t<_Predicate_>>>(), std::declval<__simd_value_t<_Iterator_>>()) }
-            -> std::convertible_to<__simd_mask_value_t<_Iterator_>>;
+template <class Pred, class It>
+concept vectorizable_unary_predicate = !always_scalar_unary<Pred, It> && 
+    vectorizable_value_type<std::iter_value_t<It>> && requires {
+        { std::invoke(std::declval<traits::function_unwrapped<std::remove_cvref_t<Pred>>>(), std::declval<simd_value_t<It>>()) }
+            -> std::convertible_to<simd_mask_value_t<It>>;
 };
 
-template <class _Predicate_, class _Iterator1_, class _Iterator2_ = _Iterator1_>
-concept vectorizable_binary_predicate = !always_scalar_binary<_Predicate_, _Iterator1_, _Iterator2_> && 
-    vectorizable_value_type<std::iter_value_t<_Iterator1_>> && 
-    vectorizable_value_type<std::iter_value_t<_Iterator2_>> && requires {
-        { std::invoke(std::declval<traits::__function_unwrapped<std::remove_cvref_t<_Predicate_>>>(), 
-            std::declval<__simd_value_t<_Iterator1_>>(),
-            std::declval<__simd_value_t<_Iterator2_>>()) } -> std::convertible_to<__simd_mask_value_t<_Iterator1_>>;
+template <class Pred, class It1, class It2 = It1>
+concept vectorizable_binary_predicate = !always_scalar_binary<Pred, It1, It2> && 
+    vectorizable_value_type<std::iter_value_t<It1>> && 
+    vectorizable_value_type<std::iter_value_t<It2>> && requires {
+        { std::invoke(std::declval<traits::function_unwrapped<std::remove_cvref_t<Pred>>>(), 
+            std::declval<simd_value_t<It1>>(),
+            std::declval<simd_value_t<It2>>()) } -> std::convertible_to<simd_mask_value_t<It1>>;
 };
 
-template <class _Function_, class _Iterator_>
-concept vectorizable_unary_function = vectorizable_value_type<std::iter_value_t<_Iterator_>> && requires {
-    { std::invoke(std::declval<traits::__function_unwrapped<std::remove_cvref_t<_Function_>>>(), std::declval<__simd_value_t<_Iterator_>&>()) };
+template <class F, class It>
+concept vectorizable_unary_function = vectorizable_value_type<std::iter_value_t<It>> && requires {
+    { std::invoke(std::declval<traits::function_unwrapped<std::remove_cvref_t<F>>>(), std::declval<simd_value_t<It>&>()) };
 };
 
-template <class _Function_, class _Iterator1_, class _Iterator2_ = _Iterator1_>
-concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t<_Iterator1_>> && 
-    vectorizable_value_type<std::iter_value_t<_Iterator2_>> && requires {
-        { std::invoke(std::declval<traits::__function_unwrapped<std::remove_cvref_t<_Function_>>>(),
-            std::declval<__simd_value_t<_Iterator1_>&>(), std::declval<__simd_value_t<_Iterator2_>&>()) };
+template <class F, class It1, class It2 = It1>
+concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t<It1>> && 
+    vectorizable_value_type<std::iter_value_t<It2>> && requires {
+        { std::invoke(std::declval<traits::function_unwrapped<std::remove_cvref_t<F>>>(),
+            std::declval<simd_value_t<It1>&>(), std::declval<simd_value_t<It2>&>()) };
 };
 
-template <class _Projection_, class _Iterator_>
-concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<traits::__function_unwrapped<_Projection_>>, std::identity>;
+template <class Proj, class It>
+concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Proj>>, std::identity>;
 
-template <class _Comp_>
-concept is_less_comparator = std::is_same_v<std::remove_cvref_t<traits::__function_unwrapped<_Comp_>>, std::less<>>;
+template <class Comp>
+concept is_less_comparator = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Comp>>, std::less<>>;
 
-template <class _Comp_>
-concept is_greater_comparator = std::is_same_v<std::remove_cvref_t<traits::__function_unwrapped<_Comp_>>, std::greater<>>;
+template <class Comp>
+concept is_greater_comparator = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Comp>>, std::greater<>>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

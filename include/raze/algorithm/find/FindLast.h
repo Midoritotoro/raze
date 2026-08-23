@@ -12,7 +12,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
 struct _Find_last_if : _Traits_, dispatchable<_Find_last_if<_Traits_>> {
-    template <source _Source_, class _Predicate_, class _Projection_>
+    template <source _Source_, class Predicate, class Projection>
     struct __impl {
         using source_type = std::remove_cvref_t<_Source_>;
         using iterator_type = typename source_type::iterator_type;
@@ -29,12 +29,12 @@ struct _Find_last_if : _Traits_, dispatchable<_Find_last_if<_Traits_>> {
         unchecked_iterator_type _iterator;
         unchecked_sentinel_type _sentinel;
 
-        _Predicate_ _predicate;
-        _Projection_ _proj;
+        Predicate _predicate;
+        Projection _proj;
 
         std::ranges::subrange<iterator_type> _result;
 
-        constexpr explicit __impl(_Source_&& __src, _Predicate_ __pred, _Projection_ __proj) noexcept:
+        constexpr explicit __impl(_Source_&& __src, Predicate __pred, Projection __proj) noexcept:
             _source(std::forward<_Source_>(__src)), _predicate(__pred), _proj(__proj)
         {
             _iterator = _source.ubegin();
@@ -129,8 +129,8 @@ struct _Find_last_if : _Traits_, dispatchable<_Find_last_if<_Traits_>> {
 
         static consteval bool vectorizable() noexcept {
             return std::contiguous_iterator<unchecked_iterator_type> &&
-                vectorizable_unary_predicate<_Predicate_, unchecked_iterator_type>&&
-                vectorizable_projection<_Projection_, unchecked_iterator_type>;
+                vectorizable_unary_predicate<Predicate, unchecked_iterator_type>&&
+                vectorizable_projection<Projection, unchecked_iterator_type>;
         }
 
         constexpr raze_always_inline auto result() const noexcept {
@@ -139,10 +139,10 @@ struct _Find_last_if : _Traits_, dispatchable<_Find_last_if<_Traits_>> {
     };
 
     template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-        class _Predicate_, class _Projection_ = std::identity>
+        class Predicate, class Projection = std::identity>
     raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
-        _Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-            requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
+        _Sentinel_ __last, Predicate __pred, Projection __proj = {}) const noexcept
+            requires(std::indirect_unary_predicate<Predicate, std::projected<_Iterator_, Projection>>)
     {
         auto __unwrapped_first = traits::__uiter<_Sentinel_>(std::move(__first));
 
@@ -150,55 +150,55 @@ struct _Find_last_if : _Traits_, dispatchable<_Find_last_if<_Traits_>> {
             auto __unwrapped_last = traits::__last_uiter<_Iterator_>(__unwrapped_first, std::move(__last));
             auto __unwrapped_result = __find_last_unchecked(
                 std::move(__unwrapped_first), std::move(__unwrapped_last),
-                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+                traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 
             return traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
         }
         else {
             auto __unwrapped_result = __find_last_unchecked(std::move(__unwrapped_first),
                 traits::__usent<_Iterator_>(std::move(__last)),
-                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj));
+                traits::fwd_fn(__pred), traits::fwd_fn(__proj));
 
             return traits::__rewrap_subrange<std::ranges::subrange<_Iterator_>>(__first, std::move(__unwrapped_result));
         }
     }
 
-    template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-    constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
-        _Range_&& __range, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-            requires(!constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-                _Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+    template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
+    constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(
+        Range&& __range, Predicate __pred, Projection __proj = {}) const noexcept
+            requires(!constexpr_sized_range<Range> && std::indirect_unary_predicate<
+                Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>)
     {
-        if constexpr (std::ranges::bidirectional_range<_Range_>) {
-            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+        if constexpr (std::ranges::bidirectional_range<Range>) {
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<Range>>(__range, __find_last_unchecked(
                 traits::__ubegin(__range), traits::__last_uiter(__range),
-                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
+                traits::fwd_fn(__pred), traits::fwd_fn(__proj)));
         }
         else {
-            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<Range>>(__range, __find_last_unchecked(
                 traits::__ubegin(__range), traits::__uend(__range),
-                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj)));
+                traits::fwd_fn(__pred), traits::fwd_fn(__proj)));
         }
 
     }
 
-    template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-    constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(_Range_&& __range,
-        _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-            requires(constexpr_sized_range<_Range_> && std::indirect_unary_predicate<
-                _Predicate_, std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+    template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
+    constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(Range&& __range,
+        Predicate __pred, Projection __proj = {}) const noexcept
+            requires(constexpr_sized_range<Range> && std::indirect_unary_predicate<
+                Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>)
     {
-        if constexpr (std::ranges::bidirectional_range<_Range_>) {
-            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+        if constexpr (std::ranges::bidirectional_range<Range>) {
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<Range>>(__range, __find_last_unchecked(
                 traits::__ubegin(__range), traits::__last_uiter(__range),
-                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj),
-                std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+                traits::fwd_fn(__pred), traits::fwd_fn(__proj),
+                std::integral_constant<sizetype, __range_constexpr_size<Range>()>{}));
         }
         else {
-            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<_Range_>>(__range, __find_last_unchecked(
+            return traits::__rewrap_subrange<std::ranges::borrowed_subrange_t<Range>>(__range, __find_last_unchecked(
                 traits::__ubegin(__range), traits::__uend(__range),
-                traits::__fwd_fn(__pred), traits::__fwd_fn(__proj),
-                std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{}));
+                traits::fwd_fn(__pred), traits::fwd_fn(__proj),
+                std::integral_constant<sizetype, __range_constexpr_size<Range>()>{}));
         }
     }
 };
@@ -208,23 +208,23 @@ constexpr inline auto find_last_if = raze::options::function_with_traits<_Find_l
 template <class _Traits_>
 struct _Find_last : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Value_, class _Projection_ = std::identity>
+		class _Value_, class Projection = std::identity>
 	constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
-		_Sentinel_ __last, const _Value_& __v, _Projection_ __proj = {}) const noexcept
+		_Sentinel_ __last, const _Value_& __v, Projection __proj = {}) const noexcept
 	{
 		return find_last_if[_Traits_::traits()](std::move(__first), std::move(__last), algorithm::equal_to(
-			function_return_type<_Projection_, std::iter_value_t<_Iterator_>>(__v)),
-			traits::__fwd_fn(__proj));
+			function_return_type<Projection, std::iter_value_t<_Iterator_>>(__v)),
+			traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Value_,
-		class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
-		_Range_&& __r, const _Value_& __v, _Projection_ __proj = {}) const noexcept
+	template <std::ranges::input_range Range, class _Value_,
+		class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(
+		Range&& __r, const _Value_& __v, Projection __proj = {}) const noexcept
 	{
-		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__r), algorithm::equal_to(
-			function_return_type<_Projection_, std::ranges::range_value_t<_Range_>>(__v)),
-			traits::__fwd_fn(__proj));
+		return find_last_if[_Traits_::traits()](std::forward<Range>(__r), algorithm::equal_to(
+			function_return_type<Projection, std::ranges::range_value_t<Range>>(__v)),
+			traits::fwd_fn(__proj));
 	}
 };
 
@@ -233,21 +233,21 @@ constexpr inline auto find_last = raze::options::function_with_traits<_Find_last
 template <class _Traits_>
 struct _Find_last_if_not : _Traits_ {
 	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Predicate_, class _Projection_ = std::identity>
+		class Predicate, class Projection = std::identity>
 	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
-		_Sentinel_ __last, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_unary_predicate<_Predicate_, std::projected<_Iterator_, _Projection_>>)
+		_Sentinel_ __last, Predicate __pred, Projection __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<Predicate, std::projected<_Iterator_, Projection>>)
 	{
-		return find_last_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::__fwd_fn(__proj));
+		return find_last_if[_Traits_::traits()](std::move(__first), std::move(__last), make_not_fn(__pred), traits::fwd_fn(__proj));
 	}
 
-	template <std::ranges::input_range _Range_, class _Predicate_, class _Projection_ = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<_Range_> operator()(
-		_Range_&& __r, _Predicate_ __pred, _Projection_ __proj = {}) const noexcept
-			requires(std::indirect_unary_predicate<_Predicate_, 
-                std::projected<std::ranges::iterator_t<_Range_>, _Projection_>>)
+	template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
+	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(
+		Range&& __r, Predicate __pred, Projection __proj = {}) const noexcept
+			requires(std::indirect_unary_predicate<Predicate, 
+                std::projected<std::ranges::iterator_t<Range>, Projection>>)
 	{
-		return find_last_if[_Traits_::traits()](std::forward<_Range_>(__r), make_not_fn(__pred), traits::__fwd_fn(__proj));
+		return find_last_if[_Traits_::traits()](std::forward<Range>(__r), make_not_fn(__pred), traits::fwd_fn(__proj));
 	}
 };
 

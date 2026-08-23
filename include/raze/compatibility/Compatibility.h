@@ -26,7 +26,6 @@
 #include <raze/compatibility/UnreachableCode.h>
 #include <raze/compatibility/Warnings.h>
 #include <raze/compatibility/StaticOperators.h>
-#include <raze/compatibility/MsvcIntrinWorkaround.h>
 #include <raze/compatibility/AutoVectorization.h>
 #include <raze/compatibility/StackProtection.h>
 #include <raze/compatibility/Unroll.h>
@@ -35,16 +34,3 @@
 #include <cstddef>
 
 raze_disable_warning_msvc(4067)
-
-
-#if !defined(__simd_inline_constexpr)
-#  define __simd_inline_constexpr raze_constexpr_cxx20 raze_always_inline
-#endif // !defined(__simd_inline_constexpr)
-
-#if !defined(__simd_nodiscard_inline_constexpr)
-#  define __simd_nodiscard_inline_constexpr raze_nodiscard raze_always_inline raze_constexpr_cxx20
-#endif // !defined(__simd_nodiscard_inline_constexpr)
-
-#if !defined(__simd_nodiscard_inline)
-#  define __simd_nodiscard_inline raze_nodiscard raze_always_inline
-#endif // !defined(__simd_nodiscard_inline)

@@ -135,17 +135,17 @@ struct _Reverse_copy : _Traits_ {
 		return { std::move(__first), std::move(__result) };
 	}
 
-	template <std::ranges::bidirectional_range _Range_, std::weakly_incrementable _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<_Range_>, _OutIterator_>
-	operator()(_Range_&& __range, _OutIterator_ __result) const noexcept
-		requires(!constexpr_sized_range<_Range_> && std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _OutIterator_>)
+	template <std::ranges::bidirectional_range Range, std::weakly_incrementable _OutIterator_>
+	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<Range>, _OutIterator_>
+	operator()(Range&& __range, _OutIterator_ __result) const noexcept
+		requires(!constexpr_sized_range<Range> && std::indirectly_copyable<std::ranges::iterator_t<Range>, _OutIterator_>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __reverse_copy_unchecked(
-			traits::__r_uiter<_Range_>(std::move(__begin)),
-			traits::__r_usent<_Range_>(__end),
+			traits::__r_uiter<Range>(std::move(__begin)),
+			traits::__r_usent<Range>(__end),
 			algorithm::__uiter(std::move(__result)));
 
 		__seek_iter(__begin, std::move(__r.in));
@@ -154,19 +154,19 @@ struct _Reverse_copy : _Traits_ {
 		return { std::move(__begin), std::move(__result) };
 	}
 
-	template <std::ranges::bidirectional_range _Range_, std::weakly_incrementable _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<_Range_>, _OutIterator_>
-	operator()(_Range_&& __range, _OutIterator_ __result) const noexcept
-		requires(constexpr_sized_range<_Range_> && std::indirectly_copyable<std::ranges::iterator_t<_Range_>, _OutIterator_>)
+	template <std::ranges::bidirectional_range Range, std::weakly_incrementable _OutIterator_>
+	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<Range>, _OutIterator_>
+	operator()(Range&& __range, _OutIterator_ __result) const noexcept
+		requires(constexpr_sized_range<Range> && std::indirectly_copyable<std::ranges::iterator_t<Range>, _OutIterator_>)
 	{
 		auto __begin = std::ranges::begin(__range);
 		auto __end = std::ranges::end(__range);
 
 		auto __r = __reverse_copy_unchecked(
-			traits::__r_uiter<_Range_>(std::move(__begin)),
-			traits::__r_usent<_Range_>(__end),
+			traits::__r_uiter<Range>(std::move(__begin)),
+			traits::__r_usent<Range>(__end),
 			algorithm::__uiter(std::move(__result)),
-			std::integral_constant<sizetype, __range_constexpr_size<_Range_>()>{});
+			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
 
 		__seek_iter(__begin, std::move(__r.in));
 		__seek_iter(__result, std::move(__r.out));
@@ -196,7 +196,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __result));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __result));
 	}
 
 	template <class _InIterator_, class _Sentinel_, class _OutIterator_, sizetype _Size_>
@@ -222,7 +222,7 @@ private:
 			}
 		}
 
-		return options::__unroller<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __result));
+		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __result));
 	}
 };
 

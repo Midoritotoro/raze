@@ -10,10 +10,10 @@ __RAZE_VX_NAMESPACE_BEGIN
 /**
  *  @brief  ABI descriptor enabling runtime‑dispatched SIMD execution on MSVC.
  *
- *  @tparam _ISA_     Maximum instruction set architecture that the dispatcher
+ *  @tparam ISA     Maximum instruction set architecture that the dispatcher
  *                    is permitted to use.
- *  @tparam _Width_   SIMD register width in bits. Defaults to the natural width
- *                    of @p _ISA_.
+ *  @tparam Width   SIMD register width in bits. Defaults to the natural width
+ *                    of @p ISA.
  *
  *  This ABI model is intended **exclusively for MSVC compiler. 
  *	It does not perform instruction selection by itself. Instead,
@@ -43,33 +43,33 @@ __RAZE_VX_NAMESPACE_BEGIN
  *  width and register count, enabling the dispatcher to construct and manage
  *  ISA‑specific SIMD backends efficiently.
 */
-template <arch::ISA	_ISA_, sizetype	_Elements_>
+template <arch::ISA	ISA, sizetype Elements>
 struct runtime_abi {
 	static constexpr auto dynamic = true;
-	static constexpr auto size = _Elements_;
-	static constexpr auto isa = _ISA_;
+	static constexpr auto size = Elements;
+	static constexpr auto isa = ISA;
 };
 
-template <sizetype _Elements_>
+template <sizetype Elements>
 struct x86_abi {
 	static constexpr auto dynamic = false;
-	static constexpr auto size = _Elements_;
-	static constexpr auto isa = __best_isa_compile_time();
+	static constexpr auto size = Elements;
+	static constexpr auto isa = target_isa();
 };
 
 #if defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
   using default_abi = x86_abi<4>;
 #endif // defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
 
-template <class _Abi_, sizetype	_Elements_>
+template <class Abi, sizetype Elements>
 struct resize_abi {
-	using type = std::conditional_t<_Abi_::dynamic, runtime_abi<_Abi_::isa, _Elements_>, x86_abi<_Elements_>>;
+	using type = std::conditional_t<Abi::dynamic, runtime_abi<Abi::isa, Elements>, x86_abi<Elements>>;
 };
 
-template <class	_Abi_, sizetype	_Elements_>
-using resize_abi_t = typename resize_abi<_Abi_, _Elements_>::type;
+template <class	Abi, sizetype Elements>
+using resize_abi_t = typename resize_abi<Abi, Elements>::type;
 
-template <class _Type_>
-using native_abi = x86_abi<native_size<_Type_>>;
+template <class Type>
+using native_abi = x86_abi<native_size<Type>>;
 
 __RAZE_VX_NAMESPACE_END
