@@ -35,7 +35,7 @@ struct _Configurable_mul: raze::options::conditional_callable<_Configurable_mul,
         _Type_ __result = __x;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Mul<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+            __chunk = _Mul<_Abi_::isa, _Value_>()(ustorage(__chunk), ustorage<_Args_>(__args)...);
         };
 
         if constexpr (!std::same_as<_Mask_, options::unknown_key>) {

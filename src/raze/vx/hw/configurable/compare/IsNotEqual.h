@@ -41,7 +41,7 @@ struct _Configurable_is_not_equal: raze::options::conditional_callable<_Configur
         simd_mask<_Value_, _Abi_> __result;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Not_equal<_Abi_::isa, _Value_>()(__storage_unwrap<_Args_>(__args)...);
+            __chunk = _Not_equal<_Abi_::isa, _Value_>()(ustorage<_Args_>(__args)...);
         };
 
         if constexpr (!std::same_as<_Mask_, options::unknown_key>) {

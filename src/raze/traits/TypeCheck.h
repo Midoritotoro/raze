@@ -10,7 +10,7 @@
 
 __RAZE_TRAITS_NAMESPACE_BEGIN
 
-template <class	_Type_, class ... _Types_>
-constexpr inline bool is_any_of_v = (std::is_same_v<_Type_, _Types_> || ...);
+template <class	T, class ... Ts>
+constexpr inline bool is_any_of_v = (std::same_as<T, Ts> || ...);
 
 __RAZE_TRAITS_NAMESPACE_END

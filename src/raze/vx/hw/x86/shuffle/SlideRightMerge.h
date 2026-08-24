@@ -149,8 +149,8 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right_m
         auto __r = __x;
 
         auto& __storage = __r.template __get<0>();
-        __storage = __slide_right_merge_native<_Abi_::isa, _Type_>(__storage_unwrap(__x.template __get<0>()),
-            __storage_unwrap(__y.template __get<0>()), __slide);
+        __storage = __slide_right_merge_native<_Abi_::isa, _Type_>(ustorage(__x.template __get<0>()),
+            ustorage(__y.template __get<0>()), __slide);
 
         return __r;
     }

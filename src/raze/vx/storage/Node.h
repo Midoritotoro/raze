@@ -6,58 +6,58 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-struct _Simd_tuple_nil 
+struct simd_tuple_nil 
 {};
 
-template <class _Head_, class _Tail_ = _Simd_tuple_nil>
-struct _Simd_tuple_node {
-    raze_no_unique_address _Head_ _head;
-    raze_no_unique_address _Tail_ _tail;
+template <class H, class T = simd_tuple_nil>
+struct simd_tuple_node {
+    raze_no_unique_address H _head;
+    raze_no_unique_address T _tail;
 
-    raze_always_inline _Simd_tuple_node() noexcept = default;
-    raze_always_inline _Simd_tuple_node(const _Simd_tuple_node&) noexcept = default;
-    raze_always_inline _Simd_tuple_node(_Simd_tuple_node&&) noexcept = default;
+    raze_always_inline simd_tuple_node() noexcept = default;
+    raze_always_inline simd_tuple_node(const simd_tuple_node&) noexcept = default;
+    raze_always_inline simd_tuple_node(simd_tuple_node&&) noexcept = default;
 
-    raze_always_inline ~_Simd_tuple_node() = default;
+    raze_always_inline ~simd_tuple_node() = default;
 
-    raze_always_inline _Simd_tuple_node& operator=(const _Simd_tuple_node&) noexcept = default;
-    raze_always_inline _Simd_tuple_node& operator=(_Simd_tuple_node&&) noexcept = default;
+    raze_always_inline simd_tuple_node& operator=(const simd_tuple_node&) noexcept = default;
+    raze_always_inline simd_tuple_node& operator=(simd_tuple_node&&) noexcept = default;
 
-    template <class _NewHead_, class _NewTail_>
-    raze_always_inline _Simd_tuple_node(_NewHead_&& __head, _NewTail_&& __tail) noexcept:
-        _head(std::forward<_NewHead_>(__head)), 
-        _tail(std::forward<_NewTail_>(__tail))
+    template <class NewH, class NewT>
+    raze_always_inline _Simd_tuple_node(NewH&& head, NewT&& tail) noexcept:
+        _head(std::forward<NewH>(head)), 
+        _tail(std::forward<NewT>(tail))
     {}
 };
 
-template <class _T_> 
-struct __is_simd_tuple: 
+template <class T> 
+struct is_simd_tuple: 
     std::false_type 
 {};
 
-template <class _H_, class _T_> 
-struct __is_simd_tuple<_Simd_tuple_node<_H_, _T_>>: 
+template <class H, class T> 
+struct is_simd_tuple<simd_tuple_node<H, T>>: 
     std::true_type 
 {};
 
 template <> 
-struct __is_simd_tuple<_Simd_tuple_nil>:
+struct is_simd_tuple<simd_tuple_nil>:
     std::true_type 
 {};
 
-template <class _Type_>
-concept wrapped_type = requires(const _Type_& __x_with_data) { __x_with_data.data(); };
+template <class T>
+concept wrapped_type = requires(const T& x) { x.data(); };
 
-template <class _Type_>
-raze_always_inline auto __storage_unwrap(const _Type_& __x) noexcept {
-    if constexpr (wrapped_type<_Type_>) return __x.data();
-    else return __x;
+template <class T>
+raze_always_inline auto ustorage(const T& x) noexcept {
+    if constexpr (wrapped_type<T>) return x.data();
+    else return x;
 }
 
-template <class _Type_>
-raze_always_inline auto& __storage_unwrap(_Type_& __x) noexcept {
-    if constexpr (wrapped_type<_Type_>) return __x.data();
-    else return __x;
+template <class T>
+raze_always_inline auto& ustorage(T& x) noexcept {
+    if constexpr (wrapped_type<T>) return x.data();
+    else return x;
 }
 
 __RAZE_VX_NAMESPACE_END

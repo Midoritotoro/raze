@@ -8,32 +8,32 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Type_, class _Abi_>
-class _Vector_storage {
-    static constexpr std::size_t __bytes = _Abi_::size * sizeof(_Type_);
-    static constexpr bool __use_native = (__bytes == 16 && has_sse2<_Abi_::isa>) ||
-        (__bytes == 32 && has_avx<_Abi_::isa>) || (__bytes == 64 && has_avx512f<_Abi_::isa>);
+template <class T, class Abi>
+class vector_storage {
+    static constexpr std::size_t bytes = Abi::size * sizeof(T);
+    static constexpr bool use_native = (bytes == 16 && has_sse2<Abi::isa>) ||
+        (bytes == 32 && has_avx<Abi::isa>) || (bytes == 64 && has_avx512f<Abi::isa>);
 public:
-    using abi_type = _Abi_;
-    using tuple_type = std::conditional_t<__use_native, typename best_chunk<
-        _Type_, _Abi_, _Abi_::size>::type, _Simd_vector_tuple_type<_Type_, _Abi_>>;
+    using abi_type = Abi;
+    using tuple_type = std::conditional_t<use_native, typename best_chunk<
+        Type, Abi, Abi::size>::type, simd_vector_tuple_type<_Type_, _Abi_>>;
     
-    raze_always_inline _Vector_storage() noexcept = default;
-    raze_always_inline _Vector_storage(const _Vector_storage&) noexcept = default;
-    raze_always_inline _Vector_storage(_Vector_storage&&) noexcept = default;
+    raze_always_inline vector_storage() noexcept = default;
+    raze_always_inline vector_storage(const vector_storage&) noexcept = default;
+    raze_always_inline vector_storage(vector_storage&&) noexcept = default;
 
-    raze_always_inline ~_Vector_storage() = default;
+    raze_always_inline ~vector_storage() = default;
 
-    raze_always_inline _Vector_storage& operator=(const _Vector_storage&) noexcept = default;
-    raze_always_inline _Vector_storage& operator=(_Vector_storage&&) noexcept = default;
+    raze_always_inline vector_storage& operator=(const vector_storage&) noexcept = default;
+    raze_always_inline vector_storage& operator=(vector_storage&&) noexcept = default;
 
     raze_nodiscard static constexpr bool is_native() noexcept {
-        return __use_native;
+        return use_native;
     }
 
     raze_nodiscard static constexpr auto chunks_count() noexcept {
         if constexpr (is_native()) return 1;
-        else return __simd_tuple_size<std::remove_cvref_t<tuple_type>>::value;
+        else return simd_tuple_size<std::remove_cvref_t<tuple_type>>::value;
     }
 
     raze_always_inline tuple_type storage() const noexcept {
@@ -46,108 +46,108 @@ public:
 
     template <class _Function_, class ... _Args_>
     raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (__use_native) __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
         else __for_each_tuple(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (__use_native) __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
         else __for_each_tuple_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_all_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_all_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_any_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_any_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (__use_native) __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
         else __for_each_tuple(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (__use_native) __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
         else __for_each_tuple_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_all_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_all_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_any_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
     template <class _Function_, class ... _Args_>
     raze_always_inline auto __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (__use_native) return __f(_data, std::forward<_Args_>(__args)...);
+        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
         else return __for_each_tuple_any_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
     }
 
-    raze_always_inline void __insert(i32 __i, _Type_ __value) noexcept {
-        raze_debug_assert(__i >= 0 && __i < _Abi_::size);
+    raze_always_inline void __insert(i32 i, T v) noexcept {
+        raze_debug_assert(i >= 0 && i < Abi::size);
 
-        if constexpr (__use_native) _Insert<_Abi_::isa>()(__storage_unwrap(_data), __i, __value);
-        else __visit_chunk_by_index(_data, __i, [&](auto& __chunk, i32 __lane) raze_always_inline_lambda {
-            _Insert<_Abi_::isa>()(__storage_unwrap(__chunk), __lane, __value);
+        if constexpr (use_native) _Insert<Abi::isa>()(ustorage(_data), i, v);
+        else visit_chunk_by_index(_data, __i, [&](auto& chunk, i32 lane) raze_always_inline_lambda {
+            _Insert<Abi::isa>()(ustorage(chunk), lane, v);
         });
     }
 
-    raze_nodiscard raze_always_inline _Type_ __extract(i32 __i) const noexcept {
-        raze_debug_assert(__i >= 0 && __i < _Abi_::size);
-        _Type_ __result{};
+    raze_nodiscard raze_always_inline T __extract(i32 i) const noexcept {
+        raze_debug_assert(i >= 0 && i < Abi::size);
+        T r{};
 
-        if constexpr (__use_native) __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(_data), __i);
-        else __visit_chunk_by_index(_data, __i, [&](const auto& __chunk, i32 __lane) raze_always_inline_lambda {
-            __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(__chunk), __lane);
+        if constexpr (use_native) r = _Extract<Abi::isa, T>()(ustorage(_data), i);
+        else visit_chunk_by_index(_data, __i, [&](const auto& chunk, i32 lane) raze_always_inline_lambda {
+            r = _Extract<Abi::isa, T>()(ustorage(chunk), lane);
         });
 
-        return __result;
+        return r;
     }
 
-    template <sizetype _I_>
-    raze_nodiscard raze_always_inline _Type_ __extract(std::integral_constant<sizetype, _I_> __i) const noexcept {
-        static_assert(__i >= 0 && __i < _Abi_::size);
-        _Type_ __result{};
+    template <sizetype I>
+    raze_nodiscard raze_always_inline T __extract(std::integral_constant<sizetype, I> i) const noexcept {
+        static_assert(i >= 0 && i < Abi::size);
+        T r{};
 
-        if constexpr (__use_native) __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(_data), __i);
-        else __visit_chunk_by_index(_data, __i, [&](const auto& __chunk, auto __current) raze_always_inline_lambda{
-            __result = _Extract<_Abi_::isa, _Type_>()(__storage_unwrap(__chunk), __current);
+        if constexpr (use_native) r = _Extract<Abi::isa, T>()(ustorage(_data), i);
+        else visit_chunk_by_index(_data, __i, [&](const auto& chunk, auto current) raze_always_inline_lambda{
+            r = _Extract<Abi::isa, T>()(ustorage(chunk), current);
         });
 
-        return __result;
+        return r;
     }
 private:
     raze_no_unique_address tuple_type _data;

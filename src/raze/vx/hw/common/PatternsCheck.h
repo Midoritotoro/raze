@@ -5,501 +5,501 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-inline constexpr sizetype __shuffle_zero = std::numeric_limits<sizetype>::max();
+inline constexpr sizetype shuffle_zero = std::numeric_limits<sizetype>::max();
 
-template <class _Pattern_>
-consteval bool __is_halfs_equal(_Pattern_ __p) noexcept {
-	constexpr auto __h = _Pattern_::size() / 2;
+template <class Pattern>
+consteval bool is_halfs_equal(P p) noexcept {
+	constexpr auto h = Pattern::size() / 2;
 
-	for (auto __i = 0; __i < __h; ++__i)
-		if (__p[__i] != (__p[__i + __h] - __h))
+	for (auto i = 0; i < h; ++i)
+		if (p[i] != (p[i + h] - h))
 			return false;
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_reverse(_Pattern_ __p) noexcept {
-	for (auto __i = 0; __i < _Pattern_::size(); ++__i)
-		if (__p[__i] != (_Pattern_::size() - __i - 1))
+template <class Pattern>
+consteval bool is_reverse(Pattern p) noexcept {
+	for (auto i = 0; i < Pattern::size(); ++i)
+		if (p[i] != (Pattern::size() - i - 1))
 			return false;
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_identity(_Pattern_ __p) noexcept {
-	for (auto __i = 0; __i < _Pattern_::size(); ++__i)
-		if (__p[__i] != __i)
+template <class Pattern>
+consteval bool is_identity(Pattern p) noexcept {
+	for (auto i = 0; i < Pattern::size(); ++i)
+		if (p[i] != i)
 			return false;
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_splat(_Pattern_ __p) noexcept {
-	const auto __v = __p[0];
+template <class Pattern>
+consteval bool is_splat(Pattern p) noexcept {
+	const auto v = p[0];
 
-	for (auto __i = 1; __i < _Pattern_::size(); ++__i)
-		if (__p[__i] != __v)
+	for (auto i = 1; i < Pattern::size(); ++i)
+		if (p[i] != v)
 			return false;
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_rotate_left(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
+template <class Pattern>
+consteval bool is_rotate_left(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
 
-	const auto __shift = __p[0];
+	const auto shift = p[0];
 
-	for (auto __i = 0; __i < __n; ++__i)
-		if (__p[__i] != ((__i + __shift) % __n))
+	for (auto i = 0; i < n; ++i)
+		if (p[i] != ((i + shift) % n))
 			return false;
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_rotate_right(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
-	const auto __shift = (__n - __p[0]) % __n;
+template <class Pattern>
+consteval bool is_rotate_right(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
+	const auto shift = (n - p[0]) % n;
 
-	for (auto __i = 0; __i < __n; ++__i)
-		if (__p[__i] != ((__i + __n - __shift) % __n))
+	for (auto i = 0; i < n; ++i)
+		if (p[i] != ((i + n - shift) % n))
 			return false;
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_slide_left(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
+template <class Pattern>
+consteval bool is_slide_left(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
 
-	bool __found_shift = false;
-	sizetype __shift = 0;
+	bool found_shift = false;
+	sizetype shift = 0;
 
-	for (sizetype __i = 0; __i < __n; ++__i) {
-		const auto __v = __p[__i];
+	for (sizetype i = 0; i < n; ++i) {
+		const auto v = p[i];
 
-		if (__v == __shuffle_zero)
+		if (v == shuffle_zero)
 			continue;
 
-		if (!__found_shift) {
-			__shift = __v - __i;
-			__found_shift = true;
+		if (!found_shift) {
+			shift = v - i;
+			found_shift = true;
 		}
 
-		if (__v != __i + __shift)
+		if (v != i + shift)
 			return false;
 
-		if (__v >= __n)
+		if (v >= n)
 			return false;
 	}
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_slide_right(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
+template <class Pattern>
+consteval bool is_slide_right(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
 
-	bool __found_shift = false;
-	sizetype __shift = 0;
+	bool found_shift = false;
+	sizetype shift = 0;
 
-	for (sizetype __i = 0; __i < __n; ++__i) {
-		const auto __v = __p[__i];
+	for (sizetype i = 0; i < n; ++i) {
+		const auto v = p[i];
 
-		if (__v == __shuffle_zero || __v < 0)
+		if (v == shuffle_zero || v < 0)
 			continue;
 
-		if (!__found_shift) {
-			__shift = __i - __v;
-			__found_shift = true;
+		if (!found_shift) {
+			shift = i - v;
+			found_shift = true;
 		}
 		else {
-			if (__i - __v != __shift)
+			if (i - v != shift)
 				return false;
 		}
 
-		if (__v != __i - __shift)
+		if (v != i - shift)
 			return false;
 
-		if (__v >= __n)
+		if (v >= n)
 			return false;
 	}
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_interleave_low(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
+template <class Pattern>
+consteval bool is_interleave_low(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
 
-	if ((__n & 1) != 0)
+	if ((n & 1) != 0)
 		return false;
 
-	constexpr auto __h = __n / 2;
+	constexpr auto h = n / 2;
 
-	for (auto __i = 0; __i < __h; ++__i) {
-		if (__p[2 * __i] != __i)
+	for (auto i = 0; i < h; ++i) {
+		if (p[2 * i] != i)
 			return false;
 
-		if (__p[2 * __i + 1] != (__h + __i))
+		if (p[2 * i + 1] != (h + i))
 			return false;
 	}
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval bool __is_interleave_high(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
+template <class Pattern>
+consteval bool is_interleave_high(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
 
-	if ((__n & 1) != 0)
+	if ((n & 1) != 0)
 		return false;
 
-	constexpr auto __h = __n / 2;
+	constexpr auto h = n / 2;
 
-	for (auto __i = 0; __i < __h; ++__i) {
-		if (__p[2 * __i] != (__h + __i))
+	for (auto i = 0; i < h; ++i) {
+		if (p[2 * i] != (h + i))
 			return false;
 
-		if (__p[2 * __i + 1] != __i)
+		if (p[2 * i + 1] != i)
 			return false;
 	}
 
 	return true;
 }
 
-template <class _Pattern_>
-consteval auto __across_halfs(_Pattern_ __p) noexcept 
-	requires (pattern_vector_t<_Pattern_>::is_native())
+template <class Pattern>
+consteval auto across_halfs(Pattern p) noexcept 
+	requires (pattern_vector_t<Pattern>::is_native())
 {
-	constexpr auto __size = sizeof(typename _Pattern_::vector_type);
+	constexpr auto size = sizeof(typename Pattern::vector_type);
 
-	for (auto __i = 0; __i < _Pattern_::size() / 2; ++__i)
-		if (__p[__i] >= (_Pattern_::size() / 2))
+	for (auto i = 0; i < Pattern::size() / 2; ++i)
+		if (p[i] >= (Pattern::size() / 2))
 			return true;
 
-	for (auto __i = _Pattern_::size() / 2; __i < _Pattern_::size(); ++__i)
-		if (__p[__i] < (_Pattern_::size() / 2))
-			return true;
-
-	return false;
-}
-
-template <class _Pattern_>
-consteval auto __across_quads(_Pattern_ __p) noexcept
-	requires (pattern_vector_t<_Pattern_>::is_native())
-{
-	constexpr auto __q = _Pattern_::size() / 4;
-
-	for (auto __i = 0; __i < __q; ++__i)
-		if (__p[__i] >= __q)
-			return true;
-
-	for (auto __i = __q; __i < 2 * __q; ++__i)
-		if (__p[__i] < __q || __p[__i] >= 2 * __q)
-			return true;
-
-	for (auto __i = 2 * __q; __i < 3 * __q; ++__i)
-		if (__p[__i] < 2 * __q || __p[__i] >= 3 * __q)
-			return true;
-
-	for (auto __i = 3 * __q; __i < 4 * __q; ++__i)
-		if (__p[__i] < 3 * __q)
+	for (auto i = Pattern::size() / 2; i < Pattern::size(); ++i)
+		if (p[i] < (Pattern::size() / 2))
 			return true;
 
 	return false;
 }
 
-template <class _Pattern_>
-consteval bool __can_widen_shuffle(_Pattern_ __p) noexcept
-	requires((_Pattern_::size() & 1) == 0)
+template <class Pattern>
+consteval auto across_quads(Pattern p) noexcept
+	requires (pattern_vector_t<Pattern>::is_native())
 {
-	for (auto __i = 0; __i < _Pattern_::size(); __i += 2) {
-		const auto __a = __p[__i];
-		const auto __b = __p[__i + 1];
+	constexpr auto q = Pattern::size() / 4;
 
-		if ((__a & 1) != 0)
-			return false;
+	for (auto i = 0; i < q; ++i)
+		if (p[i] >= q)
+			return true;
 
-		if (__b != __a + 1)
-			return false;
-	}
+	for (auto i = q; i < 2 * q; ++i)
+		if (p[i] < q || p[i] >= 2 * q)
+			return true;
 
-	return true;
+	for (auto i = 2 * q; i < 3 * q; ++i)
+		if (p[i] < 2 * q || p[i] >= 3 * q)
+			return true;
+
+	for (auto i = 3 * q; i < 4 * q; ++i)
+		if (p[i] < 3 * q)
+			return true;
+
+	return false;
 }
 
-template <class _Pattern_>
-consteval bool __is_low_half(_Pattern_ __p) noexcept {
-	for (auto __i = 0; __i < __p.size(); ++__i)
-		if (__p[__i] >= (__p.size() / 2))
-			return false;
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval bool __is_high_half(_Pattern_ __p) noexcept {
-	for (auto __i = 0; __i < __p.size(); ++__i)
-		if (__p[__i] < (__p.size() / 2))
-			return false;
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval bool __is_dup_low(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
-
-	if ((__n & 1) != 0)
-		return false;
-
-	constexpr auto __h = __n / 2;
-
-	for (auto __i = 0; __i < __h; ++__i) {
-		if (__p[__i] >= __h)
-			return false;
-
-		if (__p[__i + __h] != __p[__i])
-			return false;
-	}
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval bool __is_dup_high(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
-
-	if ((__n & 1) != 0)
-		return false;
-
-	constexpr auto __h = __n / 2;
-
-	for (auto __i = 0; __i < __h; ++__i) {
-		if (__p[__i] < __h || __p[__i] >= __n)
-			return false;
-
-		if (__p[__i + __h] != __p[__i])
-			return false;
-	}
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval bool __is_dup_low_identity(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
-
-	if ((__n & 1) != 0)
-		return false;
-
-	constexpr auto __h = __n / 2;
-
-	for (auto __i = 0; __i < __h; ++__i) {
-		if (__p[__i] >= __h || __p[__i] != __i) return false;
-		if (__p[__i + __h] != __p[__i]) return false;
-	}
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval bool __is_dup_high_identity(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
-
-	if ((__n & 1) != 0)
-		return false;
-
-	constexpr auto __h = __n / 2;
-
-	for (auto __i = 0; __i < __h; ++__i) {
-		if (__p[__i] < __h || __p[__i] >= __n || __p[__i] != __i) return false;
-		if (__p[__i + __h] != __p[__i]) return false;
-	}
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval bool __is_zip(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
-
-	if ((__n & 1) != 0)
-		return false;
-
-	constexpr auto __h = __n / 2;
-
-	for (sizetype __i = 0; __i < __h; ++__i) {
-		if (__p[2 * __i] != __i)
-			return false;
-
-		if (__p[2 * __i + 1] != (__h + __i))
-			return false;
-	}
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval bool __is_unzip(_Pattern_ __p) noexcept {
-	constexpr auto __n = _Pattern_::size();
-
-	if ((__n & 1) != 0)
-		return false;
-
-	constexpr auto __h = __n / 2;
-
-	for (sizetype __i = 0; __i < __h; ++__i) {
-		if (__p[__i] != (2 * __i))
-			return false;
-
-		if (__p[__i + __h] != (2 * __i + 1))
-			return false;
-	}
-
-	return true;
-}
-
-template <class _Pattern_>
-consteval auto __get_rotate_left_shift(_Pattern_ __p) noexcept
-	requires (__is_rotate_left(_Pattern_{}))
+template <class Pattern>
+consteval bool can_widen_shuffle(Pattern p) noexcept
+	requires((Pattern::size() & 1) == 0)
 {
-	return __p[0];
+	for (auto i = 0; i < Pattern::size(); i += 2) {
+		const auto a = p[i];
+		const auto b = p[i + 1];
+
+		if ((a & 1) != 0)
+			return false;
+
+		if (b != a + 1)
+			return false;
+	}
+
+	return true;
 }
 
-template <class _Pattern_>
-consteval auto __get_rotate_right_shift(_Pattern_ __p) noexcept
-	requires (__is_rotate_right(_Pattern_{}))
+template <class Pattern>
+consteval bool is_low_half(Pattern p) noexcept {
+	for (auto i = 0; i < p.size(); ++i)
+		if (p[i] >= (p.size() / 2))
+			return false;
+
+	return true;
+}
+
+template <class Pattern>
+consteval bool is_high_half(Pattern p) noexcept {
+	for (auto i = 0; i < p.size(); ++i)
+		if (p[i] < (p.size() / 2))
+			return false;
+
+	return true;
+}
+
+template <class Pattern>
+consteval bool is_dup_low(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
+
+	if ((n & 1) != 0)
+		return false;
+
+	constexpr auto h = n / 2;
+
+	for (auto i = 0; i < h; ++i) {
+		if (p[i] >= h)
+			return false;
+
+		if (p[i + h] != p[i])
+			return false;
+	}
+
+	return true;
+}
+
+template <class Pattern>
+consteval bool is_dup_high(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
+
+	if ((n & 1) != 0)
+		return false;
+
+	constexpr auto h = n / 2;
+
+	for (auto i = 0; i < h; ++i) {
+		if (p[i] < h || p[i] >= n)
+			return false;
+
+		if (p[i + h] != p[i])
+			return false;
+	}
+
+	return true;
+}
+
+template <class Pattern>
+consteval bool is_dup_low_identity(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
+
+	if ((n & 1) != 0)
+		return false;
+
+	constexpr auto h = n / 2;
+
+	for (auto i = 0; i < h; ++i) {
+		if (p[i] >= h || p[i] != i) return false;
+		if (p[i + h] != p[i]) return false;
+	}
+
+	return true;
+}
+
+template <class Pattern>
+consteval bool is_dup_high_identity(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
+
+	if ((n & 1) != 0)
+		return false;
+
+	constexpr auto h = n / 2;
+
+	for (auto i = 0; i < h; ++i) {
+		if (p[i] < h || p[i] >= n || p[i] != i) return false;
+		if (p[i + h] != p[i]) return false;
+	}
+
+	return true;
+}
+
+template <class Pattern>
+consteval bool is_zip(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
+
+	if ((n & 1) != 0)
+		return false;
+
+	constexpr auto h = n / 2;
+
+	for (sizetype i = 0; i < h; ++i) {
+		if (p[2 * i] != i)
+			return false;
+
+		if (p[2 * i + 1] != (h + i))
+			return false;
+	}
+
+	return true;
+}
+
+template <class Pattern>
+consteval bool is_unzip(Pattern p) noexcept {
+	constexpr auto n = Pattern::size();
+
+	if ((n & 1) != 0)
+		return false;
+
+	constexpr auto h = n / 2;
+
+	for (sizetype i = 0; i < h; ++i) {
+		if (p[i] != (2 * i))
+			return false;
+
+		if (p[i + h] != (2 * i + 1))
+			return false;
+	}
+
+	return true;
+}
+
+template <class Pattern>
+consteval auto get_rotate_left_shift(Pattern p) noexcept
+	requires (is_rotate_left(Pattern{}))
 {
-	constexpr auto __n = _Pattern_::size();
-	return (__n - __p[0]) % __n;
+	return p[0];
 }
 
-template <class _Pattern_>
-consteval auto __get_slide_left_shift(_Pattern_ __p) noexcept
-	requires (__is_slide_left(_Pattern_{}))
+template <class Pattern>
+consteval auto get_rotate_right_shift(Pattern p) noexcept
+	requires (is_rotate_right(Pattern{}))
 {
-	for (sizetype __i = 0; __i < _Pattern_::size(); ++__i)
-		if (__p[__i] != __shuffle_zero)
-			return __p[__i] - __i;
-
-	return _Pattern_::size();
+	constexpr auto n = Pattern::size();
+	return (n - p[0]) % n;
 }
 
-template <class _Pattern_>
-consteval auto __get_slide_right_shift(_Pattern_ __p) noexcept
-	requires (__is_slide_right(_Pattern_{}))
+template <class Pattern>
+consteval auto get_slide_left_shift(Pattern p) noexcept
+	requires (is_slide_left(Pattern{}))
 {
-	for (sizetype __i = 0; __i < _Pattern_::size(); ++__i)
-		if (__p[__i] != __shuffle_zero)
-			return __i - __p[__i];
+	for (sizetype i = 0; i < Pattern::size(); ++i)
+		if (p[i] != shuffle_zero)
+			return p[i] - i;
 
-	return _Pattern_::size();
+	return Pattern::size();
 }
 
-template <class _Pattern_>
-consteval u8 __to_pshufd_mask(_Pattern_ __p) noexcept {
-	return ((__p[0] & 0x03) | ((__p[1] & 0x03) << 2) | ((__p[2] & 0x03) << 4) | ((__p[3] & 0x03) << 6));
+template <class Pattern>
+consteval auto get_slide_right_shift(Pattern p) noexcept
+	requires (is_slide_right(Pattern{}))
+{
+	for (sizetype i = 0; i < Pattern::size(); ++i)
+		if (p[i] != shuffle_zero)
+			return i - p[i];
+
+	return Pattern::size();
 }
 
-template <class _Pattern_>
-consteval u8 __shufpd_to_pshufd_mask(_Pattern_ __p) noexcept {
-	return (((2 * __p[0]) & 0x03) | (((2 * __p[0] + 1) & 0x03) << 2)
-		| (((2 * __p[1]) & 0x03) << 4) | (((2 * __p[1] + 1) & 0x03) << 6));
+template <class Pattern>
+consteval u8 to_pshufd_mask(Pattern p) noexcept {
+	return ((p[0] & 0x03) | ((p[1] & 0x03) << 2) | ((p[2] & 0x03) << 4) | ((p[3] & 0x03) << 6));
 }
 
-template <simd_type _Simd_, auto _Fn_, sizetype ... _Indices_>
-consteval auto __make_shuffle_pattern_impl(std::integer_sequence<sizetype, _Indices_...>) noexcept {
-	return _Shuffle_pattern<_Simd_, _Fn_(_Indices_)...>{};
+template <class Pattern>
+consteval u8 shufpd_to_pshufd_mask(Pattern p) noexcept {
+	return (((2 * p[0]) & 0x03) | (((2 * p[0] + 1) & 0x03) << 2)
+		| (((2 * p[1]) & 0x03) << 4) | (((2 * p[1] + 1) & 0x03) << 6));
 }
 
-template <simd_type _Simd_, auto _Fn_>
-using make_shuffle_pattern = decltype(__make_shuffle_pattern_impl<_Simd_, _Fn_>(
-		std::make_integer_sequence<sizetype, _Simd_::size()>{}));
-
-template <simd_type _Simd_, auto _Fn_, sizetype _Offset_, sizetype ... _Indices_>
-consteval auto __make_shuffle_pattern_with_offset_impl(std::integer_sequence<sizetype, _Indices_...>) noexcept {
-	return _Shuffle_pattern<_Simd_, _Fn_(_Indices_ + _Offset_)...>{};
+template <simd_type V, auto F, sizetype ... Idxs>
+consteval auto make_shuffle_pattern_impl(std::integer_sequence<sizetype, Idxs...>) noexcept {
+	return shuffle_pattern<V, F(Idxs)...>{};
 }
 
-template <simd_type _Simd_, auto _Fn_, sizetype _Offset_>
-using make_shuffle_pattern_with_offset = decltype(__make_shuffle_pattern_with_offset_impl<_Simd_, _Fn_, _Offset_>(
-	std::make_integer_sequence<sizetype, _Simd_::size()>{}));
+template <simd_type V, auto F>
+using make_shuffle_pattern = decltype(make_shuffle_pattern_impl<V, F>(
+		std::make_integer_sequence<sizetype, V::size()>{}));
 
-template <simd_type _Simd_, sizetype ... _Indices_>
-using make_pattern = _Shuffle_pattern<_Simd_, _Indices_...>;
+template <simd_type V, auto _Fn_, sizetype Offset, sizetype ... Idxs>
+consteval auto make_shuffle_pattern_with_offset_impl(std::integer_sequence<sizetype, Idxs...>) noexcept {
+	return shuffle_pattern<V, _Fn_(Idxs + Offset)...>{};
+}
 
-template <simd_type _Simd_>
-using make_reversed_pattern = make_shuffle_pattern<_Simd_,
-	[] (sizetype __i) { return _Simd_::size() - 1 - __i; }>;
+template <simd_type V, auto F, sizetype Offset>
+using make_shufflePatternwith_offset = decltype(make_shuffle_pattern_with_offset_impl<V, F, Offset>(
+	std::make_integer_sequence<sizetype, V::size()>{}));
 
-template <simd_type _Simd_>
-using make_identity_pattern = make_shuffle_pattern<_Simd_,
-	[] (sizetype __i) { return __i; }>;
+template <simd_type V, sizetype ... Idxs>
+using make_pattern = shuffle_pattern<V, Idxs...>;
 
-template <simd_type _Simd_, sizetype _Shift_>
-using make_rotate_left_pattern = make_shuffle_pattern<_Simd_, 
-	[] (sizetype __i) { return (__i + _Shift_) % _Simd_::size(); }>;
+template <simd_type V>
+using make_reversed_pattern = make_shuffle_pattern<V,
+	[] (sizetype i) { return V::size() - 1 - i; }>;
 
-template <simd_type _Simd_, sizetype _Shift_>
-using make_rotate_right_pattern = make_shuffle_pattern<_Simd_, 
-	[] (sizetype __i) { return (__i + _Simd_::size() - (_Shift_ % _Simd_::size())) % _Simd_::size(); }>;
+template <simd_type V>
+using make_identity_pattern = make_shuffle_pattern<V,
+	[] (sizetype i) { return i; }>;
 
-template <simd_type _Simd_, sizetype _Index_>
-using make_splat_pattern = make_shuffle_pattern<_Simd_, [] (sizetype) { return _Index_; }>;
+template <simd_type V, sizetype Shift>
+using make_rotate_left_pattern = make_shuffle_pattern<V, 
+	[] (sizetype i) { return (i + Shift) % V::size(); }>;
 
-template <simd_type _Simd_, sizetype _Shift_>
-using make_slide_left_pattern = make_shuffle_pattern<_Simd_,
-	[] (sizetype __i) {
-		const auto __src = __i + _Shift_;
+template <simd_type V, sizetype Shift>
+using make_rotate_right_pattern = make_shuffle_pattern<V, 
+	[] (sizetype i) { return (i + V::size() - (Shift % V::size())) % V::size(); }>;
 
-		if (__src >= _Simd_::size())
-			return __shuffle_zero;
+template <simd_type V, sizetype Idx>
+using make_splat_pattern = make_shuffle_pattern<V, [] (sizetype) { return Idx; }>;
 
-		return __src;
+template <simd_type V, sizetype Shift>
+using make_slide_left_pattern = make_shuffle_pattern<V,
+	[] (sizetype i) {
+		const auto src = i + Shift;
+
+		if (src >= V::size())
+			return shuffle_zero;
+
+		return src;
 	}>;
 
-template <simd_type _Simd_, sizetype _Shift_>
-using make_slide_right_pattern = make_shuffle_pattern<_Simd_,
-	[] (sizetype __i) {
-		if (__i < _Shift_)
-			return __shuffle_zero;
+template <simd_type V, sizetype Shift>
+using make_slide_right_pattern = make_shuffle_pattern<V,
+	[] (sizetype i) {
+		if (i < Shift)
+			return shuffle_zero;
 
-		return __i - _Shift_;
+		return i - Shift;
 	}>;
 
-template <simd_type _Simd_>
-using make_zip_pattern = make_shuffle_pattern<_Simd_,
-	[] (sizetype __i) {
-		if ((__i & 1) == 0)
-			return __i / 2;
+template <simd_type V>
+using make_zip_pattern = make_shuffle_pattern<V,
+	[] (sizetype i) {
+		if ((i & 1) == 0)
+			return i / 2;
 
-		return _Simd_::size() / 2 + __i / 2;
+		return V::size() / 2 + i / 2;
 	}>;
 
-template <simd_type _Simd_>
-using make_unzip_pattern = make_shuffle_pattern<_Simd_,
-	[] (sizetype __i) {
-		if (__i < _Simd_::size() / 2)
-			return 2 * __i;
+template <simd_type V>
+using make_unzip_pattern = make_shuffle_pattern<V,
+	[] (sizetype i) {
+		if (i < V::size() / 2)
+			return 2 * i;
 
-		return 2 * (__i - _Simd_::size() / 2) + 1;
+		return 2 * (i - V::size() / 2) + 1;
 	}>;
 
-template <simd_type _Simd_, sizetype _GroupSize_>
-using make_swap_adjacent_pattern = make_shuffle_pattern<_Simd_,
-	[] (sizetype __i) {
-		constexpr auto __block = 2 * _GroupSize_;
+template <simd_type V, sizetype GroupSize>
+using make_swap_adjacent_pattern = make_shuffle_pattern<V,
+	[] (sizetype i) {
+		constexpr auto block = 2 * GroupSize;
 
-		const auto __block_begin = (__i / __block) * __block;
-		const auto __offset = __i % __block;
+		const auto block_begin = (i / block) * block;
+		const auto offset = i % block;
 
-		if (__offset < _GroupSize_) return __block_begin + __offset + _GroupSize_;
-		else return __block_begin + __offset - _GroupSize_;
+		if (offset < GroupSize) return block_begin + offset + GroupSize;
+		else return block_begin + offset - GroupSize;
 	}>;
 
 __RAZE_VX_NAMESPACE_END

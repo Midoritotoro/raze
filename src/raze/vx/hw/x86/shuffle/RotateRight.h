@@ -79,7 +79,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __rotate_right(
     using _Value_ = typename _Simd_::value_type;
 
     if constexpr (native<_Simd_>) {
-        using _Intrin_ = decltype(__storage_unwrap(__x.template __get<0>()));
+        using _Intrin_ = decltype(ustorage(__x.template __get<0>()));
         using _RetRotate = decltype(__make_rotate_right_idx<_Abi_::isa, _Value_>(_Intrin_{}, __sh));
         using _IdxType = typename _RetRotate::index_type;
 
@@ -91,10 +91,10 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __rotate_right(
             auto& __storage = __r.template __get<0>();
 
             const auto __rotate_indices = __make_rotate_right_idx<_Abi_::isa,
-                _Value_>(__storage_unwrap(__r.template __get<0>()), __sh);
+                _Value_>(ustorage(__r.template __get<0>()), __sh);
 
             using _IndexType = typename decltype(__rotate_indices)::index_type;
-            __storage = __generic_shuffle_native<_Abi_::isa, _IndexType>(__storage_unwrap(__storage), __rotate_indices.data());
+            __storage = __generic_shuffle_native<_Abi_::isa, _IndexType>(ustorage(__storage), __rotate_indices.data());
 
             return __r;
         }

@@ -709,18 +709,18 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle_native_size(co
 
 	auto& __storage = __result.template __get<0>();
 	
-	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p));
+	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__storage), __p));
 
 	if constexpr (__is_fallback<_Ret>) {
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
-		__storage = _Pattern_::__llvm_shufflevector_builtin_apply(__storage_unwrap(__storage));
+		__storage = _Pattern_::__llvm_shufflevector_builtin_apply(ustorage(__storage));
 #else
-		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p)._data;
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__storage), __p)._data;
 		return _Fallback_result{ __result };
 #endif
 	}
 	else {
-		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __p);
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__storage), __p);
 		return __result;
 	}
 }
@@ -730,16 +730,16 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle_native_size(co
 	_Simd_ __result = __x;
 
 	auto& __storage = __result.template __get<0>();
-	auto __idx_native = __storage_unwrap(__idx.template __get<0>());
+	auto __idx_native = ustorage(__idx.template __get<0>());
 	
-	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native));
+	using _Ret = decltype(__generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__storage), __idx_native));
 
 	if constexpr (__is_fallback<_Ret>) {
-		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native)._data;
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__storage), __idx_native)._data;
 		return _Fallback_result{ __result };
 	}
 	else {
-		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__storage), __idx_native);
+		__storage = __generic_shuffle_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__storage), __idx_native);
 		return __result;
 	}
 }
@@ -755,7 +755,7 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_
 		auto& __storage1 = __x.template __get<0>();
 		auto& __storage2 = __x.template __get<1>();
 
-		auto __vec = _Pattern_::__llvm_shufflevector_builtin_apply(__storage_unwrap(__storage1), __storage_unwrap(__storage2));
+		auto __vec = _Pattern_::__llvm_shufflevector_builtin_apply(ustorage(__storage1), ustorage(__storage2));
 		alignas(sizeof(_Simd_)) typename _Simd_::value_type __arr[_Simd_::size()];
 		using _VecType_ = decltype(__vec);
 		*reinterpret_cast<_VecType_*>(__arr) = __vec;
@@ -776,8 +776,8 @@ raze_always_inline raze_no_stack_protector auto __generic_shuffle(const pattern_
 				auto& __c1 = __dup_1.template __get<__i>();
 				auto& __c2 = __dup_2.template __get<__i>();
 
-				auto __c1_in = __storage_unwrap(__c1);
-				auto __c2_in = __storage_unwrap(__c2);
+				auto __c1_in = ustorage(__c1);
+				auto __c2_in = ustorage(__c2);
 
 				using _Chunk1 = std::remove_cvref_t<decltype(__c1)>;
 				using _Chunk2 = std::remove_cvref_t<decltype(__c2)>;

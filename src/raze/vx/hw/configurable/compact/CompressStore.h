@@ -33,8 +33,8 @@ struct _Configurable_compress_store : raze::options::conditional_callable<_Confi
         __x.__for_each_chunk([&] (const auto& __chunk, const auto& __mask_chunk) raze_always_inline_lambda {
             auto __mem = std::to_address(__it);
 
-            if constexpr (_Options_::contains(aligned)) __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__chunk), __storage_unwrap(__mask_chunk), __aligned_policy{}));
-            else __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, __storage_unwrap(__chunk), __storage_unwrap(__mask_chunk)));
+            if constexpr (_Options_::contains(aligned)) __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, ustorage(__chunk), ustorage(__mask_chunk), __aligned_policy{}));
+            else __mem = reinterpret_cast<decltype(__mem)>(_Compress_store<_Abi_::isa, _Value_>()(__mem, ustorage(__chunk), ustorage(__mask_chunk)));
 
             algorithm::__seek_iter(__it, __mem);
         }, __mask.__storage().storage());

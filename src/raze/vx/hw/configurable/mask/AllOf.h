@@ -29,7 +29,7 @@ struct _Configurable_all_of: raze::options::conditional_callable<_Configurable_a
         using _Abi_ = typename _Type_::abi_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (const _Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            return __all_of<_Abi_::isa, _Chunk::size, _Value_>(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+            return __all_of<_Abi_::isa, _Chunk::size, _Value_>(ustorage(__chunk), ustorage<_Args_>(__args)...);
         };
 
         if constexpr (!std::same_as<_Mask_, options::unknown_key>) {

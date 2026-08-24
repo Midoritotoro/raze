@@ -10,221 +10,209 @@
 
 __RAZE_TRAITS_NAMESPACE_BEGIN
 
-template <class _Iterator_>
-constexpr inline bool is_iterator_volatile_v = std::is_volatile_v<std::remove_reference_t<std::iter_reference_t<_Iterator_>>>;
+template <class Iter>
+constexpr inline bool is_iterator_volatile_v = std::is_volatile_v<std::remove_reference_t<std::iter_reference_t<Iter>>>;
 
-template <class _Type_, class = void>
+template <class T, class = void>
 constexpr inline bool is_iterator_v = false;
 
-template <class _Type_>
-constexpr inline bool is_iterator_v<_Type_, std::void_t<
-	typename std::iterator_traits<_Type_>::iterator_category>> = true;
+template <class T>
+constexpr inline bool is_iterator_v<T, std::void_t<
+	typename std::iterator_traits<T>::iterator_category>> = true;
 
-template <class _Iterator_, class = void>
-constexpr bool __allow_inheriting_unwrap_v = true;
+template <class Iter, class = void>
+constexpr bool allow_inheriting_unwrap_v = true;
 
-template <class _Iterator_>
-constexpr bool __allow_inheriting_unwrap_v<_Iterator_, std::void_t<typename _Iterator_::_Prevent_inheriting_unwrap>> =
-    std::is_same_v<_Iterator_, typename _Iterator_::_Prevent_inheriting_unwrap>;
+template <class Iter>
+constexpr bool allow_inheriting_unwrap_v<Iter, std::void_t<typename Iter::_Prevent_inheriting_unwrap>> =
+    std::is_same_v<Iter, typename Iter::_Prevent_inheriting_unwrap>;
 
-template <class _Iterator_, class _Sentinel_ = _Iterator_, class = void>
-constexpr bool __is_range_verifiable_v = false;
+template <class Iter, class = void>
+constexpr bool is_iterator_unwrappable_v = false;
 
-template <class _Iterator_, class _Sentinel_>
-constexpr bool __is_range_verifiable_v<_Iterator_, _Sentinel_, std::void_t<decltype(
-	__verify_range__(std::declval<const _Iterator_&>(), std::declval<const _Sentinel_&>()))>> 
-        = __allow_inheriting_unwrap_v<_Iterator_>;
+template <class Iter>
+constexpr bool is_iterator_unwrappable_v<Iter, std::void_t<decltype(std::declval<std::remove_cvref_t<Iter>&>()._Seek_to(
+	std::declval<Iter>()._Unwrapped()))>> = __allow_inheriting_unwrap_v<std::remove_cvref_t<Iter>>;
 
-template <class _Iterator_, class = void>
-constexpr bool __is_iterator_unwrappable_v = false;
+template <class Iter> 
+constexpr bool is_iterator_unwrapped_v = !is_iterator_unwrappable_v<Iter>;
 
-template <class _Iterator_>
-constexpr bool __is_iterator_unwrappable_v<_Iterator_, std::void_t<decltype(std::declval<std::remove_cvref_t<_Iterator_>&>()._Seek_to(
-	std::declval<_Iterator_>()._Unwrapped()))>> = __allow_inheriting_unwrap_v<std::remove_cvref_t<_Iterator_>>;
+template <class Iter, class = void>
+constexpr bool is_nothrow_unwrappable_v = false;
 
-template <class _Iterator_> 
-constexpr bool __is_iterator_unwrapped_v = !__is_iterator_unwrappable_v<_Iterator_>;
+template <class Iter>
+constexpr bool is_nothrow_unwrappable_v<Iter, std::void_t<decltype(std::declval<Iter>()._Unwrapped())>> =
+    noexcept(std::declval<Iter>()._Unwrapped());
 
-template <class _Iterator_, class = void>
-constexpr bool __is_nothrow_unwrappable_v = false;
+template <class Iter, class = bool>
+constexpr bool can_unwrap_when_unverified_v = false;
 
-template <class _Iterator_>
-constexpr bool __is_nothrow_unwrappable_v<_Iterator_, std::void_t<decltype(std::declval<_Iterator_>()._Unwrapped())>> =
-    noexcept(std::declval<_Iterator_>()._Unwrapped());
+template <class Iter>
+constexpr bool can_unwrap_when_unverified_v<Iter, decltype(static_cast<bool>(Iter::_Unwrap_when_unverified))> =
+    static_cast<bool>(Iter::_Unwrap_when_unverified);
 
-template <class _Iterator_, class = bool>
-constexpr bool __can_unwrap_when_unverified_v = false;
+template <class Iter>
+constexpr bool is_possibly_unverified_iterator_unwrappable_v =
+    is_iterator_unwrappable_v<Iter> && can_unwrap_when_unverified_v<std::remove_cvref_t<Iter>>;
 
-template <class _Iterator_>
-constexpr bool __can_unwrap_when_unverified_v<_Iterator_, decltype(static_cast<bool>(_Iterator_::_Unwrap_when_unverified))> =
-    static_cast<bool>(_Iterator_::_Unwrap_when_unverified);
+template <class Iter, class = void>
+constexpr bool is_offset_verifiable_v = false;
 
-template <class _Iterator_>
-constexpr bool __is_possibly_unverified_iterator_unwrappable_v =
-    __is_iterator_unwrappable_v<_Iterator_> && __can_unwrap_when_unverified_v<std::remove_cvref_t<_Iterator_>>;
+template <class Iter>
+constexpr bool is_offset_verifiable_v<Iter, std::void_t<decltype(std::declval<const Iter&>()._Verify_offset(
+	std::iter_difference_t<Iter>{}))>> = true;
 
-template <class _Iterator_, class = void>
-constexpr bool __is_offset_verifiable_v = false;
+template <class Iter, class = void>
+constexpr bool is_offset_nothrow_verifiable_v = false;
 
-template <class _Iterator_>
-constexpr bool __is_offset_verifiable_v <_Iterator_, std::void_t<decltype(std::declval<const _Iterator_&>()._Verify_offset(
-	std::iter_difference_t<_Iterator_>{}))>> = true;
+template <class Iter>
+constexpr bool is_offset_nothrow_verifiable_v <Iter, std::void_t<decltype(std::declval<const Iter&>()._Verify_offset(
+	std::iter_difference_t<Iter>{}))>> = noexcept(std::declval<const Iter&>()._Verify_offset(std::iter_difference_t<Iter>{}));
 
-template <class _Iterator_, class = void>
-constexpr bool __is_offset_nothrow_verifiable_v = false;
+template <class Iter>
+constexpr bool is_iterator_unwrappable_for_offset_v = is_iterator_unwrappable_v<Iter> && 
+	is_offset_verifiable_v<std::remove_cvref_t<Iter>>;
 
-template <class _Iterator_>
-constexpr bool __is_offset_nothrow_verifiable_v <_Iterator_, std::void_t<decltype(std::declval<const _Iterator_&>()._Verify_offset(
-	std::iter_difference_t<_Iterator_>{}))>> = noexcept(std::declval<const _Iterator_&>()._Verify_offset(std::iter_difference_t<_Iterator_>{}));
+template <class Iter>
+constexpr bool is_iterator_nothrow_unwrappable_for_offset_v = is_nothrow_unwrappable_v<Iter> &&
+	is_offset_nothrow_verifiable_v<std::remove_cvref_t<Iter>>;
 
-template <class _Iterator_>
-constexpr bool __is_iterator_unwrappable_for_offset_v = __is_iterator_unwrappable_v<_Iterator_> && 
-	__is_offset_verifiable_v<std::remove_cvref_t<_Iterator_>>;
+template <class Iter, class UIter, class = void>
+constexpr bool is_wrapped_iterator_seekable_v = false;
 
-template <class _Iterator_>
-constexpr bool __is_iterator_nothrow_unwrappable_for_offset_v =  __is_nothrow_unwrappable_v<_Iterator_> &&
-	__is_offset_nothrow_verifiable_v<std::remove_cvref_t<_Iterator_>>;
+template <class Iter, class UIter>
+constexpr bool is_wrapped_iterator_seekable_v<Iter, UIter, 
+	std::void_t<decltype(std::declval<Iter&>()._Seek_to(std::declval<UIter>()))>> = true;
 
-template <class _Iterator_, class _UnwrappedIterator_, class = void>
-constexpr bool __is_wrapped_iterator_seekable_v = false;
+template <class Iter, class UIter, class = void>
+constexpr bool is_wrapped_iterator_nothrow_seekable_v = false;
 
-template <class _Iterator_, class _UnwrappedIterator_>
-constexpr bool __is_wrapped_iterator_seekable_v<_Iterator_, _UnwrappedIterator_, 
-	std::void_t<decltype(std::declval<_Iterator_&>()._Seek_to(std::declval<_UnwrappedIterator_>()))>> = true;
+template <class Iter, class UIter>
+constexpr bool is_wrapped_iterator_nothrow_seekable_v<Iter, UIter, std::void_t<decltype(
+	std::declval<Iter&>()._Seek_to(std::declval<UIter>()))>> = 
+        noexcept(std::declval<Iter&>()._Seek_to(std::declval<UIter>()));
 
-template <class _Iterator_, class _UnwrappedIterator_, class = void>
-constexpr bool __is_wrapped_iterator_nothrow_seekable_v = false;
+template <class Wrapped>
+concept weakly_unwrappable = __allow_inheriting_unwrap_v<std::remove_cvref_t<Wrapped>>
+	&& requires(Wrapped&& wrapped) { std::forward<Wrapped>(wrapped)._Unwrapped(); };
 
-template <class _Iterator_, class _UnwrappedIterator_>
-constexpr bool __is_wrapped_iterator_nothrow_seekable_v<_Iterator_, _UnwrappedIterator_, std::void_t<decltype(
-	std::declval<_Iterator_&>()._Seek_to(std::declval<_UnwrappedIterator_>()))>> = 
-        noexcept(std::declval<_Iterator_&>()._Seek_to(std::declval<_UnwrappedIterator_>()));
+template <class Sent>
+concept weakly_unwrappable_sentinel = weakly_unwrappable<const std::remove_reference_t<Sent>&>;
 
-#if !defined(__verify_unchecked)
-#  define __verify_unchecked(_Iterator) static_assert(raze::traits::__is_iterator_unwrapped_v<_Iterator>, "Iterators in unchecked-functions must be unwrapped. ");
-#endif // !defined(__verify_unchecked)
-
-template <class _Wrapped>
-concept __weakly_unwrappable = __allow_inheriting_unwrap_v<std::remove_cvref_t<_Wrapped>>
-	&& requires(_Wrapped&& __wrapped) { std::forward<_Wrapped>(__wrapped)._Unwrapped(); };
-
-template <class _Sentinel_>
-concept __weakly_unwrappable_sentinel = __weakly_unwrappable<const std::remove_reference_t<_Sentinel_>&>;
-
-template <class _Iterator_>
-concept __weakly_unwrappable_iterator = __weakly_unwrappable<_Iterator_> && \
-	requires(_Iterator_&& __it, std::remove_cvref_t<_Iterator_>& __mutable_it) {
-		__mutable_it._Seek_to(std::forward<_Iterator_>(__it)._Unwrapped());
+template <class Iter>
+concept weakly_unwrappable_iterator = weakly_unwrappable<Iter> &&
+	requires(Iter&& it, std::remove_cvref_t<Iter>& mutable_it) {
+		mutable_it._Seek_to(std::forward<Iter>(it)._Unwrapped());
 	};
 
-template <class _Sentinel_, class _Iterator_>
-concept __unwrappable_sentinel_for = __weakly_unwrappable_sentinel<_Sentinel_> && __weakly_unwrappable_iterator<_Iterator_> && 
-	requires(_Iterator_&& __it, const std::remove_reference_t<_Sentinel_>& __sentinel) {
-		{ __sentinel._Unwrapped() } -> std::sentinel_for<decltype(std::forward<_Iterator_>(__it)._Unwrapped())>;
+template <class Sent, class Iter>
+concept unwrappable_sentinel_for = weakly_unwrappable_sentinel<Sent> && weakly_unwrappable_iterator<Iter> && 
+	requires(Iter&& it, const std::remove_reference_t<Sent>& sent) {
+		{ sent._Unwrapped() } -> std::sentinel_for<decltype(std::forward<Iter>(it)._Unwrapped())>;
 	};
 
-template <class _Sentinel_, class _Iterator_>
-raze_nodiscard raze_always_inline constexpr decltype(auto) __uiter(_Iterator_&& __iterator)
-	noexcept(!__unwrappable_sentinel_for<_Sentinel_, _Iterator_> || __is_nothrow_unwrappable_v<_Iterator_>)
+template <class Sent, class Iter>
+raze_nodiscard raze_always_inline constexpr decltype(auto) uiter(Iter&& it)
+	noexcept(!unwrappable_sentinel_for<Sent, Iter> || is_nothrow_unwrappable_v<Iter>)
 {
-	static_assert(std::sentinel_for<std::remove_cvref_t<_Sentinel_>, std::remove_cvref_t<_Iterator_>>);
+	static_assert(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>);
 
-	if constexpr (std::is_pointer_v<std::remove_cvref_t<_Iterator_>>) return __iterator + 0;
-	else if constexpr (__unwrappable_sentinel_for<_Sentinel_, _Iterator_>) return static_cast<_Iterator_&&>(__iterator)._Unwrapped();
-	else return static_cast<_Iterator_&&>(__iterator);
+	if constexpr (std::is_pointer_v<std::remove_cvref_t<Iter>>) return it + 0;
+	else if constexpr (unwrappable_sentinel_for<Sent, Iter>) return static_cast<Iter&&>(it)._Unwrapped();
+	else return static_cast<Iter&&>(it);
 }
 
-template <class _Iterator_, class _Sentinel_>
-raze_nodiscard raze_always_inline constexpr decltype(auto) __usent(_Sentinel_&& __sentinel)
-	noexcept(!__unwrappable_sentinel_for<_Sentinel_, _Iterator_> || __is_nothrow_unwrappable_v<_Sentinel_>) 
+template <class Iter, class Sent>
+raze_nodiscard raze_always_inline constexpr decltype(auto) usent(Sent&& sent)
+	noexcept(!unwrappable_sentinel_for<Sent, Iter> || is_nothrow_unwrappable_v<Sent>) 
 {
-	static_assert(std::sentinel_for<std::remove_cvref_t<_Sentinel_>, std::remove_cvref_t<_Iterator_>>);
+	static_assert(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>);
 
-	if constexpr (std::is_pointer_v<std::remove_cvref_t<_Sentinel_>>) return __sentinel + 0;
-	else if constexpr (__unwrappable_sentinel_for<_Sentinel_, _Iterator_>) return static_cast<_Sentinel_&&>(__sentinel)._Unwrapped();
-	else return static_cast<_Sentinel_&&>(__sentinel);
+	if constexpr (std::is_pointer_v<std::remove_cvref_t<Sent>>) return sent + 0;
+	else if constexpr (unwrappable_sentinel_for<Sent, Iter>) return static_cast<Sent&&>(sent)._Unwrapped();
+	else return static_cast<Sent&&>(sent);
 }
 
-template <std::ranges::range Range, class _Iterator_>
-raze_nodiscard raze_always_inline constexpr decltype(auto) __r_uiter(_Iterator_&& __iterator)
-	noexcept(noexcept(__uiter<std::ranges::sentinel_t<Range>>(static_cast<_Iterator_&&>(__iterator))))
+template <std::ranges::range R, class Iter>
+raze_nodiscard raze_always_inline constexpr decltype(auto) r_uiter(Iter&& it)
+	noexcept(noexcept(uiter<std::ranges::sentinel_t<Range>>(static_cast<Iter&&>(it))))
 {
-	static_assert(std::same_as<std::remove_cvref_t<_Iterator_>, std::ranges::iterator_t<Range>>);
-	return __uiter<std::ranges::sentinel_t<Range>>(static_cast<_Iterator_&&>(__iterator));
+	static_assert(std::same_as<std::remove_cvref_t<Iter>, std::ranges::iterator_t<R>>);
+	return __uiter<std::ranges::sentinel_t<R>>(static_cast<Iter&&>(it));
 }
 
-template <std::ranges::range Range, class _Sentinel_>
-raze_nodiscard raze_always_inline constexpr decltype(auto) __r_usent(_Sentinel_&& __sentinel)
-	noexcept(noexcept(__usent<std::ranges::iterator_t<Range>>(static_cast<_Sentinel_&&>(__sentinel))))
+template <std::ranges::range R, class Sent>
+raze_nodiscard raze_always_inline constexpr decltype(auto) r_usent(Sent&& sent)
+	noexcept(noexcept(usent<std::ranges::iterator_t<R>>(static_cast<Sent&&>(sent))))
 {
-	static_assert(std::same_as<std::remove_cvref_t<_Sentinel_>, std::ranges::sentinel_t<Range>>);
-	return __usent<std::ranges::iterator_t<Range>>(static_cast<_Sentinel_&&>(__sentinel));
+	static_assert(std::same_as<std::remove_cvref_t<Sent>, std::ranges::sentinel_t<R>>);
+	return usent<std::ranges::iterator_t<R>>(static_cast<Sent&&>(sent));
 }
 
-template <class _Iterator_, class _Sentinel_>
-using __ranges_unwrap_iter_t = std::remove_cvref_t<decltype(__uiter<_Sentinel_>(std::declval<_Iterator_>()))>;
+template <class Sent, class Iter>
+using ranges_unwrap_iter_t = std::remove_cvref_t<decltype(uiter<Sent>(std::declval<Iter>()))>;
 
-template <class _Sentinel_, class _Iterator_>
-using __ranges_unwrap_sent_t = std::remove_cvref_t<decltype(__usent<_Iterator_>(std::declval<_Sentinel_>()))>;
+template <class Sent, class Iter>
+using ranges_unwrap_sent_t = std::remove_cvref_t<decltype(usent<Iter>(std::declval<Sent>()))>;
 
 template <std::ranges::range Range>
-using __unwrapped_iterator_t = __ranges_unwrap_iter_t<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>;
+using unwrapped_iterator_t = ranges_unwrap_iter_t<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>;
 
 template <std::ranges::range Range>
-using __unwrapped_sentinel_t = __ranges_unwrap_sent_t<std::ranges::sentinel_t<Range>, std::ranges::iterator_t<Range>>;
+using unwrapped_sentinel_t = ranges_unwrap_sent_t<std::ranges::sentinel_t<Range>, std::ranges::iterator_t<Range>>;
 
 #if defined(raze_cpp_msvc)
-  constexpr inline auto __ubegin = std::ranges::_Ubegin;
-  constexpr inline auto __uend = std::ranges::_Uend;
+  constexpr inline auto ubegin = std::ranges::_Ubegin;
+  constexpr inline auto uend = std::ranges::_Uend;
 #else 
-  constexpr inline auto __ubegin = std::identity{};
-  constexpr inline auto __uend = std::identity{};
+  constexpr inline auto ubegin = std::identity{};
+  constexpr inline auto uend = std::identity{};
 #endif // defined(raze_cpp_msvc)
 
-template <std::forward_iterator _Iterator_, class _Sentinel_>
-raze_nodiscard raze_always_inline constexpr __ranges_unwrap_iter_t<_Iterator_, _Sentinel_> __last_uiter(
-	const __ranges_unwrap_iter_t<_Iterator_, _Sentinel_>& __first, _Sentinel_&& __last) 
-		requires(std::sentinel_for<std::remove_cvref_t<_Sentinel_>, _Iterator_>)
+template <std::forward_iterator Iter, class Sent>
+raze_nodiscard raze_always_inline constexpr ranges_unwrap_iter_t<Iter, Sent> __last_uiter(
+	const ranges_unwrap_iter_t<Iter, Sent>& __first, Sent&& __last) 
+		requires(std::sentinel_for<std::remove_cvref_t<Sent>, Iter>)
 {
-	  if constexpr (std::is_same_v<__ranges_unwrap_iter_t<_Iterator_, _Sentinel_>, __ranges_unwrap_sent_t<_Sentinel_, _Iterator_>>)
-		  return __usent<_Iterator_>(std::forward<_Sentinel_>(__last));
-	  else return std::ranges::next(__first, __usent<_Iterator_>(std::forward<_Sentinel_>(__last)));
+	  if constexpr (std::is_same_v<ranges_unwrap_iter_t<Iter, Sent>, ranges_unwrap_sent_t<Sent, Iter>>)
+		  return usent<Iter>(std::forward<Sent>(last));
+	  else return std::ranges::next(first, usent<Iter>(std::forward<Sent>(last)));
   }
 
-template <std::ranges::forward_range Range>
-raze_nodiscard raze_always_inline constexpr auto __last_uiter(Range& __range) {
-	  if constexpr (std::ranges::common_range<Range>) {
-		  if constexpr (std::same_as<decltype(__uend(__range)), __unwrapped_iterator_t<Range>>) return __uend(__range);
-		  else return __usent<Range>(std::ranges::end(__range));
+template <std::ranges::forward_range R>
+raze_nodiscard raze_always_inline constexpr auto __last_uiter(R& r) {
+	  if constexpr (std::ranges::common_range<R>) {
+		  if constexpr (std::same_as<decltype(uend(r)), unwrapped_iterator_t<R>>) return uend(r);
+		  else return usent<R>(std::ranges::end(r));
 	  }
-	  else if constexpr (std::ranges::sized_range<Range>) return std::ranges::next(__ubegin(__range), std::ranges::distance(__range));
-	  else return std::ranges::next(__ubegin(__range), __uend(__range));
+	  else if constexpr (std::ranges::sized_range<R>) return std::ranges::next(ubegin(r), std::ranges::distance(r));
+	  else return std::ranges::next(ubegin(r), uend(r));
   }
 
-template <class _Result_, class _Wrapped_, class _Unwrapped_>
-raze_always_inline constexpr _Result_ __rewrap_subrange(_Wrapped_& __v, std::ranges::subrange<_Unwrapped_>&& __unwrapped_result) {
-	if constexpr (std::same_as<_Result_, std::ranges::dangling>) {
+template <class Result, class Wrapped, class Unwrapped>
+raze_always_inline constexpr Result rewrap_subrange(Wrapped_& v, std::ranges::subrange<Unwrapped>&& unwrapped_result) {
+	if constexpr (std::same_as<Result, std::ranges::dangling>) {
 		return std::ranges::dangling {};
 	}
-	else if constexpr (std::same_as<_Result_, std::ranges::subrange<_Unwrapped_>>) {
-		return std::move(__unwrapped_result);
+	else if constexpr (std::same_as<Result, std::ranges::subrange<Unwrapped>>) {
+		return std::move(unwrapped_result);
 	}
-	else if constexpr (std::ranges::range<_Wrapped_>) {
-		auto __first = std::ranges::begin(__v);
-		auto __last = __first;
+	else if constexpr (std::ranges::range<Wrapped>) {
+		auto first = std::ranges::begin(v);
+		auto last = first;
 
-		__first._Seek_to(__unwrapped_result.begin());
-		__last._Seek_to(__unwrapped_result.end());
+		first._Seek_to(unwrapped_result.begin());
+		last._Seek_to(unwrapped_result.end());
 
-		return _Result_ { std::move(__first), std::move(__last) };
+		return Result { std::move(first), std::move(last) };
 	}
 	else {
-		auto __last = __v;
+		auto last = v;
 
-		__v._Seek_to(__unwrapped_result.begin());
-		__last._Seek_to(__unwrapped_result.end());
+		v._Seek_to(unwrapped_result.begin());
+		last._Seek_to(unwrapped_result.end());
 
-		return _Result_ { std::move(__v), std::move(__last) };
+		return Result { std::move(v), std::move(last) };
 	}
 }
 

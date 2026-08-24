@@ -34,12 +34,12 @@ struct _Configurable_clear_last : raze::options::conditional_callable<_Configura
         _Type_ __r = __x;
         __r.__for_each_chunk_any_of_reverse([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
             if constexpr (__unsafe) {
-                __chunk = __clear_last<_Abi_::isa, _Value_, _Chunk::size, __unsafe>(__storage_unwrap(__chunk));
+                __chunk = __clear_last<_Abi_::isa, _Value_, _Chunk::size, __unsafe>(ustorage(__chunk));
                 return true;
             }
             else {
-                if (__any_of<_Abi_::isa, _Value_>(__storage_unwrap(__chunk))) {
-                    __chunk = __clear_last<_Abi_::isa, _Value_, _Chunk::size, __unsafe>(__storage_unwrap(__chunk));
+                if (__any_of<_Abi_::isa, _Value_>(ustorage(__chunk))) {
+                    __chunk = __clear_last<_Abi_::isa, _Value_, _Chunk::size, __unsafe>(ustorage(__chunk));
                     return true;
                 }
                 else return false;

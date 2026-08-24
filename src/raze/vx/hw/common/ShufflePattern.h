@@ -7,342 +7,334 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <simd_type _Simd_, sizetype ... _Indices_>
-struct _Shuffle_pattern;
+template <simd_type V, sizetype ... Idxs>
+struct shuffle_pattern;
 
-template <class _Pattern_, sizetype _ChunkSize_, sizetype _ChunkIndex_, class _Seq_>
-struct __split_part_impl;
+template <class Pattern, sizetype ChunkSize, sizetype ChunkIndex, class Seq>
+struct split_part_impl;
 
-template <class _Pattern_, sizetype _ChunkSize_, sizetype _ChunkIndex_, sizetype... I>
-struct __split_part_impl<_Pattern_, _ChunkSize_, _ChunkIndex_, std::index_sequence<I...>> {
-    using simd_type = typename _Pattern_::vector_type;
-    using type = _Shuffle_pattern<__split_by_simd_t<_ChunkSize_, simd_type, _ChunkIndex_>,
-        _Pattern_::template __at<_ChunkIndex_* _ChunkSize_ + I>()...>;
+template <class Pattern, sizetype ChunkSize, sizetype ChunkIndex, sizetype... I>
+struct split_part_impl<Pattern, ChunkSize, ChunkIndex, std::index_sequence<I...>> {
+    using simd_type = typename Pattern::vector_type;
+    using type = shuffle_pattern<split_by_simd_t<ChunkSize, simd_type, ChunkIndex>,
+        Pattern::template __at<ChunkIndex * ChunkSize + I>()...>;
 };
 
-template <class _Pattern_, sizetype _ChunkSize_, sizetype _ChunkIndex_>
-using __split_part_t = typename __split_part_impl<_Pattern_,
-    _ChunkSize_, _ChunkIndex_, std::make_index_sequence<
-        ((_ChunkIndex_ + 1)* _ChunkSize_ <= _Pattern_::size())
-            ? _ChunkSize_ : (_Pattern_::size() - _ChunkIndex_ * _ChunkSize_)>>::type;
+template <class Pattern, sizetype ChunkSize, sizetype ChunkIndex>
+using split_part_t = typename split_part_impl<Pattern,
+    ChunkSize, ChunkIndex, std::make_index_sequence<
+        ((ChunkIndex + 1) * ChunkSize <= Pattern::size())
+            ? ChunkSize : (Pattern::size() - ChunkIndex * ChunkSize)>>::type;
 
-template <simd_type _Simd_, sizetype ... _Indices_>
-struct _Shuffle_pattern {
-	static_assert(sizeof...(_Indices_) > 0);
+template <simd_type V, sizetype ... Idxs>
+struct shuffle_pattern {
+	static_assert(sizeof...(Idxs) > 0);
 
-    static constexpr std::array<sizetype, sizeof...(_Indices_)> __indices = { _Indices_ ... };
+    static constexpr std::array<sizetype, sizeof...(Idxs)> idxs = { Idxs ... };
 
-	using vector_type = _Simd_;
+	using vector_type = V;
 
-	constexpr _Shuffle_pattern() noexcept {}
-	constexpr ~_Shuffle_pattern() noexcept {}
+	constexpr shuffle_pattern() noexcept {}
+	constexpr ~shuffle_pattern() noexcept {}
 
-	constexpr _Shuffle_pattern(const _Shuffle_pattern&) noexcept {}
-	constexpr _Shuffle_pattern& operator=(const _Shuffle_pattern&) noexcept {
+	constexpr shuffle_pattern(const shuffle_pattern&) noexcept {}
+	constexpr shuffle_pattern& operator=(const shuffle_pattern&) noexcept {
 		return *this;
 	}
 
 	static constexpr auto size() noexcept {
-		return sizeof...(_Indices_);
+		return sizeof...(Idxs);
 	}
 
-	static constexpr std::integer_sequence<sizetype, _Indices_...> get() noexcept {
-		return std::integer_sequence<sizetype, _Indices_...>{};
+	static constexpr std::integer_sequence<sizetype, Idxs...> get() noexcept {
+		return std::integer_sequence<sizetype, Idxs...>{};
 	}
 
-	template <sizetype _I_>
+	template <sizetype I>
     static constexpr auto __at() noexcept {
-        return __indices[_I_];
+        return idxs[I];
 	}
 
-	template <sizetype _I_>
-	static constexpr std::integral_constant<sizetype, __at<_I_>()> at() noexcept {
+	template <sizetype I>
+	static constexpr std::integral_constant<sizetype, __at<I>()> at() noexcept {
 		return {};
 	}
 
-	constexpr auto operator[](sizetype __i) const noexcept {
-		return __indices[__i];
+	constexpr auto operator[](sizetype i) const noexcept {
+		return idxs[i];
 	}
 
-	template <std::unsigned_integral _IdxType_>
-	static constexpr std::array<_IdxType_, size()> to_array() noexcept {
-		return std::array<_IdxType_, size()> { static_cast<_IdxType_>(_Indices_)... };
+	template <std::unsigned_integral Idx>
+	static constexpr std::array<Idx, size()> to_array() noexcept {
+		return std::array<Idx, size()> { static_cast<Idx>(Idxs)... };
 	}
 
-	template <intrin_type _Intrin_>
-    raze_no_stack_protector raze_always_inline static auto as_native() noexcept requires((sizeof(_Intrin_) / size()) != 0) {
-		using _IdxType = typename IntegerForSize<sizeof(_Intrin_) / size()>::Unsigned;
-		alignas(sizeof(_Intrin_)) static constexpr _IdxType __idx[size()] { _IdxType(_Indices_)... };
-		return _Load<abi_t<_Simd_>::isa, _Intrin_>()(__idx, __aligned_policy{});
+	template <intrin_type Intrin>
+    raze_no_stack_protector raze_always_inline static auto as_native() noexcept requires((sizeof(Intrin) / size()) != 0) {
+		using Idx = typename IntegerForSize<sizeof(Intrin) / size()>::Unsigned;
+		alignas(sizeof(Intrin)) static constexpr Idx idx[size()] { Idx(Idxs)... };
+		return _Load<abi_t<V>::isa, Intrin>()(idx, aligned_policy{});
 	}
 
-	template <std::unsigned_integral _From_, std::unsigned_integral _To_>
+	template <std::unsigned_integral From, std::unsigned_integral To>
 	static constexpr auto expand() noexcept
-		requires(sizeof(_From_) >= sizeof(_To_))
+		requires(sizeof(From) >= sizeof(To))
 	{
-		constexpr auto __n = sizeof(_From_) / sizeof(_To_);
-		constexpr auto __len = sizeof...(_Indices_);
-
-		return [] <sizetype... __I>(std::index_sequence<__I...>) {
-			return _Shuffle_pattern<_Simd_, ((__at<__I / __n>() * __n) + (__I % __n))...>{};
-		}(std::make_index_sequence<__len * __n>{});
+		constexpr auto n = sizeof(From) / sizeof(To);
+		return [] <sizetype... I> (std::index_sequence<I...>) {
+			return shuffle_pattern<V, ((at<I / n>() * n) + (I % n))...>{};
+		}(std::make_index_sequence<size() * n>{});
 	}
 
 	static constexpr auto widen() noexcept
-		requires((sizeof...(_Indices_) % 2) == 0)
+		requires((size() % 2) == 0)
 	{
-		constexpr auto __new_len = sizeof...(_Indices_) / 2;
-
-		return [] <sizetype... __I>(std::index_sequence<__I...>) {
-			return _Shuffle_pattern<_Simd_, (__at<__I * 2>() / 2)...>{};
-		}(std::make_index_sequence<__new_len>{});
+		constexpr auto new_len = size() / 2;
+		return [] <sizetype... I> (std::index_sequence<I...>) {
+			return shuffle_pattern<V, (at<I * 2>() / 2)...>{};
+		}(std::make_index_sequence<new_len>{});
 	}
 	
-    template <sizetype _I_, sizetype... __Is_>
-	raze_always_inline static constexpr sizetype __make_mask(
-        bool (__pred)(sizetype, sizetype),
-        std::index_sequence<__Is_...>) noexcept
+    template <sizetype I, sizetype... Is>
+	raze_always_inline static constexpr sizetype make_mask(
+        bool (pred)(sizetype, sizetype),
+        std::index_sequence<Is_...>) noexcept
     {
-        return ((__pred(_Indices_, _I_) ? (sizetype{1} << __Is_) : sizetype{0}) | ...);
+        return ((pred(Idxs, I) ? (sizetype{1} << Is) : sizetype{0}) | ...);
     }
 
-    template <sizetype _I_>
-	raze_always_inline constexpr sizetype operator==(std::integral_constant<sizetype, _I_>) const noexcept {
-        return __make_mask<_I_>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a == __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype I>
+	raze_always_inline constexpr sizetype operator==(std::integral_constant<sizetype, I>) const noexcept {
+        return make_mask<I>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a == b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _I_>
-	raze_always_inline constexpr sizetype operator!=(std::integral_constant<sizetype, _I_>) const noexcept {
-        return __make_mask<_I_>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a != __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype I>
+	raze_always_inline constexpr sizetype operator!=(std::integral_constant<sizetype, I>) const noexcept {
+        return make_mask<I>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a != b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _I_>
-	raze_always_inline constexpr sizetype operator<(std::integral_constant<sizetype, _I_>) const noexcept {
-        return __make_mask<_I_>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a < __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype I>
+	raze_always_inline constexpr sizetype operator<(std::integral_constant<sizetype, I>) const noexcept {
+        return make_mask<I>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a < b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _I_>
-	raze_always_inline constexpr sizetype operator<=(std::integral_constant<sizetype, _I_>) const noexcept {
-        return __make_mask<_I_>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a <= __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype I>
+	raze_always_inline constexpr sizetype operator<=(std::integral_constant<sizetype, I>) const noexcept {
+        return make_mask<I>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a <= b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _I_>
-	raze_always_inline constexpr sizetype operator>(std::integral_constant<sizetype, _I_>) const noexcept {
-        return __make_mask<_I_>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a > __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype I>
+	raze_always_inline constexpr sizetype operator>(std::integral_constant<sizetype, I>) const noexcept {
+        return make_mask<I>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a > b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _I_>
-	raze_always_inline constexpr sizetype operator>=(std::integral_constant<sizetype, _I_>) const noexcept {
-        return __make_mask<_I_>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a >= __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype I>
+	raze_always_inline constexpr sizetype operator>=(std::integral_constant<sizetype, I>) const noexcept {
+        return make_mask<I>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a >= b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-	    template <sizetype... _OtherIndices_, sizetype... __Is_>
-    raze_always_inline static constexpr sizetype __make_mask2(
-        bool (__pred)(sizetype, sizetype),
-        std::index_sequence<__Is_...>) noexcept
+	template <sizetype... OtherIdxs, sizetype... Is>
+    raze_always_inline static constexpr sizetype make_mask2(
+        bool (pred)(sizetype, sizetype),
+        std::index_sequence<Is...>) noexcept
     {
-        constexpr sizetype __this_arr[] = { _Indices_ ... };
-        constexpr sizetype __other_arr[] = { _OtherIndices_ ... };
-        return ((__pred(__this_arr[__Is_], __other_arr[__Is_]) ? (sizetype{1} << __Is_) : sizetype{0}) | ...);
+        constexpr sizetype this_arr[] = { Idxs ... };
+        constexpr sizetype other_arr[] = { OtherIdxs ... };
+        return ((pred(this_arr[Is], other_arr[Is]) ? (sizetype{1} << Is) : sizetype{0}) | ...);
     }
 
-    template <simd_type _OtherSimd_, sizetype... _OtherIndices_>
-    raze_always_inline constexpr sizetype operator==(const _Shuffle_pattern<_OtherSimd_, _OtherIndices_...>&) const noexcept
-        requires(sizeof...(_Indices_) == sizeof...(_OtherIndices_))
+    template <simd_type OtherV, sizetype... OtherIdxs>
+    raze_always_inline constexpr sizetype operator==(const shuffle_pattern<OtherV, OtherIdxs...>&) const noexcept
+        requires(sizeof...(Idxs) == sizeof...(OtherIdxs))
     {
-        return __make_mask2<_OtherIndices_...>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a == __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+        return make_mask2<OtherIdxs...>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a == b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <simd_type _OtherSimd_, sizetype... _OtherIndices_>
-    raze_always_inline constexpr sizetype operator!=(const _Shuffle_pattern<_OtherSimd_, _OtherIndices_...>&) const noexcept
-        requires(sizeof...(_Indices_) == sizeof...(_OtherIndices_))
+    template <simd_type OtherV, sizetype... OtherIdxs>
+    raze_always_inline constexpr sizetype operator!=(const shuffle_pattern<OtherV, OtherIdxs...>&) const noexcept
+        requires(sizeof...(Idxs) == sizeof...(OtherIdxs))
     {
-        return __make_mask2<_OtherIndices_...>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a != __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+        return make_mask2<OtherIdxs...>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a != b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <simd_type _OtherSimd_, sizetype... _OtherIndices_>
-    raze_always_inline constexpr sizetype operator<(const _Shuffle_pattern<_OtherSimd_, _OtherIndices_...>&) const noexcept
-        requires(sizeof...(_Indices_) == sizeof...(_OtherIndices_))
+    template <simd_type OtherV, sizetype... OtherIdxs>
+    raze_always_inline constexpr sizetype operator<(const shuffle_pattern<OtherV, OtherIdxs...>&) const noexcept
+        requires(sizeof...(Idxs) == sizeof...(OtherIdxs))
     {
-        return __make_mask2<_OtherIndices_...>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a < __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+        return make_mask2<OtherIdxs...>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a < b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <simd_type _OtherSimd_, sizetype... _OtherIndices_>
-    raze_always_inline constexpr sizetype operator<=(const _Shuffle_pattern<_OtherSimd_, _OtherIndices_...>&) const noexcept
-        requires(sizeof...(_Indices_) == sizeof...(_OtherIndices_))
+    template <simd_type OtherV, sizetype... OtherIdxs>
+    raze_always_inline constexpr sizetype operator<=(const shuffle_pattern<OtherV, OtherIdxs...>&) const noexcept
+        requires(sizeof...(Idxs) == sizeof...(OtherIdxs))
     {
-        return __make_mask2<_OtherIndices_...>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a <= __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+        return make_mask2<OtherIdxs...>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a <= b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <simd_type _OtherSimd_, sizetype... _OtherIndices_>
-    raze_always_inline constexpr sizetype operator>(const _Shuffle_pattern<_OtherSimd_, _OtherIndices_...>&) const noexcept
-        requires(sizeof...(_Indices_) == sizeof...(_OtherIndices_))
+    template <simd_type OtherV, sizetype... OtherIdxs>
+    raze_always_inline constexpr sizetype operator>(const shuffle_pattern<OtherV, OtherIdxs...>&) const noexcept
+        requires(sizeof...(Idxs) == sizeof...(OtherIdxs))
     {
-        return __make_mask2<_OtherIndices_...>(
-            [](sizetype __a, sizetype __b) constexpr noexcept { return __a > __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+        return make_mask2<OtherIdxs...>(
+            [](sizetype a, sizetype b) constexpr noexcept { return a > b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <simd_type _OtherSimd_, sizetype... _OtherIndices_>
-    raze_always_inline constexpr sizetype operator>=(const _Shuffle_pattern<_OtherSimd_, _OtherIndices_...>&) const noexcept
-        requires(sizeof...(_Indices_) == sizeof...(_OtherIndices_))
+    template <simd_type OtherV, sizetype... OtherIdxs>
+    raze_always_inline constexpr sizetype operator>=(const shuffle_pattern<OtherV, OtherIdxs...>&) const noexcept
+        requires(sizeof...(Idxs) == sizeof...(OtherIdxs))
     {
-        return __make_mask2<_OtherIndices_...>(
-            [] (sizetype __a, sizetype __b) constexpr noexcept { return __a >= __b; },
-            std::make_index_sequence<sizeof...(_Indices_)>{});
+        return make_mask2<OtherIdxs...>(
+            [] (sizetype a, sizetype b) constexpr noexcept { return a >= b; },
+            std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _Divisor_>
-    constexpr auto operator%(std::integral_constant<sizetype, _Divisor_> __divisor) const noexcept {
-        return [=] <sizetype... __I>(std::index_sequence<__I...>) {
-            return _Shuffle_pattern<_Simd_, (__at<__I>() % __divisor)...>{};
-        } (std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype Divisor>
+    constexpr auto operator%(std::integral_constant<sizetype, Divisor> divisor) const noexcept {
+        return [=] <sizetype... I> (std::index_sequence<I...>) {
+            return shuffle_pattern<V, (at<I>() % divisor)...>{};
+        } (std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _Divisor_>
-    constexpr auto operator/(std::integral_constant<sizetype, _Divisor_> __divisor) const noexcept {
-        return [=] <sizetype... __I>(std::index_sequence<__I...>) {
-            return _Shuffle_pattern<_Simd_, (__at<__I>() / __divisor)...>{};
-        } (std::make_index_sequence<sizeof...(_Indices_)>{});
+    template <sizetype Divisor>
+    constexpr auto operator/(std::integral_constant<sizetype, Divisor> divisor) const noexcept {
+        return [=] <sizetype... I>(std::index_sequence<I...>) {
+            return shuffle_pattern<V, (at<I>() / divisor)...>{};
+        } (std::make_index_sequence<sizeof...(Idxs)>{});
     }
 
-    template <sizetype _Offset_>
-    constexpr auto offset(std::integral_constant<sizetype, _Offset_> __offset) const noexcept {
-        return [=] <sizetype... __I>(std::index_sequence<__I...>) {
-            return _Shuffle_pattern<_Simd_, (__at<__I + __offset>())...>{};
-        } (std::make_index_sequence<size() - __offset>{});
+    template <sizetype Offset>
+    constexpr auto offset(std::integral_constant<sizetype, Offset> offset) const noexcept {
+        return [=] <sizetype... I>(std::index_sequence<I...>) {
+            return shuffle_pattern<V, (__at<I + offset>())...>{};
+        } (std::make_index_sequence<size() - offset>{});
     }
 
     constexpr auto crossing_lanes() const noexcept {
-        constexpr sizetype __simd_size = sizeof(_Simd_);
-        constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
-        constexpr sizetype __L = size() / __lanes;
+        constexpr sizetype simd_size = sizeof(V);
+        constexpr sizetype lanes = (simd_size >= 16) ? (simd_size / 16) : 1;
+        constexpr sizetype L = size() / lanes;
 
-        return [] <sizetype... __I>(std::index_sequence<__I...>) {
-            return _Shuffle_pattern<_Simd_, ((__I / __L) != (__at<__I>() / __L) ? static_cast<sizetype>(-1) : __at<__I>())...>{};
+        return [] <sizetype... I>(std::index_sequence<I...>) {
+            return shuffle_pattern<V, ((I / L) != (at<I>() / L) ? static_cast<sizetype>(-1) : at<I>())...>{};
         }(std::make_index_sequence<size()>{});
     }
 
     constexpr auto non_crossing_lanes() const noexcept {
-        constexpr sizetype __simd_size = sizeof(_Simd_);
-        constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
-        constexpr sizetype __L = size() / __lanes;
+        constexpr sizetype simd_size = sizeof(V);
+        constexpr sizetype lanes = (simd_size >= 16) ? (simd_size / 16) : 1;
+        constexpr sizetype L = size() / lanes;
 
-        return [] <sizetype... __I>(std::index_sequence<__I...>) {
-            return _Shuffle_pattern<_Simd_, ((__I / __L) == (__at<__I>() / __L) ? static_cast<sizetype>(-1) : __at<__I>())...>{};
+        return [] <sizetype... I>(std::index_sequence<I...>) {
+            return shuffle_pattern<V, ((I / L) == (at<I>() / L) ? static_cast<sizetype>(-1) : at<I>())...>{};
         }(std::make_index_sequence<size()>{});
     }
 
     template <sizetype... I>
-    static constexpr auto __split_impl(std::index_sequence<I...>)
-    {
-        using HalfSimd = simd<typename _Simd_::value_type, resize_abi_t<abi_t<_Simd_>, size() / 2>>;
+    static constexpr auto split_impl(std::index_sequence<I...>) {
+        using HalfSimd = simd<typename V::value_type, resize_abi_t<abi_t<V>, size() / 2>>;
 
         return std::pair{
             [] <sizetype... J> (std::index_sequence<J...>) {
-                return _Shuffle_pattern<HalfSimd, __at<J>()...>{};
+                return shuffle_pattern<HalfSimd, at<J>()...>{};
             }(std::make_index_sequence<size() / 2>{}),
 
             [] <sizetype... J> (std::index_sequence<J...>) {
-                return _Shuffle_pattern<HalfSimd, __at<J + size() / 2>()...>{};
+                return shuffle_pattern<HalfSimd, at<J + size() / 2>()...>{};
             }(std::make_index_sequence<size() / 2>{})
         };
     }
 
     constexpr auto split() const noexcept {
-        return __split_impl(std::make_index_sequence<size()>{});
+        return split_impl(std::make_index_sequence<size()>{});
     }
 
-    template <sizetype _N_, sizetype... I>
-    constexpr auto __split_by_impl(std::index_sequence<I...>) const noexcept {
-        constexpr sizetype __chunk_size = (size() + _N_ - 1) / _N_;
-        return std::tuple<__split_part_t<_Shuffle_pattern, __chunk_size, I>...>{};
+    template <sizetype N, sizetype... I>
+    constexpr auto split_by_impl(std::index_sequence<I...>) const noexcept {
+        constexpr sizetype chunk_size = (size() + N - 1) / N;
+        return std::tuple<split_part_t<shuffle_pattern, chunk_size, I>...>{};
     }
 
-    
-    template <sizetype _Chunks_>
+    template <sizetype Chunks>
     consteval auto split_by() const noexcept {
-        static_assert(_Chunks_ > 0);
-        return __split_by_impl<_Chunks_>(std::make_index_sequence<_Chunks_>{});
+        static_assert(Chunks > 0);
+        return split_by_impl<Chunks>(std::make_index_sequence<Chunks>{});
     }
 
-    template <class Predicate>
-    raze_no_stack_protector raze_always_inline static auto to_mask(Predicate __pred) noexcept {
-        using mask_type = simd_mask<typename _Simd_::value_type, abi_t<_Simd_>>;
-        alignas(64) static constexpr bool __mask[size()] { __pred(_Indices_)... };
-        return mask_type(__mask, __aligned_policy{});
+    template <class Pred>
+    raze_no_stack_protector raze_always_inline static auto to_mask(Pred pred) noexcept {
+        alignas(64) static constexpr bool mask[size()] { pred(Idxs)... };
+        return typename V::mask_type(mask, aligned_policy{});
     }
 
-    template <class _Predicate1_, class _Predicate2_>
-    raze_no_stack_protector raze_always_inline static auto to_mask(_Predicate1_ __low, _Predicate2_ __high) noexcept {
-        using mask_type = simd_mask<typename _Simd_::value_type, abi_t<_Simd_>>;
+    template <class Pred1, class Pred2>
+    raze_no_stack_protector raze_always_inline static auto to_mask(Pred1 low, Pred2 high) noexcept {
+        static constexpr std::array<sizetype, size()> idx = { Idxs... };
+        alignas(64) static constexpr std::array<bool, size()> mask = [=] {
+            std::array<bool, size()> m {};
 
-        static constexpr std::array<sizetype, size()> __idx = { _Indices_... };
-        alignas(64) static constexpr std::array<bool, size()> __mask = [=] {
-            std::array<bool, size()> __m {};
+            for (auto i = 0; i < size(); ++i)
+                m[i] = (i < size() / 2) ? low(idx[i]) : high(idx[i]);
 
-            for (auto __i = 0; __i < size(); ++__i)
-                __m[__i] = (__i < size() / 2) ? __low(__idx[__i]) : __high(__idx[__i]);
-
-            return __m;
+            return m;
         }();
 
-        return mask_type(__mask.data(), __aligned_policy{});
+        return typename V::mask_type(mask.data(), aligned_policy{});
     }
 
     raze_always_inline constexpr auto invalidate_cross_lane() const noexcept {
-        constexpr sizetype __simd_size = sizeof(_Simd_);
-        constexpr sizetype __lanes = (__simd_size >= 16) ? (__simd_size / 16) : 1;
-        constexpr sizetype __lane_size = size() / __lanes;
+        constexpr sizetype simd_size = sizeof(V);
+        constexpr sizetype lanes = (simd_size >= 16) ? (simd_size / 16) : 1;
+        constexpr sizetype lane_size = size() / lanes;
 
         return [] <sizetype... I> (std::index_sequence<I...>) {
-            return _Shuffle_pattern<_Simd_, (((__at<I>() / __lane_size) != (I / __lane_size)) ? static_cast<sizetype>(-1) : __at<I>())...>{};
+            return shuffle_pattern<V, (((at<I>() / lane_size) != (I / lane_size)) ? static_cast<sizetype>(-1) : at<I>())...>{};
         }(std::make_index_sequence<size()>{});
     }
 
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
-    template <intrin_type _Intrin_>
-    raze_always_inline static auto __llvm_shufflevector_builtin_apply(_Intrin_ __v, _Intrin_ __v2) noexcept {
-        using _Elem = typename IntegerForSize<sizeof(_Intrin_) / size()>::Unsigned;
-        using _ExtVec = _Elem __attribute__((vector_size(sizeof(_Intrin_))));
+    template <intrin_type Intrin>
+    raze_always_inline static auto builtin_shufflevector(Intrin v, Intrin v2) noexcept {
+        using Elem = typename IntegerForSize<sizeof(Intrin) / size()>::Unsigned;
+        using ExtVec = Elem __attribute__((vector_size(sizeof(Intrin))));
 
-        _ExtVec __ext = __builtin_bit_cast(_ExtVec, __v);
-        _ExtVec __ext2 = __builtin_bit_cast(_ExtVec, __v2);
-        return __builtin_shufflevector(__ext, __ext2, _Indices_...);
+        ExtVec ext = __builtin_bit_cast(ExtVec, v);
+        ExtVec ext2 = __builtin_bit_cast(ExtVec, v2);
+        return __builtin_shufflevector(ext, ext2, Idxs...);
     }
 
-    template <intrin_type _Intrin_>
-    raze_always_inline static auto __llvm_shufflevector_builtin_apply(_Intrin_ __v) noexcept {
-        using _Elem = typename IntegerForSize<sizeof(_Intrin_) / size()>::Unsigned;
-        using _ExtVec = _Elem __attribute__((vector_size(sizeof(_Intrin_))));
+    template <intrin_type Intrin>
+    raze_always_inline static auto builtin_shufflevector(Intrin v) noexcept {
+        using Elem = typename IntegerForSize<sizeof(Intrin) / size()>::Unsigned;
+        using ExtVec = Elem __attribute__((vector_size(sizeof(Intrin))));
 
-        _ExtVec __ext = __builtin_bit_cast(_ExtVec, __v);
-        return __builtin_shufflevector(__ext, __ext, _Indices_...);
+        ExtVec ext = __builtin_bit_cast(ExtVec, v);
+        return __builtin_shufflevector(ext, ext, Idxs...);
     }
 #endif
 };
 
-template <class _Pattern_>
-using pattern_vector_t = typename _Pattern_::vector_type;
+template <class Pattern>
+using pattern_vector_t = typename Pattern::vector_type;
 
 __RAZE_VX_NAMESPACE_END

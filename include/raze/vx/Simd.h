@@ -58,7 +58,7 @@ public:
     static constexpr auto __size = Abi::size;
     static constexpr auto __has_scalar_chunks = (Abi::size % 16) != 0;
 
-    using storage_type  = _Vector_storage<T, Abi>;
+    using storage_type  = vector_storage<T, Abi>;
     using reference     = _Simd_element_reference<simd>;
     using value_type    = T;
     using mask_type     = simd_mask<T, Abi>;
@@ -98,7 +98,7 @@ public:
         simd r;
 
         r.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-            using Storage = std::remove_cvref_t<decltype(__storage_unwrap(chunk))>;
+            using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
             chunk = _Zero<__isa, Storage>()();
         });
 
@@ -112,7 +112,7 @@ public:
         simd r {};
         
         r.__for_each_chunk([&] <class Chunk> (_Chunk& chunk) raze_always_inline_lambda {
-            using Storage = std::remove_cvref_t<decltype(__storage_unwrap(chunk))>;
+            using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
             chunk = _Broadcast<__isa, Storage>()(v);
         });
 
@@ -125,7 +125,7 @@ public:
     */
     raze_no_stack_protector raze_always_inline simd& fill(value_type v) noexcept {
         __for_each_chunk([&] <class Chunk> (_Chunk& chunk) raze_always_inline_lambda {
-            using Storage = std::remove_cvref_t<decltype(__storage_unwrap(chunk))>;
+            using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
             chunk = _Broadcast<__isa, Storage>()(v);
         });
 

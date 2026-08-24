@@ -61,7 +61,7 @@ raze_always_inline pattern_vector_t<_Pattern_> __reverse_native_size(const patte
 
 	_Simd_ __result = __x;
 	__result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-		__chunk = __reverse_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(__storage_unwrap(__chunk), __p);
+		__chunk = __reverse_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__chunk), __p);
 	});
 
 	return __result;
@@ -81,8 +81,8 @@ raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __reverse(pattern_
 				auto& __c1 = __x.template __get<__i>();
 				auto& __c2 = __x.template __get<_Simd_::__chunks_count() - __i - 1>();
 
-				auto __c1_in = __storage_unwrap(__c1);
-				auto __c2_in = __storage_unwrap(__c2);
+				auto __c1_in = ustorage(__c1);
+				auto __c2_in = ustorage(__c2);
 
 				using _Chunk1 = std::remove_cvref_t<decltype(__c1)>;
 				using _Chunk2 = std::remove_cvref_t<decltype(__c2)>;

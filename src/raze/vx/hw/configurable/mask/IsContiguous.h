@@ -33,7 +33,7 @@ struct _Configurable_is_contiguous: raze::options::conditional_callable<_Configu
 
         if constexpr (_Type_::__is_native() || _Type_::size() == 1) {
             return __x.__for_each_chunk_any_of([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-                return _Is_contiguous<_Abi_::isa, _Chunk::size, _Value_>()(__storage_unwrap(__chunk), __n, __k);
+                return _Is_contiguous<_Abi_::isa, _Chunk::size, _Value_>()(ustorage(__chunk), __n, __k);
             });
         }
         else if constexpr (_Type_::__chunks_count() == 2) {
@@ -43,9 +43,9 @@ struct _Configurable_is_contiguous: raze::options::conditional_callable<_Configu
             using _Ch1 = decltype(__ch1);
             using _Ch2 = decltype(__ch2);
 
-            if (__k <= _Ch1::size) return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(__storage_unwrap(__ch1), __n, __k);
-            return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(__storage_unwrap(__ch1), __n, __k) &&
-                _Is_contiguous<_Abi_::isa, _Ch2::size, _Value_>()(__storage_unwrap(__ch2), 0, __k - _Ch1::size);
+            if (__k <= _Ch1::size) return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(ustorage(__ch1), __n, __k);
+            return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(ustorage(__ch1), __n, __k) &&
+                _Is_contiguous<_Abi_::isa, _Ch2::size, _Value_>()(ustorage(__ch2), 0, __k - _Ch1::size);
         }
         else {
             return [&] <sizetype ... __I> (std::integer_sequence<size_t, __I...>) raze_always_inline_lambda {
@@ -62,7 +62,7 @@ struct _Configurable_is_contiguous: raze::options::conditional_callable<_Configu
                     if (__k <= 0) return true;
                     
                     const auto __end = __k < __size ? __k : __size;
-                    const auto __r = _Is_contiguous<_Abi_::isa, __size, _Value_>()(__storage_unwrap(__ch), __n, __end);
+                    const auto __r = _Is_contiguous<_Abi_::isa, __size, _Value_>()(ustorage(__ch), __n, __end);
 
                     __n = 0;
                     __k -= __size;

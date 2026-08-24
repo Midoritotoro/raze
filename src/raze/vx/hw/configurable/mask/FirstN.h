@@ -30,7 +30,7 @@ struct _Configurable_first_n : raze::options::conditional_callable<_Configurable
 
         if constexpr (_Type_::__chunks_count() == 1) {
             __x.__for_each_chunk([__n] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-                using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
+                using _StorageType = std::remove_cvref_t<decltype(ustorage(__chunk))>;
                 __chunk = _First_n<_Abi_::isa, _Chunk::size, _StorageType, _Value_>()(__n);
             });
         }
@@ -38,7 +38,7 @@ struct _Configurable_first_n : raze::options::conditional_callable<_Configurable
             i32 __remaining = __n;
 
             auto __chunk_op = [&__remaining] <class _Chunk> (_Chunk & __chunk) raze_always_inline_lambda {
-                using _StorageType = std::remove_cvref_t<decltype(__storage_unwrap(__chunk))>;
+                using _StorageType = std::remove_cvref_t<decltype(ustorage(__chunk))>;
                 constexpr i32 __chunk_size = static_cast<i32>(_Chunk::size);
 
                 if (__remaining > 0) {

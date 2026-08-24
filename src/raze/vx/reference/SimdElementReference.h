@@ -1,139 +1,139 @@
-  #pragma once 
+#pragma once 
 
 #include <src/raze/vx/hw/Cast.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Simd_> 
+template <class V> 
 class _Simd_element_reference {
 public:
 	using value_type = typename _Simd_::value_type;
 
-	_Simd_element_reference(_Simd_& __simd, i32 __i) noexcept:
-		_reference(__simd),
-		_index(__i)
+	simd_element_reference(_Simd_& v, i32 i) noexcept:
+		_reference(v),
+		_index(i)
 	{
-		raze_debug_assert_log(__i >= 0 && __i < _Simd_::size(), "Index out of range. ");
+		raze_debug_assert_log(i >= 0 && i < _Simd_::size(), "Index out of range. ");
 	}
 
 	raze_always_inline operator value_type() const noexcept {
-		return __read();
+		return read();
 	}
 
-	raze_always_inline _Simd_element_reference operator=(value_type __value) && noexcept {
-		__write(__value);
+	raze_always_inline simd_element_reference operator=(value_type value) && noexcept {
+		write(value);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator=(_Simd_element_reference&& __ref) && noexcept {
-		__write(__ref);
+	raze_always_inline simd_element_reference operator=(simd_element_reference&& ref) && noexcept {
+		write(ref);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator=(const _Simd_element_reference& __ref) && noexcept {
-		__write(__ref);
+	raze_always_inline simd_element_reference operator=(const simd_element_reference& ref) && noexcept {
+		write(ref);
 		return { _reference, _index };
 	}
 
 	raze_always_inline value_type operator++(int) && noexcept {
-		auto __value = __read();
-		const auto __old_value = __value;
-		__write(++__value);
-		return __old_value;
+		auto value = read();
+		const auto old_value = value;
+		write(++value);
+		return old_value;
 	}
 
-	raze_always_inline _Simd_element_reference operator++() && noexcept {
-		__write(++__read());
+	raze_always_inline simd_element_reference operator++() && noexcept {
+		write(++read());
 		return { _reference, _index };
 	}
 
 	raze_always_inline value_type operator--(int) && noexcept {
-		auto __value = __read();
-		const auto __old_value = __value;
-		__write(--__value);
-		return __old_value;
+		auto value = read();
+		const auto old_value = value;
+		write(--value);
+		return old_value;
 	}
 
-	raze_always_inline _Simd_element_reference operator--() && noexcept {
-		__write(--__read());
+	raze_always_inline simd_element_reference operator--() && noexcept {
+		write(--read());
 		return { _reference, _index };
 	}
 	
-	raze_always_inline _Simd_element_reference operator&=(value_type __other) && noexcept {
-		__write(__read() & __other);
+	raze_always_inline simd_element_reference operator&=(value_type other) && noexcept {
+		write(read() & other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator|=(value_type __other) && noexcept {
-		__write(__read() | __other);
+	raze_always_inline simd_element_reference operator|=(value_type other) && noexcept {
+		write(read() | other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator^=(value_type __other) && noexcept {
-		__write(__read() ^ __other);
+	raze_always_inline simd_element_reference operator^=(value_type other) && noexcept {
+		write(read() ^ other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator>>=(i32 __shift) && noexcept {
-		__write(__read() >> __shift);
+	raze_always_inline simd_element_reference operator>>=(i32 shift) && noexcept {
+		write(read() >> shift);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator<<=(i32 __shift) && noexcept {
-		__write(__read() << __shift);
+	raze_always_inline simd_element_reference operator<<=(i32 shift) && noexcept {
+		write(read() << shift);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator-=(value_type __other) && noexcept {
-		__write(__read() - __other);
+	raze_always_inline simd_element_reference operator-=(value_type other) && noexcept {
+		write(read() - other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator+=(value_type __other) && noexcept {
-		__write(__read() + __other);
+	raze_always_inline simd_element_reference operator+=(value_type other) && noexcept {
+		write(read() + other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator*=(value_type __other) && noexcept {
-		__write(__read() * __other);
+	raze_always_inline simd_element_reference operator*=(value_type other) && noexcept {
+		write(read() * other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator/=(value_type __other) && noexcept {
-		__write(__read() / __other);
+	raze_always_inline simd_element_reference operator/=(value_type other) && noexcept {
+		write(read() / other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline _Simd_element_reference operator%=(value_type __other) && noexcept {
-		__write(__read() % __other);
+	raze_always_inline simd_element_reference operator%=(value_type other) && noexcept {
+		write(read() % other);
 		return { _reference, _index };
 	}
 
-	raze_always_inline friend void swap(_Simd_element_reference& __left,  _Simd_element_reference& __right) noexcept {
-		value_type __temp = static_cast<_Simd_element_reference&&>(__left);
-		static_cast<_Simd_element_reference&&>(__left) = static_cast<value_type>(__right);
-		static_cast<_Simd_element_reference&&>(__right) = std::move(__temp);
+	raze_always_inline friend void swap(simd_element_reference& left,  simd_element_reference& right) noexcept {
+		value_type temp = static_cast<simd_element_reference&&>(left);
+		static_cast<simd_element_reference&&>(left) = static_cast<value_type>(right);
+		static_cast<simd_element_reference&&>(right) = std::move(temp);
 	}
 
-	raze_always_inline friend void swap(_Simd_element_reference& __left, value_type& __right) noexcept {
-		value_type __temp = static_cast<_Simd_element_reference&&>(__left);
-		static_cast<_Simd_element_reference&&>(__left) = std::move(__right);
-		__right = std::move(__temp);
+	raze_always_inline friend void swap(simd_element_reference& left, value_type& right) noexcept {
+		value_type temp = static_cast<simd_element_reference&&>(left);
+		static_cast<simd_element_reference&&>(left) = std::move(right);
+		right = std::move(temp);
 	}
 
-	raze_always_inline friend void swap(value_type&	__left, _Simd_element_reference& __right) noexcept {
-		value_type __temp = static_cast<_Simd_element_reference&&>(__right);
-		static_cast<_Simd_element_reference&&>(__right) = std::move(__left);
-		__left = std::move(__temp);
+	raze_always_inline friend void swap(value_type&	left, simd_element_reference& right) noexcept {
+		value_type temp = static_cast<simd_element_reference&&>(right);
+		static_cast<simd_element_reference&&>(right) = std::move(left);
+		left = std::move(temp);
 	}
 private:
-	raze_always_inline value_type __read() const noexcept {
+	raze_always_inline value_type read() const noexcept {
 		return _reference.__extract(_index);
 	}
 	
-	raze_always_inline void __write(value_type __value) noexcept {
-		_reference.__insert(_index, __value);
+	raze_always_inline void write(value_type value) noexcept {
+		_reference.__insert(_index, value);
 	}
 
 	_Simd_& _reference;

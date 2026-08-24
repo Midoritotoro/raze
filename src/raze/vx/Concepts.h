@@ -7,76 +7,76 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 struct scalar_tag {};
 
-template <class _Simd_>
-concept simd_type = __is_valid_simd_v<_Simd_>;
+template <class T>
+concept simd_type = __is_valid_simd_v<T>;
 
-template <simd_type _Simd_>
+template <simd_type T>
 struct tail_tag {
-	using original_type = _Simd_;
+	using original_type = T;
 };
 
-template <class _Type_>
-concept simd_or_arithmetic_type = simd_type<_Type_> || arithmetic_type<_Type_>;
+template <class T>
+concept simd_or_arithmetic_type = simd_type<T> || arithmetic_type<T>;
 
-template <class _Type_>
-concept floating_point_simd = simd_type<_Type_> || std::floating_point<typename _Type_::value_type>;
+template <class T>
+concept floating_point_simd = simd_type<T> || std::floating_point<typename T::value_type>;
 
-template <class _Type_>
-concept floating_point_simd_or_scalar_type = floating_point_simd<_Type_> || std::floating_point<_Type_>;
+template <class T>
+concept floating_point_simd_or_scalar_type = floating_point_simd<T> || std::floating_point<T>;
 
-template <class _SimdMask_>
-concept simd_mask_type = __is_simd_mask_v<_SimdMask_>;
+template <class T>
+concept simd_mask_type = __is_simd_mask_v<T>;
 
-template <class _SimdOrMask_>
-concept simd_or_mask_type = simd_mask_type<_SimdOrMask_> || simd_type<_SimdOrMask_>;
+template <class T>
+concept simd_or_mask_type = simd_mask_type<T> || simd_type<T>;
 
-template <class _AlignmentPolicy_>
+template <class Policy>
 concept alignment_policy_type = requires {
-	{ std::remove_cvref_t<_AlignmentPolicy_>::__alignment } -> std::convertible_to<bool>;
+	{ std::remove_cvref_t<Policy>::alignment } -> std::convertible_to<bool>;
 };
 
-template <simd_type _Simd_>
-using abi_t = typename _Simd_::abi_type;
+template <simd_type V>
+using abi_t = typename V::abi_type;
 
-template <simd_type _Simd_>
-constexpr auto __has_scalar_chunks_v = _Simd_::__has_scalar_chunks;
+template <simd_type V>
+constexpr auto has_scalar_chunks_v = _Simd_::__has_scalar_chunks;
 
-template <class ... _Types_>
-concept has_any_scalar_chunks = (__has_scalar_chunks_v<_Types_> || ...);
+template <class ... Ts>
+concept has_any_scalar_chunks = (has_scalar_chunks_v<Ts> || ...);
 
-template <class ... _Types_>
-concept same_abi_isa = ((abi_t<_Types_>::isa == abi_t<std::tuple_element_t<0, std::tuple<_Types_...>>>::isa) && ...);
+template <class ... Ts>
+concept same_abi_isa = ((abi_t<Ts>::isa == abi_t<std::tuple_element_t<0, std::tuple<Ts...>>>::isa) && ...);
 
-template <class _Simd_>
-concept trivially_chunk_swappable = simd_type<_Simd_> && (_Simd_::size() != 0 && (_Simd_::size() & (_Simd_::size() - 1)) == 0);
+template <class T>
+concept trivially_chunk_swappable = simd_type<T> && (T::size() != 0 && (T::size() & (T::size() - 1)) == 0);
 
-template <class _Simd_>
-concept native = simd_type<_Simd_> && _Simd_::is_native();
+template <class T>
+concept native = simd_type<T> && T::is_native();
 
-template <class _Index_>
-concept index_simd_type = simd_type<_Index_> && std::is_unsigned_v<typename _Index_::value_type>;
+template <class T>
+concept index_simd_type = simd_type<T> && std::is_unsigned_v<typename T::value_type>;
 
-template <class _Index_, class _Simd_>
-concept index_type_for = simd_type<_Simd_> && index_simd_type<_Index_> && (_Simd_::size() == _Index_::size())
-	&& (sizeof(typename _Index_::value_type) == sizeof(typename _Simd_::value_type));
+template <class Idx, class T>
+concept index_type_for = simd_type<T> && index_simd_type<Idx> && (T::size() == Idx::size())
+	&& (sizeof(typename Idx::value_type) == sizeof(typename T::value_type));
 
-template <simd_type _Simd_>
-struct __zeroupper_at_destroy_guard {
-	__zeroupper_at_destroy_guard() noexcept = default;
-	__zeroupper_at_destroy_guard(const __zeroupper_at_destroy_guard&) noexcept = delete;
-	__zeroupper_at_destroy_guard(__zeroupper_at_destroy_guard&&) noexcept = default;
+template <simd_type V>
+struct zeroupper_at_destroy_guard {
+	zeroupper_at_destroy_guard() noexcept = default;
+	zeroupper_at_destroy_guard(const zeroupper_at_destroy_guard&) noexcept = delete;
+	zeroupper_at_destroy_guard(zeroupper_at_destroy_guard&&) noexcept = default;
 
-	~__zeroupper_at_destroy_guard() noexcept {
-		if constexpr (has_avx<abi_t<_Simd_>::isa>)
+	~zeroupper_at_destroy_guard() noexcept {
+		if constexpr (has_avx<abi_t<V>::isa>)
 			_mm256_zeroupper();
 	}
 
-	__zeroupper_at_destroy_guard& operator=(const __zeroupper_at_destroy_guard&) noexcept = delete;
-	__zeroupper_at_destroy_guard& operator=(__zeroupper_at_destroy_guard&&) noexcept = default;
+	zeroupper_at_destroy_guard& operator=(const zeroupper_at_destroy_guard&) noexcept = delete;
+	zeroupper_at_destroy_guard& operator=(zeroupper_at_destroy_guard&&) noexcept = default;
 };
 
-template <simd_type _Simd_>
-raze_nodiscard raze_always_inline __zeroupper_at_destroy_guard<_Simd_> make_guard() noexcept {
+template <simd_type V>
+raze_nodiscard raze_always_inline zeroupper_at_destroy_guard<V> make_guard() noexcept {
 	return {};
 }
 

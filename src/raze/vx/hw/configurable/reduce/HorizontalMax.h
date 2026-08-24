@@ -25,7 +25,7 @@ struct _Configurable_hmax: raze::options::conditional_callable<_Configurable_hma
         _Value_ __result = 0;
         
         auto __chunk_op = [&] <class ... _Args_> (_Args_&& ... __args) raze_always_inline_lambda {
-            __result = std::max(_Horizontal_max<_Abi_::isa, _Value_>()(__storage_unwrap<_Args_>(__args)...), __result);
+            __result = std::max(_Horizontal_max<_Abi_::isa, _Value_>()(ustorage<_Args_>(__args)...), __result);
         };
 
         if constexpr (!std::same_as<_Mask_, options::unknown_key>) {

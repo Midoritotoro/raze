@@ -23,7 +23,7 @@ struct _Configurable_shl: raze::options::conditional_callable<_Configurable_shl,
         using _Value_ = typename _Simd_::value_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = _Left_shift<_Abi_::isa, _Value_>()(__storage_unwrap(__chunk), __storage_unwrap<_Args>(__args)...);
+            __chunk = _Left_shift<_Abi_::isa, _Value_>()(ustorage(__chunk), ustorage<_Args>(__args)...);
         };
 
         _Simd_ __result = __x;

@@ -42,7 +42,7 @@ struct _Configurable_find_next_set : raze::options::conditional_callable<_Config
                 return true;
             }
 
-            auto __r = _Find_next_set<_Abi_::isa, _Chunk::size, _Value_, __unsafe>()(__storage_unwrap(__chunk), __shift);
+            auto __r = _Find_next_set<_Abi_::isa, _Chunk::size, _Value_, __unsafe>()(ustorage(__chunk), __shift);
             __index += __r;
 
             if (__r != _Chunk::size) return false;

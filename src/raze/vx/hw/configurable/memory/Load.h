@@ -43,9 +43,9 @@ struct _Configurable_load {
                         _Chunk & __chunk, const _MaskChunk & __mchunk, const _SourceChunk& __src_chunk, auto& __memory) raze_always_inline_lambda
                 {
                     if constexpr (_Options_::contains(aligned))
-                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk), __aligned_policy{});
+                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, ustorage(__mchunk), ustorage(__src_chunk), __aligned_policy{});
                     else
-                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk), __storage_unwrap(__src_chunk));
+                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, ustorage(__mchunk), ustorage(__src_chunk));
 
                     algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
                 }, __mask.__storage().storage(), __condition.alternative().__storage().storage(), __mem);
@@ -54,9 +54,9 @@ struct _Configurable_load {
                         _Chunk & __chunk, const _MaskChunk & __mchunk, auto& __memory) raze_always_inline_lambda
                 {
                     if constexpr (_Options_::contains(aligned))
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk), __aligned_policy{});
+                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, ustorage(__mchunk), __aligned_policy{});
                     else
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, __storage_unwrap(__mchunk));
+                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, ustorage(__mchunk));
 
                     algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
                 }, __mask.__storage().storage(), __mem);

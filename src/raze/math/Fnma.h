@@ -53,7 +53,7 @@ struct configurable_fnma_t: options::conditional_callable<configurable_fnma_t, O
         _Type_ r = x;
 
         auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
-            chunk = vx::_Fnma<Abi::isa, Value>()(vx::__storage_unwrap(__chunk), vx::__storage_unwrap<Args>(args)...);
+            chunk = vx::_Fnma<Abi::isa, Value>()(vx::ustorage(__chunk), vx::ustorage<Args>(args)...);
         };
 
         if constexpr (!std::same_as<Mask, options::unknown_key>) {

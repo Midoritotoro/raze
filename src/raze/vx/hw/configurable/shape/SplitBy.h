@@ -64,7 +64,7 @@ struct _Configurable_split_by {
             if constexpr (_ChunksCount_ == _Simd_::__chunks_count()) {
                 const auto __get_simd = [&] <class _Tp_> (_Tp_, auto __i) raze_always_inline_lambda {
                     _Tp_ __simd;
-                    __simd.template __get<__i>() = __storage_unwrap(__x.template __get<__i>());
+                    __simd.template __get<__i>() = ustorage(__x.template __get<__i>());
                     return __simd;
                 };
 

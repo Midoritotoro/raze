@@ -9,13 +9,13 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_>
-raze_nodiscard raze_always_inline auto __zmm_broadcast_low(_Tp_ __x) noexcept {
-	if constexpr (sizeof(_Type_) == 8) return _mm512_broadcastq_epi64(__as<__m128i>(__x));
-	else if constexpr (sizeof(_Type_) == 4) return _mm512_broadcastd_epi32(__as<__m128i>(__x));
-	else if constexpr (sizeof(_Type_) == 2 && has_avx512bw<_ISA_>) return _mm512_broadcastw_epi16(__as<__m128i>(__x));
-	else if constexpr (sizeof(_Type_) == 1 && has_avx512bw<_ISA_>) return _mm512_broadcastb_epi8(__as<__m128i>(__x));
-	return _Broadcast<_ISA_, __m512i>()(_Extract<_ISA_, _Type_>()(__x, std::integral_constant<sizetype, 0>{}));
+template <arch::ISA ISA, arithmetic_type T, intrin_type V>
+raze_nodiscard raze_always_inline auto zmm_broadcast_low(V x) noexcept {
+	if constexpr (sizeof(T) == 8) return _mm512_broadcastq_epi64(__as<__m128i>(x));
+	else if constexpr (sizeof(T) == 4) return _mm512_broadcastd_epi32(__as<__m128i>(x));
+	else if constexpr (sizeof(T) == 2 && has_avx512bw<ISA>) return _mm512_broadcastw_epi16(__as<__m128i>(x));
+	else if constexpr (sizeof(T) == 1 && has_avx512bw<ISA>) return _mm512_broadcastb_epi8(__as<__m128i>(x));
+	return _Broadcast<ISA, __m512i>()(_Extract<ISA, T>()(x, std::integral_constant<sizetype, 0>{}));
 }
 
 template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_, sizetype _I_>
@@ -93,13 +93,13 @@ raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __splat(const patt
 	using _Tp_ = pattern_vector_t<_Pattern_>;
 
 	if constexpr (native<_Tp_>) {
-		using _Ret = decltype(__splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(__storage_unwrap(__x.template __get<0>()), __p.template at<0>()));
+		using _Ret = decltype(__splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(ustorage(__x.template __get<0>()), __p.template at<0>()));
 
 		if constexpr (!std::is_void_v<_Ret>) {
 			auto __r = __x;
 
 			auto& __storage = __r.template __get<0>();
-			__storage = __splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(__storage_unwrap(__storage), __p.template at<0>());
+			__storage = __splat_native<abi_t<_Tp_>::isa, typename _Tp_::value_type>(ustorage(__storage), __p.template at<0>());
 
 			return __r;
 		}

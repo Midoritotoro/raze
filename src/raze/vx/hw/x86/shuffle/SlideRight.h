@@ -144,7 +144,7 @@ __slide_right(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
         auto __r = __x;
 
         auto& __storage = __r.template __get<0>();
-        __storage = __slide_right_native(__storage_unwrap(__x.template __get<0>()), __p);
+        __storage = __slide_right_native(ustorage(__x.template __get<0>()), __p);
 
         return __r;
     }
@@ -166,7 +166,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right(c
     {
         constexpr auto __isa = __select_isa();
 
-        using _Intrin_ = decltype(__storage_unwrap(__x.template __get<0>()));
+        using _Intrin_ = decltype(ustorage(__x.template __get<0>()));
         using _RetSlide = decltype(__make_pshufb_slide_right_idx<__isa, _Value_>(_Intrin_{}, __sh));
         using _IdxType = typename _RetSlide::index_type;
 
@@ -177,10 +177,10 @@ raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_right(c
             auto __r = __x;
             auto& __storage = __r.template __get<0>();
 
-            const auto __slide_indices = __make_pshufb_slide_right_idx<__isa, _Value_>(__storage_unwrap(__storage), __sh);
+            const auto __slide_indices = __make_pshufb_slide_right_idx<__isa, _Value_>(ustorage(__storage), __sh);
             using _IndexType = typename decltype(__slide_indices)::index_type;
 
-            __storage = __generic_shuffle_native<__isa, _IndexType>(__storage_unwrap(__storage), __slide_indices.data());
+            __storage = __generic_shuffle_native<__isa, _IndexType>(ustorage(__storage), __slide_indices.data());
 
             return __r;
         }

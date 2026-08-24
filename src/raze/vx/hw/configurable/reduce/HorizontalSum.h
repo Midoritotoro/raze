@@ -25,7 +25,7 @@ struct _Configurable_hsum: raze::options::conditional_callable<_Configurable_hsu
         __reduce_type<typename _Type_::value_type> __result = 0;
         
         auto __chunk_op = [&] <class ... _Args_> (_Args_&& ... __args) raze_always_inline_lambda {
-            __result += _Reduce_add<_Abi_::isa, _Value_>()(__storage_unwrap<_Args_>(__args)...);
+            __result += _Reduce_add<_Abi_::isa, _Value_>()(ustorage<_Args_>(__args)...);
         };
 
         if constexpr (!std::same_as<_Mask_, options::unknown_key> && !std::same_as<_Mask_, options::__ignore_none>) {

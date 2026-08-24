@@ -6,29 +6,29 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Type_, class _Abi_, u64 _Elements_, class _Intrin_>
-struct _Vector_wrapper {
-    using unwrapped_type = _Intrin_;
-    using abi_type = _Abi_;
-    using value_type = _Type_;
-    using as_simd = simd<_Type_, resize_abi_t<_Abi_, _Elements_>>;
+template <class T, class Abi, u64 Elements, class V>
+struct vector_wrapper {
+    using unwrapped_type = V;
+    using abi_type = Abi;
+    using value_type = T;
+    using as_simd = simd<T, resize_abi_t<Abi, Elements>>;
 
-    static constexpr auto size = _Elements_;
+    static constexpr auto size = Elements;
 
-    template <intrin_type _OtherIntrin_> requires (sizeof(_Intrin_) == sizeof(_OtherIntrin_))
-    _Vector_wrapper(_OtherIntrin_ __vector) noexcept : _data(__as<_Intrin_>(__vector))
+    template <intrin_type V2> requires (sizeof(V) == sizeof(V2))
+    vector_wrapper(V2 v) noexcept : _data(__as<V>(v))
     {}
 
-    _Vector_wrapper() noexcept = default;
+    vector_wrapper() noexcept = default;
 
-    template <sizetype _I_, intrin_type _OtherIntrin_>
-    raze_always_inline void insert(_OtherIntrin_ __intrin) noexcept {
-        _Insert_vector<_Abi_::isa>()(_data, std::integral_constant<sizetype, _I_>{}, __intrin);
+    template <sizetype I, intrin_type V2>
+    raze_always_inline void insert(V2 v2) noexcept {
+        _Insert_vector<Abi::isa>()(_data, std::integral_constant<sizetype, I>{}, v2);
     }
 
-    template <sizetype _I_, intrin_type _OtherIntrin_>
-    raze_always_inline _OtherIntrin_ extract() const noexcept {
-        return _Extract_vector<_OtherIntrin_, _Abi_::isa>()(_data, std::integral_constant<sizetype, _I_>{});
+    template <sizetype I, intrin_type V2>
+    raze_always_inline V2 extract() const noexcept {
+        return _Extract_vector<V2, _Abi_::isa>()(_data, std::integral_constant<sizetype, I>{});
     }
 
     raze_nodiscard raze_always_inline unwrapped_type data() const noexcept {
@@ -42,17 +42,17 @@ private:
     raze_no_unique_address unwrapped_type _data;
 };
 
-template <class _Type_, class _Abi_>
-struct _Scalar_wrapper {
-    using unwrapped_type = _Type_;
-    using abi_type = _Abi_;
-    using value_type = _Type_;
-    using as_simd = simd<_Type_, resize_abi_t<_Abi_, 1>>;
+template <class T, class Abi>
+struct scalar_wrapper {
+    using unwrapped_type = T;
+    using abi_type = Abi;
+    using value_type = T;
+    using as_simd = simd<T, resize_abi_t<Abi, 1>>;
 
     static constexpr auto size = 1;
 
-    _Scalar_wrapper(_Type_ __v) noexcept : _data(__v) {}
-    _Scalar_wrapper() noexcept = default;
+    scalar_wrapper(T v) noexcept : _data(v) {}
+    scalar_wrapper() noexcept = default;
 
     raze_nodiscard raze_always_inline unwrapped_type data() const noexcept {
         return _data;
@@ -65,39 +65,39 @@ private:
     raze_no_unique_address unwrapped_type _data;
 };
 
-template <class _Type_, class _Abi_, i32 _Remaining_>
+template <class T, class Abi, i32 Remaining>
 struct best_chunk {
-    static constexpr auto __total_bytes = _Remaining_ * sizeof(_Type_);
-    static constexpr auto __max_isa_width = has_avx512f<_Abi_::isa> ? 512 :
-        has_avx<_Abi_::isa> ? 256 : has_sse2<_Abi_::isa> ? 128 : 0;
+    static constexpr auto total_bytes = Remaining * sizeof(T);
+    static constexpr auto max_isa_width = has_avx512f<Abi::isa> ? 512 :
+        has_avx<Abi::isa> ? 256 : has_sse2<Abi::isa> ? 128 : 0;
 
-    static constexpr auto __data_width = (__total_bytes >= 64) ? 512 :
-        (__total_bytes >= 32) ? 256 : (__total_bytes >= 16) ? 128 : 0;
+    static constexpr auto data_width = (total_bytes >= 64) ? 512 :
+        (total_bytes >= 32) ? 256 : (total_bytes >= 16) ? 128 : 0;
 
-    static constexpr auto __width = (__data_width < __max_isa_width) ? __data_width : __max_isa_width;
-    static constexpr auto __length = __width / raze_sizeof_in_bits(_Type_);
+    static constexpr auto width = (data_width < max_isa_width) ? data_width : max_isa_width;
+    static constexpr auto length = width / raze_sizeof_in_bits(T);
 
-    using __intrin_type = traits::__deduce_simd_vector_type<_Type_, __width>;
-    using type = std::conditional_t<__width != 0 && intrin_type<__intrin_type>,
-        _Vector_wrapper<_Type_, _Abi_, __length, __intrin_type>, _Scalar_wrapper<_Type_, _Abi_>>;
+    using intrin = traits::deduce_simd_vector_type<T, width>;
+    using type = std::conditional_t<width != 0 && intrin_type<intrin>,
+        vector_wrapper<T, Abi, length, intrin>, scalar_wrapper<T, Abi>>;
 };
 
-template <class _Type_, class _Abi_, i32 _Remaining_>
-struct __build_tuple {
-    using chunk_type = typename best_chunk<_Type_, _Abi_, _Remaining_>::type;
+template <class T, class Abi, i32 Remaining>
+struct build_tuple {
+    using chunk_type = typename best_chunk<T, Abi, Remaining>::type;
 
-    static constexpr auto __chunk_elems = sizeof(chunk_type) / sizeof(_Type_);
-    static constexpr auto __next = (_Remaining_ > __chunk_elems) ? (_Remaining_ - __chunk_elems) : 0;
+    static constexpr auto chunk_elems = sizeof(chunk_type) / sizeof(T);
+    static constexpr auto next = (Remaining > chunk_elems) ? (Remaining - chunk_elems) : 0;
     
-    using type = _Simd_tuple_node<chunk_type, typename __build_tuple<_Type_, _Abi_, __next>::type>;
+    using type = simd_tuple_node<chunk_type, typename build_tuple<T, Abi, next>::type>;
 };
 
-template <class _Type_, class _Abi_> 
-struct __build_tuple<_Type_, _Abi_, 0> {
-    using type = _Simd_tuple_nil; 
+template <class T, class Abi> 
+struct build_tuple<T, Abi, 0> {
+    using type = simd_tuple_nil; 
 };
 
-template <class _Type_, class _Abi_>
-using _Simd_vector_tuple_type = typename __build_tuple<_Type_, _Abi_, _Abi_::size>::type;
+template <class T, class Abi>
+using simd_vector_tuple_type = typename build_tuple<T, Abi, Abi::size>::type;
 
 __RAZE_VX_NAMESPACE_END

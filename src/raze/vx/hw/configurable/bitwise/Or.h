@@ -37,7 +37,7 @@ struct _Configurable_or: raze::options::conditional_callable<_Configurable_or, _
         _Type_ __result = __x;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Op()(__storage_unwrap(__chunk), __storage_unwrap<_Args_>(__args)...);
+            __chunk = _Op()(ustorage(__chunk), ustorage<_Args_>(__args)...);
         };
 
         if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
