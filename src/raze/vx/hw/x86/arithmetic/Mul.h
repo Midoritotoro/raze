@@ -6,277 +6,274 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Mul {
-	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mul_pd(__as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mul_ps(__as<__m128>(__x), __as<__m128>(__y)));
-			else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-				if constexpr (has_avx512dq<_ISA_> && has_avx512vl<_ISA_>) return __as<_Tp_>(_mm_mullo_epi64(__as<__m128i>(__x), __as<__m128i>(__y)));
-				else {
-					const auto __left_high = _mm_srli_epi64(__as<__m128i>(__x), 32);
-					const auto __right_high = _mm_srli_epi64(__as<__m128i>(__y), 32);
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
+raze_nodiscard raze_always_inline V mul_(V x, V y) noexcept {
+	if constexpr (sizeof(V) == 16) {
+		if constexpr (pd<T>) return as<V>(_mm_mul_pd(as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm_mul_ps(as<__m128>(x), as<__m128>(y)));
+		else if constexpr (epi64<T> || epu64<T>) {
+			if constexpr (has_avx512dq<ISA> && has_avx512vl<ISA>) return as<V>(_mm_mullo_epi64(as<__m128i>(x), as<__m128i>(y)));
+			else {
+				const auto left_high = _mm_srli_epi64(as<__m128i>(x), 32);
+				const auto right_high = _mm_srli_epi64(as<__m128i>(y), 32);
 
-					const auto __multiplied1 = _mm_mul_epu32(__left_high, __as<__m128i>(__y));
-					const auto __multiplied2 = _mm_mul_epu32(__right_high, __as<__m128i>(__x));
+				const auto multiplied1 = _mm_mul_epu32(left_high, as<__m128i>(y));
+				const auto multiplied2 = _mm_mul_epu32(right_high, as<__m128i>(x));
 
-					const auto __add64 = _mm_add_epi64(__multiplied2, __multiplied1);
+				const auto add64 = _mm_add_epi64(multiplied2, multiplied1);
 
-					const auto __high = _mm_slli_epi64(__add64, 32);
-					const auto __low = _mm_mul_epu32(__as<__m128i>(__x), __as<__m128i>(__y));
+				const auto high = _mm_slli_epi64(add64, 32);
+				const auto low = _mm_mul_epu32(as<__m128i>(x), as<__m128i>(y));
 
-					return __as<_Tp_>(_mm_add_epi64(__low, __high));
-				}
-			}
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-				if constexpr (has_sse41<_ISA_>) return __as<_Tp_>(_mm_mullo_epi32(__as<__m128i>(__x), __as<__m128i>(__y)));
-				else {
-					const auto __shuffled_left = _mm_shuffle_epi32(__as<__m128i>(__x), 0xF5);
-					const auto __shuffled_right = _mm_shuffle_epi32(__as<__m128i>(__y), 0xF5);
-
-					const auto __product_02 = _mm_mul_epu32(__as<__m128i>(__x), __as<__m128i>(__y));
-					const auto __product_13 = _mm_mul_epu32(__shuffled_left, __shuffled_right);
-
-					const auto __product_01 = _mm_unpacklo_epi32(__product_02, __product_13);
-					const auto __product_23 = _mm_unpackhi_epi32(__product_02, __product_13);
-
-					return __as<_Tp_>(_mm_unpacklo_epi64(__product_01, __product_23));
-				}
-			}
-			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm_mullo_epi16(__as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-				if constexpr (has_avx512bw<_ISA_> && has_avx512vl<_ISA_>) {
-					const auto __converted_x = _mm256_cvtepu8_epi16(__as<__m128i>(__x));
-					const auto __converted_y = _mm256_cvtepu8_epi16(__as<__m128i>(__y));
-
-					const auto __multiplied = _mm256_mullo_epi16(__converted_x, __converted_y);
-					return __as<_Tp_>(_mm256_cvtepi16_epi8(__multiplied));
-				}
-				else if constexpr (has_ssse3<_ISA_>) {
-					const auto __low_byte_mask = _mm_set1_epi16(0x00FF);
-
-					auto __product_low_words = _mm_mullo_epi16(__as<__m128i>(__y), __as<__m128i>(__x));
-					__product_low_words = _mm_and_si128(__product_low_words, __low_byte_mask);
-
-					const auto __inverted_mask_and_x = _mm_andnot_si128(__low_byte_mask, __as<__m128i>(__x));
-					auto __widened_byte_products = _mm_maddubs_epi16(__as<__m128i>(__y), __inverted_mask_and_x);
-
-					return __as<_Tp_>(_mm_or_si128(__product_low_words, _mm_slli_epi16(__widened_byte_products, 8)));
-				}
-				else {
-					const auto __left_odd = _mm_srli_epi16(__as<__m128i>(__x), 8);
-					const auto __right_odd = _mm_srli_epi16(__as<__m128i>(__y), 8);
-
-					const auto __multiplied_even = _mm_mullo_epi16(__as<__m128i>(__x), __as<__m128i>(__y));
-					const auto __multiplied_odd = _mm_slli_epi16(_mm_mullo_epi16(__left_odd, __right_odd), 8);
-
-					return __as<_Tp_>(_Select<_ISA_,  _Type_>()(__multiplied_even, __multiplied_odd, _mm_set1_epi32(0x00FF00FF)));
-				}
+				return as<V>(_mm_add_epi64(low, high));
 			}
 		}
-		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_mul_ps(__as<__m256>(__x), __as<__m256>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_mul_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (has_avx2<_ISA_>) {
-				if constexpr (has_avx512bw<_ISA_> && has_avx512vl<_ISA_> && (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>)) {
-					const auto __converted_x = _mm512_cvtepu8_epi16(__as<__m256i>(__x));
-					const auto __converted_y = _mm512_cvtepu8_epi16(__as<__m256i>(__y));
-
-					const auto __multiplied = _mm512_mullo_epi16(__converted_x, __converted_y);
-					return __as<_Tp_>(_mm512_cvtepi16_epi8(__multiplied));
-				}
-				else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-					const auto __low_byte_mask = _mm256_set1_epi16(0x00FF);
-					const auto __inverted_mask_and_vector_x = _mm256_andnot_si256(__low_byte_mask, __as<__m256i>(__x));
-
-					auto __product_of_words = _mm256_mullo_epi16(__as<__m256i>(__y), __as<__m256i>(__x));
-					__product_of_words = _mm256_and_si256(__product_of_words, __low_byte_mask);
-
-					auto __widened_byte_products = _mm256_maddubs_epi16(__as<__m256i>(__y), __inverted_mask_and_vector_x);
-					__widened_byte_products = _mm256_slli_epi16(__widened_byte_products, 8);
-
-					return __as<_Tp_>(_mm256_or_si256(__product_of_words, __widened_byte_products));
-				}
-				else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_mullo_epi16(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mullo_epi32(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-					const auto __x_shifted_high = _mm256_srli_epi64(__as<__m256i>(__x), 32);
-					const auto __y_shifted_high = _mm256_srli_epi64(__as<__m256i>(__y), 32);
-
-					const auto __product_low_low = _mm256_mul_epu32(__as<__m256i>(__x), __as<__m256i>(__y));
-					const auto __product_high_low = _mm256_mul_epu32(__y_shifted_high, __as<__m256i>(__x));
-					const auto __product_low_high = _mm256_mul_epu32(__x_shifted_high, __as<__m256i>(__y));
-
-					const auto __sum_cross_terms = _mm256_add_epi64(__product_high_low, __product_low_high);
-					const auto __shifted_cross_terms = _mm256_slli_epi64(__sum_cross_terms, 32);
-
-					return __as<_Tp_>(_mm256_add_epi64(__product_low_low, __shifted_cross_terms));
-				}
-			}
+		else if constexpr (epi32<T> || epu32<T>) {
+			if constexpr (has_sse41<ISA>) return as<V>(_mm_mullo_epi32(as<__m128i>(x), as<__m128i>(y)));
 			else {
-				const auto __low = _Mul<arch::ISA::SSE42, _Type_>()(__as<__m128i>(__x), __as<__m128i>(__y));
-				const auto __high = _Mul<arch::ISA::SSE42, _Type_>()(_mm256_extractf128_si256(__as<__m256i>(__x), 1),
-					_mm256_extractf128_si256(__as<__m256i>(__y), 1));
+				const auto shuffled_left = _mm_shuffle_epi32(as<__m128i>(x), 0xF5);
+				const auto shuffled_right = _mm_shuffle_epi32(as<__m128i>(y), 0xF5);
 
-				return __as<_Tp_>(_mm256_insertf128_si256(__as<__m256i>(__low), __high, 1));
+				const auto product_02 = _mm_mul_epu32(as<__m128i>(x), as<__m128i>(y));
+				const auto product_13 = _mm_mul_epu32(shuffled_left, shuffled_right);
+
+				const auto product_01 = _mm_unpacklo_epi32(product_02, product_13);
+				const auto product_23 = _mm_unpackhi_epi32(product_02, product_13);
+
+				return as<V>(_mm_unpacklo_epi64(product_01, product_23));
 			}
 		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-				if constexpr (has_avx512dq<_ISA_>) return __as<_Tp_>(_mm512_mullo_epi64(__as<__m512i>(__x), __as<__m512i>(__y)));
-				else {
-					const auto __left_high = _mm512_srli_epi64(__as<__m512i>(__x), 32);
-					const auto __right_high = _mm512_srli_epi64(__as<__m512i>(__y), 32);
+		else if constexpr (epi16<T> || epu16<T>) return as<V>(_mm_mullo_epi16(as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epi8<T> || epu8<T>) {
+			if constexpr (has_avx512bw<ISA> && has_avx512vl<ISA>) {
+				const auto converted_x = _mm256_cvtepu8_epi16(as<__m128i>(x));
+				const auto converted_y = _mm256_cvtepu8_epi16(as<__m128i>(y));
 
-					const auto __multiplied1 = _mm512_mul_epu32(__left_high, __as<__m512i>(__y));
-					const auto __multiplied2 = _mm512_mul_epu32(__right_high, __as<__m512i>(__x));
-
-					const auto __add64 = _mm512_add_epi64(__multiplied2, __multiplied1);
-
-					const auto __high = _mm512_slli_epi64(__add64, 32);
-					const auto __low = _mm512_mul_epu32(__as<__m512i>(__x), __as<__m512i>(__y));
-
-					return __as<_Tp_>(_mm512_add_epi64(__low, __high));
-				}
+				const auto multiplied = _mm256_mullo_epi16(converted_x, converted_y);
+				return as<V>(_mm256_cvtepi16_epi8(multiplied));
 			}
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mullo_epi32(__as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mul_ps(__as<__m512>(__x), __as<__m512>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mul_pd(__as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-					return __as<_Tp_>(_mm512_mullo_epi16(__as<__m512i>(__x), __as<__m512i>(__y)));
-				}
-				else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-					const auto __mul1 = _mm512_mullo_epi16(__as<__m512i>(__x), __as<__m512i>(__y));
-					const auto __and_mask = _mm512_set1_epi32(0x00FF00FF);
+			else if constexpr (has_ssse3<ISA>) {
+				const auto low_byte_mask = _mm_set1_epi16(0x00FF);
 
-					const auto __8bits = _mm512_andnot_si512(__and_mask, __as<__m512i>(__x));
-					const auto __multiplied = _mm512_maddubs_epi16(__as<__m512i>(__y), __8bits);
+				auto product_low_words = _mm_mullo_epi16(as<__m128i>(y), as<__m128i>(x));
+				product_low_words = _mm_and_si128(product_low_words, low_byte_mask);
 
-					const auto __shifted = _mm512_slli_epi16(__multiplied, 8);
-					return __as<_Tp_>(_mm512_ternarylogic_epi64(__shifted, __mul1, __and_mask, 0xF8));
-				}
+				const auto inverted_mask_and_x = _mm_andnot_si128(low_byte_mask, as<__m128i>(x));
+				auto widened_byte_products = _mm_maddubs_epi16(as<__m128i>(y), inverted_mask_and_x);
+
+				return as<V>(_mm_or_si128(product_low_words, _mm_slli_epi16(widened_byte_products, 8)));
 			}
 			else {
-				const auto __low = _Mul<arch::ISA::AVX2, _Type_>()(__as<__m256i>(__x), __as<__m256i>(__y));
-				const auto __high = _Mul<arch::ISA::AVX2, _Type_>()(_mm512_extractf64x4_pd(__as<__m512d>(__x), 1),
-					_mm512_extractf64x4_pd(__as<__m512d>(__y), 1));
+				const auto left_odd = _mm_srli_epi16(as<__m128i>(x), 8);
+				const auto right_odd = _mm_srli_epi16(as<__m128i>(y), 8);
 
-				return __as<_Tp_>(_mm512_inserti64x4(__as<__m512i>(__low), __as<__m256i>(__high), 1));
+				const auto multiplied_even = _mm_mullo_epi16(as<__m128i>(x), as<__m128i>(y));
+				const auto multiplied_odd = _mm_slli_epi16(_mm_mullo_epi16(left_odd, right_odd), 8);
+
+				return as<V>(select_<ISA,  T>(multiplied_even, multiplied_odd, _mm_set1_epi32(0x00FF00FF)));
+			}
+		}
+	}
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr (ps<T>) return as<V>(_mm256_mul_ps(as<__m256>(x), as<__m256>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm256_mul_pd(as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (has_avx2<ISA>) {
+			if constexpr (has_avx512bw<ISA> && has_avx512vl<ISA> && (epi8<T> || epu8<T>)) {
+				const auto converted_x = _mm512_cvtepu8_epi16(as<__m256i>(x));
+				const auto converted_y = _mm512_cvtepu8_epi16(as<__m256i>(y));
+
+				const auto multiplied = _mm512_mullo_epi16(converted_x, converted_y);
+				return as<V>(_mm512_cvtepi16_epi8(multiplied));
+			}
+			else if constexpr (epi8<T> || epu8<T>) {
+				const auto low_byte_mask = _mm256_set1_epi16(0x00FF);
+				const auto inverted_mask_and_vector_x = _mm256_andnot_si256(low_byte_mask, as<__m256i>(x));
+
+				auto product_of_words = _mm256_mullo_epi16(as<__m256i>(y), as<__m256i>(x));
+				product_of_words = _mm256_and_si256(product_of_words, low_byte_mask);
+
+				auto widened_byte_products = _mm256_maddubs_epi16(as<__m256i>(y), inverted_mask_and_vector_x);
+				widened_byte_products = _mm256_slli_epi16(widened_byte_products, 8);
+
+				return as<V>(_mm256_or_si256(product_of_words, widened_byte_products));
+			}
+			else if constexpr (epi16<T> || epu16<T>) return as<V>(_mm256_mullo_epi16(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm256_mullo_epi32(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epi64<T> || epu64<T>) {
+				const auto x_shifted_high = _mm256_srli_epi64(as<__m256i>(x), 32);
+				const auto y_shifted_high = _mm256_srli_epi64(as<__m256i>(y), 32);
+
+				const auto product_low_low = _mm256_mul_epu32(as<__m256i>(x), as<__m256i>(y));
+				const auto product_high_low = _mm256_mul_epu32(y_shifted_high, as<__m256i>(x));
+				const auto product_low_high = _mm256_mul_epu32(x_shifted_high, as<__m256i>(y));
+
+				const auto sum_cross_terms = _mm256_add_epi64(product_high_low, product_low_high);
+				const auto shifted_cross_terms = _mm256_slli_epi64(sum_cross_terms, 32);
+
+				return as<V>(_mm256_add_epi64(product_low_low, shifted_cross_terms));
 			}
 		}
 		else {
-			return __x * __y;
+			const auto low = mul_<arch::ISA::SSE42, T>(as<__m128i>(x), as<__m128i>(y));
+			const auto high = mul_<arch::ISA::SSE42, T>(_mm256_extractf128_si256(as<__m256i>(x), 1),
+				_mm256_extractf128_si256(as<__m256i>(y), 1));
+
+			return as<V>(_mm256_insertf128_si256(as<__m256i>(low), high, 1));
+		}
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T> || epu64<T>) {
+			if constexpr (has_avx512dq<ISA>) return as<V>(_mm512_mullo_epi64(as<__m512i>(x), as<__m512i>(y)));
+			else {
+				const auto left_high = _mm512_srli_epi64(as<__m512i>(x), 32);
+				const auto right_high = _mm512_srli_epi64(as<__m512i>(y), 32);
+
+				const auto multiplied1 = _mm512_mul_epu32(left_high, as<__m512i>(y));
+				const auto multiplied2 = _mm512_mul_epu32(right_high, as<__m512i>(x));
+
+				const auto add64 = _mm512_add_epi64(multiplied2, multiplied1);
+
+				const auto high = _mm512_slli_epi64(add64, 32);
+				const auto low = _mm512_mul_epu32(as<__m512i>(x), as<__m512i>(y));
+
+				return as<V>(_mm512_add_epi64(low, high));
+			}
+		}
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_mullo_epi32(as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm512_mul_ps(as<__m512>(x), as<__m512>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm512_mul_pd(as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T> || epu16<T>) {
+				return as<V>(_mm512_mullo_epi16(as<__m512i>(x), as<__m512i>(y)));
+			}
+			else if constexpr (epi8<T> || epu8<T>) {
+				const auto mul1 = _mm512_mullo_epi16(as<__m512i>(x), as<__m512i>(y));
+				const auto and_mask = _mm512_set1_epi32(0x00FF00FF);
+
+				const auto 8bits = _mm512_andnot_si512(and_mask, as<__m512i>(x));
+				const auto multiplied = _mm512_maddubs_epi16(as<__m512i>(y), 8bits);
+
+				const auto shifted = _mm512_slli_epi16(multiplied, 8);
+				return as<V>(_mm512_ternarylogic_epi64(shifted, mul1, and_mask, 0xF8));
+			}
+		}
+		else {
+			const auto low = mul_<arch::ISA::AVX2, T>(as<__m256i>(x), as<__m256i>(y));
+			const auto high = mul_<arch::ISA::AVX2, T>(_mm512_extractf64x4_pd(as<__m512d>(x), 1),
+				_mm512_extractf64x4_pd(as<__m512d>(y), 1));
+
+			return as<V>(_mm512_inserti64x4(as<__m512i>(low), as<__m256i>(high), 1));
+		}
+	}
+	else {
+		return x * y;
+	}
+}
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type	M>
+raze_nodiscard raze_always_inline V mul_(V x, V y, M mask) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (ps<T>) return as<V>(_mm_maskz_mul_ps(mask, as<__m128>(x), as<__m128>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm_maskz_mul_pd(mask, as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm_maskz_mullo_epi32(mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (has_avx512dq<ISA> && (epi64<T> || epu64<T>)) {
+			return as<V>(_mm_maskz_mullo_epi64(mask, as<__m128i>(x), as<__m128i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi16<T> || epu16<T>)) {
+			return as<V>(_mm_maskz_mullo_epi16(mask, as<__m128i>(x), as<__m128i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi8<T> || epu8<T>)) {
+			const auto converted_x = _mm256_cvtepu8_epi16(as<__m128i>(x));
+			const auto converted_y = _mm256_cvtepu8_epi16(as<__m128i>(y));
+
+			const auto multiplied = _mm256_mullo_epi16(converted_x, converted_y);
+			return as<V>(_mm256_maskz_cvtepi16_epi8(mask, multiplied));
+		}
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (ps<T>) return as<V>(_mm256_maskz_mul_ps(mask, as<__m256>(x), as<__m256>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm256_maskz_mul_pd(mask, as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm256_maskz_mullo_epi32(mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (has_avx512dq<ISA> && (epi64<T> || epu64<T>)) {
+			return as<V>(_mm256_maskz_mullo_epi64(mask, as<__m256i>(x), as<__m256i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi16<T> || epu16<T>)) {
+			return as<V>(_mm256_maskz_mullo_epi16(mask, as<__m256i>(x), as<__m256i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi8<T> || epu8<T>)) {
+			const auto converted_x = _mm512_cvtepu8_epi16(as<__m256i>(x));
+			const auto converted_y = _mm512_cvtepu8_epi16(as<__m256i>(y));
+
+			const auto multiplied = _mm512_mullo_epi16(__converted_x, __converted_y);
+			return as<V>(_mm512_maskz_cvtepi16_epi8(mask, __multiplied));
+		}
+	}
+	else if constexpr (sizeof(V) == 64 && std::is_integral_v<M>) {
+		if constexpr (ps<T>) return as<V>(_mm512_maskz_mul_ps(mask, as<__m512>(x), as<__m512>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm512_maskz_mul_pd(mask, as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_maskz_mullo_epi32(mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (has_avx512dq<ISA> && (epi64<T> || epu64<T>)) {
+			return as<V>(_mm512_maskz_mullo_epi64(mask, as<__m512i>(x), as<__m512i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi16<T> || epu16<T>)) {
+			return as<V>(_mm512_maskz_mullo_epi16(mask, as<__m512i>(x), as<__m512i>(y)));
 		}
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type	_Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_maskz_mul_ps(__mask, __as<__m128>(__x), __as<__m128>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_maskz_mul_pd(__mask, __as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_maskz_mullo_epi32(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (has_avx512dq<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
-				return __as<_Tp_>(_mm_maskz_mullo_epi64(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)) {
-				return __as<_Tp_>(_mm_maskz_mullo_epi16(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>)) {
-				const auto __converted_x = _mm256_cvtepu8_epi16(__as<__m128i>(__x));
-				const auto __converted_y = _mm256_cvtepu8_epi16(__as<__m128i>(__y));
+	return select_<ISA, T>(mul_<ISA, T>(x, y), mask);
+}
 
-				const auto __multiplied = _mm256_mullo_epi16(__converted_x, __converted_y);
-				return __as<_Tp_>(_mm256_maskz_cvtepi16_epi8(__mask, __multiplied));
-			}
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type	M>
+raze_always_inline V mul_(V x, V y, M mask, V src) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (ps<T>) return as<V>(_mm_mask_mul_ps(as<__m128>(src), mask, as<__m128>(x), as<__m128>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm_mask_mul_pd(as<__m128d>(src), mask, as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm_mask_mullo_epi32(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (has_avx512dq<ISA> && (epi64<T> || epu64<T>)) {
+			return as<V>(_mm_mask_mullo_epi64(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_maskz_mul_ps(__mask, __as<__m256>(__x), __as<__m256>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_maskz_mul_pd(__mask, __as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_mullo_epi32(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (has_avx512dq<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
-				return __as<_Tp_>(_mm256_maskz_mullo_epi64(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)) {
-				return __as<_Tp_>(_mm256_maskz_mullo_epi16(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>)) {
-				const auto __converted_x = _mm512_cvtepu8_epi16(__as<__m256i>(__x));
-				const auto __converted_y = _mm512_cvtepu8_epi16(__as<__m256i>(__y));
+		else if constexpr (has_avx512bw<ISA> && (epi16<T> || epu16<T>)) {
+			return as<V>(_mm_mask_mullo_epi16(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi8<T> || epu8<T>)) {
+			const auto converted_x = _mm256_cvtepu8_epi16(as<__m128i>(x));
+			const auto converted_y = _mm256_cvtepu8_epi16(as<__m128i>(y));
 
-				const auto __multiplied = _mm512_mullo_epi16(__converted_x, __converted_y);
-				return __as<_Tp_>(_mm512_maskz_cvtepi16_epi8(__mask, __multiplied));
-			}
+			const auto multiplied = _mm256_mullo_epi16(converted_x, converted_y);
+			return as<V>(_mm256_mask_cvtepi16_epi8(as<__m128i>(src), mask, multiplied));
 		}
-		else if constexpr (sizeof(_Tp_) == 64 && std::is_integral_v<_Mask_>) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_maskz_mul_ps(__mask, __as<__m512>(__x), __as<__m512>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_maskz_mul_pd(__mask, __as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_mullo_epi32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (has_avx512dq<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
-				return __as<_Tp_>(_mm512_maskz_mullo_epi64(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)) {
-				return __as<_Tp_>(_mm512_maskz_mullo_epi16(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			}
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (ps<T>) return as<V>(_mm256_mask_mul_ps(as<__m256>(src), mask, as<__m256>(x), as<__m256>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm256_mask_mul_pd(as<__m256d>(src), mask, as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm256_mask_mullo_epi32(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (has_avx512dq<ISA> && (epi64<T> || epu64<T>)) {
+			return as<V>(_mm256_mask_mullo_epi64(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
 		}
+		else if constexpr (has_avx512bw<ISA> && (epi16<T> || epu16<T>)) {
+			return as<V>(_mm256_mask_mullo_epi16(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi8<T> || epu8<T>)) {
+			const auto converted_x = _mm512_cvtepu8_epi16(as<__m256i>(x));
+			const auto converted_y = _mm512_cvtepu8_epi16(as<__m256i>(y));
 
-		return _Select<_ISA_, _Type_>()(_Mul()(__x, __y), __mask);
+			const auto multiplied = _mm512_mullo_epi16(converted_x, converted_y);
+			return as<V>(_mm512_mask_cvtepi16_epi8(as<__m256i>(src), mask, multiplied));
+		}
+	}
+	else if constexpr (sizeof(V) == 64 && std::is_integral_v<M>) {
+		if constexpr (ps<T>) return as<V>(_mm512_mask_mul_ps(as<__m512>(src), mask, as<__m512>(x), as<__m512>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm512_mask_mul_pd(as<__m512d>(src), mask, as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_mask_mullo_epi32(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (has_avx512dq<ISA> && (epi64<T> || epu64<T>)) {
+			return as<V>(_mm512_mask_mullo_epi64(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		}
+		else if constexpr (has_avx512bw<ISA> && (epi16<T> || epu16<T>)) {
+			return as<V>(_mm512_mask_mullo_epi16(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		}
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type	_Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask, _Tp_ __src) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mask_mul_ps(__as<__m128>(__src), __mask, __as<__m128>(__x), __as<__m128>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mask_mul_pd(__as<__m128d>(__src), __mask, __as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_mullo_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (has_avx512dq<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
-				return __as<_Tp_>(_mm_mask_mullo_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)) {
-				return __as<_Tp_>(_mm_mask_mullo_epi16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>)) {
-				const auto __converted_x = _mm256_cvtepu8_epi16(__as<__m128i>(__x));
-				const auto __converted_y = _mm256_cvtepu8_epi16(__as<__m128i>(__y));
-
-				const auto __multiplied = _mm256_mullo_epi16(__converted_x, __converted_y);
-				return __as<_Tp_>(_mm256_mask_cvtepi16_epi8(__as<__m128i>(__src), __mask, __multiplied));
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_mask_mul_ps(__as<__m256>(__src), __mask, __as<__m256>(__x), __as<__m256>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_mask_mul_pd(__as<__m256d>(__src), __mask, __as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mask_mullo_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (has_avx512dq<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
-				return __as<_Tp_>(_mm256_mask_mullo_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)) {
-				return __as<_Tp_>(_mm256_mask_mullo_epi16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>)) {
-				const auto __converted_x = _mm512_cvtepu8_epi16(__as<__m256i>(__x));
-				const auto __converted_y = _mm512_cvtepu8_epi16(__as<__m256i>(__y));
-
-				const auto __multiplied = _mm512_mullo_epi16(__converted_x, __converted_y);
-				return __as<_Tp_>(_mm512_mask_cvtepi16_epi8(__as<__m256i>(__src), __mask, __multiplied));
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 64 && std::is_integral_v<_Mask_>) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_mul_ps(__as<__m512>(__src), __mask, __as<__m512>(__x), __as<__m512>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_mul_pd(__as<__m512d>(__src), __mask, __as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_mullo_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (has_avx512dq<_ISA_> && (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>)) {
-				return __as<_Tp_>(_mm512_mask_mullo_epi64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			}
-			else if constexpr (has_avx512bw<_ISA_> && (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>)) {
-				return __as<_Tp_>(_mm512_mask_mullo_epi16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			}
-		}
-
-		return _Select<_ISA_, _Type_>()(_Mul()(__x, __y), __src, __mask);
-	}
-};
+	return select_<ISA, T>(mul_<ISA, T>(x, y), src, mask);
+}
 
 __RAZE_VX_NAMESPACE_END

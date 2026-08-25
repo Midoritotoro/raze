@@ -1,162 +1,159 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/compare/Less.h>
+#include <src/raze/vx/hw/x86/compare/Greater.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Vertical_min {
-	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_min_epi16(__as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm_min_epu8(__as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_min_ps(__as<__m128>(__x), __as<__m128>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_min_pd(__as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (has_sse41<_ISA_>) {
-				if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_min_epi32(__as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_min_epu32(__as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_min_epu16(__as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_min_epi8(__as<__m128i>(__x), __as<__m128i>(__y)));
-			}
-			else if constexpr (has_avx512vl<_ISA_>) {
-				if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_min_epi64(__as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_min_epu64(__as<__m128i>(__x), __as<__m128i>(__y)));
-			}
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
+raze_nodiscard raze_always_inline V vertical_min_(V x, V y) noexcept {
+	if constexpr (sizeof(V) == 16) {
+		if constexpr (epi16<T>) return as<V>(_mm_min_epi16(as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epu8<T>) return as<V>(_mm_min_epu8(as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm_min_ps(as<__m128>(x), as<__m128>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm_min_pd(as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (has_sse41<ISA>) {
+			if constexpr (epi32<T>) return as<V>(_mm_min_epi32(as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epu32<T>) return as<V>(_mm_min_epu32(as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm_min_epu16(as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm_min_epi8(as<__m128i>(x), as<__m128i>(y)));
 		}
-		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_min_ps(__as<__m256>(__x), __as<__m256>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_min_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (has_avx2<_ISA_>) {
-				if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_min_epi32(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_min_epu32(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_min_epi16(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_min_epu16(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_min_epi8(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_min_epu8(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_min_ps(__as<__m256>(__x), __as<__m256>(__y)));
-				else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_min_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
-			}
-			else if constexpr (has_avx512vl<_ISA_>) {
-				if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_min_epi64(__as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_min_epu64(__as<__m256i>(__x), __as<__m256i>(__y)));
-			}
+		else if constexpr (has_avx512vl<ISA>) {
+			if constexpr (epi64<T>) return as<V>(_mm_min_epi64(as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epu64<T>) return as<V>(_mm_min_epu64(as<__m128i>(x), as<__m128i>(y)));
 		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm512_min_epi64(__as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_min_epu64(__as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_min_epi32(__as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_min_epu32(__as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_min_ps(__as<__m512>(__x), __as<__m512>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_min_pd(__as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_min_epi8(__as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_min_epu8(__as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_min_epi16(__as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_min_epu16(__as<__m512i>(__x), __as<__m512i>(__y)));
-			}
+	}
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr (ps<T>) return as<V>(_mm256_min_ps(as<__m256>(x), as<__m256>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm256_min_pd(as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (has_avx2<ISA>) {
+			if constexpr (epi32<T>) return as<V>(_mm256_min_epi32(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu32<T>) return as<V>(_mm256_min_epu32(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epi16<T>) return as<V>(_mm256_min_epi16(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm256_min_epu16(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm256_min_epi8(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm256_min_epu8(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (ps<T>) return as<V>(_mm256_min_ps(as<__m256>(x), as<__m256>(y)));
+			else if constexpr (ps<T>) return as<V>(_mm256_min_pd(as<__m256d>(x), as<__m256d>(y)));
 		}
-
-		return _Select<_ISA_, _Type_>()(__x, __y, _Less<_ISA_, _Type_>()(__x, __y));
+		else if constexpr (has_avx512vl<ISA>) {
+			if constexpr (epi64<T>) return as<V>(_mm256_min_epi64(as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu64<T>) return as<V>(_mm256_min_epu64(as<__m256i>(x), as<__m256i>(y)));
+		}
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T>) return as<V>(_mm512_min_epi64(as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epu64<T>) return as<V>(_mm512_min_epu64(as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epi32<T>) return as<V>(_mm512_min_epi32(as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epu32<T>) return as<V>(_mm512_min_epu32(as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm512_min_ps(as<__m512>(x), as<__m512>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm512_min_pd(as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi8<T>) return as<V>(_mm512_min_epi8(as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm512_min_epu8(as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epi16<T>) return as<V>(_mm512_min_epi16(as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm512_min_epu16(as<__m512i>(x), as<__m512i>(y)));
+		}
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epi64(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epu64(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epi32(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epu32(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_ps(__mask, __as<__m128>(__x), __as<__m128>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_pd(__mask, __as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epi16(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epu16(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epi8(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm_maskz_min_epu8(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epi64(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epu64(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epi32(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epu32(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_ps(__mask, __as<__m256>(__x), __as<__m256>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_pd(__mask, __as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epi16(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epu16(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epi8(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_maskz_min_epu8(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epi64(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epu64(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epi32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epu32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_ps(__mask, __as<__m512>(__x), __as<__m512>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_pd(__mask, __as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epi16(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epu16(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epi8(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_maskz_min_epu8(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			}
-		}
+	return select_<ISA, T>(x, y, less_<ISA, T>(x, y));
+}
 
-		return _Select<_ISA_, _Type_>()(_Vertical_min()(__x, __y), __mask);
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_nodiscard raze_always_inline V vertical_min_(V x, V y, M mask) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA>) {
+		if constexpr (epi64<T>) return as<V>(_mm_maskz_min_epi64(mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epu64<T>) return as<V>(_mm_maskz_min_epu64(mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epi32<T>) return as<V>(_mm_maskz_min_epi32(mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epu32<T>) return as<V>(_mm_maskz_min_epu32(mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm_maskz_min_ps(mask, as<__m128>(x), as<__m128>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm_maskz_min_pd(mask, as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T>) return as<V>(_mm_maskz_min_epi16(mask, as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm_maskz_min_epu16(mask, as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm_maskz_min_epi8(mask, as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm_maskz_min_epu8(mask, as<__m128i>(x), as<__m128i>(y)));
+		}
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA>) {
+		if constexpr (epi64<T>) return as<V>(_mm256_maskz_min_epi64(mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (epu64<T>) return as<V>(_mm256_maskz_min_epu64(mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (epi32<T>) return as<V>(_mm256_maskz_min_epi32(mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (epu32<T>) return as<V>(_mm256_maskz_min_epu32(mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm256_maskz_min_ps(mask, as<__m256>(x), as<__m256>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm256_maskz_min_pd(mask, as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T>) return as<V>(_mm256_maskz_min_epi16(mask, as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm256_maskz_min_epu16(mask, as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm256_maskz_min_epi8(mask, as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm256_maskz_min_epu8(mask, as<__m256i>(x), as<__m256i>(y)));
+		}
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T>) return as<V>(_mm512_maskz_min_epi64(mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epu64<T>) return as<V>(_mm512_maskz_min_epu64(mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epi32<T>) return as<V>(_mm512_maskz_min_epi32(mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epu32<T>) return as<V>(_mm512_maskz_min_epu32(mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm512_maskz_min_ps(mask, as<__m512>(x), as<__m512>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm512_maskz_min_pd(mask, as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T>) return as<V>(_mm512_maskz_min_epi16(mask, as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm512_maskz_min_epu16(mask, as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm512_maskz_min_epi8(mask, as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm512_maskz_min_epu8(mask, as<__m512i>(x), as<__m512i>(y)));
+		}
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask, _Tp_ __src) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epu64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epu32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mask_min_ps(__as<__m128>(__src), __mask, __as<__m128>(__x), __as<__m128>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mask_min_pd(__as<__m128d>(__src), __mask, __as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epi16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epu16(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epi8(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm_mask_min_epu8(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epu64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epu32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_ps(__as<__m256>(__src), __mask, __as<__m256>(__x), __as<__m256>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_pd(__as<__m256d>(__src), __mask, __as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epi16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epu16(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epi8(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_mask_min_epu8(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epi64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epu64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epi32_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epu32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_ps(__as<__m512>(__src), __mask, __as<__m512>(__x), __as<__m512>(__y)));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_pd(__as<__m512d>(__src), __mask, __as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (has_avx512bw<_ISA_>) {
-				if constexpr (__is_epi16_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epi16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epu16(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epi8_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epi8(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-				else if constexpr (__is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_mask_min_epu8(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			}
-		}
+	return select_<ISA, T>(vertical_min_<ISA, T>(x, y), mask);
+}
 
-		return _Select<_ISA_, _Type_>()(_Vertical_min()(__x, __y), __src, __mask);
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_nodiscard raze_always_inline V vertical_min_(V x, V y, M mask, V src) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA>) {
+		if constexpr (epi64<T>) return as<V>(_mm_mask_min_epi64(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epu64<T>) return as<V>(_mm_mask_min_epu64(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epi32<T>) return as<V>(_mm_mask_min_epi32(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (epu32<T>) return as<V>(_mm_mask_min_epu32(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm_mask_min_ps(as<__m128>(src), mask, as<__m128>(x), as<__m128>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm_mask_min_pd(as<__m128d>(src), mask, as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T>) return as<V>(_mm_mask_min_epi16(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm_mask_min_epu16(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm_mask_min_epi8(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm_mask_min_epu8(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		}
 	}
-};
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA>) {
+		if constexpr (epi64<T>) return as<V>(_mm256_mask_min_epi64(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (epu64<T>) return as<V>(_mm256_mask_min_epu64(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (epi32<T>) return as<V>(_mm256_mask_min_epi32(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (epu32<T>) return as<V>(_mm256_mask_min_epu32(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm256_mask_min_ps(as<__m256>(src), mask, as<__m256>(x), as<__m256>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm256_mask_min_pd(as<__m256d>(src), mask, as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T>) return as<V>(_mm256_mask_min_epi16(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm256_mask_min_epu16(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm256_mask_min_epi8(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm256_mask_min_epu8(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		}
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T>) return as<V>(_mm512_mask_min_epi64(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epu64<T>) return as<V>(_mm512_mask_min_epu64(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epi32<T>) return as<V>(_mm512_mask_min_epi32(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (epu32<T>) return as<V>(_mm512_mask_min_epu32(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm512_mask_min_ps(as<__m512>(src), mask, as<__m512>(x), as<__m512>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm512_mask_min_pd(as<__m512d>(src), mask, as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T>) return as<V>(_mm512_mask_min_epi16(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epu16<T>) return as<V>(_mm512_mask_min_epu16(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epi8<T>) return as<V>(_mm512_mask_min_epi8(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+			else if constexpr (epu8<T>) return as<V>(_mm512_mask_min_epu8(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		}
+	}
+
+	return select_<ISA, T>(vertical_min_<ISA, T>(x, y), src, mask);
+}
 
 __RAZE_VX_NAMESPACE_END

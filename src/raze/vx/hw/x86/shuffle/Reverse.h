@@ -10,27 +10,27 @@ template <arch::ISA _ISA_, arithmetic_type _Value_, intrin_or_arithmetic_type _I
 raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexcept {
 	if constexpr (!has_ssse3<_ISA_> && sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Value_) == 2) {
-			__x = __as<_Intrin_>(_mm_shuffle_pd(__as<__m128d>(__x), __as<__m128d>(__x), 1));
-			__x = __as<_Intrin_>(_mm_shufflehi_epi16(__as<__m128i>(__x), 0x1B));
-			return __as<_Intrin_>(_mm_shufflelo_epi16(__as<__m128i>(__x), 0x1B));
+			__x = as<_Intrin_>(_mm_shuffle_pd(as<__m128d>(__x), as<__m128d>(__x), 1));
+			__x = as<_Intrin_>(_mm_shufflehi_epi16(as<__m128i>(__x), 0x1B));
+			return as<_Intrin_>(_mm_shufflelo_epi16(as<__m128i>(__x), 0x1B));
 		}
 		else if constexpr (sizeof(_Value_) == 1) {
-			__x = __as<_Intrin_>(_mm_or_si128(_mm_srli_epi16(__as<__m128i>(__x), 8), _mm_slli_epi16(__as<__m128i>(__x), 8)));
-			__x = __as<_Intrin_>(_mm_shufflelo_epi16(__as<__m128i>(__x), 0x1B));
-			__x = __as<_Intrin_>(_mm_shufflehi_epi16(__as<__m128i>(__x), 0x1B));
-			return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), 0x4E));
+			__x = as<_Intrin_>(_mm_or_si128(_mm_srli_epi16(as<__m128i>(__x), 8), _mm_slli_epi16(as<__m128i>(__x), 8)));
+			__x = as<_Intrin_>(_mm_shufflelo_epi16(as<__m128i>(__x), 0x1B));
+			__x = as<_Intrin_>(_mm_shufflehi_epi16(as<__m128i>(__x), 0x1B));
+			return as<_Intrin_>(_mm_shuffle_epi32(as<__m128i>(__x), 0x4E));
 		}
 	}
 	else if constexpr (sizeof(_Intrin_) == 32) {
 		if constexpr (sizeof(_Value_) == 2 && !(has_avx512bw<_ISA_> && has_avx512vl<_ISA_>)) {
-			const auto __reversed_lanes = _mm256_shuffle_epi8(__as<__m256i>(__x), 
+			const auto __reversed_lanes = _mm256_shuffle_epi8(as<__m256i>(__x), 
 				(__p % std::integral_constant<sizetype, 16>{}).template expand<u16, u8>().template as_native<__m256i>());
-			return __as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
+			return as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
 		}
 		else if constexpr (sizeof(_Value_) == 1 && !(has_avx512vbmi<_ISA_> && has_avx512vl<_ISA_>)) {
-			const auto __reversed_lanes = _mm256_shuffle_epi8(__as<__m256i>(__x),
+			const auto __reversed_lanes = _mm256_shuffle_epi8(as<__m256i>(__x),
 				(__p % std::integral_constant<sizetype, 16>{}).template as_native<__m256i>());
-			return __as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
+			return as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
 		}
 	}
 	else if constexpr (sizeof(_Intrin_) == 64) {
@@ -41,13 +41,13 @@ raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexce
 			if constexpr (sizeof(_Value_) == 2) __native = __p_offset.template expand<u16, u8>().template as_native<__m256i>();
 			else __native = __p_offset.template as_native<__m256i>();
 
-			const auto __low_half = _mm512_extracti64x4_epi64(__as<__m512i>(__x), 0);
-			const auto __high_half = _mm512_extracti64x4_epi64(__as<__m512i>(__x), 1);
+			const auto __low_half = _mm512_extracti64x4_epi64(as<__m512i>(__x), 0);
+			const auto __high_half = _mm512_extracti64x4_epi64(as<__m512i>(__x), 1);
 
 			const auto __low = _mm256_shuffle_epi8(__low_half, __native);
 			const auto __high = _mm256_shuffle_epi8(__high_half, __native);
 
-			return __as<_Intrin_>(_mm512_shuffle_i64x2(__as<__m512i>(__high), __as<__m512i>(__low), 0x11));
+			return as<_Intrin_>(_mm512_shuffle_i64x2(as<__m512i>(__high), as<__m512i>(__low), 0x11));
 		}
 	}
 		

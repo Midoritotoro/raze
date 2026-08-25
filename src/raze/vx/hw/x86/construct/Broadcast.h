@@ -30,74 +30,74 @@ struct _Broadcast {
 		using _Type_ = typename __unwrap_int<_WrappedType_>::type;
 
 		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm_broadcastq_epi64(_mm_cvtsi64_si128(math::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm_set1_epi64x(math::pointer_to_integral(__value)));
+			if constexpr (epi64<_Type_> || epu64<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm_broadcastq_epi64(_mm_cvtsi64_si128(math::pointer_to_integral(__value))));
+				else return as<_Tp_>(_mm_set1_epi64x(math::pointer_to_integral(__value)));
 			}
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm_broadcastd_epi32(_mm_cvtsi32_si128(math::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm_set1_epi32(math::pointer_to_integral(__value)));
+			else if constexpr (epi32<_Type_> || epu32<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm_broadcastd_epi32(_mm_cvtsi32_si128(math::pointer_to_integral(__value))));
+				else return as<_Tp_>(_mm_set1_epi32(math::pointer_to_integral(__value)));
 			}
-			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm_broadcastw_epi16(_mm_cvtsi32_si128(__value)));
-				else return __as<_Tp_>(_mm_set1_epi16(__value));
+			else if constexpr (epi16<_Type_> || epu16<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm_broadcastw_epi16(_mm_cvtsi32_si128(__value)));
+				else return as<_Tp_>(_mm_set1_epi16(__value));
 			}
-			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm_broadcastb_epi8(_mm_cvtsi32_si128(__value)));
-				else return __as<_Tp_>(_mm_set1_epi8(__value));
+			else if constexpr (epi8<_Type_> || epu8<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm_broadcastb_epi8(_mm_cvtsi32_si128(__value)));
+				else return as<_Tp_>(_mm_set1_epi8(__value));
 			}
-			else if constexpr (__is_ps_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm_broadcastss_ps(_mm_set_ss(__value)));
-				else return __as<_Tp_>(_mm_set1_ps(__value));
+			else if constexpr (ps<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm_broadcastss_ps(_mm_set_ss(__value)));
+				else return as<_Tp_>(_mm_set1_ps(__value));
 			}
-			else if constexpr (__is_pd_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm_broadcastsd_pd(_mm_set_sd(__value)));
-				else return __as<_Tp_>(_mm_set1_pd(__value));
+			else if constexpr (pd<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm_broadcastsd_pd(_mm_set_sd(__value)));
+				else return as<_Tp_>(_mm_set1_pd(__value));
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm256_broadcastq_epi64(_mm_cvtsi64_si128(math::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm256_set1_epi64x(math::pointer_to_integral(__value)));
+			if constexpr (epi64<_Type_> || epu64<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm256_broadcastq_epi64(_mm_cvtsi64_si128(math::pointer_to_integral(__value))));
+				else return as<_Tp_>(_mm256_set1_epi64x(math::pointer_to_integral(__value)));
 			}
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm256_broadcastd_epi32(_mm_cvtsi32_si128(math::pointer_to_integral(__value))));
-				else return __as<_Tp_>(_mm256_set1_epi32(math::pointer_to_integral(__value)));
+			else if constexpr (epi32<_Type_> || epu32<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm256_broadcastd_epi32(_mm_cvtsi32_si128(math::pointer_to_integral(__value))));
+				else return as<_Tp_>(_mm256_set1_epi32(math::pointer_to_integral(__value)));
 			}
-			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm256_broadcastw_epi16(_mm_cvtsi32_si128(__value)));
-				else return __as<_Tp_>(_mm256_set1_epi16(__value));
+			else if constexpr (epi16<_Type_> || epu16<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm256_broadcastw_epi16(_mm_cvtsi32_si128(__value)));
+				else return as<_Tp_>(_mm256_set1_epi16(__value));
 			}
-			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm256_broadcastb_epi8(_mm_cvtsi32_si128(__value)));
-				else return __as<_Tp_>(_mm256_set1_epi8(__value));
+			else if constexpr (epi8<_Type_> || epu8<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm256_broadcastb_epi8(_mm_cvtsi32_si128(__value)));
+				else return as<_Tp_>(_mm256_set1_epi8(__value));
 			}
-			else if constexpr (__is_ps_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm256_broadcastss_ps(_mm_set_ss(__value)));
-				else return __as<_Tp_>(_mm256_set1_ps(__value));
+			else if constexpr (ps<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm256_broadcastss_ps(_mm_set_ss(__value)));
+				else return as<_Tp_>(_mm256_set1_ps(__value));
 			}
-			else if constexpr (__is_pd_v<_Type_>) {
-				if constexpr (has_avx2<_ISA_>) return __as<_Tp_>(_mm256_broadcastsd_pd(_mm_set_sd(__value)));
-				else return __as<_Tp_>(_mm256_set1_pd(__value));
+			else if constexpr (pd<_Type_>) {
+				if constexpr (has_avx2<_ISA_>) return as<_Tp_>(_mm256_broadcastsd_pd(_mm_set_sd(__value)));
+				else return as<_Tp_>(_mm256_set1_pd(__value));
 			}
 		}
 		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi64(math::pointer_to_integral(__value))); 
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_set1_epi32(math::pointer_to_integral(__value)));
-			else if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) {
-				if constexpr (has_avx512bw<_ISA_>) return __as<_Tp_>(_mm512_set1_epi16(__value));
+			if constexpr (epi64<_Type_> || epu64<_Type_>) return as<_Tp_>(_mm512_set1_epi64(math::pointer_to_integral(__value))); 
+			else if constexpr (epi32<_Type_> || epu32<_Type_>) return as<_Tp_>(_mm512_set1_epi32(math::pointer_to_integral(__value)));
+			else if constexpr (epi16<_Type_> || epu16<_Type_>) {
+				if constexpr (has_avx512bw<_ISA_>) return as<_Tp_>(_mm512_set1_epi16(__value));
 				else {
 					i32 __x = __value;
 					__x |= __x << 16;
-					return __as<_Tp_>(_mm512_set1_epi32(__x));
+					return as<_Tp_>(_mm512_set1_epi32(__x));
 				}
 			}
-			else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) {
-				if constexpr (has_avx512bw<_ISA_>) return __as<_Tp_>(_mm512_set1_epi8(__value));
+			else if constexpr (epi8<_Type_> || epu8<_Type_>) {
+				if constexpr (has_avx512bw<_ISA_>) return as<_Tp_>(_mm512_set1_epi8(__value));
 				else return _mm512_set1_epi32(static_cast<u8>(__value) * 0x01010101u);
 			}
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_set1_ps(__value));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_set1_pd(__value));
+			else if constexpr (ps<_Type_>) return as<_Tp_>(_mm512_set1_ps(__value));
+			else if constexpr (pd<_Type_>) return as<_Tp_>(_mm512_set1_pd(__value));
 		}
 		else {
 			return __value;

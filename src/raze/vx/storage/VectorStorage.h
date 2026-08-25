@@ -119,9 +119,9 @@ public:
     raze_always_inline void __insert(i32 i, T v) noexcept {
         raze_debug_assert(i >= 0 && i < Abi::size);
 
-        if constexpr (use_native) _Insert<Abi::isa>()(ustorage(_data), i, v);
+        if constexpr (use_native) insert_<Abi::isa>(ustorage(_data), i, v);
         else visit_chunk_by_index(_data, __i, [&](auto& chunk, i32 lane) raze_always_inline_lambda {
-            _Insert<Abi::isa>()(ustorage(chunk), lane, v);
+            insert_<Abi::isa>(ustorage(chunk), lane, v);
         });
     }
 
@@ -129,9 +129,9 @@ public:
         raze_debug_assert(i >= 0 && i < Abi::size);
         T r{};
 
-        if constexpr (use_native) r = _Extract<Abi::isa, T>()(ustorage(_data), i);
+        if constexpr (use_native) r = extract_<Abi::isa, T>(ustorage(_data), i);
         else visit_chunk_by_index(_data, __i, [&](const auto& chunk, i32 lane) raze_always_inline_lambda {
-            r = _Extract<Abi::isa, T>()(ustorage(chunk), lane);
+            r = extract_<Abi::isa, T>(ustorage(chunk), lane);
         });
 
         return r;
@@ -142,9 +142,9 @@ public:
         static_assert(i >= 0 && i < Abi::size);
         T r{};
 
-        if constexpr (use_native) r = _Extract<Abi::isa, T>()(ustorage(_data), i);
+        if constexpr (use_native) r = extract_<Abi::isa, T>(ustorage(_data), i);
         else visit_chunk_by_index(_data, __i, [&](const auto& chunk, auto current) raze_always_inline_lambda{
-            r = _Extract<Abi::isa, T>()(ustorage(chunk), current);
+            r = extract_<Abi::isa, T>(ustorage(chunk), current);
         });
 
         return r;

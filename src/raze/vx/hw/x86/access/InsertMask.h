@@ -5,24 +5,24 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _VectorType_, class _Type_>
-struct _Insert_mask {
-    _Type_ __array[(sizeof(_VectorType_) / sizeof(_Type_)) << 1];
-    i32 __offset = 0;
+template <class V, class T>
+struct insert_mask {
+    T array[(sizeof(V) / sizeof(T)) << 1];
+    i32 offset = 0;
 };
 
-template <class _VectorType_, class _Type_>
-constexpr auto __simd_make_insert_mask() noexcept {
-    constexpr auto __length = (sizeof(_VectorType_) / sizeof(_Type_)) << 1;
-    auto __mask = _Insert_mask<_VectorType_, _Type_>();
+template <class V, class T>
+constexpr auto make_insert_mask() noexcept {
+    constexpr auto length = (sizeof(V) / sizeof(T)) << 1;
+    auto mask = insert_mask<V, T>();
 
-    for (auto __index = 0; __index < __length; ++__index)
-        __mask.__array[__index] = 0;
+    for (auto i = 0; i < __length; ++i)
+        mask.array[i] = 0;
 
-    __mask.__offset = __length >> 1;
-    __mask.__array[__mask.__offset] = -1;
+    mask.offset = length >> 1;
+    mask.array[mask.offset] = -1;
 
-    return __mask;
+    return mask;
 }
 
 __RAZE_VX_NAMESPACE_END

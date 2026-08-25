@@ -45,7 +45,7 @@ struct configurable_abs_t: raze::options::conditional_callable<configurable_abs_
         V r = x;
 
         auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
-            chunk = vx::_Abs<Abi::isa, Value>()(vx::ustorage(chunk), vx::ustorage<Args>(args)...);
+            chunk = vx::abs_<Abi::isa, Value>(vx::ustorage(chunk), vx::ustorage<Args>(args)...);
         };
 
         if constexpr (!std::same_as<Mask, options::unknown_key>) {

@@ -5,7 +5,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-raze_always_inline void __x86_store_fence() noexcept {
+raze_always_inline void x86_store_fence_() noexcept {
 	_mm_sfence();
 }
 

@@ -6,8 +6,8 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 #if defined(raze_processor_x86)
-  template <arch::ISA _ISA_, class _Type_>
-  concept native_conditional_memory_access = arithmetic_type<_Type_> && ((has_avx<_ISA_> && sizeof(_Type_) >= 4) || has_avx512bw<_ISA_>);
+  template <arch::ISA ISA, class T>
+  concept native_conditional_memory_access = arithmetic_type<T> && ((has_avx<ISA> && sizeof(T) >= 4) || has_avx512bw<ISA>);
 #endif
 
 __RAZE_VX_NAMESPACE_END

@@ -123,13 +123,13 @@ public:
         using Signed = typename IntegerForSizeof<T>::Signed;
 
         if constexpr (use_native) {
-            if constexpr (intrin_type<typename tuple_type::unwrapped_type>) _Insert<Abi::isa>()(ustorage(_data), __i, Signed(-Signed(v)));
+            if constexpr (intrin_type<typename tuple_type::unwrapped_type>) insert_<Abi::isa>(ustorage(_data), __i, Signed(-Signed(v)));
             else if constexpr (std::is_same_v<std::remove_cvref_t<typename tuple_type::unwrapped_type>, bool>) _data = v;
             else v ? math::bit_test_and_set(ustorage(_data), i) : math::bit_test_and_reset(ustorage(_data), i);
         }
         else {
             visit_chunk_by_index(_data, i, [&] <class Chunk> (Chunk & chunk, i32 lane) raze_always_inline_lambda {
-                if constexpr (intrin_type<typename Chunk::unwrapped_type>) _Insert<Abi::isa>()(ustorage(chunk), lane, Signed(-Signed(v)));
+                if constexpr (intrin_type<typename Chunk::unwrapped_type>) insert_<Abi::isa>(ustorage(chunk), lane, Signed(-Signed(v)));
                 else if constexpr (std::is_same_v<std::remove_cvref_t<typename Chunk::unwrapped_type>, bool>) chunk = v;
                 else v ? math::bit_test_and_set(ustorage(chunk), lane) : math::bit_test_and_reset(ustorage(chunk), lane);
             });
@@ -138,7 +138,7 @@ public:
 
     raze_always_inline bool __extract(i32 i) const noexcept {
         if constexpr (use_native) {
-            if constexpr (intrin_type<typename tuple_type::unwrapped_type>) return bool(-_Extract<Abi::isa, T>()(ustorage(_data), i));
+            if constexpr (intrin_type<typename tuple_type::unwrapped_type>) return bool(-extract_<Abi::isa, T>(ustorage(_data), i));
             else if constexpr (std::is_same_v<std::remove_cvref_t<typename tuple_type::unwrapped_type>, bool>) return ustorage(_data);
             else return math::bit_test(ustorage(_data), i);
         }
@@ -146,7 +146,7 @@ public:
             bool r{};
 
             visit_chunk_by_index(_data, i, [&] <class Chunk> (const Chunk& chunk, i32 lane) raze_always_inline_lambda {
-                if constexpr (intrin_type<typename Chunk::unwrapped_type>) r = bool(-_Extract<Abi::isa, T>()(ustorage(chunk), lane));
+                if constexpr (intrin_type<typename Chunk::unwrapped_type>) r = bool(-extract_<Abi::isa, T>(ustorage(chunk), lane));
                 else if constexpr (std::is_same_v<std::remove_cvref_t<typename Chunk::unwrapped_type>, bool>) r = ustorage(chunk);
                 else r = math::bit_test(ustorage(chunk), lane);
             });

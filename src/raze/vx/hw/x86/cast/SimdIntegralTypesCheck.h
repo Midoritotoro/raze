@@ -9,139 +9,82 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <i32 __first_, i32 _Second_>
-static constexpr i32 __constexpr_max() noexcept {
-    return (__first_ > _Second_) ? __first_ : _Second_;
-}
-
-template <class _Type_, class _Abi_ = x86_abi<native_size<_Type_>>>
+template <class T, class Abi = x86_abi<native_size<T>>>
 class simd;
 
-template <arch::ISA	ISA, u32 _Width_> 
-constexpr bool __is_width_for_generation_v = __vector_default_size<ISA> >= _Width_;
-
-template <class _Type_>
-constexpr bool __is_intrin_type_v = traits::is_any_of_v<std::remove_cvref_t<_Type_>,
+template <class T>
+constexpr bool __is_intrin_type_v = traits::is_any_of_v<std::remove_cvref_t<T>,
 	__m128, __m128i, __m128d, __m256, __m256i, __m256d, __m512, __m512i, __m512d>;
 
-template <class _IntrinType_>
-concept intrin_type = __is_intrin_type_v<_IntrinType_>;
+template <class T>
+concept intrin_type = __is_intrin_type_v<T>;
 
-template <class _Type_>
-concept arithmetic_type = std::is_arithmetic_v<_Type_>;
+template <class T>
+concept arithmetic_type = std::is_arithmetic_v<T>;
 
-template <class _MaskType_>
-concept raw_mask_type = intrin_type<_MaskType_> || std::is_integral_v<_MaskType_>;
+template <class T>
+concept raw_mask_type = intrin_type<T> || std::is_integral_v<terminate>;
 
-template <class _Type_>
-concept intrin_or_arithmetic_type = intrin_type<_Type_> || arithmetic_type<_Type_>;
+template <class T>
+concept intrin_or_arithmetic_type = intrin_type<T> || arithmetic_type<T>;
 
-template <typename _Element_>
-constexpr bool __is_epi64_v =  
-	((std::is_signed_v<_Element_> && !std::is_floating_point_v<_Element_>) 
-		|| std::is_pointer_v<_Element_>
-		|| std::is_same_v<_Element_, std::nullptr_t>) && sizeof(_Element_) == 8;
+template <class T>
+concept epi64 = ((std::is_signed_v<T> && !std::is_floating_point_v<T>) 
+	|| std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>) && sizeof(T) == 8;
 
-template <typename _Element_>
-constexpr bool __is_epu64_v = 
-	((std::is_unsigned_v<_Element_> && !std::is_floating_point_v<_Element_>) 
-		|| std::is_pointer_v<_Element_> 
-		|| std::is_same_v<_Element_, std::nullptr_t>) && sizeof(_Element_) == 8;
+template <class T>
+concept epu64 = ((std::is_unsigned_v<T> && !std::is_floating_point_v<T>) 
+	|| std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>) && sizeof(T) == 8;
 
-template <typename _Element_>
-constexpr bool __is_epi32_v = 
-	((std::is_signed_v<_Element_> && !std::is_floating_point_v<_Element_>) 
-		|| std::is_pointer_v<_Element_>
-		|| std::is_same_v<_Element_, std::nullptr_t>) && sizeof(_Element_) == 4;
+template <class T>
+concept epi32 = ((std::is_signed_v<T> && !std::is_floating_point_v<T>) 
+	|| std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>) && sizeof(T) == 4;
 
-template <typename _Element_>
-constexpr bool __is_epu32_v = 
-	((std::is_unsigned_v<_Element_> && !std::is_floating_point_v<_Element_>)
-		|| std::is_pointer_v<_Element_>
-		|| std::is_same_v<_Element_, std::nullptr_t>) && sizeof(_Element_) == 4;
+template <class T>
+concept epu32 = ((std::is_unsigned_v<T> && !std::is_floating_point_v<T>)
+	|| std::is_pointer_v<T> || std::is_same_v<T, std::nullptr_t>) && sizeof(T) == 4;
 
-template <typename _Element_>
-constexpr bool __is_epi16_v = sizeof(_Element_) == 2 && std::is_signed_v<_Element_> && !std::is_floating_point_v<_Element_>;
+template <class T>
+concept epi16 = sizeof(T) == 2 && std::is_signed_v<T> && !std::is_floating_point_v<T>;
 
-template <typename _Element_>
-constexpr bool __is_epu16_v = sizeof(_Element_) == 2 && std::is_unsigned_v<_Element_> && !std::is_floating_point_v<_Element_>;
+template <class T>
+concept epu16 = sizeof(T) == 2 && std::is_unsigned_v<T> && !std::is_floating_point_v<T>;
 
-template <typename _Element_>
-constexpr bool __is_epi8_v  = sizeof(_Element_) == 1 && std::is_signed_v<_Element_> && !std::is_floating_point_v<_Element_>;
+template <class T>
+concept epi8  = sizeof(T) == 1 && std::is_signed_v<T> && !std::is_floating_point_v<T>;
 
-template <typename _Element_>
-constexpr bool __is_epu8_v  = sizeof(_Element_) == 1 && std::is_unsigned_v<_Element_> && !std::is_floating_point_v<_Element_>;
+template <class T>
+concept epu8  = sizeof(T) == 1 && std::is_unsigned_v<T> && !std::is_floating_point_v<T>;
 
-template <typename _Element_>
-constexpr bool __is_pd_v    = sizeof(_Element_) == 8 && traits::is_any_of_v<_Element_, f64, long double>;
+template <class T>
+concept pd = sizeof(T) == 8 && traits::is_any_of_v<T, f64, long double>;
 
-template <typename _Element_>
-constexpr bool __is_ps_v    = sizeof(_Element_) == 4 && std::is_same_v<_Element_, f32>;
+template <class T>
+concept ps = sizeof(T) == 4 && std::is_same_v<T, f32>;
 
-template <class _BasicSimd_, class = void>
-struct __is_valid_simd: 
+template <class V, class = void>
+struct is_valid_simd: 
 	std::false_type
 {};
 
-template <class _BasicSimd_>
-struct __is_valid_simd<
-    _BasicSimd_,
-    std::void_t<simd<typename _BasicSimd_::value_type,
-        typename _BasicSimd_::abi_type>>>
+template <class V>
+struct is_valid_simd<
+    V,
+    std::void_t<simd<typename V::value_type,
+        typename V::abi_type>>>
     : std::bool_constant<
         traits::is_virtual_base_of_v<
-            simd<typename _BasicSimd_::value_type,
-                    typename _BasicSimd_::abi_type>,
-            _BasicSimd_> ||
+            simd<typename V::value_type,
+                    typename V::abi_type>,
+            V> ||
         std::is_same_v<
-            simd<typename _BasicSimd_::value_type,
-                    typename _BasicSimd_::abi_type>,
-            _BasicSimd_>> 
+            simd<typename V::value_type,
+                    typename V::abi_type>,
+            V>> 
 {};
 
-template <class _BasicSimd_>
-constexpr bool __is_valid_simd_v = __is_valid_simd<std::remove_cvref_t<_BasicSimd_>>::value;
-
-template <class _VectorType_, bool	_IsSimd_ = __is_valid_simd_v<_VectorType_>, bool _IsIntrin_	= __is_intrin_type_v<_VectorType_>>
-struct __vector_element_t {
-    using type = void;
-};
-
-template <class _VectorType_>
-struct __vector_element_t<_VectorType_, false, true> {
-    using type = std::conditional_t<traits::is_any_of_v<_VectorType_, __m128i, __m256i, __m512i>, int, 
-		std::conditional_t<traits::is_any_of_v<_VectorType_, __m128d, __m256d, __m512d>, f64, 
-			std::conditional_t<traits::is_any_of_v<_VectorType_, __m128, __m256, __m512>, f32, void>>>;
-};
-
-template <class _VectorType_>
-struct __vector_element_t<_VectorType_, true, false> {
-    using type = typename _VectorType_::value_type;
-};
-
-template <class _VectorType_>
-using __vector_element_type = typename __vector_element_t<_VectorType_>::type;
-
-template <
-	class _VectorType_,
-	bool	_IsIntrin_	= __is_intrin_type_v<_VectorType_>,
-	bool	_IsSimd_	= __is_valid_simd_v<_VectorType_>>
-struct __unwrapped_vector_t {
-	using type = _VectorType_;
-};
-
-template <class _VectorType_>
-struct __unwrapped_vector_t<_VectorType_, false, true> {
-	using type = typename _VectorType_::vector_type;
-};
-
-template <class _VectorType_>
-struct __unwrapped_vector_t<_VectorType_, true, false> {
-	using type = _VectorType_;
-};
-
-template <class _VectorType_>
-using __unwrapped_vector_type = typename __unwrapped_vector_t<_VectorType_>::type;
+template <class V>
+constexpr bool is_valid_simd_v = is_valid_simd<std::remove_cvref_t<V>>::value;
 
 template <arch::ISA ISA>
 concept has_sse2 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::SSE2);

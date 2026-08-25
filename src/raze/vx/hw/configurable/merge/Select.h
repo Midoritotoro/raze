@@ -9,41 +9,39 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_select: raze::options::conditional_callable<_Configurable_select, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_select_t: options::conditional_callable<configurable_select_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const V& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    template <simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        using Mask = options::fetch_t<raze::options::condition_key, _Options_>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        _Type_ __result = __x;
+        V r = x;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Select<_Abi_::isa, _Value_>()(ustorage(__chunk), ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            chunk = select_<Abi::isa, Value>()(ustorage(chunk), ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key> && !std::same_as<_Mask_, options::__ignore_none>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (!std::same_as<Mask, options::unknown_key> && !std::same_as<Mask, options::ignore_none_>) {
+            auto condition = opts[options::condition_key];
+            const auto mask = condition.mask();
 
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __condition.alternative().__storage().storage(), __mask.__storage().storage());
+            if constexpr (Mask::has_alternative)
+                r.__for_each_chunk(chunk_op, condition.alternative().__storage().storage(), mask.__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, mask.__storage().storage());
         }
         
-        return __result;
+        return r;
     }
-
-    using callable_tag_type = _Configurable_select;
 };
 
-constexpr inline auto __select = raze::options::functor<_Configurable_select>;
+constexpr inline auto select = raze::options::functor<configurable_select_t>;
 
 __RAZE_VX_NAMESPACE_END

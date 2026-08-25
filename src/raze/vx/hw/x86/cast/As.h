@@ -9,7 +9,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <intrin_type ToVector, intrin_type FromVector>
-raze_nodiscard raze_always_inline ToVector __as(FromVector from) noexcept {
+raze_nodiscard raze_always_inline ToVector as(FromVector from) noexcept {
     using From = std::remove_cvref_t<FromVector>;
     using To = std::remove_cvref_t<ToVector>;
 

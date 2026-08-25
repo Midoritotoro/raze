@@ -6,130 +6,122 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA	_ISA_, arithmetic_type _Type_, bool _Safe_ = false>
-struct _Mask_load {
-	static constexpr auto __avx512vl = has_avx512vl<_ISA_>;
-	static constexpr auto __avx512bw = has_avx512bw<_ISA_>;
-
-	template <raw_mask_type _Mask_, intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard static raze_always_inline _Tp_ __loadu(const void* raze_restrict __mem, _Mask_ __mask, _Tp_ __src) noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && __avx512vl) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm_mask_loadu_epi64(__as<__m128i>(__src), __mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm_mask_loadu_epi32(__as<__m128i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mask_loadu_pd(__as<__m128d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mask_loadu_ps(__as<__m128>(__src), __mask, __mem));
-			else if constexpr (__avx512bw) {
-				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm_mask_loadu_epi16(__as<__m128i>(__src), __mask, __mem));
-				else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) return __as<_Tp_>(_mm_mask_loadu_epi8(__as<__m128i>(__src), __mask, __mem));
-			}
+template <arch::ISA	ISA, arithmetic_type T, bool Safe, raw_mask_type M, intrin_or_arithmetic_type V>
+raze_always_inline V mask_loadu_(const void* mem, M mask, V src) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA>) {
+		if constexpr (epi64<T> || epu64<T>) return as<V>(_mm_mask_loadu_epi64(as<__m128i>(src), mask, mem));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm_mask_loadu_epi32(as<__m128i>(src), mask, mem));
+		else if constexpr (pd<T>) return as<V>(_mm_mask_loadu_pd(as<__m128d>(src), mask, mem));
+		else if constexpr (ps<T>) return as<V>(_mm_mask_loadu_ps(as<__m128>(src), mask, mem));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T> || epu16<T>) return as<V>(_mm_mask_loadu_epi16(as<__m128i>(src), mask, mem));
+			else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm_mask_loadu_epi8(as<__m128i>(src), mask, mem));
 		}
-		else if constexpr (sizeof(_Tp_) == 32 && __avx512vl) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm256_mask_loadu_epi64(__as<__m256i>(__src), __mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm256_mask_loadu_epi32(__as<__m256i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_mask_loadu_pd(__as<__m256d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_mask_loadu_ps(__as<__m256>(__src), __mask, __mem));
-			else if constexpr (__avx512bw) {
-				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm256_mask_loadu_epi16(__as<__m256i>(__src), __mask, __mem));
-				else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) return __as<_Tp_>(_mm256_mask_loadu_epi8(__as<__m256i>(__src), __mask, __mem));
-			}
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA>) {
+		if constexpr (epi64<T> || epu64<T>) return as<V>(_mm256_mask_loadu_epi64(as<__m256i>(src), mask, mem));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm256_mask_loadu_epi32(as<__m256i>(src), mask, mem));
+		else if constexpr (pd<T>) return as<V>(_mm256_mask_loadu_pd(as<__m256d>(src), mask, mem));
+		else if constexpr (ps<T>) return as<V>(_mm256_mask_loadu_ps(as<__m256>(src), mask, mem));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T> || epu16<T>) return as<V>(_mm256_mask_loadu_epi16(as<__m256i>(src), mask, mem));
+			else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm256_mask_loadu_epi8(as<__m256i>(src), mask, mem));
 		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_mask_loadu_epi64(__as<__m512i>(__src), __mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_loadu_epi32(__as<__m512i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_loadu_pd(__as<__m512d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_loadu_ps(__as<__m512>(__src), __mask, __mem));
-			else if constexpr (__avx512bw) {
-				if constexpr (__is_epi16_v<_Type_> || __is_epu16_v<_Type_>) return __as<_Tp_>(_mm512_mask_loadu_epi16(__as<__m512i>(__src), __mask, __mem));
-				else if constexpr (__is_epi8_v<_Type_> || __is_epu8_v<_Type_>) return __as<_Tp_>(_mm512_mask_loadu_epi8(__as<__m512i>(__src), __mask, __mem));
-			}
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T> || epu64<T>) return as<V>(_mm512_mask_loadu_epi64(as<__m512i>(src), mask, mem));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_mask_loadu_epi32(as<__m512i>(src), mask, mem));
+		else if constexpr (pd<T>) return as<V>(_mm512_mask_loadu_pd(as<__m512d>(src), mask, mem));
+		else if constexpr (ps<T>) return as<V>(_mm512_mask_loadu_ps(as<__m512>(src), mask, mem));
+		else if constexpr (has_avx512bw<ISA>) {
+			if constexpr (epi16<T> || epu16<T>) return as<V>(_mm512_mask_loadu_epi16(as<__m512i>(src), mask, mem));
+			else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm512_mask_loadu_epi8(as<__m512i>(src), mask, mem));
 		}
-		
-		if constexpr (arithmetic_type<_Tp_>) return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
-		else {
-			if constexpr (_Safe_) {
-				constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
-				alignas(sizeof(_Tp_)) _Type_ __array[__size];
-				_Store<_ISA_>()(__array, __src);
+	}
+	
+	if constexpr (arithmetic_type<V>) return mask ? *static_cast<const V*>(mem) : src;
+	else {
+		if constexpr (Safe) {
+			constexpr auto size = sizeof(V) / sizeof(T);
+			alignas(sizeof(V)) T array[size];
+			store_(array, src);
 
-				if constexpr (intrin_type<_Mask_>) {
-					alignas(sizeof(_Tp_)) typename IntegerForSizeof<_Type_>::Signed __marray[__size];
-					_Store<_ISA_>()(__marray, __mask, __aligned_policy{});
+			if constexpr (intrin_type<M>) {
+				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed mask_array[size];
+				store_(mask_array, mask, aligned_policy{});
 
-					for (auto __i = 0; __i < __size; ++__i)
-						__array[__i] = __marray[__i] == 0 ? __array[__i] : static_cast<const _Type_*>(__mem)[__i];
-				}
-				else {
-					for (auto __i = 0; __i < __size; ++__i)
-						__array[__i] = math::__bit_test(__mask, __i) ? static_cast<const _Type_*>(__mem)[__i] : __array[__i];
-				}
-
-				return _Load<_ISA_, _Tp_>()(__array, __aligned_policy{});
+				for (auto i = 0; i < size; ++i)
+					array[i] = mask_array[i] == 0 ? array[i] : static_cast<const T*>(mem)[i];
 			}
 			else {
-				return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem), __src, __mask);
+				for (auto i = 0; i < size; ++i)
+					array[i] = math::bit_test(mask, i) ? static_cast<const T*>(mem)[i] : array[i];
 			}
+
+			return load_<ISA, V>(array, aligned_policy{});
+		}
+		else {
+			return select_<ISA, T>(load_<ISA, V>(mem), src, mask);
 		}
 	}
+}
 
-	template <raw_mask_type _Mask_, intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard static raze_always_inline _Tp_ __load(const void* raze_restrict __mem, _Mask_ __mask, _Tp_ __src) noexcept {
-		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_mask_load_epi64(__as<__m128i>(__src), __mask, __mem));
-			else if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm_mask_load_epi32(__as<__m128i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm_mask_load_pd(__as<__m128d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm_mask_load_ps(__as<__m128>(__src), __mask, __mem));
-			else return __loadu(__mem, __mask, __src);
-		}
-		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr ((__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm256_mask_load_epi64(__as<__m256i>(__src), __mask, __mem));
-			else if constexpr ((__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) && __avx512vl) return __as<_Tp_>(_mm256_mask_load_epi32(__as<__m256i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm256_mask_load_pd(__as<__m256d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_> && __avx512vl) return __as<_Tp_>(_mm256_mask_load_ps(__as<__m256>(__src), __mask, __mem));
-			else return __loadu(__mem, __mask, __src);
-		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_epi64(__as<__m512i>(__src), __mask, __mem));
-			else if constexpr (__is_epi32_v<_Type_> || __is_epu32_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_epi32(__as<__m512i>(__src), __mask, __mem));
-			else if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_pd(__as<__m512d>(__src), __mask, __mem));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_load_ps(__as<__m512>(__src), __mask, __mem));
-			else return __loadu(__mem, __mask, __src);
-		}
+template <arch::ISA	ISA, arithmetic_type T, bool Safe, raw_mask_type M, intrin_or_arithmetic_type V>
+raze_nodiscard static raze_always_inline V mask_loada_(const void* mem, M mask, V src) noexcept {
+	if constexpr (sizeof(V) == 16) {
+		if constexpr ((epi64<T> || epu64<T>) && has_avx512vl<ISA>) return as<V>(_mm_mask_load_epi64(as<__m128i>(src), mask, mem));
+		else if constexpr ((epi32<T> || epu32<T>) && has_avx512vl<ISA>) return as<V>(_mm_mask_load_epi32(as<__m128i>(src), mask, mem));
+		else if constexpr (pd<T> && has_avx512vl<ISA>) return as<V>(_mm_mask_load_pd(as<__m128d>(src), mask, mem));
+		else if constexpr (ps<T> && has_avx512vl<ISA>) return as<V>(_mm_mask_load_ps(as<__m128>(src), mask, mem));
+		else return mask_loadu_<ISA, T, Safe>(mem, mask, src);
+	}
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr ((epi64<T> || epu64<T>) && has_avx512vl<ISA>) return as<V>(_mm256_mask_load_epi64(as<__m256i>(src), mask, mem));
+		else if constexpr ((epi32<T> || epu32<T>) && has_avx512vl<ISA>) return as<V>(_mm256_mask_load_epi32(as<__m256i>(src), mask, mem));
+		else if constexpr (pd<T> && has_avx512vl<ISA>) return as<V>(_mm256_mask_load_pd(as<__m256d>(src), mask, mem));
+		else if constexpr (ps<T> && has_avx512vl<ISA>) return as<V>(_mm256_mask_load_ps(as<__m256>(src), mask, mem));
+		else return mask_loadu_<ISA, T, Safe>(mem, mask, src);
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T> || epu64<T>) return as<V>(_mm512_mask_load_epi64(as<__m512i>(src), mask, mem));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_mask_load_epi32(as<__m512i>(src), mask, mem));
+		else if constexpr (pd<T>) return as<V>(_mm512_mask_load_pd(as<__m512d>(src), mask, mem));
+		else if constexpr (ps<T>) return as<V>(_mm512_mask_load_ps(as<__m512>(src), mask, mem));
+		else return mask_loadu_<ISA, T, Safe>(mem, mask, src);
+	}
 
-		if constexpr (arithmetic_type<_Tp_>) return __mask ? *static_cast<const _Tp_*>(__mem) : __src;
-		else {
-			if constexpr (_Safe_) {
-				constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
-				alignas(sizeof(_Tp_)) _Type_ __array[__size];
-				_Store<_ISA_>()(__array, __src, __aligned_policy{});
+	if constexpr (arithmetic_type<V>) return mask ? *static_cast<const V*>(mem) : src;
+	else {
+		if constexpr (Safe) {
+			constexpr auto size = sizeof(V) / sizeof(T);
+			alignas(sizeof(V)) T array[size];
+			store_(array, src, aligned_policy{});
 
-				if constexpr (intrin_type<_Mask_>) {
-					alignas(sizeof(_Tp_)) typename IntegerForSizeof<_Type_>::Signed __marray[__size];
-					_Store<_ISA_>()(__marray, __mask, __aligned_policy{});
+			if constexpr (intrin_type<M>) {
+				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed mask_array[size];
+				store_(marray, mask, aligned_policy{});
 
-					for (auto __i = 0; __i < __size; ++__i)
-						__array[__i] = __marray[__i] == 0 ? __array[__i] : static_cast<const _Type_*>(__mem)[__i];
-				}
-				else {
-					for (auto __i = 0; __i < __size; ++__i)
-						__array[__i] = math::__bit_test(__mask, __i) ? static_cast<const _Type_*>(__mem)[__i] : __array[__i];
-				}
-
-				return _Load<_ISA_, _Tp_>()(__array, __aligned_policy{});
+				for (auto i = 0; i < size; ++i)
+					array[i] = mask_array[i] == 0 ? array[i] : static_cast<const T*>(mem)[i];
 			}
 			else {
-				return _Select<_ISA_, _Type_>()(_Load<_ISA_, _Tp_>()(__mem, __aligned_policy{}), __src, __mask);
+				for (auto i = 0; i < size; ++i)
+					array[i] = math::bit_test(mask, i) ? static_cast<const T*>(mem)[i] : array[i];
 			}
+
+			return load_<ISA, V>(array, aligned_policy{});
+		}
+		else {
+			return select_<ISA, T>(load_<ISA, V>(mem, aligned_policy{}), src, mask);
 		}
 	}
+}
 
-	template <raw_mask_type _Mask_, intrin_or_arithmetic_type _Tp_, class _AlignPolicy_ = __unaligned_policy>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(const void* raze_restrict __mem, 
-		_Mask_ __mask, _Tp_ __src, _AlignPolicy_&& __policy = _AlignPolicy_{}) raze_const_operator noexcept
-	{
-		if constexpr (__is_aligned_v<_AlignPolicy_>) return __load(__mem, __mask, __src);
-		else return __loadu(__mem, __mask, __src);
-
-	}
-};
+template <arch::ISA	ISA, arithmetic_type T, bool Safe, raw_mask_type M, 
+	intrin_or_arithmetic_type V, class Policy = unaligned_policy>
+raze_always_inline V load_(const void* mem, M mask, V src, Policy = Policy{}) noexcept {
+	if constexpr (is_aligned_v<Policy>) return mask_loada_<ISA, T, Safe>(mem, mask, src);
+	else return mask_loadu_<ISA, T, Safe>(mem, mask, src);
+}
 
 __RAZE_VX_NAMESPACE_END

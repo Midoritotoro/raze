@@ -66,24 +66,24 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
     constexpr auto __shift_bytes = __shift * sizeof(_Value_);
     constexpr auto __size = __p.size();
 
-    if constexpr (sizeof(_Intrin_) == 16) return __as<_Intrin_>(_mm_srli_si128(__as<__m128i>(__x), __shift_bytes));
+    if constexpr (sizeof(_Intrin_) == 16) return as<_Intrin_>(_mm_srli_si128(as<__m128i>(__x), __shift_bytes));
     else if constexpr (sizeof(_Intrin_) == 32 && has_avx2<__isa>) {
         if constexpr (has_avx512vl<__isa> && (__shift_bytes % 4) == 0) {
-            return __as<_Intrin_>(_mm256_alignr_epi32(_mm256_setzero_si256(), __as<__m256i>(__x), (__shift_bytes >> 2) & 7));
+            return as<_Intrin_>(_mm256_alignr_epi32(_mm256_setzero_si256(), as<__m256i>(__x), (__shift_bytes >> 2) & 7));
         }
         else {
             auto __low_part = _mm256_setzero_si256();
             auto __high_part = _mm256_setzero_si256();
 
             if constexpr (__shift_bytes < 16) {
-                __low_part = _mm256_inserti128_si256(__low_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
-                __high_part = __as<__m256i>(__x);
+                __low_part = _mm256_inserti128_si256(__low_part, _mm256_extracti128_si256(as<__m256i>(__x), 1), 0);
+                __high_part = as<__m256i>(__x);
             }
-            else if constexpr (__shift_bytes < 32) __high_part = _mm256_inserti128_si256(__high_part, _mm256_extracti128_si256(__as<__m256i>(__x), 1), 0);
+            else if constexpr (__shift_bytes < 32) __high_part = _mm256_inserti128_si256(__high_part, _mm256_extracti128_si256(as<__m256i>(__x), 1), 0);
             else return _Zero<__isa, _Intrin_>()();
 
-            if constexpr ((__shift_bytes % 16) == 0) return __as<_Intrin_>(__high_part);
-            return __as<_Intrin_>(_mm256_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
+            if constexpr ((__shift_bytes % 16) == 0) return as<_Intrin_>(__high_part);
+            return as<_Intrin_>(_mm256_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
         }
     }
     else if constexpr (sizeof(_Intrin_) == 64) {
@@ -91,34 +91,34 @@ __slide_left_native(_Intrin_ __x, _Pattern_ __p) noexcept
         auto __high_part = _mm512_setzero_si512();
 
         if constexpr (__shift_bytes < 16) {
-            __low_part = _mm512_maskz_shuffle_i64x2(0x3F, __as<__m512i>(__x), __as<__m512i>(__x), 0x39);
-            __high_part = __as<__m512i>(__x);
+            __low_part = _mm512_maskz_shuffle_i64x2(0x3F, as<__m512i>(__x), as<__m512i>(__x), 0x39);
+            __high_part = as<__m512i>(__x);
         }
         else if constexpr (__shift_bytes < 32) {
-            __low_part = _mm512_maskz_shuffle_i64x2(0x0F, __as<__m512i>(__x), __as<__m512i>(__x), 0x0E);
-            __high_part = _mm512_maskz_shuffle_i64x2(0x3F, __as<__m512i>(__x), __as<__m512i>(__x), 0x39);
+            __low_part = _mm512_maskz_shuffle_i64x2(0x0F, as<__m512i>(__x), as<__m512i>(__x), 0x0E);
+            __high_part = _mm512_maskz_shuffle_i64x2(0x3F, as<__m512i>(__x), as<__m512i>(__x), 0x39);
         }
         else if constexpr (__shift_bytes < 48) {
-            __low_part = _mm512_maskz_shuffle_i64x2(0x03, __as<__m512i>(__x), __as<__m512i>(__x), 0x03);
-            __high_part = _mm512_maskz_shuffle_i64x2(0x0F, __as<__m512i>(__x), __as<__m512i>(__x), 0x0E);
+            __low_part = _mm512_maskz_shuffle_i64x2(0x03, as<__m512i>(__x), as<__m512i>(__x), 0x03);
+            __high_part = _mm512_maskz_shuffle_i64x2(0x0F, as<__m512i>(__x), as<__m512i>(__x), 0x0E);
         }
         else if constexpr (__shift_bytes < 64) {
-            __high_part = _mm512_maskz_shuffle_i64x2(0x03, __as<__m512i>(__x), __as<__m512i>(__x), 0x03);
+            __high_part = _mm512_maskz_shuffle_i64x2(0x03, as<__m512i>(__x), as<__m512i>(__x), 0x03);
         }
         else return _Zero<__isa, _Intrin_>()();
 
         if constexpr (has_avx512bw<__isa>) {
-            return __as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
+            return as<_Intrin_>(_mm512_alignr_epi8(__low_part, __high_part, __shift_bytes & 0xF));
         }
         else {
-            if constexpr ((__shift_bytes % 4) == 0) return __as<_Intrin_>(_mm512_alignr_epi32(
-                _mm512_setzero_si512(), __as<__m512i>(__x), (__shift_bytes >> 2) & 0xF));
+            if constexpr ((__shift_bytes % 4) == 0) return as<_Intrin_>(_mm512_alignr_epi32(
+                _mm512_setzero_si512(), as<__m512i>(__x), (__shift_bytes >> 2) & 0xF));
 
-            const auto __low256 = _mm256_alignr_epi8(__as<__m256i>(__low_part), __as<__m256i>(__high_part), __shift_bytes & 0xF);
-            const auto __high256 = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__low_part), 1),
-                _mm512_extracti64x4_epi64(__as<__m512i>(__high_part), 1), __shift_bytes & 0xF);
+            const auto __low256 = _mm256_alignr_epi8(as<__m256i>(__low_part), as<__m256i>(__high_part), __shift_bytes & 0xF);
+            const auto __high256 = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(as<__m512i>(__low_part), 1),
+                _mm512_extracti64x4_epi64(as<__m512i>(__high_part), 1), __shift_bytes & 0xF);
 
-            return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low256), __high256, 1));
+            return as<_Intrin_>(_mm512_inserti64x4(as<__m512i>(__low256), __high256, 1));
         }
     }
     else {

@@ -8,20 +8,20 @@ raze_disable_warning_msvc(4310)
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class	_Type_>
-class _Divisor;
+template <class	T>
+class vector_divisor;
 
 template <>
-class _Divisor<i32> {
+class vector_divisor<i32> {
 public:
-	_Divisor() noexcept = default;
+	vector_divisor() noexcept = default;
 
-	_Divisor(i32 __divisor) noexcept {
-		__from_divisor(__divisor);
+	vector_divisor(i32 divisor) noexcept {
+		from_divisor(divisor);
 	}
 
-	_Divisor(i32 __multiplier, i32 __shift, i32 __sign) noexcept {
-		__init(__multiplier, __shift, __sign);
+	vector_divisor(i32 multiplier, i32 shift, i32 sign) noexcept {
+		init(multiplier, shift, sign);
 	}
 
 	raze_nodiscard raze_always_inline __m128i sign() const noexcept {
@@ -36,35 +36,35 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(i32 __divisor) noexcept {
-		auto __shift = i32(0), __multiplier = i32(0);
-		const auto __absolute_divisor = std::abs(__divisor);
+	raze_always_inline void from_divisor(i32 divisor) noexcept {
+		auto shift = i32(0), multiplier = i32(0);
+		const auto absolute_divisor = std::abs(divisor);
 
-		if (static_cast<u32>(__divisor) == 0x80000000u) {
-			__multiplier = 0x80000001;
-			__shift = 30;
+		if (static_cast<u32>(divisor) == 0x80000000u) {
+			multiplier = 0x80000001;
+			shift = 30;
 		}
-		else if (__absolute_divisor > 1) {
-			ulong32 __leading_zeros;
-			_BitScanReverse(&__leading_zeros, static_cast<u32>(__absolute_divisor - 1));
+		else if (absolute_divisor > 1) {
+			ulong32 leading_zeros;
+			_BitScanReverse(&leading_zeros, static_cast<u32>(absolute_divisor - 1));
 
-			__shift = __leading_zeros;
-			__multiplier = i32((i64(1) << (32 + __shift)) / __absolute_divisor - ((i64(1) << 32) - 1));
+			shift = leading_zeros;
+			multiplier = i32((i64(1) << (32 + shift)) / absolute_divisor - ((i64(1) << 32) - 1));
 		}
 		else {
-			__multiplier = 1;
-			__shift = 0;
+			multiplier = 1;
+			shift = 0;
 
-			if (__divisor == 0) __multiplier /= __divisor;
+			if (divisor == 0) multiplier /= divisor;
 		}
 
-		__init(__multiplier, __shift, (__divisor < 0) ? -1 : 0);
+		init(multiplier, shift, (divisor < 0) ? -1 : 0);
 	}
 
-	raze_always_inline void __init(i32 __multiplier, i32 __shift, i32 __sign) noexcept {
-		_multiplier = _mm_set1_epi32(__multiplier);
-		_sign		= _mm_set1_epi32(__sign);
-		_shift		= _mm_cvtsi32_si128(__shift);
+	raze_always_inline void __init(i32 multiplier, i32 shift, i32 sign) noexcept {
+		_multiplier = _mm_set1_epi32(multiplier);
+		_sign		= _mm_set1_epi32(sign);
+		_shift		= _mm_cvtsi32_si128(shift);
 	}
 
 	__m128i _sign;
@@ -73,16 +73,16 @@ private:
 };
 
 template <>
-class _Divisor<u32> {
+class vector_divisor<u32> {
 public:
-	_Divisor() noexcept = default;
+	vector_divisor() noexcept = default;
 
-	_Divisor(u32 __divisor) noexcept {
-		__from_divisor(__divisor);
+	vector_divisor(u32 divisor) noexcept {
+		from_divisor(divisor);
 	}
 
-	_Divisor(u32 __multiplier, i32 __shift1, i32 __shift2) noexcept {
-		__init(__multiplier, __shift1, __shift2);
+	vector_divisor(u32 multiplier, i32 shift1, i32 shift2) noexcept {
+		init(multiplier, shift1, shift2);
 	}
 
 	raze_nodiscard raze_always_inline __m128i shift1() const noexcept {
@@ -97,45 +97,45 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(u32 __divisor) noexcept {
-		auto __shift1		= u32(0);
-		auto __shift2		= u32(0);
-		auto __multiplier	= u32(0);
+	raze_always_inline void from_divisor(u32 divisor) noexcept {
+		auto shift1		= u32(0);
+		auto shift2		= u32(0);
+		auto multiplier	= u32(0);
 
-		switch (__divisor) {
+		switch (divisor) {
 			case 0:
-				__multiplier = __shift1 = __shift2 = 1 / __divisor;
+				multiplier = shift1 = shift2 = 1 / divisor;
 				break;
 			case 1:
-				__multiplier = 1;
-				__shift1 = __shift2 = 0;
+				multiplier = 1;
+				shift1 = shift2 = 0;
 				break;
 			case 2:
-				__multiplier = 1;
-				__shift1 = 1;
-				__shift2 = 0;
+				multiplier = 1;
+				shift1 = 1;
+				shift2 = 0;
 				break;
 			default:
 				{
-					ulong32 __leading_zeros;
-					_BitScanReverse(&__leading_zeros, static_cast<u32>(__divisor - 1u));
-					++__leading_zeros;
+					ulong32 leading_zeros;
+					_BitScanReverse(&leading_zeros, static_cast<u32>(divisor - 1u));
+					++leading_zeros;
 
-					__multiplier = 1 + u32((u64(u32(
-						__leading_zeros < 32 ? 1 << __leading_zeros : 0) - __divisor) << 32) / __divisor);
+					multiplier = 1 + u32((u64(u32(
+						leading_zeros < 32 ? 1 << leading_zeros : 0) - divisor) << 32) / divisor);
 
-					__shift1 = 1; 
-					__shift2 = __leading_zeros - 1;
+					shift1 = 1; 
+					shift2 = leading_zeros - 1;
 				}
 		}
 		
-		__init(__multiplier, __shift1, __shift2);
+		init(multiplier, shift1, shift2);
 	}
 
-	raze_always_inline void __init(u32 __multiplier, i32 __shift1, i32 __shift2) noexcept {
-		_multiplier = _mm_set1_epi32(static_cast<i32>(__multiplier));
-		_shift1		= _mm_set_epi32(0, 0, 0, __shift1);
-		_shift2		= _mm_set_epi32(0, 0, 0, __shift2);
+	raze_always_inline void init(u32 multiplier, i32 shift1, i32 shift2) noexcept {
+		_multiplier = _mm_set1_epi32(static_cast<i32>(multiplier));
+		_shift1		= _mm_set_epi32(0, 0, 0, shift1);
+		_shift2		= _mm_set_epi32(0, 0, 0, shift2);
 	}
 
 	__m128i _shift2;
@@ -144,16 +144,16 @@ private:
 };
 
 template <>
-class _Divisor<i16> {
+class vector_divisor<i16> {
 public:
-	_Divisor() noexcept = default;
+	vector_divisor() noexcept = default;
 
-	_Divisor(i16 __divisor) noexcept {
-		__from_divisor(__divisor);
+	vector_divisor(i16 divisor) noexcept {
+		from_divisor(divisor);
 	}
 
-	_Divisor(i16 __multiplier, i16 __shift, i16 __sign) noexcept {
-		__init(__multiplier, __shift, __sign);
+	vector_divisor(i16 multiplier, i16 shift, i16 sign) noexcept {
+		init(multiplier, shift, sign);
 	}
 
 	raze_nodiscard raze_always_inline __m128i sign() const noexcept {
@@ -168,35 +168,35 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(i16 __divisor) noexcept {
-		auto __shift = i32(0), __multiplier = i32(0);
-		const auto __absolute_divisor = std::abs(__divisor);
+	raze_always_inline void from_divisor(i16 divisor) noexcept {
+		auto shift = i32(0), multiplier = i32(0);
+		const auto absolute_divisor = std::abs(divisor);
 
-		if (static_cast<u16>(__divisor) == 0x8000u) {
-			__multiplier = 0x8001;
-			__shift = 14;
+		if (static_cast<u16>(divisor) == 0x8000u) {
+			multiplier = 0x8001;
+			shift = 14;
 		}
-		else if (__absolute_divisor > 1) {
-			ulong32 __leading_zeros;
-			_BitScanReverse(&__leading_zeros, static_cast<u16>(__absolute_divisor - 1));
+		else if (absolute_divisor > 1) {
+			ulong32 leading_zeros;
+			_BitScanReverse(&leading_zeros, static_cast<u16>(absolute_divisor - 1));
 
-			__shift = __leading_zeros;
-			__multiplier = i32((i32(1) << (16 + __shift)) / __absolute_divisor - ((i64(1) << 16) - 1));
+			shift = leading_zeros;
+			multiplier = i32((i32(1) << (16 + shift)) / absolute_divisor - ((i64(1) << 16) - 1));
 		}
 		else {
-			__multiplier = 1;
-			__shift = 0;
+			multiplier = 1;
+			shift = 0;
 
-			if (__divisor == 0) __multiplier /= __divisor;
+			if (divisor == 0) multiplier /= divisor;
 		}
 
-		__init(__multiplier, __shift, (__divisor < 0) ? -1 : 0);
+		init(multiplier, shift, (divisor < 0) ? -1 : 0);
 	}
 
-	raze_always_inline void __init(i16 __multiplier, i16 __shift, i16 __sign) noexcept {
-		_multiplier = _mm_set1_epi16(__multiplier);
-		_sign		= _mm_set1_epi32(__sign);
-		_shift		= _mm_cvtsi32_si128(__shift);
+	raze_always_inline void init(i16 multiplier, i16 shift, i16 sign) noexcept {
+		_multiplier = _mm_set1_epi16(multiplier);
+		_sign		= _mm_set1_epi32(sign);
+		_shift		= _mm_cvtsi32_si128(shift);
 	}
 
 	__m128i _sign;
@@ -205,16 +205,16 @@ private:
 };
 
 template <>
-class _Divisor<u16> {
+class vector_divisor<u16> {
 public:
-	_Divisor() noexcept = default;
+	vector_divisor() noexcept = default;
 
-	_Divisor(u16 __divisor) noexcept {
-		__from_divisor(__divisor);
+	vector_divisor(u16 divisor) noexcept {
+		from_divisor(divisor);
 	}
 
-	_Divisor(u16 __multiplier, i32  __shift1, i32  __shift2) noexcept {
-		__init(__multiplier, __shift1, __shift2);
+	vector_divisor(u16 multiplier, i32 shift1, i32 shift2) noexcept {
+		init(multiplier, shift1, shift2);
 	}
 
 	raze_nodiscard raze_always_inline __m128i shift1() const noexcept {
@@ -229,43 +229,43 @@ public:
 		return _multiplier;
 	}
 private:
-	raze_always_inline void __from_divisor(u16 __divisor) noexcept {
-		auto __shift1		= u16(0);
-		auto __shift2		= u16(0);
-		auto __multiplier	= u16(0);
+	raze_always_inline void from_divisor(u16 divisor) noexcept {
+		auto shift1		= u16(0);
+		auto shift2		= u16(0);
+		auto multiplier	= u16(0);
 
-		switch (__divisor) {
+		switch (divisor) {
 			case 0:
-				__multiplier = __shift1 = __shift2 = 1u / __divisor;
+				multiplier = shift1 = shift2 = 1u / divisor;
 				break;
 			case 1:
-				__multiplier = 1;
+				multiplier = 1;
 				break;
 			case 2:
-				__multiplier = 1;
-				__shift1 = 1;
+				multiplier = 1;
+				shift1 = 1;
 				break;
 			default:
 				{
-					ulong32 __leading_zeros;
-					_BitScanReverse(&__leading_zeros, static_cast<u16>(__divisor - 1u));
-					++__leading_zeros;
+					ulong32 leading_zeros;
+					_BitScanReverse(&leading_zeros, static_cast<u16>(divisor - 1u));
+					++leading_zeros;
 
-					const auto __power = u16(1 << __leading_zeros);
+					const auto power = u16(1 << leading_zeros);
 
-					__multiplier = 1u + u16((u32(__power - __divisor) << 16) / __divisor);
-					__shift1 = 1; 
-					__shift2 = __leading_zeros - 1;
+					multiplier = 1u + u16((u32(power - divisor) << 16) / divisor);
+					shift1 = 1; 
+					shift2 = leading_zeros - 1;
 				}
 		}
 		
-		__init(__multiplier, __shift1, __shift2);
+		init(multiplier, shift1, shift2);
 	}
 
-	raze_always_inline void __init(u32 __multiplier, i32 __shift1, i32 __shift2) noexcept {
-		_multiplier = _mm_set1_epi16(static_cast<i16>(__multiplier));
-		_shift1		= _mm_setr_epi32(__shift1, 0, 0, 0);
-		_shift2		= _mm_setr_epi32(__shift2, 0, 0, 0);
+	raze_always_inline void init(u32 multiplier, i32 shift1, i32 shift2) noexcept {
+		_multiplier = _mm_set1_epi16(static_cast<i16>(multiplier));
+		_shift1		= _mm_setr_epi32(shift1, 0, 0, 0);
+		_shift2		= _mm_setr_epi32(shift2, 0, 0, 0);
 	}
 
 	__m128i _shift1;

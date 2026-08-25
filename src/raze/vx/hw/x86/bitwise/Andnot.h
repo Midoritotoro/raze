@@ -6,59 +6,56 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Andnot {
-	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-		using _Unsigned = typename IntegerForSizeof<_Type_>::Unsigned;
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
+raze_always_inline V bit_andnot_(V x, V y) noexcept {
+	using Unsigned = typename IntegerForSizeof<T>::Unsigned;
 
-		if constexpr (std::is_same_v<_Tp_, __m128d>) return _mm_andnot_pd(__x, __y);
-		else if constexpr (std::is_same_v<_Tp_, __m128i>) return _mm_andnot_si128(__x, __y);
-		else if constexpr (std::is_same_v<_Tp_, __m128>) return _mm_andnot_ps(__x, __y);
-		else if constexpr (std::is_same_v<_Tp_, __m256d>) return _mm256_andnot_pd(__x, __y);
-		else if constexpr (has_avx2<_ISA_> && std::is_same_v<_Tp_, __m256i>) return _mm256_andnot_si256(__x, __y);
-		else if constexpr (sizeof(_Tp_) == 32) return __as<_Tp_>(_mm256_andnot_ps(__as<__m256>(__x), __as<__m256>(__y)));
-		else if constexpr (std::is_same_v<_Tp_, __m512d>) return _mm512_andnot_pd(__x, __y);
-		else if constexpr (std::is_same_v<_Tp_, __m512i>) return _mm512_andnot_si512(__x, __y);
-		else if constexpr (std::is_same_v<_Tp_, __m512>) return _mm512_andnot_ps(__x, __y);
-		else return math::bit_cast<_Tp_>(_Unsigned(_Unsigned(~math::bit_cast<_Unsigned>(__x)) & math::bit_cast<_Unsigned>(__y)));
+	if constexpr (std::is_same_v<V, __m128d>) return _mm_andnot_pd(x, y);
+	else if constexpr (std::is_same_v<V, __m128i>) return _mm_andnot_si128(x, y);
+	else if constexpr (std::is_same_v<V, __m128>) return _mm_andnot_ps(x, y);
+	else if constexpr (std::is_same_v<V, __m256d>) return _mm256_andnot_pd(x, y);
+	else if constexpr (has_avx2<ISA> && std::is_same_v<V, __m256i>) return _mm256_andnot_si256(x, y);
+	else if constexpr (sizeof(V) == 32) return as<V>(_mm256_andnot_ps(as<__m256>(x), as<__m256>(y)));
+	else if constexpr (std::is_same_v<V, __m512d>) return _mm512_andnot_pd(x, y);
+	else if constexpr (std::is_same_v<V, __m512i>) return _mm512_andnot_si512(x, y);
+	else if constexpr (std::is_same_v<V, __m512>) return _mm512_andnot_ps(x, y);
+	else return math::bit_cast<V>(Unsigned(Unsigned(~math::bit_cast<Unsigned>(x)) & math::bit_cast<Unsigned>(y)));
+}
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type	V, raw_mask_type M>
+raze_always_inline V bit_andnot_(V x, V y, M mask, V src) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (sizeof(T) == 8) return as<V>(_mm_mask_andnot_epi64(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (sizeof(T) == 4) return as<V>(_mm_mask_andnot_epi32(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (sizeof(T) == 8) return as<V>(_mm256_mask_andnot_epi64(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (sizeof(T) == 4) return as<V>(_mm256_mask_andnot_epi32(as<__m256i>(src), mask, as<__m256i>(x), as<__m256i>(y)));
+	}
+	else if constexpr (sizeof(V) == 64 && has_avx512f<ISA> && std::is_integral_v<M>) {
+		if constexpr (sizeof(T) == 8) return as<V>(_mm512_mask_andnot_epi64(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (sizeof(T) == 4) return as<V>(_mm512_mask_andnot_epi32(as<__m512i>(src), mask, as<__m512i>(x), as<__m512i>(y)));
 	}
 
-	template <intrin_or_arithmetic_type	_Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask, _Tp_ __src) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm_mask_andnot_epi64(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm_mask_andnot_epi32(__as<__m128i>(__src), __mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm256_mask_andnot_epi64(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm256_mask_andnot_epi32(__as<__m256i>(__src), __mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 64 && has_avx512f<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm512_mask_andnot_epi64(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_mask_andnot_epi32(__as<__m512i>(__src), __mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-		}
+	return select_<ISA, T>(bit_andnot_<ISA, T>(x, y), src, mask);
+}
 
-		return _Select<_ISA_, _Type_>()(_Andnot()(__x, __y), __src, __mask);
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type	M>
+raze_always_inline V bit_andnot_(V x, V y, M mask) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (sizeof(T) == 8) return as<V>(_mm_maskz_andnot_epi64(mask, as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (sizeof(T) == 4) return as<V>(_mm_maskz_andnot_epi32(mask, as<__m128i>(x), as<__m128i>(y)));
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA> && std::is_integral_v<M>) {
+		if constexpr (sizeof(T) == 8) return as<V>(_mm256_maskz_andnot_epi64(mask, as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (sizeof(T) == 4) return as<V>(_mm256_maskz_andnot_epi32(mask, as<__m256i>(x), as<__m256i>(y)));
+	}
+	else if constexpr (sizeof(V) == 64 && has_avx512f<ISA> && std::is_integral_v<M>) {
+		if constexpr (sizeof(T) == 8) return as<V>(_mm512_maskz_andnot_epi64(mask, as<__m512i>(x), as<__m512i>(y)));
+		else if constexpr (sizeof(T) == 4) return as<V>(_mm512_maskz_andnot_epi32(mask, as<__m512i>(x), as<__m512i>(y)));
 	}
 
-	template <intrin_or_arithmetic_type	_Tp_, raw_mask_type	_Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm_maskz_andnot_epi64(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm_maskz_andnot_epi32(__mask, __as<__m128i>(__x), __as<__m128i>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm256_maskz_andnot_epi64(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm256_maskz_andnot_epi32(__mask, __as<__m256i>(__x), __as<__m256i>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 64 && has_avx512f<_ISA_> && std::is_integral_v<_Mask_>) {
-			if constexpr (sizeof(_Type_) == 8) return __as<_Tp_>(_mm512_maskz_andnot_epi64(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-			else if constexpr (sizeof(_Type_) == 4) return __as<_Tp_>(_mm512_maskz_andnot_epi32(__mask, __as<__m512i>(__x), __as<__m512i>(__y)));
-		}
-
-		return _Select<_ISA_, _Type_>()(_Andnot()(__x, __y), __mask);
-	}
-};
+	return select_<ISA, T>(bit_andnot_<ISA, T>(x, y), mask);
+}
 
 __RAZE_VX_NAMESPACE_END

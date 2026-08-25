@@ -5,15 +5,15 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-struct __aligned_policy {
-    static constexpr bool __alignment = true;
+struct aligned_policy {
+    static constexpr bool alignment = true;
 };
 
-struct __unaligned_policy {
-    static constexpr bool __alignment = false;
+struct unaligned_policy {
+    static constexpr bool alignment = false;
 };
 
-template <class _AlignmentPolicy_>
-constexpr inline auto __is_aligned_v = std::remove_cvref_t<_AlignmentPolicy_>::__alignment;
+template <class Policy>
+constexpr inline auto is_aligned_v = std::remove_cvref_t<Policy>::alignment;
 
 __RAZE_VX_NAMESPACE_END

@@ -16,19 +16,19 @@ struct vector_wrapper {
     static constexpr auto size = Elements;
 
     template <intrin_type V2> requires (sizeof(V) == sizeof(V2))
-    vector_wrapper(V2 v) noexcept : _data(__as<V>(v))
+    vector_wrapper(V2 v) noexcept : _data(as<V>(v))
     {}
 
     vector_wrapper() noexcept = default;
 
     template <sizetype I, intrin_type V2>
     raze_always_inline void insert(V2 v2) noexcept {
-        _Insert_vector<Abi::isa>()(_data, std::integral_constant<sizetype, I>{}, v2);
+        insert_vector_<Abi::isa>(_data, std::integral_constant<sizetype, I>{}, v2);
     }
 
     template <sizetype I, intrin_type V2>
     raze_always_inline V2 extract() const noexcept {
-        return _Extract_vector<V2, _Abi_::isa>()(_data, std::integral_constant<sizetype, I>{});
+        return extract_vector_<V2, Abi::isa>(_data, std::integral_constant<sizetype, I>{});
     }
 
     raze_nodiscard raze_always_inline unwrapped_type data() const noexcept {

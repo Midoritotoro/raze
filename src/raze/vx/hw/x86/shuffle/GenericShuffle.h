@@ -150,7 +150,7 @@ raze_no_stack_protector raze_always_inline _Intrin_ __byte_shuffle_mask_avx2(_In
 
 	// Multiplication by 0x0202 (= {0x02, 0x02} as a pair of bytes) creates pairs {2*i, 2*i}
 	// Adding 0x0100 increments the high byte of each pair (resulting in {2*i, 2*i+1}).
-	return __as<_Intrin_>(_mm256_add_epi16(_mm256_mullo_epi16(__as<__m256i>(__x), 
+	return as<_Intrin_>(_mm256_add_epi16(_mm256_mullo_epi16(as<__m256i>(__x), 
 		_Broadcast<_ISA_, __m256i>()(std::integral_constant<i16, 0x202>{})),
 		_Broadcast<_ISA_, __m256i>()(std::integral_constant<i16, 0x0100>{})));
 }
@@ -160,63 +160,63 @@ raze_no_stack_protector raze_always_inline _Intrin_ __shuffle_i8x64_avx512(_Intr
 	static_assert(sizeof(_Intrin_) == sizeof(__m512i));
 
 	if constexpr (has_avx512vbmi<_ISA_>) {
-		return __as<_Intrin_>(_mm512_permutexvar_epi8(__as<__m512i>(__idx), __as<__m512i>(__x)));
+		return as<_Intrin_>(_mm512_permutexvar_epi8(as<__m512i>(__idx), as<__m512i>(__x)));
 	}
 	else if constexpr (has_avx512bw<_ISA_>) {
-		auto __src_part = _mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0);
-		auto __result = _mm512_shuffle_epi8(__src_part, __as<__m512i>(__idx));
+		auto __src_part = _mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0);
+		auto __result = _mm512_shuffle_epi8(__src_part, as<__m512i>(__idx));
 
-		__src_part = _mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0x55);
-		auto __candidate = _mm512_shuffle_epi8(__src_part, __as<__m512i>(__idx));
+		__src_part = _mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0x55);
+		auto __candidate = _mm512_shuffle_epi8(__src_part, as<__m512i>(__idx));
 		auto __threshold = _Broadcast<_ISA_, __m512i>()(std::integral_constant<i8, 0x0F>{});
-		__result = _mm512_mask_mov_epi8(__result, _mm512_cmpgt_epi8_mask(__as<__m512i>(__idx), __threshold), __candidate);
+		__result = _mm512_mask_mov_epi8(__result, _mm512_cmpgt_epi8_mask(as<__m512i>(__idx), __threshold), __candidate);
 
-		__src_part = _mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0xAA);
-		__candidate = _mm512_shuffle_epi8(__src_part, __as<__m512i>(__idx));
+		__src_part = _mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0xAA);
+		__candidate = _mm512_shuffle_epi8(__src_part, as<__m512i>(__idx));
 		__threshold = _Broadcast<_ISA_, __m512i>()(std::integral_constant<i8, 0x1F>{});
-		__result = _mm512_mask_mov_epi8(__result, _mm512_cmpgt_epi8_mask(__as<__m512i>(__idx), __threshold), __candidate);
+		__result = _mm512_mask_mov_epi8(__result, _mm512_cmpgt_epi8_mask(as<__m512i>(__idx), __threshold), __candidate);
 
-		__src_part = _mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0xFF);
-		__candidate = _mm512_shuffle_epi8(__src_part, __as<__m512i>(__idx));
+		__src_part = _mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0xFF);
+		__candidate = _mm512_shuffle_epi8(__src_part, as<__m512i>(__idx));
 		__threshold = _Broadcast<_ISA_, __m512i>()(std::integral_constant<i8, 0x2F>{});
-		__result = _mm512_mask_mov_epi8(__result, _mm512_cmpgt_epi8_mask(__as<__m512i>(__idx), __threshold), __candidate);
+		__result = _mm512_mask_mov_epi8(__result, _mm512_cmpgt_epi8_mask(as<__m512i>(__idx), __threshold), __candidate);
 
 		return __result;
 	}
 	else {
-		const auto __idx_high = _mm512_extracti64x4_epi64(__as<__m512i>(__idx), 1);
-		auto __src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0));
+		const auto __idx_high = _mm512_extracti64x4_epi64(as<__m512i>(__idx), 1);
+		auto __src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0));
 
-		auto __result_low = _mm256_shuffle_epi8(__src_part, __as<__m256i>(__idx));
+		auto __result_low = _mm256_shuffle_epi8(__src_part, as<__m256i>(__idx));
 		auto __result_high = _mm256_shuffle_epi8(__src_part, __idx_high);
 
-		__src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0x05));
-		auto __candidate_low = _mm256_shuffle_epi8(__src_part, __as<__m256i>(__idx));
+		__src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0x05));
+		auto __candidate_low = _mm256_shuffle_epi8(__src_part, as<__m256i>(__idx));
 		auto __candidate_high = _mm256_shuffle_epi8(__src_part, __idx_high);
 
 		auto __threshold = _Broadcast<_ISA_, __m256i>()(std::integral_constant<i8, 0x0F>{});
-		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi8(__as<__m256i>(__idx), __threshold));
+		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi8(as<__m256i>(__idx), __threshold));
 		__result_high = _mm256_blendv_epi8(__result_high, __candidate_high, _mm256_cmpgt_epi8(__idx_high, __threshold));
 
-		__src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0xA));
+		__src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0xA));
 
-		__candidate_low = _mm256_shuffle_epi8(__src_part, __as<__m256i>(__idx));
+		__candidate_low = _mm256_shuffle_epi8(__src_part, as<__m256i>(__idx));
 		__candidate_high = _mm256_shuffle_epi8(__src_part, __idx_high);
 
 		__threshold = _Broadcast<_ISA_, __m256i>()(std::integral_constant<i8, 0x1F>{});
-		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi8(__as<__m256i>(__idx), __threshold));
+		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi8(as<__m256i>(__idx), __threshold));
 		__result_high = _mm256_blendv_epi8(__result_high, __candidate_high, _mm256_cmpgt_epi8(__idx_high, __threshold));
 
-		__src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0x1F));
+		__src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0x1F));
 
-		__candidate_low = _mm256_shuffle_epi8(__src_part, __as<__m256i>(__idx));
+		__candidate_low = _mm256_shuffle_epi8(__src_part, as<__m256i>(__idx));
 		__candidate_high = _mm256_shuffle_epi8(__src_part, __idx_high);
 
 		__threshold = _Broadcast<_ISA_, __m256i>()(std::integral_constant<i8, 0x2F>{});
-		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi8(__as<__m256i>(__idx), __threshold));
+		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi8(as<__m256i>(__idx), __threshold));
 		__result_high = _mm256_blendv_epi8(__result_high, __candidate_high, _mm256_cmpgt_epi8(__idx_high, __threshold));
 
-		return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__result_low), __result_high, 1));
+		return as<_Intrin_>(_mm512_inserti64x4(as<__m512i>(__result_low), __result_high, 1));
 	}
 }
 
@@ -225,7 +225,7 @@ raze_no_stack_protector raze_always_inline _Intrin_ __shuffle_i16x32_avx512(_Int
 	static_assert(sizeof(_Intrin_) == sizeof(__m512i));
 
 	if constexpr (has_avx512bw<_ISA_>) {
-		return __as<_Intrin_>(_mm512_permutexvar_epi16(__as<__m512i>(__idx), __as<__m512i>(__x)));
+		return as<_Intrin_>(_mm512_permutexvar_epi16(as<__m512i>(__idx), as<__m512i>(__x)));
 	}
 	else {
 		// shuffle_i64x2 layouts:
@@ -234,43 +234,43 @@ raze_no_stack_protector raze_always_inline _Intrin_ __shuffle_i16x32_avx512(_Int
 		// 0x0A : {L2,L2,L2,L2}
 		// 0x0F : {L3,L3,L3,L3}
 
-		const auto __idx_high = _mm512_extracti64x4_epi64(__as<__m512i>(__idx), 1);
+		const auto __idx_high = _mm512_extracti64x4_epi64(as<__m512i>(__idx), 1);
 
-		const auto __byte_shuffle_mask_low = __byte_shuffle_mask_avx2<_ISA_>(__as<__m256i>(__idx));
+		const auto __byte_shuffle_mask_low = __byte_shuffle_mask_avx2<_ISA_>(as<__m256i>(__idx));
 		const auto __byte_shuffle_mask_high = __byte_shuffle_mask_avx2<_ISA_>(__idx_high);
 
-		auto __src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0));
+		auto __src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0));
 
 		auto __result_low = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_low);
 		auto __result_high = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_high);
 
-		__src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0x05));
+		__src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0x05));
 		auto __candidate_low = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_low);
 		auto __candidate_high = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_high);
 
 		auto __threshold = _Broadcast<_ISA_, __m256i>()(std::integral_constant<i16, 0x07>{});
-		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi16(__as<__m256i>(__idx), __threshold));
+		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi16(as<__m256i>(__idx), __threshold));
 		__result_high = _mm256_blendv_epi8(__result_high, __candidate_high, _mm256_cmpgt_epi16(__idx_high, __threshold));
 
-		__src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0xA));
+		__src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0xA));
 
 		__candidate_low = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_low);
 		__candidate_high = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_high);
 
 		__threshold = _Broadcast<_ISA_, __m256i>()(std::integral_constant<i16, 0x0F>{});
-		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi16(__as<__m256i>(__idx), __threshold));
+		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi16(as<__m256i>(__idx), __threshold));
 		__result_high = _mm256_blendv_epi8(__result_high, __candidate_high, _mm256_cmpgt_epi16(__idx_high, __threshold));
 
-		__src_part = __as<__m256i>(_mm512_shuffle_i64x2(__as<__m512i>(__x), __as<__m512i>(__x), 0xF));
+		__src_part = as<__m256i>(_mm512_shuffle_i64x2(as<__m512i>(__x), as<__m512i>(__x), 0xF));
 
 		__candidate_low = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_low);
 		__candidate_high = _mm256_shuffle_epi8(__src_part, __byte_shuffle_mask_high);
 
 		__threshold = _Broadcast<_ISA_, __m256i>()(std::integral_constant<i16, 0x17>{});
-		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi16(__as<__m256i>(__idx), __threshold));
+		__result_low = _mm256_blendv_epi8(__result_low, __candidate_low, _mm256_cmpgt_epi16(as<__m256i>(__idx), __threshold));
 		__result_high = _mm256_blendv_epi8(__result_high, __candidate_high, _mm256_cmpgt_epi16(__idx_high, __threshold));
 
-		return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__result_low), __result_high, 1));
+		return as<_Intrin_>(_mm512_inserti64x4(as<__m512i>(__result_low), __result_high, 1));
 	}
 }
 
@@ -286,54 +286,54 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 	if constexpr (sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {
 			constexpr auto __mask = __shufpd_to_pshufd_mask(__p);
-			return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), __mask));
+			return as<_Intrin_>(_mm_shuffle_epi32(as<__m128i>(__x), __mask));
 		}
 		else if constexpr (sizeof(_Type_) == 4) {
 			constexpr auto __mask = __to_pshufd_mask(__p);
-			return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), __mask));
+			return as<_Intrin_>(_mm_shuffle_epi32(as<__m128i>(__x), __mask));
 		}
 		else if constexpr (sizeof(_Type_) == 2) {
 			constexpr auto __low_shuf = __to_pshufd_mask(__p);
 			constexpr auto __high_shuf = (__p[4] & 0x03) | ((__p[5] & 0x03) << 2) | ((__p[6] & 0x03) << 4) | ((__p[7] & 0x03) << 6);
 
 			if constexpr (__can_widen_shuffle(__p)) {
-				return __as<_Intrin_>(_mm_shuffle_epi32(__as<__m128i>(__x), __to_pshufd_mask(__p.widen())));
+				return as<_Intrin_>(_mm_shuffle_epi32(as<__m128i>(__x), __to_pshufd_mask(__p.widen())));
 			}
 			else if constexpr (!__across_halfs(__p)) {
-				auto __shuffled = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
-				return __as<_Intrin_>(_mm_shufflehi_epi16(__shuffled, __high_shuf));
+				auto __shuffled = _mm_shufflelo_epi16(as<__m128i>(__x), __low_shuf);
+				return as<_Intrin_>(_mm_shufflehi_epi16(__shuffled, __high_shuf));
 			}
 			else if constexpr (__ssse3) {
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __p.template expand<u16, u8>().template as_native<__m128i>()));
+				return as<_Intrin_>(_mm_shuffle_epi8(as<__m128i>(__x), __p.template expand<u16, u8>().template as_native<__m128i>()));
 			}
 			else if constexpr (__is_dup_low(__p)) {
-				const auto __low = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
-				return __as<_Intrin_>(_mm_unpacklo_epi64(__low, __low));
+				const auto __low = _mm_shufflelo_epi16(as<__m128i>(__x), __low_shuf);
+				return as<_Intrin_>(_mm_unpacklo_epi64(__low, __low));
 			}
 			else if constexpr (__is_dup_high(__p)) {
-				const auto __high = _mm_shufflehi_epi16(__as<__m128i>(__x), __high_shuf);
-				return __as<_Intrin_>(_mm_unpackhi_epi64(__high, __high));
+				const auto __high = _mm_shufflehi_epi16(as<__m128i>(__x), __high_shuf);
+				return as<_Intrin_>(_mm_unpackhi_epi64(__high, __high));
 			}
 			else if constexpr (__is_low_half(__p)) {
-				const auto __low1 = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
-				const auto __low2 = _mm_shufflelo_epi16(__as<__m128i>(__x), __high_shuf);
-				return __as<_Intrin_>(_mm_unpacklo_epi64(__low1, __low2));
+				const auto __low1 = _mm_shufflelo_epi16(as<__m128i>(__x), __low_shuf);
+				const auto __low2 = _mm_shufflelo_epi16(as<__m128i>(__x), __high_shuf);
+				return as<_Intrin_>(_mm_unpacklo_epi64(__low1, __low2));
 			}
 			else if constexpr (__is_high_half(__p)) {
-				const auto __high1 = _mm_shufflehi_epi16(__as<__m128i>(__x), __low_shuf);
-				const auto __high2 = _mm_shufflehi_epi16(__as<__m128i>(__x), __high_shuf);
-				return __as<_Intrin_>(_mm_unpacklo_epi64(__high1, __high2));
+				const auto __high1 = _mm_shufflehi_epi16(as<__m128i>(__x), __low_shuf);
+				const auto __high2 = _mm_shufflehi_epi16(as<__m128i>(__x), __high_shuf);
+				return as<_Intrin_>(_mm_unpacklo_epi64(__high1, __high2));
 			}
 			else {
-				const auto __low1 = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
-				const auto __low2 = _mm_shufflelo_epi16(__as<__m128i>(__x), __high_shuf);
-				const auto __high1 = _mm_shufflehi_epi16(__as<__m128i>(__x), __low_shuf);
-				const auto __high2 = _mm_shufflehi_epi16(__as<__m128i>(__x), __high_shuf);
+				const auto __low1 = _mm_shufflelo_epi16(as<__m128i>(__x), __low_shuf);
+				const auto __low2 = _mm_shufflelo_epi16(as<__m128i>(__x), __high_shuf);
+				const auto __high1 = _mm_shufflehi_epi16(as<__m128i>(__x), __low_shuf);
+				const auto __high2 = _mm_shufflehi_epi16(as<__m128i>(__x), __high_shuf);
 
 				const auto __low = _mm_unpacklo_epi64(__low1, __low2);
 				const auto __high = _mm_unpackhi_epi64(__high1, __high2);
 
-				return _Select<_ISA_, _Type_>()(__low, __high, _To_mask<_ISA_, _Type_>()(__p < std::integral_constant<sizetype, 4>{}));
+				return select_<_ISA_, _Type_>(__low, __high, _To_mask<_ISA_, _Type_>()(__p < std::integral_constant<sizetype, 4>{}));
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 1) {
@@ -344,11 +344,11 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 				constexpr auto __high_shuf = (__widen[4] & 0x03) | ((__widen[5] & 0x03) << 2)
 					| ((__widen[6] & 0x03) << 4) | ((__widen[7] & 0x03) << 6);
 
-				auto __shuffled = _mm_shufflelo_epi16(__as<__m128i>(__x), __low_shuf);
-				return __as<_Intrin_>(_mm_shufflehi_epi16(__shuffled, __high_shuf));
+				auto __shuffled = _mm_shufflelo_epi16(as<__m128i>(__x), __low_shuf);
+				return as<_Intrin_>(_mm_shufflehi_epi16(__shuffled, __high_shuf));
 			}
 			else if constexpr (__ssse3) {
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __p.template as_native<__m128i>()));
+				return as<_Intrin_>(_mm_shuffle_epi8(as<__m128i>(__x), __p.template as_native<__m128i>()));
 			}
 			else return __shuffle_fallback<_ISA_, _Type_>(__x, __p.get());
 		}
@@ -359,72 +359,72 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 			constexpr auto __mask = ((__p[0] % 2)) | ((__p[1] % 2) << 1) | ((__p[2] % 2) << 2) | ((__p[3] % 2) << 3);
 
 			if constexpr (!__across_halfs(__p)) {
-				return __as<_Intrin_>(_mm256_permute_pd(__as<__m256d>(__x), __mask));
+				return as<_Intrin_>(_mm256_permute_pd(as<__m256d>(__x), __mask));
 			}
-			else if constexpr (__avx2) return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __to_pshufd_mask(__p)));
+			else if constexpr (__avx2) return as<_Intrin_>(_mm256_permute4x64_epi64(as<__m256i>(__x), __to_pshufd_mask(__p)));
 			else if constexpr (__is_low_half(__p)) {
-				const auto __broadcasted_low_lane = _mm256_permute2f128_pd(__as<__m256d>(__x), __as<__m256d>(__x), 0);
-				return __as<_Intrin_>(_mm256_permute_pd(__broadcasted_low_lane, __mask));
+				const auto __broadcasted_low_lane = _mm256_permute2f128_pd(as<__m256d>(__x), as<__m256d>(__x), 0);
+				return as<_Intrin_>(_mm256_permute_pd(__broadcasted_low_lane, __mask));
 			}
 			else if constexpr (__is_high_half(__p)) {
-				const auto __broadcasted_high_lane = _mm256_permute2f128_pd(__as<__m256d>(__x), __as<__m256d>(__x), 0x11);
-				return __as<_Intrin_>(_mm256_permute_pd(__broadcasted_high_lane, __mask));
+				const auto __broadcasted_high_lane = _mm256_permute2f128_pd(as<__m256d>(__x), as<__m256d>(__x), 0x11);
+				return as<_Intrin_>(_mm256_permute_pd(__broadcasted_high_lane, __mask));
 			}
 			else {
 				constexpr auto __blend_mask = (__p / std::integral_constant<sizetype, 2>{}) != _Shuffle_pattern<pattern_vector_t<_Pattern_>, 0, 0, 1, 1>{};
-				const auto __swapped_lanes = _mm256_permute2f128_pd(__as<__m256d>(__x), __as<__m256d>(__x), 0x01);
+				const auto __swapped_lanes = _mm256_permute2f128_pd(as<__m256d>(__x), as<__m256d>(__x), 0x01);
 
-				const auto __first = _mm256_permute_pd(__as<__m256d>(__x), __mask);
+				const auto __first = _mm256_permute_pd(as<__m256d>(__x), __mask);
 				const auto __second = _mm256_permute_pd(__swapped_lanes, __mask);
 				
-				return __as<_Intrin_>(_mm256_blend_pd(__first, __second, __blend_mask));
+				return as<_Intrin_>(_mm256_blend_pd(__first, __second, __blend_mask));
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 4) {
 			if constexpr (!__across_halfs(__p) && __is_halfs_equal(__p))
-				return __as<_Intrin_>(_mm256_shuffle_ps(__as<__m256>(__x), __as<__m256>(__x), __to_pshufd_mask(__p)));
+				return as<_Intrin_>(_mm256_shuffle_ps(as<__m256>(__x), as<__m256>(__x), __to_pshufd_mask(__p)));
 			else if constexpr (__can_widen_shuffle(__p) && __avx2)
-				return __as<_Intrin_>(_mm256_permute4x64_epi64(__as<__m256i>(__x), __to_pshufd_mask(__p.widen())));
+				return as<_Intrin_>(_mm256_permute4x64_epi64(as<__m256i>(__x), __to_pshufd_mask(__p.widen())));
 			else if constexpr (__avx2)
-				return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), __p.template as_native<__m256i>()));
+				return as<_Intrin_>(_mm256_permutevar8x32_epi32(as<__m256i>(__x), __p.template as_native<__m256i>()));
 			else if constexpr (__is_dup_low(__p)) {
-				auto __split = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0);
+				auto __split = _mm256_permute2f128_ps(as<__m256>(__x), as<__m256>(__x), 0);
 				
 				if constexpr (!__is_dup_low_identity(__p))
 					__split = _mm256_permute_ps(__split, __to_pshufd_mask(__p));
 
-				return __as<_Intrin_>(__split);
+				return as<_Intrin_>(__split);
 			}
 			else if constexpr (__is_dup_high(__p)) {
 				constexpr auto __mask = (((__p[4] - 4) & 0x03) | (((__p[5] - 4) & 0x03) << 2)
 					| (((__p[6] - 4) & 0x03) << 4) | (((__p[7] - 4) & 0x03) << 6));
 
-				auto __split = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0x11);
+				auto __split = _mm256_permute2f128_ps(as<__m256>(__x), as<__m256>(__x), 0x11);
 
 				if constexpr (!__is_dup_low_identity(__p))
 					__split = _mm256_permute_ps(__split, __mask);
 
-				return __as<_Intrin_>(__split);
+				return as<_Intrin_>(__split);
 			}
 			else if constexpr (__is_low_half(__p)) {
-				const auto __broadcasted_low_lane = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0);
-				return __as<_Intrin_>(_mm256_permutevar_ps(__broadcasted_low_lane, (__p % std::integral_constant<sizetype, 4>{}).template as_native<__m256i>()));
+				const auto __broadcasted_low_lane = _mm256_permute2f128_ps(as<__m256>(__x), as<__m256>(__x), 0);
+				return as<_Intrin_>(_mm256_permutevar_ps(__broadcasted_low_lane, (__p % std::integral_constant<sizetype, 4>{}).template as_native<__m256i>()));
 			}
 			else if constexpr (__is_high_half(__p)) {
-				const auto __broadcasted_low_lane = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0x11);
-				return __as<_Intrin_>(_mm256_permutevar_ps(__broadcasted_low_lane, (__p % std::integral_constant<sizetype, 4>{}).template as_native<__m256i>()));
+				const auto __broadcasted_low_lane = _mm256_permute2f128_ps(as<__m256>(__x), as<__m256>(__x), 0x11);
+				return as<_Intrin_>(_mm256_permutevar_ps(__broadcasted_low_lane, (__p % std::integral_constant<sizetype, 4>{}).template as_native<__m256i>()));
 			}
 			else {
 				constexpr auto __low_mask = (__p % std::integral_constant<sizetype, 4>{});
 				constexpr auto __blend_mask = (__p / std::integral_constant<sizetype, 4>{}) != _Shuffle_pattern<pattern_vector_t<_Pattern_>, 0, 0, 0, 0, 1, 1, 1, 1>{};
-				const auto __swapped_lanes = _mm256_permute2f128_ps(__as<__m256>(__x), __as<__m256>(__x), 0x01);
+				const auto __swapped_lanes = _mm256_permute2f128_ps(as<__m256>(__x), as<__m256>(__x), 0x01);
 
 				const auto __native_mask = __p.template as_native<__m256i>();
 
-				const auto __first = _mm256_permutevar_ps(__as<__m256>(__x), __native_mask);
+				const auto __first = _mm256_permutevar_ps(as<__m256>(__x), __native_mask);
 				const auto __second = _mm256_permutevar_ps(__swapped_lanes, __native_mask);
 
-				return __as<_Intrin_>(_mm256_blend_ps(__first, __second, __blend_mask));
+				return as<_Intrin_>(_mm256_blend_ps(__first, __second, __blend_mask));
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 2 && __avx2) {
@@ -432,51 +432,51 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 			constexpr auto __mask = __expanded % std::integral_constant<sizetype, 16>{};
 
 			if constexpr (!__across_halfs(__p)) {
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p.template expand<u16, u8>().template as_native<__m256i>()));
+				return as<_Intrin_>(_mm256_shuffle_epi8(as<__m256i>(__x), __p.template expand<u16, u8>().template as_native<__m256i>()));
 			}
 			else if constexpr (__avx512bw && __avx512vl) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi16(__p.template as_native<__m256i>(), __as<__m256i>(__x)));
+				return as<_Intrin_>(_mm256_permutexvar_epi16(__p.template as_native<__m256i>(), as<__m256i>(__x)));
 			}
 			else if constexpr (__is_low_half(__p)) { 
-				const auto __broadcasted_low = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0);
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
+				const auto __broadcasted_low = _mm256_permute2x128_si256(as<__m256i>(__x), as<__m256i>(__x), 0);
+				return as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
 			}
 			else if constexpr (__is_high_half(__p)) { 
-				const auto __broadcasted_low = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0x11);
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
+				const auto __broadcasted_low = _mm256_permute2x128_si256(as<__m256i>(__x), as<__m256i>(__x), 0x11);
+				return as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
 			}
 			else {
-				const auto __swapped = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0x01);
+				const auto __swapped = _mm256_permute2x128_si256(as<__m256i>(__x), as<__m256i>(__x), 0x01);
 
-				const auto __shuffled1 = _mm256_shuffle_epi8(__as<__m256i>(__x), __expanded.crossing_lanes().template as_native<__m256i>());
+				const auto __shuffled1 = _mm256_shuffle_epi8(as<__m256i>(__x), __expanded.crossing_lanes().template as_native<__m256i>());
 				const auto __shuffled2 = _mm256_shuffle_epi8(__swapped, __expanded.non_crossing_lanes().template as_native<__m256i>());
 
-				return __as<_Intrin_>(_mm256_or_si256(__shuffled1, __shuffled2));
+				return as<_Intrin_>(_mm256_or_si256(__shuffled1, __shuffled2));
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 1 && __avx2) {
 			constexpr auto __mask = (__p % std::integral_constant<sizetype, 16>{});
 
 			if constexpr (!__across_halfs(__p)) {
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__as<__m256i>(__x), __p.template as_native<__m256i>()));
+				return as<_Intrin_>(_mm256_shuffle_epi8(as<__m256i>(__x), __p.template as_native<__m256i>()));
 			}
 			else if constexpr (__avx512vbmi && __avx512vl) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi8(__p.template as_native<__m256i>(), __as<__m256i>(__x)));
+				return as<_Intrin_>(_mm256_permutexvar_epi8(__p.template as_native<__m256i>(), as<__m256i>(__x)));
 			}
 			else if constexpr (__is_low_half(__p)) {
-				const auto __broadcasted_low = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0);
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
+				const auto __broadcasted_low = _mm256_permute2x128_si256(as<__m256i>(__x), as<__m256i>(__x), 0);
+				return as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
 			}
 			else if constexpr (__is_high_half(__p)) {
-				const auto __broadcasted_low = _mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0x11);
-				return __as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
+				const auto __broadcasted_low = _mm256_permute2x128_si256(as<__m256i>(__x), as<__m256i>(__x), 0x11);
+				return as<_Intrin_>(_mm256_shuffle_epi8(__broadcasted_low, __mask.template as_native<__m256i>()));
 			}
 			else {
-				const auto __shuffled1 = _mm256_shuffle_epi8(__as<__m256i>(__x), __p.crossing_lanes().template as_native<__m256i>());
-				const auto __shuffled2 = _mm256_shuffle_epi8(_mm256_permute2x128_si256(__as<__m256i>(__x), __as<__m256i>(__x), 0x01),
+				const auto __shuffled1 = _mm256_shuffle_epi8(as<__m256i>(__x), __p.crossing_lanes().template as_native<__m256i>());
+				const auto __shuffled2 = _mm256_shuffle_epi8(_mm256_permute2x128_si256(as<__m256i>(__x), as<__m256i>(__x), 0x01),
 					__p.non_crossing_lanes().template as_native<__m256i>());
 
-				return __as<_Intrin_>(_mm256_or_si256(__shuffled1, __shuffled2));
+				return as<_Intrin_>(_mm256_or_si256(__shuffled1, __shuffled2));
 			}
 		}
 		else return __shuffle_fallback<_ISA_, _Type_>(__x, __p.get());
@@ -487,9 +487,9 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 				constexpr auto __mask = ((__p[0] & 1) << 0) | ((__p[1] & 1) << 1) | ((__p[2] & 1) << 2) | ((__p[3] & 1) << 3) |
 					((__p[4] & 1) << 4) | ((__p[5] & 1) << 5) | ((__p[6] & 1) << 6) | ((__p[7] & 1) << 7);
 
-				return __as<_Intrin_>(_mm512_permute_pd(__as<__m512d>(__x), __mask));
+				return as<_Intrin_>(_mm512_permute_pd(as<__m512d>(__x), __mask));
 			}
-			return __as<_Intrin_>(_mm512_permutexvar_epi64(__p.template as_native<__m512i>(), __as<__m512i>(__x)));
+			return as<_Intrin_>(_mm512_permutexvar_epi64(__p.template as_native<__m512i>(), as<__m512i>(__x)));
 		}
 		else if constexpr (sizeof(_Type_) == 4) {
 			if constexpr (!__across_quads(__p)) {
@@ -498,20 +498,20 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 				constexpr auto __q2 = __to_pshufd_mask(__p.offset(std::integral_constant<sizetype, 8>{}));
 				constexpr auto __q3 = __to_pshufd_mask(__p.offset(std::integral_constant<sizetype, 12>{}));
 
-				if constexpr (__q0 == __q1 && __q1 == __q2 && __q2 == __q3) return __as<_Intrin_>(_mm512_permute_ps(__as<__m512>(__x), __q0));
-				else return __as<_Intrin_>(_mm512_permutevar_ps(__as<__m512>(__x), __p.template as_native<__m512i>()));
+				if constexpr (__q0 == __q1 && __q1 == __q2 && __q2 == __q3) return as<_Intrin_>(_mm512_permute_ps(as<__m512>(__x), __q0));
+				else return as<_Intrin_>(_mm512_permutevar_ps(as<__m512>(__x), __p.template as_native<__m512i>()));
 			}
-			else return __as<_Intrin_>(_mm512_permutevar_epi32(__p.template as_native<__m512i>(), __as<__m512i>(__x)));
+			else return as<_Intrin_>(_mm512_permutevar_epi32(__p.template as_native<__m512i>(), as<__m512i>(__x)));
 		}
 		else if constexpr (sizeof(_Type_) == 2) {
-			if constexpr (__avx512bw) return __as<_Intrin_>(_mm512_permutexvar_epi16(__p.template as_native<__m512i>(), __as<__m512i>(__x)));
+			if constexpr (__avx512bw) return as<_Intrin_>(_mm512_permutexvar_epi16(__p.template as_native<__m512i>(), as<__m512i>(__x)));
 			else if constexpr (!__across_quads(__p)) {
 				const auto __shuffle = __p.template expand<u16, u8>().template as_native<__m512i>();
 
-				const auto __low = _mm256_shuffle_epi8(__as<__m256i>(__x), __as<__m256i>(__shuffle));
-				const auto __high = _mm256_shuffle_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__x), 1), _mm512_extracti64x4_epi64(__as<__m512i>(__shuffle), 1));
+				const auto __low = _mm256_shuffle_epi8(as<__m256i>(__x), as<__m256i>(__shuffle));
+				const auto __high = _mm256_shuffle_epi8(_mm512_extracti64x4_epi64(as<__m512i>(__x), 1), _mm512_extracti64x4_epi64(as<__m512i>(__shuffle), 1));
 
-				return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+				return as<_Intrin_>(_mm512_inserti64x4(as<__m512i>(__low), __high, 1));
 			}
 			else return __shuffle_i8x64_avx512<_ISA_>(__x, __p.template expand<u16, u8>().template as_native<__m512i>());
 		}
@@ -519,12 +519,12 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 			const auto __shuffle = __p.template as_native<__m512i>();
 
 			if constexpr (!__across_quads(__p) && (!__avx512vbmi || __avx512bw)) {
-				if constexpr (__avx512bw) return __as<_Intrin_>(_mm512_shuffle_epi8(__as<__m512i>(__x), __shuffle));
+				if constexpr (__avx512bw) return as<_Intrin_>(_mm512_shuffle_epi8(as<__m512i>(__x), __shuffle));
 				else {
-					const auto __low = _mm256_shuffle_epi8(__as<__m256i>(__x), __as<__m256i>(__shuffle));
-					const auto __high = _mm256_shuffle_epi8(_mm512_extracti64x4_epi64(__as<__m512i>(__x), 1), _mm512_extracti64x4_epi64(__as<__m512i>(__shuffle), 1));
+					const auto __low = _mm256_shuffle_epi8(as<__m256i>(__x), as<__m256i>(__shuffle));
+					const auto __high = _mm256_shuffle_epi8(_mm512_extracti64x4_epi64(as<__m512i>(__x), 1), _mm512_extracti64x4_epi64(as<__m512i>(__shuffle), 1));
 
-					return __as<_Intrin_>(_mm512_inserti64x4(__as<__m512i>(__low), __high, 1));
+					return as<_Intrin_>(_mm512_inserti64x4(as<__m512i>(__low), __high, 1));
 				}
 			}
 			else return __shuffle_i8x64_avx512<_ISA_>(__x, __p.template as_native<__m512i>());
@@ -545,17 +545,17 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 	if constexpr (sizeof(_Intrin_) == 16) {
 		if constexpr (sizeof(_Type_) == 8) {
 			if constexpr (__avx512vl) {
-				return __as<_Intrin_>(_mm_permutex2var_epi64(__as<__m128i>(__x), __as<__m128i>(__idx), __as<__m128i>(__x)));
+				return as<_Intrin_>(_mm_permutex2var_epi64(as<__m128i>(__x), as<__m128i>(__idx), as<__m128i>(__x)));
 			}
 			else if constexpr (__ssse3) {
 				const auto __dupe_mask = _mm_setr_epi8(0, 0, 0, 0, 0, 0, 0, 0, 8, 8, 8, 8, 8, 8, 8, 8);
 				const auto __add_seq = _mm_setr_epi8(0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7);
 
-				const auto __byte_offsets = _mm_slli_epi64(__as<__m128i>(__idx), 3);
+				const auto __byte_offsets = _mm_slli_epi64(as<__m128i>(__idx), 3);
 				const auto __duplicated = _mm_shuffle_epi8(__byte_offsets, __dupe_mask);
 				const auto __mask = _mm_add_epi8(__duplicated, __add_seq);
 
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __mask));
+				return as<_Intrin_>(_mm_shuffle_epi8(as<__m128i>(__x), __mask));
 			}
 			else {
 				alignas(16) _Type_ __t[2];
@@ -563,23 +563,23 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 
 				const auto* __i = reinterpret_cast<const unsigned long long*>(&__idx);
 				
-				if constexpr (std::is_floating_point_v<_Type_>) return _Fallback_result { __as<_Intrin_>(_mm_set_pd(__t[__i[1]], __t[__i[0]])) };
-				else return _Fallback_result{ __as<_Intrin_>(_mm_set_epi64x(__t[__i[1]], __t[__i[0]])) };
+				if constexpr (std::is_floating_point_v<_Type_>) return _Fallback_result { as<_Intrin_>(_mm_set_pd(__t[__i[1]], __t[__i[0]])) };
+				else return _Fallback_result{ as<_Intrin_>(_mm_set_epi64x(__t[__i[1]], __t[__i[0]])) };
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 4) {
 			if constexpr (__avx512vl) {
-				return __as<_Intrin_>(_mm_permutex2var_epi32(__as<__m128i>(__x), __as<__m128i>(__idx), __as<__m128i>(__x)));
+				return as<_Intrin_>(_mm_permutex2var_epi32(as<__m128i>(__x), as<__m128i>(__idx), as<__m128i>(__x)));
 			}
 			else if constexpr (__ssse3) {
 				const auto __dupe_mask = _mm_setr_epi8(0, 0, 0, 0, 4, 4, 4, 4, 8, 8, 8, 8, 12, 12, 12, 12);
 				const auto __add_seq = _mm_setr_epi8(0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3);
 
-				const auto __byte_offsets = _mm_slli_epi32(__as<__m128i>(__idx), 2);
+				const auto __byte_offsets = _mm_slli_epi32(as<__m128i>(__idx), 2);
 				const auto __duplicated = _mm_shuffle_epi8(__byte_offsets, __dupe_mask);
 				const auto __pshufb_mask = _mm_add_epi8(__duplicated, __add_seq);
 
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __pshufb_mask));
+				return as<_Intrin_>(_mm_shuffle_epi8(as<__m128i>(__x), __pshufb_mask));
 			}
 			else {
 				alignas(16) _Type_ __t[4];
@@ -587,43 +587,43 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 
 				const auto* __i = reinterpret_cast<const unsigned int*>(&__idx);
 				
-				if constexpr (std::is_floating_point_v<_Type_>) return _Fallback_result{ __as<_Intrin_>(_mm_set_ps(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
-				else return _Fallback_result{ __as<_Intrin_>(_mm_set_epi32(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
+				if constexpr (std::is_floating_point_v<_Type_>) return _Fallback_result{ as<_Intrin_>(_mm_set_ps(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
+				else return _Fallback_result{ as<_Intrin_>(_mm_set_epi32(__t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 2) {
 			if constexpr (__avx512vl && __avx512bw) {
-				return __as<_Intrin_>(_mm_permutexvar_epi16(__as<__m128i>(__idx), __as<__m128i>(__x)));
+				return as<_Intrin_>(_mm_permutexvar_epi16(as<__m128i>(__idx), as<__m128i>(__x)));
 			}
 			else if constexpr (__ssse3) {
 				const auto __dupe_mask = _mm_setr_epi8(0, 0, 2, 2, 4, 4, 6, 6, 8, 8, 10, 10, 12, 12, 14, 14);
 				const auto __add_seq = _mm_setr_epi8(0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1);
 
-				const auto __byte_offsets = _mm_slli_epi16(__as<__m128i>(__idx), 1);
+				const auto __byte_offsets = _mm_slli_epi16(as<__m128i>(__idx), 1);
 				const auto __duplicated = _mm_shuffle_epi8(__byte_offsets, __dupe_mask);
 				const auto __pshufb_mask = _mm_add_epi8(__duplicated, __add_seq);
 
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __pshufb_mask));
+				return as<_Intrin_>(_mm_shuffle_epi8(as<__m128i>(__x), __pshufb_mask));
 			}
 			else {
 				alignas(16) _Type_ __t[8];
 				_Store<_ISA_>()(__t, __x, __aligned_policy{});
 
 				const auto* __i = reinterpret_cast<const unsigned short*>(&__idx);
-				return _Fallback_result{ __as<_Intrin_>(_mm_set_epi16(__t[__i[7]], __t[__i[6]], __t[__i[5]],
+				return _Fallback_result{ as<_Intrin_>(_mm_set_epi16(__t[__i[7]], __t[__i[6]], __t[__i[5]],
 					__t[__i[4]], __t[__i[3]], __t[__i[2]], __t[__i[1]], __t[__i[0]])) };
 			}
 		}
 		else if constexpr (sizeof(_Type_) == 1) {
 			if constexpr (__ssse3) {
-				return __as<_Intrin_>(_mm_shuffle_epi8(__as<__m128i>(__x), __as<__m128i>(__idx)));
+				return as<_Intrin_>(_mm_shuffle_epi8(as<__m128i>(__x), as<__m128i>(__idx)));
 			}
 			else {
 				alignas(16) _Type_ __t[16];
 				_Store<_ISA_>()(__t, __x, __aligned_policy{});
 
 				const auto* __i = reinterpret_cast<const unsigned char*>(&__idx);
-				return _Fallback_result { __as<_Intrin_>(_mm_set_epi8(__t[__i[15]], __t[__i[14]], __t[__i[13]],
+				return _Fallback_result { as<_Intrin_>(_mm_set_epi8(__t[__i[15]], __t[__i[14]], __t[__i[13]],
 					__t[__i[12]], __t[__i[11]], __t[__i[10]], __t[__i[9]], __t[__i[8]],
 					__t[__i[7]], __t[__i[6]], __t[__i[5]], __t[__i[4]], __t[__i[3]],
 					__t[__i[2]], __t[__i[1]], __t[__i[0]])) };
@@ -633,26 +633,26 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 	else if constexpr (sizeof(_Intrin_) == 32) {
 		if constexpr (sizeof(_Type_) == 8) {
 			if constexpr (__avx512vl) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi64(__as<__m256i>(__idx), __as<__m256i>(__x)));
+				return as<_Intrin_>(_mm256_permutexvar_epi64(as<__m256i>(__idx), as<__m256i>(__x)));
 			}
 			else if constexpr (__avx2) {
 				const auto __dupe_mask = _mm256_setr_epi32(0, 0, 2, 2, 4, 4, 6, 6);
 				const auto __add_seq = _mm256_setr_epi32(0, 1, 0, 1, 0, 1, 0, 1);
 
-				const auto __byte_offsets = _mm256_slli_epi64(__as<__m256i>(__idx), 1);
+				const auto __byte_offsets = _mm256_slli_epi64(as<__m256i>(__idx), 1);
 				const auto __duplicated = _mm256_permutevar8x32_epi32(__byte_offsets, __dupe_mask);
 				const auto __vpermd_indices = _mm256_add_epi32(__duplicated, __add_seq);
 
-				return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), __vpermd_indices));
+				return as<_Intrin_>(_mm256_permutevar8x32_epi32(as<__m256i>(__x), __vpermd_indices));
 			}
 			else return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);
 		}
 		else if constexpr (sizeof(_Type_) == 4 && __avx2) {
-			return __as<_Intrin_>(_mm256_permutevar8x32_epi32(__as<__m256i>(__x), __as<__m256i>(__idx)));
+			return as<_Intrin_>(_mm256_permutevar8x32_epi32(as<__m256i>(__x), as<__m256i>(__idx)));
 		}
 		else if constexpr (sizeof(_Type_) == 2) {
 			if constexpr (__avx512vl && __avx512bw) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi16(__as<__m256i>(__idx), __as<__m256i>(__x)));
+				return as<_Intrin_>(_mm256_permutexvar_epi16(as<__m256i>(__idx), as<__m256i>(__x)));
 			}
 			else if constexpr (__avx2) {
 				const auto __byte_shuffle_mask = __byte_shuffle_mask_avx2<_ISA_>(__idx);
@@ -661,33 +661,33 @@ raze_no_stack_protector raze_always_inline auto __generic_shuffle_native(_Intrin
 				const auto __is_upper_half = _mm256_cmpgt_epi8(__byte_shuffle_mask, _mm256_set1_epi8(15));
 
 				// __upper: {__x[2], __x[3], __x[2], __x[3]}
-				const auto __upper = _mm256_shuffle_epi8(_mm256_permute4x64_epi64(__as<__m256i>(__x), 0xEE), __byte_shuffle_mask);
+				const auto __upper = _mm256_shuffle_epi8(_mm256_permute4x64_epi64(as<__m256i>(__x), 0xEE), __byte_shuffle_mask);
 				// __lower: {__x[0], __x[1], __x[0], __x[1]}
-				const auto __lower = _mm256_shuffle_epi8(_mm256_inserti128_si256(__as<__m256i>(__x), __as<__m128i>(__x), 1), __byte_shuffle_mask);
+				const auto __lower = _mm256_shuffle_epi8(_mm256_inserti128_si256(as<__m256i>(__x), as<__m128i>(__x), 1), __byte_shuffle_mask);
 
-				return __as<_Intrin_>(_Select<_ISA_, _Type_>()(__upper, __lower, __is_upper_half));
+				return as<_Intrin_>(select_<_ISA_, _Type_>(__upper, __lower, __is_upper_half));
 			}
 			else return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);
 		}
 		else if constexpr (sizeof(_Type_) == 1) {
 			if constexpr (__avx512vl && __avx512vbmi) {
-				return __as<_Intrin_>(_mm256_permutexvar_epi8(__as<__m256i>(__idx), __as<__m256i>(__x)));
+				return as<_Intrin_>(_mm256_permutexvar_epi8(as<__m256i>(__idx), as<__m256i>(__x)));
 			}
 			else if constexpr (__avx2) {
-				const auto __is_upper_half = _mm256_cmpgt_epi8(__as<__m256i>(__idx), _mm256_set1_epi8(15));
+				const auto __is_upper_half = _mm256_cmpgt_epi8(as<__m256i>(__idx), _mm256_set1_epi8(15));
 				
-				const auto __upper = _mm256_shuffle_epi8(_mm256_permute4x64_epi64(__as<__m256i>(__x), 0xEE), __as<__m256i>(__idx));
-				const auto __lower = _mm256_shuffle_epi8(_mm256_inserti128_si256(__as<__m256i>(__x), __as<__m128i>(__x), 1), __as<__m256i>(__idx));
+				const auto __upper = _mm256_shuffle_epi8(_mm256_permute4x64_epi64(as<__m256i>(__x), 0xEE), as<__m256i>(__idx));
+				const auto __lower = _mm256_shuffle_epi8(_mm256_inserti128_si256(as<__m256i>(__x), as<__m128i>(__x), 1), as<__m256i>(__idx));
 
-				return __as<_Intrin_>(_Select<_ISA_, _Type_>()(__upper, __lower, __is_upper_half));
+				return as<_Intrin_>(select_<_ISA_, _Type_>(__upper, __lower, __is_upper_half));
 			}
 			else return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);
 		}
 		else return __shuffle_fallback<_ISA_, _Type_>(__x, __idx);
 	}
 	else if constexpr (sizeof(_Intrin_) == 64) {
-		if constexpr (sizeof(_Type_) == 8) return __as<_Intrin_>(_mm512_permutexvar_epi64(__as<__m512i>(__idx), __as<__m512i>(__x)));
-		else if constexpr (sizeof(_Type_) == 4) return __as<_Intrin_>(_mm512_permutexvar_epi32(__as<__m512i>(__idx), __as<__m512i>(__x)));
+		if constexpr (sizeof(_Type_) == 8) return as<_Intrin_>(_mm512_permutexvar_epi64(as<__m512i>(__idx), as<__m512i>(__x)));
+		else if constexpr (sizeof(_Type_) == 4) return as<_Intrin_>(_mm512_permutexvar_epi32(as<__m512i>(__idx), as<__m512i>(__x)));
 		else if constexpr (sizeof(_Type_) == 2) return __shuffle_i16x32_avx512<_ISA_>(__x, __idx);
 		else if constexpr (sizeof(_Type_) == 1) return __shuffle_i8x64_avx512<_ISA_>(__x, __idx);
 	}

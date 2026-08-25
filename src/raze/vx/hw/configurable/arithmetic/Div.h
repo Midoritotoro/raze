@@ -33,7 +33,7 @@ struct _Configurable_div : raze::options::conditional_callable<_Configurable_div
         using _Abi_ = typename _Simd_::abi_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = _Div<_Abi_::isa, _Value_>()(ustorage(__chunk), ustorage(std::forward<_Args>(__args))...);
+            __chunk = div_<_Abi_::isa, _Value_>(ustorage(__chunk), ustorage(std::forward<_Args>(__args))...);
         };
 
         _Simd_ __result = __x;
@@ -61,7 +61,7 @@ struct _Configurable_div : raze::options::conditional_callable<_Configurable_div
         using _Abi_ = typename _Simd_::abi_type;
 
         auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = _Div<_Abi_::isa, _Value_>()(ustorage(__chunk), ustorage(std::forward<_Args>(__args))...);
+            __chunk = div_<_Abi_::isa, _Value_>(ustorage(__chunk), ustorage(std::forward<_Args>(__args))...);
         };
 
         _Simd_ __result = __x;

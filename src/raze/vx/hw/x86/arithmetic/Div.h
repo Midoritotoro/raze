@@ -10,383 +10,380 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_or_arithmetic_type _Tp_>
-raze_nodiscard raze_always_inline _Tp_ __div_fallback(_Tp_ __x, _Tp_ __y) noexcept {
-	if constexpr (arithmetic_type<_Tp_>) {
-		return __x / __y;
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
+raze_nodiscard raze_always_inline V div_fallback_(V x, V y) noexcept {
+	if constexpr (arithmetic_type<V>) {
+		return x / y;
 	}
 	else {
-		constexpr auto __length = sizeof(_Tp_) / sizeof(_Type_);
+		constexpr auto size = sizeof(V) / sizeof(T);
 
-		alignas(sizeof(_Tp_)) _Type_ __destination[__length];
+		alignas(sizeof(V)) T dest[size];
 
-		alignas(sizeof(_Tp_)) _Type_ __left_array[__length];
-		alignas(sizeof(_Tp_)) _Type_ __right_array[__length];
+		alignas(sizeof(V)) T left[size];
+		alignas(sizeof(V)) T right[size];
 
-		_Store<_ISA_>()(__left_array, __x, __aligned_policy{});
-		_Store<_ISA_>()(__right_array, __y, __aligned_policy{});
+		store_(left, x, aligned_policy{});
+		store_(right, y, aligned_policy{});
 
-		for (auto __i = 0; __i < __length; ++__i)
-			__destination[__i] = __left_array[__i] / __right_array[__i];
+		for (auto i = 0; i < size; ++i)
+			dest[i] = left[i] / right[i];
 
-		return _Load<_ISA_, _Tp_>()(__destination, __aligned_policy{});
+		return load_<ISA, V>(dest, aligned_policy{});
 	}
 }
 
-template <arch::ISA	_ISA_, arithmetic_type _Type_, intrin_type _Tp_>
-raze_nodiscard raze_always_inline _Tp_ __div_fallback(_Tp_ __x, _Type_ __y) noexcept {
-	if constexpr (arithmetic_type<_Tp_>) {
-		return __x / __y;
+template <arch::ISA	ISA, arithmetic_type T, intrin_type V>
+raze_nodiscard raze_always_inline V div_fallback_(V x, T y) noexcept {
+	if constexpr (arithmetic_type<V>) {
+		return x / y;
 	}
 	else {
-		constexpr auto __length = sizeof(_Tp_) / sizeof(_Type_);
+		constexpr auto size = sizeof(V) / sizeof(T);
 
-		alignas(sizeof(_Tp_)) _Type_ __destination[__length];
-		alignas(sizeof(_Tp_)) _Type_ __left_array[__length];
+		alignas(sizeof(V)) T dest[__length];
+		alignas(sizeof(V)) T left[__length];
 
-		_Store<_ISA_>()(__left_array, __x, __aligned_policy{});
+		store_(left, x, aligned_policy{});
 
-		for (auto __i = 0; __i < __length; ++__i)
-			__destination[__i] = __left_array[__i] / __y;
+		for (auto i = 0; i < size; ++i)
+			dest[i] = left[i] / y;
 
-		return _Load<_ISA_, _Tp_>()(__destination, __aligned_policy{});
+		return load_<ISA, V>(dest, aligned_policy{});
 	}
 }
 
-template <arch::ISA	_ISA_, arithmetic_type _Type_>
-struct _Div {
-	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_div_pd(__as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_div_ps(__as<__m128>(__x), __as<__m128>(__y)));
-			else if constexpr (has_avx<_ISA_> && __is_epi32_v<_Type_>) {
-				return __as<_Tp_>(_mm256_cvttpd_epi32(_mm256_div_pd(_mm256_cvtepi32_pd(
-					__as<__m128i>(__x)), _mm256_cvtepi32_pd(__as<__m128i>(__y)))));
-			}
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V>
+raze_always_inline V div_(V x, V y) noexcept {
+	if constexpr (sizeof(V) == 16) {
+		if constexpr (pd<T>) return as<V>(_mm_div_pd(as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm_div_ps(as<__m128>(x), as<__m128>(y)));
+		else if constexpr (has_avx<ISA> && epi32<T>) {
+			return as<V>(_mm256_cvttpd_epi32(_mm256_div_pd(_mm256_cvtepi32_pd(
+				as<__m128i>(x)), _mm256_cvtepi32_pd(as<__m128i>(y)))));
 		}
-		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_div_pd(__as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_div_ps(__as<__m256>(__x), __as<__m256>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_div_pd(__as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_div_ps(__as<__m512>(__x), __as<__m512>(__y)));
-		}
-
-		return __div_fallback<_ISA_, _Type_>(__x, __y);
 	}
-	
-	template <intrin_type _Tp_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Type_ __y) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16) {
-			if constexpr (__is_epi64_v<_Type_> || __is_epu64_v<_Type_>) {
-				const auto __left_0 = _mm_cvtsi128_si64(__as<__m128i>(__x));
-				const auto __left_1 = _mm_cvtsi128_si64(__as<__m128i>(_mm_movehl_ps(
-					__as<__m128>(__x), __as<__m128>(__x))));
-
-				return _mm_set_epi64x(__left_1 / __y, __left_0 / __y);
-			}
-			else if constexpr (__is_epi32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<i32>(__y);
-				const auto __low_product = _mm_mul_epu32(__as<__m128i>(__x), __divisor_information.multiplier());
-
-				const auto __low_product_shifted = _mm_srli_epi64(__low_product, 32);
-				const auto __left_value_shifted = _mm_srli_epi64(__as<__m128i>(__x), 32);
-
-				const auto __high_product = _mm_mul_epu32(__left_value_shifted, __divisor_information.multiplier());
-				const auto __low_32bit_mask = _mm_set_epi32(-1, 0, -1, 0);
-
-				const auto __high_product_low_half = _mm_and_si128(__high_product, __low_32bit_mask);
-				const auto __merged_product = _mm_or_si128(__low_product_shifted, __high_product_low_half);
-
-				const auto __left_sign_mask = _mm_srai_epi32(__as<__m128i>(__x), 31);
-				const auto __multiplier_sign_mask = _mm_srai_epi32(__divisor_information.multiplier(), 31);
-
-				const auto __correction_from_multiplier = _mm_and_si128(__divisor_information.multiplier(), __left_sign_mask);
-				const auto __correction_from_left_value = _mm_and_si128(__as<__m128i>(__x), __multiplier_sign_mask);
-
-				const auto __correction_total = _mm_add_epi32(__correction_from_multiplier, __correction_from_left_value);
-				const auto __adjusted_product = _mm_sub_epi32(__merged_product, __correction_total);
-
-				const auto __biased_product = _mm_add_epi32(__adjusted_product, __as<__m128i>(__x));
-				const auto __shifted_product = _mm_sra_epi32(__biased_product, __divisor_information.shift());
-
-				const auto __sign_correction = _mm_sub_epi32(__left_sign_mask, __divisor_information.sign());
-				const auto __quotient_value = _mm_sub_epi32(__shifted_product, __sign_correction);
-
-				return __as<_Tp_>(_mm_xor_si128(__quotient_value, __divisor_information.sign()));
-			}
-			else if constexpr (__is_epu32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<u32>(__y);
-
-				const auto __low_product = _mm_mul_epu32(__as<__m128i>(__x), __divisor_information.multiplier());
-				const auto __low_product_shifted = _mm_srli_epi64(__low_product, 32);
-				const auto __left_value_shifted = _mm_srli_epi64(__as<__m128i>(__x), 32);
-
-				const auto __high_product = _mm_mul_epu32(__left_value_shifted, __divisor_information.multiplier());
-				const auto __low_32bit_mask = _mm_set_epi32(-1, 0, -1, 0);
-
-				const auto __high_product_low_half = _mm_and_si128(__high_product, __low_32bit_mask);
-				const auto __merged_product = _mm_or_si128(__low_product_shifted, __high_product_low_half);
-
-				const auto __difference_value = _mm_sub_epi32(__as<__m128i>(__x), __merged_product);
-				const auto __first_shifted_value = _mm_srl_epi32(__difference_value, __divisor_information.shift1());
-				const auto __biased_value = _mm_add_epi32(__merged_product, __first_shifted_value);
-
-				return __as<_Tp_>(_mm_srl_epi32(__biased_value, __divisor_information.shift2()));
-			}
-			else if constexpr (__is_epi16_v<_Type_>) {
-				const auto __divisor_information = _Divisor<i16>(__y);
-
-				const auto __high_half_product = _mm_mulhi_epi16(__as<__m128i>(__x), __divisor_information.multiplier());
-				const auto __sum_with_left_value = _mm_add_epi16(__high_half_product, __as<__m128i>(__x));
-
-				const auto __shifted_sum = _mm_sra_epi16(__sum_with_left_value, __divisor_information.shift());
-				const auto __left_sign_mask = _mm_srai_epi16(__as<__m128i>(__x), 15);
-				const auto __sign_correction = _mm_sub_epi16(__left_sign_mask, __divisor_information.sign());
-				const auto __adjusted_value = _mm_sub_epi16(__shifted_sum, __sign_correction);
-
-				return __as<_Tp_>(_mm_xor_si128(__adjusted_value, __divisor_information.sign()));
-			}
-			else if constexpr (__is_epu16_v<_Type_>) {
-				const auto __divisor_information = _Divisor<u16>(__y);
-
-				const auto __high_half_product = _mm_mulhi_epu16(__as<__m128i>(__x), __divisor_information.multiplier());
-				const auto __difference_value = _mm_sub_epi16(__as<__m128i>(__x), __high_half_product);
-
-				const auto __first_shifted_value = _mm_srl_epi16(__difference_value, __divisor_information.shift1());
-				const auto __biased_value = _mm_add_epi16(__high_half_product, __first_shifted_value);
-
-				return __as<_Tp_>(_mm_srl_epi16(__biased_value, __divisor_information.shift2()));
-			}
-			else if constexpr (__is_epi8_v<_Type_>) {
-				const auto __sign = _mm_cmpgt_epi8(_mm_setzero_si128(), __as<__m128i>(__x));
-				const auto __mask = _mm_set1_epi32(0x00FF00FF);
-
-				const auto __low = _Div<_ISA_, i16>()(_mm_unpacklo_epi8(__as<__m128i>(__x), __sign), __y);
-				const auto __high = _Div<_ISA_, i16>()(_mm_unpackhi_epi8(__as<__m128i>(__x), __sign), __y);
-
-				return __as<_Tp_>(_mm_packus_epi16(_mm_and_si128(__low, __mask), _mm_and_si128(__high, __mask)));
-			}
-			else if constexpr (__is_epu8_v<_Type_>) {
-				const auto __mask = _mm_set1_epi32(0x00FF00FF);
-
-				const auto __low_part = _mm_unpacklo_epi8(__as<__m128i>(__x), _mm_setzero_si128());
-				const auto __high_part = _mm_unpackhi_epi8(__as<__m128i>(__x), _mm_setzero_si128());
-
-				const auto __low = _Div<_ISA_, u16>()(__low_part, __y);
-				const auto __high = _Div<_ISA_, u16>()(__high_part, __y);
-
-				return __as<_Tp_>(_mm_packus_epi16(_mm_and_si128(__low, __mask), _mm_and_si128(__high, __mask)));
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 32) {
-			if constexpr (has_avx2<_ISA_>) {
-				if constexpr (__is_epi32_v<_Type_>) {
-					const auto __divisor_information = _Divisor<i32>(__y);
-
-					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
-					const auto __sign_broadcast = _mm256_broadcastq_epi64(__divisor_information.sign());
-
-					const auto __low_half_product = _mm256_mul_epi32(__as<__m256i>(__x), __multiplier_broadcast);
-					const auto __low_half_product_shifted = _mm256_srli_epi64(__low_half_product, 32);
-
-					const auto __left_value_shifted = _mm256_srli_epi64(__as<__m256i>(__x), 32);
-					const auto __high_half_product = _mm256_mul_epi32(__left_value_shifted, __multiplier_broadcast);
-
-					const auto __merged_product = _mm256_blend_epi32(__low_half_product_shifted, __high_half_product, 0xAA);
-
-					const auto __biased_value = _mm256_add_epi32(__merged_product, __as<__m256i>(__x));
-					const auto __shifted_value = _mm256_sra_epi32(__biased_value, __divisor_information.shift());
-
-					const auto __left_sign_mask = _mm256_srai_epi32(__as<__m256i>(__x), 31);
-
-					const auto __sign_correction = _mm256_sub_epi32(__left_sign_mask, __sign_broadcast);
-					const auto __adjusted_value = _mm256_sub_epi32(__shifted_value, __sign_correction);
-
-					return __as<_Tp_>(_mm256_xor_si256(__adjusted_value, __sign_broadcast));
-				}
-				else if constexpr (__is_epu32_v<_Type_>) {
-					const auto __divisor_information = _Divisor<u32>(__y);
-
-					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
-					const auto __low_half_product = _mm256_mul_epu32(__as<__m256i>(__x), __multiplier_broadcast);
-					const auto __low_half_product_shifted = _mm256_srli_epi64(__low_half_product, 32);
-
-					const auto __left_value_shifted = _mm256_srli_epi64(__as<__m256i>(__x), 32);
-					const auto __high_half_product = _mm256_mul_epu32(__left_value_shifted, __multiplier_broadcast);
-
-					const auto __merged_product = _mm256_blend_epi32(__low_half_product_shifted, __high_half_product, 0xAA);
-					const auto __difference_value = _mm256_sub_epi32(__as<__m256i>(__x), __merged_product);
-
-					const auto __first_shifted_value = _mm256_srl_epi32(__difference_value, __divisor_information.shift1());
-					const auto __biased_value = _mm256_add_epi32(__merged_product, __first_shifted_value);
-
-					return __as<_Tp_>(_mm256_srl_epi32(__biased_value, __divisor_information.shift2()));
-				}
-				else if constexpr (__is_epi16_v<_Type_>) {
-					const auto __divisor_information = _Divisor<i16>(__y);
-
-					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
-					const auto __sign_broadcast = _mm256_broadcastq_epi64(__divisor_information.sign());
-
-					const auto __high_half_product = _mm256_mulhi_epi16(__as<__m256i>(__x), __multiplier_broadcast);
-					const auto __sum_with_left_value = _mm256_add_epi16(__high_half_product, __as<__m256i>(__x));
-
-					const auto __shifted_sum = _mm256_sra_epi16(__sum_with_left_value, __divisor_information.shift());
-					const auto __left_sign_mask = _mm256_srai_epi16(__as<__m256i>(__x), 15);
-
-					const auto __sign_correction = _mm256_sub_epi16(__left_sign_mask, __sign_broadcast);
-					const auto __adjusted_value = _mm256_sub_epi16(__shifted_sum, __sign_correction);
-
-					return __as<_Tp_>(_mm256_xor_si256(__adjusted_value, __sign_broadcast));
-				}
-				else if constexpr (__is_epu16_v<_Type_>) {
-					const auto __divisor_information = _Divisor<u16>(__y);
-
-					const auto __multiplier_broadcast = _mm256_broadcastq_epi64(__divisor_information.multiplier());
-					const auto __high_half_product = _mm256_mulhi_epu16(__as<__m256i>(__x), __multiplier_broadcast);
-
-					const auto __difference_value = _mm256_sub_epi16(__as<__m256i>(__x), __high_half_product);
-					const auto __first_shifted_value = _mm256_srl_epi16(__difference_value, __divisor_information.shift1());
-
-					const auto __biased_value = _mm256_add_epi16(__high_half_product, __first_shifted_value);
-					return __as<_Tp_>(_mm256_srl_epi16(__biased_value, __divisor_information.shift2()));
-				}
-				else if constexpr (__is_epi8_v<_Type_>) {
-					const auto __zeros = _mm256_setzero_si256();
-					const auto __and_mask = _mm256_set1_epi32(0x00FF00FF);
-
-					const auto __shuffled_low = _mm256_permute4x64_epi64(__as<__m256i>(__x), 0x10);
-					const auto __shuffled_high = _mm256_permute4x64_epi64(__as<__m256i>(__x), 0xC8);
-
-					const auto __sign_low = _mm256_cmpgt_epi8(__zeros, __shuffled_low);
-					const auto __sign_high = _mm256_cmpgt_epi8(__zeros, __shuffled_high);
-
-					const auto __low = _mm256_unpacklo_epi8(__shuffled_low, __sign_low);
-					const auto __high = _mm256_unpackhi_epi8(__shuffled_high, __sign_high);
-
-					const auto __divided_low = _Div<arch::ISA::AVX2, i16>()(__low, __y);
-					const auto __divided_high = _Div<arch::ISA::AVX2, i16>()(__high, __y);
-
-					const auto __low_mask = _mm256_and_si256(__divided_low, __and_mask);
-					const auto __high_mask = _mm256_and_si256(__divided_high, __and_mask);
-
-					return __as<_Tp_>(_mm256_permute4x64_epi64(_mm256_packus_epi16(__low_mask, __high_mask), 0xD8));
-				}
-				else if constexpr (__is_epu8_v<_Type_>) {
-					const auto __zeros = _mm256_setzero_si256();
-					const auto __and_mask = _mm256_set1_epi32(0x00FF00FF);
-
-					const auto __shuffled_low = _mm256_permute4x64_epi64(__as<__m256i>(__x), 0x10);
-					const auto __shuffled_high = _mm256_permute4x64_epi64(__as<__m256i>(__x), 0xC8);
-
-					const auto __low = _mm256_unpacklo_epi8(__shuffled_low, __zeros);
-					const auto __high = _mm256_unpackhi_epi8(__shuffled_high, __zeros);
-
-					const auto __divided_low = _Div<arch::ISA::AVX2, i16>()(__low, __y);
-					const auto __divided_high = _Div<arch::ISA::AVX2, i16>()(__high, __y);
-
-					const auto __low_mask = _mm256_and_si256(__divided_low, __and_mask);
-					const auto __high_mask = _mm256_and_si256(__divided_high, __and_mask);
-
-					return __as<_Tp_>(_mm256_permute4x64_epi64(_mm256_packus_epi16(__low_mask, __high_mask), 0xD8));
-				}
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_epi32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<i32>(__y);
-
-				const auto __multiplier_broadcast = _mm512_broadcast_i32x4(__divisor_information.multiplier());
-				const auto __sign_broadcast = _mm512_broadcast_i32x4(__divisor_information.sign());
-
-				const auto __low_half_product = _mm512_mul_epi32(__as<__m512i>(__x), __multiplier_broadcast);
-				const auto __left_shifted_high = _mm512_srli_epi64(__as<__m512i>(__x), 32);
-
-				const auto __high_half_product = _mm512_mul_epi32(__left_shifted_high, __multiplier_broadcast);
-				const auto __low_half_product_shifted = _mm512_srli_epi64(__low_half_product, 32);
-
-				const auto __merged_product = _mm512_mask_mov_epi32(__low_half_product_shifted, 0xAAAA, __high_half_product);
-				const auto __biased_value = _mm512_add_epi32(__merged_product, __as<__m512i>(__x));
-
-				const auto __shifted_value = _mm512_sra_epi32(__biased_value, __divisor_information.shift());
-				const auto __left_sign_mask = _mm512_srai_epi32(__as<__m512i>(__x), 31);
-
-				const auto __sign_correction = _mm512_sub_epi32(__left_sign_mask, __sign_broadcast);
-				const auto __adjusted_value = _mm512_sub_epi32(__shifted_value, __sign_correction);
-
-				return __as<_Tp_>(_mm512_xor_si512(__adjusted_value, __sign_broadcast));
-			}
-			else if constexpr (__is_epu32_v<_Type_>) {
-				const auto __divisor_information = _Divisor<u32>(__y);
-
-				const auto __multiplier_broadcast = _mm512_broadcast_i32x4(__divisor_information.multiplier());
-				const auto __low_half_product = _mm512_mul_epu32(__as<__m512i>(__x), __multiplier_broadcast);
-
-				const auto __left_shifted_high = _mm512_srli_epi64(__as<__m512i>(__x), 32);
-				const auto __high_half_product = _mm512_mul_epu32(__left_shifted_high, __multiplier_broadcast);
-
-				const auto __low_half_product_shifted = _mm512_srli_epi64(__low_half_product, 32);
-				const auto __merged_product = _mm512_mask_mov_epi32(__low_half_product_shifted, 0xAAAA, __high_half_product);
-				const auto __difference_value = _mm512_sub_epi32(__as<__m512i>(__x), __merged_product);
-
-				const auto __first_shifted_value = _mm512_srl_epi32(__difference_value, __divisor_information.shift1());
-				const auto __biased_value = _mm512_add_epi32(__merged_product, __first_shifted_value);
-
-				return _mm512_srl_epi32(__biased_value, __divisor_information.shift2());
-			}
-		}
-
-		return _Div()(__x, _Broadcast<_ISA_, _Tp_>()(__y));
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr (pd<T>) return as<_Tp_>(_mm256_div_pd(as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (ps<T>) return as<_Tp_>(_mm256_div_ps(as<__m256>(x), as<__m256>(y)));
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (pd<T>) return as<_Tp_>(_mm512_div_pd(as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (ps<T>) return as<_Tp_>(_mm512_div_ps(as<__m512>(x), as<__m512>(y)));
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_maskz_div_pd(__mask, __as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_maskz_div_ps(__mask, __as<__m128>(__x), __as<__m128>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_maskz_div_pd(__mask, __as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_maskz_div_ps(__mask, __as<__m256>(__x), __as<__m256>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_maskz_div_pd(__mask, __as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_maskz_div_ps(__mask, __as<__m512>(__x), __as<__m512>(__y)));
-		}
+	return div_fallback_<ISA, T>(x, y);
+}
 
-		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __mask);
+template <arch::ISA	ISA, arithmetic_type T, intrin_type V>
+raze_always_inline V div_(V x, T y) noexcept {
+	if constexpr (sizeof(V) == 16) {
+		if constexpr (epi64<T> || epu64<T>) {
+			const auto left_0 = _mm_cvtsi128_si64(as<__m128i>(x));
+			const auto left_1 = _mm_cvtsi128_si64(as<__m128i>(_mm_movehl_ps(
+				as<__m128>(x), as<__m128>(x))));
+
+			return _mm_set_epi64x(left_1 / y, left_0 / y);
+		}
+		else if constexpr (epi32<T>) {
+			const auto divisor_information = vector_divisor<i32>(y);
+			const auto low_product = _mm_mul_epu32(as<__m128i>(x), divisor_information.multiplier());
+
+			const auto low_product_shifted = _mm_srli_epi64(low_product, 32);
+			const auto left_value_shifted = _mm_srli_epi64(as<__m128i>(x), 32);
+
+			const auto high_product = _mm_mul_epu32(left_value_shifted, divisor_information.multiplier());
+			const auto low_32bit_mask = _mm_set_epi32(-1, 0, -1, 0);
+
+			const auto high_product_low_half = _mm_and_si128(high_product, low_32bit_mask);
+			const auto merged_product = _mm_or_si128(low_product_shifted, high_product_low_half);
+
+			const auto left_sign_mask = _mm_srai_epi32(as<__m128i>(x), 31);
+			const auto multiplier_sign_mask = _mm_srai_epi32(divisor_information.multiplier(), 31);
+
+			const auto correction_from_multiplier = _mm_and_si128(divisor_information.multiplier(), left_sign_mask);
+			const auto correction_from_left_value = _mm_and_si128(as<__m128i>(x), multiplier_sign_mask);
+
+			const auto correction_total = _mm_add_epi32(correction_from_multiplier, correction_from_left_value);
+			const auto adjusted_product = _mm_sub_epi32(merged_product, correction_total);
+
+			const auto biased_product = _mm_add_epi32(adjusted_product, as<__m128i>(x));
+			const auto shifted_product = _mm_sra_epi32(biased_product, divisor_information.shift());
+
+			const auto sign_correction = _mm_sub_epi32(left_sign_mask, divisor_information.sign());
+			const auto quotient_value = _mm_sub_epi32(shifted_product, sign_correction);
+
+			return as<V>(_mm_xor_si128(quotient_value, divisor_information.sign()));
+		}
+		else if constexpr (epu32<T>) {
+			const auto divisor_information = vector_divisor<u32>(y);
+
+			const auto low_product = _mm_mul_epu32(as<__m128i>(__x), divisor_information.multiplier());
+			const auto low_product_shifted = _mm_srli_epi64(low_product, 32);
+			const auto left_value_shifted = _mm_srli_epi64(as<__m128i>(x), 32);
+
+			const auto high_product = _mm_mul_epu32(left_value_shifted, divisor_information.multiplier());
+			const auto low_32bit_mask = _mm_set_epi32(-1, 0, -1, 0);
+
+			const auto high_product_low_half = _mm_and_si128(high_product, low_32bit_mask);
+			const auto merged_product = _mm_or_si128(low_product_shifted, high_product_low_half);
+
+			const auto difference_value = _mm_sub_epi32(as<__m128i>(x), merged_product);
+			const auto first_shifted_value = _mm_srl_epi32(difference_value, divisor_information.shift1());
+			const auto biased_value = _mm_add_epi32(merged_product, first_shifted_value);
+
+			return as<V>(_mm_srl_epi32(biased_value, divisor_information.shift2()));
+		}
+		else if constexpr (epi16<T>) {
+			const auto divisor_information = vector_divisor<i16>(y);
+
+			const auto high_half_product = _mm_mulhi_epi16(as<__m128i>(x), divisor_information.multiplier());
+			const auto sum_with_left_value = _mm_add_epi16(high_half_product, as<__m128i>(x));
+
+			const auto shifted_sum = _mm_sra_epi16(sum_with_left_value, divisor_information.shift());
+			const auto left_sign_mask = _mm_srai_epi16(as<__m128i>(x), 15);
+			const auto sign_correction = _mm_sub_epi16(left_sign_mask, divisor_information.sign());
+			const auto adjusted_value = _mm_sub_epi16(shifted_sum, sign_correction);
+
+			return as<V>(_mm_xor_si128(adjusted_value, divisor_information.sign()));
+		}
+		else if constexpr (epu16<T>) {
+			const auto divisor_information = vector_divisor<u16>(__y);
+
+			const auto high_half_product = _mm_mulhi_epu16(as<__m128i>(x), divisor_information.multiplier());
+			const auto difference_value = _mm_sub_epi16(as<__m128i>(x), high_half_product);
+
+			const auto first_shifted_value = _mm_srl_epi16(difference_value, divisor_information.shift1());
+			const auto biased_value = _mm_add_epi16(high_half_product, first_shifted_value);
+
+			return as<V>(_mm_srl_epi16(biased_value, divisor_information.shift2()));
+		}
+		else if constexpr (epi8<T>) {
+			const auto sign = _mm_cmpgt_epi8(_mm_setzero_si128(), as<__m128i>(x));
+			const auto mask = _mm_set1_epi32(0x00FF00FF);
+
+			const auto low = div_<ISA, i16>(_mm_unpacklo_epi8(as<__m128i>(x), sign), y);
+			const auto high = div_<ISA, i16>(_mm_unpackhi_epi8(as<__m128i>(x), sign), y);
+
+			return as<V>(_mm_packus_epi16(_mm_and_si128(low, mask), _mm_and_si128(high, mask)));
+		}
+		else if constexpr (epu8<T>) {
+			const auto mask = _mm_set1_epi32(0x00FF00FF);
+
+			const auto low_part = _mm_unpacklo_epi8(as<__m128i>(x), _mm_setzero_si128());
+			const auto high_part = _mm_unpackhi_epi8(as<__m128i>(x), _mm_setzero_si128());
+
+			const auto low = div_<ISA, u16>()(low_part, y);
+			const auto high = div_<ISA, u16>()(high_part, y);
+
+			return as<V>(_mm_packus_epi16(_mm_and_si128(low, mask), _mm_and_si128(high, mask)));
+		}
+	}
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr (has_avx2<ISA>) {
+			if constexpr (epi32<T>) {
+				const auto divisor_information = vector_divisor<i32>(__y);
+
+				const auto multiplier_broadcast = _mm256_broadcastq_epi64(divisor_information.multiplier());
+				const auto sign_broadcast = _mm256_broadcastq_epi64(divisor_information.sign());
+
+				const auto low_half_product = _mm256_mul_epi32(as<__m256i>(x), multiplier_broadcast);
+				const auto low_half_product_shifted = _mm256_srli_epi64(low_half_product, 32);
+
+				const auto left_value_shifted = _mm256_srli_epi64(as<__m256i>(x), 32);
+				const auto high_half_product = _mm256_mul_epi32(left_value_shifted, multiplier_broadcast);
+
+				const auto merged_product = _mm256_blend_epi32(low_half_product_shifted, high_half_product, 0xAA);
+
+				const auto biased_value = _mm256_add_epi32(merged_product, as<__m256i>(x));
+				const auto shifted_value = _mm256_sra_epi32(biased_value, divisor_information.shift());
+
+				const auto left_sign_mask = _mm256_srai_epi32(as<__m256i>(x), 31);
+
+				const auto sign_correction = _mm256_sub_epi32(left_sign_mask, sign_broadcast);
+				const auto adjusted_value = _mm256_sub_epi32(shifted_value, sign_correction);
+
+				return as<V>(_mm256_xor_si256(adjusted_value, sign_broadcast));
+			}
+			else if constexpr (epu32<T>) {
+				const auto divisor_information = vector_divisor<u32>(y);
+
+				const auto multiplier_broadcast = _mm256_broadcastq_epi64(divisor_information.multiplier());
+				const auto low_half_product = _mm256_mul_epu32(as<__m256i>(x), multiplier_broadcast);
+				const auto low_half_product_shifted = _mm256_srli_epi64(low_half_product, 32);
+
+				const auto left_value_shifted = _mm256_srli_epi64(as<__m256i>(x), 32);
+				const auto high_half_product = _mm256_mul_epu32(left_value_shifted, multiplier_broadcast);
+
+				const auto merged_product = _mm256_blend_epi32(low_half_product_shifted, high_half_product, 0xAA);
+				const auto difference_value = _mm256_sub_epi32(as<__m256i>(x), merged_product);
+
+				const auto first_shifted_value = _mm256_srl_epi32(difference_value, divisor_information.shift1());
+				const auto biased_value = _mm256_add_epi32(merged_product, first_shifted_value);
+
+				return as<V>(_mm256_srl_epi32(biased_value, divisor_information.shift2()));
+			}
+			else if constexpr (epi16<T>) {
+				const auto divisor_information = vector_divisor<i16>(y);
+
+				const auto multiplier_broadcast = _mm256_broadcastq_epi64(divisor_information.multiplier());
+				const auto sign_broadcast = _mm256_broadcastq_epi64(divisor_information.sign());
+
+				const auto high_half_product = _mm256_mulhi_epi16(as<__m256i>(x), multiplier_broadcast);
+				const auto sum_with_left_value = _mm256_add_epi16(high_half_product, as<__m256i>(x));
+
+				const auto shifted_sum = _mm256_sra_epi16(sum_with_left_value, divisor_information.shift());
+				const auto left_sign_mask = _mm256_srai_epi16(as<__m256i>(x), 15);
+
+				const auto sign_correction = _mm256_sub_epi16(left_sign_mask, sign_broadcast);
+				const auto adjusted_value = _mm256_sub_epi16(shifted_sum, sign_correction);
+
+				return as<V>(_mm256_xor_si256(adjusted_value, sign_broadcast));
+			}
+			else if constexpr (epu16<T>) {
+				const auto divisor_information = vector_divisor<u16>(y);
+
+				const auto multiplier_broadcast = _mm256_broadcastq_epi64(divisor_information.multiplier());
+				const auto high_half_product = _mm256_mulhi_epu16(as<__m256i>(x), multiplier_broadcast);
+
+				const auto difference_value = _mm256_sub_epi16(as<__m256i>(x), high_half_product);
+				const auto first_shifted_value = _mm256_srl_epi16(difference_value, divisor_information.shift1());
+
+				const auto biased_value = _mm256_add_epi16(high_half_product, first_shifted_value);
+				return as<V>(_mm256_srl_epi16(biased_value, divisor_information.shift2()));
+			}
+			else if constexpr (epi8<T>) {
+				const auto zeros = _mm256_setzero_si256();
+				const auto and_mask = _mm256_set1_epi32(0x00FF00FF);
+
+				const auto shuffled_low = _mm256_permute4x64_epi64(as<__m256i>(x), 0x10);
+				const auto shuffled_high = _mm256_permute4x64_epi64(as<__m256i>(x), 0xC8);
+
+				const auto sign_low = _mm256_cmpgt_epi8(zeros, shuffled_low);
+				const auto sign_high = _mm256_cmpgt_epi8(zeros, shuffled_high);
+
+				const auto low = _mm256_unpacklo_epi8(shuffled_low, sign_low);
+				const auto high = _mm256_unpackhi_epi8(shuffled_high, sign_high);
+
+				const auto divided_low = div_<arch::ISA::AVX2, i16>(low, y);
+				const auto divided_high = div_<arch::ISA::AVX2, i16>(high, y);
+
+				const auto low_mask = _mm256_and_si256(divided_low, and_mask);
+				const auto high_mask = _mm256_and_si256(divided_high, and_mask);
+
+				return as<V>(_mm256_permute4x64_epi64(_mm256_packus_epi16(low_mask,_high_mask), 0xD8));
+			}
+			else if constexpr (epu8<T>) {
+				const auto zeros = _mm256_setzero_si256();
+				const auto and_mask = _mm256_set1_epi32(0x00FF00FF);
+
+				const auto shuffled_low = _mm256_permute4x64_epi64(as<__m256i>(x), 0x10);
+				const auto shuffled_high = _mm256_permute4x64_epi64(as<__m256i>(x), 0xC8);
+
+				const auto low = _mm256_unpacklo_epi8(shuffled_low, zeros);
+				const auto high = _mm256_unpackhi_epi8(shuffled_high, zeros);
+
+				const auto divided_low = div_<arch::ISA::AVX2, i16>(low, y);
+				const auto divided_high = div_<arch::ISA::AVX2, i16>(high, y);
+
+				const auto low_mask = _mm256_and_si256(divided_low, and_mask);
+				const auto high_mask = _mm256_and_si256(divided_high, and_mask);
+
+				return as<V>(_mm256_permute4x64_epi64(_mm256_packus_epi16(low_mask, high_mask), 0xD8));
+			}
+		}
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi32<T>) {
+			const auto divisor_information = vector_divisor<i32>(y);
+
+			const auto multiplier_broadcast = _mm512_broadcast_i32x4(divisor_information.multiplier());
+			const auto sign_broadcast = _mm512_broadcast_i32x4(divisor_information.sign());
+
+			const auto low_half_product = _mm512_mul_epi32(as<__m512i>(x), multiplier_broadcast);
+			const auto left_shifted_high = _mm512_srli_epi64(as<__m512i>(x), 32);
+
+			const auto high_half_product = _mm512_mul_epi32(left_shifted_high, multiplier_broadcast);
+			const auto low_half_product_shifted = _mm512_srli_epi64(low_half_product, 32);
+
+			const auto merged_product = _mm512_mask_mov_epi32(low_half_product_shifted, 0xAAAA, high_half_product);
+			const auto biased_value = _mm512_add_epi32(merged_product, as<__m512i>(x));
+
+			const auto shifted_value = _mm512_sra_epi32(biased_value, divisor_information.shift());
+			const auto left_sign_mask = _mm512_srai_epi32(as<__m512i>(x), 31);
+
+			const auto sign_correction = _mm512_sub_epi32(left_sign_mask, sign_broadcast);
+			const auto adjusted_value = _mm512_sub_epi32(shifted_value, sign_correction);
+
+			return as<V>(_mm512_xor_si512(adjusted_value, sign_broadcast));
+		}
+		else if constexpr (epu32<T>) {
+			const auto divisor_information = vector_divisor<u32>(y);
+
+			const auto multiplier_broadcast = _mm512_broadcast_i32x4(divisor_information.multiplier());
+			const auto low_half_product = _mm512_mul_epu32(as<__m512i>(x), multiplier_broadcast);
+
+			const auto left_shifted_high = _mm512_srli_epi64(as<__m512i>(x), 32);
+			const auto high_half_product = _mm512_mul_epu32(left_shifted_high, multiplier_broadcast);
+
+			const auto low_half_product_shifted = _mm512_srli_epi64(low_half_product, 32);
+			const auto merged_product = _mm512_mask_mov_epi32(low_half_product_shifted, 0xAAAA, high_half_product);
+			const auto difference_value = _mm512_sub_epi32(as<__m512i>(x), merged_product);
+
+			const auto first_shifted_value = _mm512_srl_epi32(difference_value, divisor_information.shift1());
+			const auto biased_value = _mm512_add_epi32(merged_product, first_shifted_value);
+
+			return as<V>(_mm512_srl_epi32(biased_value, divisor_information.shift2()));
+		}
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Type_ __y, _Mask_ __mask) const noexcept {
-		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __mask);
+	return div_<ISA, T>(x, _Broadcast<ISA, V>()(y));
+}
+
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_always_inline V div_(V x, V y, M mask) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA>) {
+		if constexpr (pd<T>) return as<V>(_mm_maskz_div_pd(mask, as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm_maskz_div_ps(mask, as<__m128>(x), as<__m128>(y)));
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA>) {
+		if constexpr (pd<T>) return as<V>(_mm256_maskz_div_pd(mask, as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm256_maskz_div_ps(mask, as<__m256>(x), as<__m256>(y)));
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (pd<T>) return as<V>(_mm512_maskz_div_pd(mask, as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm512_maskz_div_ps(mask, as<__m512>(x), as<__m512>(y)));
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask, _Tp_ __src) const noexcept {
-		if constexpr (sizeof(_Tp_) == 16 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm_mask_div_pd(__as<__m128d>(__src), __mask, __as<__m128d>(__x), __as<__m128d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm_mask_div_ps(__as<__m128>(__src), __mask, __as<__m128>(__x), __as<__m128>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 32 && has_avx512vl<_ISA_>) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm256_mask_div_pd(__as<__m256d>(__src), __mask, __as<__m256d>(__x), __as<__m256d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm256_mask_div_ps(__as<__m256>(__src), __mask, __as<__m256>(__x), __as<__m256>(__y)));
-		}
-		else if constexpr (sizeof(_Tp_) == 64) {
-			if constexpr (__is_pd_v<_Type_>) return __as<_Tp_>(_mm512_mask_div_pd(__as<__m512d>(__src), __mask, __as<__m512d>(__x), __as<__m512d>(__y)));
-			else if constexpr (__is_ps_v<_Type_>) return __as<_Tp_>(_mm512_mask_div_ps(__as<__m512>(__src), __mask, __as<__m512>(__x), __as<__m512>(__y)));
-		}
+	return select_<ISA, T>(div_<ISA, T>(x, y), mask);
+}
 
-		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __src, __mask);
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_always_inline V div_(V x, T y, M mask) noexcept {
+	return select_<ISA, T>(div_<ISA, T>(x, y), mask);
+}
+
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_always_inline V div_(V x, V y, M mask, V src) noexcept {
+	if constexpr (sizeof(V) == 16 && has_avx512vl<ISA>) {
+		if constexpr (pd<T>) return as<V>(_mm_mask_div_pd(as<__m128d>(src), mask, as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm_mask_div_ps(as<__m128>(src), mask, as<__m128>(x), as<__m128>(y)));
+	}
+	else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA>) {
+		if constexpr (pd<T>) return as<V>(_mm256_mask_div_pd(as<__m256d>(src), mask, as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm256_mask_div_ps(as<__m256>(src), mask, as<__m256>(x), as<__m256>(y)));
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (pd<T>) return as<V>(_mm512_mask_div_pd(as<__m512d>(src), mask, as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm512_mask_div_ps(as<__m512>(src), mask, as<__m512>(x), as<__m512>(y)));
 	}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Type_ __y, _Mask_ __mask, _Tp_ __src) const noexcept {
-		return _Select<_ISA_, _Type_>()(_Div()(__x, __y), __src, __mask);
-	}
-};
+	return select_<ISA, T>(div_<ISA, T>(x, y), src, mask);
+}
+
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_always_inline V div_(V x, T y, M mask, V src) noexcept {
+	return select_<ISA, T>(div_<ISA, T>(x, y), src, mask);
+}
 
 __RAZE_VX_NAMESPACE_END

@@ -45,59 +45,59 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
 
     template <any_iterator_or_pointer Mem, simd_type V>
     static raze_no_stack_protector raze_always_inline auto deferred_call(auto opts, Mem it, const V& x) noexcept {
-        using Mask = raze::options::fetch_t<raze::options::condition_key, Options>;
+        using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
-        constexpr auto __safe = Options::contains(safe);
+        constexpr auto is_safe = Options::contains(safe);
 		auto mem = std::to_address(it);
 
         if constexpr (!std::same_as<Mask, options::unknown_key>) {
             static_assert(!Options::contains(nt), "The nt option is incompatible with masked load/store.");
 
-            auto __condition = opts[options::condition_key];
-            const auto __mask = __condition.mask(options::as<typename _Mask_::condition_type>{});
+            auto condition = opts[options::condition_key];
+            const auto mask = condition.mask();
 
             if constexpr (Mask::has_alternative)
                 return x.__for_each_chunk([] <class Chunk, class MaskChunk, class SourceChunk> (
-                    _Chunk& __chunk, const _MaskChunk& __mchunk, const _SourceChunk& __src_chunk, auto& __memory) raze_always_inline_lambda
+                    Chunk& chunk, const MaskChunk& mchunk, const SourceChunk& src_chunk, auto& memory) raze_always_inline_lambda
                 {
-                    if constexpr (_Options_::contains(aligned)) _Store<_Abi_::isa>()(__memory, _Select<_Abi_::isa, _Value_>()(ustorage(__chunk),
-                        ustorage(__src_chunk), ustorage(__mchunk)), __aligned_policy{});
-                    else _Store<_Abi_::isa>()(__memory, _Select<_Abi_::isa, _Value_>()(ustorage(__chunk),
-                        ustorage(__src_chunk), ustorage(__mchunk)));
+                    if constexpr (Options::contains(aligned)) store_<Abi::isa>(memory, select_<Abi::isa, Value>()(ustorage(chunk),
+                        ustorage(src_chunk), ustorage(mchunk)), aligned_policy{});
+                    else store_<Abi::isa>(memory, select_<Abi::isa, Value>(ustorage(chunk),
+                        ustorage(src_chunk), ustorage(mchunk)));
 
-                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
-                }, __mask.__storage().storage(), __condition.alternative().__storage().storage(), __mem);
+                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
+                }, mask.__storage().storage(), condition.alternative().__storage().storage(), mem);
             else
-                return __x.__for_each_chunk([] <class _Chunk, class _MaskChunk> (
-                    _Chunk& __chunk, const _MaskChunk& __mchunk, auto& __memory) raze_always_inline_lambda
+                return x.__for_each_chunk([] <class Chunk, class MaskChunk> (
+                    Chunk& chunk, const MaskChunk& mchunk, auto& memory) raze_always_inline_lambda
                 {
-                    if constexpr (_Options_::contains(aligned)) _Mask_store<_Abi_::isa, _Value_, __safe>()(__memory, ustorage(__mchunk), ustorage(__chunk), __aligned_policy{});
-                    else _Mask_store<_Abi_::isa, _Value_, __safe>()(__memory, ustorage(__mchunk), ustorage(__chunk));
+                    if constexpr (Options::contains(aligned)) mask_store_<Abi::isa, Value, is_safe>()(memory, ustorage(mchunk), ustorage(chunk), aligned_policy{});
+                    else mask_store_<Abi::isa, Value, is_safe>()(memory, ustorage(mchunk), ustorage(chunk));
 
-                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
-                }, __mask.__storage().storage(), __mem);
+                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
+                }, mask.__storage().storage(), mem);
         }
         else {
-            if constexpr (_Options_::contains(nt)) {
-                return __x.__for_each_chunk([] <class _Chunk> (_Chunk& __chunk, auto& __memory) raze_always_inline_lambda {
-                    _Store_nt<_Abi_::isa>()(__memory, ustorage(__chunk));
-                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
-                }, __mem);
+            if constexpr (Options::contains(nt)) {
+                return x.__for_each_chunk([] <class Chunk> (Chunk& chunk, auto& memory) raze_always_inline_lambda {
+                    store_nt_<Abi::isa>()(memory, ustorage(chunk));
+                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
+                }, mem);
             }
             else {
-                return __x.__for_each_chunk([] <class _Chunk> (_Chunk& __chunk, auto& __memory) raze_always_inline_lambda {
-                    if constexpr (_Options_::contains(aligned)) _Store<_Abi_::isa>()(__memory, ustorage(__chunk), __aligned_policy{});
-                    else _Store<_Abi_::isa>()(__memory, ustorage(__chunk));
+                return x.__for_each_chunk([] <class Chunk> (Chunk& chunk, auto& memory) raze_always_inline_lambda {
+                    if constexpr (Options::contains(aligned)) store<Abi::isa>()(memory, ustorage(chunk), aligned_policy{});
+                    else store_<Abi::isa>()(memory, ustorage(chunk));
 
-                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
-                }, __mem);
+                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
+                }, mem);
             }
         }
     }
 };
 
-constexpr inline auto __store = raze::options::functor<_Configurable_store>;
+constexpr inline auto store = raze::options::functor<configurable_store_t>;
 
 __RAZE_VX_NAMESPACE_END
