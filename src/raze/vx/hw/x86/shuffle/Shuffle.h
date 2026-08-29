@@ -9,24 +9,24 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Pattern_>
-raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __shuffle(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
-	if constexpr (__is_reverse(__p)) {
-		return __reverse(__x, __p);
+template <class Pattern> 
+raze_always_inline pattern_vector_t<Pattern> shuffle_(const pattern_vector_t<Pattern>& x, Pattern p) noexcept {
+	if constexpr (is_reverse(p)) {
+		return reverse_(x, p);
 	}
-	else if constexpr (__is_splat(__p)) {
-		return __splat(__x, __p);
+	else if constexpr (is_splat(p)) {
+		return splat_(x, p);
 	}
 	else {
-		return __generic_shuffle(__x, __p);
+		return generic_shuffle_(x, p);
 	}
 }
 
-template <simd_type _Simd_, index_simd_type _Index_>
-raze_always_inline _Simd_ __shuffle(const _Simd_& __x, const _Index_& __idx) noexcept
-	requires (index_type_for<_Index_, _Simd_>)
+template <simd_type V, index_simd_type Index>
+raze_always_inline V shuffle_(const V& x, const Index& idx) noexcept
+	requires (index_type_for<Index, V>)
 {
-	return __generic_shuffle(__x, __idx);
+	return generic_shuffle_(x, idx);
 }
 
 __RAZE_VX_NAMESPACE_END

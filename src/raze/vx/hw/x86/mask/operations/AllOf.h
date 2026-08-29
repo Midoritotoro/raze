@@ -6,51 +6,51 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, raw_mask_type _Tp_>
-raze_nodiscard raze_always_inline bool __none_of(_Tp_ __x) noexcept;
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
+raze_always_inline bool none_of_(M __x) noexcept;
 
-template <arch::ISA _ISA_, u64 _Size_, arithmetic_type _Type_, raw_mask_type _Tp_>
-raze_nodiscard raze_always_inline bool __all_of(_Tp_ __x) noexcept {
-	if constexpr (intrin_type<_Tp_>) {
-		constexpr auto __size = (sizeof(_Tp_)) == 64 ? 0xFFFFFFFFFFFFFFFFULL : u64((u64(1) << (sizeof(_Tp_))) - 1);
-		return _To_bitmask<_ISA_, i8>()(__x) == __size;
+template <arch::ISA ISA, u64 N, arithmetic_type T, raw_mask_type M>
+raze_always_inline bool all_of_(M x) noexcept {
+	if constexpr (intrin_type<M>) {
+		constexpr auto size = (sizeof(M)) == 64 ? 0xFFFFFFFFFFFFFFFFULL : u64((u64(1) << (sizeof(M))) - 1);
+		return to_bitmask_<ISA, i8>(x) == size;
 	}
-	else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
-		raze_maybe_unused_attribute constexpr auto __max_for_bits = ((sizeof(_Tp_) * 8) == _Size_)
-			? math::max_limit<_Tp_>() : _Tp_(((_Tp_(1) << _Size_) - 1));
+	else if constexpr (std::is_integral_v<M> && !std::is_same_v<M, bool>) {
+		raze_maybe_unused_attribute constexpr auto max_for_bits = ((sizeof(M) * 8) == N)
+			? math::max_limit<M>() : M(((M(1) << N) - 1));
 
-		if constexpr (_Size_ < 8 && has_avx512dq<_ISA_>) return _ktestc_mask8_u8(__x, _cvtu32_mask8(__max_for_bits));
-		else if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>) return _kortestc_mask8_u8(__x, __x);
-		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>) return _kortestc_mask16_u8(__x, __x);
-		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>) return _kortestc_mask32_u8(__x, __x);
-		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>) return _kortestc_mask64_u8(__x, __x);
-		else return (__x == __max_for_bits);
+		if constexpr (N < 8 && has_avx512dq<ISA>) return _ktestc_mask8_u8(x, _cvtu32_mask8(max_for_bits));
+		else if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) return _kortestc_mask8_u8(x, x);
+		else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>) return _kortestc_mask16_u8(x, x);
+		else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _kortestc_mask32_u8(x, x);
+		else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _kortestc_mask64_u8(x, x);
+		else return (x == max_for_bits);
 	}
-	else return __x;
+	else return x;
 }
 
-template <arch::ISA _ISA_, u64 _Size_, arithmetic_type _Type_, raw_mask_type _Tp_, raw_mask_type _Mask_>
-raze_nodiscard raze_always_inline bool __all_of(_Tp_ __x, _Mask_ __mask) noexcept
-	requires((intrin_type<_Tp_> && intrin_type<_Mask_>) || (std::unsigned_integral<_Tp_> && std::unsigned_integral<_Mask_>
-		&& !std::is_same_v<_Tp_, bool> && !std::is_same_v<_Tp_, bool>) || (std::is_same_v<_Tp_, bool> && std::is_same_v<_Tp_, _Mask_>))
+template <arch::ISA ISA, u64 N, arithmetic_type T, raw_mask_type M, raw_mask_type Mask>
+raze_always_inline bool all_of_(M x, Mask mask) noexcept
+	requires((intrin_type<M> && intrin_type<Mask>) || (std::unsigned_integral<M> && std::unsigned_integral<Mask>
+		&& !std::is_same_v<M, bool> && !std::is_same_v<M, bool>) || (std::is_same_v<M, bool> && std::is_same_v<M, Mask>))
 {
-    if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-        return !__mask || __x;
+    if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
+        return !mask || x;
     }
-    else if constexpr (std::is_integral_v<_Tp_> && !std::is_same_v<_Tp_, bool>) {
-        if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>)
-            return _ktestc_mask8_u8(__x, __mask);
-        else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>)
-            return _ktestc_mask16_u8(__x, __mask);
-        else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>)
-            return _ktestc_mask32_u8(__x, __mask);
-        else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>)
-            return _ktestc_mask64_u8(__x, __mask);
+    else if constexpr (std::is_integral_v<M> && !std::is_same_v<M, bool>) {
+        if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>)
+            return _ktestc_mask8_u8(x, mask);
+        else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>)
+            return _ktestc_mask16_u8(x, mask);
+        else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>)
+            return _ktestc_mask32_u8(x, mask);
+        else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>)
+            return _ktestc_mask64_u8(x, mask);
         else
-            return (__x & __mask) == __mask;
+            return (x & mask) == mask;
     }
 	
-	return __none_of<_ISA_, _Type_>(_Mask_andnot<_ISA_, _Type_>()(__x, __mask));
+	return none_of_<ISA, T>(mask_andnot_<ISA, T>(x, mask));
 }
 
 __RAZE_VX_NAMESPACE_END

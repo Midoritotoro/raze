@@ -5,7 +5,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, class _Type_>
-constexpr inline auto __bitmask_bits_per_element_v = has_avx512bw<_ISA_> ? 1 : ((sizeof(_Type_) == 2) ? 2 : 1);
+template <arch::ISA ISA, class T>
+constexpr inline auto bitmask_bits_per_element_v = has_avx512bw<ISA> ? 1 : ((sizeof(T) == 2) ? 2 : 1);
 
 __RAZE_VX_NAMESPACE_END

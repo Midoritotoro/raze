@@ -6,102 +6,102 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Value_, intrin_or_arithmetic_type _Intrin_, class _Pattern_>
-raze_always_inline _Intrin_ __reverse_native(_Intrin_ __x, _Pattern_ __p) noexcept {
-	if constexpr (!has_ssse3<_ISA_> && sizeof(_Intrin_) == 16) {
-		if constexpr (sizeof(_Value_) == 2) {
-			__x = as<_Intrin_>(_mm_shuffle_pd(as<__m128d>(__x), as<__m128d>(__x), 1));
-			__x = as<_Intrin_>(_mm_shufflehi_epi16(as<__m128i>(__x), 0x1B));
-			return as<_Intrin_>(_mm_shufflelo_epi16(as<__m128i>(__x), 0x1B));
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, class Pattern>
+raze_always_inline V reverse_native_(V x, Pattern p) noexcept {
+	if constexpr (!has_ssse3<ISA> && sizeof(V) == 16) {
+		if constexpr (sizeof(T) == 2) {
+			x = as<V>(_mm_shuffle_pd(as<__m128d>(x), as<__m128d>(x), 1));
+			x = as<V>(_mm_shufflehi_epi16(as<__m128i>(x), 0x1B));
+			return as<V>(_mm_shufflelo_epi16(as<__m128i>(x), 0x1B));
 		}
-		else if constexpr (sizeof(_Value_) == 1) {
-			__x = as<_Intrin_>(_mm_or_si128(_mm_srli_epi16(as<__m128i>(__x), 8), _mm_slli_epi16(as<__m128i>(__x), 8)));
-			__x = as<_Intrin_>(_mm_shufflelo_epi16(as<__m128i>(__x), 0x1B));
-			__x = as<_Intrin_>(_mm_shufflehi_epi16(as<__m128i>(__x), 0x1B));
-			return as<_Intrin_>(_mm_shuffle_epi32(as<__m128i>(__x), 0x4E));
-		}
-	}
-	else if constexpr (sizeof(_Intrin_) == 32) {
-		if constexpr (sizeof(_Value_) == 2 && !(has_avx512bw<_ISA_> && has_avx512vl<_ISA_>)) {
-			const auto __reversed_lanes = _mm256_shuffle_epi8(as<__m256i>(__x), 
-				(__p % std::integral_constant<sizetype, 16>{}).template expand<u16, u8>().template as_native<__m256i>());
-			return as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
-		}
-		else if constexpr (sizeof(_Value_) == 1 && !(has_avx512vbmi<_ISA_> && has_avx512vl<_ISA_>)) {
-			const auto __reversed_lanes = _mm256_shuffle_epi8(as<__m256i>(__x),
-				(__p % std::integral_constant<sizetype, 16>{}).template as_native<__m256i>());
-			return as<_Intrin_>(_mm256_permute2x128_si256(__reversed_lanes, __reversed_lanes, 0x01));
+		else if constexpr (sizeof(T) == 1) {
+			x = as<V>(_mm_or_si128(_mm_srli_epi16(as<__m128i>(x), 8), _mm_slli_epi16(as<__m128i>(x), 8)));
+			x = as<V>(_mm_shufflelo_epi16(as<__m128i>(x), 0x1B));
+			x = as<V>(_mm_shufflehi_epi16(as<__m128i>(x), 0x1B));
+			return as<V>(_mm_shuffle_epi32(as<__m128i>(x), 0x4E));
 		}
 	}
-	else if constexpr (sizeof(_Intrin_) == 64) {
-		if constexpr ((sizeof(_Value_) == 2 && !has_avx512bw<_ISA_>) || (sizeof(_Value_) == 1 && !has_avx512vbmi<_ISA_>)) {
-			constexpr auto __p_offset = __p.offset(std::integral_constant<sizetype, __p.size() / 2>{});
-			__m256i __native;
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr (sizeof(T) == 2 && !(has_avx512bw<ISA> && has_avx512vl<ISA>)) {
+			const auto reversed_lanes = _mm256_shuffle_epi8(as<__m256i>(x), 
+				(p % std::integral_constant<sizetype, 16>{}).template expand<u16, u8>().template as_native<__m256i>());
+			return as<V>(_mm256_permute2x128_si256(reversed_lanes, reversed_lanes, 0x01));
+		}
+		else if constexpr (sizeof(T) == 1 && !(has_avx512vbmi<ISA> && has_avx512vl<ISA>)) {
+			const auto reversed_lanes = _mm256_shuffle_epi8(as<__m256i>(x),
+				(p % std::integral_constant<sizetype, 16>{}).template as_native<__m256i>());
+			return as<V>(_mm256_permute2x128_si256(reversed_lanes, reversed_lanes, 0x01));
+		}
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr ((sizeof(T) == 2 && !has_avx512bw<ISA>) || (sizeof(T) == 1 && !has_avx512vbmi<ISA>)) {
+			constexpr auto p_offset = p.offset(std::integral_constant<sizetype, p.size() / 2>{});
+			__m256i native;
 			
-			if constexpr (sizeof(_Value_) == 2) __native = __p_offset.template expand<u16, u8>().template as_native<__m256i>();
-			else __native = __p_offset.template as_native<__m256i>();
+			if constexpr (sizeof(T) == 2) native = p_offset.template expand<u16, u8>().template as_native<__m256i>();
+			else native = p_offset.template as_native<__m256i>();
 
-			const auto __low_half = _mm512_extracti64x4_epi64(as<__m512i>(__x), 0);
-			const auto __high_half = _mm512_extracti64x4_epi64(as<__m512i>(__x), 1);
+			const auto low_half = _mm512_extracti64x4_epi64(as<__m512i>(x), 0);
+			const auto high_half = _mm512_extracti64x4_epi64(as<__m512i>(x), 1);
 
-			const auto __low = _mm256_shuffle_epi8(__low_half, __native);
-			const auto __high = _mm256_shuffle_epi8(__high_half, __native);
+			const auto low = _mm256_shuffle_epi8(low_half, native);
+			const auto high = _mm256_shuffle_epi8(high_half, native);
 
-			return as<_Intrin_>(_mm512_shuffle_i64x2(as<__m512i>(__high), as<__m512i>(__low), 0x11));
+			return as<V>(_mm512_shuffle_i64x2(as<__m512i>(high), as<__m512i>(low), 0x11));
 		}
 	}
 		
-	if constexpr (arithmetic_type<_Intrin_>) return __x;
-	else return __generic_shuffle_native<_ISA_, _Value_>(__x, __p);
+	if constexpr (arithmetic_type<V>) return x;
+	else return generic_shuffle_native_<ISA, T>(x, p);
 }
 
-template <class _Pattern_>
-raze_always_inline pattern_vector_t<_Pattern_> __reverse_native_size(const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept {
-	using _Simd_ = pattern_vector_t<_Pattern_>;
+template <class Pattern>
+raze_always_inline pattern_vector_t<Pattern> reverse_native_size_(const pattern_vector_t<Pattern>& x, Pattern p) noexcept {
+	using V = pattern_vector_t<Pattern>;
 
-	_Simd_ __result = __x;
-	__result.__for_each_chunk([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-		__chunk = __reverse_native<abi_t<_Simd_>::isa, typename _Simd_::value_type>(ustorage(__chunk), __p);
+	V result = x;
+	result.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+		chunk = reverse_native_<abi_t<V>::isa, typename V::value_type>(ustorage(chunk), p);
 	});
 
-	return __result;
+	return result;
 }
 
-template <class _Pattern_>
-raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> __reverse(pattern_vector_t<_Pattern_> __x, _Pattern_ __p) noexcept {
-	using _Simd_ = pattern_vector_t<_Pattern_>;
-	using _Value_ = typename _Simd_::value_type;
+template <class Pattern>
+raze_always_inline pattern_vector_t<Pattern> reverse_(pattern_vector_t<Pattern> x, Pattern p) noexcept {
+	using V = pattern_vector_t<Pattern>;
+	using T = typename V::value_type;
 
-	if constexpr (native<_Simd_>) {
-		return __reverse_native_size(__x, __p);
+	if constexpr (native<V>) {
+		return reverse_native_size_(x, p);
 	}
-	else if constexpr (trivially_chunk_swappable<_Simd_>) {
-		[&] <sizetype... _Indices_> (std::integer_sequence<sizetype, _Indices_...>) raze_always_inline_lambda {
-			([&](auto __i) raze_always_inline_lambda {
-				auto& __c1 = __x.template __get<__i>();
-				auto& __c2 = __x.template __get<_Simd_::__chunks_count() - __i - 1>();
+	else if constexpr (trivially_chunk_swappable<V>) {
+		[&] <sizetype... Indices> (std::integer_sequence<sizetype, Indices...>) raze_always_inline_lambda {
+			([&](auto i) raze_always_inline_lambda {
+				auto& c1 = x.template __get<i>();
+				auto& c2 = x.template __get<V::__chunks_count() - i - 1>();
 
-				auto __c1_in = ustorage(__c1);
-				auto __c2_in = ustorage(__c2);
+				auto c1_in = ustorage(c1);
+				auto c2_in = ustorage(c2);
 
-				using _Chunk1 = std::remove_cvref_t<decltype(__c1)>;
-				using _Chunk2 = std::remove_cvref_t<decltype(__c2)>;
+				using Chunk1 = std::remove_cvref_t<decltype(c1)>;
+				using Chunk2 = std::remove_cvref_t<decltype(c2)>;
 
-				const auto __r1 = __reverse_native<abi_t<_Simd_>::isa, _Value_>(
-					__c2_in, make_reversed_pattern<typename _Chunk2::as_simd>{});
+				const auto r1 = reverse_native_<abi_t<V>::isa, T>(
+					c2_in, make_reversed_pattern<typename Chunk2::as_simd>{});
 
-				const auto __r2 = __reverse_native<abi_t<_Simd_>::isa, _Value_>(
-					__c1_in, make_reversed_pattern<typename _Chunk1::as_simd>{});
+				const auto r2 = reverse_native_<abi_t<V>::isa, T>(
+					c1_in, make_reversed_pattern<typename Chunk1::as_simd>{});
 
-				__c1 = __r1;
-				__c2 = __r2;
-			}(std::integral_constant<sizetype, _Indices_>{}), ...);
-		}(std::make_integer_sequence<sizetype, _Simd_::__chunks_count() / 2>{});
+				c1 = r1;
+				c2 = r2;
+			}(std::integral_constant<sizetype, Indices>{}), ...);
+		}(std::make_integer_sequence<sizetype, V::__chunks_count() / 2>{});
 
-		return __x;
+		return x;
 	}
 	else {
-		return __generic_shuffle(__x, __p);
+		return generic_shuffle_(x, p);
 	}
 }
 

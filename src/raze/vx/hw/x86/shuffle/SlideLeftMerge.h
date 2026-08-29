@@ -6,18 +6,14 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <simd_type _Simd_, sizetype _Slide_>
-raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_left_merge(
-    const _Simd_& __x, const _Simd_& __y, std::integral_constant<sizetype, _Slide_> __slide) noexcept
-{
-    return __slide_right_merge(__y, __x, std::integral_constant<sizetype, _Simd_::size() - _Slide_>{});
+template <simd_type V, sizetype Slide>
+raze_always_inline V slide_left_merge_(const V& x, const V& y, std::integral_constant<sizetype, Slide> slide) noexcept {
+    return slide_right_merge_(y, x, std::integral_constant<sizetype, V::size() - Slide>{});
 }
 
-template <simd_type _Simd_>
-raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ __slide_left_merge(
-    const _Simd_& __x, const _Simd_& __y, i32 __sh) noexcept 
-{
-    return __slide_right_merge(__y, __x, _Simd_::size() - __sh);
+template <simd_type V>
+raze_always_inline V slide_left_merge_(const V& x, const V& y, i32 sh) noexcept {
+    return slide_right_merge_(y, x, V::size() - sh);
 }
 
 __RAZE_VX_NAMESPACE_END

@@ -7,18 +7,15 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, class _Tp_>
-concept __can_concatenate_into_native_register = (__vector_default_size<_ISA_> / 8) >= (sizeof(_Tp_) * 2);
+template <arch::ISA ISA, class V>
+concept can_concatenate_into_native_register = (vector_default_size<ISA> / 8) >= (sizeof(V) * 2);
 
-template <arch::ISA _ISA_>
-struct _Concat {
-	template <intrin_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline auto operator()(_Tp_ __x, _Tp_ __y) raze_const_operator noexcept {
-		if constexpr (__can_concatenate_into_native_register<_ISA_, _Tp_>) {
-			if constexpr (sizeof(_Tp_) == 16 && has_avx<_ISA_>) return _mm256_insertf128_si256(as<__m256i>(__x), as<__m128i>(__y), 1);
-			else if constexpr (sizeof(_Tp_) == 32 && has_avx512f<_ISA_>) return _mm512_inserti32x8(as<__m512i>(__x), as<__m256i>(__y), 1);
-		}
+template <arch::ISA ISA, intrin_type V>
+raze_always_inline auto concat_(V x, V y) noexcept {
+	if constexpr (can_concatenate_into_native_register<_SA, V>) {
+		if constexpr (sizeof(V) == 16 && has_avx<ISA>) return _mm256_insertf128_si256(as<__m256i>(x), as<__m128i>(y), 1);
+		else if constexpr (sizeof(V) == 32 && has_avx512f<ISA>) return _mm512_inserti32x8(as<__m512i>(x), as<__m256i>(y), 1);
 	}
-};
+}
 
 __RAZE_VX_NAMESPACE_END

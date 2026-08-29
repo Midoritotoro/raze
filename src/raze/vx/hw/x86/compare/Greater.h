@@ -6,12 +6,9 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA	_ISA_, arithmetic_type _Type_>
-struct _Greater {
-	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline auto operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-		return _Less<_ISA_, _Type_>()(__y, __x);
-	}
-};
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V>
+raze_always_inline auto greater_(V x, V y) noexcept {
+	return less_<ISA, T>(y, x);
+}
 
 __RAZE_VX_NAMESPACE_END

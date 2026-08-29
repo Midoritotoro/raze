@@ -11,52 +11,52 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Ternarylogic {
-    template <intrin_or_arithmetic_type _Tp_, u8 _Op_>
-    raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(
-        _Tp_ __x, _Tp_ __y,  _Tp_ __z, std::integral_constant<u8, _Op_> __imm8) raze_const_operator noexcept
-    {
-        if constexpr (has_avx512f<_ISA_> && intrin_type<_Tp_>) {
-            if constexpr (sizeof(_Tp_) == 64)  return as<_Tp_>(_mm512_ternarylogic_epi32(as<__m512i>(__x), as<__m512i>(__y), as<__m512i>(__z), __imm8));
-            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 32) return as<_Tp_>(_mm256_ternarylogic_epi32(as<__m256i>(__x), as<__m256i>(__y), as<__m256i>(__z), __imm8));
-            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 16) return as<_Tp_>(_mm_ternarylogic_epi32(as<__m128i>(__x), as<__m128i>(__y),  as<__m128i>(__z), __imm8));
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op>
+raze_always_inline V ternarylogic_(V x, V y,  V z, std::integral_constant<u8, Op> op) noexcept
+{
+    if constexpr (has_avx512f<ISA> && intrin_type<V>) {
+        if constexpr (sizeof(V) == 64)  return as<V>(_mm512_ternarylogic_epi32(as<__m512i>(x), as<__m512i>(y), as<__m512i>(z), op));
+        else if constexpr (has_avx512vl<ISA> && sizeof(V) == 32) return as<V>(_mm256_ternarylogic_epi32(as<__m256i>(x), as<__m256i>(y), as<__m256i>(z), op));
+        else if constexpr (has_avx512vl<ISA> && sizeof(V) == 16) return as<V>(_mm_ternarylogic_epi32(as<__m128i>(x), as<__m128i>(y),  as<__m128i>(z), op));
+    }
+
+    return ternarylogic_emulated(x, y, z, op,
+        [] (auto x, auto y) raze_always_inline_lambda { return bit_or_<ISA, T>(x, y); },
+        [] (auto x, auto y) raze_always_inline_lambda { return bit_xor_<ISA, T>(x, y); },
+        [] (auto x, auto y) raze_always_inline_lambda { return bit_and_<ISA, T>(x, y); },
+        [] (auto x, auto y) raze_always_inline_lambda { return bit_andnot_<ISA, T>(x, y); },
+        [] (auto x) raze_always_inline_lambda { return bit_not_<ISA, T>(x); },
+        [] () raze_always_inline_lambda { return zero_<ISA, T>(); });
+}
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M, u8 Op>
+raze_always_inline V ternarylogic_(V x, V y,  V z, 
+    std::integral_constant<u8, Op> op,  M mask) noexcept
+{
+    if constexpr (has_avx512f<ISA> && std::is_integral_v<M> && intrin_type<V>) {
+        if constexpr (sizeof(V) == 64) {
+            if constexpr (sizeof(T) == 8) return as<V>(_mm512_maskz_ternarylogic_epi64(mask, as<__m512i>(x), as<__m512i>(y), as<__m512i>(z), op));
+            else if constexpr (sizeof(T) == 4) return as<V>(_mm512_maskz_ternarylogic_epi32(mask, as<__m512i>(x), as<__m512i>(y), as<__m512i>(z), op));
         }
-
-        return _Ternarylogic_emulated()(__x, __y, __z, __imm8, _Or<_ISA_, _Type_>(), _Xor<_ISA_, _Type_>(),
-            _And<_ISA_, _Type_>(), _Andnot<_ISA_, _Type_>(), _Not<_ISA_, _Type_>(), _Zero<_ISA_, _Tp_>());
-    }
-
-    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, u8 _Op_>
-    raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y,  _Tp_ __z, 
-        std::integral_constant<u8, _Op_> __imm8,  _Mask_ __mask) const noexcept
-    {
-        if constexpr (has_avx512f<_ISA_> && std::is_integral_v<_Mask_> && intrin_type<_Tp_>) {
-            if constexpr (sizeof(_Tp_) == 64) {
-                if constexpr (sizeof(_Type_) == 8) return as<_Tp_>(_mm512_maskz_ternarylogic_epi64(__mask, as<__m512i>(__x), as<__m512i>(__y), as<__m512i>(__z), __imm8));
-                else if constexpr (sizeof(_Type_) == 4) return as<_Tp_>(_mm512_maskz_ternarylogic_epi32(__mask, as<__m512i>(__x), as<__m512i>(__y), as<__m512i>(__z), __imm8));
-            }
-            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 32) {
-                if constexpr (sizeof(_Type_) == 8) return as<_Tp_>(_mm256_maskz_ternarylogic_epi64(__mask, as<__m256i>(__x),  as<__m256i>(__y), as<__m256i>(__z), __imm8));
-                else if constexpr (sizeof(_Type_) == 4) return as<_Tp_>(_mm256_maskz_ternarylogic_epi32(__mask, as<__m256i>(__x), as<__m256i>(__y), as<__m256i>(__z), __imm8));
-            }
-            else if constexpr (has_avx512vl<_ISA_> && sizeof(_Tp_) == 16) {
-                if constexpr (sizeof(_Type_) == 8) return as<_Tp_>(_mm_maskz_ternarylogic_epi64(__mask, as<__m128i>(__x), as<__m128i>(__y), as<__m128i>(__z), __imm8));
-                else if constexpr (sizeof(_Type_) == 4) return as<_Tp_>(_mm_maskz_ternarylogic_epi32(__mask, as<__m128i>(__x), as<__m128i>(__y), as<__m128i>(__z), __imm8));
-            }
+        else if constexpr (has_avx512vl<ISA> && sizeof(V) == 32) {
+            if constexpr (sizeof(T) == 8) return as<V>(_mm256_maskz_ternarylogic_epi64(mask, as<__m256i>(x),  as<__m256i>(y), as<__m256i>(z), op));
+            else if constexpr (sizeof(T) == 4) return as<V>(_mm256_maskz_ternarylogic_epi32(mask, as<__m256i>(x), as<__m256i>(y), as<__m256i>(z), op));
         }
-       
-        return select_<_ISA_, _Type_>(_Ternarylogic()(__x, __y, __z, __imm8), __mask);
+        else if constexpr (has_avx512vl<ISA> && sizeof(V) == 16) {
+            if constexpr (sizeof(T) == 8) return as<V>(_mm_maskz_ternarylogic_epi64(mask, as<__m128i>(x), as<__m128i>(y), as<__m128i>(z), op));
+            else if constexpr (sizeof(T) == 4) return as<V>(_mm_maskz_ternarylogic_epi32(mask, as<__m128i>(x), as<__m128i>(y), as<__m128i>(z), op));
+        }
     }
+    
+    return select_<ISA, T>(ternarylogic_<ISA, T>(x, y, z, op), mask);
+}
 
 
-    template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_, u8 _Op_>
-    raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y,  _Tp_ __z, 
-        std::integral_constant<u8, _Op_> __imm8,  _Mask_ __mask, _Tp_ __src) const noexcept
-    {
-        return select_<_ISA_, _Type_>(_Ternarylogic()(__x, __y, __z, __imm8), __src, __mask);
-    }
-};
-
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M, u8 Op>
+raze_always_inline V ternarylogic_(V x, V y,  V z, 
+    std::integral_constant<u8, Op> op,  M mask, V src)  noexcept
+{
+    return select_<ISA, T>(ternarylogic_<ISA, T>(x, y, z, op), src, mask);
+}
 
 __RAZE_VX_NAMESPACE_END

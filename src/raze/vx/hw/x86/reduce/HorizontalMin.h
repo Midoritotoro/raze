@@ -7,30 +7,25 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Vmin_wrapper {
-	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) const noexcept {
-		return _Vertical_min<_ISA_, _Type_>()(__x, __y);
-	}
-};
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V>
+raze_always_inline T horizontal_min_(V x) noexcept {
+	return mirror_fold_<ISA, T>()(x, [] (auto x, auto y) raze_always_inline_lambda { 
+		return vertical_min_<ISA, T>(x, y);
+	});
+}
 
-template <arch::ISA	_ISA_, arithmetic_type _Type_>
-struct _Horizontal_min {
-	template <intrin_or_arithmetic_type _Tp_>
-	raze_nodiscard raze_always_inline _Type_ operator()(_Tp_ __x) const noexcept {
-		return _Fold<_ISA_, _Type_>()(__x, _Vmin_wrapper<_ISA_, _Type_>{});
-	}
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_always_inline T horizontal_min_(V x, M mask) noexcept {
+	return mirror_fold_<ISA, T>()(select_<ISA, T>(x, mask), [] (auto x, auto y) raze_always_inline_lambda { 
+		return vertical_min_<ISA, T>(x, y);
+	});
+}
 
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Type_ operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
-		return _Fold<_ISA_, _Type_>()(select_<_ISA_, _Type_>(__x, __mask), _Vmin_wrapper<_ISA_, _Type_>{});
-	}
-
-	template <intrin_or_arithmetic_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline _Type_ operator()(_Tp_ __x, _Mask_ __mask, _Tp_ __src) const noexcept {
-		return _Fold<_ISA_, _Type_>()(select_<_ISA_, _Type_>(__x, __src, __mask), _Vmin_wrapper<_ISA_, _Type_>{});
-	}
-};
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
+raze_always_inline T horizontal_min_(V x, M mask, V src) noexcept {
+	return mirror_fold_<ISA, T>()(select_<ISA, T>(x, src, mask), [] (auto x, auto y) raze_always_inline_lambda { 
+		return vertical_min_<ISA, T>(x, y);
+	});
+}
 
 __RAZE_VX_NAMESPACE_END

@@ -76,7 +76,7 @@ raze_always_inline V left_shift_(V x, u32 shift, M mask) noexcept {
 		}
 	}
 
-	return select_<ISA, T>(_Left_shift()(x, shift), mask);
+	return select_<ISA, T>(left_shift_<ISA, T>(x, shift), mask);
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
