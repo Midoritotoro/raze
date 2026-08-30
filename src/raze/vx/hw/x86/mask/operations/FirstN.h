@@ -10,58 +10,54 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <sizetype _VectorLength_, arithmetic_type _Type_>
+template <sizetype VectorLength, arithmetic_type T>
 consteval auto first_n_vtable() noexcept {
-    using _MaskType = typename IntegerForSizeof<_Type_>::Unsigned;
-    auto table = std::array<_MaskType, _VectorLength_ * 2>{};
+    using MaskType = typename IntegerForSizeof<T>::Unsigned;
+    auto table = std::array<MaskType, VectorLength * 2>{};
 
-    for (auto i = 0; i < _VectorLength_; ++i)
-        table[i] = ~_MaskType(0);
+    for (auto i = 0; i < VectorLength; ++i)
+        table[i] = ~MaskType(0);
 
-    for (auto i = _VectorLength_; i < _VectorLength_ * 2; ++i)
+    for (auto i = VectorLength; i < VectorLength * 2; ++i)
         table[i] = 0;
 
     return table;
 }
 
-template <arch::ISA	_ISA_, u32 _Size_, raw_mask_type _Tp_, arithmetic_type _Type_>
-struct _First_n {
-    raze_nodiscard raze_always_inline auto operator()(u32 elements) const noexcept {
-        constexpr auto kmask = (has_avx512f<_ISA_> && sizeof(_Type_) >= 4) || (has_avx512bw<_ISA_>);
+template <arch::ISA	ISA, u32 N, raw_mask_type M, arithmetic_type T>
+raze_always_inline auto operator()(u32 elements) noexcept {
+    constexpr auto kmask = (has_avx512f<ISA> && sizeof(T) >= 4) || (has_avx512bw<ISA>);
 
-        if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-            return elements != 0;
-        }
-        else if constexpr (kmask) {
-            if constexpr (has_bmi2<_ISA_>) {
-                if constexpr (sizeof(_Tp_) == 1) return static_cast<_Tp_>(_bzhi_u32(0xFF, elements));
-                else if constexpr (sizeof(_Tp_) == 2) return static_cast<_Tp_>(_bzhi_u32(0xFFFF, elements));
-                else if constexpr (sizeof(_Tp_) == 4) return static_cast<_Tp_>(_bzhi_u32(0xFFFFFFFF, elements));
-                else if constexpr (sizeof(_Tp_) == 8) return static_cast<_Tp_>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, elements));
-            }
-            else {
-                if constexpr (_Size_ == raze_sizeof_in_bits(_Tp_)) {
-                    auto r = _Tp_((_Tp_(1) << elements) - 1);
-                    return elements == _Size_ ? math::max_limit<_Tp_>() : r;
-                }
-                else {
-                    return _Tp_((_Tp_(1) << elements) - 1);
-                }
-            }
+    if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
+        return elements != 0;
+    }
+    else if constexpr (kmask) {
+        if constexpr (has_bmi2<ISA>) {
+            if constexpr (sizeof(M) == 1) return static_cast<M>(_bzhi_u32(0xFF, elements));
+            else if constexpr (sizeof(M) == 2) return static_cast<M>(_bzhi_u32(0xFFFF, elements));
+            else if constexpr (sizeof(M) == 4) return static_cast<M>(_bzhi_u32(0xFFFFFFFF, elements));
+            else if constexpr (sizeof(M) == 8) return static_cast<M>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, elements));
         }
         else {
-            static constexpr auto vtable = first_n_vtable<_Size_, _Type_>();
-            auto* raze_restrict addr = algorithm::bytes_pointer_offset(vtable.data(), sizeof(_Tp_) - (elements * sizeof(_Type_)));
-            const auto loaded = _Load<_ISA_, _Tp_>()(addr);
-            return loaded;
+            if constexpr (N == raze_sizeof_in_bits(M)) {
+                auto r = M((M(1) << elements) - 1);
+                return elements == N ? math::max_limit<M>() : r;
+            }
+            else {
+                return M((M(1) << elements) - 1);
+            }
         }
     }
-};
+    else {
+        static constexpr auto table = first_n_vtable<N, T>();
+        return load_<ISA, M>(algorithm::bytes_pointer_offset(table.data(), sizeof(M) - (elements * sizeof(T))));
+    }
+}
 
-template <sizetype _Bits_, class _Type_>
+template <sizetype Bits, class T>
 consteval auto max_for_bits() noexcept {
-    if constexpr (_Bits_ == raze_sizeof_in_bits(_Type_)) return _Type_(-1);
-    else return _Type_(_Type_(_Type_(1) << _Bits_) - 1);
+    if constexpr (Bits == raze_sizeof_in_bits(T)) return T(-1);
+    else return T(T(T(1) << Bits) - 1);
 }
 
 __RAZE_VX_NAMESPACE_END

@@ -5,18 +5,15 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA	_ISA_, arithmetic_type _Type_>
-struct _To_bitmask {
-	template <intrin_type _Vector_>
-	raze_nodiscard raze_static_operator raze_always_inline auto operator()(_Vector_ __x) raze_const_operator noexcept {
-		if constexpr (!has_avx512bw<_ISA_> && sizeof(_Type_) == 2) return _To_mask<_ISA_, i8>()(__x);
-		else return _To_mask<_ISA_, _Type_>()(__x);
-	}
+template <arch::ISA	ISA, arithmetic_type T, intrin_type V>
+raze_always_inline auto to_bitmask_(V x) noexcept {
+	if constexpr (!has_avx512bw<ISA> && sizeof(T) == 2) return to_mask_<ISA, i8>(x);
+	else return to_mask_<ISA, T>(x);
+}
 
-	template <std::unsigned_integral _Mask_>
-	raze_nodiscard raze_static_operator raze_always_inline auto operator()(_Mask_ __x) raze_const_operator noexcept {
-		return __x;
-	}
-};
+template <arch::ISA	ISA, arithmetic_type T, std::unsigned_integral M>
+raze_always_inline auto to_bitmask_(M x) noexcept {
+	return x;
+}
 
 __RAZE_VX_NAMESPACE_END

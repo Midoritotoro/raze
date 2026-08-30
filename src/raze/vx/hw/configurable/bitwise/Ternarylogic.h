@@ -10,48 +10,47 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_ternarylogic: raze::options::conditional_callable<_Configurable_ternarylogic, _Options_> {
-    template <simd_or_mask_type _Type_, u8 _Op_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, 
-        const _Type_& __y, const _Type_& __z, std::integral_constant<u8, _Op_> __op) const noexcept
+template <class Options>
+struct configurable_ternarylogic_t: options::conditional_callable<configurable_ternarylogic_t, Options> {
+    template <simd_or_mask_type T, u8 Op>
+    raze_nodiscard raze_always_inline T operator()(const T& x, 
+        const T& y, const T& z, std::integral_constant<u8, Op> op) const noexcept
     {
-        return raze::options::__dispatch_call(*this, __x, __y, __z, __op);
+        return options::dispatch_call(*this, x, y, z, op);
     }
 
-    template <simd_or_mask_type _Type_, u8 _Op_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, 
-        const _Type_& __y, const _Type_& __z, std::integral_constant<u8, _Op_> __op) noexcept
+    template <simd_or_mask_type T, u8 Op>
+    static raze_always_inline auto deferred_call(auto opts, const T& x, 
+        const T& y, const T& z, std::integral_constant<u8, Op> op) noexcept
     {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename T::value_type;
+        using Abi = typename T::abi_type;
 
-        using _Op = std::conditional_t<simd_type<_Type_>, _Ternarylogic<_Abi_::isa, _Value_>, _Mask_ternarylogic<_Abi_::isa, _Value_>>;
-        _Type_ __result = __x;
+        T r = x;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Op()(ustorage(__chunk), ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            if constexpr (simd_mask_type<T>) chunk = ternarylogic_<Abi::isa, T>(ustorage(chunk), ustorage<Args>(args)...);
+            else chunk = mask_ternarylogic_<Abi::isa, T>(ustorage(chunk), ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __z.__storage().storage(), 
-                    __op, __mask.__storage().storage(), __condition.alternative().__storage().storage());
+            if constexpr (Mask::has_alternative)
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), 
+                    op, condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __z.__storage().storage(), __op, __mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), op, mask.__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __z.__storage().storage(), __op);
+            r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), op);
         }
 
-        return __result;
+        return r;
     }
-
-    using callable_tag_type = _Configurable_ternarylogic;
 };
+
+constexpr inline auto ternarylogic = options::functor<condigurable_ternarylogic_t>;
 
 __RAZE_VX_NAMESPACE_END

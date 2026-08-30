@@ -11,30 +11,30 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class _Options_>
-struct _Configurable_rotate_right : raze::options::conditional_callable<_Configurable_rotate_right, _Options_> {
-    template <simd_type _Type_, sizetype _Elements_>
-    raze_nodiscard raze_no_stack_protector raze_always_inline _Type_ operator()(const _Type_& __x, std::integral_constant<sizetype, _Elements_> __i) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, __i);
+struct configurable_rotate_right_t : options::conditional_callable<configurable_rotate_right_t, Options> {
+    template <simd_type V, sizetype _Elements_>
+    raze_always_inline _Type_ operator()(const _Type_& x, std::integral_constant<sizetype, _Elements_> i) const noexcept {
+        return options::dispatch_call(*this, x, i);
     }
 
-    template <simd_type _Type_>
-    raze_nodiscard raze_no_stack_protector raze_always_inline _Type_ operator()(const _Type_& __x, i32 __i) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, __i);
+    template <simd_type V>
+    raze_always_inline V operator()(const V& x, i32 i) const noexcept {
+        return options::dispatch_call(*this, x, i);
     }
 
-    template <simd_type _Type_, sizetype _Elements_>
-    raze_nodiscard static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, const _Type_& __x,
-        std::integral_constant<sizetype, _Elements_> __i) noexcept 
+    template <simd_type V, sizetype _Elements_>
+    static raze_always_inline auto deferred_call(auto opts, const V& x,
+        std::integral_constant<sizetype, Elements> i) noexcept 
     {
-        return __rotate_right(__x, make_rotate_right_pattern<_Type_, __i>{});
+        return rotate_right_(x, make_rotate_right_pattern<V, i>{});
     }
 
-    template <simd_type _Type_>
-    raze_nodiscard static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, const _Type_& __x, i32 __i) noexcept {
-        return __rotate_right(__x, __i);
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x, i32 i) noexcept {
+        return rotate_right_(x, i);
     }
-
-    using callable_tag_type = _Configurable_rotate_right;
 };
+
+constexpr inline auto rotate_right = options::functor<configurable_rotate_right_t>;
 
 __RAZE_VX_NAMESPACE_END

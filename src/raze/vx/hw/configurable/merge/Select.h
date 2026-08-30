@@ -25,7 +25,7 @@ struct configurable_select_t: options::conditional_callable<configurable_select_
         V r = x;
 
         auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
-            chunk = select_<Abi::isa, Value>()(ustorage(chunk), ustorage<Args>(args)...);
+            chunk = select_<Abi::isa, Value>(ustorage(chunk), ustorage<Args>(args)...);
         };
 
         if constexpr (!std::same_as<Mask, options::unknown_key> && !std::same_as<Mask, options::ignore_none_>) {
@@ -42,6 +42,6 @@ struct configurable_select_t: options::conditional_callable<configurable_select_
     }
 };
 
-constexpr inline auto select = raze::options::functor<configurable_select_t>;
+constexpr inline auto select = options::functor<configurable_select_t>;
 
 __RAZE_VX_NAMESPACE_END

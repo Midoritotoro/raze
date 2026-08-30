@@ -10,53 +10,52 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_or: raze::options::conditional_callable<_Configurable_or, _Options_> {
-    template <simd_or_mask_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, const _Type_& __y) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, __y);
+template <class Options>
+struct configurable_or_t: options::conditional_callable<configurable_or_t, Options> {
+    template <simd_or_mask_type T>
+    raze_nodiscard raze_always_inline T operator()(const T& x, const T& y) const noexcept {
+        return options::dispatch_call(*this, x, y);
     }
 
-    template <simd_or_mask_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, typename _Type_::value_type __y) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, _Type_(__y));
+    template <simd_or_mask_type T>
+    raze_nodiscard raze_always_inline T operator()(const T& x, typename T::value_type y) const noexcept {
+        return options::dispatch_call(*this, x, T(y));
     }
         
-    template <simd_or_mask_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(typename _Type_::value_type __x, const _Type_& __y) const noexcept {
-        return raze::options::__dispatch_call(*this, _Type_(__x), __y);
+    template <simd_or_mask_type T>
+    raze_nodiscard raze_always_inline T operator()(typename T::value_type x, const T& y) const noexcept {
+        return options::dispatch_call(*this, T(x), y);
     }
 
-    template <simd_or_mask_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Type_& __y) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_or_mask_type T>
+    static raze_always_inline auto deferred_call(auto opts, const T& x, const T& y) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename T::value_type;
+        using Abi = typename T::abi_type;
 
-        using _Op = std::conditional_t<simd_type<_Type_>, _Or<_Abi_::isa, _Value_>, _Mask_or<_Abi_::isa, _Value_>>;
-        _Type_ __result = __x;
+        T r = x;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Op()(ustorage(__chunk), ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            if constexpr (simd_mask_type<T>) chunk = mask_or_<Abi::isa, Value>(ustorage(chunk), ustorage<Args>(args)...);
+            else chunk = bit_or_<Abi::isa, Value>(ustorage(chunk), ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage(), __condition.alternative().__storage().storage());
+            if constexpr (Mask::has_alternative)
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), condition.mask().__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __y.__storage().storage());
+            r.__for_each_chunk(chunk_op, y.__storage().storage());
         }
 
-        return __result;
+        return r;
     }
-
-    using callable_tag_type = _Configurable_or;
 };
+
+constexpr inline auto bit_or = options::functor<configurable_or_t>;
 
 __RAZE_VX_NAMESPACE_END

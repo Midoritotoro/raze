@@ -7,91 +7,81 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <sizetype _Chunks_, simd_type _Simd_, sizetype _Index_>
-using __split_by_simd_t = simd<
-    typename _Simd_::value_type, resize_abi_t<abi_t<_Simd_>,
-        ((_Index_ + 1) * ((abi_t<_Simd_>::size + _Chunks_ - 1) / _Chunks_)
-            <= abi_t<_Simd_>::size
+template <sizetype Chunks, simd_type V, sizetype Index>
+using split_by_simd_t = simd<
+    typename V::value_type, resize_abi_t<abi_t<V>,
+        ((Index + 1) * ((abi_t<V>::size + Chunks - 1) / Chunks)
+            <= abi_t<V>::size
         )
         ?
-        ((abi_t<_Simd_>::size + _Chunks_ - 1) / _Chunks_)
+        ((abi_t<V>::size + Chunks - 1) / Chunks)
         :
         (
-            abi_t<_Simd_>::size -
-            _Index_ *
-            ((abi_t<_Simd_>::size + _Chunks_ - 1) / _Chunks_)
+            abi_t<V>::size -
+            Index *
+            ((abi_t<V>::size + Chunks - 1) / Chunks)
         )
     >
 >;
 
-template <sizetype _Chunks_, simd_type _Simd_, sizetype... _Indices_>
-using split_by_type = std::tuple<__split_by_simd_t<_Chunks_, _Simd_, _Indices_>...>;
+template <sizetype Chunks, simd_type V, sizetype... Indices>
+using split_by_type = std::tuple<split_by_simd_t<Chunks, V, Indices>...>;
 
-template <sizetype _ChunkSize_, simd_type _Simd_, class _Sequence_>
-struct __split_by_return_impl;
+template <sizetype ChunkSize, simd_type V, class Sequence>
+struct split_by_return_impl;
 
-template <sizetype _ChunkSize_, simd_type _Simd_, sizetype... _Indices_>
-struct __split_by_return_impl<_ChunkSize_, _Simd_, std::integer_sequence<sizetype, _Indices_...>> {
-    using type = split_by_type<_ChunkSize_, _Simd_, _Indices_...>;
+template <sizetype ChunkSize, simd_type V, sizetype... Indices>
+struct split_by_return_impl<ChunkSize, V, std::integer_sequence<sizetype, Indices...>> {
+    using type = split_by_type<ChunkSize, V, Indices...>;
 };
 
-template <sizetype _Chunks_, simd_type _Simd_>
-using split_by_return_type =
-typename __split_by_return_impl<
-    _Chunks_,
-    _Simd_,
-    std::make_integer_sequence<
-    sizetype,
-    _Chunks_
-    >
->::type;
-template <sizetype _Chunks_>
-struct _Configurable_split_by {
-    template <class _Options_>
-    struct __impl : raze::options::conditional_callable<__impl, _Options_> {
-        template <simd_type _Simd_> requires(_Chunks_ > 0)
-        raze_nodiscard raze_always_inline split_by_return_type<_Chunks_, _Simd_> operator()(const _Simd_& __x) const noexcept {
-            return raze::options::__dispatch_call(*this, __x);
+template <sizetype Chunks, simd_type V>
+using split_by_return_type = typename split_by_return_impl<
+    Chunks, V, std::make_integer_sequence<sizetype, Chunks>>::type;
+
+template <sizetype Chunks>
+struct configurable_split_by_t {
+    template <class Options>
+    struct impl : options::conditional_callable<impl, Options> {
+        template <simd_type V> requires(Chunks > 0)
+        raze_nodiscard raze_always_inline split_by_return_type<Chunks, V> operator()(const V& x) const noexcept {
+            return options::dispatch_call(*this, x);
         }
 
-        template <sizetype _ChunksCount_, simd_type _Simd_>
-        static raze_always_inline auto __impl_split(const _Simd_& __x) noexcept {
-            
+        template <sizetype ChunksCount, simd_type V>
+        static raze_always_inline auto impl_split(const V& x) noexcept {
+            constexpr sizetype count = ChunksCount;
+            constexpr sizetype chunk_size = (V::size() + count - 1) / count;
 
-            constexpr sizetype __count = _ChunksCount_;
-            constexpr sizetype __chunk_size = (_Simd_::size() + __count - 1) / __count;
-
-            if constexpr (_ChunksCount_ == _Simd_::__chunks_count()) {
-                const auto __get_simd = [&] <class _Tp_> (_Tp_, auto __i) raze_always_inline_lambda {
-                    _Tp_ __simd;
-                    __simd.template __get<__i>() = ustorage(__x.template __get<__i>());
-                    return __simd;
+            if constexpr (ChunksCount == V::__chunks_count()) {
+                const auto get_simd = [&] <class Vec> (Vec, auto i) raze_always_inline_lambda {
+                    Vec vec;
+                    vec.template __get<i>() = ustorage(x.template __get<i>());
+                    return vec;
                 };
 
                 return [&] <sizetype... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
-                    return std::tuple{ __get_simd(__split_by_simd_t<_ChunksCount_, _Simd_, I>{}, std::integral_constant<sizetype, I>{})...
+                    return std::tuple{ get_simd(split_by_simd_t<ChunksCount, V, I>{}, std::integral_constant<sizetype, I>{})...
                 };
-                }(std::make_integer_sequence<sizetype, __count>{});
+                }(std::make_integer_sequence<sizetype, count>{});
             }
             else {
-                alignas(64) typename _Simd_::value_type __buffer[_Simd_::size()];
-                vx::__store[vx::aligned](__buffer, __x);
+                alignas(64) typename V::value_type buffer[V::size()];
+                vx::store[vx::aligned](buffer, x);
 
                 return [&] <sizetype... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
-                    return std::tuple{ vx::__load<__split_by_simd_t<_ChunksCount_, _Simd_, I>>[vx::aligned](__buffer + I * __chunk_size)... };
-                }(std::make_integer_sequence<sizetype, __count>{});
+                    return std::tuple{ vx::load<split_by_simd_t<ChunksCount, V, I>>[vx::aligned](buffer + I * chunk_size)... };
+                }(std::make_integer_sequence<sizetype, count>{});
             }
         }
 
-        template <simd_type _Simd_>
-        static raze_always_inline auto deferred_call(auto, const _Simd_& __x) noexcept  {
-            return __impl_split<_Chunks_>(__x);
+        template <simd_type V>
+        static raze_always_inline auto deferred_call(auto, const V& x) noexcept  {
+            return impl_split<Chunks>(x);
         }
-
-        using callable_tag_type = __impl;
     };
 };
 
-template <sizetype _Chunks_> constexpr inline auto __split_by = raze::options::functor<_Configurable_split_by<_Chunks_>::template __impl>;
+template <sizetype Chunks> constexpr inline auto split_by = options::functor<configurable_split_by_t<Chunks>::template impl>;
 
 __RAZE_VX_NAMESPACE_END

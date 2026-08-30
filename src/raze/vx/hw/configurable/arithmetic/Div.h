@@ -9,78 +9,78 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_div : raze::options::conditional_callable<_Configurable_div, _Options_> {
-    template <simd_type _Simd_>
-    raze_nodiscard raze_always_inline _Simd_ operator()(const _Simd_& __x, const _Simd_& __y) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, __y);
+template <class Options>
+struct configurable_div_t : raze::options::conditional_callable<configurable_div_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const V& x, const V& y) const noexcept {
+        return options::dispatch_call(*this, x, y);
     }
 
-    template <simd_type _Simd_>
-    raze_nodiscard raze_always_inline _Simd_ operator()(const _Simd_& __x, typename _Simd_::value_type __y) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, __y);
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const V& x, typename V::value_type y) const noexcept {
+        return options::dispatch_call(*this, x, y);
     }
 
-    template <simd_type _Simd_>
-    raze_nodiscard raze_always_inline _Simd_ operator()(typename _Simd_::value_type __x, const _Simd_& __y) const noexcept {
-        return raze::options::__dispatch_call(*this, _Simd_(__x), __y);
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(typename V::value_type x, const V& y) const noexcept {
+        return options::dispatch_call(*this, V(x), y);
     }
 
-    template <simd_type _Simd_, arithmetic_type _Divisor_>
-    static raze_always_inline auto deferred_call(auto __options, const _Simd_& __x, const _Divisor_& __y) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Simd_::value_type;
-        using _Abi_ = typename _Simd_::abi_type;
+    template <simd_type V, arithmetic_type Divisor>
+    static raze_always_inline auto deferred_call(auto opts, const V& x, const Divisor& y) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = div_<_Abi_::isa, _Value_>(ustorage(__chunk), ustorage(std::forward<_Args>(__args))...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&&... args) raze_always_inline_lambda {
+            chunk = div_<Abi::isa, Value>(ustorage(chunk), ustorage(std::forward<Args>(args))...);
         };
 
-        _Simd_ __result = __x;
+        V r = x;
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __y, __mask.__storage().storage(), __condition.alternative().__storage().storage());
+            if constexpr (Mask::has_alternative)
+                r.__for_each_chunk(chunk_op, y, condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __y, __mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, y, condition.mask().__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __y);
+            r.__for_each_chunk(chunk_op, y);
         }
 
-        return __result;
+        return r;
     }
 
-    template <simd_type _Simd_, simd_type _Divisor_>
-    static raze_always_inline auto deferred_call(auto __options, const _Simd_& __x, const _Divisor_& __y) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Simd_::value_type;
-        using _Abi_ = typename _Simd_::abi_type;
+    template <simd_type V, simd_type Divisor>
+    static raze_always_inline auto deferred_call(auto opts, const V& x, const Divisor& y) noexcept {
+        using Mask = options::fetch_t<options::condition_key, _Options_>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args> (_Chunk& __chunk, _Args&&... __args) raze_always_inline_lambda {
-            __chunk = div_<_Abi_::isa, _Value_>(ustorage(__chunk), ustorage(std::forward<_Args>(__args))...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&&... args) raze_always_inline_lambda {
+            chunk = div_<Abi::isa, Value>(ustorage(chunk), ustorage(std::forward<Args>(args))...);
         };
 
-        _Simd_ __result = __x;
+        V r = x;
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage(), __condition.alternative().__storage().storage());
+            if constexpr (Mask::has_alternative)
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __y.__storage().storage(), __mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), condition.mask().__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __y.__storage().storage());
+            r.__for_each_chunk(chunk_op, y.__storage().storage());
         }
 
-        return __result;
+        return r;
     }
 };
+
+constexpr inline auto div = options::functor<configurable_div_t>;
 
 __RAZE_VX_NAMESPACE_END

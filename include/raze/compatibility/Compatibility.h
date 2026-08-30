@@ -29,7 +29,7 @@
 #include <raze/compatibility/AutoVectorization.h>
 #include <raze/compatibility/StackProtection.h>
 #include <raze/compatibility/Unroll.h>
-#include <raze/compatibility/LLVMTargetClones.h>
+#include <raze/compatibility/TargetClones.h>
 
 #include <cstddef>
 

@@ -7,33 +7,31 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <simd_type _Simd_>
-using pair_type = std::pair<simd<typename _Simd_::value_type, resize_abi_t<abi_t<_Simd_>, _Simd_::size() / 2>>,
-    simd<typename _Simd_::value_type, resize_abi_t<abi_t<_Simd_>, _Simd_::size() - (_Simd_::size() / 2)>>>;
+template <simd_type V>
+using pair_type = std::pair<simd<typename V::value_type, resize_abi_t<abi_t<V>, V::size() / 2>>,
+    simd<typename V::value_type, resize_abi_t<abi_t<V>, V::size() - (V::size() / 2)>>>;
 
-template <class _Options_>
-struct _Configurable_split : raze::options::conditional_callable<_Configurable_split, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline pair_type<_Type_> operator()(const _Type_& __x) const noexcept
-        requires(_Type_::size() > 1)
+template <class Options>
+struct configurable_split_t : options::conditional_callable<configurable_split_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline pair_type<V> operator()(const V& x) const noexcept
+        requires(V::size() > 1)
     {
-        return raze::options::__dispatch_call(*this, __x);
+        return options::dispatch_call(*this, x);
     }
 
-    template <simd_type _Type_>
-    static raze_always_inline pair_type<_Type_> deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _First_ = typename pair_type<_Type_>::first_type;
-        using _Second_ = typename pair_type<_Type_>::second_type;
+    template <simd_type V>
+    static raze_always_inline pair_type<V> deferred_call(auto, const V& x) noexcept {
+        using First = typename pair_type<V>::first_type;
+        using Second = typename pair_type<V>::second_type;
         
-        alignas(64) typename _Type_::value_type __arr[_Type_::size()];
-        vx::__store[vx::aligned](__arr, __x);
+        alignas(64) typename V::value_type arr[V::size()];
+        vx::store[vx::aligned](arr, x);
 
-        return { vx::__load<_First_>[vx::aligned](__arr), vx::__load<_Second_>[vx::aligned](__arr + _First_::size()) };
+        return { vx::load<First>[vx::aligned](arr), vx::load<Second>[vx::aligned](arr + First::size()) };
     }
-
-    using callable_tag_type = _Configurable_split;
 };
 
-constexpr inline auto __split = raze::options::functor<_Configurable_split>;
+constexpr inline auto split = options::functor<configurable_split_t>;
 
 __RAZE_VX_NAMESPACE_END

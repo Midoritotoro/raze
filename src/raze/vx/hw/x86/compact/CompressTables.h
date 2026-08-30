@@ -4,58 +4,58 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <sizetype _VerticalSize_, sizetype _HorizontalSize_, sizetype _Alignment_>
-struct _Compress_tables {
-    alignas(_Alignment_) u8 __size[_VerticalSize_];
-    alignas(_Alignment_) u8 __shuffle[_VerticalSize_][_HorizontalSize_];
+template <sizetype VerticalSize, sizetype HorizontalSize, sizetype Alignment>
+struct compress_tables {
+    alignas(Alignment) u8 size[VerticalSize];
+    alignas(Alignment) u8 shuffle[VerticalSize][HorizontalSize];
 };
 
-template <sizetype _VerticalSize_, sizetype _HorizontalSize_, sizetype _Alignment_>
-constexpr auto __make_compress_tables(u32 __multiplier, u32 __element_group_stride) noexcept {
-    auto __result = _Compress_tables<_VerticalSize_, _HorizontalSize_, _Alignment_>();
+template <sizetype VerticalSize, sizetype HorizontalSize, sizetype Alignment>
+constexpr auto make_compress_tables(u32 multiplier, u32 element_group_stride) noexcept {
+    auto result = compress_tables<VerticalSize, HorizontalSize, Alignment>();
 
-    for (auto __vertical_index = u32(0); __vertical_index != _VerticalSize_; ++__vertical_index) {
-        auto __active_group_count = u32(0);
+    for (auto vertical_index = u32(0); vertical_index != VerticalSize; ++vertical_index) {
+        auto active_group_count = u32(0);
 
-        for (auto __horizontal_index = u32(0); __horizontal_index != _HorizontalSize_ / __element_group_stride; ++__horizontal_index) {
-            if ((__vertical_index & (1 << __horizontal_index)) == 0) {
-                for (auto __element_offset = u32(0); __element_offset != __element_group_stride; ++__element_offset)
-                    __result.__shuffle[__vertical_index][__active_group_count * __element_group_stride + __element_offset] =
-                        static_cast<u8>(__horizontal_index * __element_group_stride + __element_offset);
+        for (auto horizontal_index = u32(0); horizontal_index != HorizontalSize / element_group_stride; ++horizontal_index) {
+            if ((vertical_index & (1 << horizontal_index)) == 0) {
+                for (auto element_offset = u32(0); element_offset != element_group_stride; ++element_offset)
+                    result.shuffle[vertical_index][active_group_count * element_group_stride + element_offset] =
+                        static_cast<u8>(horizontal_index * element_group_stride + element_offset);
 
-                ++__active_group_count;
+                ++active_group_count;
             }
         }
 
-        __result.__size[__vertical_index] = static_cast<u8>(__active_group_count * __multiplier);
+        result.size[vertical_index] = static_cast<u8>(active_group_count * multiplier);
 
-        for (; __active_group_count != _HorizontalSize_ / __element_group_stride; ++__active_group_count)
-            for (auto __element_offset = u32(0); __element_offset != __element_group_stride; ++__element_offset)
-                __result.__shuffle[__vertical_index][__active_group_count * __element_group_stride + __element_offset] =
-                    static_cast<u8>(__active_group_count * __element_group_stride + __element_offset);
+        for (; active_group_count != HorizontalSize / element_group_stride; ++active_group_count)
+            for (auto element_offset = u32(0); element_offset != element_group_stride; ++element_offset)
+                result.shuffle[vertical_index][active_group_count * element_group_stride + element_offset] =
+                    static_cast<u8>(active_group_count * element_group_stride + element_offset);
     }
 
-    return __result;
+    return result;
 }
 
-template <sizetype _Size_> 
-constexpr auto __tables_sse = [] { 
-    static_assert(_Size_ == 1 || _Size_ == 2 || _Size_ == 4 || _Size_ == 8, "Unsupported element size for __tables_sse");
-    return _Compress_tables<1, 1, 16>();
+template <sizetype N> 
+constexpr auto tables_sse = [] { 
+    static_assert(N == 1 || N == 2 || N == 4 || N == 8, "Unsupported element size for tables_sse");
+    return compress_tables<1, 1, 16>();
 }();
 
-template <> constexpr auto __tables_sse<1>  = __make_compress_tables<256, 8, 16>(1, 1);
-template <> constexpr auto __tables_sse<2>  = __make_compress_tables<256, 16, 16>(2, 2);
-template <> constexpr auto __tables_sse<4>  = __make_compress_tables<16, 16, 16>(4, 4);
-template <> constexpr auto __tables_sse<8>  = __make_compress_tables<4, 16, 16>(8, 8);
+template <> constexpr auto tables_sse<1>  = make_compress_tables<256, 8, 16>(1, 1);
+template <> constexpr auto tables_sse<2>  = make_compress_tables<256, 16, 16>(2, 2);
+template <> constexpr auto tables_sse<4>  = make_compress_tables<16, 16, 16>(4, 4);
+template <> constexpr auto tables_sse<8>  = make_compress_tables<4, 16, 16>(8, 8);
 
-template <sizetype _Size_>
-constexpr auto __tables_avx = [] { 
-    static_assert(_Size_ == 1 || _Size_ == 2 || _Size_ == 4 || _Size_ == 8, "Unsupported element size for __tables_avx");
-    return _Compress_tables<1, 1, 16>();
+template <sizetype N>
+constexpr auto tables_avx = [] { 
+    static_assert(N == 1 || N == 2 || N == 4 || N == 8, "Unsupported element size for tables_avx");
+    return compress_tables<1, 1, 16>();
 }();
 
-template <> constexpr auto __tables_avx<4> = __make_compress_tables<256, 8, 16>(4, 1);
-template <> constexpr auto __tables_avx<8> = __make_compress_tables<16, 8, 16>(8, 2);
+template <> constexpr auto tables_avx<4> = make_compress_tables<256, 8, 16>(4, 1);
+template <> constexpr auto tables_avx<8> = make_compress_tables<16, 8, 16>(8, 2);
 
 __RAZE_VX_NAMESPACE_END

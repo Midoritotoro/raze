@@ -8,14 +8,11 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Mask_bit_select {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __src, _Tp_ __mask) raze_const_operator noexcept {
-		if constexpr (std::is_same_v<_Tp_, bool>) return __mask ? __x : __src;
-		else if constexpr (intrin_type<_Tp_>) return select_<_ISA_, _Type_>(__x, __src, __mask);
-		else return _Mask_or<_ISA_, _Type_>()(_Mask_and<_ISA_, _Type_>()(__x, __mask), _Mask_andnot<_ISA_, _Type_>()(__src, __mask));
-	}
-};
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
+raze_always_inline M mask_bitselect_(M x, M src, M mask) noexcept {
+	if constexpr (std::is_same_v<M, bool>) return mask ? x : src;
+	else if constexpr (intrin_type<M>) return select_<ISA, T>(x, src, mask);
+	else return mask_or_<ISA, T>(mask_and_<ISA, T>(x, mask), mask_andnot_<ISA, T>(src, mask));
+}
 
 __RAZE_VX_NAMESPACE_END

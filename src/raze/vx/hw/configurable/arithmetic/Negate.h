@@ -9,40 +9,41 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_neg: raze::options::conditional_callable<_Configurable_neg, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_neg_t: options::conditional_callable<configurable_neg_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const V& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    template <simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        _Type_ __result = __x;
+        V r = x;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Negate<_Abi_::isa, _Value_>()(ustorage(__chunk), ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            chunk = negate_<Abi::isa, Value>()(ustorage(chunk), ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
-                __result.__for_each_chunk(__chunk_op, __mask.__storage().storage(), __condition.alternative().__storage().storage());
+            if constexpr (Mask::has_alternative)
+                r.__for_each_chunk(chunk_op, condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                __result.__for_each_chunk(__chunk_op, __mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, condition.mask().__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op);
+            r.__for_each_chunk(chunk_op);
         }
 
-        return __result;
+        return r;
     }
 };
+
+constexpr inline auto neg = options::functor<configurable_neg_t>;
 
 __RAZE_VX_NAMESPACE_END

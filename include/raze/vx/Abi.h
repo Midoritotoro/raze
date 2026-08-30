@@ -31,8 +31,7 @@ __RAZE_VX_NAMESPACE_BEGIN
  *  On GCC and Clang, this ABI model is **not applicable**. True runtime ISA
  *  dispatch on those compilers requires compiling multiple translation units
  *  with different simd flags and loading them dynamically (e.g., via
- *  `dlopen`), which is significantly slower and unsuitable for high‑performance
- *  SIMD code. For GCC/Clang, use the regular `fixed_abi` with compile‑time ISA
+ *  `dlopen`). For GCC/Clang, use the regular `fixed_abi` with compile‑time ISA
  *  selection instead.
  *
  *  In summary:

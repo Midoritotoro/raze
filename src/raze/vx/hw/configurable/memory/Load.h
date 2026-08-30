@@ -13,70 +13,66 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <simd_type _Simd_>
-struct _Configurable_load {
-    template <class _Options_>
-    struct __load : raze::options::conditional_callable<__load, _Options_, aligned_option, safe_option> {
-        template <any_iterator_or_pointer _Mem_>
-        raze_nodiscard raze_no_stack_protector raze_always_inline _Simd_ operator()(_Mem_ __it) const noexcept {
-            return raze::options::__dispatch_call(*this, __it);
+template <simd_type V>
+struct configurable_load_t {
+    template <class Options>
+    struct load : options::conditional_callable<load, Options, aligned_option, safe_option> {
+        template <any_iterator_or_pointer Mem>
+        raze_nodiscard raze_always_inline V operator()(Mem it) const noexcept {
+            return options::dispatch_call(*this, it);
         }
 
-        template <any_iterator_or_pointer _Mem_>
-        static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, _Mem_ __it) noexcept {
-            using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-            using _Value_ = typename _Simd_::value_type;
-            using _Abi_ = typename _Simd_::abi_type;
+        template <any_iterator_or_pointer Mem>
+        static raze_always_inline auto deferred_call(auto opts, Mem it) noexcept {
+            using Mask = options::fetch_t<options::condition_key, Options>;
+            using Value = typename V::value_type;
+            using Abi = typename V::abi_type;
 
-            constexpr auto __safe = _Options_::contains(safe);
+            constexpr auto is_safe = Options::contains(safe);
 
-            _Simd_ __x;
+            V x;
+            auto mem = std::to_address(it);
 
-            auto __mem = std::to_address(__it);
-
-            if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-                auto __condition = __options[raze::options::condition_key];
-                const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+            if constexpr (options::complete_mask<Mask>) {
+                auto condition = opts[options::condition_key];
 
                 if constexpr (_Mask_::has_alternative)
-                    __x.__for_each_chunk([] <class _Chunk, class _MaskChunk, class _SourceChunk> (
-                        _Chunk & __chunk, const _MaskChunk & __mchunk, const _SourceChunk& __src_chunk, auto& __memory) raze_always_inline_lambda
+                    x.__for_each_chunk([] <class Chunk, class MaskChunk, class SourceChunk> (
+                        Chunk& chunk, const MaskChunk& mchunk, const SourceChunk& src_chunk, auto& memory) raze_always_inline_lambda
                 {
-                    if constexpr (_Options_::contains(aligned))
-                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, ustorage(__mchunk), ustorage(__src_chunk), __aligned_policy{});
+                    if constexpr (Options::contains(aligned))
+                        chunk = load_<Abi::isa, Value, is_safe>(memory, ustorage(mchunk), ustorage(src_chunk), aligned_policy{});
                     else
-                        __chunk = _Mask_load<_Abi_::isa, _Value_, __safe>()(__memory, ustorage(__mchunk), ustorage(__src_chunk));
+                        chunk = load_<Abi::isa, Value, is_safe>(memory, ustorage(mchunk), ustorage(src_chunk));
 
-                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
-                }, __mask.__storage().storage(), __condition.alternative().__storage().storage(), __mem);
+                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
+                }, condition.mask().__storage().storage(), condition.alternative().__storage().storage(), mem);
                 else
-                    __x.__for_each_chunk([] <class _Chunk, class _MaskChunk> (
-                        _Chunk & __chunk, const _MaskChunk & __mchunk, auto& __memory) raze_always_inline_lambda
+                    x.__for_each_chunk([] <class Chunk, class MaskChunk> (
+                        Chunk& chunk, const MaskChunk& mchunk, auto& memory) raze_always_inline_lambda
                 {
-                    if constexpr (_Options_::contains(aligned))
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, ustorage(__mchunk), __aligned_policy{});
+                    if constexpr (Options::contains(aligned))
+                        chunk = load_<Abi::isa, typename Chunk::unwrapped_type, Value, is_safe>(memory, ustorage(mchunk), aligned_policy{});
                     else
-                        __chunk = _Maskz_load<_Abi_::isa, typename _Chunk::unwrapped_type, _Value_, __safe>()(__memory, ustorage(__mchunk));
+                        chunk = load_<Abi::isa, typename Chunk::unwrapped_type, Value, is_safe>(memory, ustorage(mchunk));
 
-                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
-                }, __mask.__storage().storage(), __mem);
+                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
+                }, condition.mask().__storage().storage(), mem);
             }
             else {
-                __x.__for_each_chunk([] <class _Chunk> (_Chunk & __chunk, auto& __memory) raze_always_inline_lambda {
-                    if constexpr (_Options_::contains(aligned)) __chunk = _Load<_Abi_::isa, typename _Chunk::unwrapped_type>()(__memory, __aligned_policy{});
-                    else __chunk = _Load<_Abi_::isa, typename _Chunk::unwrapped_type>()(__memory);
+                x.__for_each_chunk([] <class Chunk> (Chunk& chunk, auto& memory) raze_always_inline_lambda {
+                    if constexpr (Options::contains(aligned)) chunk = load_<Abi::isa, typename Chunk::unwrapped_type>(memory, aligned_policy{});
+                    else chunk = load_<Abi::isa, typename Chunk::unwrapped_type>(memory);
 
-                    algorithm::__advance_bytes(__memory, sizeof(_Value_) * _Chunk::size);
+                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
                 }, __mem);
             }
 
-            return __x;
+            return x;
         }
-
-        using callable_tag_type = __load;
     };
 };
 
-template <simd_type _Simd_> constexpr inline auto __load = raze::options::functor<_Configurable_load<_Simd_>::template __load>;
+template <simd_type V> constexpr inline auto load = options::functor<configurable_load_t<V>::template load>;
 
 __RAZE_VX_NAMESPACE_END

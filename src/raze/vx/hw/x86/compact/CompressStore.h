@@ -12,410 +12,400 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_type _Tp_, std::unsigned_integral _CompressMask_, class _AlignmentPolicy_ = __unaligned_policy>
-raze_nodiscard static raze_always_inline void* __fallback(void* __ptr, 
-	_Tp_ __x, _CompressMask_ __compress_mask, _AlignmentPolicy_ __policy = {}) noexcept 
-{
-	constexpr auto __length = sizeof(_Tp_) / sizeof(_Type_);
-	alignas(sizeof(_Tp_)) _Type_ __source[__length];
+template <arch::ISA ISA, arithmetic_type T, intrin_type V, std::unsigned_integral CompressMask>
+raze_always_inline void* compress_store_fallback_(void* ptr, V x, CompressMask compress_mask) noexcept {
+	constexpr auto size = sizeof(V) / sizeof(T);
+	alignas(sizeof(V)) T source[size];
 
-	_Store<_ISA_>()(__source, __x, __aligned_policy{});
+	store_(source, x, aligned_policy{});
 
-	_Type_* __result_pointer = reinterpret_cast<_Type_*>(__ptr);
-	auto __start = __result_pointer;
+	T* result_pointer = reinterpret_cast<T*>(ptr);
+	auto start = result_pointer;
 
-	for (auto __index = 0; __index < __length; ++__index)
-		if (!((__compress_mask >> __index) & 1))
-			*__result_pointer++ = __source[__index];
+	for (auto index = 0; index < size; ++index)
+		if (!((compress_mask >> index) & 1))
+			*result_pointer++ = source[index];
 
-	return algorithm::__bytes_pointer_offset(__ptr, (__result_pointer - __start) * sizeof(_Type_));
+	return algorithm::bytes_pointer_offset(ptr, (result_pointer - start) * sizeof(T));
 }
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, intrin_or_arithmetic_type _Tp_, raw_mask_type _CompressMask_, class _AlignmentPolicy_ = __unaligned_policy>
-raze_nodiscard raze_static_operator raze_always_inline void* operator()(void* __ptr, _Tp_ __x, 
-	_CompressMask_ __compress_mask, _AlignmentPolicy_ __policy = {}) raze_const_operator noexcept
-{
-	constexpr auto __ssse3 = has_ssse3<_ISA_>;
-	constexpr auto __avx2 = has_avx2<_ISA_>;
-	constexpr auto __avx512bw = has_avx512bw<_ISA_>;
-	constexpr auto __avx512vl = has_avx512vl<_ISA_>;
-	constexpr auto __avx512vbmi2 = has_avx512vbmi2<_ISA_>;
-	constexpr auto __size = sizeof(_Tp_) / sizeof(_Type_);
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type CompressMask>
+raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_mask) noexcept {
+	constexpr auto size = sizeof(V) / sizeof(T);
+	const auto int_mask = to_mask_<ISA, T>(compress_mask);
 
-	const auto __int_mask = _To_mask<_ISA_, _Type_>()(__compress_mask);
-
-	if constexpr (sizeof(_Tp_) == 16) {
-		if constexpr (__avx512vl) {
-			if constexpr (sizeof(_Type_) == 8) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm_mask_compressstoreu_epi64(__ptr, __not_mask, as<__m128i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+	if constexpr (sizeof(V) == 16) {
+		if constexpr (has_avx512vl<ISA>) {
+			if constexpr (sizeof(T) == 8) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm_mask_compressstoreu_epi64(ptr, not_mask, as<__m128i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
-			else if constexpr (sizeof(_Type_) == 4) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm_mask_compressstoreu_epi32(__ptr, __not_mask, as<__m128i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+			else if constexpr (sizeof(T) == 4) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm_mask_compressstoreu_epi32(ptr, not_mask, as<__m128i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
-			else if constexpr (sizeof(_Type_) == 2 && __avx512vbmi2) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm_mask_compressstoreu_epi16(__ptr, __not_mask, as<__m128i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+			else if constexpr (sizeof(T) == 2 && has_avx512vbmi2<ISA>) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm_mask_compressstoreu_epi16(ptr, not_mask, as<__m128i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
-			else if constexpr (sizeof(_Type_) == 1 && __avx512vbmi2) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm_mask_compressstoreu_epi8(__ptr, __not_mask, as<__m128i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+			else if constexpr (sizeof(T) == 1 && has_avx512vbmi2<ISA>) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm_mask_compressstoreu_epi8(ptr, not_mask, as<__m128i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 		}
-		if constexpr (__ssse3 && sizeof(_Type_) < 4) {
-			if constexpr (sizeof(_Type_) == 1) {
-				const auto __mask_low = __int_mask & 0xFF;
-				const auto __mask_high = (__int_mask >> 8) & 0xFF;
+		if constexpr (has_ssse3<ISA> && sizeof(T) < 4) {
+			if constexpr (sizeof(T) == 1) {
+				const auto mask_low = int_mask & 0xFF;
+				const auto mask_high = (int_mask >> 8) & 0xFF;
 
-				_Type_* __dst_ptr = reinterpret_cast<_Type_*>(__ptr);
+				T* dst_ptr = reinterpret_cast<T*>(ptr);
 
-				const auto __count_lo = __tables_sse<sizeof(_Type_)>.__size[__mask_low];
-				const auto __count_hi = __tables_sse<sizeof(_Type_)>.__size[__mask_high];
+				const auto count_lo = tables_sse<sizeof(T)>.size[mask_low];
+				const auto count_hi = tables_sse<sizeof(T)>.size[mask_high];
 
-				const auto __shuffle_mask_lo = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_low]));
-				const auto __shuffle_mask_hi = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_high]));
+				const auto shuffle_mask_lo = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_low]));
+				const auto shuffle_mask_hi = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_high]));
 
-				const auto __packed_lo = _mm_shuffle_epi8(as<__m128i>(__x), __shuffle_mask_lo);
-				const auto __packed_hi = _mm_shuffle_epi8(_mm_srli_si128(as<__m128i>(__x), 8), as<__m128i>(__shuffle_mask_hi));
+				const auto packed_lo = _mm_shuffle_epi8(as<__m128i>(x), shuffle_mask_lo);
+				const auto packed_hi = _mm_shuffle_epi8(_mm_srli_si128(as<__m128i>(x), 8), as<__m128i>(shuffle_mask_hi));
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed_lo));
-				algorithm::__advance_bytes(__dst_ptr, __count_lo);
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed_hi));
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed_lo));
+				algorithm::advance_bytes(dst_ptr, count_lo);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed_hi));
 
-				return algorithm::__bytes_pointer_offset(__ptr, __count_lo + __count_hi);
+				return algorithm::bytes_pointer_offset(ptr, count_lo + count_hi);
 			}
 			else {
-				const auto __shuffle_mask = _Load<_ISA_, __m128i>()(__tables_sse<sizeof(_Type_)>.__shuffle[__int_mask], __aligned_policy{});
-				const auto __processed_bytes = __tables_sse<sizeof(_Type_)>.__size[__int_mask];
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(__ptr), _mm_shuffle_epi8(as<__m128i>(__x), __shuffle_mask));
-				return algorithm::__bytes_pointer_offset(__ptr, __processed_bytes);
+				const auto shuffle_mask = load_<ISA, __m128i>(tables_sse<sizeof(T)>.shuffle[int_mask], aligned_policy{});
+				const auto processed_bytes = tables_sse<sizeof(T)>.size[int_mask];
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), _mm_shuffle_epi8(as<__m128i>(x), shuffle_mask));
+				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 		}
 		else {
-			if constexpr (sizeof(_Type_) == 8) {
-				constexpr auto __calculate = [] <class _Vec_> (auto __mask, _Vec_ __v) raze_always_inline_lambda -> std::pair<size_t, _Vec_> {
-					switch (__mask) {
-						case 0: return { 16, __v };
-						case 1: return { 8, as<_Vec_>(_mm_shuffle_pd(as<__m128d>(__v), as<__m128d>(__v), 0x3)) };
-						case 2: return { 8, __v };
-						case 3: return { 0, __v };
+			if constexpr (sizeof(T) == 8) {
+				constexpr auto calculate = [] <class Vec> (auto mask, Vec v) raze_always_inline_lambda -> std::pair<size_t, Vec> {
+					switch (mask) {
+						case 0: return { 16, v };
+						case 1: return { 8, as<Vec>(_mm_shuffle_pd(as<__m128d>(v), as<__m128d>(v), 0x3)) };
+						case 2: return { 8, v };
+						case 3: return { 0, v };
 					}
 				};
 
-				auto [__processed_bytes, __packed] = __calculate(__int_mask, __x);
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(__ptr), as<__m128i>(__packed));
-				return algorithm::__bytes_pointer_offset(__ptr, __processed_bytes);
+				auto [processed_bytes, packed] = calculate(int_mask, x);
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), as<__m128i>(packed));
+				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
-			else if constexpr (sizeof(_Type_) == 4) {
-				constexpr auto __calculate = [] <class _Vec_> (auto __mask, _Vec_ __v) raze_always_inline_lambda -> std::pair<size_t, _Vec_> {
-					switch (__mask) {
-						case 0x0: return { 16, __v };
-						case 0x1: return { 12, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xF9)) };
-						case 0x2: return { 12, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xF8)) };
-						case 0x3: return { 8, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xEE)) };
-						case 0x4: return { 12, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xF4)) };
-						case 0x5: return { 8, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xED)) };
-						case 0x6: return { 8, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xEC)) };
-						case 0x7: return { 4, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xE7)) };
-						case 0x8: return { 12, __v };
-						case 0x9: return { 8, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xE9)) };
-						case 0xA: return { 8, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xE8)) };
-						case 0xB: return { 4, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0xE6)) };
-						case 0xC: return { 8, __v };
-						case 0xD: return { 4, as<_Vec_>(_mm_shuffle_ps(as<__m128>(__v), as<__m128>(__v), 0x55)) };
-						case 0xE: return { 4, __v };
-						case 0xF: return { 0, __v };
+			else if constexpr (sizeof(T) == 4) {
+				constexpr auto calculate = [] <class Vec> (auto mask, Vec v) raze_always_inline_lambda -> std::pair<size_t, Vec> {
+					switch (mask) {
+						case 0x0: return { 16, v };
+						case 0x1: return { 12, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xF9)) };
+						case 0x2: return { 12, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xF8)) };
+						case 0x3: return { 8, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xEE)) };
+						case 0x4: return { 12, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xF4)) };
+						case 0x5: return { 8, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xED)) };
+						case 0x6: return { 8, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xEC)) };
+						case 0x7: return { 4, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xE7)) };
+						case 0x8: return { 12, v };
+						case 0x9: return { 8, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xE9)) };
+						case 0xA: return { 8, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xE8)) };
+						case 0xB: return { 4, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0xE6)) };
+						case 0xC: return { 8, v };
+						case 0xD: return { 4, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0x55)) };
+						case 0xE: return { 4, v };
+						case 0xF: return { 0, v };
 					}
 				};
 
-				auto [__processed_bytes, __packed] = __calculate(__int_mask, __x);
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(__ptr), as<__m128i>(__packed));
-				return algorithm::__bytes_pointer_offset(__ptr, __processed_bytes);
+				auto [processed_bytes, packed] = calculate(int_mask, x);
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), as<__m128i>(packed));
+				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 		}
 	}
-	else if constexpr (sizeof(_Tp_) == 32) {
-		if constexpr (__avx512vl) {
-			if constexpr (sizeof(_Type_) == 8) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm256_mask_compressstoreu_epi64(__ptr, __not_mask, as<__m256i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr (has_avx512vl<ISA>) {
+			if constexpr (sizeof(T) == 8) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm256_mask_compressstoreu_epi64(ptr, not_mask, as<__m256i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
-			else if constexpr (sizeof(_Type_) == 4) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm256_mask_compressstoreu_epi32(__ptr, __not_mask, as<__m256i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+			else if constexpr (sizeof(T) == 4) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm256_mask_compressstoreu_epi32(ptr, not_mask, as<__m256i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
-			else if constexpr (sizeof(_Type_) == 2 && __avx512vbmi2) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm256_mask_compressstoreu_epi16(__ptr, __not_mask, as<__m256i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+			else if constexpr (sizeof(T) == 2 && has_avx512vbmi2<ISA>) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm256_mask_compressstoreu_epi16(ptr, not_mask, as<__m256i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
-			else if constexpr (sizeof(_Type_) == 1 && __avx512vbmi2) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm256_mask_compressstoreu_epi8(__ptr, __not_mask, as<__m256i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+			else if constexpr (sizeof(T) == 1 && has_avx512vbmi2<ISA>) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm256_mask_compressstoreu_epi8(ptr, not_mask, as<__m256i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 		}
-		if constexpr (sizeof(_Type_) >= 4 && __avx2) {
-			const auto __shuffle = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_avx<sizeof(_Type_)>.__shuffle[__int_mask]));
-			const auto __processed_bytes = __tables_avx<sizeof(_Type_)>.__size[__int_mask];
-			_mm256_storeu_si256(reinterpret_cast<__m256i*>(__ptr), _mm256_permutevar8x32_epi32(as<__m256i>(__x), _mm256_cvtepu8_epi32(__shuffle)));
-			return algorithm::__bytes_pointer_offset(__ptr, __processed_bytes);
+		if constexpr (sizeof(T) >= 4 && has_avx2<ISA>) {
+			const auto shuffle = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_avx<sizeof(T)>.shuffle[int_mask]));
+			const auto processed_bytes = tables_avx<sizeof(T)>.size[int_mask];
+			_mm256_storeu_si256(reinterpret_cast<__m256i*>(ptr), _mm256_permutevar8x32_epi32(as<__m256i>(x), _mm256_cvtepu8_epi32(shuffle)));
+			return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 		}
-		else if constexpr (sizeof(_Type_) == 2) {
-			_Type_* __write_ptr = reinterpret_cast<_Type_*>(__ptr);
+		else if constexpr (sizeof(T) == 2) {
+			T* write_ptr = reinterpret_cast<T*>(ptr);
 
-			const auto __vec_low = as<__m128i>(__x);
-			const auto __vec_high = _mm256_extracti128_si256(as<__m256i>(__x), 1);
+			const auto vec_low = as<__m128i>(__x);
+			const auto vec_high = _mm256_extracti128_si256(as<__m256i>(x), 1);
 
-			const auto __mask_low = __int_mask & 0xFF;
-			const auto __mask_high = (__int_mask >> 8) & 0xFF;
+			const auto mask_low = int_mask & 0xFF;
+			const auto mask_high = (int_mask >> 8) & 0xFF;
 
-			const auto __count_bytes_low = __tables_sse<sizeof(_Type_)>.__size[__mask_low];
-			const auto __count_bytes_high = __tables_sse<sizeof(_Type_)>.__size[__mask_high];
+			const auto count_bytes_low = tables_sse<sizeof(T)>.size[mask_low];
+			const auto count_bytes_high = tables_sse<sizeof(T)>.size[mask_high];
 
-			const auto __total_bytes = __count_bytes_low + __count_bytes_high;
+			const auto total_bytes = count_bytes_low + count_bytes_high;
 
-			const auto __shuffle_mask_low = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_low]));
-			const auto __shuffle_mask_high = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_high]));
+			const auto shuffle_mask_low = _mm_load_si128(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_low]));
+			const auto shuffle_mask_high = _mm_load_si128(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_high]));
 
-			const auto __packed_low = _mm_shuffle_epi8(__vec_low, __shuffle_mask_low);
-			const auto __packed_high = _mm_shuffle_epi8(__vec_high, __shuffle_mask_high);
+			const auto packed_low = _mm_shuffle_epi8(vec_low, shuffle_mask_low);
+			const auto packed_high = _mm_shuffle_epi8(vec_high, shuffle_mask_high);
 
-			_mm_storeu_si128(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed_low));
-			algorithm::__advance_bytes(__write_ptr, __count_bytes_low);
+			_mm_storeu_si128(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed_low));
+			algorithm::advance_bytes(write_ptr, count_bytes_low);
 
-			_mm_storeu_si128(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed_high));
-			return algorithm::__bytes_pointer_offset(__ptr, __total_bytes);
+			_mm_storeu_si128(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed_high));
+			return algorithm::bytes_pointer_offset(ptr, total_bytes);
 		}
-		else if constexpr (sizeof(_Type_) == 1) {
-			_Type_* __dst_ptr = reinterpret_cast<_Type_*>(__ptr);
+		else if constexpr (sizeof(T) == 1) {
+			T* dst_ptr = reinterpret_cast<T*>(ptr);
 
-			const auto __vec_low = as<__m128i>(__x);
-			const auto __vec_high = _mm256_extracti128_si256(as<__m256i>(__x), 1);
+			const auto vec_low = as<__m128i>(x);
+			const auto vec_high = _mm256_extracti128_si256(as<__m256i>(x), 1);
 
-			const auto __vec_low_hi = as<__m128i>(_mm_movehl_ps(
-				as<__m128>(_mm_slli_si128(__vec_low, 8)), as<__m128>(__vec_low)));
+			const auto vec_low_hi = as<__m128i>(_mm_movehl_ps(
+				as<__m128>(_mm_slli_si128(vec_low, 8)), as<__m128>(vec_low)));
 
-			const auto __vec_high_hi = as<__m128i>(_mm_movehl_ps(
-				as<__m128>(_mm_slli_si128(__vec_high, 8)), as<__m128>(__vec_high)));
+			const auto vec_high_hi = as<__m128i>(_mm_movehl_ps(
+				as<__m128>(_mm_slli_si128(vec_high, 8)), as<__m128>(vec_high)));
 
-			const auto __mask_1 = __int_mask & 0xFF;
-			const auto __mask_2 = (__int_mask >> 8) & 0xFF;
-			const auto __mask_3 = (__int_mask >> 16) & 0xFF;
-			const auto __mask_4 = (__int_mask >> 24) & 0xFF;
+			const auto mask_1 = int_mask & 0xFF;
+			const auto mask_2 = (int_mask >> 8) & 0xFF;
+			const auto mask_3 = (int_mask >> 16) & 0xFF;
+			const auto mask_4 = (int_mask >> 24) & 0xFF;
 
-			const auto __bytes_1 = __tables_sse<sizeof(_Type_)>.__size[__mask_1];
-			const auto __bytes_2 = __tables_sse<sizeof(_Type_)>.__size[__mask_2];
-			const auto __bytes_3 = __tables_sse<sizeof(_Type_)>.__size[__mask_3];
-			const auto __bytes_4 = __tables_sse<sizeof(_Type_)>.__size[__mask_4];
+			const auto bytes_1 = tables_sse<sizeof(T)>.size[mask_1];
+			const auto bytes_2 = tables_sse<sizeof(T)>.size[mask_2];
+			const auto bytes_3 = tables_sse<sizeof(T)>.size[mask_3];
+			const auto bytes_4 = tables_sse<sizeof(T)>.size[mask_4];
 
-			const auto __bytes_low = __bytes_1 + __bytes_2;
-			const auto __bytes_high = __bytes_3 + __bytes_4;
+			const auto bytes_low = bytes_1 + bytes_2;
+			const auto bytes_high = bytes_3 + bytes_4;
 
-			const auto __total_bytes = __bytes_low + __bytes_high;
+			const auto total_bytes = bytes_low + bytes_high;
 
-			const auto __shuffle_1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_1]));
-			const auto __shuffle_2 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_2]));
-			const auto __shuffle_3 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_3]));
-			const auto __shuffle_4 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask_4]));
+			const auto shuffle_1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_1]));
+			const auto shuffle_2 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_2]));
+			const auto shuffle_3 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_3]));
+			const auto shuffle_4 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_4]));
 
-			const auto __packed_1 = _mm_shuffle_epi8(__vec_low, __shuffle_1);
-			const auto __packed_2 = _mm_shuffle_epi8(__vec_low_hi, __shuffle_2);
-			const auto __packed_3 = _mm_shuffle_epi8(__vec_high, __shuffle_3);
-			const auto __packed_4 = _mm_shuffle_epi8(__vec_high_hi, __shuffle_4);
+			const auto packed_1 = _mm_shuffle_epi8(vec_low, shuffle_1);
+			const auto packed_2 = _mm_shuffle_epi8(vec_low_hi, shuffle_2);
+			const auto packed_3 = _mm_shuffle_epi8(vec_high, shuffle_3);
+			const auto packed_4 = _mm_shuffle_epi8(vec_high_hi, shuffle_4);
 
-			_mm_storel_epi64(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed_1));
-			__dst_ptr += __bytes_1;
+			_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed_1));
+			dst_ptr += bytes_1;
 
-			_mm_storel_epi64(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed_2));
-			__dst_ptr += __bytes_2;
+			_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed_2));
+			dst_ptr += bytes_2;
 
-			_mm_storel_epi64(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed_3));
-			__dst_ptr += __bytes_3;
+			_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed_3));
+			dst_ptr += bytes_3;
 
-			_mm_storel_epi64(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed_4));
+			_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed_4));
 
-			return algorithm::__bytes_pointer_offset(__ptr, __total_bytes);
+			return algorithm::bytes_pointer_offset(ptr, total_bytes);
 		}
 	}
-	else if constexpr (sizeof(_Tp_) == 64) {
-		if constexpr (sizeof(_Type_) == 8) {
-			const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-			_mm512_mask_compressstoreu_epi64(__ptr, __not_mask, as<__m512i>(__x));
-			return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (sizeof(T) == 8) {
+			const auto not_mask = mask_not_<ISA, T>(int_mask);
+			_mm512_mask_compressstoreu_epi64(ptr, not_mask, as<__m512i>(x));
+			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 		}
-		else if constexpr (sizeof(_Type_) == 4) {
-			const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-			_mm512_mask_compressstoreu_epi32(__ptr, __not_mask, as<__m512i>(__x));
-			return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+		else if constexpr (sizeof(T) == 4) {
+			const auto not_mask = mask_not_<ISA, T>(int_mask);
+			_mm512_mask_compressstoreu_epi32(ptr, not_mask, as<__m512i>(x));
+			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 		}
-		else if constexpr (sizeof(_Type_) == 2) {
-			if constexpr (__avx512vbmi2) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
-				_mm512_mask_compressstoreu_epi16(__ptr, __not_mask, as<__m512i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+		else if constexpr (sizeof(T) == 2) {
+			if constexpr (has_avx512vbmi2<ISA>) {
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm512_mask_compressstoreu_epi16(ptr, not_mask, as<__m512i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else {
-				_Type_* __dst_ptr = reinterpret_cast<_Type_*>(__ptr);
+				T* dst_ptr = reinterpret_cast<T*>(ptr);
 
-				const auto __vec1 = as<__m128i>(__x);
-				const auto __vec2 = _mm256_extracti128_si256(as<__m256i>(__x), 1);
-				const auto __vec3 = as<__m128i>(_mm512_extractf32x4_ps(as<__m512>(__x), 2));
-				const auto __vec4 = as<__m128i>(_mm512_extractf32x4_ps(as<__m512>(__x), 3));
+				const auto vec1 = as<__m128i>(x);
+				const auto vec2 = _mm256_extracti128_si256(as<__m256i>(x), 1);
+				const auto vec3 = as<__m128i>(_mm512_extractf32x4_ps(as<__m512>(x), 2));
+				const auto vec4 = as<__m128i>(_mm512_extractf32x4_ps(as<__m512>(x), 3));
 
-				const auto __mask1 = __int_mask & 0xFF;
-				const auto __mask2 = (__int_mask >> 8) & 0xFF;
-				const auto __mask3 = (__int_mask >> 16) & 0xFF;
-				const auto __mask4 = (__int_mask >> 24) & 0xFF;
+				const auto mask1 = int_mask & 0xFF;
+				const auto mask2 = (int_mask >> 8) & 0xFF;
+				const auto mask3 = (int_mask >> 16) & 0xFF;
+				const auto mask4 = (int_mask >> 24) & 0xFF;
 
-				const auto __bytes1 = __tables_sse<sizeof(_Type_)>.__size[__mask1];
-				const auto __bytes2 = __tables_sse<sizeof(_Type_)>.__size[__mask2];
-				const auto __bytes3 = __tables_sse<sizeof(_Type_)>.__size[__mask3];
-				const auto __bytes4 = __tables_sse<sizeof(_Type_)>.__size[__mask4];
+				const auto bytes1 = tables_sse<sizeof(T)>.size[mask1];
+				const auto bytes2 = tables_sse<sizeof(T)>.size[mask2];
+				const auto bytes3 = tables_sse<sizeof(T)>.size[mask3];
+				const auto bytes4 = tables_sse<sizeof(T)>.size[mask4];
 
-				const auto __total_bytes = __bytes1 + __bytes2 + __bytes3 + __bytes4;
-				const auto __total_elems = __total_bytes / sizeof(_Type_);
+				const auto total_bytes = bytes1 + bytes2 + bytes3 + bytes4;
+				const auto total_elems = total_bytes / sizeof(T);
 
-				const auto __shuffle1 = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask1]));
-				const auto __shuffle2 = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask2]));
-				const auto __shuffle3 = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask3]));
-				const auto __shuffle4 = _mm_load_si128(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask4]));
+				const auto shuffle1 = _mm_load_si128(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask1]));
+				const auto shuffle2 = _mm_load_si128(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask2]));
+				const auto shuffle3 = _mm_load_si128(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask3]));
+				const auto shuffle4 = _mm_load_si128(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask4]));
 
-				const auto __packed1 = _mm_shuffle_epi8(__vec1, __shuffle1);
-				const auto __packed2 = _mm_shuffle_epi8(__vec2, __shuffle2);
-				const auto __packed3 = _mm_shuffle_epi8(__vec3, __shuffle3);
-				const auto __packed4 = _mm_shuffle_epi8(__vec4, __shuffle4);
+				const auto packed1 = _mm_shuffle_epi8(vec1, shuffle1);
+				const auto packed2 = _mm_shuffle_epi8(vec2, shuffle2);
+				const auto packed3 = _mm_shuffle_epi8(vec3, shuffle3);
+				const auto packed4 = _mm_shuffle_epi8(vec4, shuffle4);
 
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed1));
-				algorithm::__advance_bytes(__dst_ptr, __bytes1);
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed1));
+				algorithm::advance_bytes(dst_ptr, bytes1);
 
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed2));
-				algorithm::__advance_bytes(__dst_ptr, __bytes2);
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed2));
+				algorithm::advance_bytes(dst_ptr, bytes2);
 
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed3));
-				algorithm::__advance_bytes(__dst_ptr, __bytes3);
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(__packed3));
+				algorithm::advance_bytes(dst_ptr, bytes3);
 
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(__dst_ptr), as<__m128i>(__packed4));
-				return algorithm::__bytes_pointer_offset(__ptr, __total_bytes);
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed4));
+				return algorithm::bytes_pointer_offset(ptr, total_bytes);
 			}
 		}
-		else if constexpr (sizeof(_Type_) == 1) {
-			if constexpr (__avx512vbmi2) {
-				const auto __not_mask = _Mask_not<_ISA_, _Type_>()(__int_mask);
+		else if constexpr (sizeof(T) == 1) {
+			if constexpr (has_avx512vbmi2<ISA>) {
+				const auto __not_mask = _Mask_not<ISA, T>()(__int_mask);
 				_mm512_mask_compressstoreu_epi8(__ptr, __not_mask, as<__m512i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<__size>(__not_mask) * sizeof(_Type_));
+				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<size>(__not_mask) * sizeof(T));
 			}
 			else {
-				_Type_* __write_ptr = reinterpret_cast<_Type_*>(__ptr);
+				T* write_ptr = reinterpret_cast<T*>(ptr);
 
-				const auto __ymm_lower = as<__m256i>(__x);
-				const auto __ymm_higher = _mm512_extractf64x4_pd(as<__m512d>(__x), 1);
+				const auto ymm_lower = as<__m256i>(x);
+				const auto ymm_higher = _mm512_extractf64x4_pd(as<__m512d>(x), 1);
 
-				const auto __xmm1 = as<__m128i>(__ymm_lower);
-				const auto __xmm2 = as<__m128i>(_mm256_extractf128_pd(as<__m256d>(__ymm_lower), 1));
+				const auto xmm1 = as<__m128i>(ymm_lower);
+				const auto xmm2 = as<__m128i>(_mm256_extractf128_pd(as<__m256d>(ymm_lower), 1));
 
-				const auto __xmm3 = as<__m128i>(__ymm_higher);
-				const auto __xmm4 = as<__m128i>(_mm256_extractf128_pd(as<__m256d>(__ymm_higher), 1));
+				const auto xmm3 = as<__m128i>(ymm_higher);
+				const auto xmm4 = as<__m128i>(_mm256_extractf128_pd(as<__m256d>(ymm_higher), 1));
 
-				const auto __xmm1_upper = as<__m128i>(_mm_movehl_ps(
-					as<__m128>(_mm_slli_si128(__xmm1, 8)), as<__m128>(__xmm1)));
+				const auto xmm1_upper = as<__m128i>(_mm_movehl_ps(
+					as<__m128>(_mm_slli_si128(xmm1, 8)), as<__m128>(xmm1)));
 
-				const auto __xmm2_upper = as<__m128i>(_mm_movehl_ps(
-					as<__m128>(_mm_slli_si128(__xmm2, 8)), as<__m128>(__xmm2)));
+				const auto xmm2_upper = as<__m128i>(_mm_movehl_ps(
+					as<__m128>(_mm_slli_si128(xmm2, 8)), as<__m128>(xmm2)));
 
 				const auto __xmm3_upper = as<__m128i>(_mm_movehl_ps(
-					as<__m128>(_mm_slli_si128(__xmm3, 8)), as<__m128>(__xmm3)));
+					as<__m128>(_mm_slli_si128(xmm3, 8)), as<__m128>(xmm3)));
 
 				const auto __xmm4_upper = as<__m128i>(_mm_movehl_ps(
-					as<__m128>(_mm_slli_si128(__xmm4, 8)), as<__m128>(__xmm4)));
+					as<__m128>(_mm_slli_si128(xmm4, 8)), as<__m128>(xmm4)));
 
-				const auto __mask1 = __int_mask & 0xFF;
-				const auto __mask2 = (__int_mask >> 8) & 0xFF;
-				const auto __mask3 = (__int_mask >> 16) & 0xFF;
-				const auto __mask4 = (__int_mask >> 24) & 0xFF;
-				const auto __mask5 = (__int_mask >> 32) & 0xFF;
-				const auto __mask6 = (__int_mask >> 40) & 0xFF;
-				const auto __mask7 = (__int_mask >> 48) & 0xFF;
-				const auto __mask8 = (__int_mask >> 56) & 0xFF;
+				const auto mask1 = int_mask & 0xFF;
+				const auto mask2 = (int_mask >> 8) & 0xFF;
+				const auto mask3 = (int_mask >> 16) & 0xFF;
+				const auto mask4 = (int_mask >> 24) & 0xFF;
+				const auto mask5 = (int_mask >> 32) & 0xFF;
+				const auto mask6 = (int_mask >> 40) & 0xFF;
+				const auto mask7 = (int_mask >> 48) & 0xFF;
+				const auto mask8 = (int_mask >> 56) & 0xFF;
 
-				const auto __bytes1 = __tables_sse<sizeof(_Type_)>.__size[__mask1];
-				const auto __bytes2 = __tables_sse<sizeof(_Type_)>.__size[__mask2];
-				const auto __bytes3 = __tables_sse<sizeof(_Type_)>.__size[__mask3];
-				const auto __bytes4 = __tables_sse<sizeof(_Type_)>.__size[__mask4];
-				const auto __bytes5 = __tables_sse<sizeof(_Type_)>.__size[__mask5];
-				const auto __bytes6 = __tables_sse<sizeof(_Type_)>.__size[__mask6];
-				const auto __bytes7 = __tables_sse<sizeof(_Type_)>.__size[__mask7];
-				const auto __bytes8 = __tables_sse<sizeof(_Type_)>.__size[__mask8];
+				const auto bytes1 = tables_sse<sizeof(T)>.size[mask1];
+				const auto bytes2 = tables_sse<sizeof(T)>.size[mask2];
+				const auto bytes3 = tables_sse<sizeof(T)>.size[mask3];
+				const auto bytes4 = tables_sse<sizeof(T)>.size[mask4];
+				const auto bytes5 = tables_sse<sizeof(T)>.size[mask5];
+				const auto bytes6 = tables_sse<sizeof(T)>.size[mask6];
+				const auto bytes7 = tables_sse<sizeof(T)>.size[mask7];
+				const auto bytes8 = tables_sse<sizeof(T)>.size[mask8];
 
-				const auto __bytes_lane1 = __bytes1 + __bytes2;
-				const auto __bytes_lane2 = __bytes3 + __bytes4;
-				const auto __bytes_lane3 = __bytes5 + __bytes6;
-				const auto __bytes_lane4 = __bytes7 + __bytes8;
+				const auto bytes_lane1 = bytes1 + bytes2;
+				const auto bytes_lane2 = bytes3 + bytes4;
+				const auto bytes_lane3 = bytes5 + bytes6;
+				const auto bytes_lane4 = bytes7 + bytes8;
 
-				const auto __bytes_total = __bytes_lane1 + __bytes_lane2 + __bytes_lane3 + __bytes_lane4;
+				const auto bytes_total = bytes_lane1 + bytes_lane2 + bytes_lane3 + bytes_lane4;
 
-				const auto __shuffle1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask1]));
-				const auto __shuffle2 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask2]));
-				const auto __shuffle3 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask3]));
-				const auto __shuffle4 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask4]));
-				const auto __shuffle5 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask5]));
-				const auto __shuffle6 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask6]));
-				const auto __shuffle7 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask7]));
-				const auto __shuffle8 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(__tables_sse<sizeof(_Type_)>.__shuffle[__mask8]));
+				const auto shuffle1 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask1]));
+				const auto shuffle2 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask2]));
+				const auto shuffle3 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask3]));
+				const auto shuffle4 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask4]));
+				const auto shuffle5 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask5]));
+				const auto shuffle6 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask6]));
+				const auto shuffle7 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask7]));
+				const auto shuffle8 = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask8]));
 
-				const auto __packed1 = _mm_shuffle_epi8(__xmm1, __shuffle1);
-				const auto __packed2 = _mm_shuffle_epi8(__xmm1_upper, __shuffle2);
-				const auto __packed3 = _mm_shuffle_epi8(__xmm2, __shuffle3);
-				const auto __packed4 = _mm_shuffle_epi8(__xmm2_upper, __shuffle4);
-				const auto __packed5 = _mm_shuffle_epi8(__xmm3, __shuffle5);
-				const auto __packed6 = _mm_shuffle_epi8(__xmm3_upper, __shuffle6);
-				const auto __packed7 = _mm_shuffle_epi8(__xmm4, __shuffle7);
-				const auto __packed8 = _mm_shuffle_epi8(__xmm4_upper, __shuffle8);
+				const auto packed1 = _mm_shuffle_epi8(xmm1, shuffle1);
+				const auto packed2 = _mm_shuffle_epi8(xmm1_upper, shuffle2);
+				const auto packed3 = _mm_shuffle_epi8(xmm2, shuffle3);
+				const auto packed4 = _mm_shuffle_epi8(xmm2_upper, shuffle4);
+				const auto packed5 = _mm_shuffle_epi8(xmm3, shuffle5);
+				const auto packed6 = _mm_shuffle_epi8(xmm3_upper, shuffle6);
+				const auto packed7 = _mm_shuffle_epi8(xmm4, shuffle7);
+				const auto packed8 = _mm_shuffle_epi8(xmm4_upper, shuffle8);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed1));
-				algorithm::__advance_bytes(__write_ptr, __bytes1);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed1));
+				algorithm::advance_bytes(write_ptr, bytes1);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed2));
-				algorithm::__advance_bytes(__write_ptr, __bytes2);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed2));
+				algorithm::advance_bytes(write_ptr, bytes2);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed3));
-				algorithm::__advance_bytes(__write_ptr, __bytes3);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed3));
+				algorithm::advance_bytes(write_ptr, bytes3);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed4));
-				algorithm::__advance_bytes(__write_ptr, __bytes4);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed4));
+				algorithm::advance_bytes(write_ptr, bytes4);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed5));
-				algorithm::__advance_bytes(__write_ptr, __bytes5);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed5));
+				algorithm::advance_bytes(write_ptr, bytes5);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed6));
-				algorithm::__advance_bytes(__write_ptr, __bytes6);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed6));
+				algorithm::advance_bytes(write_ptr, bytes6);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed7));
-				algorithm::__advance_bytes(__write_ptr, __bytes7);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed7));
+				algorithm::advance_bytes(write_ptr, bytes7);
 
-				_mm_storel_epi64(reinterpret_cast<__m128i*>(__write_ptr), as<__m128i>(__packed8));
-				return algorithm::__bytes_pointer_offset(__ptr, __bytes_total);
+				_mm_storel_epi64(reinterpret_cast<__m128i*>(write_ptr), as<__m128i>(packed8));
+				return algorithm::bytes_pointer_offset(ptr, bytes_total);
 			}
 		}
 	}
 
-	if constexpr (arithmetic_type<_Tp_>) {
-		if (!__compress_mask) {
-			reinterpret_cast<_Tp_*>(__ptr)[0] = __x;
-			return algorithm::__bytes_pointer_offset(__ptr, sizeof(_Tp_));
+	if constexpr (arithmetic_type<V>) {
+		if (!compress_mask) {
+			reinterpret_cast<V*>(ptr)[0] = x;
+			return algorithm::bytes_pointer_offset(ptr, sizeof(V));
 		}
 		else {
-			return __ptr;
+			return ptr;
 		}
 	}
-	else return __fallback(__ptr, __x, __int_mask, __policy);
+	else return compress_store_fallback_(ptr, x, int_mask);
 }
 
 __RAZE_VX_NAMESPACE_END

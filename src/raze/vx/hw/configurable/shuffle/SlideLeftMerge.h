@@ -10,37 +10,33 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_slide_left_merge : raze::options::conditional_callable<_Configurable_slide_left_merge, _Options_> {
-    template <simd_type _Type_, sizetype _Elements_>
-    raze_nodiscard raze_no_stack_protector raze_always_inline _Type_ operator()(const _Type_& __x,
-        const _Type_& __y, std::integral_constant<sizetype, _Elements_> __i) const noexcept
+template <class Options>
+struct configurable_slide_left_merge_t : options::conditional_callable<configurable_slide_left_merge_t, Options> {
+    template <simd_type V, sizetype Elements>
+    raze_nodiscard raze_always_inline V operator()(const V& x,
+        const V& y, std::integral_constant<sizetype, Elements> i) const noexcept
     {
-        return raze::options::__dispatch_call(*this, __x, __y, __i);
+        return options::dispatch_call(*this, x, y, i);
     }
 
-    template <simd_type _Type_>
-    raze_nodiscard raze_no_stack_protector raze_always_inline 
-        _Type_ operator()(const _Type_& __x, const _Type_& __y, i32 __i) const noexcept
-    {
-        return raze::options::__dispatch_call(*this, __x, __y, __i);
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const V& x, const V& y, i32 i) const noexcept {
+        return options::dispatch_call(*this, x, y, i);
     }
 
-    template <simd_type _Type_, sizetype _Elements_>
-    raze_nodiscard static raze_no_stack_protector raze_always_inline auto deferred_call(auto __options, const _Type_& __x,
-        const _Type_& __y, std::integral_constant<sizetype, _Elements_> __i) noexcept 
+    template <simd_type V, sizetype Elements>
+    static raze_always_inline auto deferred_call(auto opts, const V& x,
+        const V& y, std::integral_constant<sizetype, Elements> i) noexcept 
     {
-        return __slide_left_merge(__x, __y, __i);
+        return slide_left_merge_(x, y, i);
     }
 
-    template <simd_type _Type_>
-    raze_nodiscard static raze_no_stack_protector raze_always_inline auto deferred_call(
-        auto __options, const _Type_& __x, const _Type_& __y, i32 __i) noexcept
-    {
-        return __slide_left_merge(__x, __y, __i);
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x, const V& y, i32 i) noexcept {
+        return slide_left_merge_(x, y, i);
     }
-
-    using callable_tag_type = _Configurable_slide_left_merge;
 };
+
+constexpr inline auto slide_left_merge = options::functor<configurable_slide_left_merge_t>;
 
 __RAZE_VX_NAMESPACE_END

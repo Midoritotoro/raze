@@ -7,24 +7,21 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, arithmetic_type _Type_>
-struct _Mask_lshift {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, i32 __shift) raze_const_operator noexcept {
-		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-			return __x;
-		}
-		else if constexpr (std::is_integral_v<_Tp_>) {
-			raze_maybe_unused_attribute constexpr auto __all_mask = ((sizeof(_Tp_) * 8) == _Size_)
-				? math::max_limit<_Tp_>() : _Tp_(((_Tp_(1) << _Size_) - 1));
-
-			if constexpr (_Size_ < 8) return (__x << __shift) & __all_mask;
-			else return (__x << __shift);
-		}
-		else {
-			
-		}
+template <arch::ISA ISA, u32 N, arithmetic_type _Type_, raw_mask_type M>
+raze_always_inline M mask_lshift_(M x, i32 shift) noexcept {
+	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
+		return x;
 	}
-};
+	else if constexpr (std::is_integral_v<M>) {
+		raze_maybe_unused_attribute constexpr auto all_mask = ((sizeof(M) * 8) == N)
+			? math::max_limit<M>() : M(((M(1) << N) - 1));
+
+		if constexpr (N < 8) return (x << shift) & all_mask;
+		else return (x << shift);
+	}
+	else {
+		
+	}
+}
 
 __RAZE_VX_NAMESPACE_END

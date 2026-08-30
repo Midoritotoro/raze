@@ -6,53 +6,50 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, intrin_type _Intrin_, arithmetic_type _Type_>
-struct _Mask_slide_left {
-	static constexpr auto __size = sizeof(_Intrin_) / sizeof(_Type_);
 
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, i32 __shift) raze_const_operator noexcept {
-		if constexpr (intrin_type<_Tp_>) return _Slide_left<_ISA_, _Type_>()(__x, __shift);
-		else return (__shift >= __size) ? 0 : __x >> __shift;
+template <arch::ISA ISA, intrin_type V, arithmetic_type T, raw_mask_type M>
+raze_always_inline M slide_left_(M x, i32 shift) noexcept {
+	static constexpr auto size = sizeof(V) / sizeof(T);
+	if constexpr (intrin_type<M>) return slide_left_<ISA, T>(x, shift);
+	else return (shift >= size) ? 0 : x >> shift;
+}
+
+template <arch::ISA ISA, intrin_type V, arithmetic_type T, raw_mask_type M, i32 Shift>
+raze_always_inline M slide_left_(M x, std::integral_constant<i32, Shift> shift) noexcept {
+	static constexpr auto size = sizeof(V) / sizeof(T);
+	
+	raze_maybe_unused_attribute constexpr auto all_mask = ((sizeof(M) * 8) == size)
+		? math::max_limit<M>() : M(((M(1) << size) - 1));
+
+	if constexpr (shift >= size)
+		return 0;
+
+	if constexpr (sizeof(M) == 1) {
+		if constexpr (&& has_avx512dq<ISA>) {
+			if constexpr (size < 8)
+				return mask_and_<ISA, V, T>(_kshiftli_mask8(mask, shift), all_mask);
+			else
+				return _kshiftli_mask8(mask, shift);
+		}
+		else {
+			if constexpr (size < 8)
+				return (mask << shift) & all_mask;
+		}
 	}
-
-	template <raw_mask_type _Tp_, i32 _Shift_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x,
-		std::integral_constant<i32, _Shift_> __shift) raze_const_operator noexcept
-	{
-		raze_maybe_unused_attribute constexpr auto __all_mask = ((sizeof(_Tp_) * 8) == __size)
-			? math::max_limit<_Tp_>() : _Tp_(((_Tp_(1) << __size) - 1));
-
-		if constexpr (__shift >= __size)
-			return 0;
-
-		if constexpr (sizeof(_Tp_) == 1) {
-			if constexpr (&& has_avx512dq<_ISA_>) {
-				if constexpr (__size < 8)
-					return _Mask_and<_ISA_, _Intrin_, _Type_>()(_kshiftli_mask8(__mask, __shift), __to_k<_ISA_>(__all_mask));
-				else
-					return _kshiftli_mask8(__mask, __shift);
-			}
-			else {
-				if constexpr (__size < 8)
-					return (__mask << __shift) & __all_mask;
-			}
-		}
-		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>) {
-			return _kshiftli_mask16(__mask, __shift);
-		}
-		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>) {
-			return _kshiftli_mask32(__mask, __shift);
-		}
-		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>) {
-			return _kshiftli_mask64(__mask, __shift);
-		}
-		
-		if constexpr (intrin_type<_Tp_>)
-			return _Slide_left<_ISA_, _Type_>()(__x, __shift);
-		else
-			return __x << __shift;
+	else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>) {
+		return _kshiftli_mask16(mask, shift);
 	}
-};
+	else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) {
+		return _kshiftli_mask32(mask, shift);
+	}
+	else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) {
+		return _kshiftli_mask64(mask, shift);
+	}
+	
+	if constexpr (intrin_type<M>)
+		return slide_left_<ISA, T>(x, shift);
+	else
+		return x << shift;
+}
 
 __RAZE_VX_NAMESPACE_END

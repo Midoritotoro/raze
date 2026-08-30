@@ -7,43 +7,40 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, intrin_type _Intrin_, arithmetic_type _Type_>
-struct _Mask_slide_rigth {
-	static constexpr auto __size = sizeof(_Intrin_) / sizeof(_Type_);
+template <arch::ISA ISA, intrin_type V, arithmetic_type T, raw_mask_type M> 
+raze_always_inline M slide_right_(M x, i32 shift) noexcept {
+	static constexpr auto size = sizeof(V) / sizeof(T);
+	
+	if constexpr (intrin_type<M>)
+		return slide_right_<ISA, T>(x, shift);
+	else
+		return (shift >= size) ? 0 : x >> shift;
+}
 
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, i32 __shift) raze_const_operator noexcept {
-		if constexpr (intrin_type<_Tp_>)
-			return _Slide_right<_ISA_, _Type_>()(__x, __shift);
-		else
-			return (__shift >= __size) ? 0 : __x >> __shift;
-	}
+template <arch::ISA ISA, intrin_type V, arithmetic_type T, raw_mask_type M, i32 Shift>
+raze_always_inline M slide_right_(M x, std::integral_constant<i32, Shift> shift) noexcept {
+	static constexpr auto size = sizeof(V) / sizeof(T);
 
-	template <raw_mask_type _Tp_, i32 _Shift_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x,
-		std::integral_constant<i32, _Shift_> __shift) raze_const_operator noexcept 
-	{
-		if constexpr (__shift >= __size)
-			return 0;
+	if constexpr (shift >= size)
+		return 0;
 
-		if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>)
-			return _kshiftri_mask8(__x, __shift);
+	if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>)
+		return _kshiftri_mask8(x, shift);
 
-		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>)
-			return _kshiftri_mask16(__x, __shift);
+	else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>)
+		return _kshiftri_mask16(x, shift);
 
-		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>)
-			return _kshiftri_mask32(__x, __shift);
+	else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>)
+		return _kshiftri_mask32(x, shift);
 
-		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>)
-			return _kshiftri_mask64(__x, __shift);
+	else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>)
+		return _kshiftri_mask64(x, shift);
 
-		else if constexpr (intrin_type<_Tp_>)
-			return _Slide_right<_ISA_, _Type_>()(__x, __shift);
+	else if constexpr (intrin_type<M>)
+		return slide_right_<ISA, T>(x, shift);
 
-		else
-			return __x >> __shift;
-	}
-};
+	else
+		return x >> shift;
+}
 
 __RAZE_VX_NAMESPACE_END

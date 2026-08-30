@@ -19,8 +19,8 @@ raze_always_inline void insert_(V& v, u8 i, T x) noexcept {
 	else {
 		constexpr auto mask = make_insert_mask<V, typename IntegerForSizeof<T>::Unsigned>();
 
-		const auto broadcasted = _Broadcast<ISA, V>()(x);
-		const auto insert_mask = _Load<ISA, V>()(mask.array + mask.offset - i);
+		const auto broadcasted = broadcast_<ISA, V>(x);
+		const auto insert_mask = load_<ISA, V>(mask.array + mask.offset - i);
 
 		v = select_<ISA, T>(broadcasted, v, insert_mask);
 	}

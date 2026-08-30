@@ -10,17 +10,17 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_sfence: options::conditional_callable<_Configurable_sfence, _Options_> {
+template <class Options>
+struct configurable_sfence_t: options::conditional_callable<configurable_sfence_t, Options> {
     raze_always_inline void operator()() const noexcept {
-        return raze::options::__dispatch_call(*this);
+        return options::dispatch_call(*this);
     }
 
-    static raze_always_inline auto deferred_call(auto __options) noexcept {
-        return __x86_store_fence();
+    static raze_always_inline auto deferred_call(auto) noexcept {
+        return x86_store_fence_();
     }
-
-    using callable_tag_type = _Configurable_sfence;
 };
+
+constexpr inline auto sfence = options::functor<configurable_sfence_t>;
 
 __RAZE_VX_NAMESPACE_END

@@ -11,22 +11,20 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_compress_store : raze::options::conditional_callable<_Configurable_compress_store, _Options_, aligned_option> {
-    template <any_iterator_or_pointer _Mem_, simd_type _Type_, simd_mask_type _Mask_>
-    raze_no_stack_protector raze_always_inline _Mem_ operator()(_Mem_ __it, const _Type_& __x, const _Mask_& __mask) const noexcept {
-        return raze::options::__dispatch_call(*this, __it, __x, __mask);
+template <class Options>
+struct configurable_compress_store_t : options::conditional_callable<configurable_compress_store_t, Options, aligned_option> {
+    template <any_iterator_or_pointer Mem, simd_type T, simd_mask_type M>
+    raze_always_inline _Mem_ operator()(Mem it, const T& x, const M& mask) const noexcept {
+        return options::dispatch_call(*this, it, x, mask);
     }
 
-    template <any_iterator_or_pointer _Mem_, simd_type _Type_, simd_mask_type _MaskType_>
-    static raze_no_stack_protector raze_always_inline _Mem_ deferred_call(auto __options,
-        _Mem_ __it, const _Type_& __x, const _MaskType_& __mask) noexcept
-    {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <any_iterator_or_pointer Mem, simd_type T, simd_mask_type M>
+    static raze_always_inline _Mem_ deferred_call(auto opts, Mem it, const T& x, const M& mask) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename T::value_type;
+        using Abi = typename T::abi_type;
 
-        static_assert(std::same_as<_Mask_, options::unknown_key>,
+        static_assert(!options::complete_mask<Mask>,
             "compress_store does not support masks passed via options. "
             "The mask must be supplied as the last function argument.");
 
@@ -41,8 +39,6 @@ struct _Configurable_compress_store : raze::options::conditional_callable<_Confi
 
         return __it;
     }
-
-    using callable_tag_type = _Configurable_compress_store;
 };
 
 __RAZE_VX_NAMESPACE_END

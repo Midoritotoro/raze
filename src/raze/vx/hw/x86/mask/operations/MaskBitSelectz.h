@@ -5,13 +5,10 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Mask_bit_selectz {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __mask) raze_const_operator noexcept {
-		if constexpr (intrin_type<_Tp_>) return select_<_ISA_, _Type_>(__x, __mask);
-		else return _Mask_and<_ISA_, _Type_>()(__x, __mask);
-	}
-};
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
+raze_always_inline M mask_bitselectz_(M x, M mask) noexcept {
+	if constexpr (intrin_type<M>) return select_<ISA, T>(x, mask);
+	else return mask_and_<ISA, T>(x, mask);
+}
 
 __RAZE_VX_NAMESPACE_END

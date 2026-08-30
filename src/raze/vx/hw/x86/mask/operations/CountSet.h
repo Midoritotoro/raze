@@ -5,19 +5,16 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, arithmetic_type _Type_>
-struct _Count_set {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_always_inline i32 operator()(_Tp_ __x) const noexcept {
-		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) return __x;
-		else return math::__popcnt_n_bits<_Size_>(_To_mask<_ISA_, _Type_>()(__x));
-	}
+template <arch::ISA ISA, u32 N, arithmetic_type T, raw_mask_type M>
+raze_always_inline i32 count_set_(M x) noexcept {
+	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) return x;
+	else return math::popcnt_n_bits<N>(to_mask_<ISA, T>(x));
+}
 
-	template <raw_mask_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_always_inline i32 operator()(_Tp_ __x, _Mask_ __mask) const noexcept {
-		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) return __mask && __x;
-		else return math::__popcnt_n_bits<_Size_>(_To_mask<_ISA_, _Type_>()(_Mask_and<_ISA_, _Type_>()(__x, __mask)));
-	}
-};
+template <arch::ISA ISA, u32 N, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask>
+raze_always_inline i32 count_set_(M x, ControlMask mask) noexcept {
+	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) return mask && x;
+	else return math::popcnt_n_bits<N>(to_mask_<ISA, T>(mask_and_<ISA, T>(x, mask)));
+}
 
 __RAZE_VX_NAMESPACE_END

@@ -9,44 +9,42 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_hsum: raze::options::conditional_callable<_Configurable_hsum, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline __reduce_type<typename _Type_::value_type> operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_hsum_t: options::conditional_callable<configurable_hsum_t, _Options_> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline reduce_type<typename V::value_type> operator()(const V& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    template <simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        using Mask = options::fetch_t<options::condition_key, _Options_>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        __reduce_type<typename _Type_::value_type> __result = 0;
+        reduce_type<typename V::value_type> r = 0;
         
-        auto __chunk_op = [&] <class ... _Args_> (_Args_&& ... __args) raze_always_inline_lambda {
-            __result += _Reduce_add<_Abi_::isa, _Value_>()(ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class ... Args> (Args&& ... args) raze_always_inline_lambda {
+            r += reduce_add_<Abi::isa, Value>(ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key> && !std::same_as<_Mask_, options::__ignore_none>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
 
             if constexpr (_Mask_::has_alternative)
-                __x.__for_each_chunk(__chunk_op, __mask.__storage().storage(), __condition.alternative().__storage().storage());
+                x.__for_each_chunk(chunk_op, condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                __x.__for_each_chunk(__chunk_op, __mask.__storage().storage());
+                x.__for_each_chunk(chunk_op, condition.mask().__storage().storage());
         }
         else {
-            __x.__for_each_chunk(__chunk_op);
+            x.__for_each_chunk(chunk_op);
         }
 
-        return __result;
+        return r;
     }
-
-    using callable_tag_type = _Configurable_hsum;
 };
 
-constexpr inline auto __hsum = raze::options::functor<_Configurable_hsum>;
+constexpr inline auto horizontal_sum = options::functor<configurable_hsum_t>;
+constexpr inline auto hsum = horizontal_sum;
 
 __RAZE_VX_NAMESPACE_END

@@ -7,21 +7,17 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, raw_mask_type _Mask_, arithmetic_type _Type_>
-struct _Mask_broadcast {
-	raze_nodiscard raze_static_operator raze_always_inline _Mask_ operator()(bool __v) raze_const_operator noexcept {
-		if constexpr (intrin_type<_Mask_>) return __v ? _Broadcast<_ISA_, _Mask_>()(-1) : _Zero<_ISA_, _Mask_>()();
-		else if constexpr (std::is_same_v<_Mask_, bool>) return __v;
-		else return _First_n<_ISA_, _Size_, _Mask_, _Type_>()(_Size_ * i32(__v));
-	}
-};
+template <arch::ISA ISA, u32 N, raw_mask_type M, arithmetic_type T>
+raze_always_inline M mask_broadcast_(bool v) noexcept {
+	if constexpr (intrin_type<M>) return v ? broadcast_<ISA, M>(-1) : zero_<ISA, M>();
+	else if constexpr (std::is_same_v<M, bool>) return __v;
+	else return first_n_<ISA, N, M, T>()(N * i32(v));
+}
 
-template <arch::ISA _ISA_, raw_mask_type _Mask_>
-struct _Mask_zero {
-	raze_nodiscard raze_static_operator raze_always_inline _Mask_ operator()() raze_const_operator noexcept {
-		if constexpr (intrin_type<_Mask_>) return _Zero<_ISA_, _Mask_>()();
-		else return 0;
-	}
-};
+template <arch::ISA ISA, raw_mask_type M>
+raze_always_inline M mask_broadcast_() noexcept {
+	if constexpr (intrin_type<M>) return zero_<ISA, M>();
+	else return 0;
+}
 
 __RAZE_VX_NAMESPACE_END

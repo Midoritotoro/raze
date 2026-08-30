@@ -4,21 +4,18 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, arithmetic_type _Type_, bool _Unsafe_>
-struct _Find_next_set {
-    template <raw_mask_type _Tp_>
-    raze_nodiscard raze_always_inline i32 operator()(_Tp_ __x, u32 __shift) const noexcept {
-        if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-            return __shift == 0 ? !__x : 1;
-        }
-        else {
-            auto __mask = _To_mask<_ISA_, _Type_>()(__x);
-            using _Mask_ = decltype(__mask);
-
-            _Mask_ __mask_after = __shift == 0  ? __mask : _Mask_(__mask & _Mask_(_Mask_(~0) << __shift));
-            return math::__ctz_n_bits<_ISA_, _Size_, _Unsafe_>(__mask_after);
-        }
+template <arch::ISA ISA, u32 N, arithmetic_type T, bool Unsafe, raw_mask_type M>
+raze_always_inline i32 find_next_set_(M x, u32 shift) noexcept {
+    if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
+        return shift == 0 ? !x : 1;
     }
-};
+    else {
+        auto mask = to_mask_<ISA, T>(x);
+        using Mask = decltype(mask);
+
+        Mask mask_after = shift == 0 ? mask : Mask(mask & Mask(Mask(~0) << shift));
+        return math::ctz_n_bits<ISA, N, Unsafe>(mask_after);
+    }
+}
 
 __RAZE_VX_NAMESPACE_END

@@ -6,23 +6,20 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Mask_not {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x) raze_const_operator noexcept {
-		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) return !__x;
-		else if constexpr (intrin_type<_Tp_>) return _Not<_ISA_, _Type_>()(__x);
-		else if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>) return _knot_mask8(__x);
-		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>) return _knot_mask16(__x);
-		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>) return _knot_mask32(__x);
-		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>) return _knot_mask64(__x);
-		else return ~__x;
-	}
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
+raze_always_inline M mask_not_(M x) noexcept {
+	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) return !x;
+	else if constexpr (intrin_type<M>) return bit_not_<ISA, T>(x);
+	else if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) return _knot_mask8(x);
+	else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>) return _knot_mask16(x);
+	else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _knot_mask32(x);
+	else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _knot_mask64(x);
+	else return ~x;
+}
 
-	template <raw_mask_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Mask_ __mask) raze_const_operator noexcept {
-		return _And<_ISA_, _Type_>()(_Mask_not()(__x), __mask);
-	}
-};
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask>
+raze_always_inline M mask_not_(M x, ControlMask mask) noexcept {
+	return bit_and_<ISA, T>(mask_not_<ISA, T>(x), mask);
+}
 
 __RAZE_VX_NAMESPACE_END

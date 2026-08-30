@@ -6,23 +6,20 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_>
-struct _Mask_xor {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y) raze_const_operator noexcept {
-		if constexpr (intrin_type<_Tp_>) return _Xor<_ISA_, _Type_>()(__x, __y);
-		else if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) return __x != __y;
-		else if constexpr (sizeof(_Tp_) == 1 && has_avx512dq<_ISA_>) return _kxor_mask8(__x, __y);
-		else if constexpr (sizeof(_Tp_) == 2 && has_avx512f<_ISA_>) return _kxor_mask16(__x, __y);
-		else if constexpr (sizeof(_Tp_) == 4 && has_avx512bw<_ISA_>) return _kxor_mask32(__x, __y);
-		else if constexpr (sizeof(_Tp_) == 8 && has_avx512bw<_ISA_>) return _kxor_mask64(__x, __y);
-		else return __x ^ __y;
-	}
+template <arch::ISA ISA, arithmetic_type _Type_, raw_mask_type M>
+raze_always_inline M mask_xor_(M x, M y) noexcept {
+	if constexpr (intrin_type<M>) return bit_xor_<ISA, T>(x, y);
+	else if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) return x != y;
+	else if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) return _kxor_mask8(x, y);
+	else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>) return _kxor_mask16(x, y);
+	else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _kxor_mask32(x, y);
+	else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _kxor_mask64(x, y);
+	else return x ^ y;
+}
 
-	template <raw_mask_type _Tp_, raw_mask_type _Mask_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, _Tp_ __y, _Mask_ __mask) raze_const_operator noexcept {
-		return _And<_ISA_, _Type_>()(_Mask_xor()(__x, __y), __mask);
-	}
-};
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask>
+raze_always_inline M mask_xor_(M x, M y, ControlMask mask) noexcept {
+	return bit_and_<ISA, T>()(mask_xor_<ISA, T>(x, y), mask);
+}
 
 __RAZE_VX_NAMESPACE_END

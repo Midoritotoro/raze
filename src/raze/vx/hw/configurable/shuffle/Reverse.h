@@ -10,19 +10,19 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_reverse: raze::options::conditional_callable<_Configurable_reverse, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_reverse_t: options::conditional_callable<configurable_reverse_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const V& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    template <simd_type _Type_>
-    raze_nodiscard static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        return __reverse(__x, make_reversed_pattern<_Type_>{});
+    template <simd_type V>
+    raze_nodiscard static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        return reverse_(x, make_reversed_pattern<V>{});
     }
-
-    using callable_tag_type = _Configurable_reverse;
 };
+
+constexpr inline auto reverse = options::functor<configurable_reverse_t>;
 
 __RAZE_VX_NAMESPACE_END

@@ -10,39 +10,35 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-struct within_chunks_mode {};
-constexpr auto within_chunks = raze::options::flag(within_chunks_mode{});
-struct within_chunks_option : raze::options::exact_option<within_chunks> {};
-
 template <class _Options_>
-struct _Configurable_shuffle: raze::options::conditional_callable<_Configurable_shuffle, _Options_, within_chunks_option> {
-    template <class _Pattern_>
-    raze_nodiscard raze_always_inline pattern_vector_t<_Pattern_> operator()(
-        const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) const noexcept
+struct configurable_shuffle_t: raze::options::conditional_callable<configurable_shuffle_t, Options> {
+    template <class Pattern>
+    raze_nodiscard raze_always_inline pattern_vector_t<Pattern> operator()(
+        const pattern_vector_t<Pattern>& x, Pattern p) const noexcept
     {
-        return raze::options::__dispatch_call(*this, __x, __p);
+        return options::dispatch_call(*this, x, p);
     }
 
-    template <simd_type _Type_, index_simd_type _Index_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x, const _Index_& __idx) const noexcept
-        requires(index_type_for<_Index_, _Type_>) 
+    template <simd_type V, index_simd_type Index>
+    raze_nodiscard raze_always_inline V operator()(const V& x, const Index& idx) const noexcept
+        requires(index_type_for<Index, V>) 
     {
-        return raze::options::__dispatch_call(*this, __x, __idx);
+        return options::dispatch_call(*this, x, idx);
     }
 
-    template <class _Pattern_>
-    raze_nodiscard static raze_always_inline auto deferred_call(auto __options,
-        const pattern_vector_t<_Pattern_>& __x, _Pattern_ __p) noexcept
+    template <class Pattern>
+    static raze_always_inline auto deferred_call(auto opts,
+        const pattern_vector_t<Pattern>& x, Pattern p) noexcept
     {
-        return __shuffle(__x, __p);
+        return shuffle_(x, p);
     }
 
-    template <simd_type _Type_, index_simd_type _Index_>
-    raze_nodiscard static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Index_& __idx) noexcept {
-        return __shuffle(__x, __idx);
+    template <simd_type V, index_simd_type Index>
+    static raze_always_inline auto deferred_call(auto opts, const V& x, const Index& idx) noexcept {
+        return shuffle_(x, idx);
     }
-
-    using callable_tag_type = _Configurable_shuffle;
 };
+
+constexpr inline auto shuffle = options::functor<configurable_shuffle_t>;
 
 __RAZE_VX_NAMESPACE_END

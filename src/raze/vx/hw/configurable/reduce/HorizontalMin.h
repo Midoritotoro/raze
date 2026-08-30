@@ -9,48 +9,48 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_hmin : raze::options::conditional_callable<_Configurable_hmin, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline typename _Type_::value_type operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_hmin_t: options::conditional_callable<configurable_hmin_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline typename V::value_type operator()(const V& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    template <simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        _Value_ __result = 0;
+        Value r = 0;
         
-        auto __chunk_op = [&] <class ... _Args_> (_Args_&& ... __args) raze_always_inline_lambda {
-            __result = std::min(_Horizontal_min<_Abi_::isa, _Value_>()(ustorage<_Args_>(__args)...), __result);
+        auto chunk_op = [&] <class ... Args> (Args&& ... args) raze_always_inline_lambda {
+            result = std::min(horizontal_min_<Abi::isa, Value>(ustorage<Args>(args)...), r);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative) {
-                auto __alternative = __condition.alternative();
-                __result = __mask[std::integral_constant<sizetype, 0>{}] ? __x[std::integral_constant<sizetype, 0>{}] : __alternative[std::integral_constant<sizetype, 0>{}];
-                __x.__for_each_chunk(__chunk_op, __mask.__storage().storage(), __alternative.__storage().storage());
+            if constexpr (Mask::has_alternative) {
+                auto alternative = condition.alternative();
+                r = condition.mask()[std::integral_constant<sizetype, 0>{}] ? x[std::integral_constant<sizetype, 0>{}] : alternative[std::integral_constant<sizetype, 0>{}];
+                x.__for_each_chunk(chunk_op, condition.mask().__storage().storage(), alternative.__storage().storage());
             }
             else {
-                __result = __mask[std::integral_constant<sizetype, 0>{}] ? __x[std::integral_constant<sizetype, 0>{}] : 0;
-                __x.__for_each_chunk(__chunk_op, __mask.__storage().storage());
+                r = condition.mask()[std::integral_constant<sizetype, 0>{}] ? x[std::integral_constant<sizetype, 0>{}] : 0;
+                x.__for_each_chunk(chunk_op, condition.mask().__storage().storage());
             }
         }
         else {
-            __result = __x[std::integral_constant<sizetype, 0>{}];
-            __x.__for_each_chunk(__chunk_op);
+            r = x[std::integral_constant<sizetype, 0>{}];
+            x.__for_each_chunk(chunk_op);
         }
 
-        return __result;
+        return r;
     }
-
-    using callable_tag_type = _Configurable_hmin;
 };
+
+constexpr inline auto horizontal_min = options::functor<configurable_hmin_t>;
+constexpr inline auto hmin = horizontal_min;
 
 __RAZE_VX_NAMESPACE_END

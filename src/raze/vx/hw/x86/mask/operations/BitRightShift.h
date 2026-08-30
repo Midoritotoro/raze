@@ -7,20 +7,17 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, arithmetic_type _Type_>
-struct _Mask_rshift {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_static_operator raze_always_inline _Tp_ operator()(_Tp_ __x, i32 __shift) raze_const_operator noexcept {
-		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-			return !__shift;
-		}
-		else if constexpr (std::is_integral_v<_Tp_>) {
-			return (__shift >= _Size_) ? 0 : __x >> __shift;
-		}
-		else {
-			
-		}
+template <arch::ISA ISA, u32 N, arithmetic_type T, raw_mask_type M>
+raze_always_inline M mask_rshift_(M x, i32 shift) noexcept {
+	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
+		return !shift;
 	}
-};
+	else if constexpr (std::is_integral_v<M>) {
+		return (shift >= N) ? 0 : x >> shift;
+	}
+	else {
+		
+	}
+}
 
 __RAZE_VX_NAMESPACE_END

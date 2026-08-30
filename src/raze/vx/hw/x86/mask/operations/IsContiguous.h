@@ -10,25 +10,22 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, arithmetic_type _Type_>
-struct _Is_contiguous {
-	template <raw_mask_type _Tp_>
-	raze_nodiscard raze_always_inline bool operator()(_Tp_ __mask, i32 __n, i32 __k) const noexcept {
-		if constexpr (std::is_same_v<std::remove_cvref_t<_Tp_>, bool>) {
-			return (__k <= __n) ? true : __mask != 0;
-		}
-		else if constexpr (std::is_integral_v<_Tp_>) {
-			auto __len = __k - __n;
-			
-			if constexpr (_Size_ == 64) return _tzcnt_u64((~__mask) >> __n) >= __len;
-			else if constexpr (has_avx2<_ISA_>) return _bzhi_u64((~__mask) >> __n, __len) == 0;
-			else return (((~__mask) >> __n) & ((1ull << __len) - 1)) == 0; // Compilers usually turn this code into bzhi,
-			// but for compatibility with MSVC Runtime Dispatch, this is implemented manually
-		}
-		else {
-			return _Is_contiguous()(_To_mask<_ISA_, _Type_>()(__mask), __n, __k);
-		}
+template <arch::ISA ISA, u32 N, arithmetic_type T, raw_mask_type M>
+raze_always_inline bool is_contiguous_(M mask, i32 n, i32 k) noexcept {
+	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
+		return (k <= n) ? true : mask != 0;
 	}
-};
+	else if constexpr (std::is_integral_v<M>) {
+		auto len = k - n;
+		
+		if constexpr (N == 64) return _tzcnt_u64((~mask) >> n) >= len;
+		else if constexpr (has_avx2<ISA>) return _bzhi_u64((~mask) >> n, len) == 0;
+		else return (((~mask) >> n) & ((1ull << len) - 1)) == 0; // Compilers usually turn this code into bzhi,
+		// but for compatibility with MSVC Runtime Dispatch, this is implemented manually
+	}
+	else {
+		return is_contiguous_<ISA, N, T>(to_mask_<ISA, T>(mask), n, k);
+	}
+}
 
 __RAZE_VX_NAMESPACE_END

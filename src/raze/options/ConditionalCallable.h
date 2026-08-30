@@ -91,4 +91,7 @@ struct conditional_callable: conditional_callable_impl<F, OptionsValues, conditi
     }
 };
 
+template <class Mask>
+concept complete_mask = !std::same_as<Mask, unknown_key> && !std::same_as<Mask, ignore_none_>;
+
 __RAZE_OPTIONS_NAMESPACE_END

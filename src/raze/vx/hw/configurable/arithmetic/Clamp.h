@@ -5,17 +5,19 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_clamp : raze::options::conditional_callable<_Configurable_clamp, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __v, const _Type_& __low, const _Type_& __high) const noexcept {
-        return raze::options::__dispatch_call(*this, __v, __low, __high);
+template <class Options>
+struct configurable_clamp_t : options::conditional_callable<configurable_clamp_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const V& v, const V& low, const V& high) const noexcept {
+        return options::dispatch_call(*this, v, low, high);
     }
 
-    template <simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __v, const _Type_& __low, const _Type_& __high) noexcept {
-        return __vmin[__options](__vmax[__options](__v, __low), __high);
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& v, const V& low, const V& high) noexcept {
+        return vmin[opts](vmax[opts](v, low), high);
     }
 };
+
+constexpr inline auto clamp = options::functor<configurable_clamp_t>;
 
 __RAZE_VX_NAMESPACE_END

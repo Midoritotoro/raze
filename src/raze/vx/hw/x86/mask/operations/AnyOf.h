@@ -4,16 +4,16 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, raw_mask_type _Tp_>
-raze_nodiscard raze_always_inline bool __any_of(_Tp_ __x) noexcept {
-	return !__none_of<_ISA_, _Type_>(__x);
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
+raze_always_inline bool any_of_(M x) noexcept {
+	return !none_of_<ISA, T>(x);
 }
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, raw_mask_type _Tp_, raw_mask_type _Mask_>
-raze_nodiscard raze_always_inline bool __any_of(_Tp_ __x, _Mask_ __mask) noexcept
-	requires((intrin_type<_Tp_>&& intrin_type<_Mask_>) || (std::unsigned_integral<_Tp_> && std::unsigned_integral<_Mask_>))
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask>
+raze_always_inline bool any_of_(M x, ControlMask mask) noexcept
+	requires((intrin_type<M>&& intrin_type<ControlMask>) || (std::unsigned_integral<M> && std::unsigned_integral<ControlMask>))
 {
-	return !__none_of<_ISA_, _Type_>(__x, __mask);
+	return !none_of_<ISA, T>(x, mask);
 }
 
 __RAZE_VX_NAMESPACE_END

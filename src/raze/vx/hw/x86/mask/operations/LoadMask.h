@@ -8,31 +8,26 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, u32 _Size_, raw_mask_type _Mask_, arithmetic_type _Type_>
-struct _Load_mask {
-	template <class _AlignPolicy_ = __unaligned_policy>
-	raze_nodiscard raze_no_stack_protector raze_static_operator raze_always_inline _Mask_ operator()(
-		const bool* __mem, _AlignPolicy_&& __policy = _AlignPolicy_{}) raze_const_operator noexcept 
-	{
-		using _Signed = typename IntegerForSizeof<_Type_>::Signed;
+template <arch::ISA ISA, u32 N, raw_mask_type M, arithmetic_type T, class Policy = unaligned_policy>
+raze_always_inline M load_mask_(const bool* mem, Policy policy = Policy{}) noexcept {
+	using Signed = typename IntegerForSizeof<T>::Signed;
 
-		if constexpr (intrin_type<_Mask_>)
-			return _Negate<_ISA_, _Signed>()(_Load<_ISA_, _Mask_>()(__mem, __policy));
-		else if constexpr (std::is_same_v<std::remove_cvref_t<_Mask_>, bool>)
-			return *__mem;
-		else if constexpr (_Size_ >= 16)
-			return _To_mask<_ISA_, byte>()(_Negate<_ISA_, byte>()(_Load<_ISA_, 
-				traits::__deduce_simd_vector_type<_Signed, _Size_ * 8>>()(__mem, __policy)));
-		else {
-			_Mask_ __mask = 0;
+	if constexpr (intrin_type<M>)
+		return negate_<ISA, Signed>(load_<ISA, M>(mem, policy));
+	else if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>)
+		return *mem;
+	else if constexpr (N >= 16)
+		return to_mask_<ISA, byte>(negate_<ISA, byte>(load_<ISA, 
+			traits::deduce_simd_vector_type<Signed, N * 8>>()(mem, policy)));
+	else {
+		M mask = 0;
 
-			for (auto __i = 0; __i < _Size_; ++__i)
-				if (*__mem++)
-					math::__bit_test_and_set(__mask, __i);
+		for (auto i = 0; i < N; ++i)
+			if (*mem++)
+				math::bit_test_and_set(mask, i);
 
-			return __mask;
-		}
+		return mask;
 	}
-};
+}
 
 __RAZE_VX_NAMESPACE_END
