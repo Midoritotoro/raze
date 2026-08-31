@@ -25,7 +25,7 @@ struct configurable_hmin_t: options::conditional_callable<configurable_hmin_t, O
         Value r = 0;
         
         auto chunk_op = [&] <class ... Args> (Args&& ... args) raze_always_inline_lambda {
-            result = std::min(horizontal_min_<Abi::isa, Value>(ustorage<Args>(args)...), r);
+            r = std::min(horizontal_min_<Abi::isa, Value>(ustorage<Args>(args)...), r);
         };
 
         if constexpr (options::complete_mask<Mask>) {

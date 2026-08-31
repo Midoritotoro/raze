@@ -6,7 +6,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA ISA, arithmetic_type _Type_, raw_mask_type M>
+template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
 raze_always_inline M mask_xor_(M x, M y) noexcept {
 	if constexpr (intrin_type<M>) return bit_xor_<ISA, T>(x, y);
 	else if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) return x != y;

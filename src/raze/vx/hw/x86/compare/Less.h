@@ -23,7 +23,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
 
                 const auto xor_mask = _mm_xor_si128(as<__m128i>(x), as<__m128i>(y));
                 const auto left_andnot_right = _mm_andnot_si128(as<__m128i>(y), as<__m128i>(x));
-                const auto difference_andnot_xor = _mm_andnot_si128(__xor_mask, __difference64);
+                const auto difference_andnot_xor = _mm_andnot_si128(xor_mask, difference64);
 
                 const auto combined_mask = _mm_or_si128(left_andnot_right, difference_andnot_xor);
                 return as<V>(_mm_shuffle_epi32(_mm_srai_epi32(combined_mask, 31), 0xF5));
@@ -188,8 +188,8 @@ raze_always_inline auto less_(V x, V y) noexcept {
             else if constexpr (epu8<T>)  return _mm512_cmplt_epu8_mask(as<__m512i>(x), as<__m512i>(y));
         }
         else {
-            const auto compared_low = _Less<arch::ISA::AVX2, T>()(as<__m256i>(x), as<__m256i>(y));
-            const auto compared_high = _Less<arch::ISA::AVX2, T>()(_mm512_extracti64x4_epi64(as<__m512i>(x), 1),
+            const auto compared_low = less_<arch::ISA::AVX2, T>(as<__m256i>(x), as<__m256i>(y));
+            const auto compared_high = less_<arch::ISA::AVX2, T>(_mm512_extracti64x4_epi64(as<__m512i>(x), 1),
                 _mm512_extracti64x4_epi64(as<__m512i>(y), 1));
 
             return as<V>(_mm512_inserti64x4(as<__m512i>(compared_low), compared_high, 1));

@@ -28,7 +28,7 @@ struct configurable_mul_t: options::conditional_callable<configurable_mul_t, Opt
 
     template <simd_type V>
     static raze_always_inline auto deferred_call(auto opts, const V& x, const V& y) noexcept {
-        using Mask = options::fetch_toptions::condition_key, Options>;
+        using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 

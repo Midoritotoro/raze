@@ -12,7 +12,7 @@ concept native_ternarylogic = intrin_type<V> && ((has_avx512f<ISA> && sizeof(V) 
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V>
 raze_always_inline V bit_not_(V x) noexcept {
-	if constexpr (native_ternarylogic<ISA, V>) return _Ternarylogic<ISA, T>()(x, x, x, std::integral_constant<u8, 0x55>{});
+	if constexpr (native_ternarylogic<ISA, V>) return ternarylogic_<ISA, T>(x, x, x, std::integral_constant<u8, 0x55>{});
 	else if constexpr (arithmetic_type<V>) {
 		using Unsigned = typename IntegerForSizeof<V>::Unsigned;
 		return math::bit_cast<V>(Unsigned(~math::bit_cast<Unsigned>(x)));
@@ -22,7 +22,7 @@ raze_always_inline V bit_not_(V x) noexcept {
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type	V, raw_mask_type	M>
 raze_always_inline V bit_not_(V x, M mask) noexcept {
-	if constexpr (native_ternarylogic<ISA, V>) return _Ternarylogic<ISA, T>()(x, x, x, std::integral_constant<u8, 0x55>{}, mask);
+	if constexpr (native_ternarylogic<ISA, V>) return ternarylogic_<ISA, T>(x, x, x, std::integral_constant<u8, 0x55>{}, mask);
 	else if constexpr (arithmetic_type<V>) {
 		using Unsigned = typename IntegerForSizeof<V>::Unsigned;
 		return mask ? math::bit_cast<V>(Unsigned(~math::bit_cast<Unsigned>(x))) : 0;
@@ -32,7 +32,7 @@ raze_always_inline V bit_not_(V x, M mask) noexcept {
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type	V, raw_mask_type	M>
 raze_always_inline V bit_not_(V x, M mask, V src) noexcept {
-	if constexpr (native_ternarylogic<ISA, V>) return _Ternarylogic<ISA, T>()(x, x, x, std::integral_constant<u8, 0x55>{}, mask, src);
+	if constexpr (native_ternarylogic<ISA, V>) return ternarylogic_<ISA, T>(x, x, x, std::integral_constant<u8, 0x55>{}, mask, src);
 	else if constexpr (arithmetic_type<V>) {
 		using Unsigned = typename IntegerForSizeof<V>::Unsigned;
 		return mask ? math::bit_cast<V>(Unsigned(~math::bit_cast<Unsigned>(x))) : src;

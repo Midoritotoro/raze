@@ -56,7 +56,7 @@ raze_always_inline V sub_(V x, V y) noexcept {
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type	M>
-raze_nodiscard raze_always_inline V operator()(V x, V y, M mask) noexcept {
+raze_nodiscard raze_always_inline V sub_(V x, V y, M mask) noexcept {
 	if constexpr (sizeof(V) == 16) {
 		if constexpr (has_avx512vl<ISA>) {
 			if constexpr (epi64<T> || epu64<T>) return as<V>(_mm_maskz_sub_epi64(mask, as<__m128i>(x), as<__m128i>(y)));
@@ -97,7 +97,7 @@ raze_nodiscard raze_always_inline V operator()(V x, V y, M mask) noexcept {
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
-raze_nodiscard raze_always_inline V operator()(V x, V y, M mask, V src) noexcept {
+raze_nodiscard raze_always_inline V sub_(V x, V y, M mask, V src) noexcept {
 	if constexpr (sizeof(V) == 16) {
 		if constexpr (has_avx512vl<ISA>) {
 			if constexpr (epi64<T> || epu64<T>) return as<V>(_mm_mask_sub_epi64(as<__m128i>(src), mask, as<__m128i>(x), as<__m128i>(y)));

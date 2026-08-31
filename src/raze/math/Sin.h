@@ -24,7 +24,7 @@ raze_always_inline T fast_sin_impl(T x) noexcept {
 }
 
 template <std::floating_point T>
-raze_always_inline _Type_ sin_impl(T x) noexcept {
+raze_always_inline T sin_impl(T x) noexcept {
     return std::sin(x);
 }
 
@@ -49,7 +49,7 @@ struct configurable_sin_t: options::conditional_callable<configurable_sin_t, Opt
     static raze_always_inline auto deferred_call(auto opts, const T& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
@@ -63,17 +63,18 @@ struct configurable_sin_t: options::conditional_callable<configurable_sin_t, Opt
     static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = options[options::condition_key];
             const auto mask = condition.mask();
 
             if constexpr (Mask::has_alternative) 
-                return vx::__select[mask, condition.alternative()](sin_impl(x));
-            else return vx::__select[mask](sin_impl(x));
+                return vx::select[mask, condition.alternative()](sin_impl(x));
+            else return vx::select[mask](sin_impl(x));
         }
         else return sin_impl(x);
     }
 };
 
-constexpr inline auto sin = options::functor<raze
+constexpr inline auto sin = options::functor<configurable_sin_t>;
+
 __RAZE_MATH_NAMESPACE_END

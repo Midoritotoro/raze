@@ -171,8 +171,8 @@ struct ctz_not_n_bits_implementation {
     template <std::unsigned_integral T>
     constexpr raze_always_inline i32 operator()(T v) const noexcept {
         constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
-        constexpr auto mask = T(sent - 1);
         constexpr auto sent = Bits == raze_sizeof_in_bits(T) ? 0 : T(1ull << Bits);
+        constexpr auto mask = T(sent - 1);
 
         using UT = typename IntegerForSize<mask_size>::Unsigned;
 

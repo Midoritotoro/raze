@@ -55,7 +55,7 @@ struct configurable_div_t : raze::options::conditional_callable<configurable_div
 
     template <simd_type V, simd_type Divisor>
     static raze_always_inline auto deferred_call(auto opts, const V& x, const Divisor& y) noexcept {
-        using Mask = options::fetch_t<options::condition_key, _Options_>;
+        using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 

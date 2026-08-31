@@ -11,9 +11,9 @@ struct x86_abi;
 
 template <u64 N>
 using mmask_for_elements_helper = std::conditional_t<N <= 8, __mmask8,
-    std::conditional_t<_N_ <= 16, __mmask16,
-    std::conditional_t<_N_ <= 32, __mmask32,
-    std::conditional_t<_N_ <= 64, __mmask64, void>>>>;
+    std::conditional_t<N <= 16, __mmask16,
+    std::conditional_t<N <= 32, __mmask32,
+    std::conditional_t<N <= 64, __mmask64, void>>>>;
 
 template <u64 N>
 using mmask_for_elements_t = mmask_for_elements_helper<N>;

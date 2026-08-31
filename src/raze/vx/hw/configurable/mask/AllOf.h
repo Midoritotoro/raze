@@ -11,41 +11,39 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_all_of: raze::options::conditional_callable<_Configurable_all_of, _Options_> {
-    template <simd_mask_type _Type_>
-    raze_nodiscard raze_always_inline bool operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_all_of_t: options::conditional_callable<configurable_all_of_t, Options> {
+    template <simd_mask_type V>
+    raze_nodiscard raze_always_inline bool operator()(const V& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x) const noexcept {
-        return (*this)(__x());
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& x) const noexcept {
+        return (*this)(x());
     }
 
-    template <simd_mask_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_mask_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (const _Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            return __all_of<_Abi_::isa, _Chunk::size, _Value_>(ustorage(__chunk), ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (const Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            return all_of_<Abi::isa, Chunk::size, Value>(ustorage(chunk), ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            static_assert(!_Mask_::has_alternative, "Not supported. ");
+        if constexpr (options::complete_mask<Mask>) {
+            static_assert(!Mask::has_alternative, "Not supported. ");
 
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
-
-            return __x.__for_each_chunk_all_of(__chunk_op, __mask.__storage().storage());
+            auto condition = opts[options::condition_key];
+            return x.__for_each_chunk_all_of(chunk_op, condition.mask().__storage().storage());
         }
         else {
-            return __x.__for_each_chunk_all_of(__chunk_op);
+            return x.__for_each_chunk_all_of(chunk_op);
         }
     }
-
-    using callable_tag_type = _Configurable_all_of;
 };
+
+constexpr inline auto all_of = options::functor<configurable_all_of_t>;
 
 __RAZE_VX_NAMESPACE_END

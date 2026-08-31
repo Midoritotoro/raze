@@ -18,9 +18,9 @@ concept alternative_type = (vx::simd_mask_type<Condition> && vx::simd_type<Alter
     (boolean_condition<Condition> && vx::arithmetic_type<Alternative>);
 
 template <template <class> class F, class OptionsValues, class ... Options>
-struct conditional_callable_impl:  callable<_Function_, _OptionsValues_, _Options_...> {
-    using func_t = _Function_<_OptionsValues_>;
-    using base_t = callable<_Function_, _OptionsValues_, _Options_...>;
+struct conditional_callable_impl:  callable<F, OptionsValues, Options...> {
+    using func_t = F<OptionsValues>;
+    using base_t = callable<F, OptionsValues, Options...>;
 
     using base_t::operator[];
 

@@ -17,7 +17,7 @@ public:
 		_reference(mask),
 		_index(i)
 	{
-		raze_assert(i >= 0 && i < _Mask_::size());
+		raze_assert(i >= 0 && i < Mask::size());
 	}
 
 	raze_always_inline operator value_type() const noexcept {

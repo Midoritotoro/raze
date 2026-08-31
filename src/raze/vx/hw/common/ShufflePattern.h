@@ -98,7 +98,7 @@ struct shuffle_pattern {
     template <sizetype I, sizetype... Is>
 	raze_always_inline static constexpr sizetype make_mask(
         bool (pred)(sizetype, sizetype),
-        std::index_sequence<Is_...>) noexcept
+        std::index_sequence<Is...>) noexcept
     {
         return ((pred(Idxs, I) ? (sizetype{1} << Is) : sizetype{0}) | ...);
     }

@@ -77,7 +77,7 @@ raze_always_inline V splat_native_(V x, std::integral_constant<sizetype, I> i) n
 		}
 	}
 	else if constexpr (sizeof(V) == 64) {
-		if constexpr (i == 0) return as<V>(__zmm_broadcast_low<ISA, T>(x));
+		if constexpr (i == 0) return as<V>(zmm_broadcast_low_<ISA, T>(x));
 		else {
 			constexpr auto index = std::integral_constant<sizetype, i % (size / 4)>{};
 			constexpr auto lane = i / (size / 4);
@@ -95,7 +95,7 @@ raze_always_inline pattern_vector_t<Pattern> splat_(const pattern_vector_t<Patte
 	if constexpr (native<V>) {
 		using Ret = decltype(splat_native_<abi_t<V>::isa, typename V::value_type>(ustorage(x.template __get<0>()), p.template at<0>()));
 
-		if constexpr (!std::is_void_v<_Ret>) {
+		if constexpr (!std::is_void_v<Ret>) {
 			auto r = x;
 
 			auto& storage = r.template __get<0>();

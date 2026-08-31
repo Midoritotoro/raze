@@ -25,7 +25,7 @@ struct configurable_not_t: options::conditional_callable<configurable_not_t, Opt
 
         T r = x;
 
-        auto chunk_op = [&] <class Chunk, class ... Args> (_Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
             if constexpr (simd_mask_type<T>) chunk = mask_not_<Abi::isa, Value>(ustorage(chunk), ustorage<Args>(args)...);
             else chunk = bit_not_<Abi::isa, Value>(ustorage(chunk), ustorage<Args>(args)...);
         };

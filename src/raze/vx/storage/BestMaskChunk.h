@@ -9,7 +9,7 @@ template <class T, class Abi, u64 Elements, raw_mask_type M>
 struct mask_wrapper {
     using unwrapped_type = M;
     using abi_type = Abi;
-    using value_type = Type;
+    using value_type = T;
 
     static constexpr auto size = Elements;
 
@@ -38,7 +38,7 @@ private:
     raze_no_unique_address unwrapped_type _data;
 };
 
-template <class T, class Abi, i32 Remaining_>
+template <class T, class Abi, i32 Remaining>
 struct best_mask_chunk {
     static constexpr auto max_isa_width = has_avx512f<Abi::isa> ? 512 : has_avx<Abi::isa> 
         ? 256 : has_sse2<Abi::isa> ? 128 : 0;

@@ -77,9 +77,9 @@ raze_always_inline V rotate_left_(const V& x, i32 sh) noexcept {
 	using Value = typename V::value_type;
 
 	if constexpr (native<V>) {
-        using Intrin_ = decltype(ustorage(x.template __get<0>()));
-        using RetRotate = decltype(make_rotate_left_idx_<_Abi_::isa, _Value_>(Intrin{}, sh));
-        using IdxType = typename _RetRotate::index_type;
+        using Intrin = decltype(ustorage(x.template __get<0>()));
+        using RetRotate = decltype(make_rotate_left_idx_<Abi::isa, Value>(Intrin{}, sh));
+        using IdxType = typename RetRotate::index_type;
 
         using Ret = decltype(generic_shuffle_native_<Abi::isa, IdxType>(Intrin{}, std::declval<RetRotate>().data()));
 		

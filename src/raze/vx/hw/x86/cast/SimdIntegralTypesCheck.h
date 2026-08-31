@@ -13,17 +13,17 @@ template <class T, class Abi = x86_abi<native_size<T>>>
 class simd;
 
 template <class T>
-constexpr bool __is_intrin_type_v = traits::is_any_of_v<std::remove_cvref_t<T>,
+constexpr bool is_intrin_type_v = traits::is_any_of_v<std::remove_cvref_t<T>,
 	__m128, __m128i, __m128d, __m256, __m256i, __m256d, __m512, __m512i, __m512d>;
 
 template <class T>
-concept intrin_type = __is_intrin_type_v<T>;
+concept intrin_type = is_intrin_type_v<T>;
 
 template <class T>
 concept arithmetic_type = std::is_arithmetic_v<T>;
 
 template <class T>
-concept raw_mask_type = intrin_type<T> || std::is_integral_v<terminate>;
+concept raw_mask_type = intrin_type<T> || std::is_integral_v<T>;
 
 template <class T>
 concept intrin_or_arithmetic_type = intrin_type<T> || arithmetic_type<T>;

@@ -1,8 +1,7 @@
 #pragma once 
 
 #include <raze/compatibility/Compatibility.h>
-#include <src/raze/options/SameAs.h>
-
+#include <type_traits>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 

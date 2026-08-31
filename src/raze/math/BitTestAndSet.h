@@ -7,7 +7,7 @@
 __RAZE_MATH_NAMESPACE_BEGIN
 
 template <class T>
-raze_always_inline bool __bit_test_and_set(T& x, i32 i) noexcept {
+raze_always_inline bool bit_test_and_set(T& x, i32 i) noexcept {
     raze_debug_assert(i < raze_sizeof_in_bits(T) && i >= 0);
 
 #if defined(raze_cpp_msvc)

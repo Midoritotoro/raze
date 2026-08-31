@@ -1,7 +1,6 @@
 #pragma once
 
 #include <src/raze/options/Traits.h>
-#include <src/raze/options/SameAs.h>
 #include <src/raze/vx/hw/x86/memory/ConditionalMemAccessNative.h>
 #include <src/raze/options/As.h>
 #include <src/raze/vx/hw/configurable/mask/FirstN.h>

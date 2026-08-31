@@ -35,7 +35,7 @@ struct as_keyword {
     template <class F> 
     constexpr raze_always_inline auto operator|(call<F>&& f) const noexcept
     {
-        return type_or<_eyword, call<F>>{std::forward<F>(f)};
+        return type_or<Keyword, call<F>>{std::forward<F>(f)};
     }
 
     template <concepts::option ... Options>
@@ -81,7 +81,7 @@ struct flag_keyword {
         return std::is_same_v<std::true_type, T>;
     }
 
-    using tag_type          = _ID_;
+    using tag_type          = ID;
     using keyword_type      = flag_keyword;
     using stored_value_type = bool;
         

@@ -12,7 +12,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <class Options>
 struct configurable_rotate_left_t : options::conditional_callable<configurable_rotate_left_t, Options> {
-    template <simd_type V, sizetype _Elements_>
+    template <simd_type V, sizetype Elements>
     raze_nodiscard raze_always_inline V operator()(const V& x, std::integral_constant<sizetype, Elements> i) const noexcept {
         return options::dispatch_call(*this, x, i);
     }

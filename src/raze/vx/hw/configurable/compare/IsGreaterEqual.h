@@ -9,54 +9,53 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_is_greater_equal: raze::options::conditional_callable<_Configurable_is_greater_equal, _Options_> {
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline simd_mask<typename _Type_::value_type, typename _Type_::abi_type> 
-        operator()(const _Type_& __x, const _Type_& __y) const noexcept 
+template <class Options>
+struct configurable_is_greater_equal_t: options::conditional_callable<configurable_is_greater_equal_t, Options> {
+    template <simd_type V>
+    raze_nodiscard raze_always_inline simd_mask<typename V::value_type, abi_t<V>> 
+        operator()(const V& x, const V& y) const noexcept 
     {
-        return raze::options::__dispatch_call(*this, __x, __y);
+        return options::dispatch_call(*this, x, y);
     }
 
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline simd_mask<typename _Type_::value_type, typename _Type_::abi_type> 
-        operator()(const _Type_& __x, typename _Type_::value_type __y) const noexcept
+    template <simd_type V>
+    raze_nodiscard raze_always_inline simd_mask<typename V::value_type, typename V::abi_type> 
+        operator()(const V& x, typename V::value_type y) const noexcept
     {
-        return raze::options::__dispatch_call(*this, __x, _Type_(__y));
+        return options::dispatch_call(*this, x, V(y));
     }
         
-    template <simd_type _Type_>
-    raze_nodiscard raze_always_inline simd_mask<typename _Type_::value_type, typename _Type_::abi_type>
-        operator()(typename _Type_::value_type __x, const _Type_& __y) const noexcept
+    template <simd_type V>
+    raze_nodiscard raze_always_inline simd_mask<typename V::value_type, typename V::abi_type>
+        operator()(typename V::value_type x, const V& y) const noexcept
     {
-        return raze::options::__dispatch_call(*this, _Type_(__x), __y);
+        return options::dispatch_call(*this, V(x), y);
     }
 
-    template <simd_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, const _Type_& __y) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_type V>
+    static raze_always_inline auto deferred_call(auto opts, const V& x, const V& y) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
 
-        simd_mask<_Value_, _Abi_> __result;
+        simd_mask<Value, Abi> r;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (_Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __chunk = _Greater_equal<_Abi_::isa, _Value_>()(ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            chunk = greater_equal_<Abi::isa, Value>(ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
-            __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage(), __mask.__storage().storage());
+        if constexpr (options::complete_mask<Mask>) {
+            auto condition = opts[options::condition_key];
+            r.__for_each_chunk(chunk_op, x.__storage().storage(), y.__storage().storage(), condition.mask().__storage().storage());
         }
         else {
-            __result.__for_each_chunk(__chunk_op, __x.__storage().storage(), __y.__storage().storage());
+            r.__for_each_chunk(chunk_op, x.__storage().storage(), y.__storage().storage());
         }
 
-        return __result;
+        return r;
     }
-
-    using callable_tag_type = _Configurable_is_greater_equal;
 };
+
+constexpr inline auto is_greater_equal = options::functor<configurable_is_greater_equal_t>;
 
 __RAZE_VX_NAMESPACE_END

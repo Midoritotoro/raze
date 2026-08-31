@@ -27,7 +27,7 @@ raze_always_inline void insert_(V& v, u8 i, T x) noexcept {
 }
 
 template <arch::ISA ISA, intrin_type V, sizetype I, intrin_type Insert>
-raze_always_inline void operator()(V& v, std::integral_constant<sizetype, I> i, Insert ins) noexcept {
+raze_always_inline void insert_vector_(V& v, std::integral_constant<sizetype, I> i, Insert ins) noexcept {
 	if constexpr (sizeof(V) == sizeof(Insert)) v = as<V>(ins);
 	else if constexpr (sizeof(V) == 32) {
 		if constexpr (sizeof(Insert) == 16) v = _mm256_inserti128_si256(as<__m256i>(v), as<__m128i>(ins), i);

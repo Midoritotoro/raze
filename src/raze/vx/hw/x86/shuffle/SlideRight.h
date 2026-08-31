@@ -35,13 +35,13 @@ consteval auto make_slide_right_pshufb_table_() noexcept {
 }
 
 template <arch::ISA ISA, arithmetic_type T, intrin_type V>
-raze_nodiscard raze_no_stack_protector raze_always_inline auto make_pshufb_slide_right_idx_(Intrin, i32 sh) noexcept {
-    alignas(sizeof(Intrin)) static constexpr auto table_u8 = make_slide_right_pshufb_table_<sizeof(Intrin), sizeof(T), u8>();
+raze_nodiscard raze_always_inline auto make_pshufb_slide_right_idx_(V, i32 sh) noexcept {
+    alignas(sizeof(V)) static constexpr auto table_u8 = make_slide_right_pshufb_table_<sizeof(V), sizeof(T), u8>();
     return rotate_indices<V, u8>{ load_<ISA, V>(table_u8[sh].data(), aligned_policy{}) };
 }
 
 template <simd_type V, class Int>
-raze_nodiscard raze_no_stack_protector raze_always_inline V slide_right_fallback_(const V& x, Int sh) noexcept {
+raze_nodiscard raze_always_inline V slide_right_fallback_(const V& x, Int sh) noexcept {
     alignas(sizeof(V)) typename V::value_type arr[V::size() * 2];
 
     vx::store[vx::aligned](arr, V::zero());
@@ -53,7 +53,7 @@ raze_nodiscard raze_no_stack_protector raze_always_inline V slide_right_fallback
 template <intrin_type V, class Pattern>
 raze_always_inline V slide_right_native_(V x, Pattern p) noexcept {
     constexpr auto isa = abi_t<pattern_vector_t<Pattern>>::isa;
-    using Value = typename pattern_vector_t<_Pattern_>::value_type;
+    using Value = typename pattern_vector_t<Pattern>::value_type;
 
     constexpr auto shift = get_slide_right_shift(p) == shuffle_zero ? p.size() : get_slide_right_shift(p);
     constexpr auto shift_bytes = shift * sizeof(Value);
@@ -62,10 +62,10 @@ raze_always_inline V slide_right_native_(V x, Pattern p) noexcept {
     if constexpr (shift == 0)
         return x;
 
-    if constexpr (sizeof(_Intrin_) == 16) return as<_Intrin_>(_mm_slli_si128(as<__m128i>(__x), __shift_bytes));
-    else if constexpr (sizeof(_Intrin_) == 32 && has_avx2<isa>) {
-        if constexpr (has_avx512vl<isa> && (__shift_bytes % 4) == 0) {
-            return as<_Intrin_>(_mm256_alignr_epi32(as<__m256i>(__x), _mm256_setzero_si256(), (8 - (__shift_bytes >> 2)) & 7));
+    if constexpr (sizeof(V) == 16) return as<V>(_mm_slli_si128(as<__m128i>(x), shift_bytes));
+    else if constexpr (sizeof(V) == 32 && has_avx2<isa>) {
+        if constexpr (has_avx512vl<isa> && (shift_bytes % 4) == 0) {
+            return as<V>(_mm256_alignr_epi32(as<__m256i>(x), _mm256_setzero_si256(), (8 - (shift_bytes >> 2)) & 7));
         }
         else {
             auto low_part = _mm256_setzero_si256();
@@ -117,7 +117,7 @@ raze_always_inline V slide_right_native_(V x, Pattern p) noexcept {
             const auto high = _mm256_alignr_epi8(_mm512_extracti64x4_epi64(as<__m512i>(low_part), 1),
                 _mm512_extracti64x4_epi64(as<__m512i>(high_part), 1), 16 - (shift_bytes & 0xF));
 
-            return as<_Intrin_>(_mm512_inserti64x4(as<__m512i>(low), high, 1));
+            return as<V>(_mm512_inserti64x4(as<__m512i>(low), high, 1));
         }
     }
     else {
@@ -144,7 +144,7 @@ raze_always_inline pattern_vector_t<Pattern> slide_right_(const pattern_vector_t
 
         return r;
     }
-    else return slide_right_fallback_(x, get_slide_right_shift(p) == shuffle_zero ? p.size() : get_slide_right_shift(__p));
+    else return slide_right_fallback_(x, get_slide_right_shift(p) == shuffle_zero ? p.size() : get_slide_right_shift(p));
 }
 
 template <simd_type V>

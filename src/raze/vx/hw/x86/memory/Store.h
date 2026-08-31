@@ -33,9 +33,9 @@ raze_always_inline void storeu_(void* mem, V v) noexcept {
 	else *static_cast<V*>(mem) = v;
 }
 
-template <intrin_or_arithmetic_type V, class Policy = Policy>
+template <intrin_or_arithmetic_type V, class Policy = unaligned_policy>
 raze_always_inline void store_(void* mem, V v, Policy = Policy{}) noexcept {
-	if constexpr (is_aligned_v<Policy>) storea_<ISA>(mem, v);
+	if constexpr (is_aligned_v<Policy>) storea_(mem, v);
 	else storeu_(mem, v);
 }
 

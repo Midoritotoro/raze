@@ -41,7 +41,7 @@ struct configurable_ternarylogic_t: options::conditional_callable<configurable_t
                 r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), 
                     op, condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), op, mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), op, condition.mask().__storage().storage());
         }
         else {
             r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), op);
@@ -51,6 +51,6 @@ struct configurable_ternarylogic_t: options::conditional_callable<configurable_t
     }
 };
 
-constexpr inline auto ternarylogic = options::functor<condigurable_ternarylogic_t>;
+constexpr inline auto ternarylogic = options::functor<configurable_ternarylogic_t>;
 
 __RAZE_VX_NAMESPACE_END

@@ -11,55 +11,53 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_first_n : raze::options::conditional_callable<_Configurable_first_n, _Options_> {
-    template <simd_mask_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(i32 __n, const options::as<_Type_>& __type) const noexcept {
-        return raze::options::__dispatch_call(*this, __n, __type);
+template <class Options>
+struct configurable_first_n_t : options::conditional_callable<configurable_first_n_t, Options> {
+    template <simd_mask_type M>
+    raze_nodiscard raze_always_inline M operator()(i32 n, const options::as<M>& type) const noexcept {
+        return options::dispatch_call(*this, n, type);
     }
 
-    template <simd_mask_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, i32 __n, const options::as<_Type_>&) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        static_assert(std::same_as<_Mask_, options::unknown_key>, "Not supported. ");
+    template <simd_mask_type M>
+    static raze_always_inline auto deferred_call(auto opts, i32 n, const options::as<M>&) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        static_assert(!options::complete_mask<Mask>, "Not supported. ");
 
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+        using Value = typename M::value_type;
+        using Abi = typename M::abi_type;
 
-        _Type_ __x(uninitialized);
+        M x(uninitialized);
 
-        if constexpr (_Type_::__chunks_count() == 1) {
-            __x.__for_each_chunk([__n] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-                using _StorageType = std::remove_cvref_t<decltype(ustorage(__chunk))>;
-                __chunk = _First_n<_Abi_::isa, _Chunk::size, _StorageType, _Value_>()(__n);
+        if constexpr (M::__chunks_count() == 1) {
+            x.__for_each_chunk([n] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+                using StorageType = std::remove_cvref_t<decltype(ustorage(chunk))>;
+                chunk = first_n_<Abi::isa, Chunk::size, StorageType, Value>(n);
             });
         }
         else {
-            i32 __remaining = __n;
+            i32 remaining = n;
 
-            auto __chunk_op = [&__remaining] <class _Chunk> (_Chunk & __chunk) raze_always_inline_lambda {
-                using _StorageType = std::remove_cvref_t<decltype(ustorage(__chunk))>;
-                constexpr i32 __chunk_size = static_cast<i32>(_Chunk::size);
+            auto chunk_op = [&remaining] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+                using StorageType = std::remove_cvref_t<decltype(ustorage(chunk))>;
+                constexpr i32 chunk_size = static_cast<i32>(Chunk::size);
 
-                if (__remaining > 0) {
-                    i32 __chunk_n = (__remaining < __chunk_size) ? __remaining : __chunk_size;
-                    __chunk = _First_n<_Abi_::isa, _Chunk::size, _StorageType, _Value_>()(__chunk_n);
-                    __remaining -= __chunk_size;
+                if (remaining > 0) {
+                    i32 chunk_n = (remaining < chunk_size) ? remaining : chunk_size;
+                    chunk = first_n_<Abi::isa, Chunk::size, StorageType, Value>(chunk_n);
+                    remaining -= chunk_size;
                 }
                 else {
-                    __chunk = _First_n<_Abi_::isa, _Chunk::size, _StorageType, _Value_>()(0);
+                    chunk = first_n_<Abi::isa, Chunk::size, StorageType, Value>(0);
                 }
             };
 
-            __x.__for_each_chunk(__chunk_op);
+            x.__for_each_chunk(chunk_op);
         }
 
-        return __x;
+        return x;
     }
-
-    using callable_tag_type = _Configurable_first_n;
 };
 
-constexpr inline auto __first_n = raze::options::functor<_Configurable_first_n>;
+constexpr inline auto first_n = options::functor<configurable_first_n_t>;
 
 __RAZE_VX_NAMESPACE_END

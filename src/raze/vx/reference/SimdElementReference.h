@@ -6,15 +6,15 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class V> 
-class _Simd_element_reference {
+class simd_element_reference {
 public:
-	using value_type = typename _Simd_::value_type;
+	using value_type = typename V::value_type;
 
-	simd_element_reference(_Simd_& v, i32 i) noexcept:
+	simd_element_reference(V& v, i32 i) noexcept:
 		_reference(v),
 		_index(i)
 	{
-		raze_debug_assert_log(i >= 0 && i < _Simd_::size(), "Index out of range. ");
+		raze_debug_assert_log(i >= 0 && i < V::size(), "Index out of range. ");
 	}
 
 	raze_always_inline operator value_type() const noexcept {
@@ -136,7 +136,7 @@ private:
 		_reference.__insert(_index, value);
 	}
 
-	_Simd_& _reference;
+	V& _reference;
 	i32 _index = 0;
 };
 

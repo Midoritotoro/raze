@@ -5,7 +5,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
-raze_always_inline auto operator()(V x, V y) noexcept {
+raze_always_inline auto not_equal_(V x, V y) noexcept {
     if constexpr (sizeof(V) == 16) {
         if constexpr (pd<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm_cmp_pd_mask(as<__m128d>(x), as<__m128d>(y), _CMP_NEQ_OQ);

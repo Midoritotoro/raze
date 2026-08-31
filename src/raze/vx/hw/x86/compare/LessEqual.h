@@ -6,7 +6,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA ISA, arithmetic_typen T, intrin_or_arithmetic_type V>
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
 raze_always_inline auto less_equal_(V x, V y) noexcept {
     if constexpr (sizeof(V) == 16) {
         if constexpr (pd<T>) {
@@ -68,7 +68,7 @@ raze_always_inline auto less_equal_(V x, V y) noexcept {
     }
     
     if constexpr (arithmetic_type<V>) return x <= y;
-    else return bit_not_<ISA, T>()(less_<ISA, T>()(y, x));
+    else return bit_not_<ISA, T>(less_<ISA, T>(y, x));
 }
 
 __RAZE_VX_NAMESPACE_END

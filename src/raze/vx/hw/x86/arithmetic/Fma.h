@@ -25,12 +25,12 @@ raze_always_inline V fma_(V x, V y, V z) noexcept {
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
-raze_always_inline V operator()(V x, V y, V z, M mask) noexcept {
+raze_always_inline V fma_(V x, V y, V z, M mask) noexcept {
 	return select_<ISA, T>(fma_<ISA, T>(x, y, z), mask);
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
-raze_always_inline V operator()(V x, V y, V z, M mask, V src) noexcept {
+raze_always_inline V fma_(V x, V y, V z, M mask, V src) noexcept {
 	return select_<ISA, T>(fma_<ISA, T>(x, y, z), src, mask);
 }
 

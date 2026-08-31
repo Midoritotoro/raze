@@ -15,36 +15,15 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Type_>
-struct stream_ptr;
-
 template <class Options>
-struct configurable_store_t : raze::options::conditional_callable<configurable_store_t, Options, aligned_option, nt_option, safe_option> {
+struct configurable_store_t : raze::options::conditional_callable<configurable_store_t, Options, aligned_option, safe_option> {
     template <any_iterator_or_pointer Mem, simd_type V>
-    raze_no_stack_protector raze_always_inline void operator()(_Mem_ it, const V& x) const noexcept {
-        return raze::options::__dispatch_call(*this, it, x);
-    }
-
-    template <class Mem, simd_type V>
-    raze_no_stack_protector raze_always_inline void operator()(stream_ptr<_Mem_> it, const V& x) const noexcept {
-        return raze::options::__dispatch_call(*this, it, x);
-    }
-
-    template <class Mem, simd_type V>
-    static raze_no_stack_protector raze_always_inline auto deferred_call(auto opts, stream_ptr<Mem> it, const V& x) noexcept {
-        using Mask = raze::options::fetch_t<raze::options::condition_key, Options>;
-        using Value = typename V::value_type;
-        using Abi = typename V::abi_type;
-
-        return x.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-            auto mem = std::to_address(it);
-            store_nt_<Abi::isa>(mem, ustorage(chunk));
-            algorithm::seek_iter(it, algorithm::bytes_pointer_offset(mem, sizeof(Value) * Chunk::size));
-        });
+    raze_always_inline void operator()(Mem it, const V& x) const noexcept {
+        return options::dispatch_call(*this, it, x);
     }
 
     template <any_iterator_or_pointer Mem, simd_type V>
-    static raze_no_stack_protector raze_always_inline auto deferred_call(auto opts, Mem it, const V& x) noexcept {
+    static raze_always_inline auto deferred_call(auto opts, Mem it, const V& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
@@ -53,8 +32,6 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
 		auto mem = std::to_address(it);
 
         if constexpr (!std::same_as<Mask, options::unknown_key>) {
-            static_assert(!Options::contains(nt), "The nt option is incompatible with masked load/store.");
-
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
@@ -80,20 +57,12 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
                 }, mask.__storage().storage(), mem);
         }
         else {
-            if constexpr (Options::contains(nt)) {
-                return x.__for_each_chunk([] <class Chunk> (Chunk& chunk, auto& memory) raze_always_inline_lambda {
-                    store_nt_<Abi::isa>(memory, ustorage(chunk));
-                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
-                }, mem);
-            }
-            else {
-                return x.__for_each_chunk([] <class Chunk> (Chunk& chunk, auto& memory) raze_always_inline_lambda {
-                    if constexpr (Options::contains(aligned)) store(memory, ustorage(chunk), aligned_policy{});
-                    else store_(memory, ustorage(chunk));
+            return x.__for_each_chunk([] <class Chunk> (Chunk& chunk, auto& memory) raze_always_inline_lambda {
+                if constexpr (Options::contains(aligned)) store(memory, ustorage(chunk), aligned_policy{});
+                else store_(memory, ustorage(chunk));
 
-                    algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
-                }, mem);
-            }
+                algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
+            }, mem);
         }
     }
 };

@@ -10,10 +10,10 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
+template <class Options>
 struct configurable_rotate_right_t : options::conditional_callable<configurable_rotate_right_t, Options> {
-    template <simd_type V, sizetype _Elements_>
-    raze_always_inline _Type_ operator()(const _Type_& x, std::integral_constant<sizetype, _Elements_> i) const noexcept {
+    template <simd_type V, sizetype Elements>
+    raze_always_inline V operator()(const V& x, std::integral_constant<sizetype, Elements> i) const noexcept {
         return options::dispatch_call(*this, x, i);
     }
 
@@ -22,7 +22,7 @@ struct configurable_rotate_right_t : options::conditional_callable<configurable_
         return options::dispatch_call(*this, x, i);
     }
 
-    template <simd_type V, sizetype _Elements_>
+    template <simd_type V, sizetype Elements>
     static raze_always_inline auto deferred_call(auto opts, const V& x,
         std::integral_constant<sizetype, Elements> i) noexcept 
     {

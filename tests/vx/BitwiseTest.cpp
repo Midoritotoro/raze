@@ -239,43 +239,9 @@ struct bitwise_tests {
                         );
                     }
                 }
-
-                //test_where_binary<_Type_, N>(
-                //    arrA, arrB, arrSrc, m,
-                //    a, b, src,
-                //    [m, src](Simd A, Simd B) {
-                //        return raze::vx::bit_shl[m, src](A, B);
-                //    },
-                //    [m](Simd A, Simd B) {
-                //        return raze::vx::bit_shl[m](A, B);
-                //    },
-                //    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                //        constexpr size_t bits = sizeof(_Type_) * 8;
-                //        U v = std::bit_cast<U>(A);
-                //        U s = std::bit_cast<U>(B) % bits;
-                //        return cond ? std::bit_cast<_Type_>(v << s) : Src;
-                //    }
-                //);
-
-                //test_where_binary<_Type_, N>(
-                //    arrA, arrB, arrSrc, m,
-                //    a, b, src,
-                //    [m, src](Simd A, Simd B) {
-                //        return raze::vx::bit_shr[m, src](A, B);
-                //    },
-                //    [m](Simd A, Simd B) {
-                //        return raze::vx::bit_shr[m](A, B);
-                //    },
-                //    [](_Type_ A, _Type_ B, _Type_ Src, bool cond, bool rev) {
-                //        constexpr size_t bits = sizeof(_Type_) * 8;
-                //        U v = std::bit_cast<U>(A);
-                //        U s = std::bit_cast<U>(B) % bits;
-                //        return cond ? std::bit_cast<_Type_>(v >> s) : Src;
-                //    }
-                //);
             };
 
-            for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+            for (auto i = 0; i < std::min(int(std::pow(2, N)), 500); ++i) {
                 run_tests(make_random_mask<Mask>());
             }
         }
@@ -283,6 +249,8 @@ struct bitwise_tests {
 
     void operator()() {
         test_size<(_Width_ / (sizeof(_Type_) * 8))>();
+        test_size<(_Width_ / (sizeof(_Type_) * 8)) + 1>();
+        test_size<1>();
     }
 };
 

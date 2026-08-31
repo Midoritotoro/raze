@@ -8,12 +8,12 @@ template <class>
 struct simd_tuple_size_impl;
 
 template <>
-struct simd_tuple_size_impl<_Simd_tuple_nil>:
+struct simd_tuple_size_impl<simd_tuple_nil>:
     std::integral_constant<sizetype, 0>
 {};
 
 template <class H, class T>
-struct simd_tuple_size_impl<_Simd_tuple_node<H, T>>:
+struct simd_tuple_size_impl<simd_tuple_node<H, T>>:
     std::integral_constant<sizetype, 1 + simd_tuple_size_impl<T>::value>
 {};
 

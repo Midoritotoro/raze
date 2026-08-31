@@ -68,8 +68,8 @@ raze_always_inline auto to_vector_(M mask) noexcept {
             constexpr auto half_bits = (sizeof(V) / 2) / sizeof(T);
             constexpr MaskType low_mask = (MaskType(1) << half_bits) - 1;
 
-            const auto low = to_vector_<arch::ISA::SSSE3, __m128i, T>(_MaskType(mask & low_mask));
-            const auto high = to_vector_<arch::ISA::SSSE3, __m128i, T>(_MaskType(mask >> half_bits));
+            const auto low = to_vector_<arch::ISA::SSSE3, __m128i, T>(MaskType(mask & low_mask));
+            const auto high = to_vector_<arch::ISA::SSSE3, __m128i, T>(MaskType(mask >> half_bits));
 
             return as<V>(_mm256_insertf128_si256(as<__m256i>(low), as<__m128i>(high), 1));
         };
@@ -90,7 +90,7 @@ raze_always_inline auto to_vector_(M mask) noexcept {
         else if constexpr (sizeof(T) == 4) {
             if constexpr (has_avx512vl<ISA>) {
                 if constexpr (has_avx512dq<ISA>) return as<V>(_mm256_movm_epi32(mask));
-                else return as<V>(_mm256_maskz_mov_epi64(mask, _All_ones<ISA, __m256i>()()));
+                else return as<V>(_mm256_maskz_mov_epi64(mask, all_ones_<ISA, __m256i>()));
             }
             else if constexpr(has_avx2<ISA>) {
                 const auto vector_mask = _mm256_set1_epi32(static_cast<i32>(mask));

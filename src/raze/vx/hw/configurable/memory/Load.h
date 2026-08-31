@@ -36,7 +36,7 @@ struct configurable_load_t {
             if constexpr (options::complete_mask<Mask>) {
                 auto condition = opts[options::condition_key];
 
-                if constexpr (_Mask_::has_alternative)
+                if constexpr (Mask::has_alternative)
                     x.__for_each_chunk([] <class Chunk, class MaskChunk, class SourceChunk> (
                         Chunk& chunk, const MaskChunk& mchunk, const SourceChunk& src_chunk, auto& memory) raze_always_inline_lambda
                 {
@@ -65,7 +65,7 @@ struct configurable_load_t {
                     else chunk = load_<Abi::isa, typename Chunk::unwrapped_type>(memory);
 
                     algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);
-                }, __mem);
+                }, mem);
             }
 
             return x;

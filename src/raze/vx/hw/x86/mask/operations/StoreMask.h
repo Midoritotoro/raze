@@ -14,7 +14,7 @@ raze_always_inline void store_mask_(bool* mem, M mask, Policy policy = Policy{})
 	using Signed = typename IntegerForSizeof<T>::Signed;
 
 	if constexpr (intrin_type<M>)
-		store_(mem, negate_<ISA, Signed>(mask), __policy);
+		store_(mem, negate_<ISA, Signed>(mask), policy);
 	else if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>)
 		*mem = mask;
 	else if constexpr (N >= 16)

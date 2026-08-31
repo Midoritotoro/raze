@@ -18,7 +18,7 @@ struct configurable_shr_t: options::conditional_callable<configurable_shr_t, Opt
 
     template <simd_type V>
     static raze_always_inline auto deferred_call(auto opts, const V& x, u32 shift) noexcept {
-        using Mask = options::fetch_toptions::condition_key, Options>;
+        using Mask = options::fetch_t<options::condition_key, Options>;
         using Abi = typename V::abi_type;
         using Value = typename V::value_type;
 
@@ -31,7 +31,7 @@ struct configurable_shr_t: options::conditional_callable<configurable_shr_t, Opt
         if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
+            if constexpr (Mask::has_alternative)
                 r.__for_each_chunk(chunk_op, shift, condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
                 r.__for_each_chunk(chunk_op, shift, condition.mask().__storage().storage());

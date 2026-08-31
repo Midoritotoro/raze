@@ -24,9 +24,9 @@ struct configurable_abs_t: raze::options::conditional_callable<configurable_abs_
 
     template <vx::arithmetic_type T>
     static raze_always_inline auto deferred_call(auto opts, const T& x) noexcept {
-        using Mask = options::fetch_t<options::condition_key, _Options_>;
+        using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
@@ -38,7 +38,7 @@ struct configurable_abs_t: raze::options::conditional_callable<configurable_abs_
 
     template <vx::simd_type V>
     static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
-        using Mask = options::fetch_t<options::condition_key, _Options_>;
+        using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
@@ -48,7 +48,7 @@ struct configurable_abs_t: raze::options::conditional_callable<configurable_abs_
             chunk = vx::abs_<Abi::isa, Value>(vx::ustorage(chunk), vx::ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
@@ -64,6 +64,8 @@ struct configurable_abs_t: raze::options::conditional_callable<configurable_abs_
         return r;
     }
 };
+
+constexpr inline auto abs = options::functor<configurable_abs_t>;
 
 __RAZE_MATH_NAMESPACE_END
 

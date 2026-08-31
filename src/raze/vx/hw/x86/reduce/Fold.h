@@ -54,7 +54,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
             const auto shuffle1 = _mm256_shuffle_ps(swapped_halfs, swapped_halfs, 0x4E);
             folded = reduce(folded, shuffle1);
 
-            const auto __shuffle2 = _mm256_shuffle_ps(folded, folded, 0x4E);
+            const auto shuffle2 = _mm256_shuffle_ps(folded, folded, 0x4E);
             folded = reduce(folded, shuffle2);
 
             const auto shuffle3 = _mm256_shuffle_ps(folded, folded, 0xB1);
@@ -164,7 +164,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
                 folded = reduce(folded, shuffled2);
 
                 const auto shuffled3 = _mm512_permutex_epi64(folded, 0xB1);
-                folded = reduce(__folded, shuffled3);
+                folded = reduce(folded, shuffled3);
 
                 const auto shuffled4 = as<__m512i>(_mm512_permute_ps(as<__m512>(folded), 0xB1));
                 folded = reduce(folded, shuffled4);

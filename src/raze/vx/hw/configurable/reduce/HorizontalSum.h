@@ -10,7 +10,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class Options>
-struct configurable_hsum_t: options::conditional_callable<configurable_hsum_t, _Options_> {
+struct configurable_hsum_t: options::conditional_callable<configurable_hsum_t, Options> {
     template <simd_type V>
     raze_nodiscard raze_always_inline reduce_type<typename V::value_type> operator()(const V& x) const noexcept {
         return options::dispatch_call(*this, x);
@@ -18,7 +18,7 @@ struct configurable_hsum_t: options::conditional_callable<configurable_hsum_t, _
 
     template <simd_type V>
     static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
-        using Mask = options::fetch_t<options::condition_key, _Options_>;
+        using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
@@ -31,7 +31,7 @@ struct configurable_hsum_t: options::conditional_callable<configurable_hsum_t, _
         if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
 
-            if constexpr (_Mask_::has_alternative)
+            if constexpr (Mask::has_alternative)
                 x.__for_each_chunk(chunk_op, condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
                 x.__for_each_chunk(chunk_op, condition.mask().__storage().storage());

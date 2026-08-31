@@ -39,7 +39,7 @@ raze_always_inline V mask_loadu_(const void* mem) noexcept {
 }
 
 template <arch::ISA ISA, intrin_or_arithmetic_type V, class Policy = unaligned_policy>
-raze_always_inline V operator()(const void* mem, Policy = Policy{}) noexcept {
+raze_always_inline V load_(const void* mem, Policy = Policy{}) noexcept {
     if constexpr (is_aligned_v<Policy>) return mask_loada_<ISA, V>(mem);
     else return mask_loadu_<ISA, V>(mem);
 }

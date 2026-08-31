@@ -31,24 +31,24 @@ raze_always_inline V slide_right_merge_native_(V x, V y, std::integral_constant<
         }
     }
     else if constexpr (sizeof(V) == 32) {
-        if constexpr (has_avx512vl<_ISA_> && (shift_bytes % 4) == 0) {
+        if constexpr (has_avx512vl<ISA> && (shift_bytes % 4) == 0) {
             return as<V>(_mm256_alignr_epi32(as<__m256i>(x), as<__m256i>(y), 8 - shift_bytes / 4));
         }
-        else if constexpr (has_avx2<_ISA_>) {
+        else if constexpr (has_avx2<ISA>) {
             const auto mid = _mm256_permute2x128_si256(as<__m256i>(x), as<__m256i>(y), 0x03);
 
-            if constexpr (shift_bytes == 16) return as<V>(__mid);
+            if constexpr (shift_bytes == 16) return as<V>(mid);
             else if constexpr (shift_bytes < 16) return as<V>(_mm256_alignr_epi8(as<__m256i>(x), mid, 16 - shift_bytes));
             else return as<V>(_mm256_alignr_epi8(mid, as<__m256i>(y), 32 - shift_bytes));
         }
-        else if constexpr ((__shift_bytes % 8) == 0) {
+        else if constexpr ((shift_bytes % 8) == 0) {
             const auto mid = _mm256_permute2x128_si256(as<__m256i>(x), as<__m256i>(y), 0x03);
 
-            if constexpr (shift_bytes == 8) return as<V>(_mm256_shuffle_pd(as<__m256d>(__mid), as<__m256d>(x), 0b0101));
+            if constexpr (shift_bytes == 8) return as<V>(_mm256_shuffle_pd(as<__m256d>(mid), as<__m256d>(x), 0b0101));
             else if constexpr (shift_bytes == 16) return as<V>(mid);
             else if constexpr (shift_bytes == 24) return as<V>(_mm256_shuffle_pd(as<__m256d>(y), as<__m256d>(mid), 0b0101));
         }
-        else if constexpr (__shift_bytes < 16) {
+        else if constexpr (shift_bytes < 16) {
 #if defined(raze_cpp_msvc_only)
             const auto low_x = as<__m128i>(_mm256_permute2x128_si256(as<__m256i>(x), as<__m256i>(x), 0));
 #else
@@ -143,7 +143,7 @@ raze_always_inline V slide_right_merge_(const V& x, const V& y, std::integral_co
         auto r = x;
 
         auto& storage = r.template __get<0>();
-        storage = __slide_right_merge_native<_Abi_::isa, T>(ustorage(x.template __get<0>()),
+        storage = slide_right_merge_native_<Abi::isa, T>(ustorage(x.template __get<0>()),
             ustorage(y.template __get<0>()), slide);
 
         return r;

@@ -10,7 +10,7 @@ struct settings;
 
 template <concepts::option ... Keys1, concepts::option ... Keys2>
 constexpr raze_always_inline auto merge(const settings<Keys1...>& opts, 
-    const settings<_Keys2_...>& defaults) noexcept
+    const settings<Keys2...>& defaults) noexcept
 {
     auto selector = [] <class Key, class Options> (
         const Key&, const Options& os, const auto& d)

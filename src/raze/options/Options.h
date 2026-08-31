@@ -34,7 +34,7 @@ struct options:
 
     template <concepts::keyword Keyword0, concepts::keyword ... Keywords>
     constexpr raze_always_inline auto drop(const Keyword0& kw0,
-        const _Keywords_& ... kws) const noexcept 
+        const Keywords& ... kws) const noexcept
     {
         auto dropped = raze::options::drop(kw0, *this);
         return options<decltype(dropped)>{dropped}.drop(kws...);

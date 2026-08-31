@@ -45,7 +45,7 @@ struct configurable_cos_t: raze::options::conditional_callable<configurable_cos_
     static raze_always_inline auto deferred_call(auto opts, T x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
@@ -59,15 +59,15 @@ struct configurable_cos_t: raze::options::conditional_callable<configurable_cos_
     static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
             if constexpr (Mask::has_alternative) 
-                return vx::__select[mask, condition.alternative()](cos_impl(x));
-            else return vx::__select[mask](cos_impl(__x));
+                return vx::select[mask, condition.alternative()](cos_impl(x));
+            else return vx::select[mask](cos_impl(x));
         }
-        else return cos_impl(__x);
+        else return cos_impl(x);
     }
 };
 

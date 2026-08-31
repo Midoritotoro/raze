@@ -69,7 +69,7 @@ raze_always_inline reduce_type<T> reduce_add_(V x) noexcept {
             return static_cast<ReduceType>(_mm_cvtsi128_si32(first_reduce)
                 + extract_<arch::ISA::SSE2, i32>(first_reduce, 2));
 #else
-            return static_cast<_ReduceType>(_mm_cvtsi128_si64(as<__m128i>(first_reduce))
+            return static_cast<ReduceType>(_mm_cvtsi128_si64(as<__m128i>(first_reduce))
                 + extract_<arch::ISA::SSE2, i64>(first_reduce, 1));
 #endif // defined(raze_processor_x86_32)
         }
@@ -109,7 +109,7 @@ raze_always_inline reduce_type<T> reduce_add_(V x) noexcept {
                 const auto reduce6 = _mm256_hadd_epi32(reduce5, zeros);
                 const auto reduce7 = _mm256_hadd_epi32(reduce6, zeros);
 
-                return static_cast<ReduceType>(_mm_cvtsi128_si32(as<__m128i>(__reduce7)));
+                return static_cast<ReduceType>(_mm_cvtsi128_si32(as<__m128i>(reduce7)));
             }
             else if constexpr (epi16<T> || epu16<T>) {
                 const auto zeros = _mm256_setzero_si256();
@@ -158,7 +158,7 @@ raze_always_inline reduce_type<T> reduce_add_(V x) noexcept {
             const auto high = _mm256_extractf128_ps(as<__m256>(x), 1);
 
             const auto vertical_sum = add_<arch::ISA::AVX, T>(low, high);
-            return _Reduce_add<arch::ISA::AVX, T>()(vertical_sum);
+            return reduce_add_<arch::ISA::AVX, T>(vertical_sum);
         }
     }
     else if constexpr (sizeof(V) == 64) {

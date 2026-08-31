@@ -13,9 +13,6 @@ raze_disable_warning_msvc(26495)
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-using aligned_policy    = __aligned_policy;
-using unaligned_policy  = __unaligned_policy;
-
 template <bool _Alignment_>
 struct alignment_policy {
     static constexpr bool __alignment = _Alignment_;
@@ -53,13 +50,12 @@ template <class T, class Abi>
 class simd {
     static_assert(traits::is_vector_type_supported_v<std::decay_t<T>>, "Unsupported element type. ");
 public:
-    static constexpr auto __isa = Abi::isa;
-    static constexpr auto __width = (Abi::size * sizeof(T) * 8);
-    static constexpr auto __size = Abi::size;
-    static constexpr auto __has_scalar_chunks = (Abi::size % 16) != 0;
+    static constexpr auto isa = Abi::isa;
+    static constexpr auto width = (Abi::size * sizeof(T) * 8);
+    static constexpr auto has_scalar_chunks = (Abi::size % 16) != 0;
 
     using storage_type  = vector_storage<T, Abi>;
-    using reference     = _Simd_element_reference<simd>;
+    using reference     = simd_element_reference<simd>;
     using value_type    = T;
     using mask_type     = simd_mask<T, Abi>;
     using abi_type      = Abi;
@@ -99,7 +95,7 @@ public:
 
         r.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
             using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
-            chunk = _Zero<__isa, Storage>()();
+            chunk = zero_<isa, Storage>();
         });
 
         return r;
@@ -111,9 +107,9 @@ public:
     raze_nodiscard raze_no_stack_protector static raze_always_inline simd broadcast(value_type v) noexcept {
         simd r {};
         
-        r.__for_each_chunk([&] <class Chunk> (_Chunk& chunk) raze_always_inline_lambda {
+        r.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
             using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
-            chunk = _Broadcast<__isa, Storage>()(v);
+            chunk = broadcast_<isa, Storage>(v);
         });
 
         return r;
@@ -124,9 +120,9 @@ public:
      * @return Reference to `*this`.
     */
     raze_no_stack_protector raze_always_inline simd& fill(value_type v) noexcept {
-        __for_each_chunk([&] <class Chunk> (_Chunk& chunk) raze_always_inline_lambda {
+        __for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
             using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
-            chunk = _Broadcast<__isa, Storage>()(v);
+            chunk = broadcast_<isa, Storage>(v);
         });
 
         return *this;
@@ -246,14 +242,14 @@ public:
     }
 
     template <class L, class R>
-    raze_always_inline friend mask_type operator>(const L& __x, const R& __y) noexcept
+    raze_always_inline friend mask_type operator>(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>)
     {
         return is_greater(x, y);
     }
 
     template <class L, class R>
-    raze_always_inline friend mask_type operator>=(const L& __x, const R& __y) noexcept
+    raze_always_inline friend mask_type operator>=(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
     {
         return is_greater_equal(x, y);
@@ -331,13 +327,13 @@ public:
         return reference(*this, i);
     }
 
-    template <sizetype _I_>
-    raze_nodiscard raze_always_inline reference operator[](std::integral_constant<sizetype, _I_>) noexcept {
-        return reference(*this, _I_);
+    template <sizetype I>
+    raze_nodiscard raze_always_inline reference operator[](std::integral_constant<sizetype, I>) noexcept {
+        return reference(*this, I);
     }
 
-    template <sizetype _I_>
-    raze_nodiscard raze_always_inline T operator[](std::integral_constant<sizetype, _I_> i) const noexcept {
+    template <sizetype I>
+    raze_nodiscard raze_always_inline T operator[](std::integral_constant<sizetype, I> i) const noexcept {
         return __extract(i);
     }
 
@@ -379,34 +375,34 @@ public:
         return storage_type::is_native();
     }
 
-    template <sizetype _I_>
+    template <sizetype I>
     raze_always_inline auto& __get() noexcept {
-        return raze::vx::__get<_I_>(_storage.storage());
+        return raze::vx::get<I>(_storage.storage());
     }
 
-    template <sizetype _I_>
+    template <sizetype I>
     raze_always_inline const auto __get() const noexcept {
-        return raze::vx::__get<_I_>(_storage.storage());
+        return raze::vx::get<I>(_storage.storage());
     }
 
     static constexpr auto __chunks_count() noexcept {
         return storage_type::chunks_count();
     }
 private:
-    raze_always_inline void __insert(i32 __position, value_type __value) noexcept {
-        _storage.__insert(__position, __value);
+    raze_always_inline void __insert(i32 position, value_type value) noexcept {
+        _storage.insert(position, value);
     }
 
-    raze_nodiscard raze_always_inline T __extract(i32 __i) const noexcept {
-        return _storage.__extract(__i);
+    raze_nodiscard raze_always_inline T __extract(i32 i) const noexcept {
+        return _storage.extract(i);
     }
 
-    template <sizetype _I_>
-    raze_nodiscard raze_always_inline T __extract(std::integral_constant<sizetype, _I_> __i) const noexcept {
-        return _storage.__extract(__i);
+    template <sizetype I>
+    raze_nodiscard raze_always_inline T __extract(std::integral_constant<sizetype, I> i) const noexcept {
+        return _storage.extract(i);
     }
 
-    friend _Simd_element_reference<simd>;
+    friend simd_element_reference<simd>;
     raze_no_unique_address storage_type _storage;
 };
 

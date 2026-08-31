@@ -8,13 +8,13 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 template <class Key, concepts::keyword ... Keywords>
 struct filter {
-    using type = keys<Keywors...>;
+    using type = keys<Keywords...>;
 
     template <class T> 
     constexpr raze_always_inline auto operator+(const keys<T>&) const noexcept {
         using kw_t = typename T::keyword_type;
 
-        if constexpr (!std::same_as<Key, typename kw_t::tag_type>) return filter<Key, Keywors..., kw_t>{};
+        if constexpr (!std::same_as<Key, typename kw_t::tag_type>) return filter<Key, Keywords..., kw_t>{};
         else return *this;
     }
 };

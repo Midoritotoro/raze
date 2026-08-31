@@ -8,7 +8,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 inline constexpr sizetype shuffle_zero = std::numeric_limits<sizetype>::max();
 
 template <class Pattern>
-consteval bool is_halfs_equal(P p) noexcept {
+consteval bool is_halfs_equal(Pattern p) noexcept {
 	constexpr auto h = Pattern::size() / 2;
 
 	for (auto i = 0; i < h; ++i)

@@ -14,7 +14,7 @@ consteval auto make_rotate_right_shuffle_table_() noexcept {
     constexpr sizetype chunks_per_element = ElementBytes / idx_bytes;
     constexpr sizetype num_shifts = num_elements;
 
-    std::array<std::array<IdxType_, num_indices>, num_shifts> table{};
+    std::array<std::array<IdxType, num_indices>, num_shifts> table{};
 
     for (sizetype shift = 0; shift < num_shifts; ++shift) {
         sizetype actual_shift = shift % num_elements;
@@ -38,7 +38,7 @@ raze_always_inline auto make_rotate_right_idx_(V, i32 sh) noexcept {
     using IdxType = typename IntegerForSizeof<T>::Unsigned;
 
     alignas(sizeof(V)) static constexpr auto table_u8 = make_rotate_right_shuffle_table_<vector_bytes, element_bytes, u8>();
-    alignas(sizeof(V)) static constexpr auto table = make_rotate_right_shuffle_table_<vector_bytes, element_bytes, _IdxType>();
+    alignas(sizeof(V)) static constexpr auto table = make_rotate_right_shuffle_table_<vector_bytes, element_bytes, IdxType>();
 
     if constexpr (sizeof(V) == 16)  return rotate_indices<V, u8> { load_<ISA, V>(table_u8[sh].data(), aligned_policy{}) };
     else if constexpr (vector_bytes == 32) {
@@ -49,7 +49,7 @@ raze_always_inline auto make_rotate_right_idx_(V, i32 sh) noexcept {
             }
             else return rotate_indices<V, u8>{ load_<ISA, V>()(table_u8[sh].data(), aligned_policy{}) };
         }
-        else return rotate_indices<V, _IdxType>{ load_<ISA, V>()(table[sh].data(), aligned_policy{}) };
+        else return rotate_indices<V, IdxType>{ load_<ISA, V>()(table[sh].data(), aligned_policy{}) };
     }
     else if constexpr (vector_bytes == 64) return rotate_indices<V, IdxType>{ load_<ISA, V>(table[sh].data(), aligned_policy{}) };
 }
@@ -81,7 +81,7 @@ raze_always_inline V rotate_right_(const V& x, i32 sh) noexcept {
         using RetRotate = decltype(make_rotate_right_idx_<Abi::isa, Value>(Intrin{}, sh));
         using IdxType = typename RetRotate::index_type;
 
-        using Ret = decltype(generic_shuffle_native_<_Abi_::isa, _IdxType>(Intrin{}, std::declval<RetRotate>().data()));
+        using Ret = decltype(generic_shuffle_native_<Abi::isa, IdxType>(Intrin{}, std::declval<RetRotate>().data()));
 
         if constexpr (is_fallback<Ret>) return rotate_right_fallback_(x, sh);
         else {

@@ -13,47 +13,43 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA _ISA_, arithmetic_type _Type_, sizetype _Size_, bool _Unsafe_, raw_mask_type _Tp_>
-raze_nodiscard raze_always_inline _Tp_ __clear_first(_Tp_ __x) noexcept;
-
-template <class _Options_>
-struct _Configurable_clear_first: raze::options::conditional_callable<_Configurable_clear_first, _Options_, not_null_option> {
-    template <simd_mask_type _Type_>
-    raze_nodiscard raze_always_inline _Type_ operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_clear_first_t: options::conditional_callable<configurable_clear_first_t, Options, not_null_option> {
+    template <simd_mask_type M>
+    raze_nodiscard raze_always_inline M operator()(const M& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x) const noexcept {
-        return (*this)(__x());
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& x) const noexcept {
+        return (*this)(x());
     }
 
-    template <simd_mask_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_mask_type M>
+    static raze_always_inline auto deferred_call(auto opts, const M& x) noexcept {
+        using Value = typename M::value_type;
+        using Abi = typename M::abi_type;
 
-        constexpr auto __unsafe = _Options_::contains(not_null) && _Type_::__chunks_count() == 1;
+        constexpr auto is_unsafe = Options::contains(not_null) && M::__chunks_count() == 1;
 
-        _Type_ __r = __x;
-        __r.__for_each_chunk_any_of([&] <class _Chunk> (_Chunk& __chunk) raze_always_inline_lambda {
-            if constexpr (__unsafe) {
-                __chunk = __clear_first<_Abi_::isa, _Value_, _Chunk::size, __unsafe>(ustorage(__chunk));
+        M r = x;
+        r.__for_each_chunk_any_of([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+            if constexpr (is_unsafe) {
+                chunk = clear_first_<Abi::isa, Value, Chunk::size, is_unsafe>(ustorage(chunk));
                 return true;
             }
             else {
-                if (__any_of<_Abi_::isa, _Value_>(ustorage(__chunk))) {
-                    __chunk = __clear_first<_Abi_::isa, _Value_, _Chunk::size, __unsafe>(ustorage(__chunk));
+                if (any_of_<Abi::isa, Value>(ustorage(chunk))) {
+                    chunk = clear_first_<Abi::isa, Value, Chunk::size, is_unsafe>(ustorage(chunk));
                     return true;
                 }
                 else return false;
             }
         });
-        return __r;
-    }
 
-    using callable_tag_type = _Configurable_clear_first;
+        return r;
+    }
 };
 
-constexpr inline auto __clear_first_impl = raze::options::functor<_Configurable_clear_first>;
+constexpr inline auto clear_first = options::functor<configurable_clear_first_t>;
 
 __RAZE_VX_NAMESPACE_END

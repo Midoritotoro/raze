@@ -99,7 +99,7 @@ raze_nodiscard static raze_always_inline V mask_loada_(const void* mem, M mask, 
 
 			if constexpr (intrin_type<M>) {
 				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed mask_array[size];
-				store_(marray, mask, aligned_policy{});
+				store_(mask_array, mask, aligned_policy{});
 
 				for (auto i = 0; i < size; ++i)
 					array[i] = mask_array[i] == 0 ? array[i] : static_cast<const T*>(mem)[i];

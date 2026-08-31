@@ -10,7 +10,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
+template <class Options>
 struct configurable_shuffle_t: raze::options::conditional_callable<configurable_shuffle_t, Options> {
     template <class Pattern>
     raze_nodiscard raze_always_inline pattern_vector_t<Pattern> operator()(

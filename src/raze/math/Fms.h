@@ -11,7 +11,7 @@
 __RAZE_MATH_NAMESPACE_BEGIN
 
 template <class Options>
-struct configurable_fnms_t: options::conditional_callable<configurable_fnms_t, Options> {
+struct configurable_fms_t : options::conditional_callable<configurable_fms_t, Options> {
     template <class A, class B, class C>
         requires (vx::simd_type<A> || vx::simd_type<B> || vx::simd_type<C>)
     raze_nodiscard raze_always_inline std::conditional_t<vx::simd_type<A>, std::remove_cvref_t<A>,
@@ -37,11 +37,11 @@ struct configurable_fnms_t: options::conditional_callable<configurable_fnms_t, O
             auto condition = opts[options::condition_key];
 
             if constexpr (Mask::has_alternative)
-                return vx::_Fms<arch::ISA::SSE2, T>()(x, y, z, condition.mask(), condition.alternative());
+                return vx::fms_<arch::ISA::SSE2, T>(x, y, z, condition.mask(), condition.alternative());
             else
-                return vx::_Fms<arch::ISA::SSE2, T>()(x, y, z, condition.mask());
+                return vx::fms_<arch::ISA::SSE2, T>(x, y, z, condition.mask());
         }
-        else return vx::_Fms<arch::ISA::SSE2, T>()(x, y, z);
+        else return vx::fms_<arch::ISA::SSE2, T>(x, y, z);
     }
 
     template <vx::simd_type V>
@@ -50,24 +50,24 @@ struct configurable_fnms_t: options::conditional_callable<configurable_fnms_t, O
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
-        _Type_ r = x;
+        V r = x;
 
         auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
-            chunk = vx::_Fms<Abi::isa, Value>()(vx::ustorage(__chunk), vx::ustorage<Args>(args)...);
+            chunk = vx::fms_<Abi::isa, Value>(vx::ustorage(chunk), vx::ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
 
             if constexpr (Mask::has_alternative)
-                r.__for_each_chunk(chunk_op, __y.__storage().storage(), __z.__storage().storage(), 
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(), 
                     condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
-                r.__for_each_chunk(chunk_op, __y.__storage().storage(), __z.__storage().storage(),
+                r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage(),
                     condition.mask().__storage().storage());
         }
         else {
-            r.__for_each_chunk(chunk_op, __y.__storage().storage(), __z.__storage().storage());
+            r.__for_each_chunk(chunk_op, y.__storage().storage(), z.__storage().storage());
         }
 
         return r;

@@ -47,83 +47,83 @@ public:
         return _data;
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
-        else __for_each_tuple(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline void __for_each_chunk(F&& f, Args&& ... args) noexcept {
+        if constexpr (use_native) f(_data, std::forward<Args>(args)...);
+        else for_each_tuple(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
-        else __for_each_tuple_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline void __for_each_chunk_reverse(F&& f, Args&& ... args) noexcept {
+        if constexpr (use_native) f(_data, std::forward<Args>(args)...);
+        else for_each_tuple_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_all_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_all_of(F&& f, Args&& ... args) noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_all_of(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_all_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_all_of_reverse(F&& f, Args&& ... args) noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_all_of_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_any_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_any_of(F&& f, Args&& ... args) noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_any_of(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_any_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_any_of_reverse(F&& f, Args&& ... args) noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_any_of_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
-        else __for_each_tuple(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline void __for_each_chunk(F&& f, Args&& ... args) const noexcept {
+        if constexpr (use_native) f(_data, std::forward<Args>(args)...);
+        else for_each_tuple(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (use_native) __f(_data, std::forward<_Args_>(__args)...);
-        else __for_each_tuple_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline void for_each_chunk_reverse(F&& f, Args&& ... args) const noexcept {
+        if constexpr (use_native) f(_data, std::forward<Args>(args)...);
+        else for_each_tuple_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_all_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_all_of(F&& f, Args&& ... args) const noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_all_of(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_all_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_all_of_reverse(F&& f, Args&& ... args) const noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_all_of_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_any_of(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_any_of(F&& f, Args&& ... args) const noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_any_of(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    template <class _Function_, class ... _Args_>
-    raze_always_inline auto __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-        if constexpr (use_native) return __f(_data, std::forward<_Args_>(__args)...);
-        else return __for_each_tuple_any_of_reverse(_data, std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+    template <class F, class ... Args>
+    raze_always_inline auto __for_each_chunk_any_of_reverse(F&& f, Args&& ... args) const noexcept {
+        if constexpr (use_native) return f(_data, std::forward<Args>(args)...);
+        else return for_each_tuple_any_of_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    raze_always_inline void __insert(i32 i, bool v) noexcept {
+    raze_always_inline void insert(i32 i, bool v) noexcept {
         using Signed = typename IntegerForSizeof<T>::Signed;
 
         if constexpr (use_native) {
-            if constexpr (intrin_type<typename tuple_type::unwrapped_type>) insert_<Abi::isa>(ustorage(_data), __i, Signed(-Signed(v)));
+            if constexpr (intrin_type<typename tuple_type::unwrapped_type>) insert_<Abi::isa>(ustorage(_data), i, Signed(-Signed(v)));
             else if constexpr (std::is_same_v<std::remove_cvref_t<typename tuple_type::unwrapped_type>, bool>) _data = v;
             else v ? math::bit_test_and_set(ustorage(_data), i) : math::bit_test_and_reset(ustorage(_data), i);
         }
@@ -136,7 +136,7 @@ public:
         }
     }
 
-    raze_always_inline bool __extract(i32 i) const noexcept {
+    raze_always_inline bool extract(i32 i) const noexcept {
         if constexpr (use_native) {
             if constexpr (intrin_type<typename tuple_type::unwrapped_type>) return bool(-extract_<Abi::isa, T>(ustorage(_data), i));
             else if constexpr (std::is_same_v<std::remove_cvref_t<typename tuple_type::unwrapped_type>, bool>) return ustorage(_data);

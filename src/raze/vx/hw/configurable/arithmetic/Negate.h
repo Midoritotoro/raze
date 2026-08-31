@@ -25,7 +25,7 @@ struct configurable_neg_t: options::conditional_callable<configurable_neg_t, Opt
         V r = x;
 
         auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
-            chunk = negate_<Abi::isa, Value>()(ustorage(chunk), ustorage<Args>(args)...);
+            chunk = negate_<Abi::isa, Value>(ustorage(chunk), ustorage<Args>(args)...);
         };
 
         if constexpr (options::complete_mask<Mask>) {

@@ -12,7 +12,7 @@ concept can_concatenate_into_native_register = (vector_default_size<ISA> / 8) >=
 
 template <arch::ISA ISA, intrin_type V>
 raze_always_inline auto concat_(V x, V y) noexcept {
-	if constexpr (can_concatenate_into_native_register<_SA, V>) {
+	if constexpr (can_concatenate_into_native_register<ISA, V>) {
 		if constexpr (sizeof(V) == 16 && has_avx<ISA>) return _mm256_insertf128_si256(as<__m256i>(x), as<__m128i>(y), 1);
 		else if constexpr (sizeof(V) == 32 && has_avx512f<ISA>) return _mm512_inserti32x8(as<__m512i>(x), as<__m256i>(y), 1);
 	}

@@ -161,7 +161,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 		else if constexpr (sizeof(T) == 2) {
 			T* write_ptr = reinterpret_cast<T*>(ptr);
 
-			const auto vec_low = as<__m128i>(__x);
+			const auto vec_low = as<__m128i>(x);
 			const auto vec_high = _mm256_extracti128_si256(as<__m256i>(x), 1);
 
 			const auto mask_low = int_mask & 0xFF;
@@ -289,7 +289,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed2));
 				algorithm::advance_bytes(dst_ptr, bytes2);
 
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(__packed3));
+				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed3));
 				algorithm::advance_bytes(dst_ptr, bytes3);
 
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed4));
@@ -298,9 +298,9 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 		}
 		else if constexpr (sizeof(T) == 1) {
 			if constexpr (has_avx512vbmi2<ISA>) {
-				const auto __not_mask = _Mask_not<ISA, T>()(__int_mask);
-				_mm512_mask_compressstoreu_epi8(__ptr, __not_mask, as<__m512i>(__x));
-				return algorithm::__bytes_pointer_offset(__ptr, math::__native_popcnt_n_bits<size>(__not_mask) * sizeof(T));
+				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				_mm512_mask_compressstoreu_epi8(ptr, not_mask, as<__m512i>(x));
+				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else {
 				T* write_ptr = reinterpret_cast<T*>(ptr);
@@ -320,10 +320,10 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto xmm2_upper = as<__m128i>(_mm_movehl_ps(
 					as<__m128>(_mm_slli_si128(xmm2, 8)), as<__m128>(xmm2)));
 
-				const auto __xmm3_upper = as<__m128i>(_mm_movehl_ps(
+				const auto xmm3_upper = as<__m128i>(_mm_movehl_ps(
 					as<__m128>(_mm_slli_si128(xmm3, 8)), as<__m128>(xmm3)));
 
-				const auto __xmm4_upper = as<__m128i>(_mm_movehl_ps(
+				const auto xmm4_upper = as<__m128i>(_mm_movehl_ps(
 					as<__m128>(_mm_slli_si128(xmm4, 8)), as<__m128>(xmm4)));
 
 				const auto mask1 = int_mask & 0xFF;

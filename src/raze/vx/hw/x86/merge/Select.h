@@ -70,7 +70,7 @@ raze_always_inline V select_(V x, V y, M mask) noexcept {
 	}
 
 	if constexpr (arithmetic_type<V>) return mask ? x : y;
-	else return _Ternarylogic<ISA, T>()(_To_vector<ISA, V, T>()(mask), x, y, std::integral_constant<u8, 0xca>{});
+	else return ternarylogic_<ISA, T>(to_vector_<ISA, V, T>(mask), x, y, std::integral_constant<u8, 0xca>{});
 }
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
@@ -112,7 +112,7 @@ raze_always_inline V select_(V x, M	mask) noexcept {
 		}
 	}
 
-	return select_<ISA, T>(x, _Zero<ISA, V>()(), mask);
+	return select_<ISA, T>(x, zero_<ISA, V>(), mask);
 }
 
 

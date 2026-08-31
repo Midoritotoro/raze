@@ -61,7 +61,7 @@ private:
 		init(multiplier, shift, (divisor < 0) ? -1 : 0);
 	}
 
-	raze_always_inline void __init(i32 multiplier, i32 shift, i32 sign) noexcept {
+	raze_always_inline void init(i32 multiplier, i32 shift, i32 sign) noexcept {
 		_multiplier = _mm_set1_epi32(multiplier);
 		_sign		= _mm_set1_epi32(sign);
 		_shift		= _mm_cvtsi32_si128(shift);

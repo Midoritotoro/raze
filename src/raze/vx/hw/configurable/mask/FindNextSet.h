@@ -13,49 +13,49 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_find_next_set : raze::options::conditional_callable<_Configurable_find_next_set, _Options_, not_null_option> {
-    template <simd_mask_type _Type_>
-    raze_nodiscard raze_always_inline i32 operator()(const _Type_& __x, i32 __from) const noexcept {
-        return raze::options::__dispatch_call(*this, __x, __from);
+template <class Options>
+struct configurable_find_next_set_t : raze::options::conditional_callable<configurable_find_next_set_t, Options, not_null_option> {
+    template <simd_mask_type M>
+    raze_nodiscard raze_always_inline i32 operator()(const M& x, i32 from) const noexcept {
+        return options::dispatch_call(*this, x, from);
     }
 
-    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x, i32 __from) const noexcept {
-        return (*this)(__x(), __from);
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& x, i32 from) const noexcept {
+        return (*this)(x(), from);
     }
 
-    template <simd_mask_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, i32 __from) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_mask_type M>
+    static raze_always_inline auto deferred_call(auto opts, const M& x, i32 from) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename M::value_type;
+        using Abi = typename M::abi_type;
 
-        i32 __index = 0;
-        constexpr auto __unsafe = _Options_::contains(not_null) && _Type_::__chunks_count() == 1;
+        i32 index = 0;
+        constexpr auto is_unsafe = Options::contains(not_null) && M::__chunks_count() == 1;
 
-        i32 __shift = __from < 0 ? 0u : u32(__from + 1);
+        i32 shift = from < 0 ? 0u : u32(from + 1);
 
-        auto __chunk_op = [&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-            if (__shift >= i32(_Chunk::size)) {
-                __index += _Chunk::size;
-                __shift -= _Chunk::size;
+        auto chunk_op = [&] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
+            if (shift >= i32(Chunk::size)) {
+                index += Chunk::size;
+                shift -= Chunk::size;
                 return true;
             }
 
-            auto __r = _Find_next_set<_Abi_::isa, _Chunk::size, _Value_, __unsafe>()(ustorage(__chunk), __shift);
-            __index += __r;
+            auto r = find_next_set_<Abi::isa, Chunk::size, Value, is_unsafe>(ustorage(chunk), shift);
+            index += r;
 
-            if (__r != _Chunk::size) return false;
+            if (r != Chunk::size) return false;
 
-            __shift = 0;
+            shift = 0;
             return true;
         };
 
-        __x.__for_each_chunk_all_of(__chunk_op);
-        return __index;
+        x.__for_each_chunk_all_of(chunk_op);
+        return index;
     }
-
-    using callable_tag_type = _Configurable_find_next_set;
 };
+
+constexpr inline auto find_next_set = options::functor<configurable_find_next_set_t>;
 
 __RAZE_VX_NAMESPACE_END

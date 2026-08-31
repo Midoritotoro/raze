@@ -14,14 +14,6 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-constexpr inline auto abs = raze::options::functor<_Configurable_abs>;
-constexpr inline auto fma = __fma;
-constexpr inline auto fms = __fms;
-constexpr inline auto fnma = __fnma;
-constexpr inline auto fnms = __fnms;
-constexpr inline auto sin = raze::options::functor<_Configurable_sin>;
-constexpr inline auto cos = raze::options::functor<_Configurable_cos>;
-
 template <vx::arithmetic_type T1, vx::arithmetic_type T2>
 raze_always_inline constexpr auto max(const T1& x, const T2& y) noexcept {
 	return (x < y) ? y : x;

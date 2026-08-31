@@ -33,7 +33,7 @@ private:
     static constexpr bool is_fp64 = is_any_of_v<Type, f64, long double> || (std::is_same_v<Type, std::nullptr_t> && sizeof(std::nullptr_t) == 8);
     static constexpr bool is_fp32 = std::is_same_v<Type, f32>;
     static constexpr bool is_i32 = is_nonbool_integral_v<Type> || (std::is_same_v<Type, std::nullptr_t> && sizeof(std::nullptr_t) == 4);
-    static constexpr bool is_ptr  = s_pointer_decay_v<T>;
+    static constexpr bool is_ptr  = is_pointer_decay_v<T>;
     static constexpr bool use_i   = is_i32 || is_ptr;
 public:
     using type =

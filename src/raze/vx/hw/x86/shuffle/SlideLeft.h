@@ -7,7 +7,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <sizetype VectorBytes, sizetype ElementBytes, class IdxType_>
+template <sizetype VectorBytes, sizetype ElementBytes, class IdxType>
 consteval auto make_slide_left_pshufb_table_() noexcept {
     constexpr sizetype num_elements = VectorBytes / ElementBytes;
     constexpr sizetype idx_bytes = sizeof(IdxType);
@@ -16,7 +16,7 @@ consteval auto make_slide_left_pshufb_table_() noexcept {
     constexpr sizetype chunks_per_element = ElementBytes / idx_bytes;
     constexpr sizetype num_shifts = num_elements;
 
-    std::array<std::array<IdxType_, num_indices>, num_shifts> table{};
+    std::array<std::array<IdxType, num_indices>, num_shifts> table{};
 
     for (sizetype shift = 0; shift < num_shifts; ++shift) {
         for (sizetype idx = 0; idx < num_indices; ++idx) {
@@ -42,7 +42,7 @@ template <arch::ISA ISA, arithmetic_type T, intrin_type V>
 raze_always_inline auto make_pshufb_slide_left_idx_(V, i32 sh) noexcept {
     using IdxType = typename IntegerForSizeof<T>::Unsigned;
     alignas(sizeof(V)) static constexpr auto table_u8 = make_slide_left_pshufb_table_<sizeof(V), sizeof(T), u8>();
-    return rotate_indices<V, u8> { load_<ISA, V>(table_u8[_sh & (sizeof(V) - 1)].data(), aligned_policy{}) };
+    return rotate_indices<V, u8> { load_<ISA, V>(table_u8[sh & (sizeof(V) - 1)].data(), aligned_policy{}) };
 }
 
 template <simd_type V, class Int>
@@ -148,7 +148,7 @@ slide_left_(const pattern_vector_t<Pattern>& x, Pattern p) noexcept {
 }
 
 template <simd_type V>
-raze_always_inline V slide_left_(const V& x, i32 __sh) noexcept {
+raze_always_inline V slide_left_(const V& x, i32 sh) noexcept {
 	using Abi = abi_t<V>;
 	using Value = typename V::value_type;
 
@@ -162,11 +162,11 @@ raze_always_inline V slide_left_(const V& x, i32 __sh) noexcept {
     {
         constexpr auto isa = select_isa();
 
-        using Intrin_ = decltype(ustorage(x.template __get<0>()));
+        using Intrin = decltype(ustorage(x.template __get<0>()));
         using RetRotate = decltype(make_pshufb_slide_left_idx_<isa, Value>(Intrin{}, sh));
         using IdxType = typename RetRotate::index_type;
 
-        using Ret = decltype(__generic_shuffle_native<isa, IdxType>(Intrin{}, std::declval<RetRotate>().data()));
+        using Ret = decltype(generic_shuffle_native_<isa, IdxType>(Intrin{}, std::declval<RetRotate>().data()));
 		
 		if constexpr (is_fallback<Ret>) return slide_left_fallback_(x, sh);
 		else {

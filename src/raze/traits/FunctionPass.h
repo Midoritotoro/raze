@@ -32,7 +32,7 @@ struct function_reference {
         else return _f(std::forward<Args>(args)...);
     }
 
-    Function& _function;
+    F& _f;
 };
 
 template <class F>
@@ -54,8 +54,8 @@ template <class F>
 using function_unwrapped = typename function_unwrapped_impl<F>::type;
 
 template <class F>
-raze_always_inline constexpr function_unwrapped<Function> unwrap_function(F&& f) noexcept {
-    return static_cast<function_unwrapped<Function>>(std::forward<F>(f));
+raze_always_inline constexpr function_unwrapped<F> unwrap_function(F&& f) noexcept {
+    return static_cast<function_unwrapped<F>>(std::forward<F>(f));
 }
 
 template <class F>

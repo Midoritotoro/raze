@@ -59,9 +59,9 @@ struct settings {
         return contains(flag_keyword<Keyword>{});
     }
 
-    template <concepts::keyword Keyword,  class Value>
-    constexpr raze_always_inline auto operator[](type_or<Key, Value> v) const {
-        if constexpr(contains(Key{})) return (*this)[Key{}];
+    template <concepts::keyword Keyword, class Value>
+    constexpr raze_always_inline auto operator[](type_or<Keyword, Value> v) const {
+        if constexpr(contains(Keyword{})) return (*this)[Keyword{}];
         else if constexpr(requires(Value t) { t.perform(); }) return v._value.perform();
         else return v._value;
     }

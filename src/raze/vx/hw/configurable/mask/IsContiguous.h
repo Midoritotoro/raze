@@ -11,69 +11,69 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_is_contiguous: raze::options::conditional_callable<_Configurable_is_contiguous, _Options_> {
-    template <simd_mask_type _Type_>
-    raze_nodiscard raze_always_inline bool operator()(const _Type_& __x, i32 __n, i32 __k) const noexcept {
-        raze_debug_assert(__n < _Type_::size() && __k <= _Type_::size() && __n <= __k);
-        return raze::options::__dispatch_call(*this, __x, __n, __k);
+template <class Options>
+struct configurable_is_contiguous_t: options::conditional_callable<configurable_is_contiguous_t, Options> {
+    template <simd_mask_type M>
+    raze_nodiscard raze_always_inline bool operator()(const M& x, i32 n, i32 k) const noexcept {
+        raze_debug_assert(n < M::size() && k <= M::size() && n <= k);
+        return options::dispatch_call(*this, x, n, k);
     }
 
-    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x, i32 __n, i32 __k) const noexcept {
-        return (*this)(__x(), __n, __k);
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& x, i32 n, i32 k) const noexcept {
+        return (*this)(x(), n, k);
     }
 
-    template <simd_mask_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x, i32 __n, i32 __k) noexcept {
-        static_assert(std::same_as<raze::options::fetch_t<raze::options::condition_key, _Options_>,
-            raze::options::unknown_key>, "is_contiguous does not support conditional masks via []. ");
+    template <simd_mask_type M>
+    static raze_always_inline auto deferred_call(auto opts, const M& x, i32 n, i32 k) noexcept {
+        static_assert(!options::complete_mask<options::fetch_t<options::condition_key, Options>>,
+             "is_contiguous does not support conditional masks via []. ");
 
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+        using Value = typename M::value_type;
+        using Abi = typename M::abi_type;
 
-        if constexpr (_Type_::__is_native() || _Type_::size() == 1) {
-            return __x.__for_each_chunk_any_of([&] <class _Chunk> (const _Chunk& __chunk) raze_always_inline_lambda {
-                return _Is_contiguous<_Abi_::isa, _Chunk::size, _Value_>()(ustorage(__chunk), __n, __k);
+        if constexpr (M::is_native() || M::size() == 1) {
+            return x.__for_each_chunk_any_of([&] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
+                return is_contiguous_<Abi::isa, Chunk::size, Value>(ustorage(chunk), n, k);
             });
         }
-        else if constexpr (_Type_::__chunks_count() == 2) {
-            auto __ch1 = __x.template __get<0>();
-            auto __ch2 = __x.template __get<1>();
+        else if constexpr (M::__chunks_count() == 2) {
+            auto ch1 = x.template __get<0>();
+            auto ch2 = x.template __get<1>();
 
-            using _Ch1 = decltype(__ch1);
-            using _Ch2 = decltype(__ch2);
+            using Ch1 = decltype(ch1);
+            using Ch2 = decltype(ch2);
 
-            if (__k <= _Ch1::size) return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(ustorage(__ch1), __n, __k);
-            return _Is_contiguous<_Abi_::isa, _Ch1::size, _Value_>()(ustorage(__ch1), __n, __k) &&
-                _Is_contiguous<_Abi_::isa, _Ch2::size, _Value_>()(ustorage(__ch2), 0, __k - _Ch1::size);
+            if (k <= Ch1::size) return is_contiguous_<Abi::isa, Ch1::size, Value>(ustorage(ch1), n, k);
+            return is_contiguous_<Abi::isa, Ch1::size, Value>(ustorage(ch1), n, k) &&
+                is_contiguous_<Abi::isa, Ch2::size, Value>(ustorage(ch2), 0, k - Ch1::size);
         }
         else {
-            return [&] <sizetype ... __I> (std::integer_sequence<size_t, __I...>) raze_always_inline_lambda {
-                return ([&] (auto __i) raze_always_inline_lambda {
-                    auto __ch = __x.template __get<__i>();
-                    constexpr auto __size = decltype(__ch)::size;
+            return [&] <sizetype ... I> (std::integer_sequence<size_t, I...>) raze_always_inline_lambda {
+                return ([&] (auto i) raze_always_inline_lambda {
+                    auto ch = x.template __get<i>();
+                    constexpr auto size = decltype(ch)::size;
 
-                    if (__n >= __size) {
-                        __n -= __size;
-                        __k -= __size;
+                    if (n >= size) {
+                        n -= size;
+                        k -= size;
                         return true;
                     }
 
-                    if (__k <= 0) return true;
+                    if (k <= 0) return true;
                     
-                    const auto __end = __k < __size ? __k : __size;
-                    const auto __r = _Is_contiguous<_Abi_::isa, __size, _Value_>()(ustorage(__ch), __n, __end);
+                    const auto end = k < size ? k : size;
+                    const auto r = is_contiguous_<Abi::isa, size, Value>(ustorage(ch), n, end);
 
-                    __n = 0;
-                    __k -= __size;
+                    n = 0;
+                    k -= size;
 
-                    return __r;
-                }(std::integral_constant<sizetype, __I>{}) && ...);
-            }(std::make_integer_sequence<sizetype, _Type_::__chunks_count()>{});
+                    return r;
+                }(std::integral_constant<sizetype, I>{}) && ...);
+            }(std::make_integer_sequence<sizetype, M::__chunks_count()>{});
         }
     }
-
-    using callable_tag_type = _Configurable_is_contiguous;
 };
+
+constexpr inline auto is_contiguous = options::functor<configurable_is_contiguous_t>;
 
 __RAZE_VX_NAMESPACE_END

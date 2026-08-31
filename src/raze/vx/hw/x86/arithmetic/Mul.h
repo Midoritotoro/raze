@@ -150,8 +150,8 @@ raze_nodiscard raze_always_inline V mul_(V x, V y) noexcept {
 				const auto mul1 = _mm512_mullo_epi16(as<__m512i>(x), as<__m512i>(y));
 				const auto and_mask = _mm512_set1_epi32(0x00FF00FF);
 
-				const auto 8bits = _mm512_andnot_si512(and_mask, as<__m512i>(x));
-				const auto multiplied = _mm512_maddubs_epi16(as<__m512i>(y), 8bits);
+				const auto bits = _mm512_andnot_si512(and_mask, as<__m512i>(x));
+				const auto multiplied = _mm512_maddubs_epi16(as<__m512i>(y), bits);
 
 				const auto shifted = _mm512_slli_epi16(multiplied, 8);
 				return as<V>(_mm512_ternarylogic_epi64(shifted, mul1, and_mask, 0xF8));
@@ -204,8 +204,8 @@ raze_nodiscard raze_always_inline V mul_(V x, V y, M mask) noexcept {
 			const auto converted_x = _mm512_cvtepu8_epi16(as<__m256i>(x));
 			const auto converted_y = _mm512_cvtepu8_epi16(as<__m256i>(y));
 
-			const auto multiplied = _mm512_mullo_epi16(__converted_x, __converted_y);
-			return as<V>(_mm512_maskz_cvtepi16_epi8(mask, __multiplied));
+			const auto multiplied = _mm512_mullo_epi16(converted_x, converted_y);
+			return as<V>(_mm512_maskz_cvtepi16_epi8(mask, multiplied));
 		}
 	}
 	else if constexpr (sizeof(V) == 64 && std::is_integral_v<M>) {

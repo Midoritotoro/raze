@@ -11,17 +11,17 @@ raze_always_inline V abs_(V x) noexcept {
 
 	if constexpr (sizeof(V) == 16) {
 		if constexpr (epi64<T>) {
-			if constexpr (has_avx512vl<ISA>) return as<V>(_mm_abs_epi64(as<__m128i>(x)));
+			if constexpr (has_avx512vl<ISA>) return _mm_abs_epi64(x);
 			else {
-				const auto high_sign = _mm_srai_epi32(as<__m128i>(x), 31);
+				const auto high_sign = _mm_srai_epi32(x, 31);
 				const auto sign = _mm_shuffle_epi32(high_sign, 0xF5);
 
-				const auto invert = _mm_xor_si128(as<__m128i>(x), sign);
-				return as<V>(_mm_sub_epi64(invert, sign));
+				const auto invert = _mm_xor_si128(x, sign);
+				return _mm_sub_epi64(invert, sign);
 			}
 		}
 		else if constexpr (epi32<T>) {
-			if constexpr (has_ssse3<ISA>) return as<V>(_mm_abs_epi32(as<__m128i>(x)));
+			if constexpr (has_ssse3<ISA>) return _mm_abs_epi32(x);
 			else {
 				const auto sign = _mm_srai_epi32(as<__m128i>(x), 31);
 				const auto invert = _mm_xor_si128(as<__m128i>(x), sign);

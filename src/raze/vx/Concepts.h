@@ -8,7 +8,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 struct scalar_tag {};
 
 template <class T>
-concept simd_type = __is_valid_simd_v<T>;
+concept simd_type = is_valid_simd_v<T>;
 
 template <simd_type T>
 struct tail_tag {
@@ -25,7 +25,7 @@ template <class T>
 concept floating_point_simd_or_scalar_type = floating_point_simd<T> || std::floating_point<T>;
 
 template <class T>
-concept simd_mask_type = __is_simd_mask_v<T>;
+concept simd_mask_type = is_simd_mask_v<T>;
 
 template <class T>
 concept simd_or_mask_type = simd_mask_type<T> || simd_type<T>;
@@ -39,7 +39,7 @@ template <simd_type V>
 using abi_t = typename V::abi_type;
 
 template <simd_type V>
-constexpr auto has_scalar_chunks_v = _Simd_::__has_scalar_chunks;
+constexpr auto has_scalar_chunks_v = V::__has_scalar_chunks;
 
 template <class ... Ts>
 concept has_any_scalar_chunks = (has_scalar_chunks_v<Ts> || ...);

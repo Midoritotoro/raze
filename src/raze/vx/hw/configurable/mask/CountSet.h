@@ -11,43 +11,42 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class _Options_>
-struct _Configurable_count_set: raze::options::conditional_callable<_Configurable_count_set, _Options_> {
-    template <simd_mask_type _Type_>
-    raze_nodiscard raze_always_inline i32 operator()(const _Type_& __x) const noexcept {
-        return raze::options::__dispatch_call(*this, __x);
+template <class Options>
+struct configurable_count_set_t: options::conditional_callable<configurable_count_set_t, Options> {
+    template <simd_mask_type M>
+    raze_nodiscard raze_always_inline i32 operator()(const M& x) const noexcept {
+        return options::dispatch_call(*this, x);
     }
 
-    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& __x) const noexcept {
-        return (*this)(__x());
+    raze_nodiscard raze_always_inline auto operator()(algorithm::tail_mask_type auto const& x) const noexcept {
+        return (*this)(x());
     }
 
-    template <simd_mask_type _Type_>
-    static raze_always_inline auto deferred_call(auto __options, const _Type_& __x) noexcept {
-        using _Mask_ = raze::options::fetch_t<raze::options::condition_key, _Options_>;
-        using _Value_ = typename _Type_::value_type;
-        using _Abi_ = typename _Type_::abi_type;
+    template <simd_mask_type M>
+    static raze_always_inline auto deferred_call(auto opts, const M& x) noexcept {
+        using Mask = options::fetch_t<options::condition_key, Options>;
+        using Value = typename M::value_type;
+        using Abi = typename M::abi_type;
 
-        auto __count = 0;
+        auto count = 0;
 
-        auto __chunk_op = [&] <class _Chunk, class ... _Args_> (const _Chunk& __chunk, _Args_&& ... __args) raze_always_inline_lambda {
-            __count += _Count_set<_Abi_::isa, _Chunk::size, _Value_>()(ustorage(__chunk), ustorage<_Args_>(__args)...);
+        auto chunk_op = [&] <class Chunk, class ... Args> (const Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+            count += count_set_<Abi::isa, Chunk::size, Value>(ustorage(chunk), ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<_Mask_, options::unknown_key>) {
-            static_assert(!_Mask_::has_alternative, "Not supported. ");
-            auto __condition = __options[raze::options::condition_key];
-            const auto __mask = __condition.mask(raze::options::as<typename _Mask_::condition_type>{});
-            __x.__for_each_chunk(__chunk_op, __mask.__storage().storage());
+        if constexpr (options::complete_mask<Mask>) {
+            static_assert(!Mask::has_alternative, "Not supported. ");
+            auto condition = opts[options::condition_key];
+            x.__for_each_chunk(chunk_op, condition.mask().__storage().storage());
         }
         else {
-            __x.__for_each_chunk(__chunk_op);
+            x.__for_each_chunk(chunk_op);
         }
 
-        return __count;
+        return count;
     }
-
-    using callable_tag_type = _Configurable_count_set;
 };
+
+constexpr inline auto count_set = options::functor<configurable_count_set_t>;
 
 __RAZE_VX_NAMESPACE_END

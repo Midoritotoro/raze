@@ -20,7 +20,7 @@ raze_always_inline V ternarylogic_(V x, V y,  V z, std::integral_constant<u8, Op
         else if constexpr (has_avx512vl<ISA> && sizeof(V) == 16) return as<V>(_mm_ternarylogic_epi32(as<__m128i>(x), as<__m128i>(y),  as<__m128i>(z), op));
     }
 
-    return ternarylogic_emulated(x, y, z, op,
+    return ternarylogic_emulated_(x, y, z, op,
         [] (auto x, auto y) raze_always_inline_lambda { return bit_or_<ISA, T>(x, y); },
         [] (auto x, auto y) raze_always_inline_lambda { return bit_xor_<ISA, T>(x, y); },
         [] (auto x, auto y) raze_always_inline_lambda { return bit_and_<ISA, T>(x, y); },

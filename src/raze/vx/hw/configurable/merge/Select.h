@@ -18,7 +18,7 @@ struct configurable_select_t: options::conditional_callable<configurable_select_
 
     template <simd_type V>
     static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
-        using Mask = options::fetch_t<raze::options::condition_key, _Options_>;
+        using Mask = options::fetch_t<raze::options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
@@ -28,14 +28,13 @@ struct configurable_select_t: options::conditional_callable<configurable_select_
             chunk = select_<Abi::isa, Value>(ustorage(chunk), ustorage<Args>(args)...);
         };
 
-        if constexpr (!std::same_as<Mask, options::unknown_key> && !std::same_as<Mask, options::ignore_none_>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
-            const auto mask = condition.mask();
 
             if constexpr (Mask::has_alternative)
-                r.__for_each_chunk(chunk_op, condition.alternative().__storage().storage(), mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, condition.alternative().__storage().storage(), condition.mask().__storage().storage());
             else
-                r.__for_each_chunk(chunk_op, mask.__storage().storage());
+                r.__for_each_chunk(chunk_op, condition.mask().__storage().storage());
         }
         
         return r;

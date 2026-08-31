@@ -24,7 +24,7 @@ struct simd_tuple_node {
     raze_always_inline simd_tuple_node& operator=(simd_tuple_node&&) noexcept = default;
 
     template <class NewH, class NewT>
-    raze_always_inline _Simd_tuple_node(NewH&& head, NewT&& tail) noexcept:
+    raze_always_inline simd_tuple_node(NewH&& head, NewT&& tail) noexcept:
         _head(std::forward<NewH>(head)), 
         _tail(std::forward<NewT>(tail))
     {}

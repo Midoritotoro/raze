@@ -18,15 +18,15 @@ template <class T, class Abi>
 class simd_mask {
 	static_assert(traits::is_vector_type_supported_v<T>);
 public:
-	using storage_type = _Mask_storage<T, Abi>;
+	using storage_type = mask_storage<T, Abi>;
 	using element_type = T;
-	using reference_type = _Simd_mask_reference<simd_mask>;
+	using reference_type = simd_mask_reference<simd_mask>;
 	using value_type = T;
 	using abi_type = Abi;
 
 	raze_always_inline simd_mask() noexcept {
 		_storage.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-			chunk = _Mask_zero<abi_type::isa, typename Chunk::unwrapped_type>()();
+			chunk = mask_zero_<abi_type::isa, typename Chunk::unwrapped_type>();
 		});
 	}
 
@@ -38,18 +38,18 @@ public:
 
 	raze_no_stack_protector raze_always_inline explicit simd_mask(bool v) noexcept {
 		_storage.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-			chunk = _Mask_broadcast<abi_type::isa, Chunk::size, typename Chunk::unwrapped_type, value_type>()(v);
+			chunk = mask_broadcast_<abi_type::isa, Chunk::size, typename Chunk::unwrapped_type, value_type>(v);
 		});
 	}
 
-	template <std::forward_iterator FwdIt, class Policy = __unaligned_policy>
+	template <std::forward_iterator FwdIt, class Policy = unaligned_policy>
 	raze_no_stack_protector raze_always_inline simd_mask(FwdIt it, Policy&& policy = {}) noexcept {
 		copy_from(it, policy);
 	}
 
-	template <std::forward_iterator FwdIt, class Policy = __unaligned_policy>
+	template <std::forward_iterator FwdIt, class Policy = unaligned_policy>
 	raze_no_stack_protector raze_always_inline void copy_from(FwdIt it, Policy&& policy = {}) noexcept
-		requires(std::convertible_to<std::iter_value_t<_ForwardIterator_>, bool>)
+		requires(std::convertible_to<std::iter_value_t<FwdIt>, bool>)
 	{
 		using Unwrapped = algorithm::unwrapped_iterator_type<FwdIt>;
 		using Value = std::iter_value_t<Unwrapped>;
@@ -58,13 +58,13 @@ public:
 			auto current = reinterpret_cast<const bool*>(std::to_address(it));
 
 			__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-				chunk = _Load_mask<abi_type::isa, Chunk::size, typename Chunk::unwrapped_type, value_type>()(current, policy);
+				chunk = load_mask_<abi_type::isa, Chunk::size, typename Chunk::unwrapped_type, value_type>(current, policy);
 				algorithm::advance_bytes(current, Chunk::size * sizeof(value_type));
 			});
 		}
 		else {
 			for (auto i = 0; i < size(); ++i)
-				insert(i, static_cast<bool>(*it++));
+				__insert(i, static_cast<bool>(*it++));
 		}
 	}
 
@@ -148,7 +148,7 @@ public:
 		return _storage;
 	}
 
-	raze_nodiscard raze_always_inline static constexpr bool __is_native() noexcept {
+	raze_nodiscard raze_always_inline static constexpr bool is_native() noexcept {
 		return storage_type::is_native();
 	}
 
@@ -156,73 +156,73 @@ public:
 		return storage_type::chunks_count();
 	}
 
-	template <sizetype _I_>
+	template <sizetype I>
 	raze_always_inline auto __get() const noexcept {
-		return raze::vx::__get<_I_>(_storage.storage());
+		return raze::vx::get<I>(_storage.storage());
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) noexcept {
-		_storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline void __for_each_chunk(F&& f, Args&& ... args) noexcept {
+		_storage.__for_each_chunk(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-		_storage.__for_each_chunk_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline void __for_each_chunk_reverse(F&& f, Args&& ... args) noexcept {
+		_storage.__for_each_chunk_reverse(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
-		_storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline void __for_each_chunk(F&& f, Args&& ... args) const noexcept {
+		_storage.__for_each_chunk(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline void __for_each_chunk_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-		_storage.__for_each_chunk_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline void __for_each_chunk_reverse(F&& f, Args&& ... args) const noexcept {
+		_storage.__for_each_chunk_reverse(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) noexcept {
-		return _storage.__for_each_chunk_any_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_any_of(F&& f, Args&& ... args) noexcept {
+		return _storage.__for_each_chunk_any_of(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-		return _storage.__for_each_chunk_any_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_any_of_reverse(F&& f, Args&& ... args) noexcept {
+		return _storage.__for_each_chunk_any_of_reverse(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_any_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
-		return _storage.__for_each_chunk_any_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_any_of(F&& f, Args&& ... args) const noexcept {
+		return _storage.__for_each_chunk_any_of(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_any_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-		return _storage.__for_each_chunk_any_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_any_of_reverse(F&& f, Args&& ... args) const noexcept {
+		return _storage.__for_each_chunk_any_of_reverse(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) noexcept {
-		return _storage.__for_each_chunk_all_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_all_of(F&& f, Args&& ... args) noexcept {
+		return _storage.__for_each_chunk_all_of(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) noexcept {
-		return _storage.__for_each_chunk_all_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_all_of_reverse(F&& f, Args&& ... args) noexcept {
+		return _storage.__for_each_chunk_all_of_reverse(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_all_of(_Function_&& __f, _Args_&& ... __args) const noexcept {
-		return _storage.__for_each_chunk_all_of(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_all_of(F&& f, Args&& ... args) const noexcept {
+		return _storage.__for_each_chunk_all_of(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	template <class _Function_, class ... _Args_>
-	raze_always_inline bool __for_each_chunk_all_of_reverse(_Function_&& __f, _Args_&& ... __args) const noexcept {
-		return _storage.__for_each_chunk_all_of_reverse(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
+	template <class F, class ... Args>
+	raze_always_inline bool __for_each_chunk_all_of_reverse(F&& f, Args&& ... args) const noexcept {
+		return _storage.__for_each_chunk_all_of_reverse(std::forward<F>(f), std::forward<Args>(args)...);
 	}
 
-	raze_always_inline void __insert(i32 __i, bool __v) noexcept {
-		_storage.insert(__i, __v);
+	raze_always_inline void __insert(i32 i, bool v) noexcept {
+		_storage.insert(i, v);
     }
 
     raze_nodiscard raze_always_inline bool __extract(i32 i) const noexcept {

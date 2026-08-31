@@ -41,8 +41,8 @@ raze_nodiscard raze_always_inline V div_fallback_(V x, T y) noexcept {
 	else {
 		constexpr auto size = sizeof(V) / sizeof(T);
 
-		alignas(sizeof(V)) T dest[__length];
-		alignas(sizeof(V)) T left[__length];
+		alignas(sizeof(V)) T dest[size];
+		alignas(sizeof(V)) T left[size];
 
 		store_(left, x, aligned_policy{});
 
@@ -64,12 +64,12 @@ raze_always_inline V div_(V x, V y) noexcept {
 		}
 	}
 	else if constexpr (sizeof(V) == 32) {
-		if constexpr (pd<T>) return as<_Tp_>(_mm256_div_pd(as<__m256d>(x), as<__m256d>(y)));
-		else if constexpr (ps<T>) return as<_Tp_>(_mm256_div_ps(as<__m256>(x), as<__m256>(y)));
+		if constexpr (pd<T>) return as<V>(_mm256_div_pd(as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm256_div_ps(as<__m256>(x), as<__m256>(y)));
 	}
 	else if constexpr (sizeof(V) == 64) {
-		if constexpr (pd<T>) return as<_Tp_>(_mm512_div_pd(as<__m512d>(x), as<__m512d>(y)));
-		else if constexpr (ps<T>) return as<_Tp_>(_mm512_div_ps(as<__m512>(x), as<__m512>(y)));
+		if constexpr (pd<T>) return as<V>(_mm512_div_pd(as<__m512d>(x), as<__m512d>(y)));
+		else if constexpr (ps<T>) return as<V>(_mm512_div_ps(as<__m512>(x), as<__m512>(y)));
 	}
 
 	return div_fallback_<ISA, T>(x, y);
@@ -118,7 +118,7 @@ raze_always_inline V div_(V x, T y) noexcept {
 		else if constexpr (epu32<T>) {
 			const auto divisor_information = vector_divisor<u32>(y);
 
-			const auto low_product = _mm_mul_epu32(as<__m128i>(__x), divisor_information.multiplier());
+			const auto low_product = _mm_mul_epu32(as<__m128i>(x), divisor_information.multiplier());
 			const auto low_product_shifted = _mm_srli_epi64(low_product, 32);
 			const auto left_value_shifted = _mm_srli_epi64(as<__m128i>(x), 32);
 
@@ -148,7 +148,7 @@ raze_always_inline V div_(V x, T y) noexcept {
 			return as<V>(_mm_xor_si128(adjusted_value, divisor_information.sign()));
 		}
 		else if constexpr (epu16<T>) {
-			const auto divisor_information = vector_divisor<u16>(__y);
+			const auto divisor_information = vector_divisor<u16>(y);
 
 			const auto high_half_product = _mm_mulhi_epu16(as<__m128i>(x), divisor_information.multiplier());
 			const auto difference_value = _mm_sub_epi16(as<__m128i>(x), high_half_product);
@@ -173,8 +173,8 @@ raze_always_inline V div_(V x, T y) noexcept {
 			const auto low_part = _mm_unpacklo_epi8(as<__m128i>(x), _mm_setzero_si128());
 			const auto high_part = _mm_unpackhi_epi8(as<__m128i>(x), _mm_setzero_si128());
 
-			const auto low = div_<ISA, u16>()(low_part, y);
-			const auto high = div_<ISA, u16>()(high_part, y);
+			const auto low = div_<ISA, u16>(low_part, y);
+			const auto high = div_<ISA, u16>(high_part, y);
 
 			return as<V>(_mm_packus_epi16(_mm_and_si128(low, mask), _mm_and_si128(high, mask)));
 		}
@@ -182,7 +182,7 @@ raze_always_inline V div_(V x, T y) noexcept {
 	else if constexpr (sizeof(V) == 32) {
 		if constexpr (has_avx2<ISA>) {
 			if constexpr (epi32<T>) {
-				const auto divisor_information = vector_divisor<i32>(__y);
+				const auto divisor_information = vector_divisor<i32>(y);
 
 				const auto multiplier_broadcast = _mm256_broadcastq_epi64(divisor_information.multiplier());
 				const auto sign_broadcast = _mm256_broadcastq_epi64(divisor_information.sign());
@@ -271,7 +271,7 @@ raze_always_inline V div_(V x, T y) noexcept {
 				const auto low_mask = _mm256_and_si256(divided_low, and_mask);
 				const auto high_mask = _mm256_and_si256(divided_high, and_mask);
 
-				return as<V>(_mm256_permute4x64_epi64(_mm256_packus_epi16(low_mask,_high_mask), 0xD8));
+				return as<V>(_mm256_permute4x64_epi64(_mm256_packus_epi16(low_mask, high_mask), 0xD8));
 			}
 			else if constexpr (epu8<T>) {
 				const auto zeros = _mm256_setzero_si256();
@@ -337,7 +337,7 @@ raze_always_inline V div_(V x, T y) noexcept {
 		}
 	}
 
-	return div_<ISA, T>(x, _Broadcast<ISA, V>()(y));
+	return div_<ISA, T>(x, broadcast_<ISA, V>(y));
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
