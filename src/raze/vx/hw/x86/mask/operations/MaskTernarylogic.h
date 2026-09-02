@@ -12,11 +12,11 @@ template <arch::ISA ISA, arithmetic_type T, raw_mask_type M, u8 Op>
 raze_always_inline M mask_ternarylogic_(M x, M y, M z, std::integral_constant<u8, Op> op) noexcept {
     if constexpr (intrin_type<M>) return ternarylogic_<ISA, T>(x, y, z, op);
     else return ternarylogic_emulated_(x, y, z, op, 
-        [] (auto x, auto y) raze_always_inline_lambda { return mask_or_<ISA, T>(x, y); },
-        [] (auto x, auto y) raze_always_inline_lambda { return mask_xor_<ISA, T>(x, y); },
-        [] (auto x, auto y) raze_always_inline_lambda { return mask_and_<ISA, T>(x, y); },
-        [] (auto x, auto y) raze_always_inline_lambda { return mask_andnot_<ISA, T>(x, y); },
-        [] (auto x) raze_always_inline_lambda { return mask_not_<ISA, T>(x, y); },
+        [] (auto a, auto b) raze_always_inline_lambda { return mask_or_<ISA, T>(a, b); },
+        [] (auto a, auto b) raze_always_inline_lambda { return mask_xor_<ISA, T>(a, b); },
+        [] (auto a, auto b) raze_always_inline_lambda { return mask_and_<ISA, T>(a, b); },
+        [] (auto a, auto b) raze_always_inline_lambda { return mask_andnot_<ISA, T>(a, b); },
+        [] (auto a) raze_always_inline_lambda { return mask_not_<ISA, T>(a); },
         []() raze_always_inline_lambda { return 0; });
 }
 

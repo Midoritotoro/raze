@@ -149,7 +149,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
                     45, 44, 47, 46, 41, 40, 43, 42, 37, 36, 39, 38, 33, 32, 35, 34,
                     29, 28, 31, 30, 25, 24, 27, 26, 21, 20, 23, 22, 17, 16, 19, 18,
                     13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
-                x = __reduce(x, as<V>(shuffled));
+                x = reduce(x, as<V>(shuffled));
 
                 return _mm512_cvtsi512_si32(as<__m512i>(x));
             }

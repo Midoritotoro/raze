@@ -13,7 +13,7 @@ constexpr auto replace_strategy = options::strategy<strategy<>()
 	.for_clang<strategy_mode::autovec>()>;
 
 template <class Traits>
-struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>>{
+struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 	template <source Source, class Predicate, class Projection, class Value>
 	struct kernel {
 		using source_type = std::remove_cvref_t<Source>;

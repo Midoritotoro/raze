@@ -42,7 +42,7 @@ struct counter {
     raze_always_inline void count(const mask_type& mask) noexcept {
         if constexpr (std::integral<storage_type>) _storage += count_set(mask);
         else _storage.__for_each_chunk([&] <class _Chunk_, class _Chunk2_> (_Chunk_ & chunk, const _Chunk2_ & ch2) raze_always_inline_lambda {
-            chunk = _Sub<abi_t<V>::isa, index_type>()(ustorage(chunk), ustorage(ch2));
+            chunk = sub_<abi_t<V>::isa, index_type>(ustorage(chunk), ustorage(ch2));
         }, mask.__storage().storage());
     }
 

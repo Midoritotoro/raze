@@ -44,7 +44,7 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
     }
 
     template <simd_type V, class F>
-    static raze_always_inline auto deferred_call(auto opts, const V& x, F f) noexcept
+    static raze_always_inline auto deferred_call(auto opts, V x, F f) noexcept
         requires(!std::is_same_v<traits::function_unwrapped<std::remove_cvref_t<F>>, std::remove_cvref_t<decltype(add)>>)
     {
         using Mask = options::fetch_t<options::condition_key, Options>;
@@ -60,7 +60,7 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
 
             const auto r = [&] <sizetype ... Indices> (std::integer_sequence<sizetype, Indices...>) raze_always_inline_lambda {
                 x = select[opts](x);
-                ((x = f(x, swap_adjacent_(x, std::integral_constant<sizetype, 1ull << Indices>{}))), ...);
+                ((x = f(x, swap_adjacent(x, std::integral_constant<sizetype, 1ull << Indices>{}))), ...);
                 return x;
             } (std::make_integer_sequence<sizetype, depth>{});
 

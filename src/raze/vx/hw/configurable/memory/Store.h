@@ -58,7 +58,7 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
         }
         else {
             return x.__for_each_chunk([] <class Chunk> (Chunk& chunk, auto& memory) raze_always_inline_lambda {
-                if constexpr (Options::contains(aligned)) store(memory, ustorage(chunk), aligned_policy{});
+                if constexpr (Options::contains(aligned)) store_(memory, ustorage(chunk), aligned_policy{});
                 else store_(memory, ustorage(chunk));
 
                 algorithm::advance_bytes(memory, sizeof(Value) * Chunk::size);

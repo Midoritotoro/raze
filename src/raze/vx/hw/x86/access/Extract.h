@@ -13,12 +13,12 @@ consteval auto broadcast_pshufd_index_(std::integral_constant<sizetype, I> i) no
 
 template <arch::ISA ISA, arithmetic_type T, intrin_type V>
 raze_always_inline T extract_first_(V x) noexcept {
-	if constexpr (epi64<T> || epu64<T>) return _mm_cvtsi128_si64x(x);
-	else if constexpr (epi32<T> || epu32<T>) return _mm_cvtsi128_si32(x);
-	else if constexpr (epi16<T> || epu16<T>) return _mm_cvtsi128_si32(x) & 0xFFFF;
-	else if constexpr (epi8<T> || epu8<T>) return _mm_cvtsi128_si32(x) & 0xFF;
-	else if constexpr (pd<T>) return _mm_cvtsd_f64(x);
-	else if constexpr (ps<T>) return _mm_cvtss_f32(x);
+	if constexpr (epi64<T> || epu64<T>) return _mm_cvtsi128_si64x(as<__m128i>(x));
+	else if constexpr (epi32<T> || epu32<T>) return _mm_cvtsi128_si32(as<__m128i>(x));
+	else if constexpr (epi16<T> || epu16<T>) return _mm_cvtsi128_si32(as<__m128i>(x)) & 0xFFFF;
+	else if constexpr (epi8<T> || epu8<T>) return _mm_cvtsi128_si32(as<__m128i>(x)) & 0xFF;
+	else if constexpr (pd<T>) return _mm_cvtsd_f64(as<__m128d>(x));
+	else if constexpr (ps<T>) return _mm_cvtss_f32(as<__m128>(x));
 }
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>

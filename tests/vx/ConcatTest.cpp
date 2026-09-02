@@ -39,8 +39,6 @@ struct concat_tests {
     template <raze::u64 N>
     void run_for_n() {
         test_k_args<N, 2>();
-        //test_k_args<N, 3>();
-        //test_k_args<N, 4>();
     }
 
     void operator()() {

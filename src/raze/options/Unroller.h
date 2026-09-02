@@ -109,6 +109,6 @@ struct unroller_t {
 };
 
 template <class Traits, class V>
-static inline constexpr auto unroller_t = typename unroller_t<Traits>::template impl<V>{};
+static inline constexpr auto unroller = typename unroller_t<Traits>::template impl<V>{};
 
 __RAZE_OPTIONS_NAMESPACE_END

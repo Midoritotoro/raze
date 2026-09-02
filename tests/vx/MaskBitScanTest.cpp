@@ -14,9 +14,6 @@ struct variable_length_mask_tests {
 
         constexpr size_t N = _N_;
 
-        if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>())
-            return;
-
         auto make_pattern = [](auto f) {
             Mask m(false);
             for (size_t i = 0; i < N; ++i)

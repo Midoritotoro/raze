@@ -13,9 +13,6 @@ struct variable_length_mask_tests {
 
         constexpr size_t N = _N_;
 
-        if (!raze::arch::ProcessorFeatures::isSupported<Simd::__isa>())
-            return;
-
         {
             auto m = raze::vx::first_n(0, raze::options::as(Mask{}));
             for (size_t i = 0; i < N; ++i)

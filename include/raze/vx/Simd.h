@@ -13,11 +13,6 @@ raze_disable_warning_msvc(26495)
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <bool _Alignment_>
-struct alignment_policy {
-    static constexpr bool __alignment = _Alignment_;
-};
-
 template <class V, class L, class R>
 concept correct_simd_binary_op = simd_type<V> &&
     (std::same_as<std::remove_cvref_t<L>, V> && (

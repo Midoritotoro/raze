@@ -68,7 +68,7 @@ public:
 		}
 	}
 
-	template <class OutIt, class Policy = __unaligned_policy>
+	template <class OutIt, class Policy = unaligned_policy>
 	raze_always_inline void copy_to(OutIt out, Policy&& policy = {}) noexcept {
 		using Unwrapped = algorithm::unwrapped_iterator_type<OutIt>;
 		using Value = std::iter_value_t<Unwrapped>;
@@ -77,7 +77,7 @@ public:
 			auto current = reinterpret_cast<bool*>(std::to_address(out));
 
 			__for_each_chunk([&] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
-				_Store_mask<abi_type::isa, Chunk::size, value_type>()(current, chunk.data(), policy);
+				store_mask_<abi_type::isa, Chunk::size, value_type>(current, chunk.data(), policy);
 				algorithm::advance_bytes(current, Chunk::size * sizeof(value_type));
 			});
 		}

@@ -17,7 +17,7 @@ template <concepts::keyword Keyword, class Value, concepts::option ... Options>
 constexpr raze_always_inline decltype(auto) fetch(const type_or<Keyword, Value>& kw,
     const Options& ... opts) noexcept
 {
-    return settings(opts)[kw];
+    return settings(opts...)[kw];
 }
 
 template <class Key, concepts::settings Settings>

@@ -37,11 +37,14 @@ struct configurable_concat_t: options::conditional_callable<configurable_concat_
 
         Concatenated r;
         
-        alignas(64) Value arr[Abi::size];
+        Value arr[Abi::size];
         Value* ptr = arr;
 
-        ([&]() raze_always_inline_lambda { store[aligned](ptr, xs); ptr += xs.size(); }(), ...);
-        r = load<Concatenated>[aligned](arr);
+        store(ptr, x);
+        ptr += x.size();
+
+        ([&]() raze_always_inline_lambda { store(ptr, xs); ptr += xs.size(); }(), ...);
+        r = load<Concatenated>(arr);
 
         return r;
     }

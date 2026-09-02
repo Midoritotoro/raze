@@ -39,7 +39,7 @@ template <simd_type V>
 using abi_t = typename V::abi_type;
 
 template <simd_type V>
-constexpr auto has_scalar_chunks_v = V::__has_scalar_chunks;
+constexpr auto has_scalar_chunks_v = V::has_scalar_chunks;
 
 template <class ... Ts>
 concept has_any_scalar_chunks = (has_scalar_chunks_v<Ts> || ...);

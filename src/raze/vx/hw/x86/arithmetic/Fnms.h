@@ -10,16 +10,16 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V>
 raze_always_inline V fnms_(V x, V y, V z) noexcept {
 	if constexpr (sizeof(V) == 16 && has_fma3<ISA>) {
-		if constexpr (pd<T>) return as<V>(_mm_fnmsub_pd(as<__m128d>(x), as<__m128d>(y), as<__m128d>(z)));
-		else if constexpr (ps<T>) return as<V>(_mm_fnmsub_ps(as<__m128>(x), as<__m128>(y), as<__m128>(z)));
+		if constexpr (pd<T>) return _mm_fnmsub_pd(x, y, z);
+		else if constexpr (ps<T>) return _mm_fnmsub_ps(x, y, z);
 	}
 	else if constexpr (sizeof(V) == 32 && has_fma3<ISA>) {
-		if constexpr (pd<T>) return as<V>(_mm256_fnmsub_pd(as<__m256d>(x), as<__m256d>(y), as<__m256d>(z)));
-		else if constexpr (ps<T>) return as<V>(_mm256_fnmsub_ps(as<__m256>(x), as<__m256>(y), as<__m256>(z)));
+		if constexpr (pd<T>) return _mm256_fnmsub_pd(x, y, z);
+		else if constexpr (ps<T>) return _mm256_fnmsub_ps(x, y, z);
 	}
 	else if constexpr (sizeof(V) == 64) {
-		if constexpr (pd<T>) return as<V>(_mm512_fnmsub_pd(as<__m512d>(x), as<__m512d>(y), as<__m512d>(z)));
-		else if constexpr (ps<T>) return as<V>(_mm512_fnmsub_ps(as<__m512>(x), as<__m512>(y), as<__m512>(z)));
+		if constexpr (pd<T>) return _mm512_fnmsub_pd(x, y, z);
+		else if constexpr (ps<T>) return _mm512_fnmsub_ps(x, y, z);
 	}
 
 	return sub_<ISA, T>(negate_<ISA, T>(mul_<ISA, T>(x, y)), z);

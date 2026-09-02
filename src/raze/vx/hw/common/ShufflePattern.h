@@ -73,7 +73,7 @@ struct shuffle_pattern {
     raze_no_stack_protector raze_always_inline static auto as_native() noexcept requires((sizeof(Intrin) / size()) != 0) {
 		using Idx = typename IntegerForSize<sizeof(Intrin) / size()>::Unsigned;
 		alignas(sizeof(Intrin)) static constexpr Idx idx[size()] { Idx(Idxs)... };
-		return _Load<abi_t<V>::isa, Intrin>()(idx, aligned_policy{});
+		return load_<abi_t<V>::isa, Intrin>(idx, aligned_policy{});
 	}
 
 	template <std::unsigned_integral From, std::unsigned_integral To>

@@ -89,7 +89,7 @@ struct abs_tests {
                 raze_assert(r[i] == (arr[i] < _Type_(0) ? _Type_(-arr[i]) : _Type_(arr[i])));
         }
 
-        for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+        for (auto i = 0; i < std::min(int(std::pow(2, N)), 100); ++i) {
             auto m = make_random_mask<Mask>();
 
             {

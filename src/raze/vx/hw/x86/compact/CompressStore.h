@@ -12,7 +12,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <arch::ISA ISA, arithmetic_type T, intrin_type V, std::unsigned_integral CompressMask>
+template <arithmetic_type T, intrin_type V, std::unsigned_integral CompressMask>
 raze_always_inline void* compress_store_fallback_(void* ptr, V x, CompressMask compress_mask) noexcept {
 	constexpr auto size = sizeof(V) / sizeof(T);
 	alignas(sizeof(V)) T source[size];
@@ -405,7 +405,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 			return ptr;
 		}
 	}
-	else return compress_store_fallback_(ptr, x, int_mask);
+	else return compress_store_fallback_<T>(ptr, x, int_mask);
 }
 
 __RAZE_VX_NAMESPACE_END

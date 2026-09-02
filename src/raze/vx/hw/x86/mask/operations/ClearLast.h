@@ -8,20 +8,24 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA ISA, arithmetic_type T, sizetype N, bool Unsafe, raw_mask_type M>
-raze_always_inline M clear_first_(M x) noexcept {
+raze_always_inline M clear_last_(M x) noexcept {
 	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
 		return 0;
 	}
 	else if constexpr (std::is_integral_v<M>) {
-		if constexpr (has_avx2<ISA>) {
-			if constexpr (N == 64) return _blsr_u64(x);
-			else return _blsr_u32(x);
+		if constexpr (N >= 32) {
+			return mask_xor_<ISA, T>(x, (math::sign_bit<M>() >>
+				math::clz_n_bits<ISA, N, Unsafe>(x)));
 		}
-		else return x & (x - 1);
+		else {
+			const auto pos = (N - 1) - math::clz_n_bits<ISA, N, Unsafe>(x);
+			return mask_andnot_<ISA, T>(M(M(1) << pos), x);
+		}
 	}
 	else if constexpr (intrin_type<M>) {
-		return to_vector_<ISA, M, T>(clear_first_<ISA, T, N, Unsafe>(to_mask_<ISA, T>(x)));
+		return to_vector_<ISA, M, T>(clear_last_<ISA, T, N, Unsafe>(to_mask_<ISA, T>(x)));
 	}
 }
+
 
 __RAZE_VX_NAMESPACE_END

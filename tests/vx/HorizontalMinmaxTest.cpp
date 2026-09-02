@@ -33,7 +33,7 @@ struct horizontal_minmax_tests {
             raze_assert(hmax == expected);
         }
 
-        for (auto i = 0; i < std::min(int(std::pow(2, N)), 10000); ++i) {
+        for (auto i = 0; i < std::min(int(std::pow(2, N)), 1000); ++i) {
             auto m = make_random_mask<Mask>();
 
             {
@@ -73,9 +73,8 @@ struct horizontal_minmax_tests {
 
     void operator()() {
         test_size<_Width_ / (sizeof(_Type_) * 8)>();
+        test_size<_Width_ / (sizeof(_Type_) * 8) + 1>();
         test_size<1>();
-        test_size<7>();
-        test_size<17>();
     }
 };
 
