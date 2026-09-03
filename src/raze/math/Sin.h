@@ -64,7 +64,7 @@ struct configurable_sin_t: options::conditional_callable<configurable_sin_t, Opt
         using Mask = options::fetch_t<options::condition_key, Options>;
 
         if constexpr (options::complete_mask<Mask>) {
-            auto condition = options[options::condition_key];
+            auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
             if constexpr (Mask::has_alternative) 

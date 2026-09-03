@@ -72,7 +72,7 @@ raze_always_inline V maskz_loadu_(const void* mem, M mask) noexcept {
 		if constexpr (Safe) {
 			constexpr auto size = sizeof(V) / sizeof(T);
 			alignas(sizeof(V)) T array[size];
-			store_(array, _Zero<ISA, V>()(), aligned_policy{});
+			store_(array, zero_<ISA, V>(), aligned_policy{});
 
 			if constexpr (intrin_type<M>) {
 				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed marray[size];

@@ -16,11 +16,10 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-    set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
+   set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 endif()
 
-add_custom_target(unit.exe)
-
-add_custom_target(vx.core.exe)
-add_dependencies(unit.exe vx.core.exe)
+add_custom_target(unit)
+add_custom_target(vx.core)
+add_dependencies(unit vx.core)
 raze_glob_unit("vx.core" ${CMAKE_CURRENT_SOURCE_DIR} "temp/*.cpp")

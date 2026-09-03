@@ -80,7 +80,7 @@ message("Compiler: ${CMAKE_CXX_COMPILER_ID}")
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-        add_compile_options(-g) 
+        add_compile_options(-Od) 
     elseif (CMAKE_BUILD_TYPE STREQUAL "Release")
         add_compile_options(-O2 -Ob3)
     endif()
