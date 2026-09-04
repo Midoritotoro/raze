@@ -204,6 +204,14 @@ namespace rtts {
             else { RTTS_FAIL("Expected: " << #LHS << " == " << #RHS << " but vectors differ."); return ::rtts::detail::logger{}; } \
         }(LHS, RHS)
 
+#define RTTS_ALL_VALIDATE(LHS, GEN) \
+        [&](auto const& a, auto const& b) { \
+            bool ok = true; \
+            for(size_t i=0; i<std::size(a); ++i) if(a[i] != b(i)) { ok = false; break; } \
+            if(ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
+            else { RTTS_FAIL("Expected: " << #LHS << " == " << #GEN << " but vectors differ."); return ::rtts::detail::logger{}; } \
+        }(LHS, GEN)
+
     namespace simd {
         constexpr raze::arch::ISA current_isa() {
             return raze::vx::target_isa();
@@ -213,7 +221,7 @@ namespace rtts {
         struct simd_info {
             using base_type = T;
             static constexpr raze::u32 width = Width;
-            using type = raze::vx::simd<base_type, raze::vx::runtime_abi<current_isa(), width>>;
+            using type = raze::vx::simd<base_type, raze::vx::x86_abi<width / (sizeof(T) * 8)>>;
         };
 
         template<typename T>

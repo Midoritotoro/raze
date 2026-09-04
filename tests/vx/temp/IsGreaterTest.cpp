@@ -1,7 +1,7 @@
 #include <tests/rts/rts.h>
 #include <raze/vx/Algorithm.h>
 
-RTTS_CASE_TPL("raze::vx::is_equal", rtts::simd::all_simd_infos)
+RTTS_CASE_TPL("raze::vx::is_greater", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
     using T = typename V::value_type;
@@ -16,5 +16,5 @@ RTTS_CASE_TPL("raze::vx::is_equal", rtts::simd::all_simd_infos)
     V a = raze::vx::load<V>(arrA);
     V b = raze::vx::load<V>(arrB);
 
-    RTTS_ALL_VALIDATE(a == b, [=] (auto i) { return arrA[i] == arrB[i]; });
+    RTTS_ALL_VALIDATE(a > b, [=](auto i) { return arrA[i] > arrB[i]; });
 };

@@ -9,6 +9,15 @@ template <arch::ISA	ISA, class V>
 concept native_ternarylogic = intrin_type<V> && ((has_avx512f<ISA> && sizeof(V) == 64) || 
 	(has_avx512vl<ISA> && (sizeof(V) == 32 || sizeof(V) == 16)));
 
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op>
+raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op) noexcept;
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op>
+raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op) noexcept;
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M, u8 Op>
+raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op, M mask, V src) noexcept;
+
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V>
 raze_always_inline V bit_not_(V x) noexcept {
 	if constexpr (native_ternarylogic<ISA, V>) return ternarylogic_<ISA, T>(x, x, x, std::integral_constant<u8, 0x55>{});

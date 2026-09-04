@@ -14,14 +14,37 @@ function(raze_add_parent_target target)
 endfunction()
 
 set(RAZE_TEST_ARCH_CONFIGS
-    "SSE2| | |RAZE_HAS_SSE2_SUPPORT=1"
+    "None| | |RAZE_HAS_NONE_SUPPORT=1"
+    "SSE|-msse| |RAZE_HAS_SSE_SUPPORT=1"
+    "SSE2|-msse2| |RAZE_HAS_SSE2_SUPPORT=1"
+    "SSE3|-msse3| |RAZE_HAS_SSE3_SUPPORT=1"
+    "SSSE3|-mssse3| |RAZE_HAS_SSSE3_SUPPORT=1"
+    "SSE41|-msse4.1| |RAZE_HAS_SSE41_SUPPORT=1"
+    "SSE42|-msse4.2| |RAZE_HAS_SSE42_SUPPORT=1"
     "AVX|-mavx|/arch:AVX|RAZE_HAS_AVX_SUPPORT=1"
+    "FMA3|-mfma| |RAZE_HAS_FMA3_SUPPORT=1"
     "AVX2|-mavx2|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
-    "AVX512|-mavx512f|/arch:AVX512|RAZE_HAS_AVX512F_SUPPORT=1"
+    "AVX2FMA3|-mavx2 -mfma|/arch:AVX2|RAZE_HAS_AVX2FMA3_SUPPORT=1"
+    "AVX512F|-mavx512f|/arch:AVX512|RAZE_HAS_AVX512F_SUPPORT=1"
+    "AVX512BW|-mavx512bw|/arch:AVX512|RAZE_HAS_AVX512BW_SUPPORT=1"
+    "AVX512DQ|-mavx512dq|/arch:AVX512|RAZE_HAS_AVX512DQ_SUPPORT=1"
+    "AVX512BWDQ|-mavx512bw -mavx512dq|/arch:AVX512|RAZE_HAS_AVX512BWDQ_SUPPORT=1"
+    "AVX512VLBWDQ|-mavx512vl -mavx512bw -mavx512dq|/arch:AVX512|RAZE_HAS_AVX512VLBWDQ_SUPPORT=1"
+    "AVX512VLDQ|-mavx512vl -mavx512dq|/arch:AVX512|RAZE_HAS_AVX512VLDQ_SUPPORT=1"
+    "AVX512VLBW|-mavx512vl -mavx512bw|/arch:AVX512|RAZE_HAS_AVX512VLBW_SUPPORT=1"
+    "AVX512VLF|-mavx512vl -mavx512f|/arch:AVX512|RAZE_HAS_AVX512VLF_SUPPORT=1"
+    "AVX512VBMI|-mavx512vbmi -mavx512bw|/arch:AVX512|RAZE_HAS_AVX512VBMI_SUPPORT=1"
+    "AVX512VBMI2|-mavx512vbmi2 -mavx512bw|/arch:AVX512|RAZE_HAS_AVX512VBMI2_SUPPORT=1"
+    "AVX512VBMIVL|-mavx512vbmi -mavx512vl|/arch:AVX512|RAZE_HAS_AVX512VBMIVL_SUPPORT=1"
+    "AVX512VBMI2VL|-mavx512vbmi2 -mavx512vl|/arch:AVX512|RAZE_HAS_AVX512VBMI2VL_SUPPORT=1"
+    "AVX512VBMIDQ|-mavx512vbmi -mavx512bw -mavx512dq|/arch:AVX512|RAZE_HAS_AVX512VBMIDQ_SUPPORT=1"
+    "AVX512VBMI2DQ|-mavx512vbmi2 -mavx512bw -mavx512dq|/arch:AVX512|RAZE_HAS_AVX512VBMI2DQ_SUPPORT=1"
+    "AVX512VBMIVLDQ|-mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX512|RAZE_HAS_AVX512VBMIVLDQ_SUPPORT=1"
+    "AVX512VBMI2VLDQ|-mavx512vbmi2 -mavx512bw -mavx512dq -mavx512vl|/arch:AVX512|RAZE_HAS_AVX512VBMI2VLDQ_SUPPORT=1"
 )
 
 function(raze_generate_test root main_source rootpath file)
-    string(REPLACE ".cpp" ".exe" base ${file})
+    string(REPLACE ".cpp" "" base ${file})
     string(REPLACE "/" "." base ${base})
     string(REPLACE "\\" "." base ${base})
 
@@ -75,10 +98,10 @@ function(raze_generate_test root main_source rootpath file)
                 list(APPEND msvc_defs_flags "/D${def}")
             endforeach()
             
-            target_compile_options(${obj_target} PRIVATE /bigobj /permissive- /O1 ${msvc_arch_flag} ${msvc_defs_flags})
+            target_compile_options(${obj_target} PRIVATE /bigobj /permissive- /Od ${msvc_arch_flag} ${msvc_defs_flags})
         else()
             separate_arguments(flags_list UNIX_COMMAND "${gcc_flags}")
-            target_compile_options(${obj_target} PRIVATE ${flags_list} -g -O0)
+            target_compile_options(${obj_target} PRIVATE ${flags_list} -g)
         endif()
 
         set_target_properties(${obj_target} PROPERTIES
