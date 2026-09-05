@@ -107,35 +107,19 @@
 #endif // !defined(RAZE_HAS_AVX512VL_SUPPORT)
 
 #if !defined(RAZE_HAS_AVX512VBMI_SUPPORT) 
-#  if defined(raze_cpp_msvc_only)
-#    if RAZE_HAS_AVX512F_SUPPORT
+#  if defined (__AVX512VBMI__)
 #      define RAZE_HAS_AVX512VBMI_SUPPORT 1
-#    else 
+#  else 
 #      define RAZE_HAS_AVX512VBMI_SUPPORT 0
-#    endif // RAZE_HAS_AVX512F_SUPPORT
-#  endif // defined(raze_cpp_msvc_only)
-#else
-#    if defined (__AVX512VBMI__)
-#      define RAZE_HAS_AVX512VBMI_SUPPORT 1
-#    else 
-#      define RAZE_HAS_AVX512VBMI_SUPPORT 0
-#    endif // defined (__AVX512VBMI__)
+#  endif // defined (__AVX512VBMI__)
 #endif // !defined(RAZE_HAS_AVX512VBMI_SUPPORT)
 
 #if !defined(RAZE_HAS_AVX512VBMI2_SUPPORT) 
-#  if defined(raze_cpp_msvc_only)
-#    if RAZE_HAS_AVX512F_SUPPORT
+#  if defined (__AVX512VBMI2__)
 #      define RAZE_HAS_AVX512VBMI2_SUPPORT 1
-#    else 
+#  else 
 #      define RAZE_HAS_AVX512VBMI2_SUPPORT 0
-#    endif // RAZE_HAS_AVX512F_SUPPORT
-#  endif // defined(raze_cpp_msvc_only)
-#  else
-#    if defined (__AVX512VBMI2__)
-#      define RAZE_HAS_AVX512VBMI2_SUPPORT 1
-#    else 
-#      define RAZE_HAS_AVX512VBMI2_SUPPORT 0
-#    endif // defined (__AVX512VBMI2__)
+#  endif // defined (__AVX512VBMI2__)
 #endif // !defined(RAZE_HAS_AVX512VBMI2_SUPPORT)
 
 #if defined(RAZE_FORCE_AVX512F)

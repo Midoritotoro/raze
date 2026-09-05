@@ -14,19 +14,26 @@
 #include <tuple>
 
 namespace rtts {
-    template<typename... Ts>
+    template <class ... Ts>
     struct types {
-        template<typename... Us> constexpr types<Ts..., Us...> operator+(types<Us...> const&) const;
+        template <class ... Us> 
+        constexpr types<Ts..., Us...> operator+(types<Us...> const&) const;
     };
 
-    template<typename... Ls> struct concatenate { using type = decltype((Ls{} + ...)); };
+    template <class ... Ls> 
+    struct concatenate { 
+        using type = decltype((Ls{} + ...)); 
+    };
 
-    template<typename... Ls> using concatenate_t = typename concatenate<Ls...>::type;
+    template <class ... Ls> 
+    using concatenate_t = typename concatenate<Ls...>::type;
 
-    template<typename T> struct type {};
+    template <class T > 
+    struct type {};
 
     namespace detail {
-        template<typename T> struct typename_impl {
+        template <class T> 
+        struct typename_impl {
             static auto value() noexcept {
 #if defined(_MSC_VER)
                 std::string_view data(__FUNCSIG__);
@@ -41,14 +48,26 @@ namespace rtts {
         };
     }
 
-    template<typename T> inline auto const typename_ = detail::typename_impl<T>::value();
+    template <class T> 
+    inline auto const typename_ = detail::typename_impl<T>::value();
 
     namespace detail {
         struct env {
-            void pass() { test_count++; success_count++; }
-            void fail() { test_count++; failure_count++; }
-            void invalid() { test_count++; invalid_count++; }
+            void pass() { 
+                test_count++; 
+                success_count++; 
+            }
 
+            void fail() { 
+                test_count++; 
+                failure_count++; 
+            }
+
+            void invalid() { 
+                test_count++; 
+                invalid_count++; 
+            }
+            
             int report() const {
                 std::cout << "----------------------------------------------------------------\n";
                 std::cout << "Results: " << test_count << " tests - "
@@ -68,36 +87,97 @@ namespace rtts {
 
         struct logger {
             logger(bool status = true) : display(status), done(false) {}
-            template<typename Data> logger& operator<<(Data const& d) {
+            template <class Data> 
+            logger& operator<<(Data const& d) {
                 if (display) {
                     if (!done) { std::cout << ">> Additional information: \n"; done = true; }
                     std::cout << d;
                 }
                 return *this;
             }
-            ~logger() noexcept { if (display && done) std::cout << "\n"; }
+
+            ~logger() noexcept { 
+                if (display && done) std::cout << "\n"; 
+            }
+            
             bool display, done;
         };
 
         struct callable {
             using signature_t = void(*)(void*);
-            signature_t invoker = {};
-            signature_t cleanup = {};
-            void* payload = {};
+            signature_t invoker = nullptr;
+            signature_t cleanup = nullptr;
+            void* payload = nullptr;
 
-            template<typename Function>
-            constexpr callable(Function f)
-                : invoker{ invoke<Function> }, cleanup{ destroy<Function> }, payload{ new Function{std::move(f)} } {}
+            callable() = default;
 
-            void operator()() { invoker(payload); }
-            template <typename T> static void invoke(void* data) { (*static_cast<T*>(data))(); }
-            template <typename T> static void destroy(void* data) { delete static_cast<T*>(data); }
+            template <class Function>
+            callable(Function f)
+                : invoker{ invoke<Function> }
+                , cleanup{ destroy<Function> }
+                , payload{ new Function{std::move(f)} }
+            {}
+
+            callable(const callable&) = delete;
+            callable& operator=(const callable&) = delete;
+
+            callable(callable&& other) noexcept
+                : invoker{ other.invoker }
+                , cleanup{ other.cleanup }
+                , payload{ other.payload }
+            {
+                other.invoker = nullptr;
+                other.cleanup = nullptr;
+                other.payload = nullptr;
+            }
+
+            callable& operator=(callable&& other) noexcept {
+                if (this != &other) {
+                    if (payload && cleanup) {
+                        cleanup(payload);
+                    }
+                    invoker = other.invoker;
+                    cleanup = other.cleanup;
+                    payload = other.payload;
+
+                    other.invoker = nullptr;
+                    other.cleanup = nullptr;
+                    other.payload = nullptr;
+                }
+                return *this;
+            }
+
+            ~callable() {
+                if (payload && cleanup) {
+                    cleanup(payload);
+                    payload = nullptr;
+                }
+            }
+
+            void operator()() {
+                if (invoker && payload) {
+                    invoker(payload);
+                }
+            }
+
+            template <class T>
+            static void invoke(void* data) {
+                (*static_cast<T*>(data))();
+            }
+
+            template <class T>
+            static void destroy(void* data) {
+                delete static_cast<T*>(data);
+            }
         };
 
         struct test {
             std::string name;
             callable behaviour;
-            void operator()() { current_test = name; behaviour(); }
+            void operator()() { 
+                current_test = name;
+                behaviour(); 
+            }
             static inline bool acknowledge(test&& f);
         };
 
@@ -117,9 +197,7 @@ namespace rtts {
             const char* name;
         };
 
-   
-
-        template<typename... Types>
+        template <class... Types>
         struct test_captures {
             test_captures(const char* id) : name(id) {}
             auto operator+(auto body) const {
@@ -134,26 +212,22 @@ namespace rtts {
             std::string name;
         };
 
-        template<typename... Types>
+        template <class ... Types >
         struct test_captures<types<Types...>> : test_captures<Types...> {};
     }
 
-    template<typename T>
+    template <class T>
     std::string as_string(T const& e) {
-        if constexpr (requires { std::to_string(e); }) {
-            return std::to_string(e);
-        }
-        else if constexpr (requires(std::ostream & o) { o << e; }) {
-            std::ostringstream os; os << e; return os.str();
-        }
-        else {
-            return std::string("[") + typename_<T> +"]";
-        }
+        if constexpr (requires { std::to_string(e); }) return std::to_string(e);
+        else if constexpr (requires(std::ostream & o) { o << e; }) { std::ostringstream os; os << e; return os.str(); }
+        else return std::string("[") + typename_<T> +"]";
     }
-    inline std::string as_string(bool b) { return b ? "true" : "false"; }
 
-    template<typename Simd>
-        requires requires { Simd::size(); typename Simd::value_type; }
+    inline std::string as_string(bool b) { 
+        return b ? "true" : "false"; 
+    }
+
+    template <class Simd> requires requires { Simd::size(); typename Simd::value_type; }
     std::string as_string(Simd const& v) {
         std::ostringstream os;
         os << "{ ";
@@ -217,43 +291,35 @@ namespace rtts {
             return raze::vx::target_isa();
         }
 
-        template<typename T, raze::u32 Width>
+        template <class T, raze::u32 Width>
         struct simd_info {
             using base_type = T;
             static constexpr raze::u32 width = Width;
             using type = raze::vx::simd<base_type, raze::vx::x86_abi<width / (sizeof(T) * 8)>>;
         };
 
-        template<typename T>
+        template <class T>
         struct widths_for_type {
-            using type = types<
-                simd_info<T, 128>,
-                simd_info<T, 256>,
-                simd_info<T, 512>
-            >;
+            using type = types<simd_info<T, 128>, simd_info<T, 256>, simd_info<T, 512>,
+                simd_info<T, raze_sizeof_in_bits(T)>, simd_info<T, (raze::vx::simd<T>::size() + 1)* raze_sizeof_in_bits(T)>>;
         };
 
-        template<typename... Lists>
+        template <class ... Lists>
         struct concatenate_lists;
 
-        template<>
+        template <>
         struct concatenate_lists<> {
             using type = types<>;
         };
 
-        template<typename... Ts, typename... Rest>
+        template <class ... Ts, class ... Rest>
         struct concatenate_lists<types<Ts...>, Rest...> {
-            using type = concatenate_t<
-                types<Ts...>,
-                typename concatenate_lists<Rest...>::type
-            >;
+            using type = concatenate_t<types<Ts...>, typename concatenate_lists<Rest...>::type>;
         };
 
-        template <typename... Ts>
+        template <class... Ts>
         auto make_all_widths(types<Ts...>) {
-            return typename concatenate_lists<
-                typename widths_for_type<Ts>::type...
-            >::type{};
+            return typename concatenate_lists<typename widths_for_type<Ts>::type...>::type{};
         }
 
         using base_types = types<raze::i8, raze::u8, raze::i16, raze::u16, raze::i32, raze::u32, raze::i64, raze::u64, raze::f32, raze::f64>;
@@ -262,20 +328,22 @@ namespace rtts {
         using all_simd_infos = decltype(make_all_widths(base_types{}));
         using all_fp_infos = decltype(make_all_widths(fp_types{}));
 
-        template<typename Info>
+        template <class Info>
         struct is_valid_simd_info {
             static constexpr bool value = requires {
                 typename raze::vx::simd<typename Info::base_type, raze::vx::runtime_abi<current_isa(), Info::width>>;
             };
         };
 
-        template<template<typename> typename Pred, typename Type> struct filter {
-            template<typename... Ls> static types<Ls...> tuple_to_types(const std::tuple<Ls...>&);
-            template<typename T>
+        template <template <class> class Pred, class Type> 
+        struct filter {
+            template <class... Ls> static types<Ls...> tuple_to_types(const std::tuple<Ls...>&);
+            template <class T>
             static std::conditional_t<Pred<T>::value, std::tuple<T>, std::tuple<>> filter_type();
-            template<typename... Ls> static auto filter_impl(types<Ls...>) {
+            template <class... Ls> static auto filter_impl(types<Ls...>) {
                 return tuple_to_types(std::tuple_cat(filter_type<Ls>()...));
             }
+
             using type = decltype(filter_impl(Type{}));
         };
 
@@ -296,9 +364,11 @@ namespace rtts {
                     detail::global_runtime.invalid();
                     std::cout << "[!] - " << detail::current_test << " : EMPTY TEST CASE\n";
                 }
+#if defined(RTTS_SHOW_VALID)
                 else if (failure_count == detail::global_runtime.failure_count) {
                     std::cout << "[V] - " << detail::current_test << "\n";
                 }
+#endif
             }
         }
         catch (...) {

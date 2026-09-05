@@ -20,6 +20,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
 endif()
 
 add_custom_target(unit)
+
 add_custom_target(vx.core)
 add_dependencies(unit vx.core)
-raze_glob_unit("vx.core" ${CMAKE_CURRENT_SOURCE_DIR} "temp/*.cpp")
+raze_glob_unit("vx.core" ${CMAKE_CURRENT_SOURCE_DIR} "compare/*.cpp")
+raze_glob_unit("vx.core" ${CMAKE_CURRENT_SOURCE_DIR} "bitwise/*.cpp")

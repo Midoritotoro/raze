@@ -16,9 +16,9 @@ raze_always_inline V bit_andnot_(V x, V y) noexcept {
 	else if constexpr (std::is_same_v<V, __m256d>) return _mm256_andnot_pd(x, y);
 	else if constexpr (has_avx2<ISA> && std::is_same_v<V, __m256i>) return _mm256_andnot_si256(x, y);
 	else if constexpr (sizeof(V) == 32) return as<V>(_mm256_andnot_ps(as<__m256>(x), as<__m256>(y)));
-	else if constexpr (std::is_same_v<V, __m512d>) return _mm512_andnot_pd(x, y);
-	else if constexpr (std::is_same_v<V, __m512i>) return _mm512_andnot_si512(x, y);
-	else if constexpr (std::is_same_v<V, __m512>) return _mm512_andnot_ps(x, y);
+	else if constexpr (has_avx512dq<ISA> && std::is_same_v<V, __m512d>) return _mm512_andnot_pd(x, y);
+	else if constexpr (has_avx512dq<ISA> && std::is_same_v<V, __m512>) return _mm512_andnot_ps(x, y);
+	else if constexpr (sizeof(V) == 64) return as<V>(_mm512_andnot_si512(as<__m512i>(x), as<__m512i>(y)));
 	else return math::bit_cast<V>(Unsigned(Unsigned(~math::bit_cast<Unsigned>(x)) & math::bit_cast<Unsigned>(y)));
 }
 

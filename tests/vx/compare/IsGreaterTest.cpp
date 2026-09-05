@@ -7,7 +7,7 @@ RTTS_CASE_TPL("raze::vx::is_greater", rtts::simd::all_simd_infos)
     using T = typename V::value_type;
     constexpr size_t N = V::size();
 
-    alignas(64) T arrA[N], arrB[N];
+    T arrA[N], arrB[N];
     for (size_t i = 0; i < N; ++i) {
         arrA[i] = T(i + 1);
         arrB[i] = T(N - i);

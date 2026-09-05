@@ -17,7 +17,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
         }
         else if constexpr (epi64<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm_cmplt_epi64_mask(x, y);
-            else if constexpr (has_sse41<ISA>) return _mm_cmpgt_epi64(y, x);
+            else if constexpr (has_sse42<ISA>) return _mm_cmpgt_epi64(y, x);
             else {
                 const auto difference_andnot_xor = _mm_andnot_si128(_mm_xor_si128(x, y), _mm_sub_epi64(x, y));
                 const auto combined = _mm_or_si128(_mm_andnot_si128(y, x), difference_andnot_xor);
@@ -26,7 +26,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
         }
         else if constexpr (epu64<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm_cmplt_epu64_mask(x, y);
-            else if constexpr (has_sse41<ISA>) {
+            else if constexpr (has_sse42<ISA>) {
                 const auto sign = _mm_set1_epi64x(0x8000000000000000);
                 return _mm_cmpgt_epi64(_mm_xor_si128(y, sign), _mm_xor_si128(x, sign));
             }

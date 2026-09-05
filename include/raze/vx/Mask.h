@@ -15,7 +15,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class T, class Abi>
-class simd_mask {
+class raze_aligned_type(64) simd_mask {
 	static_assert(traits::is_vector_type_supported_v<T>);
 public:
 	using storage_type = mask_storage<T, Abi>;

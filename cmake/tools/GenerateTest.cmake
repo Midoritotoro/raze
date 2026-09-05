@@ -98,7 +98,7 @@ function(raze_generate_test root main_source rootpath file)
                 list(APPEND msvc_defs_flags "/D${def}")
             endforeach()
             
-            target_compile_options(${obj_target} PRIVATE /bigobj /permissive- /Od ${msvc_arch_flag} ${msvc_defs_flags})
+            target_compile_options(${obj_target} PRIVATE /bigobj /permissive- /Od /MP ${msvc_arch_flag} ${msvc_defs_flags})
         else()
             separate_arguments(flags_list UNIX_COMMAND "${gcc_flags}")
             target_compile_options(${obj_target} PRIVATE ${flags_list} -g)
