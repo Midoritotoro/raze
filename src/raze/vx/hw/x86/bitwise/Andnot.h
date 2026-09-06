@@ -3,7 +3,6 @@
 #include <src/raze/vx/hw/x86/cast/As.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 
-
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>

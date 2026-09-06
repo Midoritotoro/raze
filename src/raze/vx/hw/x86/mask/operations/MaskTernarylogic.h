@@ -22,12 +22,12 @@ raze_always_inline M mask_ternarylogic_(M x, M y, M z, std::integral_constant<u8
 
 template <arch::ISA ISA, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask, u8 Op>
 raze_always_inline M mask_ternarylogic_(M x, M y, M z, std::integral_constant<u8, Op> op, ControlMask mask) noexcept {
-    return mask_bit_selectz_<ISA, T>(mask_ternarylogic_<ISA, T>(x, y, z, op), mask);
+    return mask_bitselectz_<ISA, T>(mask_ternarylogic_<ISA, T>(x, y, z, op), mask);
 }
 
 template <arch::ISA ISA, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask, u8 Op>
 raze_always_inline M mask_ternarylogic_(M x, M y, M z, std::integral_constant<u8, Op> op, ControlMask mask, M src) noexcept {
-    return mask_bit_select_<ISA, T>(mask_ternarylogic_<ISA, T>(x, y, z, op), src, mask);
+    return mask_bitselect_<ISA, T>(mask_ternarylogic_<ISA, T>(x, y, z, op), src, mask);
 }
 
 __RAZE_VX_NAMESPACE_END

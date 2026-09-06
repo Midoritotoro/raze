@@ -1,11 +1,18 @@
 #pragma once 
 
 #include <src/raze/vx/hw/Cast.h>
-#include <src/raze/vx/hw/x86/bitwise/Ternarylogic.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
 
-
 __RAZE_VX_NAMESPACE_BEGIN 
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op>
+raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op) noexcept;
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op, raw_mask_type M>
+raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op, M mask) noexcept;
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op, raw_mask_type M>
+raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op, M mask, V src) noexcept;
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
 raze_always_inline V select_(V x, V y, M mask) noexcept {

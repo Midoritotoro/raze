@@ -3,7 +3,7 @@
 #include <raze/math/Math.h>
 
 RTTS_CASE_TPL("raze::vx::bit_andnot", rtts::simd::all_simd_infos)
-< class Simd > (rtts::type<Simd>) {
+<class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
     using T = typename V::value_type;
     using Mask = typename V::mask_type;
@@ -23,16 +23,16 @@ RTTS_CASE_TPL("raze::vx::bit_andnot", rtts::simd::all_simd_infos)
 
     Mask m = rtts::simd::make_random_mask<Mask>();
 
-    auto scalar_eval = [&] (size_t i) {
+    auto scalar_eval = [&](size_t i) {
         using CommonIntegralType = typename raze::IntegerForSizeof<T>::Unsigned;
         if constexpr (std::floating_point<T>) return raze::math::bit_cast<T>(CommonIntegralType(
-            raze::math::bit_cast<CommonIntegralType>(arrA[i])) & raze::math::bit_cast<CommonIntegralType>(arrB[i]));
-        else return T(arrA[i] & arrB[i]);
-        };
+            ~raze::math::bit_cast<CommonIntegralType>(arrA[i])) & raze::math::bit_cast<CommonIntegralType>(arrB[i]));
+        else return T(~arrA[i] & arrB[i]);
+    };
 
-    auto r1 = raze::vx::bit_and(a, b);
-    auto r2 = raze::vx::bit_and[m](a, b);
-    auto r3 = raze::vx::bit_and[m, src](a, b);
+    auto r1 = raze::vx::bit_andnot(a, b);
+    auto r2 = raze::vx::bit_andnot[m](a, b);
+    auto r3 = raze::vx::bit_andnot[m, src](a, b);
 
     RTTS_ALL_VALIDATE_BITS(r1, [&](auto i) { return scalar_eval(i); });
     RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });

@@ -11,6 +11,7 @@
 #include <sstream>
 #include <iomanip>
 #include <concepts>
+#include <random>
 #include <tuple>
 
 namespace rtts {
@@ -32,10 +33,28 @@ namespace rtts {
     struct type {};
 
     namespace detail {
+        template <class T>
+        constexpr auto to_bits(T const& value) noexcept {
+            if constexpr (sizeof(T) == 1) return raze::math::bit_cast<raze::u8>(value);
+            else if constexpr (sizeof(T) == 2) return raze::math::bit_cast<raze::u16>(value);
+            else if constexpr (sizeof(T) == 4) return raze::math::bit_cast<raze::u32>(value);
+            else if constexpr (sizeof(T) == 8) return raze::math::bit_cast<raze::u64>(value);
+            else static_assert(sizeof(T) <= 8, "rtts::to_bits: unsupported type size");
+        }
+
+        template <class T>
+        std::string bits_to_string(T const& value) {
+            auto bits = to_bits(value);
+            std::ostringstream os;
+            os << "0x" << std::hex << std::setfill('0')
+                << std::setw(sizeof(T) * 2) << bits;
+            return os.str();
+        }
+
         template <class T> 
         struct typename_impl {
             static auto value() noexcept {
-#if defined(_MSC_VER)
+#if defined(raze_cpp_msvc_only)
                 std::string_view data(__FUNCSIG__);
                 auto i = data.find('<') + 1, j = data.find(">::value");
                 return std::string(data.substr(i, j - i));
@@ -286,9 +305,49 @@ namespace rtts {
             else { RTTS_FAIL("Expected: " << #LHS << " == " << #GEN << " but vectors differ."); return ::rtts::detail::logger{}; } \
         }(LHS, GEN)
 
+#define RTTS_ALL_VALIDATE_BITS(LHS, GEN) \
+    [&](auto const& rtts_a, auto const& rtts_gen) { \
+        bool rtts_ok = true; \
+        size_t rtts_bad = 0; \
+        for(size_t rtts_i = 0; rtts_i < std::size(rtts_a); ++rtts_i) { \
+            if(::rtts::detail::to_bits(rtts_a[rtts_i]) != ::rtts::detail::to_bits(rtts_gen(rtts_i))) { \
+                rtts_ok = false; rtts_bad = rtts_i; break; \
+            } \
+        } \
+        if(rtts_ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
+        else { \
+            RTTS_FAIL("Expected bitwise: " << #LHS << " == " << #GEN \
+                << " but differ at [" << rtts_bad << "]: " \
+                << ::rtts::detail::bits_to_string(rtts_a[rtts_bad]) \
+                << " != " << ::rtts::detail::bits_to_string(rtts_gen(rtts_bad))); \
+            return ::rtts::detail::logger{}; \
+        } \
+    }(LHS, GEN)
+
     namespace simd {
         constexpr raze::arch::ISA current_isa() {
             return raze::vx::target_isa();
+        }
+
+        template <class Mask>
+        Mask make_alternating_mask() {
+            Mask m;
+
+            for (size_t i = 0; i < Mask::size(); ++i)
+                m[i] = (i % 2) == 0;
+
+            return m;
+        }
+
+        template <class Mask>
+        Mask make_random_mask() {
+            Mask m;
+            static std::mt19937_64 rng(0x123456789ABCDEFULL);
+
+            for (size_t i = 0; i < Mask::size(); ++i)
+                m[i] = (rng() & 1) != 0;
+
+            return m;
         }
 
         template <class T, raze::u32 Width>
@@ -300,8 +359,19 @@ namespace rtts {
 
         template <class T>
         struct widths_for_type {
-            using type = types<simd_info<T, 128>, simd_info<T, 256>, simd_info<T, 512>,
-                simd_info<T, raze_sizeof_in_bits(T)>, simd_info<T, (raze::vx::simd<T>::size() + 1)* raze_sizeof_in_bits(T)>>;
+            using type = types<
+                simd_info<T, raze_sizeof_in_bits(T)>,
+                simd_info<T, raze::vx::simd<T>::size() * raze_sizeof_in_bits(T)>
+#if (RAZE_HAS_SSE2_SUPPORT && !RAZE_HAS_AVX512F_SUPPORT) || RAZE_HAS_AVX512VL_SUPPORT
+                ,simd_info<T, 128>
+#endif
+#if RAZE_HAS_AVX512VL_SUPPORT || RAZE_HAS_AVX_SUPPORT
+                ,simd_info<T, 256>
+#endif
+#if RAZE_HAS_AVX512F_SUPPORT
+                ,simd_info<T, 512>
+#endif  
+            >;
         };
 
         template <class ... Lists>
