@@ -2,35 +2,36 @@
 #include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
-RTTS_CASE_TPL("raze::vx::bit_not", rtts::simd::all_simd_infos)
+RTTS_CASE_TPL("raze::vx::clamp", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
     using T = typename V::value_type;
     using Mask = typename V::mask_type;
     constexpr size_t N = V::size();
 
-    alignas(alignof(V)) T arrA[N], arrSrc[N];
+    alignas(alignof(V)) T arrV[N], arrLow[N], arrHigh[N], arrSrc[N];
 
     for (size_t i = 0; i < N; ++i) {
-        arrA[i] = T(i + 1);
+        arrV[i] = T(i);
+        arrLow[i] = T(N / 4);
+        arrHigh[i] = T(N - N / 4 - 1);
         arrSrc[i] = T(100 + i);
     }
 
-    V a = raze::vx::load<V>(arrA);
+    V v = raze::vx::load<V>(arrV);
+    V low = raze::vx::load<V>(arrLow);
+    V high = raze::vx::load<V>(arrHigh);
     V src = raze::vx::load<V>(arrSrc);
 
     Mask m = rtts::simd::make_random_mask<Mask>();
 
     auto scalar_eval = [&](size_t i) {
-        using CommonIntegralType = typename raze::IntegerForSizeof<T>::Unsigned;
-        if constexpr (std::floating_point<T>) return raze::math::bit_cast<T>(CommonIntegralType(
-            ~raze::math::bit_cast<CommonIntegralType>(arrA[i])));
-        else return T(~arrA[i]);
-        };
+        return raze::math::min(raze::math::max(arrV[i], arrLow[i]), arrHigh[i]);
+    };
 
-    auto r1 = raze::vx::bit_not(a);
-    auto r2 = raze::vx::bit_not[m](a);
-    auto r3 = raze::vx::bit_not[m, src](a);
+    auto r1 = raze::vx::clamp(v, low, high);
+    auto r2 = raze::vx::clamp[m](v, low, high);
+    auto r3 = raze::vx::clamp[m, src](v, low, high);
 
     RTTS_ALL_VALIDATE_BITS(r1, [&](auto i) { return scalar_eval(i); });
     RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });

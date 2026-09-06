@@ -2,7 +2,7 @@
 #include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
-RTTS_CASE_TPL("raze::vx::bit_andnot", rtts::simd::all_simd_infos)
+RTTS_CASE_TPL("raze::vx::bit_and", rtts::simd::all_simd_infos)
 < class Simd > (rtts::type<Simd>) {
     using V = typename Simd::type;
     using T = typename V::value_type;
