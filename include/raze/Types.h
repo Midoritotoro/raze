@@ -84,7 +84,7 @@ using sqword_t      = i64;
   using system_handle_t = void*;
 #endif // defined(raze_os_windows)
 
-template <class _Type_, _Type_ _N_>
-using ic = std::integral_constant<_Type_, _N_>;
+template <class T, T N>
+using ic = std::integral_constant<T, N>;
 
 __RAZE_NAMESPACE_END

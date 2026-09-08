@@ -5,32 +5,16 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-template <class T>
-raze_always_inline bool bit_test(T x, i32 i) noexcept
-{
+template <std::unsigned_integral T>
+raze_always_inline bool bit_test(T x, i32 i) noexcept {
     raze_debug_assert(i < raze_sizeof_in_bits(T) && i >= 0);
 
-#if defined(raze_cpp_msvc)
-    if constexpr (sizeof(T) == 8)
-        return static_cast<bool>(_bittest64(
-            reinterpret_cast<const i64*>(&x), i));
-    else
-        return static_cast<bool>(_bittest(
-            reinterpret_cast<const long32*>(&x), i));
-
-#elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
-    bool old = 0;
-
-    asm volatile(
-        "bt %2, %1\n\t"
-        "setc %0"
-        : "=r"(old)
-        : "m"(x), "r"(i)
-        : "cc"
-        );
-
-    return old;
-#endif
+//#if defined(raze_cpp_msvc_only)
+//    if constexpr (sizeof(T) == 8) return static_cast<bool>(_bittest64(reinterpret_cast<const i64*>(&x), i));
+//    else if constexpr (sizeof(T) == 4) return static_cast<bool>(_bittest(reinterpret_cast<const long32*>(&x), i));
+//    else
+//#endif
+        return (x >> i) & 1;
 }
 
 __RAZE_MATH_NAMESPACE_END

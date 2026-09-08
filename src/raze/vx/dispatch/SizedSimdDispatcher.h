@@ -185,7 +185,7 @@ struct configurable_isa_dispatcher_t {
     };
 };
 
-consteval arch::ISA forced_isa() noexcept {
+consteval raze_always_inline arch::ISA forced_isa() noexcept {
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu) || RAZE_ISA_FORCE_ENABLED
 	return target_isa();
 #else

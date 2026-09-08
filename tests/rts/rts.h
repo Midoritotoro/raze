@@ -34,7 +34,7 @@ namespace rtts {
 
     namespace detail {
         template <class T>
-        constexpr auto to_bits(T const& value) noexcept {
+        constexpr inline auto to_bits(T const& value) noexcept {
             if constexpr (sizeof(T) == 1) return raze::math::bit_cast<raze::u8>(value);
             else if constexpr (sizeof(T) == 2) return raze::math::bit_cast<raze::u16>(value);
             else if constexpr (sizeof(T) == 4) return raze::math::bit_cast<raze::u32>(value);
@@ -43,7 +43,7 @@ namespace rtts {
         }
 
         template <class T>
-        std::string bits_to_string(T const& value) {
+        inline std::string bits_to_string(T const& value) {
             auto bits = to_bits(value);
             std::ostringstream os;
             os << "0x" << std::hex << std::setfill('0')
@@ -236,7 +236,7 @@ namespace rtts {
     }
 
     template <class T>
-    std::string as_string(T const& e) {
+    inline std::string as_string(T const& e) {
         if constexpr (requires { std::to_string(e); }) return std::to_string(e);
         else if constexpr (requires(std::ostream & o) { o << e; }) { std::ostringstream os; os << e; return os.str(); }
         else return std::string("[") + typename_<T> +"]";
@@ -247,7 +247,7 @@ namespace rtts {
     }
 
     template <class Simd> requires requires { Simd::size(); typename Simd::value_type; }
-    std::string as_string(Simd const& v) {
+    inline std::string as_string(Simd const& v) {
         std::ostringstream os;
         os << "{ ";
         for (size_t i = 0; i < Simd::size(); ++i) os << as_string(v[i]) << " ";
@@ -330,17 +330,17 @@ namespace rtts {
         }
 
         template <class Mask>
-        Mask make_alternating_mask() {
-            Mask m;
+        raze_always_inline Mask make_alternating_mask() {
+            Mask m(true);
 
             for (size_t i = 0; i < Mask::size(); ++i)
-                m[i] = (i % 2) == 0;
+               m[i] = (i % 2) == 0;
 
             return m;
         }
 
         template <class Mask>
-        Mask make_random_mask() {
+        raze_always_inline Mask make_random_mask() {
             Mask m;
             static std::mt19937_64 rng(0x123456789ABCDEFULL);
 

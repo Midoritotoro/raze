@@ -48,7 +48,7 @@ raze_always_inline bool none_of_(M x, ControlMask mask) noexcept
     else if constexpr (std::is_integral_v<M> && !std::is_same_v<M, bool>) {
         if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>)
             return _ktestz_mask8_u8(x, mask);
-        else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>)
+        else if constexpr (sizeof(M) == 2 && has_avx512dq<ISA>)
             return _ktestz_mask16_u8(x, mask);
         else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>)
             return _ktestz_mask32_u8(x, mask);

@@ -8,7 +8,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 inline constexpr sizetype shuffle_zero = std::numeric_limits<sizetype>::max();
 
 template <class Pattern>
-consteval bool is_halfs_equal(Pattern p) noexcept {
+consteval raze_always_inline  bool is_halfs_equal(Pattern p) noexcept {
 	constexpr auto h = Pattern::size() / 2;
 
 	for (auto i = 0; i < h; ++i)
@@ -19,7 +19,7 @@ consteval bool is_halfs_equal(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_reverse(Pattern p) noexcept {
+consteval raze_always_inline bool is_reverse(Pattern p) noexcept {
 	for (auto i = 0; i < Pattern::size(); ++i)
 		if (p[i] != (Pattern::size() - i - 1))
 			return false;
@@ -28,7 +28,7 @@ consteval bool is_reverse(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_identity(Pattern p) noexcept {
+consteval raze_always_inline bool is_identity(Pattern p) noexcept {
 	for (auto i = 0; i < Pattern::size(); ++i)
 		if (p[i] != i)
 			return false;
@@ -37,7 +37,7 @@ consteval bool is_identity(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_splat(Pattern p) noexcept {
+consteval raze_always_inline bool is_splat(Pattern p) noexcept {
 	const auto v = p[0];
 
 	for (auto i = 1; i < Pattern::size(); ++i)
@@ -48,7 +48,7 @@ consteval bool is_splat(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_rotate_left(Pattern p) noexcept {
+consteval raze_always_inline bool is_rotate_left(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	const auto shift = p[0];
@@ -61,7 +61,7 @@ consteval bool is_rotate_left(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_rotate_right(Pattern p) noexcept {
+consteval raze_always_inline bool is_rotate_right(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 	const auto shift = (n - p[0]) % n;
 
@@ -73,7 +73,7 @@ consteval bool is_rotate_right(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_slide_left(Pattern p) noexcept {
+consteval raze_always_inline bool is_slide_left(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	bool found_shift = false;
@@ -101,7 +101,7 @@ consteval bool is_slide_left(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_slide_right(Pattern p) noexcept {
+consteval raze_always_inline bool is_slide_right(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	bool found_shift = false;
@@ -133,7 +133,7 @@ consteval bool is_slide_right(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_interleave_low(Pattern p) noexcept {
+consteval raze_always_inline bool is_interleave_low(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -153,7 +153,7 @@ consteval bool is_interleave_low(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_interleave_high(Pattern p) noexcept {
+consteval raze_always_inline bool is_interleave_high(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -173,7 +173,7 @@ consteval bool is_interleave_high(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval auto across_halfs(Pattern p) noexcept 
+consteval raze_always_inline auto across_halfs(Pattern p) noexcept
 	requires (pattern_vector_t<Pattern>::is_native())
 {
 	constexpr auto size = sizeof(typename Pattern::vector_type);
@@ -190,7 +190,7 @@ consteval auto across_halfs(Pattern p) noexcept
 }
 
 template <class Pattern>
-consteval auto across_quads(Pattern p) noexcept
+consteval raze_always_inline auto across_quads(Pattern p) noexcept
 	requires (pattern_vector_t<Pattern>::is_native())
 {
 	constexpr auto q = Pattern::size() / 4;
@@ -215,7 +215,7 @@ consteval auto across_quads(Pattern p) noexcept
 }
 
 template <class Pattern>
-consteval bool can_widen_shuffle(Pattern p) noexcept
+consteval raze_always_inline bool can_widen_shuffle(Pattern p) noexcept
 	requires((Pattern::size() & 1) == 0)
 {
 	for (auto i = 0; i < Pattern::size(); i += 2) {
@@ -233,7 +233,7 @@ consteval bool can_widen_shuffle(Pattern p) noexcept
 }
 
 template <class Pattern>
-consteval bool is_low_half(Pattern p) noexcept {
+consteval raze_always_inline bool is_low_half(Pattern p) noexcept {
 	for (auto i = 0; i < p.size(); ++i)
 		if (p[i] >= (p.size() / 2))
 			return false;
@@ -242,7 +242,7 @@ consteval bool is_low_half(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_high_half(Pattern p) noexcept {
+consteval raze_always_inline bool is_high_half(Pattern p) noexcept {
 	for (auto i = 0; i < p.size(); ++i)
 		if (p[i] < (p.size() / 2))
 			return false;
@@ -251,7 +251,7 @@ consteval bool is_high_half(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_dup_low(Pattern p) noexcept {
+consteval raze_always_inline bool is_dup_low(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -271,7 +271,7 @@ consteval bool is_dup_low(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_dup_high(Pattern p) noexcept {
+consteval raze_always_inline bool is_dup_high(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -291,7 +291,7 @@ consteval bool is_dup_high(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_dup_low_identity(Pattern p) noexcept {
+consteval raze_always_inline bool is_dup_low_identity(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -308,7 +308,7 @@ consteval bool is_dup_low_identity(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_dup_high_identity(Pattern p) noexcept {
+consteval raze_always_inline bool is_dup_high_identity(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -325,7 +325,7 @@ consteval bool is_dup_high_identity(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_zip(Pattern p) noexcept {
+consteval raze_always_inline bool is_zip(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -345,7 +345,7 @@ consteval bool is_zip(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval bool is_unzip(Pattern p) noexcept {
+consteval raze_always_inline bool is_unzip(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 
 	if ((n & 1) != 0)
@@ -365,14 +365,14 @@ consteval bool is_unzip(Pattern p) noexcept {
 }
 
 template <class Pattern>
-consteval auto get_rotate_left_shift(Pattern p) noexcept
+consteval raze_always_inline auto get_rotate_left_shift(Pattern p) noexcept
 	requires (is_rotate_left(Pattern{}))
 {
 	return p[0];
 }
 
 template <class Pattern>
-consteval auto get_rotate_right_shift(Pattern p) noexcept
+consteval raze_always_inline auto get_rotate_right_shift(Pattern p) noexcept
 	requires (is_rotate_right(Pattern{}))
 {
 	constexpr auto n = Pattern::size();
@@ -380,7 +380,7 @@ consteval auto get_rotate_right_shift(Pattern p) noexcept
 }
 
 template <class Pattern>
-consteval auto get_slide_left_shift(Pattern p) noexcept
+consteval raze_always_inline auto get_slide_left_shift(Pattern p) noexcept
 	requires (is_slide_left(Pattern{}))
 {
 	for (sizetype i = 0; i < Pattern::size(); ++i)
@@ -391,7 +391,7 @@ consteval auto get_slide_left_shift(Pattern p) noexcept
 }
 
 template <class Pattern>
-consteval auto get_slide_right_shift(Pattern p) noexcept
+consteval raze_always_inline auto get_slide_right_shift(Pattern p) noexcept
 	requires (is_slide_right(Pattern{}))
 {
 	for (sizetype i = 0; i < Pattern::size(); ++i)
@@ -402,12 +402,12 @@ consteval auto get_slide_right_shift(Pattern p) noexcept
 }
 
 template <class Pattern>
-consteval u8 to_pshufd_mask(Pattern p) noexcept {
+consteval raze_always_inline u8 to_pshufd_mask(Pattern p) noexcept {
 	return ((p[0] & 0x03) | ((p[1] & 0x03) << 2) | ((p[2] & 0x03) << 4) | ((p[3] & 0x03) << 6));
 }
 
 template <class Pattern>
-consteval u8 shufpd_to_pshufd_mask(Pattern p) noexcept {
+consteval raze_always_inline u8 shufpd_to_pshufd_mask(Pattern p) noexcept {
 	return (((2 * p[0]) & 0x03) | (((2 * p[0] + 1) & 0x03) << 2)
 		| (((2 * p[1]) & 0x03) << 4) | (((2 * p[1] + 1) & 0x03) << 6));
 }

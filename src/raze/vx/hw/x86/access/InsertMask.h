@@ -12,7 +12,7 @@ struct insert_mask {
 };
 
 template <class V, class T>
-constexpr auto make_insert_mask() noexcept {
+constexpr raze_always_inline auto make_insert_mask() noexcept {
     constexpr auto length = (sizeof(V) / sizeof(T)) << 1;
     auto mask = insert_mask<V, T>();
 

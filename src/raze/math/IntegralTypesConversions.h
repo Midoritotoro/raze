@@ -6,7 +6,7 @@
 __RAZE_MATH_NAMESPACE_BEGIN
 
 template <std::integral T>
-constexpr T min_limit() noexcept {
+raze_always_inline constexpr T min_limit() noexcept {
 	if constexpr (std::is_unsigned_v<T>)
 		return 0;
 
@@ -15,7 +15,7 @@ constexpr T min_limit() noexcept {
 }
 
 template <class T>
-constexpr T max_limit() noexcept { 
+raze_always_inline constexpr T max_limit() noexcept {
 	if constexpr (std::is_unsigned_v<T>)
 		return static_cast<T>(-1);
 	

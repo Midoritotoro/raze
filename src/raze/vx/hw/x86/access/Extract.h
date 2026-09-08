@@ -7,7 +7,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype I>
-consteval auto broadcast_pshufd_index_(std::integral_constant<sizetype, I> i) noexcept {
+consteval raze_always_inline auto broadcast_pshufd_index_(std::integral_constant<sizetype, I> i) noexcept {
 	return (i & 0x03) | (i << 2) | (i << 4) | (i << 6);
 }
 
