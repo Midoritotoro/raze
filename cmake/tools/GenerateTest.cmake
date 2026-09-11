@@ -80,8 +80,8 @@ function(raze_generate_test root main_source rootpath file)
     target_include_directories(
         ${test}
         PRIVATE
-        ${PROJECT_SOURCE_DIR}/include
-        ${PROJECT_SOURCE_DIR}/tests
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
     )
 
     foreach(arch_config ${RAZE_TEST_ARCH_CONFIGS})
@@ -98,6 +98,13 @@ function(raze_generate_test root main_source rootpath file)
             ${obj_target}
             OBJECT
             "${rootpath}${file}"
+        )
+
+        target_include_directories(
+            ${obj_target}
+            PUBLIC
+            ${CMAKE_SOURCE_DIR}
+            ${CMAKE_SOURCE_DIR}/include
         )
 
         if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
@@ -154,13 +161,6 @@ function(raze_generate_test root main_source rootpath file)
             ${obj_target}
             PRIVATE
             raze::raze
-        )
-
-        target_include_directories(
-            ${obj_target}
-            PRIVATE
-            ${PROJECT_SOURCE_DIR}/include
-            ${PROJECT_SOURCE_DIR}/tests
         )
 
         target_sources(
