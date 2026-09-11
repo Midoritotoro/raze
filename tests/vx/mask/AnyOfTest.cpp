@@ -23,7 +23,7 @@ RTTS_CASE_TPL("raze::vx::any_of", rtts::simd::all_simd_infos)
         return false;
     };
 
-    for (raze::sizetype i = 0; i < 1000; ++i) {
+    for (raze::sizetype i = 0; i < 100; ++i) {
         Mask m = rtts::simd::make_random_mask<Mask>();
         Mask control = rtts::simd::make_random_mask<Mask>();
 

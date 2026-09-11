@@ -152,7 +152,7 @@ struct clz_not_n_bits_implementation {
     template <std::unsigned_integral T>
     constexpr raze_always_inline i32 operator()(T v) const noexcept {
         constexpr auto offset = raze_sizeof_in_bits(T) - Bits;
-        constexpr auto mask = T((T(1) << Bits) - 1);
+        constexpr auto mask = (Bits == raze_sizeof_in_bits(T)) ? math::max_limit<T>() : T((T(1) << Bits) - 1);
 
         v = T(~v);
         if constexpr (Bits < 8) v &= mask;

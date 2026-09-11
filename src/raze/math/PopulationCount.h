@@ -82,32 +82,21 @@ template <std::unsigned_integral T>
 raze_always_inline i32 popcnt_population_count(T v) noexcept {
     constexpr auto digits = std::numeric_limits<T>::digits;
 
-    if constexpr (digits == 64)
-        return static_cast<int>(raze_popcnt_u64(static_cast<u64>(v)));
-    else if constexpr (digits == 32)
-        return static_cast<int>(raze_popcnt_u32(static_cast<u32>(v)));
-    else if constexpr (digits <= 16)
-#if defined(raze_cpp_msvc)
-        return static_cast<int>(__popcnt16(static_cast<u16>(v)));
-#elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
-        return bit_hacks_population_count(v);
-#endif // defined(raze_cpp_msvc) // defined(raze_cpp_gnu) || defined(raze_cpp_clang)
+    if constexpr (digits == 64) return static_cast<int>(raze_popcnt_u64(static_cast<u64>(v)));
+    else return static_cast<int>(raze_popcnt_u32(static_cast<u32>(v)));
 }
 
 #endif // defined(raze_processor_x86)
 
 template <std::unsigned_integral T>
 constexpr raze_always_inline i32 population_count_impl(T v) noexcept {
-#if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
-    if not consteval {
+#if defined(raze_processor_x86)
+    if !consteval {
         if (arch::ProcessorFeatures::POPCNT())
             return popcnt_population_count(v);
     }
-    else
-#endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
-    {
-        return bit_hacks_population_count(v);
-    }
+#endif // defined(raze_processor_x86)
+    return bit_hacks_population_count(v);
 }
 
 template <sizetype Bits, std::unsigned_integral T>

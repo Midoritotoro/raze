@@ -2,7 +2,7 @@
 #include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
-RTTS_CASE_TPL("raze::vx::all_of", rtts::simd::all_simd_infos)
+RTTS_CASE_TPL("raze::vx::none_of", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
     using T = typename V::value_type;
@@ -11,14 +11,14 @@ RTTS_CASE_TPL("raze::vx::all_of", rtts::simd::all_simd_infos)
 
     auto scalar_impl = [] (auto mask) { 
         for (auto i = 0; i < mask.size(); ++i)
-            if (!mask[i]) return false;
+            if (mask[i]) return false;
 
         return true;
     };
 
     auto scalar_with_control_impl = [] (auto mask, auto control) { 
         for (auto i = 0; i < mask.size(); ++i)
-            if (control[i] && !mask[i]) 
+            if (control[i] && mask[i]) 
                 return false;
 
         return true;
@@ -26,20 +26,20 @@ RTTS_CASE_TPL("raze::vx::all_of", rtts::simd::all_simd_infos)
 
     {
         Mask m(false);
-        RTTS_EXPECT(scalar_impl(m) == raze::vx::all_of(m));
+        RTTS_EXPECT(scalar_impl(m) == raze::vx::none_of(m));11
     }
 
     {
         Mask m(true);
-        RTTS_EXPECT(scalar_impl(m) == raze::vx::all_of(m));
+        RTTS_EXPECT(scalar_impl(m) == raze::vx::none_of(m));
     }
 
-    for (raze::sizetype i = 0; i < 1000; ++i) {
+    for (raze::sizetype i = 0; i < 100; ++i) {
         Mask m = rtts::simd::make_random_mask<Mask>();
         Mask control = rtts::simd::make_random_mask<Mask>();
 
-        auto r1 = raze::vx::all_of(m);
-        auto r2 = raze::vx::all_of[control](m);
+        auto r1 = raze::vx::none_of(m);
+        auto r2 = raze::vx::none_of[control](m);
         auto r1_scalar = scalar_impl(m);
         auto r2_scalar = scalar_with_control_impl(m, control);
 

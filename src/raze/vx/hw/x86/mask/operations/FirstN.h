@@ -26,12 +26,10 @@ consteval auto first_n_vtable() noexcept {
 
 template <arch::ISA	ISA, u32 N, raw_mask_type M, arithmetic_type T>
 raze_always_inline auto first_n_(u32 elements) noexcept {
-    constexpr auto kmask = (has_avx512f<ISA> && sizeof(T) >= 4) || (has_avx512bw<ISA>);
-
     if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
         return elements != 0;
     }
-    else if constexpr (kmask) {
+    else if constexpr (std::integral<M>) {
         if constexpr (has_bmi2<ISA>) {
             if constexpr (sizeof(M) == 1) return static_cast<M>(_bzhi_u32(0xFF, elements));
             else if constexpr (sizeof(M) == 2) return static_cast<M>(_bzhi_u32(0xFFFF, elements));

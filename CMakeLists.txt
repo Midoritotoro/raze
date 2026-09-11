@@ -88,6 +88,7 @@ if(MSVC)
         /permissive-
         /utf-8
         /Zc:__cplusplus
+        /nologo
     )
 endif()
 
