@@ -6,6 +6,7 @@
 #include <src/raze/vx/hw/x86/memory/Store.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/math/PopulationCount.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
 #include <src/raze/vx/hw/x86/mask/operations/MaskNot.h>
 #include <utility>
@@ -32,27 +33,33 @@ raze_always_inline void* compress_store_fallback_(void* ptr, V x, CompressMask c
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type CompressMask>
 raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_mask) noexcept {
 	constexpr auto size = sizeof(V) / sizeof(T);
-	const auto int_mask = to_mask_<ISA, T>(compress_mask);
+	auto int_mask = to_mask_<ISA, T>(compress_mask);
+	//using IntMask = decltype(int_mask);
+
+	//if constexpr (traits::is_nonbool_integral_v<IntMask>) {
+	//	constexpr auto limit_mask = (size == raze_sizeof_in_bits(IntMask)) ? math::max_limit<IntMask>() : IntMask((IntMask(1) << size) - 1);
+	//	int_mask &= limit_mask;
+	//}
 
 	if constexpr (sizeof(V) == 16) {
 		if constexpr (has_avx512vl<ISA>) {
 			if constexpr (sizeof(T) == 8) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm_mask_compressstoreu_epi64(ptr, not_mask, as<__m128i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 4) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm_mask_compressstoreu_epi32(ptr, not_mask, as<__m128i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 2 && has_avx512vbmi2<ISA>) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm_mask_compressstoreu_epi16(ptr, not_mask, as<__m128i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 1 && has_avx512vbmi2<ISA>) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm_mask_compressstoreu_epi8(ptr, not_mask, as<__m128i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
@@ -94,10 +101,11 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 						case 1: return { 8, as<Vec>(_mm_shuffle_pd(as<__m128d>(v), as<__m128d>(v), 0x3)) };
 						case 2: return { 8, v };
 						case 3: return { 0, v };
+						default: { raze_assert_unreachable(); return { 0, v }; }
 					}
 				};
 
-				auto [processed_bytes, packed] = calculate(int_mask, x);
+				const auto& [processed_bytes, packed] = calculate(int_mask, x);
 				_mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), as<__m128i>(packed));
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
@@ -120,11 +128,11 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 						case 0xD: return { 4, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0x55)) };
 						case 0xE: return { 4, v };
 						case 0xF: return { 0, v };
+						default: { raze_assert_unreachable(); return { 0, v }; }
 					}
 				};
-
-				auto [processed_bytes, packed] = calculate(int_mask, x);
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), as<__m128i>(packed));
+				const auto& [processed_bytes, packed] = calculate(int_mask, x);
+				_mm_storeu_si128(static_cast<__m128i*>(ptr), as<__m128i>(packed));
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 		}
@@ -132,22 +140,22 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 	else if constexpr (sizeof(V) == 32) {
 		if constexpr (has_avx512vl<ISA>) {
 			if constexpr (sizeof(T) == 8) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm256_mask_compressstoreu_epi64(ptr, not_mask, as<__m256i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 4) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm256_mask_compressstoreu_epi32(ptr, not_mask, as<__m256i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 2 && has_avx512vbmi2<ISA>) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm256_mask_compressstoreu_epi16(ptr, not_mask, as<__m256i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 1 && has_avx512vbmi2<ISA>) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm256_mask_compressstoreu_epi8(ptr, not_mask, as<__m256i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
@@ -162,7 +170,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 			T* write_ptr = reinterpret_cast<T*>(ptr);
 
 			const auto vec_low = as<__m128i>(x);
-			const auto vec_high = _mm256_extracti128_si256(as<__m256i>(x), 1);
+			const auto vec_high = _mm256_extractf128_si256(as<__m256i>(x), 1);
 
 			const auto mask_low = int_mask & 0xFF;
 			const auto mask_high = (int_mask >> 8) & 0xFF;
@@ -188,7 +196,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 			T* dst_ptr = reinterpret_cast<T*>(ptr);
 
 			const auto vec_low = as<__m128i>(x);
-			const auto vec_high = _mm256_extracti128_si256(as<__m256i>(x), 1);
+			const auto vec_high = _mm256_extractf128_si256(as<__m256i>(x), 1);
 
 			const auto vec_low_hi = as<__m128i>(_mm_movehl_ps(
 				as<__m128>(_mm_slli_si128(vec_low, 8)), as<__m128>(vec_low)));
@@ -237,18 +245,18 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 	}
 	else if constexpr (sizeof(V) == 64) {
 		if constexpr (sizeof(T) == 8) {
-			const auto not_mask = mask_not_<ISA, T>(int_mask);
+			const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 			_mm512_mask_compressstoreu_epi64(ptr, not_mask, as<__m512i>(x));
 			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 		}
 		else if constexpr (sizeof(T) == 4) {
-			const auto not_mask = mask_not_<ISA, T>(int_mask);
+			const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 			_mm512_mask_compressstoreu_epi32(ptr, not_mask, as<__m512i>(x));
 			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 		}
 		else if constexpr (sizeof(T) == 2) {
 			if constexpr (has_avx512vbmi2<ISA>) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm512_mask_compressstoreu_epi16(ptr, not_mask, as<__m512i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}
@@ -298,7 +306,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 		}
 		else if constexpr (sizeof(T) == 1) {
 			if constexpr (has_avx512vbmi2<ISA>) {
-				const auto not_mask = mask_not_<ISA, T>(int_mask);
+				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm512_mask_compressstoreu_epi8(ptr, not_mask, as<__m512i>(x));
 				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
 			}

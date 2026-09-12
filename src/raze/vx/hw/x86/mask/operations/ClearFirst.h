@@ -14,8 +14,8 @@ raze_always_inline M clear_first_(M x) noexcept {
 	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
 		return 0;
 	}
-	else if constexpr (std::is_integral_v<M>) {
-		if constexpr (has_avx2<ISA>) {
+	else if constexpr (std::integral<M>) {
+		if constexpr (has_bmi2<ISA>) {
 			if constexpr (N == 64) return _blsr_u64(x);
 			else return _blsr_u32(x);
 		}

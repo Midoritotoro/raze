@@ -25,7 +25,7 @@ set(RAZE_TEST_ARCH_CONFIGS
     "AVX512F|-mavx512f|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1"
     "AVX512BW|-mavx512bw|/arch:AVX2|RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
     "AVX512DQ|-mavx512dq|/arch:AVX2|RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512BWDQ|-mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
+    "AVX512BWDQ|-mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
     "AVX512VLBWDQ|-mavx512vl -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
     "AVX512VLDQ|-mavx512vl -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
     "AVX512VLBW|-mavx512vl -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
@@ -52,134 +52,58 @@ function(raze_generate_test root main_source rootpath file)
     endif()
 
     if(NOT EXISTS "${main_source}")
-        message(FATAL_ERROR
-            "raze_generate_test: main.cpp не найден по пути: ${main_source}"
-        )
+        message(FATAL_ERROR "raze_generate_test: main.cpp не найден: ${main_source}")
     endif()
-
-    add_executable(${test} "${main_source}")
-
-    set_target_properties(${test} PROPERTIES
-        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
-        EXCLUDE_FROM_DEFAULT_BUILD TRUE
-        EXCLUDE_FROM_ALL TRUE
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-        CXX_SCAN_FOR_MODULES OFF
-    )
-
-    target_compile_features(${test} PUBLIC cxx_std_23)
-
-    target_link_libraries(
-        ${test}
-        PRIVATE
-        raze::raze
-    )
-
-    target_include_directories(
-        ${test}
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}
-        ${CMAKE_SOURCE_DIR}/include
-    )
 
     foreach(arch_config ${RAZE_TEST_ARCH_CONFIGS})
         string(REPLACE "|" ";" config_list "${arch_config}")
-
         list(GET config_list 0 arch_name)
         list(GET config_list 1 gcc_flags)
         list(GET config_list 2 msvc_arch_flag)
         list(GET config_list 3 msvc_defs)
 
-        set(obj_target "${test}_${arch_name}")
+        set(arch_test "${test}_${arch_name}")
+        add_executable(${arch_test} "${main_source}" "${rootpath}${file}")
 
-        add_library(
-            ${obj_target}
-            OBJECT
-            "${rootpath}${file}"
+        set_target_properties(${arch_test} PROPERTIES
+            RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
+            EXCLUDE_FROM_DEFAULT_BUILD TRUE
+            EXCLUDE_FROM_ALL TRUE
+            CXX_STANDARD 23
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+            CXX_SCAN_FOR_MODULES OFF
         )
 
-        target_include_directories(
-            ${obj_target}
-            PUBLIC
+        target_compile_features(${arch_test} PUBLIC cxx_std_23)
+        target_link_libraries(${arch_test} PRIVATE raze::raze)
+        target_include_directories(${arch_test} PRIVATE
             ${CMAKE_SOURCE_DIR}
             ${CMAKE_SOURCE_DIR}/include
         )
 
         if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-            string(
-                REPLACE ","
-                ";"
-                msvc_defs_list
-                "${msvc_defs}"
+            string(REPLACE "," ";" msvc_defs_list "${msvc_defs}")
+            target_compile_definitions(${arch_test} PRIVATE ${msvc_defs_list})
+            target_compile_options(${arch_test} PRIVATE
+                /bigobj /permissive- /Od /MP ${msvc_arch_flag}
             )
-
-            target_compile_definitions(
-                ${obj_target}
-                PRIVATE
-                ${msvc_defs_list}
-            )
-
-            target_compile_options(
-                ${obj_target}
-                PRIVATE
-                /bigobj
-                /permissive-
-                /Od
-                /MP
-                ${msvc_arch_flag}
-            )
-
         else()
-
-            separate_arguments(
-                flags_list
-                UNIX_COMMAND
-                "${gcc_flags}"
-            )
-
-            target_compile_options(
-                ${obj_target}
-                PRIVATE
-                ${flags_list}
-                -g
-            )
-
+            separate_arguments(flags_list UNIX_COMMAND "${gcc_flags}")
+            target_compile_options(${arch_test} PRIVATE ${flags_list} -g)
         endif()
 
-        set_target_properties(${obj_target} PROPERTIES
-            CXX_STANDARD 23
-            CXX_STANDARD_REQUIRED ON
-            CXX_EXTENSIONS OFF
-            CXX_SCAN_FOR_MODULES OFF
-            EXCLUDE_FROM_DEFAULT_BUILD TRUE
-            EXCLUDE_FROM_ALL TRUE
+        add_test(
+            NAME ${arch_test}
+            WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
+            COMMAND $<TARGET_FILE:${arch_test}>
         )
 
-        target_link_libraries(
-            ${obj_target}
-            PRIVATE
-            raze::raze
-        )
-
-        target_sources(
-            ${test}
-            PRIVATE
-            $<TARGET_OBJECTS:${obj_target}>
-        )
+        add_dependencies(unit ${arch_test})
     endforeach()
 
-    add_test(
-        NAME ${test}
-        WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
-        COMMAND $<TARGET_FILE:${test}>
-    )
-
-    add_dependencies(unit ${test})
     raze_add_parent_target(${test})
 endfunction()
-
 function(raze_glob_unit root relative pattern)
     set(main_source "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
 

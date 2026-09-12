@@ -34,21 +34,21 @@ struct configurable_ternarylogic_t: options::conditional_callable<configurable_t
                 r.__for_each_chunk([&] <class Chunk> (Chunk& chunk, auto ch2, auto ch3, auto cond, auto src) raze_always_inline_lambda {
                     if constexpr (simd_type<T>) chunk = raze::vx::ternarylogic_<Abi::isa, Value>(ustorage(chunk), ustorage(ch2),
                         ustorage(ch3), std::integral_constant<u8, Op>{}, ustorage(cond), ustorage(src));
-                    else chunk = raze::vx::mask_ternarylogic_<Abi::isa, Value>(ustorage(chunk), ustorage(ch2),
+                    else chunk = raze::vx::mask_ternarylogic_<Abi::isa, Chunk::size, Value>(ustorage(chunk), ustorage(ch2),
                         ustorage(ch3), std::integral_constant<u8, Op>{}, ustorage(cond), ustorage(src));
                 }, y.__storage().storage(), z.__storage().storage(), condition.mask().__storage().storage(), condition.alternative().__storage().storage());
             else
                 r.__for_each_chunk([&] <class Chunk> (Chunk& chunk, auto ch2, auto ch3, auto cond) raze_always_inline_lambda {
                     if constexpr (simd_type<T>) chunk = raze::vx::ternarylogic_<Abi::isa, Value>(ustorage(chunk), ustorage(ch2),
                         ustorage(ch3), std::integral_constant<u8, Op>{}, ustorage(cond));
-                    else chunk = raze::vx::mask_ternarylogic_<Abi::isa, Value>(ustorage(chunk), ustorage(ch2),
+                    else chunk = raze::vx::mask_ternarylogic_<Abi::isa, Chunk::size, Value>(ustorage(chunk), ustorage(ch2),
                         ustorage(ch3), std::integral_constant<u8, Op>{}, ustorage(cond));
                 }, y.__storage().storage(), z.__storage().storage(), condition.mask().__storage().storage());
         }
         else {
             r.__for_each_chunk([&] <class Chunk> (Chunk& chunk, auto ch2, auto ch3) raze_always_inline_lambda {
                 if constexpr (simd_type<T>) chunk = raze::vx::ternarylogic_<Abi::isa, Value>(ustorage(chunk), ustorage(ch2), ustorage(ch3), std::integral_constant<u8, Op>{});
-                else chunk = raze::vx::mask_ternarylogic_<Abi::isa, Value>(ustorage(chunk), ustorage(ch2), ustorage(ch3), std::integral_constant<u8, Op>{});
+                else chunk = raze::vx::mask_ternarylogic_<Abi::isa, Chunk::size, Value>(ustorage(chunk), ustorage(ch2), ustorage(ch3), std::integral_constant<u8, Op>{});
             }, y.__storage().storage(), z.__storage().storage());
         }
 
