@@ -3,6 +3,8 @@
 #include <raze/math/Math.h>
 #include <random>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::find_next_set", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -55,3 +57,5 @@ RTTS_CASE_TPL("raze::vx::find_next_set", rtts::simd::all_simd_infos)
             RTTS_EXPECT(raze::vx::find_next_set(m, pos) == scalar_find_next(m, pos));
     }
 };
+
+RAZE_TEST_NAMESPACE_END

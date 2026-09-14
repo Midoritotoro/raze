@@ -3,6 +3,8 @@
 #include <raze/math/Math.h>
 #include <random>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::simd_mask<T> element access", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -21,3 +23,5 @@ RTTS_CASE_TPL("raze::vx::simd_mask<T> element access", rtts::simd::all_simd_info
     for (size_t i = 1; i + 1 < N; ++i)
         RTTS_EXPECT(!m[i]);
 };
+
+RAZE_TEST_NAMESPACE_END

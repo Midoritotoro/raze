@@ -2,6 +2,8 @@
 #include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::simd_mask<T> bitwise operations", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -34,3 +36,5 @@ RTTS_CASE_TPL("raze::vx::simd_mask<T> bitwise operations", rtts::simd::all_simd_
         RTTS_EXPECT(c_not[i] == (!av));
     }
 };
+
+RAZE_TEST_NAMESPACE_END

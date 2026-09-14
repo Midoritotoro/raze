@@ -77,7 +77,7 @@ function(raze_generate_test root main_source rootpath file)
     foreach(arch_config ${RAZE_TEST_ARCH_CONFIGS})
         string(REPLACE "|" ";" config_list "${arch_config}")
         list(GET config_list 0 arch_name)
-        list(GET config_list 1 gcc_flags)
+        list(GET config_list 1 gcc_and_llvm_flags)
         list(GET config_list 2 msvc_arch_flag)
         list(GET config_list 3 msvc_defs)
 
@@ -101,7 +101,7 @@ function(raze_generate_test root main_source rootpath file)
                 /bigobj /permissive- /Od /MP ${msvc_arch_flag}
             )
         else()
-            separate_arguments(flags_list UNIX_COMMAND "${gcc_flags}")
+            separate_arguments(flags_list UNIX_COMMAND "${gcc_and_llvm_flags}")
             target_compile_options(${obj_target} PRIVATE ${flags_list} -g)
         endif()
 
@@ -120,8 +120,8 @@ function(raze_generate_test root main_source rootpath file)
 
     add_test(
         NAME ${test}
-        WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
         COMMAND $<TARGET_FILE:${test}>
+        WORKING_DIRECTORY $<TARGET_FILE_DIR:${test}>
     )
 
     add_dependencies(unit ${test})

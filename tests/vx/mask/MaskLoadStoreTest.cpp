@@ -1,6 +1,8 @@
 #include <tests/rts/rts.h>
 #include <raze/vx/Algorithm.h>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::simd_mask<T>::copy_to, raze::vx::simd_mask<T>::copy_from", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -19,3 +21,5 @@ RTTS_CASE_TPL("raze::vx::simd_mask<T>::copy_to, raze::vx::simd_mask<T>::copy_fro
     for (size_t i = 0; i < N; ++i)
         RTTS_EXPECT(dst[i] == src[i]);
 };
+
+RAZE_TEST_NAMESPACE_END

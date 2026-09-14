@@ -3,6 +3,8 @@
 #include <raze/math/Math.h>
 #include <random>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::find_last_set", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -45,3 +47,6 @@ RTTS_CASE_TPL("raze::vx::find_last_set", rtts::simd::all_simd_infos)
         RTTS_EXPECT(raze::vx::find_last_set[control](m) == scalar_find_last_with_control(m, control));
     }
 };
+
+RAZE_TEST_NAMESPACE_END
+

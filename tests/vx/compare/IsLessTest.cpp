@@ -1,6 +1,8 @@
 #include <tests/rts/rts.h>
 #include <raze/vx/Algorithm.h>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::is_less", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -18,3 +20,5 @@ RTTS_CASE_TPL("raze::vx::is_less", rtts::simd::all_simd_infos)
 
     RTTS_ALL_VALIDATE(a < b, [=](auto i) { return arrA[i] < arrB[i]; });
 };
+
+RAZE_TEST_NAMESPACE_END

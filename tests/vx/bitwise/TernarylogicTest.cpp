@@ -6,6 +6,8 @@
 #include <algorithm>
 #include <vector>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 template <class V, class Mask, class T, size_t N, raze::u8 Op>
 void test_ternarylogic_single_op() {
     alignas(alignof(V)) T arrA[N], arrB[N], arrC[N], arrSrc[N];
@@ -85,3 +87,5 @@ RTTS_CASE_TPL("raze::vx::ternarylogic", rtts::simd::all_simd_infos)
 
     test_ternarylogic_all_ops<V, Mask, T, N>();
 };
+
+RAZE_TEST_NAMESPACE_END

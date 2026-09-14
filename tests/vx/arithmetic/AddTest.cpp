@@ -2,6 +2,8 @@
 #include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::add", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -31,3 +33,5 @@ RTTS_CASE_TPL("raze::vx::add", rtts::simd::all_simd_infos)
     RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? T(arrA[i] + arrB[i]) : T(0); });
     RTTS_ALL_VALIDATE_BITS(r3, [&](auto i) { return m[i] ? T(arrA[i] + arrB[i]) : arrSrc[i]; });
 };
+
+RAZE_TEST_NAMESPACE_END

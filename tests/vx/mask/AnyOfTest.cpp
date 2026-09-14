@@ -2,6 +2,8 @@
 #include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::any_of", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -34,3 +36,5 @@ RTTS_CASE_TPL("raze::vx::any_of", rtts::simd::all_simd_infos)
         RTTS_EXPECT(r2 == scalar_with_control_impl(m, control));
     }
 };
+
+RAZE_TEST_NAMESPACE_END

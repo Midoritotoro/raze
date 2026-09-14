@@ -2,6 +2,8 @@
 #include <raze/vx/Algorithm.h>
 #include <random>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::is_contiguous", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -53,3 +55,5 @@ RTTS_CASE_TPL("raze::vx::is_contiguous", rtts::simd::all_simd_infos)
         }
     }
 };
+
+RAZE_TEST_NAMESPACE_END

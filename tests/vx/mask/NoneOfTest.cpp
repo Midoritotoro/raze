@@ -2,6 +2,8 @@
 #include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 RTTS_CASE_TPL("raze::vx::none_of", rtts::simd::all_simd_infos)
 <class Simd> (rtts::type<Simd>) {
     using V = typename Simd::type;
@@ -26,7 +28,7 @@ RTTS_CASE_TPL("raze::vx::none_of", rtts::simd::all_simd_infos)
 
     {
         Mask m(false);
-        RTTS_EXPECT(scalar_impl(m) == raze::vx::none_of(m));11
+        RTTS_EXPECT(scalar_impl(m) == raze::vx::none_of(m));
     }
 
     {
@@ -47,3 +49,5 @@ RTTS_CASE_TPL("raze::vx::none_of", rtts::simd::all_simd_infos)
         RTTS_EXPECT(r2 == r2_scalar);
     }
 };
+
+RAZE_TEST_NAMESPACE_END

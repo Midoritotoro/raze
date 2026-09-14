@@ -11,5 +11,5 @@ find_package(raze)
 
 
 add_subdirectory(algorithm)
-add_subdirectory(math)
+# add_subdirectory(math)
 add_subdirectory(vx)
