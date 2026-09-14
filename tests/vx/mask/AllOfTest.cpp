@@ -47,3 +47,4 @@ RTTS_CASE_TPL("raze::vx::all_of", rtts::simd::all_simd_infos)
         RTTS_EXPECT(r2 == r2_scalar);
     }
 };
+

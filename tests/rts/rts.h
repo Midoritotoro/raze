@@ -14,6 +14,9 @@
 #include <random>
 #include <tuple>
 
+#define RAZE_TEST_NAMESPACE_BEGIN namespace RAZE_TEST_ARCH_NAMESPACE {
+#define RAZE_TEST_NAMESPACE_END }
+
 namespace rtts {
     template <class ... Ts>
     struct types {

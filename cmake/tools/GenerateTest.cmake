@@ -23,21 +23,21 @@ set(RAZE_TEST_ARCH_CONFIGS
     "FMA3|-mfma|/arch:AVX|RAZE_HAS_FMA3_SUPPORT=1"
     "AVX2|-mavx2|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
     "AVX512F|-mavx512f|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512BW|-mavx512bw|/arch:AVX2|RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512DQ|-mavx512dq|/arch:AVX2|RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512BWDQ|-mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
-    "AVX512VLBWDQ|-mavx512vl -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VLDQ|-mavx512vl -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VLBW|-mavx512vl -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VLF|-mavx512f -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VBMI|-mavx512vbmi -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
-    "AVX512VBMI2|-mavx512vbmi2 -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512VBMIVL|-mavx512vbmi -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VBMI2VL|-mavx512vbmi2 -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
-    "AVX512VBMIDQ|-mavx512vbmi -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
-    "AVX512VBMI2DQ|-mavx512vbmi2 -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
-    "AVX512VBMIVLDQ|-mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VBMI2VLDQ|-mavx512vbmi2 -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
+    "AVX512BW|-mavx512f -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
+    "AVX512DQ|-mavx512f -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
+    "AVX512BWDQ|-mavx512f -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
+    "AVX512VLBWDQ|-mavx512f -mavx512vl -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
+    "AVX512VLDQ|-mavx512f -mavx512vl -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
+    "AVX512VLBW|-mavx512f -mavx512vl -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
+    "AVX512VLF|-mavx512f -mavx512f -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
+    "AVX512VBMI|-mavx512f -mavx512vbmi -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
+    "AVX512VBMI2|-mavx512f -mavx512vbmi2 -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
+    "AVX512VBMIVL|-mavx512f -mavx512vbmi -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
+    "AVX512VBMI2VL|-mavx512f -mavx512vbmi2 -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
+    "AVX512VBMIDQ|-mavx512f -mavx512vbmi -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
+    "AVX512VBMI2DQ|-mavx512f -mavx512vbmi2 -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
+    "AVX512VBMIVLDQ|-mavx512f -mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
+    "AVX512VBMI2VLDQ|-mavx512f -mavx512vbmi2 -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
 )
 
 function(raze_generate_test root main_source rootpath file)
@@ -52,8 +52,27 @@ function(raze_generate_test root main_source rootpath file)
     endif()
 
     if(NOT EXISTS "${main_source}")
-        message(FATAL_ERROR "raze_generate_test: main.cpp не найден: ${main_source}")
+        message(FATAL_ERROR "raze_generate_test: main.cpp not found: ${main_source}")
     endif()
+
+    add_executable(${test} "${main_source}")
+
+    set_target_properties(${test} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
+        EXCLUDE_FROM_DEFAULT_BUILD TRUE
+        EXCLUDE_FROM_ALL TRUE
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+        CXX_SCAN_FOR_MODULES OFF
+    )
+
+    target_compile_features(${test} PUBLIC cxx_std_23)
+    target_link_libraries(${test} PRIVATE raze::raze)
+    target_include_directories(${test} PRIVATE
+        ${CMAKE_SOURCE_DIR}
+        ${CMAKE_SOURCE_DIR}/include
+    )
 
     foreach(arch_config ${RAZE_TEST_ARCH_CONFIGS})
         string(REPLACE "|" ";" config_list "${arch_config}")
@@ -62,52 +81,55 @@ function(raze_generate_test root main_source rootpath file)
         list(GET config_list 2 msvc_arch_flag)
         list(GET config_list 3 msvc_defs)
 
-        set(arch_test "${test}_${arch_name}")
-        add_executable(${arch_test} "${main_source}" "${rootpath}${file}")
+        set(obj_target "${test}_${arch_name}")
 
-        set_target_properties(${arch_test} PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
-            EXCLUDE_FROM_DEFAULT_BUILD TRUE
-            EXCLUDE_FROM_ALL TRUE
-            CXX_STANDARD 23
-            CXX_STANDARD_REQUIRED ON
-            CXX_EXTENSIONS OFF
-            CXX_SCAN_FOR_MODULES OFF
+        add_library(${obj_target} OBJECT "${rootpath}${file}")
+
+        target_compile_definitions(${obj_target} PRIVATE
+            RAZE_TEST_ARCH_NAMESPACE=raze_test_${arch_name}
         )
 
-        target_compile_features(${arch_test} PUBLIC cxx_std_23)
-        target_link_libraries(${arch_test} PRIVATE raze::raze)
-        target_include_directories(${arch_test} PRIVATE
+        target_include_directories(${obj_target} PRIVATE
             ${CMAKE_SOURCE_DIR}
             ${CMAKE_SOURCE_DIR}/include
         )
 
         if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
             string(REPLACE "," ";" msvc_defs_list "${msvc_defs}")
-            target_compile_definitions(${arch_test} PRIVATE ${msvc_defs_list})
-            target_compile_options(${arch_test} PRIVATE
+            target_compile_definitions(${obj_target} PRIVATE ${msvc_defs_list})
+            target_compile_options(${obj_target} PRIVATE
                 /bigobj /permissive- /Od /MP ${msvc_arch_flag}
             )
         else()
             separate_arguments(flags_list UNIX_COMMAND "${gcc_flags}")
-            target_compile_options(${arch_test} PRIVATE ${flags_list} -g)
+            target_compile_options(${obj_target} PRIVATE ${flags_list} -g)
         endif()
 
-        add_test(
-            NAME ${arch_test}
-            WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
-            COMMAND $<TARGET_FILE:${arch_test}>
+        set_target_properties(${obj_target} PROPERTIES
+            CXX_STANDARD 23
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+            CXX_SCAN_FOR_MODULES OFF
+            EXCLUDE_FROM_DEFAULT_BUILD TRUE
+            EXCLUDE_FROM_ALL TRUE
         )
 
-        add_dependencies(unit ${arch_test})
+        target_link_libraries(${obj_target} PRIVATE raze::raze)
+        target_sources(${test} PRIVATE $<TARGET_OBJECTS:${obj_target}>)
     endforeach()
 
+    add_test(
+        NAME ${test}
+        WORKING_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
+        COMMAND $<TARGET_FILE:${test}>
+    )
+
+    add_dependencies(unit ${test})
     raze_add_parent_target(${test})
 endfunction()
+
 function(raze_glob_unit root relative pattern)
     set(main_source "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-
-    
     file(GLOB files RELATIVE ${relative} ${pattern})
     foreach(file ${files})
         raze_generate_test("${root}" "${main_source}" "${relative}/" ${file})

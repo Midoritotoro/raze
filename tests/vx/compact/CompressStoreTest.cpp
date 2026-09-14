@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cmath>
 
+RAZE_TEST_NAMESPACE_BEGIN
+
 template <class V>
 void mask_compress_any(const typename V::value_type*  a,
     const typename V::value_type* src, typename V::value_type* dst,
@@ -45,3 +47,5 @@ RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
         RTTS_EXPECT(std::equal(dst, dst + count, expected, expected + count));
     }
 };
+
+RAZE_TEST_NAMESPACE_END
