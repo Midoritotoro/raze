@@ -150,7 +150,7 @@ public:
         return r;
     }
 private:
-    raze_no_unique_address tuple_type _data;
+    tuple_type _data;
 };
 
 __RAZE_VX_NAMESPACE_END

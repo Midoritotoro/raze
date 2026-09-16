@@ -39,7 +39,7 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
                 return x.__for_each_chunk([] <class Chunk, class MaskChunk, class SourceChunk> (
                     Chunk& chunk, const MaskChunk& mchunk, const SourceChunk& src_chunk, auto& memory) raze_always_inline_lambda
                 {
-                    if constexpr (Options::contains(aligned)) store_(memory, select_<Abi::isa, Value>()(ustorage(chunk),
+                    if constexpr (Options::contains(aligned)) store_(memory, select_<Abi::isa, Value>(ustorage(chunk),
                         ustorage(src_chunk), ustorage(mchunk)), aligned_policy{});
                     else store_(memory, select_<Abi::isa, Value>(ustorage(chunk),
                         ustorage(src_chunk), ustorage(mchunk)));

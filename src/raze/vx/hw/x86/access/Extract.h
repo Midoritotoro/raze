@@ -13,7 +13,7 @@ consteval raze_always_inline auto broadcast_pshufd_index_(std::integral_constant
 
 template <arch::ISA ISA, arithmetic_type T, intrin_type V>
 raze_always_inline T extract_first_(V x) noexcept {
-	if constexpr (epi64<T> || epu64<T>) return _mm_cvtsi128_si64x(as<__m128i>(x));
+	if constexpr (epi64<T> || epu64<T>) return _mm_cvtsi128_si64(as<__m128i>(x));
 	else if constexpr (epi32<T> || epu32<T>) return _mm_cvtsi128_si32(as<__m128i>(x));
 	else if constexpr (epi16<T> || epu16<T>) return _mm_cvtsi128_si32(as<__m128i>(x)) & 0xFFFF;
 	else if constexpr (epi8<T> || epu8<T>) return _mm_cvtsi128_si32(as<__m128i>(x)) & 0xFF;

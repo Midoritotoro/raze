@@ -45,7 +45,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
             folded = reduce(folded, as<__m256d>(shuffle2));
 
             if constexpr (pd<T>) return _mm256_cvtsd_f64(folded);
-            else return _mm256_cvtsi256_si64(as<__m256i>(folded));
+            else return _mm_cvtsi128_si64(as<__m128i>(folded));
         }
         else if constexpr (sizeof(T) == 4) {
             auto folded = as<__m256>(x);
@@ -61,7 +61,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
             folded = reduce(folded, shuffle3);
 
             if constexpr (ps<T>) return _mm256_cvtss_f32(as<__m256>(folded));
-            else return _mm256_cvtsi256_si32(as<__m256i>(folded));
+            else return _mm_cvtsi128_si32(as<__m128i>(folded));
         }
         else if constexpr (sizeof(T) == 2) {
             const auto high = _mm256_permute2f128_pd(as<__m256d>(x), as<__m256d>(x), 1);
@@ -105,10 +105,8 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
             const auto shuffled3 = _mm512_permutex_epi64(folded, 0xB1);
             folded = reduce(folded, shuffled3);
 
-            if constexpr (pd<T>)
-                return _mm512_cvtsd_f64(as<__m512d>(folded));
-            else
-                return _mm512_cvtsi512_si64(folded);
+            if constexpr (pd<T>) return _mm512_cvtsd_f64(as<__m512d>(folded));
+            else return _mm_cvtsi128_si64(as<__m128i>(folded));
         }
         else if constexpr (sizeof(T) == 4) {
             auto folded = as<__m512i>(x);
@@ -125,10 +123,8 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
             const auto shuffled4 = as<__m512i>(_mm512_permute_ps(as<__m512>(folded), 0xB1));
             folded = reduce(folded, shuffled4);
 
-            if constexpr (ps<T>)
-                return _mm512_cvtss_f32(as<__m512>(folded));
-            else
-                return _mm512_cvtsi512_si32(folded);
+            if constexpr (ps<T>) return _mm512_cvtss_f32(as<__m512>(folded));
+            else return _mm_cvtsi128_si32(as<__m128i>(folded));
         }
         else if constexpr (sizeof(T) == 2) {
             if constexpr (has_avx512bw<ISA>) {
@@ -151,7 +147,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
                     13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
                 x = reduce(x, as<V>(shuffled));
 
-                return _mm512_cvtsi512_si32(as<__m512i>(x));
+                return _mm_cvtsi128_si32(as<__m128i>(x));
             }
             else {
                 const auto shuffle_words = _mm256_broadcastsi128_si256(_mm_set_epi8(13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
@@ -178,7 +174,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
 
                 folded = reduce(folded, as<__m512i>(shuffled5));
 
-                return _mm512_cvtsi512_si32(folded);
+                return _mm_cvtsi128_si32(as<__m128i>(folded));
             }
         }
         else if constexpr (sizeof(T) == 1) {
@@ -215,7 +211,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
                 const auto shuffled6 = _mm512_shuffle_epi8(folded, shuffle_bytes);
                 folded = reduce(folded, as<__m512i>(shuffled6));
 
-                return _mm512_cvtsi512_si32(folded);
+                return _mm_cvtsi128_si32(as<__m128i>(folded));
             }
             else {
                 const auto shuffle_words = _mm256_broadcastsi128_si256(_mm_set_epi8(13, 12, 15, 14, 9, 8, 11, 10, 5, 4, 7, 6, 1, 0, 3, 2));
@@ -253,7 +249,7 @@ raze_always_inline T mirror_fold_(V x, Reduce reduce) noexcept {
 
                 folded = reduce(folded, as<__m512i>(shuffled6));
 
-                return _mm512_cvtsi512_si32(folded);
+                return _mm_cvtsi128_si32(as<__m128i>(folded));
             }
         }
     }

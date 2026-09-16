@@ -56,15 +56,15 @@ raze_always_inline auto less_(V x, V y) noexcept {
         }
         else if constexpr (epu16<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm_cmplt_epu16_mask(x, y);
-            else return bit_not_<arch::ISA::SSE2, T>(_mm_cmpeq_epi16(_mm_subs_epu16(y, x), _mm_setzero_si128()));
+            else return bit_not_<arch::ISA::SSE2, T>(_mm_cmpeq_epi16(_mm_subs_epu16(as<__m128i>(y), as<__m128i>(x)), _mm_setzero_si128()));
         }
         else if constexpr (epi8<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm_cmplt_epi8_mask(x, y);
-            else return _mm_cmplt_epi8(x, y);
+            else return _mm_cmplt_epi8(as<__m128i>(x), as<__m128i>(y));
         }
         else if constexpr (epu8<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm_cmplt_epu8_mask(x, y);
-            else return bit_not_<arch::ISA::SSE2, T>(_mm_cmpeq_epi8(_mm_subs_epu8(y, x), _mm_setzero_si128()));
+            else return bit_not_<arch::ISA::SSE2, T>(_mm_cmpeq_epi8(_mm_subs_epu8(as<__m128i>(y), as<__m128i>(x)), _mm_setzero_si128()));
         }
     }
     else if constexpr (sizeof(V) == 32) {

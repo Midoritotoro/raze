@@ -73,7 +73,7 @@ function(raze_generate_test root main_source rootpath file)
         ${CMAKE_SOURCE_DIR}
         ${CMAKE_SOURCE_DIR}/include
     )
-
+    
     foreach(arch_config ${RAZE_TEST_ARCH_CONFIGS})
         string(REPLACE "|" ";" config_list "${arch_config}")
         list(GET config_list 0 arch_name)

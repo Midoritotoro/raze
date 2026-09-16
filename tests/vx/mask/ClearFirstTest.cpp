@@ -9,7 +9,12 @@ RTTS_CASE_TPL("raze::vx::clear_first", rtts::simd::all_simd_infos)
     using V = typename Simd::type;
     using T = typename V::value_type;
     using Mask = typename V::mask_type;
+	using Abi = typename V::abi_type;
     constexpr size_t N = V::size();
+
+	/*if constexpr (Abi::isa == raze::arch::ISA::AVX512BW && sizeof(V) == 64 && sizeof(T) == 1) {
+        __debugbreak();
+	}*/
 
     {
         Mask m_empty(false);
@@ -19,7 +24,7 @@ RTTS_CASE_TPL("raze::vx::clear_first", rtts::simd::all_simd_infos)
             RTTS_EXPECT(!m_empty_cleared[i]);
     }
 
-    if constexpr (N > 0) {
+    {
         Mask m(false);
         m[0] = true;
         auto r = raze::vx::clear_first(m);
@@ -28,7 +33,7 @@ RTTS_CASE_TPL("raze::vx::clear_first", rtts::simd::all_simd_infos)
             RTTS_EXPECT(!r[i]);
     }
 
-    if constexpr (N > 0) {
+    {
         Mask m(false);
         m[N - 1] = true;
         auto r = raze::vx::clear_first(m);
@@ -37,7 +42,7 @@ RTTS_CASE_TPL("raze::vx::clear_first", rtts::simd::all_simd_infos)
             RTTS_EXPECT(!r[i]);
     }
 
-    if constexpr (N >= 4) {
+    if constexpr (Mask::size() > 4) {
         Mask m(false);
         m[1] = true;
         m[3] = true;
@@ -55,7 +60,7 @@ RTTS_CASE_TPL("raze::vx::clear_first", rtts::simd::all_simd_infos)
         }
     }
 
-    if constexpr (N > 0) {
+    {
         Mask m(true);
         auto r = raze::vx::clear_first(m);
 

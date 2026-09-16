@@ -42,7 +42,7 @@ concept correct_simd_binary_op = simd_type<V> &&
 */
 
 template <class T, class Abi>
-class raze_aligned_type(64) simd {
+class raze_aligned_type(std::hardware_constructive_interference_size) simd {
     static_assert(traits::is_vector_type_supported_v<std::decay_t<T>>, "Unsupported element type. ");
 public:
     static constexpr auto isa = Abi::isa;

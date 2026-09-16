@@ -27,7 +27,7 @@ raze_always_inline V maskz_loadu_(const void* mem, M mask) noexcept {
 			if constexpr (has_avx512vl<ISA>) return as<V>(_mm_maskz_loadu_ps(mask, mem));
 			else if constexpr (has_avx<ISA>) return as<V>(_mm_maskload_ps(static_cast<const f32*>(mem), as<__m128i>(mask)));
 		}
-		else if constexpr (has_avx512bw<ISA>) {
+		else if constexpr (has_avx512bw<ISA> && has_avx512vl<ISA>) {
 			if constexpr (epi16<T> || epu16<T>) return as<V>(_mm_maskz_loadu_epi16(mask, mem));
 			else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm_maskz_loadu_epi8(mask, mem));
 		}
@@ -51,7 +51,7 @@ raze_always_inline V maskz_loadu_(const void* mem, M mask) noexcept {
 			if constexpr (has_avx512vl<ISA>) return as<V>(_mm256_maskz_loadu_ps(mask, mem));
 			else return as<V>(_mm256_maskload_ps(static_cast<const f32*>(mem), as<__m256i>(mask)));
 		}
-		else if constexpr (has_avx512bw<ISA>) {
+		else if constexpr (has_avx512bw<ISA> && has_avx512vl<ISA>) {
 			if constexpr (epi16<T> || epu16<T>) return as<V>(_mm256_maskz_loadu_epi16(mask, mem));
 			else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm256_maskz_loadu_epi8(mask, mem));
 		}

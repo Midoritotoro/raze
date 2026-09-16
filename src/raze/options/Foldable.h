@@ -27,7 +27,7 @@ template <class F, class T>
 foldable(const F&, T&&) -> foldable<F, T>;
 
 template <class F, class T, class Value>
-constexpr raze_always_inline auto fold_left(F&& f, T&& tuple, Value init) noexcept {
+constexpr raze_always_inline auto fold_left(F f, T&& tuple, Value init) noexcept {
     return [&] <std::size_t... I> (std::index_sequence<I...>) {
         return (foldable{ f, init } >> ... >> foldable {
             f, std::get<I>(std::forward<T>(tuple))})._value;

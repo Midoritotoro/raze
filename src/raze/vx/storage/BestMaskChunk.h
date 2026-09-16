@@ -35,7 +35,7 @@ struct mask_wrapper {
         return _data;
     }
 private:
-    raze_no_unique_address unwrapped_type _data;
+    alignas(alignof(unwrapped_type)) unwrapped_type _data;
 };
 
 template <class T, class Abi, i32 Remaining>

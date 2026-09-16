@@ -160,7 +160,7 @@ public:
         }
     }
 private:
-    raze_no_unique_address tuple_type _data;
+    alignas(alignof(tuple_type)) tuple_type _data;
 };
 
 __RAZE_VX_NAMESPACE_END

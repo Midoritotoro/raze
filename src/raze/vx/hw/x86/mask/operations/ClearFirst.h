@@ -12,7 +12,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <arch::ISA ISA, arithmetic_type T, sizetype N, bool Unsafe, raw_mask_type M>
 raze_always_inline M clear_first_(M x) noexcept {
 	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
-		return 0;
+		return false;
 	}
 	else if constexpr (std::integral<M>) {
 		if constexpr (has_bmi2<ISA>) {

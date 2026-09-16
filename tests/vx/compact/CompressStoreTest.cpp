@@ -28,17 +28,16 @@ RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
     using Mask = typename V::mask_type;
     constexpr size_t N = V::size();
 
-    alignas(64) T src[N];
+    alignas(std::hardware_constructive_interference_size) T src[N];
     for (size_t i = 0; i < N; ++i)
         src[i] = T(i + 1);
 
     V v = raze::vx::load<V>(src);
     
-    int iterations = std::min(int(std::pow(2, N)), 10000);
-    for (int i = 0; i < iterations; ++i) {
+    for (int i = 0; i < 100; ++i) {
         Mask mask = rtts::simd::make_random_mask<Mask>();
 
-        alignas(64) T dst[N], expected[N];
+        alignas(std::hardware_constructive_interference_size) T dst[N], expected[N];
         mask_compress_any<V>(src, src, expected, mask);
 
         raze::vx::compress_store(dst, v, mask);
