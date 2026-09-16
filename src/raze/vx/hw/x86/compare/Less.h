@@ -4,6 +4,9 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+template <arithmetic_type T, intrin_type V>
+raze_always_inline auto avx_less_fallback_(V x, V y) noexcept;
+
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
 raze_always_inline auto less_(V x, V y) noexcept {
     if constexpr (sizeof(V) == 16) {
@@ -68,14 +71,6 @@ raze_always_inline auto less_(V x, V y) noexcept {
         }
     }
     else if constexpr (sizeof(V) == 32) {
-        auto fallback_avx = [=] (auto x, auto y) raze_always_inline_lambda {
-            const auto low = less_<arch::ISA::SSE42, T>(as<__m128i>(x), as<__m128i>(y));
-            const auto high = less_<arch::ISA::SSE42, T>(_mm256_extractf128_si256(as<__m256i>(x), 1),
-                _mm256_extractf128_si256(as<__m256i>(y), 1));
-
-            return as<V>(_mm256_insertf128_si256(as<__m256i>(low), high, 1));
-        };
-
         if constexpr (pd<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm256_cmp_pd_mask(x, y, _CMP_LT_OQ);
             else return _mm256_cmp_pd(x, y, _CMP_LT_OQ);
@@ -87,7 +82,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
         else if constexpr (epi64<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm256_cmplt_epi64_mask(x, y);
             else if constexpr (has_avx2<ISA>) return _mm256_cmpgt_epi64(y, x);
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
         else if constexpr (epu64<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm256_cmplt_epu64_mask(x, y);
@@ -95,12 +90,12 @@ raze_always_inline auto less_(V x, V y) noexcept {
                 const auto sign = _mm256_set1_epi64x(0x8000000000000000);
                 return _mm256_cmpgt_epi64(_mm256_xor_si256(y, sign), _mm256_xor_si256(x, sign));
             }
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
         else if constexpr (epi32<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm256_cmplt_epi32_mask(x, y);
             else if constexpr (has_avx2<ISA>) return _mm256_cmpgt_epi32(y, x);
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
         else if constexpr (epu32<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm256_cmplt_epu32_mask(x, y);
@@ -108,12 +103,12 @@ raze_always_inline auto less_(V x, V y) noexcept {
                 const auto sign = _mm256_set1_epi32(0x80000000);
                 return _mm256_cmpgt_epi32(_mm256_xor_si256(y, sign), _mm256_xor_si256(x, sign));
             }
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
         else if constexpr (epi16<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm256_cmplt_epi16_mask(x, y);
             else if constexpr (has_avx2<ISA>) return _mm256_cmpgt_epi16(y, x);
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
         else if constexpr (epu16<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm256_cmplt_epu16_mask(x, y);
@@ -121,12 +116,12 @@ raze_always_inline auto less_(V x, V y) noexcept {
                 const auto sign = _mm256_set1_epi16(0x8000);
                 return _mm256_cmpgt_epi16(_mm256_xor_si256(y, sign), _mm256_xor_si256(x, sign));
             }
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
         else if constexpr (epi8<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm256_cmplt_epi8_mask(x, y);
             else if constexpr (has_avx2<ISA>) return _mm256_cmpgt_epi8(y, x);
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
         else if constexpr (epu8<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm256_cmplt_epu8_mask(x, y);
@@ -134,7 +129,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
                 const auto sign = _mm256_set1_epi8(0x80);
                 return _mm256_cmpgt_epi8(_mm256_xor_si256(y, sign), _mm256_xor_si256(x, sign));
             }
-            else return fallback_avx(x, y);
+            else return avx_less_fallback_<T>(x, y);
         }
     }
     else if constexpr (sizeof(V) == 64) {
@@ -151,9 +146,11 @@ raze_always_inline auto less_(V x, V y) noexcept {
             else if constexpr (epu8<T>)  return _mm512_cmplt_epu8_mask(x, y);
         }
         else {
-            const auto compared_low = less_<arch::ISA::AVX2, T>(as<__m256i>(x), as<__m256i>(y));
-            const auto compared_high = less_<arch::ISA::AVX2, T>(_mm512_extracti64x4_epi64(as<__m512i>(x), 1),
-                _mm512_extracti64x4_epi64(as<__m512i>(y), 1));
+            using Low = traits::deduce_simd_vector_type<T, raze_sizeof_in_bits(V) / 2>;
+
+            const auto compared_low = less_<arch::ISA::AVX2, T>(as<Low>(x), as<Low>(y));
+            const auto compared_high = less_<arch::ISA::AVX2, T>(as<Low>(_mm512_extracti64x4_epi64(as<__m512i>(x), 1)),
+                as<Low>(_mm512_extracti64x4_epi64(as<__m512i>(y), 1)));
 
             return as<V>(_mm512_inserti64x4(as<__m512i>(compared_low), compared_high, 1));
         }
@@ -161,6 +158,17 @@ raze_always_inline auto less_(V x, V y) noexcept {
     else {
         return x < y;
     }
+}
+
+template <arithmetic_type T, intrin_type V>
+raze_always_inline auto avx_less_fallback_(V x, V y) noexcept {
+    using Low = traits::deduce_simd_vector_type<T, raze_sizeof_in_bits(V) / 2>;
+
+    const auto low = less_<arch::ISA::SSE42, T>(as<Low>(x), as<Low>(y));
+    const auto high = less_<arch::ISA::SSE42, T>(as<Low>(_mm256_extractf128_si256(as<__m256i>(x), 1)),
+        as<Low>(_mm256_extractf128_si256(as<__m256i>(y), 1)));
+
+    return as<V>(_mm256_insertf128_si256(as<__m256i>(low), high, 1));
 }
 
 __RAZE_VX_NAMESPACE_END

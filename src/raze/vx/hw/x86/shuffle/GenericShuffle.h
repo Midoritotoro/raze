@@ -515,7 +515,7 @@ raze_always_inline auto generic_shuffle_native_(V x, Pattern p) noexcept {
 					return as<V>(_mm512_inserti64x4(as<__m512i>(low), high, 1));
 				}
 			}
-			else return shuffle_i8x64_avx512<ISA>(x, p.template as_native<__m512i>());
+			else return shuffle_i8x64_avx512<ISA>(x, shuffle);
 		}
 		else return shuffle_fallback_<ISA, T>(x, p.get());
 	}
@@ -690,7 +690,6 @@ raze_always_inline auto generic_shuffle_native_size_(const pattern_vector_t<Patt
 	V result = x;
 
 	auto& storage = result.template __get<0>();
-	
 	using Ret = decltype(generic_shuffle_native_<abi_t<V>::isa, typename V::value_type>(ustorage(storage), p));
 
 	if constexpr (is_fallback<Ret>) {
@@ -698,8 +697,8 @@ raze_always_inline auto generic_shuffle_native_size_(const pattern_vector_t<Patt
 		storage = Pattern::builtin_shufflevector(ustorage(storage));
 #else
 		storage = generic_shuffle_native_<abi_t<V>::isa, typename V::value_type>(ustorage(storage), p)._data;
-		return fallback_result{ result };
 #endif
+		return fallback_result{ result };
 	}
 	else {
 		storage = generic_shuffle_native_<abi_t<V>::isa, typename V::value_type>(ustorage(storage), p);

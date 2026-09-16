@@ -20,6 +20,10 @@ struct broadcast_mode {};
 constexpr inline auto broadcast = raze::options::flag(broadcast_mode{});
 struct broadcast_option : raze::options::exact_option<broadcast> {};
 
+//struct mirror_mode {};
+//constexpr inline auto mirror = raze::options::flag(mirror_mode{});
+//struct mirror_option : raze::options::exact_option<mirror> {};
+
 template <class Options>
 struct configurable_fold_t : options::conditional_callable<configurable_fold_t, Options, broadcast_option> {
     template <simd_type V, class F>

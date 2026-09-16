@@ -315,8 +315,8 @@ struct shuffle_pattern {
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
     template <intrin_type Intrin>
     raze_always_inline static auto builtin_shufflevector(Intrin v, Intrin v2) noexcept {
-        using Elem = typename IntegerForSize<sizeof(Intrin) / size()>::Unsigned;
-        using ExtVec = Elem __attribute__((vector_size(sizeof(Intrin))));
+        using T = typename V::value_type;
+        using ExtVec = T __attribute__((vector_size(sizeof(Intrin))));
 
         ExtVec ext = __builtin_bit_cast(ExtVec, v);
         ExtVec ext2 = __builtin_bit_cast(ExtVec, v2);
@@ -324,12 +324,12 @@ struct shuffle_pattern {
     }
 
     template <intrin_type Intrin>
-    raze_always_inline static auto builtin_shufflevector(Intrin v) noexcept {
-        using Elem = typename IntegerForSize<sizeof(Intrin) / size()>::Unsigned;
-        using ExtVec = Elem __attribute__((vector_size(sizeof(Intrin))));
+    raze_always_inline static Intrin builtin_shufflevector(Intrin v) noexcept {
+        using T = typename V::value_type;
+        using ExtVec = T __attribute__((vector_size(sizeof(Intrin))));
 
         ExtVec ext = __builtin_bit_cast(ExtVec, v);
-        return __builtin_shufflevector(ext, ext, Idxs...);
+        return __builtin_bit_cast(Intrin, __builtin_shufflevector(ext, ext, Idxs...));
     }
 #endif
 };
