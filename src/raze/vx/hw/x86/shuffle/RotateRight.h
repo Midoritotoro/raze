@@ -45,11 +45,11 @@ raze_always_inline auto make_rotate_right_idx_(V, i32 sh) noexcept {
         if constexpr (has_avx2<ISA> && !(has_avx512bw<ISA> && has_avx512vl<ISA>)) {
             if constexpr (sizeof(IdxType) >= 4) {
                 alignas(sizeof(V)) static constexpr auto table_u32 = make_rotate_right_shuffle_table_<vector_bytes, element_bytes, u32>();
-                return rotate_indices<V, u32>{ load_<ISA, V>()(table_u32[sh].data(), aligned_policy{}) };
+                return rotate_indices<V, u32>{ load_<ISA, V>(table_u32[sh].data(), aligned_policy{}) };
             }
-            else return rotate_indices<V, u8>{ load_<ISA, V>()(table_u8[sh].data(), aligned_policy{}) };
+            else return rotate_indices<V, u8>{ load_<ISA, V>(table_u8[sh].data(), aligned_policy{}) };
         }
-        else return rotate_indices<V, IdxType>{ load_<ISA, V>()(table[sh].data(), aligned_policy{}) };
+        else return rotate_indices<V, IdxType>{ load_<ISA, V>(table[sh].data(), aligned_policy{}) };
     }
     else if constexpr (vector_bytes == 64) return rotate_indices<V, IdxType>{ load_<ISA, V>(table[sh].data(), aligned_policy{}) };
 }
@@ -61,7 +61,7 @@ raze_always_inline V rotate_right_fallback_(const V& x, Int sh) noexcept {
     vx::store[vx::aligned](arr, x);
     vx::store[vx::aligned](arr + V::size(), x);
 
-    return vx::load<V>[vx::aligned](arr + (V::size() - sh));
+    return vx::load<V>(arr + (V::size() - sh));
 }
 
 template <class Pattern>

@@ -52,7 +52,7 @@ raze_always_inline V slide_left_fallback_(const V& x, Int sh) noexcept {
     vx::store[vx::aligned](arr, x);
     vx::store[vx::aligned](arr + V::size(), V::zero());
 
-    return vx::load<V>[vx::aligned](arr + sh);
+    return vx::load<V>(arr + sh);
 }
 
 template <intrin_type V, class Pattern>
@@ -125,7 +125,7 @@ raze_always_inline V slide_left_native_(V x, Pattern p) noexcept {
         store_(arr, x, aligned_policy{});
         store_(arr + p.size(), zero_<isa, V>(), aligned_policy{});
 
-        return store_<isa, V>(arr + shift, aligned_policy{});
+        return load_<isa, V>(arr + shift);
     }
 }
 

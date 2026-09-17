@@ -14,7 +14,7 @@ raze_always_inline V slide_right_merge_fallback_(const V& x, const V& y, Int sh)
     vx::store[vx::aligned](arr, y);
     vx::store[vx::aligned](arr + V::size(), x);
 
-    return vx::load<V>[vx::aligned](arr + (V::size() - sh));
+    return vx::load<V>(arr + (V::size() - sh));
 }
 
 template <arch::ISA ISA, arithmetic_type T, intrin_type V, sizetype Slide>
@@ -42,15 +42,15 @@ raze_always_inline V slide_right_merge_native_(V x, V y, std::integral_constant<
             else return as<V>(_mm256_alignr_epi8(mid, as<__m256i>(y), 32 - shift_bytes));
         }
         else if constexpr ((shift_bytes % 8) == 0) {
-            const auto mid = _mm256_permute2x128_si256(as<__m256i>(x), as<__m256i>(y), 0x03);
+            const auto mid = _mm256_permute2f128_pd(as<__m256d>(x), as<__m256d>(y), 0x03);
 
-            if constexpr (shift_bytes == 8) return as<V>(_mm256_shuffle_pd(as<__m256d>(mid), as<__m256d>(x), 0b0101));
+            if constexpr (shift_bytes == 8) return as<V>(_mm256_shuffle_pd(mid, as<__m256d>(x), 0b0101));
             else if constexpr (shift_bytes == 16) return as<V>(mid);
-            else if constexpr (shift_bytes == 24) return as<V>(_mm256_shuffle_pd(as<__m256d>(y), as<__m256d>(mid), 0b0101));
+            else if constexpr (shift_bytes == 24) return as<V>(_mm256_shuffle_pd(as<__m256d>(y), mid, 0b0101));
         }
         else if constexpr (shift_bytes < 16) {
 #if defined(raze_cpp_msvc_only)
-            const auto low_x = as<__m128i>(_mm256_permute2x128_si256(as<__m256i>(x), as<__m256i>(x), 0));
+            const auto low_x = as<__m128i>(_mm256_permute2f128_pd(as<__m256d>(x), as<__m256d>(x), 0));
 #else
             const auto low_x = as<__m128i>(x);
 #endif // defined(raze_cpp_msvc_only)
@@ -61,8 +61,8 @@ raze_always_inline V slide_right_merge_native_(V x, V y, std::integral_constant<
         else {
             constexpr auto shift = ((size - sh) * sizeof(T));
 #if defined(raze_cpp_msvc_only)
-            const auto low_x = as<__m128i>(_mm256_permute2x128_si256(as<__m256i>(x), as<__m256i>(x), 0));
-            const auto low_y = as<__m128i>(_mm256_permute2x128_si256(as<__m256i>(y), as<__m256i>(y), 0));
+            const auto low_x = as<__m128i>(_mm256_permute2f128_pd(as<__m256d>(x), as<__m256d>(x), 0));
+            const auto low_y = as<__m128i>(_mm256_permute2f128_pd(as<__m256d>(y), as<__m256d>(y), 0));
 #else
             const auto low_x = as<__m128i>(x);
             const auto low_y = as<__m128i>(y);

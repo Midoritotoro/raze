@@ -21,7 +21,7 @@ raze_always_inline V reverse_native_(V x, Pattern p) noexcept {
 			return as<V>(_mm_shuffle_epi32(as<__m128i>(x), 0x4E));
 		}
 	}
-	else if constexpr (sizeof(V) == 32) {
+	else if constexpr (sizeof(V) == 32 && has_avx2<ISA>) {
 		if constexpr (sizeof(T) == 2 && !(has_avx512bw<ISA> && has_avx512vl<ISA>)) {
 			const auto reversed_lanes = _mm256_shuffle_epi8(as<__m256i>(x), 
 				(p % std::integral_constant<sizetype, 16>{}).template expand<u16, u8>().template as_native<__m256i>());

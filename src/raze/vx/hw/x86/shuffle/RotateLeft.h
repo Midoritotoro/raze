@@ -61,7 +61,7 @@ raze_always_inline V rotate_left_fallback_(const V& x, Int sh) noexcept {
     vx::store[vx::aligned](arr, x);
     vx::store[vx::aligned](arr + V::size(), x);
 
-    return vx::load<V>[vx::aligned](arr + sh);
+    return vx::load<V>(arr + sh);
 }
 
 template <class Pattern>

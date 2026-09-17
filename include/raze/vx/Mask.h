@@ -15,7 +15,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <class T, class Abi>
-class raze_aligned_type(std::hardware_constructive_interference_size) simd_mask {
+class simd_mask {
 	static_assert(traits::is_vector_type_supported_v<T>);
 public:
 	using storage_type = mask_storage<T, Abi>;

@@ -57,7 +57,7 @@ raze_always_inline T extract_(V v, std::integral_constant<sizetype, I> i) noexce
 		else if constexpr (sizeof(T) == 1 && has_avx2<ISA>) return _mm256_extract_epi8(v, i);
 	}
 	else if constexpr (sizeof(V) == 64) {
-		constexpr auto mask = 1u << I;
+		constexpr auto mask = 1ull << I;
 		if constexpr (pd<T>) return _mm512_cvtsd_f64(_mm512_maskz_compress_pd(mask, v));
 		else if constexpr (ps<T>) return _mm512_cvtss_f32(_mm512_maskz_compress_ps(mask, v));
 		else if constexpr (epi32<T> || epu32<T>) return _mm512_cvtsi512_si32(_mm512_maskz_compress_epi32(mask, v));

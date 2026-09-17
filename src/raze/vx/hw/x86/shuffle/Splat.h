@@ -15,7 +15,7 @@ raze_always_inline auto zmm_broadcast_low_(V x) noexcept {
 	else if constexpr (sizeof(T) == 4) return _mm512_broadcastd_epi32(as<__m128i>(x));
 	else if constexpr (sizeof(T) == 2 && has_avx512bw<ISA>) return _mm512_broadcastw_epi16(as<__m128i>(x));
 	else if constexpr (sizeof(T) == 1 && has_avx512bw<ISA>) return _mm512_broadcastb_epi8(as<__m128i>(x));
-	return brodcast_<ISA, __m512i>()(extract_<ISA, T>(x, std::integral_constant<sizetype, 0>{}));
+	return broadcast_<ISA, __m512i>(extract_<ISA, T>(x, std::integral_constant<sizetype, 0>{}));
 }
 
 template <arch::ISA ISA, arithmetic_type T, intrin_type V, sizetype I>
@@ -29,7 +29,7 @@ raze_always_inline V splat_native_(V x, std::integral_constant<sizetype, I> i) n
 			if constexpr (i == 0) return as<V>(_mm_shuffle_pd(as<__m128d>(x), as<__m128d>(x), 0));
 			else return as<V>(_mm_shuffle_pd(as<__m128d>(x), as<__m128d>(x), 0x03));
 		}
-		else if constexpr (sizeof(T) == 4) return as<V>(_mm_shuffle_epi32(as<__m128i>(x), __broadcast_pshufd_index(i)));
+		else if constexpr (sizeof(T) == 4) return as<V>(_mm_shuffle_epi32(as<__m128i>(x), broadcast_pshufd_index_(i)));
 		else if constexpr (sizeof(T) == 2 && has_avx2<ISA> && i == 0) return as<V>(_mm_broadcastw_epi16(as<__m128i>(x)));
 		else if constexpr (sizeof(T) == 1) {
 			if constexpr (has_avx2<ISA> && i == 0) return as<V>(_mm_broadcastb_epi8(as<__m128i>(x)));

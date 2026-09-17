@@ -212,6 +212,10 @@
 #  endif // !RAZE_HAS_SSE2_SUPPORT
 # endif // defined(RAZE_FORCE_SSE2)
 
+#if RAZE_HAS_AVX512VBMI2_SUPPORT && !RAZE_HAS_AVX512VBMI_SUPPORT
+#  error "RAZE: inconsistent AVX-512 VBMI feature detection: VBMI2 is enabled but VBMI is not"
+#endif
+
 __RAZE_VX_NAMESPACE_BEGIN
 
 constexpr raze_always_inline arch::ISA target_isa() noexcept {
