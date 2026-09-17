@@ -564,9 +564,10 @@ raze_always_inline auto generic_shuffle_native_(V x, Index idx) noexcept {
 			}
 			else {
 				alignas(16) T t[4];
-				store_(t, x, aligned_policy{});
+				alignas(16) u32 i[4];
 
-				const auto* i = reinterpret_cast<const unsigned int*>(&idx);
+				store_(t, x, aligned_policy{});
+				store_(i, idx, aligned_policy{});
 				
 				if constexpr (std::is_floating_point_v<T>) return fallback_result{ as<V>(_mm_set_ps(t[i[3]], t[i[2]], t[i[1]], t[i[0]])) };
 				else return fallback_result{ as<V>(_mm_set_epi32(t[i[3]], t[i[2]], t[i[1]], t[i[0]])) };
@@ -588,9 +589,11 @@ raze_always_inline auto generic_shuffle_native_(V x, Index idx) noexcept {
 			}
 			else {
 				alignas(16) T t[8];
-				store_(t, x, aligned_policy{});
+				alignas(16) u16 i[8];
 
-				const auto* i = reinterpret_cast<const unsigned short*>(&idx);
+				store_(t, x, aligned_policy{});
+				store_(i, idx, aligned_policy{});
+
 				return fallback_result{ as<V>(_mm_set_epi16(t[i[7]], t[i[6]], t[i[5]],
 					t[i[4]], t[i[3]], t[i[2]], t[i[1]], t[i[0]])) };
 			}
@@ -601,9 +604,11 @@ raze_always_inline auto generic_shuffle_native_(V x, Index idx) noexcept {
 			}
 			else {
 				alignas(16) T t[16];
-				store_(t, x, aligned_policy{});
+				alignas(16) u8 i[16];
 
-				const auto* i = reinterpret_cast<const unsigned char*>(&idx);
+				store_(t, x, aligned_policy{});
+				store_(i, idx, aligned_policy{});
+
 				return fallback_result { as<V>(_mm_set_epi8(t[i[15]], t[i[14]], t[i[13]],
 					t[i[12]], t[i[11]], t[i[10]], t[i[9]], t[i[8]],
 					t[i[7]], t[i[6]], t[i[5]], t[i[4]], t[i[3]],
@@ -785,7 +790,7 @@ template <simd_type V, index_simd_type Index>
 raze_always_inline auto generic_shuffle_(const V& x, const Index& idx) noexcept
 	requires (index_type_for<Index, V>)
 {
-	if constexpr (native<V>) return __generic_shuffle_native_size(x, idx);
+	if constexpr (native<V>) return generic_shuffle_native_size_(x, idx);
 	else return generic_shuffle_scalar_fallback_(x, idx);
 }
 

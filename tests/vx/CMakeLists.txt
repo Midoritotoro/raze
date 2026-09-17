@@ -1,3 +1,5 @@
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/tools/Targets.cmake")
+
 cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
 project(razeTestsVx LANGUAGES CXX)
 
@@ -18,8 +20,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
    set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 endif()
-
-add_custom_target(unit)
 
 add_custom_target(vx)
 add_dependencies(unit vx)
