@@ -498,8 +498,12 @@ using make_swap_adjacent_pattern = make_shuffle_pattern<V,
 		const auto block_begin = (i / block) * block;
 		const auto offset = i % block;
 
-		if (offset < GroupSize) return block_begin + offset + GroupSize;
-		else return block_begin + offset - GroupSize;
+		auto index = 0;
+
+		if (offset < GroupSize) index = block_begin + offset + GroupSize;
+		else index = block_begin + offset - GroupSize;
+
+		return index % V::size();
 	}>;
 
 __RAZE_VX_NAMESPACE_END
