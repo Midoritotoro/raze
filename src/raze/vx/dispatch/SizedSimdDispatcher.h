@@ -10,20 +10,20 @@ struct configurable_isa_dispatcher_t {
     template <class Options>
     struct impl : options::callable<impl, Options>{
         template <class ... Args>
-        raze_always_inline Ret operator()(sizetype size, Args&& ... args) const noexcept {
+        raze_always_inline Ret operator()(sizetype size, Args&& ... args) const {
             return options::dispatch_call(*this, size, std::forward<Args>(args)...);
         }
 
         template <sizetype Size, class ... Args>
         raze_always_inline Ret operator()(std::integral_constant<sizetype, Size> size,
-            Args&& ... args) const noexcept
+            Args&& ... args) const
         {
             return options::dispatch_call(*this, size, std::forward<Args>(args)...);
         }
 
         template <sizetype Size, class ... Args>
         static raze_always_inline Ret deferred_call(auto opts,
-            std::integral_constant<sizetype, Size> size, Args&& ... args) noexcept requires(sizeof...(Candidates) == 0)
+            std::integral_constant<sizetype, Size> size, Args&& ... args) requires(sizeof...(Candidates) == 0)
         {
             if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = (vx::default_width<Forced> / 8);
@@ -113,13 +113,13 @@ struct configurable_isa_dispatcher_t {
 
         template <class ... Args>
         static raze_always_inline Ret deferred_call(auto opts,
-            sizetype size, Args&& ... args) noexcept requires(sizeof...(Candidates) == 0)
+            sizetype size, Args&& ... args) requires(sizeof...(Candidates) == 0)
         {
            if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = (vx::default_width<Forced> / 8);
 
                 if (size < vector_size)
-                    return F<vx::scalar_tag>()(std::forward<_Args_>(args)...);
+                    return F<vx::scalar_tag>()(std::forward<Args>(args)...);
 
                 const auto aligned_size = size & ~sizetype(vector_size - 1);
                 using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
@@ -152,7 +152,7 @@ struct configurable_isa_dispatcher_t {
         }
 
         template <arch::ISA ISA, arch::ISA ... Rest, class ... Args>
-        static raze_always_inline Ret try_dispatch(sizetype size, i32 all, Args&& ... args) noexcept {
+        static raze_always_inline Ret try_dispatch(sizetype size, i32 all, Args&& ... args) {
             constexpr auto vector_size = vx::default_width<ISA> / 8;
 
             if (size >= vector_size && arch::ProcessorFeatures::has<arch::feature_of(ISA)>(all)) {
@@ -166,15 +166,15 @@ struct configurable_isa_dispatcher_t {
 
         template <class ... Args>
         static raze_always_inline Ret deferred_call(auto opts,
-            sizetype size, _Args_&& ... args) noexcept requires(sizeof...(Candidates) != 0)
+            sizetype size, Args&& ... args) requires(sizeof...(Candidates) != 0)
         {
-            if constexpr (_ForcedISA_ != arch::ISA::None) {
+            if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = vx::default_width<Forced> / 8;
 
                 if (size < vector_size)
                     return F<vx::scalar_tag>()(std::forward<Args>(args)...);
 
-                using V = simd<T, runtime_abi<_ForcedISA_, vector_size / sizeof(T)>>;
+                using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
                 return F<V>()(size & ~sizetype(vector_size - 1), size & (vector_size - 1), std::forward<Args>(args)...);
             }
             else {

@@ -9,7 +9,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
     struct name {                                                 \
         T _v;                                                  \
                                                                     \
-        constexpr explicit __name(T v) noexcept              \
+        constexpr explicit name(T v) noexcept              \
             : _v(std::move(v))                                    \
         {}                                                          \
                                                                     \

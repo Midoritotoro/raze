@@ -8,25 +8,25 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class Gen>
 struct tail_mask {
 	using mask_type = decltype(std::declval<Gen>()());
-	tail_mask(sizetype tail_bytes, Gen&& gen) noexcept : _tail_bytes(tail_bytes), _gen(std::move(gen)) {}
+	tail_mask(sizetype tail_bytes, Gen&& gen) : _tail_bytes(tail_bytes), _gen(std::move(gen)) {}
 
-	raze_always_inline operator mask_type() const noexcept {
+	raze_always_inline operator mask_type() const {
 		return _gen();
 	}
 
-	raze_always_inline mask_type operator()() const noexcept {
+	raze_always_inline mask_type operator()() const {
 		return _gen();
 	}
 
-	raze_always_inline mask_type mask() const noexcept {
+	raze_always_inline mask_type mask() const {
 		return _gen();
 	}
 
-	raze_always_inline sizetype tail_bytes() const noexcept {
+	raze_always_inline sizetype tail_bytes() const {
 		return _tail_bytes;
 	}
 
-	raze_always_inline sizetype tail_elements() const noexcept {
+	raze_always_inline sizetype tail_elements() const {
 		return _tail_bytes / sizeof(typename mask_type::value_type);
 	}
 private:

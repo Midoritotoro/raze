@@ -2,7 +2,6 @@
 
 #include <raze/options/Options.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
-#include <src/raze/algorithm/AlgorithmDebug.h>
 #include <src/raze/algorithm/DataSource.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
 #include <raze/arch/CpuFeature.h>
@@ -25,9 +24,9 @@ template <class Work>
 struct llvm_invoke_autovec_helper_t {
     using value_type = typename Work::vector_value_type;
 
-    llvm_invoke_autovec_helper_t(Work& w) noexcept : _work(w) {}
+    llvm_invoke_autovec_helper_t(Work& w) : _work(w) {}
 
-    raze_targets("avx512f", "avx2", "sse4.2", "default") void operator()() noexcept requires(sizeof(value_type) >= 4) {
+    raze_targets("avx512f", "avx2", "sse4.2", "default") void operator()() requires(sizeof(value_type) >= 4) {
         _work(autovectorizable{});
     }
 
@@ -36,7 +35,7 @@ struct llvm_invoke_autovec_helper_t {
 #elif defined(raze_cpp_gnu)
     raze_targets("arch=x86-64-v4", "avx2", "sse4.2", "default")
 #endif
-    void operator()() noexcept requires(sizeof(value_type) < 4) {
+    void operator()() requires(sizeof(value_type) < 4) {
         _work(autovectorizable{});
     }
 
@@ -44,13 +43,13 @@ struct llvm_invoke_autovec_helper_t {
 };
 
 template <class Work>
-auto invoke_scalar_autovec_impl(Work& w) noexcept {
+auto invoke_scalar_autovec_impl(Work& w) {
     auto c = llvm_invoke_autovec_helper_t<Work>(w);
     c();
 }
 
 template <class Work>
-raze_always_inline constexpr auto invoke_scalar_autovec(Work&& w) noexcept {
+raze_always_inline constexpr auto invoke_scalar_autovec(Work&& w) {
     if not consteval { invoke_scalar_autovec_impl(w); }
     else {  w(); }
 
@@ -68,7 +67,7 @@ void get_result_type() noexcept;
 template <class Function, arch::ISA ... Other>
 struct dispatchable {
     template <class ... Args>
-    constexpr raze_always_inline auto dispatch(Args&& ... args) const noexcept {
+    constexpr raze_always_inline auto dispatch(Args&& ... args) const {
         auto work = typename Function::kernel(std::forward<Args>(args)...);
 
         using TraitsType = decltype(static_cast<const Function*>(this)->traits());
@@ -89,9 +88,9 @@ struct dispatchable {
             WorkType::vectorizable() && (options::get_strategy<TraitsType>().is_manual()
             || (have_best_isa && use_autovec)))
         {
-            if not consteval {
+            if !consteval {
                 using ReturnType = decltype(get_result_type<WorkType>());
-                constexpr auto dispatch = vx::dispatch<options::unroller_t<TraitsType>::template __impl, Value, ReturnType, Other...>;
+                constexpr auto dispatch = vx::dispatch<options::unroller_t<TraitsType>::template impl, Value, ReturnType, Other...>;
 
                 if constexpr (requires { WorkType::static_size(); })
                     return dispatch(WorkType::static_size(), work);

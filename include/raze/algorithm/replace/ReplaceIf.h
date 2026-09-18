@@ -1,0 +1,118 @@
+#pragma once 
+
+#include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/VectorizablePredicate.h>
+#include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
+
+__RAZE_ALGORITHM_NAMESPACE_BEGIN
+
+constexpr auto replace_strategy = options::strategy<strategy<>()
+	.for_gcc<strategy_mode::autovec>()
+	.for_clang<strategy_mode::autovec>()>;
+
+template <class Traits>
+struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
+	template <source Source, class Predicate, class Projection, class Value>
+	struct kernel {
+		using source_type = std::remove_cvref_t<Source>;
+		using iterator_type = typename source_type::iterator_type;
+
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+
+		using vector_value_type = std::iter_value_t<iterator_type>;
+
+		static consteval bool vectorizable() noexcept {
+			return std::contiguous_iterator<unchecked_iterator_type> &&
+				vectorizable_unary_predicate<Predicate, unchecked_iterator_type> &&
+				vectorizable_projection<Projection, unchecked_iterator_type>;
+		}
+
+		Source _source;
+		unchecked_iterator_type _iterator;
+		unchecked_sentinel_type _sentinel;
+		Predicate _predicate;
+		Projection _proj;
+		Value _new_value;
+
+		constexpr kernel(Source&& src, Predicate pred, Projection proj, Value new_val):
+			_source(std::forward<Source>(src)), _predicate(pred), _proj(proj), _new_value(new_val)
+		{
+			_iterator = _source.ubegin();
+			_sentinel = _source.uend();
+		}
+	
+		void operator()(autovectorizable) requires(vectorizable()) {
+			auto* raze_restrict b = std::to_address(_iterator);
+			auto* raze_restrict e = std::to_address(_sentinel);
+
+			for (; b != e; ++b)
+				*b = _predicate(_proj(*b)) ? _new_value : *b;
+
+			source_type::from_ptr(_iterator, b);
+		}
+
+		raze_always_inline constexpr void operator()() {
+			raze_disable_unrolling
+			for (; _iterator != _sentinel; ++_iterator) 
+				*_iterator = (_predicate(_proj(*_iterator))) ? _new_value : *_iterator;
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			auto* ptr = std::to_address(_iterator);
+
+			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
+			const auto new_value = Tag(_new_value);
+
+			raze_disable_unrolling
+			do {
+				vx::store[_predicate(_proj(vx::load<Tag>(ptr)))](ptr, new_value);
+				advance_bytes(ptr, sizeof(Tag));
+			} while (ptr != aligned_end);
+
+			source_type::from_ptr(_iterator, ptr);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			auto* ptr = std::to_address(_iterator);
+			vx::store[_predicate(_proj(vx::load<Tag>[ignore](ptr))) & ignore()](ptr, Tag(_new_value));
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source>) {
+			return Source::static_size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const {
+			return _source.size();
+		}
+	};
+
+	template <std::permutable Iterator, std::sentinel_for<Iterator> Sentinel,
+		class Predicate, class Value, class Projection = std::identity>
+	constexpr raze_always_inline void operator()(Iterator first, Sentinel sent,
+		Predicate pred, Value new_value, Projection proj = {}) const
+			requires(std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>)
+	{
+		this->dispatch(get_source(std::move(first), std::move(sent)),
+			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
+	}
+
+	template <std::ranges::input_range Range, class Predicate, class Value,
+		class Projection = std::identity>
+	constexpr raze_always_inline void operator()(Range&& r, Predicate pred,
+		Value new_value, Projection proj = {}) const
+			requires(std::indirect_unary_predicate<Predicate,
+				std::projected<std::ranges::iterator_t<Range>, Projection>>
+				&& std::permutable<std::ranges::iterator_t<Range>>)
+	{
+		this->dispatch(get_source(std::forward<Range>(r)),
+			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
+	}
+};
+
+constexpr inline auto replace_if = options::function_with_traits<replace_if_t>[options::unroll<4>][replace_strategy];
+
+__RAZE_ALGORITHM_NAMESPACE_END

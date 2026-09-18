@@ -327,6 +327,53 @@ namespace rtts {
         } \
     }(LHS, GEN)
 
+    namespace algorithm {
+        using all_types = types<
+            char, short, int, long long,
+            unsigned char, unsigned short, unsigned int, unsigned long long,
+            float, double
+        >;
+    } // namespace algorithm
+
+    namespace random {
+        template <class T>
+        struct generator {
+            std::mt19937 gen;
+
+            explicit generator(unsigned seed = 42) : gen(seed) {}
+
+            T operator()() {
+                if constexpr (std::is_same_v<T, bool>) {
+                    return (gen() & 1) != 0;
+                } else if constexpr (std::is_integral_v<T>) {
+                    if constexpr (std::is_signed_v<T>) {
+                        std::uniform_int_distribution<long long> dist(-1000, 1000);
+                        return static_cast<T>(dist(gen));
+                    } else {
+                        std::uniform_int_distribution<unsigned long long> dist(0, 2000);
+                        return static_cast<T>(dist(gen));
+                    }
+                } else if constexpr (std::is_floating_point_v<T>) {
+                    std::uniform_real_distribution<T> dist(T(-1000), T(1000));
+                    return dist(gen);
+                } else {
+                    static_assert(std::is_arithmetic_v<T>, "Unsupported random type");
+                }
+            }
+        };
+
+        template <class T>
+        std::vector<T> vector(size_t size, unsigned seed = 42) {
+            generator<T> gen(seed);
+
+            std::vector<T> result(size);
+            for (auto& x : result)
+                x = gen();
+
+            return result;
+        }
+    } // namespace random
+
     namespace simd {
         constexpr raze::arch::ISA current_isa() {
             return raze::vx::target_isa();

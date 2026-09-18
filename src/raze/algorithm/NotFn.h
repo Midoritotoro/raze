@@ -24,7 +24,7 @@ struct not_fn {
 };
 
 template <class Fn>
-constexpr raze_always_inline decltype(auto) make_not_fn(Fn& fn) noexcept {
+constexpr raze_always_inline decltype(auto) make_not_fn(Fn& fn) noexcept(noexcept(not_fn<Fn>(fn))) {
     return not_fn<Fn>(fn);
 }
 

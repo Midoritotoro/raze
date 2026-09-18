@@ -26,6 +26,7 @@
 #include <raze/algorithm/remove/Remove.h>
 #include <raze/algorithm/remove/RemoveCopy.h>
 #include <raze/algorithm/replace/Replace.h>
+#include <raze/algorithm/replace/ReplaceIf.h>
 #include <raze/algorithm/replace/ReplaceCopy.h>
 #include <raze/algorithm/transform/Transform.h>
 #include <raze/algorithm/swap/Swap.h>

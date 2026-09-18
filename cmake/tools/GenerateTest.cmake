@@ -884,6 +884,7 @@ function(raze_generate_test root main_source rootpath file)
     raze_add_parent_target(${test})
 
 endfunction()
+
 function(raze_glob_unit root relative pattern)
     if(ARGC GREATER 3)
         set(parent_target ${ARGV3})
@@ -932,5 +933,127 @@ function(raze_make_unit root)
                 ${parent_target}
             )
         endif()
+    endforeach()
+endfunction()
+
+function(raze_configure_test_target target)
+    set_target_properties(${target} PROPERTIES
+        CXX_STANDARD 23
+        CXX_STANDARD_REQUIRED ON
+        CXX_EXTENSIONS OFF
+        CXX_SCAN_FOR_MODULES OFF
+    )
+
+    target_compile_features(${target} PRIVATE cxx_std_23)
+
+    target_include_directories(${target} PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
+    target_link_libraries(${target} PRIVATE raze::raze)
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(${target} PRIVATE /bigobj /permissive- /Od /MP)
+    else()
+        target_compile_options(${target} PRIVATE -O0 -g)
+    endif()
+endfunction()
+
+
+function(raze_configure_native_test_target target)
+    raze_configure_test_target(${target})
+
+    target_compile_definitions(
+        ${target}
+        PRIVATE
+            RAZE_TEST_ARCH_NAMESPACE=raze_test_native
+    )
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(${target} PRIVATE -march=native)
+    endif()
+endfunction()
+
+
+function(raze_generate_native_test root main_source rootpath file)
+    if(ARGC GREATER 4)
+        set(parent_target ${ARGV4})
+    else()
+        set(parent_target "unit")
+    endif()
+
+    string(REPLACE ".cpp" "" base "${file}")
+    string(REPLACE "/" "." base "${base}")
+    string(REPLACE "\\" "." base "${base}")
+
+    if(NOT root STREQUAL "")
+        set(test "${root}.${base}")
+    else()
+        set(test "${base}")
+    endif()
+
+    if(NOT EXISTS "${main_source}")
+        message(FATAL_ERROR
+            "raze_generate_native_test: main.cpp not found: ${main_source}"
+        )
+    endif()
+
+    add_executable(
+        ${test}
+        "${main_source}"
+        "${rootpath}${file}"
+    )
+
+    set_target_properties(${test} PROPERTIES
+        RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
+
+        OUTPUT_NAME "${test}"
+
+        FOLDER "Tests"
+    )
+
+    raze_configure_native_test_target(${test})
+
+    add_test(
+        NAME ${test}
+        COMMAND ${test}
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:${test}>"
+    )
+
+    raze_add_parent_target(${test})
+
+    if(NOT TARGET ${parent_target})
+        add_custom_target(${parent_target})
+    endif()
+
+    add_dependencies(${parent_target} ${test})
+endfunction()
+
+
+function(raze_glob_native_unit root relative pattern)
+    if(ARGC GREATER 3)
+        set(parent_target ${ARGV3})
+    else()
+        set(parent_target "unit")
+    endif()
+
+    set(main_source "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
+
+    file(
+        GLOB files
+        CONFIGURE_DEPENDS
+        RELATIVE "${relative}"
+        "${relative}/${pattern}"
+    )
+
+    foreach(file IN LISTS files)
+        if(file STREQUAL "main.cpp")
+            continue()
+        endif()
+
+        raze_generate_native_test(
+            "${root}"
+            "${main_source}"
+            "${relative}/"
+            "${file}"
+            "${parent_target}"
+        )
     endforeach()
 endfunction()

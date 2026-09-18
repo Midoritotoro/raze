@@ -14,38 +14,37 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Type_, class _Integral_>
-raze_always_inline void rewind_bytes(_Type_*& target, _Integral_ offset) noexcept {
-    target = reinterpret_cast<_Type_*>(const_cast<u8*>(
-        reinterpret_cast<const volatile u8*>(target)) - offset);
+template <class T, class Offset>
+raze_always_inline void rewind_bytes(T*& target, Offset offset) noexcept {
+    target = reinterpret_cast<T*>(const_cast<u8*>(reinterpret_cast<const volatile u8*>(target)) - offset);
 }
 
-template <class _Type_, class _Integral_>
-raze_always_inline void rewind_bytes(const _Type_*& target, _Integral_ offset) noexcept {
-    target = reinterpret_cast<const _Type_*>(const_cast<const u8*>(
+template <class T, class Offset>
+raze_always_inline void rewind_bytes(const T*& target, Offset offset) noexcept {
+    target = reinterpret_cast<const T*>(const_cast<const u8*>(
         reinterpret_cast<const volatile unsigned char*>(target)) - offset);
 }
 
-template <class _Type_, class _Integral_>
-raze_always_inline void advance_bytes(_Type_*& target, _Integral_ offset) noexcept {
-    target = reinterpret_cast<_Type_*>(const_cast<unsigned char*>(
+template <class T, class Offset>
+raze_always_inline void advance_bytes(T*& target, Offset offset) noexcept {
+    target = reinterpret_cast<T*>(const_cast<unsigned char*>(
         reinterpret_cast<const volatile unsigned char*>(target)) + offset);
 }
 
-template <class _Type_, class _Integral_>
-raze_always_inline void advance_bytes(const _Type_*& target, _Integral_ offset) noexcept {
-    target = reinterpret_cast<const _Type_*>(const_cast<const unsigned char*>(
+template <class T, class Offset>
+raze_always_inline void advance_bytes(const T*& target, Offset offset) noexcept {
+    target = reinterpret_cast<const T*>(const_cast<const unsigned char*>(
         reinterpret_cast<const volatile unsigned char*>(target)) + offset);
 }
 
-template <class _Type1_, class _Type2_, class _Integral_>
-raze_always_inline void advance_bytes(_Type1_*& target1, _Type2_*& target2, _Integral_ offset) noexcept {
+template <class T1, class T2, class Offset>
+raze_always_inline void advance_bytes(T1*& target1, T2*& target2, Offset offset) noexcept {
     advance_bytes(target1, offset);
     advance_bytes(target2, offset);
 }
 
-template <class _Type1_, class _Type2_, class _Integral_>
-raze_always_inline void advance_bytes(const _Type1_*& target1, const _Type2_*& target2, _Integral_ offset) noexcept {
+template <class T1, class T2, class Offset>
+raze_always_inline void advance_bytes(const T1*& target1, const T2*& target2, Offset offset) noexcept {
     advance_bytes(target1, offset);
     advance_bytes(target2, offset);
 }
@@ -55,16 +54,16 @@ raze_always_inline sizetype byte_length(const volatile void* first, const volati
         const_cast<const unsigned char*>(reinterpret_cast<const volatile unsigned char*>(first)));
 }
 
-template <class _InputIterator_> 
-constexpr inline bool is_nothrow_distance_v = std::random_access_iterator<_InputIterator_> 
-    || std::bool_constant<noexcept(std::declval<std::remove_reference_t<_InputIterator_>&>()++)>::value;
+template <class InIt> 
+constexpr inline bool is_nothrow_distance_v = std::random_access_iterator<InIt>
+    || std::bool_constant<noexcept(std::declval<std::remove_reference_t<InIt>&>()++)>::value;
 
-template <class _InputIterator_, class _DifferenceType_ = std::iter_difference_t<_InputIterator_>>
-raze_nodiscard raze_always_inline constexpr std::iter_difference_t<_InputIterator_> distance(
-    _InputIterator_ first, _InputIterator_ last) noexcept(is_nothrow_distance_v<_InputIterator_>)
+template <class InIt, class DiffType = std::iter_difference_t<InIt>>
+raze_nodiscard raze_always_inline constexpr std::iter_difference_t<InIt> distance(
+    InIt first, InIt last) noexcept(is_nothrow_distance_v<InIt>)
 {
-    if constexpr (std::random_access_iterator<_InputIterator_>) {
-        return static_cast<_DifferenceType_>(last - first);
+    if constexpr (std::random_access_iterator<InIt>) {
+        return static_cast<DiffType>(last - first);
     }
     else {
         verify_range(first, last);
@@ -72,7 +71,7 @@ raze_nodiscard raze_always_inline constexpr std::iter_difference_t<_InputIterato
         auto first_unwrapped = uiter(first);
         const auto last_unwrapped = uiter(last);
 
-        auto distance = _DifferenceType_(0);
+        auto distance = DiffType(0);
 
         for (; first_unwrapped != last_unwrapped; ++first_unwrapped)
             ++distance;
@@ -81,34 +80,31 @@ raze_nodiscard raze_always_inline constexpr std::iter_difference_t<_InputIterato
     }
 }
 
-template <class _Type_, class _Integral_>
-constexpr raze_always_inline _Type_* bytes_pointer_offset(
-    _Type_* target, _Integral_ offset) noexcept
-{
-    return reinterpret_cast<_Type_*>(const_cast<unsigned char*>(
+template <class T, class Offset>
+constexpr raze_always_inline T* bytes_pointer_offset(T* target, Offset offset) noexcept {
+    return reinterpret_cast<T*>(const_cast<unsigned char*>(
         reinterpret_cast<const volatile unsigned char*>(target)) + offset);
 }
 
 template <std::ranges::contiguous_range Range>
 constexpr std::integral_constant<sizetype, range_constexpr_size<Range>() * sizeof(std::ranges::range_value_t<Range>)>
-bytes_distance(const options::as<Range>&) noexcept requires(constexpr_sized_range<Range>)
-{
+bytes_distance(const options::as<Range>&) noexcept requires(constexpr_sized_range<Range>) {
     return std::integral_constant<sizetype, range_constexpr_size<Range>() * sizeof(std::ranges::range_value_t<Range>)>{};
 }
 
 template <std::ranges::contiguous_range Range>
-constexpr auto bytes_distance(Range&& r) noexcept {
+constexpr auto bytes_distance(Range&& r) noexcept(noexcept(std::ranges::size(r))) {
     return std::ranges::size(r) * sizeof(std::ranges::range_value_t<Range>);
 }
 
-template <std::contiguous_iterator _It_, std::sentinel_for<_It_> _Sent_>
-constexpr auto bytes_distance(_It_ it, _Sent_ sent) noexcept {
-    return std::ranges::distance(it, sent) * sizeof(std::iter_value_t<_It_>);
+template <std::contiguous_iterator It, std::sentinel_for<It> Sent>
+constexpr auto bytes_distance(It it, Sent sent) noexcept(noexcept(std::ranges::distance(it, sent))) {
+    return std::ranges::distance(it, sent) * sizeof(std::iter_value_t<It>);
 }
 
-template <std::contiguous_iterator _It_>
-constexpr auto bytes_distance(_It_ first, _It_ last) noexcept {
-    return algorithm::distance(first, last) * sizeof(std::iter_value_t<_It_>);
+template <std::contiguous_iterator It>
+constexpr auto bytes_distance(It first, It last) noexcept(noexcept(algorithm::distance(first, last))) {
+    return algorithm::distance(first, last) * sizeof(std::iter_value_t<It>);
 }
 
 __RAZE_ALGORITHM_NAMESPACE_END
