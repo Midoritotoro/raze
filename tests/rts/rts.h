@@ -424,30 +424,47 @@ namespace rtts {
         using all_fp_types = typename filter<is_valid_simd_info, all_fp_infos>::type;
     }
 
-    inline int main() {
+    inline int run() {
         std::size_t done_tests = 0;
+        bool aborted = false;
+
         try {
             for (auto& t : detail::suite()) {
                 auto test_count = detail::global_runtime.test_count;
                 auto failure_count = detail::global_runtime.failure_count;
+
                 detail::global_runtime.fail_status = false;
+
                 t();
+
                 done_tests++;
+
                 if (test_count == detail::global_runtime.test_count) {
                     detail::global_runtime.invalid();
-                    std::cout << "[!] - " << detail::current_test << " : EMPTY TEST CASE\n";
+
+                    std::cout
+                        << "[!] - "
+                        << detail::current_test
+                        << " : EMPTY TEST CASE\n";
                 }
-#if defined(RTTS_SHOW_VALID)
-                else if (failure_count == detail::global_runtime.failure_count) {
-                    std::cout << "[V] - " << detail::current_test << "\n";
-                }
-#endif
             }
         }
         catch (...) {
-            std::cout << "@@ ABORTING DUE TO EXCEPTION @@ - " << (detail::suite().size() - done_tests - 1) << " Tests not run\n";
+            aborted = true;
+
+            std::cout
+                << "@@ ABORTING DUE TO EXCEPTION @@ - "
+                << (detail::suite().size() - done_tests - 1)
+                << " Tests not run\n";
         }
-        return detail::global_runtime.report();
+
+        const int result = detail::global_runtime.report();
+
+        if (aborted) {
+            return 1;
+        }
+
+        return result;
     }
 }
 

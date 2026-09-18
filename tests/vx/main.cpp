@@ -1,5 +1,5 @@
 #include <tests/rts/rts.h>
 
 int main() {
-    return rtts::main();
+    return rtts::run();
 }
