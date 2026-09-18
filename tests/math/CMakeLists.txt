@@ -1,5 +1,3 @@
-include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/tools/Targets.cmake")
-
 cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
 project(razeTestsMath LANGUAGES CXX)
 
@@ -21,7 +19,8 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
    set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
 endif()
 
+add_custom_target(unit.math)
 add_custom_target(math)
-add_dependencies(unit math)
-raze_glob_unit("math" ${CMAKE_CURRENT_SOURCE_DIR} "fused/*.cpp")
-raze_glob_unit("math" ${CMAKE_CURRENT_SOURCE_DIR} "core/*.cpp")
+add_dependencies(unit.math math)
+raze_glob_unit("math" ${CMAKE_CURRENT_SOURCE_DIR} "fused/*.cpp" unit.math)
+raze_glob_unit("math" ${CMAKE_CURRENT_SOURCE_DIR} "core/*.cpp" unit.math)

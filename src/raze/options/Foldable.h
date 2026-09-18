@@ -5,7 +5,7 @@
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 struct accumulate_decorations {
-    raze_always_inline constexpr auto operator()(auto acc, const auto& m) const {
+    raze_always_inline constexpr auto operator()(auto acc, const auto& m) const noexcept {
         return m.default_to(acc); 
     }
 };
@@ -22,9 +22,6 @@ struct foldable {
             std::invoke(x._function, x._value, y._value)};
     }
 };
-
-template <class F, class T>
-foldable(const F&, T&&) -> foldable<F, T>;
 
 template <class F, class T, class Value>
 constexpr raze_always_inline auto fold_left(F f, T&& tuple, Value init) noexcept {

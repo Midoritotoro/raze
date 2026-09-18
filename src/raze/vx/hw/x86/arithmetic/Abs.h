@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/arithmetic/Sub.h>
+#include <src/raze/vx/hw/x86/bitwise/Andnot.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -32,13 +33,12 @@ raze_always_inline V abs_(V x) noexcept {
 			if constexpr (has_ssse3<ISA>) return _mm_abs_epi8(x);
 			else return _mm_min_epu8(x, _mm_sub_epi8(_mm_setzero_si128(), x));
 		}
-		else if constexpr (ps<T>) return _mm_and_ps(x, as<__m128>(_mm_set1_epi32(0x7FFFFFFF)));
-		else if constexpr (pd<T>) return _mm_and_pd(x, as<__m128d>(_mm_setr_epi32(-1, 0x7FFFFFFFu, -1, 0x7FFFFFFFu)));
+		else if constexpr (ps<T>) return _mm_andnot_ps(_mm_set1_ps(-0.0f), x);
+		else if constexpr (pd<T>) return _mm_andnot_pd(_mm_set1_pd(-0.0), x);
 	}
 	else if constexpr (sizeof(V) == 32) {
-		if constexpr (pd<T>) return _mm256_and_pd(x, as<__m256d>(_mm256_setr_epi32(
-			0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu, 0xFFFFFFFFu, 0x7FFFFFFFu)));
-		else if constexpr (ps<T>) return _mm256_and_ps(x, as<__m256>(_mm256_set1_epi32(0x7FFFFFFFu)));
+		if constexpr (pd<T>) return _mm256_andnot_pd(_mm256_set1_pd(-0.0), x);
+		else if constexpr (ps<T>) return _mm256_andnot_ps(_mm256_set1_ps(-0.0f), x);
 		else if constexpr (has_avx2<ISA>) {
 			if constexpr (epi64<T>) {
 				if constexpr (has_avx512vl<ISA>) return _mm256_abs_epi64(x);
@@ -60,8 +60,8 @@ raze_always_inline V abs_(V x) noexcept {
 	else if constexpr (sizeof(V) == 64) {
 		if constexpr (epi64<T>) return _mm512_abs_epi64(x);
 		else if constexpr (epi32<T>) return _mm512_abs_epi32(x);
-		else if constexpr (ps<T>) return _mm512_abs_ps(x);
-		else if constexpr (pd<T>) return _mm512_abs_pd(x);
+		else if constexpr (pd<T>) return as<V>(_mm512_andnot_si512(as<__m512i>(_mm512_set1_pd(-0.0)), as<__m512i>(x)));
+		else if constexpr (ps<T>) return as<V>(_mm512_andnot_si512(as<__m512i>(_mm512_set1_ps(-0.0f)), as<__m512i>(x)));
 		else if constexpr (has_avx512bw<ISA>) {
 			if constexpr (epi16<T>) return _mm512_abs_epi16(x);
 			else if constexpr (epi8<T>) return _mm512_abs_epi8(x);
@@ -72,7 +72,10 @@ raze_always_inline V abs_(V x) noexcept {
 			return as<V>(_mm512_insertf64x4(as<__m512d>(low), as<__m256d>(high), 1));
 		}
 	}
-	else return x < 0 ? -x : x;
+	else {
+		if constexpr (std::floating_point<T>) return bit_andnot_<ISA, T>(T(-0.0), x);
+		else return (x < 0) ? -x : x;
+	}
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
@@ -99,16 +102,15 @@ raze_always_inline V abs_(V x, M mask) noexcept {
 	else if constexpr (sizeof(V) == 64) {
 		if constexpr (epi64<T>) return _mm512_maskz_abs_epi64(mask, x);
 		else if constexpr (epi32<T>) return _mm512_maskz_abs_epi32(mask, x);
-		else if constexpr (ps<T>) return _mm512_maskz_abs_ps(mask, x);
-		else if constexpr (pd<T>) return _mm512_maskz_abs_pd(mask, x);
+		else if constexpr (ps<T>) return _mm512_mask_abs_ps(_mm512_setzero_ps(), mask, x);
+		else if constexpr (pd<T>) return _mm512_mask_abs_pd(_mm512_setzero_pd(), mask, x);
 		else if constexpr (has_avx512bw<ISA>) {
 			if constexpr (epi16<T>) return _mm512_maskz_abs_epi16(mask, x);
 			else if constexpr (epi8<T>) return _mm512_maskz_abs_epi8(mask, x);
 		}
 	}
 	
-	if constexpr (arithmetic_type<V>) return (mask) ? (x < 0 ? -x : x) : 0;
-	else return select_<ISA, T>(abs_<ISA, T>(x), mask);
+	return select_<ISA, T>(abs_<ISA, T>(x), mask);
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
@@ -143,8 +145,7 @@ raze_always_inline V abs_(V x, M mask, V src) noexcept {
 		}
 	}
 	
-	if constexpr (arithmetic_type<V>) return (mask) ? (x < 0 ? -x : x) : src;
-	else return select_<ISA, T>(abs_<ISA, T>(x), src, mask);
+	return select_<ISA, T>(abs_<ISA, T>(x), src, mask);
 }
 
 __RAZE_VX_NAMESPACE_END

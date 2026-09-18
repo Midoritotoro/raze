@@ -1,18 +1,3 @@
-function(raze_add_parent_target target)
-  string(REGEX REPLACE "[^.]+\\.([^.]+)$" "\\1" parent_target ${target})
-  string(REGEX REPLACE "^.*\\.([^.]+)$" "\\1" suffix ${parent_target})
-
-  if(NOT TARGET ${target})
-    add_custom_target(${target})
-    set_property(TARGET ${target} PROPERTY FOLDER "${suffix}")
-  endif()
-
-  if(NOT ${parent_target} STREQUAL ${target})
-    raze_add_parent_target(${parent_target})
-    add_dependencies(${parent_target} ${target})
-  endif()
-endfunction()
-
 set(RAZE_TEST_ARCH_CONFIGS
     "SSE2|-msse2| |RAZE_HAS_SSE2_SUPPORT=1"
     "SSE3|-msse3| |RAZE_HAS_SSE3_SUPPORT=1"
@@ -40,7 +25,28 @@ set(RAZE_TEST_ARCH_CONFIGS
     "AVX512VBMI2VLDQ|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512VBMI2_SUPPORT=1"
 )
 
+function(raze_add_parent_target target)
+  string(REGEX REPLACE "[^.]+\\.([^.]+)$" "\\1" parent_target ${target})
+  string(REGEX REPLACE "^.*\\.([^.]+)$" "\\1" suffix ${parent_target})
+
+  if(NOT TARGET ${target})
+    add_custom_target(${target})
+    set_property(TARGET ${target} PROPERTY FOLDER "${suffix}")
+  endif()
+
+  if(NOT ${parent_target} STREQUAL ${target})
+    raze_add_parent_target(${parent_target})
+    add_dependencies(${parent_target} ${target})
+  endif()
+endfunction()
+
 function(raze_generate_test root main_source rootpath file)
+    if(ARGC GREATER 4)
+        set(parent_target ${ARGV4})
+    else()
+        set(parent_target "unit")
+    endif()
+
     string(REPLACE ".cpp" "" base ${file})
     string(REPLACE "/" "." base ${base})
     string(REPLACE "\\" "." base ${base})
@@ -124,21 +130,42 @@ function(raze_generate_test root main_source rootpath file)
         WORKING_DIRECTORY $<TARGET_FILE_DIR:${test}>
     )
 
-    add_dependencies(unit ${test})
+    if(NOT TARGET ${parent_target})
+        add_custom_target(${parent_target})
+    endif()
+    add_dependencies(${parent_target} ${test})
     raze_add_parent_target(${test})
 endfunction()
 
 function(raze_glob_unit root relative pattern)
+    if(ARGC GREATER 3)
+        set(parent_target ${ARGV3})
+    else()
+        set(parent_target "unit")
+    endif()
+
     set(main_source "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
     file(GLOB files RELATIVE ${relative} ${pattern})
     foreach(file ${files})
-        raze_generate_test("${root}" "${main_source}" "${relative}/" ${file})
+        raze_generate_test("${root}" "${main_source}" "${relative}/" ${file} ${parent_target})
     endforeach()
 endfunction()
 
 function(raze_make_unit root)
+    if(ARGC GREATER 1 AND NOT ARGV1 MATCHES "\\.(cpp|h)$")
+        set(parent_target ${ARGV1})
+        set(start_idx 2)
+    else()
+        set(parent_target "unit")
+        set(start_idx 1)
+    endif()
+
     set(main_source "${CMAKE_CURRENT_SOURCE_DIR}/main.cpp")
-    foreach(file ${ARGN})
-        raze_generate_test(${root} "${main_source}" "${CMAKE_CURRENT_SOURCE_DIR}/" ${file})
+    
+    foreach(i RANGE ${start_idx} ${ARGC})
+        if(i LESS ARGC)
+            list(GET ARGV ${i} file)
+            raze_generate_test(${root} "${main_source}" "${CMAKE_CURRENT_SOURCE_DIR}/" ${file} ${parent_target})
+        endif()
     endforeach()
 endfunction()

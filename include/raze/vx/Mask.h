@@ -34,6 +34,9 @@ public:
 	simd_mask(simd_mask&&) = default;
 	~simd_mask() = default;
 
+	raze_always_inline simd_mask& operator=(const simd_mask& other) noexcept = default;
+	raze_always_inline simd_mask& operator=(simd_mask&&) noexcept = default;
+
 	raze_always_inline simd_mask(uninitialized_tag) noexcept {}
 
 	raze_no_stack_protector raze_always_inline explicit simd_mask(bool v) noexcept {
@@ -97,11 +100,6 @@ public:
 
 	raze_nodiscard raze_always_inline static constexpr auto size() noexcept {
 		return abi_type::size;
-	}
-
-	raze_always_inline simd_mask& operator=(const simd_mask& other) noexcept {
-		_storage = other._storage;
-		return *this;
 	}
 
 	friend raze_always_inline simd_mask operator&(const simd_mask& x, const simd_mask& y) noexcept {
