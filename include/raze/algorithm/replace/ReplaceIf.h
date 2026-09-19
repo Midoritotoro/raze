@@ -3,6 +3,8 @@
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/DataSource.h>
+#include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -44,13 +46,13 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		}
 	
 		void operator()(autovectorizable) requires(vectorizable()) {
-			auto* raze_restrict b = std::to_address(_iterator);
-			auto* raze_restrict e = std::to_address(_sentinel);
+			auto* raze_restrict first = std::to_address(_iterator);
+			auto* raze_restrict last = std::to_address(_sentinel);
 
-			for (; b != e; ++b)
-				*b = _predicate(_proj(*b)) ? _new_value : *b;
+			for (; first != last; ++first)
+				*first = _predicate(_proj(*first)) ? _new_value : *first;
 
-			source_type::from_ptr(_iterator, b);
+			source_type::from_ptr(_iterator, first);
 		}
 
 		raze_always_inline constexpr void operator()() {

@@ -34,7 +34,7 @@ struct configurable_compress_store_t : options::conditional_callable<configurabl
             if constexpr (Options::contains(aligned)) mem = reinterpret_cast<decltype(mem)>(compress_store_<Abi::isa, Value>(mem, ustorage(chunk), ustorage(mask_chunk), aligned_policy{}));
             else mem = reinterpret_cast<decltype(mem)>(compress_store_<Abi::isa, Value>(mem, ustorage(chunk), ustorage(mask_chunk)));
 
-            algorithm::seek_iter(it, mem);
+            traits::seek_iter(it, mem);
         }, mask.__storage().storage());
 
         return it;

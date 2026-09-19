@@ -58,7 +58,7 @@ struct range_data_source {
 		unwrap(std::iter_value_t<unchecked_iterator_type>* ptr) 
 	{
 		unchecked_iterator_type it;
-		seek_iter(it, ptr);
+		traits::seek_iter(it, ptr);
 		return it;
 	}
 
@@ -66,7 +66,7 @@ struct range_data_source {
 		unwrap(const std::iter_value_t<unchecked_iterator_type>* ptr) 
 	{
 		unchecked_iterator_type it;
-		seek_iter(it, ptr);
+		traits::seek_iter(it, ptr);
 		return it;
 	}
 
@@ -74,32 +74,32 @@ struct range_data_source {
 		wrap(unchecked_iterator_type uit) const
 	{
 		iterator_type it = std::ranges::begin(_range);
-		seek_iter(it, uit);
+		traits::seek_iter(it, uit);
 		return it;
 	}
 
 	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
 		std::iter_value_t<unchecked_iterator_type>* ptr)
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
 		const std::iter_value_t<unchecked_iterator_type>* ptr)
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
 		std::iter_value_t<iterator_type>* ptr)
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
 		const std::iter_value_t<iterator_type>* ptr)
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	Range _range;
@@ -110,7 +110,7 @@ struct iter_data_source {
 	using iterator_type = It;
 	using sentinel_type = Sent;
 
-	using unchecked_iterator_type = decltype(traits::uiter<Sent>(std::declval<It>()));
+	using unchecked_iterator_type = decltype(traits::uiter_s<Sent>(std::declval<It>()));
 	using unchecked_sentinel_type = decltype(traits::usent<It>(std::declval<Sent>()));
 
 	constexpr iter_data_source(It it, Sent sent) :
@@ -134,7 +134,7 @@ struct iter_data_source {
 	}
 
 	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
-		return traits::uiter<Sent>(_it);
+		return traits::uiter_s<Sent>(_it);
 	}
 
 	raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
@@ -144,14 +144,14 @@ struct iter_data_source {
 	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
 		unwrap(iterator_type it) 
 	{
-		return traits::uiter<Sent>(std::move(it));
+		return traits::uiter_s<Sent>(std::move(it));
 	}
 
 	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
 		unwrap(std::iter_value_t<unchecked_iterator_type>* ptr) 
 	{
 		unchecked_iterator_type it;
-		seek_iter(it, ptr);
+		traits::seek_iter(it, ptr);
 		return it;
 	}
 
@@ -159,7 +159,7 @@ struct iter_data_source {
 		unwrap(const std::iter_value_t<unchecked_iterator_type>* ptr)
 	{
 		unchecked_iterator_type it;
-		seek_iter(it, ptr);
+		traits::seek_iter(it, ptr);
 		return it;
 	}
 
@@ -167,32 +167,32 @@ struct iter_data_source {
 		wrap(unchecked_iterator_type uit) const
 	{
 		iterator_type it = _it;
-		seek_iter(it, uit);
+		traits::seek_iter(it, uit);
 		return it;
 	}
 
 	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
 		std::iter_value_t<unchecked_iterator_type>* ptr) 
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
 		const std::iter_value_t<unchecked_iterator_type>* ptr)
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
 		std::iter_value_t<iterator_type>* ptr)
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
 		const std::iter_value_t<iterator_type>* ptr)
 	{
-		seek_iter(uit, ptr);
+		traits::seek_iter(uit, ptr);
 	}
 
 	iterator_type _it;

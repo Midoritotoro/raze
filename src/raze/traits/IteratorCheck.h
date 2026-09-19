@@ -112,14 +112,22 @@ concept unwrappable_sentinel_for = weakly_unwrappable_sentinel<Sent> && weakly_u
 	};
 
 template <class Sent, class Iter>
-raze_nodiscard raze_always_inline constexpr decltype(auto) uiter(Iter&& it)
+raze_nodiscard raze_always_inline constexpr decltype(auto) uiter_s(Iter&& it)
 	noexcept(!unwrappable_sentinel_for<Sent, Iter> || is_nothrow_unwrappable_v<Iter>)
+		requires(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>)
 {
-	static_assert(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>);
-
 	if constexpr (std::is_pointer_v<std::remove_cvref_t<Iter>>) return it + 0;
 	else if constexpr (unwrappable_sentinel_for<Sent, Iter>) return static_cast<Iter&&>(it)._Unwrapped();
 	else return static_cast<Iter&&>(it);
+}
+
+template <class It>
+raze_always_inline constexpr decltype(auto) uiter(It&& it)
+	noexcept(traits::is_iterator_unwrappable_v<It> == false || traits::is_nothrow_unwrappable_v<It>)
+{
+	if constexpr (std::is_pointer_v<std::decay_t<It>>) return it + 0;
+	else if constexpr (traits::is_iterator_unwrappable_v<It>) return std::move(it)._Unwrapped();
+	else return std::move(it);
 }
 
 template <class Iter, class Sent>
@@ -135,10 +143,10 @@ raze_nodiscard raze_always_inline constexpr decltype(auto) usent(Sent&& sent)
 
 template <std::ranges::range R, class Iter>
 raze_nodiscard raze_always_inline constexpr decltype(auto) r_uiter(Iter&& it)
-	noexcept(noexcept(uiter<std::ranges::sentinel_t<R>>(static_cast<Iter&&>(it))))
+	noexcept(noexcept(uiter_s<std::ranges::sentinel_t<R>>(static_cast<Iter&&>(it))))
 {
 	static_assert(std::same_as<std::remove_cvref_t<Iter>, std::ranges::iterator_t<R>>);
-	return uiter<std::ranges::sentinel_t<R>>(static_cast<Iter&&>(it));
+	return uiter_s<std::ranges::sentinel_t<R>>(static_cast<Iter&&>(it));
 }
 
 template <std::ranges::range R, class Sent>
@@ -150,7 +158,7 @@ raze_nodiscard raze_always_inline constexpr decltype(auto) r_usent(Sent&& sent)
 }
 
 template <class Sent, class Iter>
-using ranges_unwrap_iter_t = std::remove_cvref_t<decltype(uiter<Sent>(std::declval<Iter>()))>;
+using ranges_unwrap_iter_t = std::remove_cvref_t<decltype(uiter_s<Sent>(std::declval<Iter>()))>;
 
 template <class Sent, class Iter>
 using ranges_unwrap_sent_t = std::remove_cvref_t<decltype(usent<Iter>(std::declval<Sent>()))>;
@@ -214,6 +222,19 @@ raze_always_inline constexpr Result rewrap_subrange(Wrapped& v, std::ranges::sub
 
 		return Result { std::move(v), std::move(last) };
 	}
+}
+
+template <class It>
+using unwrapped_iterator_type = std::remove_cvref_t<decltype(uiter(std::declval<It>()))>;
+
+template <class It, class UIt>
+raze_always_inline constexpr void seek_iter(It& it, UIt&& uit) noexcept(
+	traits::is_wrapped_iterator_seekable_v<It, UIt> == false || 
+	traits::is_wrapped_iterator_nothrow_seekable_v<It, UIt>)
+{
+    if constexpr (traits::is_wrapped_iterator_seekable_v<It, UIt>)
+        it._Seek_to(std::forward<UIt>(uit));
+    else it = std::forward<UIt>(uit);
 }
 
 __RAZE_TRAITS_NAMESPACE_END

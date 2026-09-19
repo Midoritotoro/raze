@@ -7,7 +7,7 @@
 #include <raze/Types.h>
 
 #include <src/raze/utility/Assert.h>
-#include <src/raze/algorithm/MsvcIteratorUnwrap.h>
+#include <src/raze/traits/IteratorCheck.h>
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/options/As.h>
 
@@ -68,8 +68,8 @@ raze_nodiscard raze_always_inline constexpr std::iter_difference_t<InIt> distanc
     else {
         verify_range(first, last);
 
-        auto first_unwrapped = uiter(first);
-        const auto last_unwrapped = uiter(last);
+        auto first_unwrapped = traits::uiter(first);
+        const auto last_unwrapped = traits::uiter(last);
 
         auto distance = DiffType(0);
 

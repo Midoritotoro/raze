@@ -5,7 +5,7 @@
 #include <src/raze/vx/hw/x86/mask/operations/MaskBroadcast.h>
 #include <src/raze/vx/hw/x86/mask/operations/LoadMask.h>
 #include <src/raze/vx/hw/x86/mask/operations/StoreMask.h>
-#include <src/raze/algorithm/MsvcIteratorUnwrap.h>
+#include <src/raze/traits/IteratorCheck.h>
 #include <src/raze/vx/Storage.h>
 #include <src/raze/vx/reference/SimdMaskReference.h>
 #include <bitset>
@@ -54,7 +54,7 @@ public:
 	raze_no_stack_protector raze_always_inline void copy_from(FwdIt it, Policy&& policy = {}) noexcept
 		requires(std::convertible_to<std::iter_value_t<FwdIt>, bool>)
 	{
-		using Unwrapped = algorithm::unwrapped_iterator_type<FwdIt>;
+		using Unwrapped = traits::unwrapped_iterator_type<FwdIt>;
 		using Value = std::iter_value_t<Unwrapped>;
 
 		if constexpr (sizeof(Value) == 1 && std::contiguous_iterator<Unwrapped> && sizeof(T) == 1) {
@@ -73,7 +73,7 @@ public:
 
 	template <class OutIt, class Policy = unaligned_policy>
 	raze_always_inline void copy_to(OutIt out, Policy&& policy = {}) noexcept {
-		using Unwrapped = algorithm::unwrapped_iterator_type<OutIt>;
+		using Unwrapped = traits::unwrapped_iterator_type<OutIt>;
 		using Value = std::iter_value_t<Unwrapped>;
 
 		if constexpr (sizeof(Value) == 1 && std::contiguous_iterator<Unwrapped> && sizeof(T) == 1) {
