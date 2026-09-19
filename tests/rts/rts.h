@@ -13,6 +13,10 @@
 #include <concepts>
 #include <random>
 #include <tuple>
+#include <deque>
+#include <list>
+#include <forward_list>
+#include <array>
 
 #define RAZE_TEST_NAMESPACE_BEGIN namespace RAZE_TEST_ARCH_NAMESPACE {
 #define RAZE_TEST_NAMESPACE_END }
@@ -362,11 +366,42 @@ namespace rtts {
             }
         };
 
-        template <class T>
-        std::vector<T> vector(size_t size, unsigned seed = 42) {
+        template <template <class...> class Container, class T>
+        Container<T> sequence(size_t size, unsigned seed = 42) {
             generator<T> gen(seed);
 
-            std::vector<T> result(size);
+            Container<T> result(size);
+            for (auto& x : result)
+                x = gen();
+
+            return result;
+        }
+
+        template <class T>
+        std::vector<T> vector(size_t size, unsigned seed = 42) {
+            return sequence<std::vector, T>(size, seed);
+        }
+
+        template <class T>
+        std::deque<T> deque(size_t size, unsigned seed = 42) {
+            return sequence<std::deque, T>(size, seed);
+        }
+
+        template <class T>
+        std::list<T> list(size_t size, unsigned seed = 42) {
+            return sequence<std::list, T>(size, seed);
+        }
+
+        template <class T>
+        std::forward_list<T> forward_list(size_t size, unsigned seed = 42) {
+            return sequence<std::forward_list, T>(size, seed);
+        }
+
+        template <class T, size_t N>
+        std::array<T, N> array(unsigned seed = 42) {
+            generator<T> gen(seed);
+
+            std::array<T, N> result;
             for (auto& x : result)
                 x = gen();
 

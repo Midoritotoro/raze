@@ -197,6 +197,102 @@ struct iter_data_source {
 	sentinel_type _sent;
 };
 
+template <class It>
+struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
+	using iterator_type = std::counted_iterator<It>;
+	using sentinel_type = std::default_sentinel_t;
+
+	using base_iterator_type = It;
+	using unchecked_base_iterator_type = traits::unwrapped_iterator_type<It>;
+	using unchecked_iterator_type = std::counted_iterator<unchecked_base_iterator_type>;
+	using unchecked_sentinel_type = std::default_sentinel_t;
+
+	constexpr iter_data_source(iterator_type it, sentinel_type):
+		_it(std::move(it))
+	{}
+
+	raze_nodiscard raze_always_inline constexpr bool empty() const {
+		return _it.count() == 0;
+	}
+
+	raze_nodiscard raze_always_inline constexpr auto size() const {
+		return static_cast<sizetype>(_it.count()) *
+			sizeof(std::iter_value_t<unchecked_base_iterator_type>);
+	}
+
+	raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+		return _it;
+	}
+
+	raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
+		return {};
+	}
+
+	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+		return { traits::uiter(_it.base()), _it.count() };
+	}
+
+	raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
+		return {};
+	}
+
+	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
+		unwrap(iterator_type it)
+	{
+		return { traits::uiter(it.base()), it.count() };
+	}
+
+	raze_nodiscard raze_always_inline constexpr iterator_type
+		wrap(unchecked_iterator_type it) const
+	{
+		auto base = _it.base();
+		traits::seek_iter(base, it.base());
+		return { std::move(base), it.count() };
+	}
+
+	static raze_always_inline constexpr void from_ptr(
+		unchecked_iterator_type& it,
+		std::iter_value_t<unchecked_iterator_type>* ptr)
+	{
+		auto base = it.base();
+		const auto offset = ptr - std::to_address(base);
+		std::ranges::advance(base, offset);
+		it = { std::move(base), it.count() - offset };
+	}
+
+	static raze_always_inline constexpr void from_ptr(
+		unchecked_iterator_type& it,
+		const std::iter_value_t<unchecked_iterator_type>* ptr)
+	{
+		auto base = it.base();
+		const auto offset = ptr - std::to_address(base);
+		std::ranges::advance(base, offset);
+		it = { std::move(base), it.count() - offset };
+	}
+
+	static raze_always_inline constexpr void from_ptr(
+		iterator_type& it,
+		std::iter_value_t<base_iterator_type>* ptr)
+	{
+		auto base = it.base();
+		const auto offset = ptr - std::to_address(base);
+		std::ranges::advance(base, offset);
+		it = { std::move(base), it.count() - offset };
+	}
+
+	static raze_always_inline constexpr void from_ptr(
+		iterator_type& it,
+		const std::iter_value_t<base_iterator_type>* ptr)
+	{
+		auto base = it.base();
+		const auto offset = ptr - std::to_address(base);
+		std::ranges::advance(base, offset);
+		it = { std::move(base), it.count() - offset };
+	}
+
+	iterator_type _it;
+};
+
 template <class Range>
 raze_nodiscard raze_always_inline constexpr auto get_source(Range&& r) {
 	return range_data_source<Range>(std::forward<Range>(r));
@@ -211,9 +307,7 @@ template <class Source>
 concept source = requires(
 	Source src,
 	typename Source::iterator_type it,
-	typename Source::unchecked_iterator_type uit,
-	std::iter_value_t<typename Source::unchecked_iterator_type>*ptr,
-	const std::iter_value_t<typename Source::unchecked_iterator_type>*cptr)
+	typename Source::unchecked_iterator_type uit)
 {
 	typename Source::iterator_type;
 	typename Source::sentinel_type;
@@ -230,25 +324,29 @@ concept source = requires(
 	{ src.uend() } -> std::same_as<typename Source::unchecked_sentinel_type>;
 
 	{ Source::unwrap(it) } -> std::same_as<typename Source::unchecked_iterator_type>;
-	{ Source::unwrap(ptr) } -> std::same_as<typename Source::unchecked_iterator_type>;
-
-	{ Source::unwrap(cptr) } -> std::same_as<typename Source::unchecked_iterator_type>;
 	{ src.wrap(uit) } -> std::same_as<typename Source::iterator_type>;
+};
 
-	{ Source::from_ptr(uit, ptr) } -> std::same_as<void>;
-	{ Source::from_ptr(uit, cptr) } -> std::same_as<void>;
-
-	{ Source::from_ptr(it, ptr) } -> std::same_as<void>;
-	{ Source::from_ptr(it, cptr) } -> std::same_as<void>;
+template <class Source>
+concept contiguous_source = source<Source> &&
+	std::contiguous_iterator<typename Source::iterator_type> &&
+	requires(typename Source::iterator_type it,
+		typename Source::unchecked_iterator_type uit,
+		std::iter_value_t<typename Source::unchecked_iterator_type>* ptr,
+		const std::iter_value_t<typename Source::unchecked_iterator_type>* cptr,
+		std::iter_value_t<typename Source::iterator_type>* iptr,
+		const std::iter_value_t<typename Source::iterator_type>* ciptr)
+{
+		{ Source::from_ptr(uit, ptr) } -> std::same_as<void>;
+		{ Source::from_ptr(uit, cptr) } -> std::same_as<void>;
+		{ Source::from_ptr(it, iptr) } -> std::same_as<void>;
+		{ Source::from_ptr(it, ciptr) } -> std::same_as<void>;
 };
 
 template <class Source>
 concept constexpr_sized_source = source<Source> && requires(Source src) {
 	{ Source::static_size() } -> std::convertible_to<sizetype>;
 };
-
-template <class Source>
-concept contiguous_source = source<Source> && std::contiguous_iterator<typename Source::iterator_type>;
 
 template <class Source>
 concept modifiable_source = source<Source> && std::permutable<typename Source::unchecked_iterator_type>;
