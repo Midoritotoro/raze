@@ -172,27 +172,25 @@ struct iter_data_source {
 	}
 
 	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
-		std::iter_value_t<unchecked_iterator_type>* ptr) 
+		std::iter_value_t<unchecked_iterator_type>* ptr)
+			requires(!std::same_as< unchecked_iterator_type, iterator_type>)
 	{
 		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
-		const std::iter_value_t<unchecked_iterator_type>* ptr)
+		const std::iter_value_t<unchecked_iterator_type>* ptr) 
+			requires(!std::same_as< unchecked_iterator_type, iterator_type>)
 	{
 		traits::seek_iter(uit, ptr);
 	}
 
-	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
-		std::iter_value_t<iterator_type>* ptr)
-	{
-		traits::seek_iter(uit, ptr);
+	static raze_always_inline constexpr void from_ptr(iterator_type& it, std::iter_value_t<iterator_type>* ptr) {
+		traits::seek_iter(it, ptr);
 	}
 
-	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
-		const std::iter_value_t<iterator_type>* ptr)
-	{
-		traits::seek_iter(uit, ptr);
+	static raze_always_inline constexpr void from_ptr(iterator_type& it, const std::iter_value_t<iterator_type>* ptr) {
+		traits::seek_iter(it, ptr);
 	}
 
 	iterator_type _it;
@@ -248,5 +246,11 @@ template <class Source>
 concept constexpr_sized_source = source<Source> && requires(Source src) {
 	{ Source::static_size() } -> std::convertible_to<sizetype>;
 };
+
+template <class Source>
+concept contiguous_source = source<Source> && std::contiguous_iterator<typename Source::iterator_type>;
+
+template <class Source>
+concept modifiable_source = source<Source> && std::permutable<typename Source::unchecked_iterator_type>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

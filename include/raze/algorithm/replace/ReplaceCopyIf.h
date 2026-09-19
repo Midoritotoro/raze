@@ -29,8 +29,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		using vector_value_type = std::iter_value_t<iterator_type>;
 
 		static consteval bool vectorizable() noexcept {
-			return std::contiguous_iterator<unchecked_iterator_type> &&
-				contiguous_destination<Destination> && 
+			return contiguous_source<Source> && contiguous_destination<Destination> && 
 				vectorizable_unary_predicate<Predicate, unchecked_iterator_type>&&
 				vectorizable_projection<Projection, unchecked_iterator_type>;
 		}

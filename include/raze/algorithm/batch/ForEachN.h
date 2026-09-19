@@ -1,99 +1,105 @@
-#pragma once 
-
+#pragma once
 
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
-#include <algorithm>
+#include <src/raze/algorithm/Destination.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _For_each_n : _Traits_ {
-	template <class _Iterator_, class _Function_, class Projection>
-	struct __impl {
-		mutable _Iterator_ _iterator;
-		_Function_ _function;
-		Projection _proj;
-		sizetype _count;
+constexpr auto for_each_n_strategy = options::strategy<strategy<>()
+	.for_gcc<strategy_mode::autovec>()
+	.for_clang<strategy_mode::autovec>()>;
 
-		constexpr explicit __impl(_Iterator_ __it, sizetype __n, _Function_ __f, Projection __proj) noexcept :
-			_iterator(__it), _function(__f), _proj(__proj), _count(__n)
-		{}
+template <class Traits>
+struct for_each_n_t : Traits, dispatchable<for_each_n_t<Traits>> {
+	template <source Source, class F, class Proj>
+	struct kernel {
+		using source_type = std::remove_cvref_t<Source>;
+		using iterator_type = typename source_type::iterator_type;
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+		using vector_value_type = std::iter_value_t<iterator_type>;
 
-		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_) const noexcept
-			requires(std::same_as<_Tag_, vx::scalar_tag>)
-		{
-			raze_disable_unrolling
-			for (sizetype __i = 0; __i < _count; ++__i, ++_iterator)
-				_function(_proj(*_iterator));
+		static consteval bool vectorizable() noexcept {
+			return contiguous_source<Source> &&
+				vectorizable_unary_function<F, unchecked_iterator_type> &&
+				vectorizable_projection<Proj, unchecked_iterator_type>;
 		}
 
-		template <class _Tag_>
-		raze_always_inline constexpr void operator()(_Tag_, sizetype __aligned_size) const noexcept
-			requires(!std::same_as<_Tag_, vx::scalar_tag>)
-		{
-			auto* __ptr = std::to_address(_iterator);
-			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
+		source_type _source;
+		unchecked_iterator_type _iterator;
+		unchecked_sentinel_type _sentinel;
+		F _f;
+		Proj _proj;
+
+		constexpr explicit kernel(Source&& src, F f, Proj proj):
+			_source(std::forward<Source>(src)), _iterator(_source.ubegin()),
+			_sentinel(_source.uend()), _f(f), _proj(proj)
+		{}
+
+		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+			auto* raze_restrict first = std::to_address(_iterator);
+			auto* raze_restrict last = std::to_address(_sentinel);
+
+			for (; first != last; ++first)
+				_f(_proj(*first));
+		}
+
+		raze_always_inline constexpr void operator()() {
+			raze_disable_unrolling
+			for (; _iterator != _sentinel; ++_iterator)
+				_f(_proj(*_iterator));
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			auto* ptr = std::to_address(_iterator);
+			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
 			raze_disable_unrolling
 			do {
-				auto __projected = _proj(raze::vx::load<_Tag_>(__ptr));
-				_function(__projected);
-				vx::store(__ptr, __projected);
-				__ptr += _Tag_::size();
-			} while (__ptr != __aligned_end);
+				auto projected = _proj(vx::load<Tag>(ptr));
+				_f(projected);
+				vx::store(ptr, projected);
+				advance_bytes(ptr, sizeof(Tag));
+			} while (ptr != aligned_end);
 
-			__seek_iter(_iterator, __ptr);
+			source_type::from_ptr(_iterator, ptr);
 		}
 
-		constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> result() const noexcept {
-			return { _iterator, _function };
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			auto* ptr = std::to_address(_iterator);
+
+			auto projected = _proj(vx::load<Tag>[ignore](ptr));
+			_f(projected);
+			vx::store[ignore](ptr, projected);
+
+			advance_bytes(ptr, ignore.tail_bytes());
+			source_type::from_ptr(_iterator, ptr);
+		}
+
+		constexpr raze_always_inline std::ranges::in_fun_result<iterator_type, F> result() const {
+			return { _source.wrap(_iterator).base(), _f };
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const {
+			return _source.size();
 		}
 	};
 
-	template <std::input_iterator _Iterator_, class _Function_, class Projection = std::identity>
-	constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> operator()(_Iterator_ __first,
-		sizetype __n, _Function_ __f, Projection __proj = {}) const noexcept
+	template <std::input_iterator InIt, class F, class Proj = std::identity>
+	constexpr raze_always_inline std::ranges::in_fun_result<InIt, F> operator()(
+		InIt first, std::iter_difference_t<InIt> n, F f, Proj proj = {}) const
+			requires(std::indirectly_unary_invocable<F, std::projected<InIt, Proj>>)
 	{
-		if (__n == 0) return { std::move(__first), std::move(__f) };
-
-		auto __r = __for_each_n_unchecked(
-			traits::__uiter<_Iterator_>(std::move(__first)),
-			__n, traits::fwd_fn(__f), traits::fwd_fn(__proj));
-
-		__seek_iter(__first, __r.in);
-		return { __first, __unwrap_function(std::move(__r.fun)) };
-	}
-
-private:
-	template <class _Iterator_, class _Function_, class Projection>
-	constexpr raze_always_inline std::ranges::for_each_result<_Iterator_, _Function_> __for_each_n_unchecked(
-		_Iterator_ __first, sizetype __n, _Function_ __f, Projection __proj) const noexcept
-	{
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		auto __work = __impl(__first, __n, __f, __proj);
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
-			&& vectorizable_unary_function<_Function_, _Iterator_> &&
-			vectorizable_projection<Projection, _Iterator_> && traits::__is_lightweight_callable_v<_Function_>)
-		{
-			if not consteval {
-				return vx::__dispatch_sized_impl<options::unroller_t<_TraitsType>::template __impl, 
-					_Value_, std::ranges::for_each_result<_Iterator_, _Function_>>(__n * sizeof(_Value_), __work);
-			}
-		}
-		
-		return options::_unroller_t<decltype(this->traits()), vx::scalar_tag>(__work);
+		return this->dispatch(get_source(std::counted_iterator<InIt>(std::move(first), n), 
+			std::default_sentinel), traits::fwd_fn(f), traits::fwd_fn(proj));
 	}
 };
 
-constexpr inline auto for_each_n = raze::options::function_with_traits<_For_each_n>[raze::options::unroll<4>];
+constexpr inline auto for_each_n = options::function_with_traits<for_each_n_t>[options::unroll<4>][for_each_n_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END
