@@ -2,6 +2,7 @@
 
 #include <raze/vx/Simd.h>
 #include <raze/vx/Abi.h>
+
 #include <iostream>
 #include <vector>
 #include <string>
@@ -17,6 +18,12 @@
 #include <list>
 #include <forward_list>
 #include <array>
+#include <iterator>
+#include <algorithm>
+#include <numeric>
+#include <functional>
+#include <memory>
+#include <ranges>
 
 #define RAZE_TEST_NAMESPACE_BEGIN namespace RAZE_TEST_ARCH_NAMESPACE {
 #define RAZE_TEST_NAMESPACE_END }
@@ -239,7 +246,9 @@ namespace rtts {
         };
 
         template <class ... Types >
-        struct test_captures<types<Types...>> : test_captures<Types...> {};
+        struct test_captures<types<Types...>> : test_captures<Types...> {
+            using test_captures<Types...>::test_captures;
+        };
     }
 
     template <class T>
@@ -253,7 +262,7 @@ namespace rtts {
         return b ? "true" : "false"; 
     }
 
-    template <class Simd> requires requires { Simd::size(); typename Simd::value_type; }
+    template <class Simd> requires requires(Simd const& v) { Simd::size(); typename Simd::value_type; v[size_t{}]; }
     inline std::string as_string(Simd const& v) {
         std::ostringstream os;
         os << "{ ";
@@ -297,17 +306,15 @@ namespace rtts {
 
 #define RTTS_ALL_EQUAL(LHS, RHS) \
         [&](auto const& a, auto const& b) { \
-            if (std::size(a) != std::size(b)) { RTTS_FAIL("Sizes don't match"); return ::rtts::detail::logger{}; } \
-            bool ok = true; \
-            for(size_t i=0; i<std::size(a); ++i) if(a[i] != b[i]) { ok = false; break; } \
-            if(ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
-            else { RTTS_FAIL("Expected: " << #LHS << " == " << #RHS << " but vectors differ."); return ::rtts::detail::logger{}; } \
+            if (!std::ranges::equal(a, b)) { RTTS_FAIL("Expected: " << #LHS << " == " << #RHS << " but containers differ."); return ::rtts::detail::logger{}; } \
+            else { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
         }(LHS, RHS)
 
 #define RTTS_ALL_VALIDATE(LHS, GEN) \
         [&](auto const& a, auto const& b) { \
             bool ok = true; \
-            for(size_t i=0; i<std::size(a); ++i) if(a[i] != b(i)) { ok = false; break; } \
+            size_t i = 0; \
+            for(auto const& elem : a) { if(elem != b(i)) { ok = false; break; } ++i; } \
             if(ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
             else { RTTS_FAIL("Expected: " << #LHS << " == " << #GEN << " but vectors differ."); return ::rtts::detail::logger{}; } \
         }(LHS, GEN)
@@ -316,16 +323,19 @@ namespace rtts {
     [&](auto const& rtts_a, auto const& rtts_gen) { \
         bool rtts_ok = true; \
         size_t rtts_bad = 0; \
-        for(size_t rtts_i = 0; rtts_i < std::size(rtts_a); ++rtts_i) { \
-            if(::rtts::detail::to_bits(rtts_a[rtts_i]) != ::rtts::detail::to_bits(rtts_gen(rtts_i))) { \
-                rtts_ok = false; rtts_bad = rtts_i; break; \
+        size_t rtts_i = 0; \
+        auto rtts_bad_val = typename std::decay_t<decltype(rtts_a)>::value_type{}; \
+        for(auto const& elem : rtts_a) { \
+            if(::rtts::detail::to_bits(elem) != ::rtts::detail::to_bits(rtts_gen(rtts_i))) { \
+                rtts_ok = false; rtts_bad = rtts_i; rtts_bad_val = elem; break; \
             } \
+            ++rtts_i; \
         } \
         if(rtts_ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
         else { \
             RTTS_FAIL("Expected bitwise: " << #LHS << " == " << #GEN \
                 << " but differ at [" << rtts_bad << "]: " \
-                << ::rtts::detail::bits_to_string(rtts_a[rtts_bad]) \
+                << ::rtts::detail::bits_to_string(rtts_bad_val) \
                 << " != " << ::rtts::detail::bits_to_string(rtts_gen(rtts_bad))); \
             return ::rtts::detail::logger{}; \
         } \
@@ -371,6 +381,18 @@ namespace rtts {
             generator<T> gen(seed);
 
             Container<T> result(size);
+            for (auto& x : result)
+                x = gen();
+
+            return result;
+        }
+
+        template <class Container>
+        Container sequence(size_t size, unsigned seed = 42) {
+            using T = typename Container::value_type;
+            generator<T> gen(seed);
+
+            Container result(size);
             for (auto& x : result)
                 x = gen();
 
@@ -504,6 +526,437 @@ namespace rtts {
 
         using all_types = typename filter<is_valid_simd_info, all_simd_infos>::type;
         using all_fp_types = typename filter<is_valid_simd_info, all_fp_infos>::type;
+    }
+
+    namespace algorithm {
+        enum class kind { range, n };
+
+        inline constexpr kind range = kind::range;
+        inline constexpr kind n = kind::n;
+
+        struct config {
+            size_t random_cases = 256;
+            size_t random_max_size = 1000;
+            unsigned seed = 42;
+            bool counted = true;
+            std::vector<size_t> sizes = {
+                0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32,
+                63, 64, 127, 128, 255, 256
+            };
+
+            static config thorough() {
+                config result;
+                result.random_cases = 1000;
+                result.sizes = {
+                    0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32,
+                    63, 64, 127, 128, 255, 256,
+                    10000, 50000, 100000
+                };
+                return result;
+            }
+
+            config& random(size_t cases, size_t max_size) {
+                random_cases = cases;
+                random_max_size = max_size;
+                return *this;
+            }
+
+            config& add_sizes(std::initializer_list<size_t> values) {
+                sizes.insert(sizes.end(), values.begin(), values.end());
+                return *this;
+            }
+
+            config& counted_only(bool value = true) {
+                counted = value;
+                return *this;
+            }
+        };
+
+        template <class T, class Container>
+        struct fixture {
+            Container value;
+            Container second;
+            std::vector<T> output;
+            std::vector<T> output2;
+            std::vector<T> pattern;
+            size_t pattern_size = 0;
+            size_t count = 0;
+            T value_arg{};
+            T other_arg = T(17);
+            T replacement = T(42);
+
+            size_t size() const { return static_cast<size_t>(std::ranges::distance(value)); }
+        };
+
+        template <bool Counted, class Fixture>
+        struct args {
+            Fixture& data;
+
+            constexpr auto first() const {
+                if constexpr (Counted)
+                    return std::counted_iterator(data.value.begin(), static_cast<std::ptrdiff_t>(data.size()));
+                else
+                    return data.value.begin();
+            }
+
+            constexpr auto last() const {
+                if constexpr (Counted)
+                    return std::default_sentinel;
+                else
+                    return data.value.end();
+            }
+
+            constexpr auto first2() const {
+                if constexpr (Counted)
+                    return std::counted_iterator(data.second.begin(), static_cast<std::ptrdiff_t>(std::ranges::distance(data.second)));
+                else
+                    return data.second.begin();
+            }
+
+            constexpr auto last2() const {
+                if constexpr (Counted)
+                    return std::default_sentinel;
+                else
+                    return data.second.end();
+            }
+
+            constexpr auto out() const {
+                return data.output.begin();
+            }
+
+            constexpr auto out2() const {
+                return data.output2.begin();
+            }
+
+            constexpr auto pattern_first() const {
+                return data.pattern.begin();
+            }
+
+            constexpr auto pattern_last() const {
+                return data.pattern.begin() + data.pattern_size;
+            }
+
+            constexpr size_t count() const {
+                return data.count;
+            }
+
+            constexpr auto& value() const {
+                return data.value_arg;
+            }
+
+            constexpr auto& other() const {
+                return data.other_arg;
+            }
+
+            constexpr auto& replacement() const {
+                return data.replacement;
+            }
+        };
+
+        template <class It>
+        constexpr auto base(It it) {
+            if constexpr (requires { it.base(); }) return it.base();
+            else return it;
+        }
+
+        template <class Container, class It>
+        constexpr size_t position(Container const& value, It it) {
+            if constexpr (std::is_same_v<std::decay_t<It>, std::default_sentinel_t>) {
+                return static_cast<size_t>(std::ranges::distance(value));
+            } else {
+                return static_cast<size_t>(std::ranges::distance(value.begin(), base(it)));
+            }
+        }
+
+        template <class A, class B>
+        constexpr bool iterator_equal(A const& a, B const& b, auto const& ca, auto const& cb) {
+            return position(ca, a) == position(cb, b);
+        }
+
+        template <class A, class B>
+        constexpr bool input2_equal(A const& a, B const& b, auto const& ca, auto const& cb) {
+            return position(ca.second, a) == position(cb.second, b);
+        }
+
+        template <class A, class B>
+        constexpr bool output_equal(A const& a, B const& b, auto const& ca, auto const& cb) {
+            return position(ca.output, a) == position(cb.output, b);
+        }
+
+        template <class A, class B>
+        constexpr bool output2_equal(A const& a, B const& b, auto const& ca, auto const& cb) {
+            return position(ca.output2, a) == position(cb.output2, b);
+        }
+
+        template <class A, class B>
+        constexpr bool result_equal(A const& a, B const& b, auto const& ca, auto const& cb) {
+            bool handled = false;
+            bool result = true;
+
+            if constexpr (requires { a.in; b.in; }) {
+                handled = true;
+                result &= iterator_equal(a.in, b.in, ca.value, cb.value);
+            }
+
+            if constexpr (requires { a.out; b.out; }) {
+                handled = true;
+                result &= output_equal(a.out, b.out, ca, cb);
+            }
+
+            if constexpr (requires { a.in1; b.in1; }) {
+                handled = true;
+                result &= iterator_equal(a.in1, b.in1, ca.value, cb.value);
+            }
+            if constexpr (requires { a.in2; b.in2; }) {
+                handled = true;
+                result &= input2_equal(a.in2, b.in2, ca, cb);
+            }
+            if constexpr (requires { a.out1; b.out1; }) {
+                handled = true;
+                result &= output_equal(a.out1, b.out1, ca, cb);
+            }
+            if constexpr (requires { a.out2; b.out2; }) {
+                handled = true;
+                result &= output2_equal(a.out2, b.out2, ca, cb);
+            }
+
+            if constexpr (requires { a.min; b.min; a.max; b.max; }) {
+                handled = true;
+                result &= iterator_equal(a.min, b.min, ca.value, cb.value);
+                result &= iterator_equal(a.max, b.max, ca.value, cb.value);
+            }
+
+            if constexpr (requires { a.begin(); a.end(); b.begin(); b.end(); }) {
+                if (!handled) {
+                    handled = true;
+                    result &= iterator_equal(a.begin(), b.begin(), ca.value, cb.value);
+                    result &= iterator_equal(a.end(), b.end(), ca.value, cb.value);
+                }
+            }
+
+            if (!handled) {
+                if constexpr (std::input_or_output_iterator<A> && std::input_or_output_iterator<B>)
+                    result = iterator_equal(a, b, ca.value, cb.value);
+                else if constexpr (std::equality_comparable_with<A, B>)
+                    result = a == b;
+                else
+                    result = false;  
+            }
+
+            return result;
+        }
+
+        template <class A, class B>
+        constexpr bool state_equal(A const& a, B const& b) {
+            return std::ranges::equal(a.value, b.value) &&
+                std::ranges::equal(a.second, b.second) &&
+                std::ranges::equal(a.output, b.output) &&
+                std::ranges::equal(a.output2, b.output2);
+        }
+
+        template <class Result>
+        constexpr auto logical_end(Result const& result) {
+            if constexpr (requires { result.in; })
+                return base(result.in);
+            else if constexpr (requires { result.begin(); })
+                return base(result.begin());
+            else
+                return base(result);
+        }
+
+        struct same {
+            template <class A, class B, class RA, class RB>
+            constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
+                return state_equal(a, b) && result_equal(ra, rb, a, b);
+            }
+        };
+
+        struct prefix {
+            template <class A, class B, class RA, class RB>
+            constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
+                const auto ae = logical_end(ra);
+                const auto be = logical_end(rb);
+
+                return std::ranges::equal(
+                    std::ranges::subrange(a.value.begin(), ae),
+                    std::ranges::subrange(b.value.begin(), be)) &&
+                    result_equal(ra, rb, a, b);
+            }
+        };
+
+        inline constexpr same same_result{};
+        inline constexpr prefix prefix_result{};
+
+        template <class T, class F>
+        void each_container(size_t size, unsigned seed, F f) {
+            f(rtts::random::vector<T>(size, seed));
+            f(rtts::random::deque<T>(size, seed));
+            f(rtts::random::list<T>(size, seed));
+            f(rtts::random::forward_list<T>(size, seed));
+        }
+
+        template <class F>
+        void each_count(size_t size, std::mt19937& rng, bool boundary, F f) {
+            if (size == 0)
+                return;
+
+            if (boundary) {
+                f(size_t(0));
+                if (size > 1) f(size / 2);
+                if (size > 2 && size - 1 != size / 2) f(size - 1);
+            }
+            else {
+                f(rng() % size);
+            }
+        }
+
+        template <bool Counted, class Fixture, class Raze, class Std, class Verify>
+        constexpr bool variant(Fixture& raze_data, Fixture& std_data, Raze& raze_op, Std& std_op, Verify& verify) {
+            if constexpr (Counted) {
+                if (raze_data.size() == 0)
+                    return true;
+            }
+
+            const args<Counted, Fixture> raze_args{ raze_data };
+            const args<Counted, Fixture> std_args{ std_data };
+
+            const auto raze_ret = raze_op(raze_args);
+            const auto std_ret = std_op(std_args);
+
+            return verify(raze_data, std_data, raze_ret, std_ret);
+        }
+
+        template <class T, class Container>
+        auto make_fixture_from_container(Container c, unsigned seed) {
+            fixture<T, Container> f;
+            f.value = std::move(c);
+
+            const size_t sz = f.size();
+            f.second = rtts::random::sequence<Container>(sz, seed + 1);
+
+            f.output.resize(sz);
+            f.output2.resize(sz);
+
+            size_t pat_sz = std::min<size_t>(3, sz);
+            f.pattern.resize(pat_sz);
+            std::copy_n(f.value.begin(), pat_sz, f.pattern.begin());
+            f.pattern_size = pat_sz;
+
+            f.value_arg = f.value.empty() ? T{} : f.value.front();
+            f.other_arg = T(17);
+            f.replacement = T(42);
+
+            return f;
+        }
+
+        template <kind Kind, class T, class Container, class Raze, class Std, class Verify>
+        void case_(Container value, unsigned seed, std::mt19937& rng, bool boundary,
+            Raze& raze_op, Std& std_op, Verify& verify) {
+
+            auto raze_data = make_fixture_from_container<T>(std::move(value), seed);
+            auto std_data = raze_data;  
+
+            auto run = [&](size_t count) {
+                raze_data.count = count;
+                std_data.count = count;
+
+                RTTS_EXPECT(variant<false>(
+                    raze_data, std_data, raze_op, std_op, verify));
+
+                if (raze_data.size() != 0)
+                    RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                };
+
+            if constexpr (Kind == kind::range) {
+                run(0);  
+            }
+            else {
+                each_count(raze_data.size(), rng, boundary, run);
+            }
+        }
+
+        template <kind Mode, class T, class Raze, class Std, class Verify = same>
+        void run(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            std::mt19937 rng(cfg.seed);
+            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
+
+            for (size_t i = 0; i < cfg.random_cases; ++i) {
+                const size_t size = size_dist(rng);
+                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
+
+                each_container<T>(size, seed, [&](auto value) {
+                    case_<Mode == kind::n ? kind::n : kind::range, T>(
+                        std::move(value), seed, rng, false, raze_op, std_op, verify);
+                    });
+            }
+
+            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
+                const size_t size = cfg.sizes[i];
+                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
+
+                each_container<T>(size, seed, [&](auto value) {
+                    case_<Mode == kind::n ? kind::n : kind::range, T>(
+                        std::move(value), seed, rng, true, raze_op, std_op, verify);
+                    });
+            }
+        }
+
+        template <class T, size_t N>
+        struct constexpr_fixture {
+            std::array<T, N> value{};
+            std::array<T, N> second{};
+            std::array<T, N> output{};
+            std::array<T, N> output2{};
+            std::array<T, N> pattern{};
+            size_t pattern_size = N < 3 ? N : 3;
+            size_t count = 0;
+            T value_arg{};
+            T other_arg = T(17);
+            T replacement = T(42);
+
+            constexpr size_t size() const {
+                return N;
+            }
+        };
+
+        template <class T, size_t N>
+        constexpr auto make_constexpr_fixture() {
+            constexpr_fixture<T, N> result{};
+            for (size_t i = 0; i < N; ++i) {
+                result.value[i] = T(i + 1);
+                result.second[i] = T(100 + i);
+                result.output[i] = T(200 + i);
+                result.output2[i] = T(300 + i);
+                result.pattern[i] = result.value[i];
+            }
+            if constexpr (N != 0)
+                result.value_arg = result.value[0];
+            return result;
+        }
+
+        template <class T, kind Kind, size_t Size, size_t Count = 0, class Raze, class Std, class Verify = same>
+        consteval bool constexpr_run(Raze raze_op, Std std_op, Verify verify = {}) {
+            if constexpr (Kind == kind::n)
+                static_assert(Size != 0 && Count < Size);
+
+            auto raze_data = make_constexpr_fixture<T, Size>();
+            auto std_data = raze_data;
+
+            raze_data.count = Count;
+            std_data.count = Count;
+
+            if (!variant<false>(
+                raze_data, std_data, raze_op, std_op, verify))
+                return false;
+
+            if constexpr (Size != 0) {
+                if (!variant<true>(
+                    raze_data, std_data, raze_op, std_op, verify))
+                    return false;
+            }
+
+            return true;
+        }
     }
 
     inline int run() {

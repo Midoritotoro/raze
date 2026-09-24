@@ -1,7 +1,7 @@
 #pragma once
 
 #include <raze/algorithm/batch/ForEach.h>
-#include <src/raze/algorithm/MakeCounted.h>
+#include <iterator>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -12,7 +12,7 @@ struct for_each_n_t : Traits {
 		InIt first, std::iter_difference_t<InIt> n, F f, Proj proj = {}) const
 			requires(std::indirectly_unary_invocable<F, std::projected<InIt, Proj>>)
 	{
-		auto r = for_each[Traits::traits()](make_counted(std::move(first), n),
+		auto r = for_each[Traits::traits()](std::counted_iterator<InIt>(std::move(first), n),
 			std::default_sentinel, traits::fwd_fn(f), traits::fwd_fn(proj));
 		return { r.in.base(), std::move(r.fun)};
 	}
