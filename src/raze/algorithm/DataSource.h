@@ -216,8 +216,7 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
 	}
 
 	raze_nodiscard raze_always_inline constexpr auto size() const {
-		return static_cast<sizetype>(_it.count()) *
-			sizeof(std::iter_value_t<unchecked_base_iterator_type>);
+		return static_cast<sizetype>(_it.count()) * sizeof(std::iter_value_t<unchecked_base_iterator_type>);
 	}
 
 	raze_nodiscard raze_always_inline constexpr iterator_type begin() const {

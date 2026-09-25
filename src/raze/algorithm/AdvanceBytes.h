@@ -66,8 +66,6 @@ raze_nodiscard raze_always_inline constexpr std::iter_difference_t<InIt> distanc
         return static_cast<DiffType>(last - first);
     }
     else {
-        verify_range(first, last);
-
         auto first_unwrapped = traits::uiter(first);
         const auto last_unwrapped = traits::uiter(last);
 
@@ -86,23 +84,23 @@ constexpr raze_always_inline T* bytes_pointer_offset(T* target, Offset offset) n
         reinterpret_cast<const volatile unsigned char*>(target)) + offset);
 }
 
-template <std::ranges::contiguous_range Range>
+template <constexpr_sized_range Range>
 constexpr std::integral_constant<sizetype, range_constexpr_size<Range>() * sizeof(std::ranges::range_value_t<Range>)>
-bytes_distance(const options::as<Range>&) noexcept requires(constexpr_sized_range<Range>) {
+bytes_distance(const options::as<Range>&) noexcept {
     return std::integral_constant<sizetype, range_constexpr_size<Range>() * sizeof(std::ranges::range_value_t<Range>)>{};
 }
 
-template <std::ranges::contiguous_range Range>
+template <std::ranges::range Range>
 constexpr auto bytes_distance(Range&& r) noexcept(noexcept(std::ranges::size(r))) {
     return std::ranges::size(r) * sizeof(std::ranges::range_value_t<Range>);
 }
 
-template <std::contiguous_iterator It, std::sentinel_for<It> Sent>
+template <std::input_iterator It, std::sentinel_for<It> Sent>
 constexpr auto bytes_distance(It it, Sent sent) noexcept(noexcept(std::ranges::distance(it, sent))) {
     return std::ranges::distance(it, sent) * sizeof(std::iter_value_t<It>);
 }
 
-template <std::contiguous_iterator It>
+template <std::input_iterator It>
 constexpr auto bytes_distance(It first, It last) noexcept(noexcept(algorithm::distance(first, last))) {
     return algorithm::distance(first, last) * sizeof(std::iter_value_t<It>);
 }

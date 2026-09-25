@@ -860,12 +860,9 @@ namespace rtts {
                 raze_data.count = count;
                 std_data.count = count;
 
-                RTTS_EXPECT(variant<false>(
-                    raze_data, std_data, raze_op, std_op, verify));
-
-                if (raze_data.size() != 0)
-                    RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
-                };
+                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+            };
 
             if constexpr (Kind == kind::range) {
                 run(0);  
@@ -883,21 +880,13 @@ namespace rtts {
             for (size_t i = 0; i < cfg.random_cases; ++i) {
                 const size_t size = size_dist(rng);
                 const unsigned seed = cfg.seed + static_cast<unsigned>(i);
-
-                each_container<T>(size, seed, [&](auto value) {
-                    case_<Mode == kind::n ? kind::n : kind::range, T>(
-                        std::move(value), seed, rng, false, raze_op, std_op, verify);
-                    });
+                each_container<T>(size, seed, [&](auto value) { case_<Mode, T>(std::move(value), seed, rng, false, raze_op, std_op, verify); });
             }
 
             for (size_t i = 0; i < cfg.sizes.size(); ++i) {
                 const size_t size = cfg.sizes[i];
                 const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
-
-                each_container<T>(size, seed, [&](auto value) {
-                    case_<Mode == kind::n ? kind::n : kind::range, T>(
-                        std::move(value), seed, rng, true, raze_op, std_op, verify);
-                    });
+                each_container<T>(size, seed, [&](auto value) { case_<Mode, T>(std::move(value), seed, rng, true, raze_op, std_op, verify); });
             }
         }
 
@@ -945,13 +934,11 @@ namespace rtts {
             raze_data.count = Count;
             std_data.count = Count;
 
-            if (!variant<false>(
-                raze_data, std_data, raze_op, std_op, verify))
+            if (!variant<false>(raze_data, std_data, raze_op, std_op, verify))
                 return false;
 
             if constexpr (Size != 0) {
-                if (!variant<true>(
-                    raze_data, std_data, raze_op, std_op, verify))
+                if (!variant<true>(raze_data, std_data, raze_op, std_op, verify))
                     return false;
             }
 
