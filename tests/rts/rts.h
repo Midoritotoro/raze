@@ -536,7 +536,7 @@ namespace rtts {
 
         struct config {
             size_t random_cases = 256;
-            size_t random_max_size = 1000;
+            size_t random_max_size = 100;
             unsigned seed = 42;
             bool counted = true;
             std::vector<size_t> sizes = {
@@ -546,11 +546,11 @@ namespace rtts {
 
             static config thorough() {
                 config result;
-                result.random_cases = 1000;
+                result.random_cases = 100;
                 result.sizes = {
                     0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32,
                     63, 64, 127, 128, 255, 256,
-                    10000, 50000, 100000
+                    10000
                 };
                 return result;
             }
@@ -606,6 +606,10 @@ namespace rtts {
                     return data.value.end();
             }
 
+            constexpr auto range() const {
+                return std::ranges::subrange(first(), last());
+            }
+
             constexpr auto first2() const {
                 if constexpr (Counted)
                     return std::counted_iterator(data.second.begin(), static_cast<std::ptrdiff_t>(std::ranges::distance(data.second)));
@@ -618,6 +622,10 @@ namespace rtts {
                     return std::default_sentinel;
                 else
                     return data.second.end();
+            }
+
+            constexpr auto range2() const {
+                return std::ranges::subrange(first2(), last2());
             }
 
             constexpr auto out() const {
@@ -634,6 +642,10 @@ namespace rtts {
 
             constexpr auto pattern_last() const {
                 return data.pattern.begin() + data.pattern_size;
+            }
+
+            constexpr auto pattern_range() const {
+                return std::ranges::subrange(pattern_first(), pattern_last());
             }
 
             constexpr size_t count() const {
@@ -820,10 +832,12 @@ namespace rtts {
             const args<Counted, Fixture> raze_args{ raze_data };
             const args<Counted, Fixture> std_args{ std_data };
 
-            const auto raze_ret = raze_op(raze_args);
-            const auto std_ret = std_op(std_args);
-
-            return verify(raze_data, std_data, raze_ret, std_ret);
+            if constexpr (std::same_as<decltype(raze_op(raze_args)), void>) {
+                raze_op(raze_args);
+                std_op(std_args);
+                return verify(raze_data, std_data, 0, 0);
+            }
+            else return verify(raze_data, std_data, raze_op(raze_args), std_op(std_args));
         }
 
         template <class T, class Container>

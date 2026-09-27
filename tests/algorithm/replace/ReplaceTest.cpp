@@ -1,120 +1,73 @@
 #include <tests/rts/rts.h>
 #include <raze/algorithm/replace/Replace.h>
 
-#include <algorithm>
-
-struct Point {
-    int x, y;
-    bool operator==(const Point&) const = default;
-};
-
 RTTS_CASE_TPL("raze::algorithm::replace", rtts::algorithm::all_types)
 <class T> (rtts::type<T>) {
-    auto check = [] <class F, class G> (std::vector<T> value, F raze_op, G std_op) {
-        auto expected = value;
+    auto cfg = rtts::algorithm::config::thorough();
 
-        raze_op(value);
-        std_op(expected);
+    {
+        const T old_val = rtts::random::generator<T>(42)();
+        const T new_val = rtts::random::generator<T>(1000)();
 
-        RTTS_ALL_EQUAL(value, expected);
-    };
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [old_val, new_val](auto c) { return raze::algorithm::replace(c.first(), c.last(), old_val, new_val); },
+            [old_val, new_val](auto c) { return std::ranges::replace(c.first(), c.last(), old_val, new_val); });
 
-    std::mt19937 rng(42);
-    std::uniform_int_distribution<size_t> size_dist(0, 1000);
-
-    for (int i = 0; i < 1000; ++i) {
-        auto value = rtts::random::vector<T>(size_dist(rng), 42 + i);
-        const T old_value = rtts::random::generator<T>(1000 + i)();
-        const T new_value = rtts::random::generator<T>(2000 + i)();
-
-        check(value,
-            [=](auto& v) { raze::algorithm::replace(v.begin(), v.end(), old_value, new_value); },
-            [=](auto& v) { std::ranges::replace(v.begin(), v.end(), old_value, new_value); });
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [old_val, new_val](auto c) { return raze::algorithm::replace(c.range(), old_val, new_val); },
+            [old_val, new_val](auto c) { return std::ranges::replace(c.range(), old_val, new_val); });
     }
 
-    for (int i = 0; i < 500; ++i) {
-        auto value = rtts::random::vector<T>(size_dist(rng), 30000 + i);
-        const T old_value = value.empty() ? T(0) : value[value.size() / 2];
-        const T new_value = old_value == T(0) ? T(1) : T(0);
+    {
+        const T val = rtts::random::generator<T>(777)();
 
-        check(std::move(value),
-            [=](auto& v) { raze::algorithm::replace(v.begin(), v.end(), old_value, new_value); },
-            [=](auto& v) { std::ranges::replace(v.begin(), v.end(), old_value, new_value); });
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [val](auto c) { return raze::algorithm::replace(c.first(), c.last(), val, val); },
+            [val](auto c) { return std::ranges::replace(c.first(), c.last(), val, val); });
+
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [val](auto c) { return raze::algorithm::replace(c.range(), val, val); },
+            [val](auto c) { return std::ranges::replace(c.range(), val, val); });
     }
 
-    for (int i = 0; i < 500; ++i) {
-        auto value = rtts::random::vector<T>(size_dist(rng), 40000 + i);
-        const T old_value = rtts::random::generator<T>(50000 + i)();
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+        [](auto c) constexpr { return raze::algorithm::replace(c.first(), c.last(), T(42), T(99)); },
+        [](auto c) constexpr { return std::ranges::replace(c.first(), c.last(), T(42), T(99)); }));
 
-        check(std::move(value),
-            [=](auto& v) { raze::algorithm::replace(v.begin(), v.end(), old_value, old_value); },
-            [=](auto& v) { std::ranges::replace(v.begin(), v.end(), old_value, old_value); });
-    }
-
-    for (int i = 0; i < 1000; ++i) {
-        auto value = rtts::random::vector<T>(size_dist(rng), 60000 + i);
-        const T old_value = rtts::random::generator<T>(70000 + i)();
-        const T new_value = rtts::random::generator<T>(80000 + i)();
-
-        check(value,
-            [=](auto& v) { raze::algorithm::replace(v, old_value, new_value); },
-            [=](auto& v) { std::ranges::replace(v, old_value, new_value); });
-    }
-
-    for (size_t size : {0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32, 63, 64, 127, 128, 255, 256}) {
-        check(std::vector<T>(size, T(42)),
-            [](auto& v) { raze::algorithm::replace(v.begin(), v.end(), T(42), T(99)); },
-            [](auto& v) { std::ranges::replace(v.begin(), v.end(), T(42), T(99)); });
-    }
-
-    for (size_t size : {10000, 50000, 100000}) {
-        auto value = rtts::random::vector<T>(size, 90000 + static_cast<unsigned>(size));
-        const T old_value = value[size / 3];
-        const T new_value = old_value == T(0) ? T(1) : T(0);
-
-        check(std::move(value),
-            [=](auto& v) { raze::algorithm::replace(v.begin(), v.end(), old_value, new_value); },
-            [=](auto& v) { std::ranges::replace(v.begin(), v.end(), old_value, new_value); });
-    }
-
-    for (size_t size : {1, 10, 100, 1000}) {
-        check(std::vector<T>(size, T(42)),
-            [](auto& v) { raze::algorithm::replace(v.begin(), v.end(), T(42), T(99)); },
-            [](auto& v) { std::ranges::replace(v.begin(), v.end(), T(42), T(99)); });
-
-        check(std::vector<T>(size, T(42)),
-            [](auto& v) { raze::algorithm::replace(v.begin(), v.end(), T(99), T(0)); },
-            [](auto& v) { std::ranges::replace(v.begin(), v.end(), T(99), T(0)); });
-    }
-
-    for (int i = 0; i < 500; ++i) {
-        auto value = rtts::random::vector<T>(10 + (rng() % 491), 100000 + i);
-        const T old_value = value[value.size() / 4];
-        const T new_value = rtts::random::generator<T>(110000 + i)();
-
-        check(std::move(value),
-            [=](auto& v) { raze::algorithm::replace(v.begin(), v.end(), old_value, new_value); },
-            [=](auto& v) { std::ranges::replace(v.begin(), v.end(), old_value, new_value); });
-    }
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+        [](auto c) constexpr { return raze::algorithm::replace(c.range(), T(42), T(99)); },
+        [](auto c) constexpr { return std::ranges::replace(c.range(), T(42), T(99)); }));
 };
 
-RTTS_CASE("raze::algorithm::replace.projection") {
-    for (int i = 0; i < 100; ++i) {
-        std::vector<Point> value(100);
-        auto gen = rtts::random::generator<int>(120000 + i);
+RTTS_CASE_TPL("raze::algorithm::replace.projection", rtts::algorithm::all_types)
+<class T> (rtts::type<T>) {
+    auto cfg = rtts::algorithm::config::thorough();
 
-        for (auto& p : value)
-            p = {gen(), gen()};
+    const T old_val = rtts::random::generator<T>(12345)();
+    const T new_val = rtts::random::generator<T>(67890)();
+    auto proj = [](const T& x) -> const T& { return x; };
 
-        const int target = gen();
-        const Point replacement{999, 888};
-        const auto proj = [](const Point& p) { return p.x; };
+    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+        [old_val, new_val, proj](auto c) { return raze::algorithm::replace(c.first(), c.last(), old_val, new_val, proj); },
+        [old_val, new_val, proj](auto c) { return std::ranges::replace(c.first(), c.last(), old_val, new_val, proj); });
 
-        auto expected = value;
+    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+        [old_val, new_val, proj](auto c) { return raze::algorithm::replace(c.range(), old_val, new_val, proj); },
+        [old_val, new_val, proj](auto c) { return std::ranges::replace(c.range(), old_val, new_val, proj); });
 
-        raze::algorithm::replace(value.begin(), value.end(), target, replacement, proj);
-        std::ranges::replace(expected.begin(), expected.end(), target, replacement, proj);
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+        [](auto c) constexpr {
+            return raze::algorithm::replace(c.first(), c.last(), T(42), T(99), [](const T& x) constexpr -> const T& { return x; });
+        },
+        [](auto c) constexpr {
+            return std::ranges::replace(c.first(), c.last(), T(42), T(99), [](const T& x) constexpr -> const T& { return x; });
+        }));
 
-        RTTS_ALL_EQUAL(value, expected);
-    }
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+        [](auto c) constexpr {
+            return raze::algorithm::replace(c.range(), T(42), T(99), [](const T& x) constexpr -> const T& { return x; });
+        },
+        [](auto c) constexpr {
+            return std::ranges::replace(c.range(), T(42), T(99), [](const T& x) constexpr -> const T& { return x; });
+        }));
 };

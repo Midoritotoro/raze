@@ -31,10 +31,10 @@ RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
     alignas(std::hardware_constructive_interference_size) T src[N];
     for (size_t i = 0; i < N; ++i)
         src[i] = T(i + 1);
-
+    
     V v = raze::vx::load<V>(src);
     
-    for (int i = 0; i < 100; ++i) {
+    for (int i = 0; i < 1000; ++i) {
         Mask mask = rtts::simd::make_random_mask<Mask>();
 
         alignas(std::hardware_constructive_interference_size) T dst[N], expected[N];

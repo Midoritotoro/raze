@@ -29,3 +29,7 @@ add_dependencies(unit.algorithm algorithm)
 
 raze_glob_native_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "replace/*.cpp" unit.algorithm)
 raze_glob_native_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "batch/*.cpp" unit.algorithm)
+raze_glob_native_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "fill/*.cpp" unit.algorithm)
+raze_glob_native_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "transform/*.cpp" unit.algorithm)
+raze_glob_native_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "swap/*.cpp" unit.algorithm)
+raze_glob_native_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "remove/*.cpp" unit.algorithm)

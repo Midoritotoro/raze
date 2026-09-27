@@ -1,179 +1,116 @@
-#pragma once 
-
+#pragma once
 
 #include <src/raze/algorithm/RangesSize.h>
-#include <src/raze/algorithm/VectorizablePredicate.h>
-#include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
-
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Fill : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class _ValueType_>
-	struct __impl {
-		_Iterator_ _iterator;
-		_Sentinel_ _sentinel;
-		const _ValueType_& _value;
+constexpr auto fill_strategy = options::strategy<strategy<>()
+	.for_gcc<strategy_mode::autovec>()
+	.for_clang<strategy_mode::autovec>()>;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, const _ValueType_& __v) noexcept :
-			_iterator(__it), _sentinel(__sent), _value(__v)
+template <class Traits>
+struct fill_t : Traits, dispatchable<fill_t<Traits>> {
+	template <source Source, class T>
+	struct kernel {
+		using source_type = std::remove_cvref_t<Source>;
+		using iterator_type = typename source_type::iterator_type;
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+		using value_type = std::iter_value_t<iterator_type>;
+
+		static consteval auto deduce_value_type() noexcept {
+			if constexpr (std::floating_point<T>) return T{};
+			else return typename IntegerForSizeof<T>::Signed{};
+		}
+
+		using vector_value_type = decltype(deduce_value_type());
+
+		static consteval bool vectorizable() noexcept {
+			return contiguous_source<Source> && std::is_trivially_copyable_v<value_type> &&
+				(sizeof(value_type) <= 8) && (sizeof(value_type) != 0) &&
+				((sizeof(value_type) & (sizeof(value_type) - 1)) == 0);
+		}
+
+		source_type _source;
+		unchecked_iterator_type _iterator;
+		unchecked_sentinel_type _sentinel;
+		vector_value_type _value;
+
+		constexpr explicit kernel(Source&& source, const T& value)
+			: _source(std::forward<Source>(source)),  _value(math::bit_cast<vector_value_type>(value)),
+			  _iterator(_source.ubegin()), _sentinel(_source.uend())
 		{}
 
-		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
-			if (_iterator == _sentinel) return true;
-			*_iterator++ = _value;
-			return false;
+		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+			auto* raze_restrict ptr = std::to_address(_iterator);
+			auto* raze_restrict last = std::to_address(_sentinel);
+
+			for (; ptr != last; ++ptr)
+				*ptr = _value;
+
+			source_type::from_ptr(_iterator, ptr);
+		}
+
+		raze_always_inline constexpr void operator()() {
+			raze_disable_unrolling
+			for (; _iterator != _sentinel; ++_iterator)
+				*_iterator = _value;
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			auto* ptr = std::to_address(_iterator);
+			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
+			const Tag vec_val(_value);
+
+			do {
+				vx::store(ptr, vec_val);
+				advance_bytes(ptr, sizeof(Tag));
+			} while (ptr != aligned_end);
+
+			source_type::from_ptr(_iterator, ptr);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			auto* ptr = std::to_address(_iterator);
+			const Tag vec_val(_value);
+			vx::store[ignore](ptr, vec_val);
+
+			advance_bytes(ptr, ignore.tail_bytes());
+			source_type::from_ptr(_iterator, ptr);
+		}
+
+		constexpr raze_always_inline iterator_type result() const {
+			return _source.wrap(_iterator);
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source>) {
+			return Source::static_size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const {
+			return _source.size();
 		}
 	};
 
-	template <class _Tag_>
-	struct __vectorized_fill {
-		template <class _Iterator_, class _Sentinel_, class _ValueType_>
-		raze_always_inline void operator()(_Iterator_ __first, _Sentinel_ __sentinel, 
-			const _ValueType_& __v) const noexcept
-		{
-			if constexpr (sizeof(_ValueType_) <= 8) {
-				auto __start_address = std::to_address(__first);
-				auto __end_address = std::to_address(__sentinel);
-
-				auto* __reinterpret_start = reinterpret_cast<_ValueType_*>(__start_address);
-				auto* __reinterpret_end = reinterpret_cast<const volatile _ValueType_* const>(__end_address);
-
-				for (; __reinterpret_start != __reinterpret_end; ++__reinterpret_start)
-					*__reinterpret_start = __v;
-			}
-			else {
-				for (; __first != __sentinel; ++__first)
-					*__first = __v;
-			}
-		}
-
-		template <class _Iterator_, class _Sentinel_, class _ValueType_>
-		raze_always_inline void operator()(sizetype __aligned_size, sizetype __tail_size,
-			_Iterator_ __first, _Sentinel_ __sentinel, const _ValueType_& __v) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
-
-			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
-
-			do {
-				vx::store(__ptr, _Tag_(__v));
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (__ptr != __aligned_end);
-
-			__seek_iter(__first, __ptr);
-			return (*this)(__first, __sentinel, __v);
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _Iterator_, class _Sentinel_, class _ValueType_>
-		raze_always_inline void operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
-			const _ValueType_& __v) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
-
-			auto __left = __iterations_aligned;
-
-			do {
-				vx::store(__ptr, _Tag_(__v));
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (--__left);
-
-			__seek_iter(__first, __ptr);
-			return (*this)(__first, __sentinel, __v);
-		}
-	};
-
-	template <class _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, 
-		class _Value_ = std::iter_value_t<_Iterator_>>
-	constexpr raze_always_inline _Iterator_ operator()(_Iterator_ __first, 
-		_Sentinel_ __last, const std::type_identity_t<_Value_>& __v) const noexcept
-			requires(std::output_iterator<_Iterator_, _Value_>)
+	template <std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T = std::iter_value_t<It>>
+	constexpr raze_always_inline It operator()(It first, Sent last, const std::type_identity_t<T>& value) const
+		requires(std::output_iterator<It, T>)
 	{
-		__fill_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_Iterator_>(__last), __v);
-		return __last;
+		return this->dispatch(get_source(std::move(first), std::move(last)), value);
 	}
 
-	template <class Range, class _Value_ = std::ranges::range_value_t<Range>>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
-		Range&& __r, const std::type_identity_t<_Value_>& __v) const noexcept
-			requires(!constexpr_sized_range<Range> && std::ranges::output_range<Range, _Value_>)
+	template <class R, class T = std::ranges::range_value_t<R>>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<R> operator()(
+		R&& r, const std::type_identity_t<T>& value) const 
+			requires(std::ranges::output_range<R, T>)
 	{
-		auto __last = std::ranges::end(__r);
-		__fill_unchecked(traits::__ubegin(__r), traits::__uend(__r), __v);
-		return __last;
-	}
-
-	template <class Range, class _Value_ = std::ranges::range_value_t<Range>>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<Range> operator()(
-		Range&& __r, const std::type_identity_t<_Value_>& __v) const noexcept
-			requires(constexpr_sized_range<Range> && std::ranges::output_range<Range, _Value_>)
-	{
-		auto __last = std::ranges::end(__r);
-		__fill_unchecked(traits::__ubegin(__r), traits::__uend(__r), __v,
-			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
-		return __last;
-	}
-private:
-	template <class _Iterator_, class _Sentinel_, class _ValueType_>
-	constexpr raze_always_inline void __fill_unchecked(_Iterator_ __first, 
-		_Sentinel_ __last, const _ValueType_& __v) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (std::contiguous_iterator<_Iterator_> && std::is_trivially_copyable_v<_Value_> &&
-			sizeof(_Value_) <= 8 && (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0)
-		{
-			if not consteval {
-				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				vx::__dispatch_sized_impl<__vectorized_fill, _IntegerValue_, void>(algorithm::distance(__first, __last) * sizeof(_Value_),
-					__first, __last, math::bit_cast<_IntegerValue_>(__v));
-				return;
-			}
-		}
-
-		options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __v));
-	}
-
-	template <class _Iterator_, class _Sentinel_, class _ValueType_, sizetype _Size_>
-	constexpr raze_always_inline void __fill_unchecked(_Iterator_ __first, 
-		_Sentinel_ __last, const _ValueType_& __v, std::integral_constant<sizetype, _Size_>) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_Iterator_> && std::is_trivially_copyable_v<_Value_> &&
-			sizeof(_Value_) <= 8 && (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0)
-		{
-			if not consteval {
-				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				vx::__dispatch_sized_impl<__vectorized_fill, _IntegerValue_, void>(std::integral_constant<
-					sizetype, _Size_ * sizeof(_Value_)>{}, __first, __last, math::bit_cast<_IntegerValue_>(__v));
-				return;
-			}
-		}
-
-		options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __v));
+		return this->dispatch(get_source(std::forward<R>(r)), value);
 	}
 };
 
-constexpr inline auto fill = raze::options::function_with_traits<_Fill>;
+constexpr inline auto fill = options::function_with_traits<fill_t>[options::unroll<4>][fill_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

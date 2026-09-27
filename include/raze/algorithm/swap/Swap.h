@@ -1,174 +1,147 @@
-#pragma once 
-
+#pragma once
 
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
-#include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
-#include <src/raze/algorithm/memory/SwapRanges.h>
-
+#include <raze/math/Math.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Swap_ranges : _Traits_ {
-	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_>
-	struct __impl {
-		_Iterator1_ _iterator1;
-		_Sentinel1_ _sentinel1;
-		_Iterator2_ _iterator2;
-		_Sentinel2_ _sentinel2;
+constexpr auto swap_ranges_strategy = options::strategy<strategy<>()
+	.for_gcc<strategy_mode::autovec>()
+	.for_clang<strategy_mode::autovec>()>;
 
-		constexpr explicit __impl(_Iterator1_ __it1, _Sentinel1_ __sent1,
-			_Iterator2_ __it2, _Sentinel2_ __sent2) noexcept :
-			_iterator1(__it1), _sentinel1(__sent1), _iterator2(__it2), _sentinel2(__sent2)
-		{}
+template <class Traits>
+struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
+	template <source Source1, source Source2>
+	struct kernel {
+		using source1_type = std::remove_cvref_t<Source1>;
+		using source2_type = std::remove_cvref_t<Source2>;
 
-		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
-			if (_iterator1 == _sentinel1 || _iterator2 == _sentinel2) return true;
-			std::ranges::iter_swap(_iterator1, _iterator2);
-			++_iterator1;
-			++_iterator2;
-			return false;
+		using iterator1_type = typename source1_type::iterator_type;
+		using iterator2_type = typename source2_type::iterator_type;
+
+		using unchecked_iterator1_type = typename source1_type::unchecked_iterator_type;
+		using unchecked_sentinel1_type = typename source1_type::unchecked_sentinel_type;
+		using unchecked_iterator2_type = typename source2_type::unchecked_iterator_type;
+		using unchecked_sentinel2_type = typename source2_type::unchecked_sentinel_type;
+
+		using vector_value_type = std::iter_value_t<unchecked_iterator1_type>;
+
+		static consteval bool vectorizable() noexcept {
+			return contiguous_source<Source1> && contiguous_source<Source2> &&
+				std::is_trivially_copyable_v<vector_value_type> &&
+				std::same_as<vector_value_type, std::iter_value_t<unchecked_iterator2_type>>;
 		}
 
-		constexpr raze_always_inline std::ranges::swap_ranges_result<_Iterator1_, _Iterator2_> result() const noexcept {
-			return { _iterator1, _iterator2 };
+		source1_type _source1;
+		source2_type _source2;
+		unchecked_iterator1_type _in1_iterator;
+		unchecked_sentinel1_type _in1_sentinel;
+		unchecked_iterator2_type _in2_iterator;
+		unchecked_sentinel2_type _in2_sentinel;
+
+		constexpr explicit kernel(Source1&& source1, Source2&& source2)
+			: _source1(std::forward<Source1>(source1)),
+			  _source2(std::forward<Source2>(source2)),
+			  _in1_iterator(_source1.ubegin()), _in1_sentinel(_source1.uend()),
+			  _in2_iterator(_source2.ubegin()), _in2_sentinel(_source2.uend())
+		{}
+
+		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+			auto* raze_restrict in1_ptr = std::to_address(_in1_iterator);
+			auto* raze_restrict in1_last = std::to_address(_in1_sentinel);
+			auto* raze_restrict in2_ptr = std::to_address(_in2_iterator);
+			auto* raze_restrict in2_last = std::to_address(_in2_sentinel);
+
+			for (; in1_ptr != in1_last && in2_ptr != in2_last; ++in1_ptr, ++in2_ptr) {
+				auto tmp = *in1_ptr;
+				*in1_ptr = *in2_ptr;
+				*in2_ptr = tmp;
+			}
+
+			source1_type::from_ptr(_in1_iterator, in1_ptr);
+			source2_type::from_ptr(_in2_iterator, in2_ptr);
+		}
+
+		raze_always_inline constexpr void operator()() {
+			raze_disable_unrolling
+			for (; _in1_iterator != _in1_sentinel && _in2_iterator != _in2_sentinel; ++_in1_iterator, ++_in2_iterator)
+				std::ranges::iter_swap(_in1_iterator, _in2_iterator);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			auto* in1_ptr = std::to_address(_in1_iterator);
+			auto* in2_ptr = std::to_address(_in2_iterator);
+			const auto aligned_end = bytes_pointer_offset(in1_ptr, aligned_size);
+
+			do {
+				const auto v1 = vx::load<Tag>(in1_ptr);
+				const auto v2 = vx::load<Tag>(in2_ptr);
+				vx::store(in1_ptr, v2);
+				vx::store(in2_ptr, v1);
+				advance_bytes(in1_ptr, in2_ptr, sizeof(Tag));
+			} while (in1_ptr != aligned_end);
+
+			source1_type::from_ptr(_in1_iterator, in1_ptr);
+			source2_type::from_ptr(_in2_iterator, in2_ptr);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			auto* in1_ptr = std::to_address(_in1_iterator);
+			auto* in2_ptr = std::to_address(_in2_iterator);
+
+			const auto v1 = vx::load<Tag>(in1_ptr);
+			const auto v2 = vx::load<Tag>(in2_ptr);
+			vx::store[ignore](in1_ptr, v2);
+			vx::store[ignore](in2_ptr, v1);
+
+			advance_bytes(in1_ptr, in2_ptr, ignore.tail_bytes());
+
+			source1_type::from_ptr(_in1_iterator, in1_ptr);
+			source2_type::from_ptr(_in2_iterator, in2_ptr);
+		}
+
+		constexpr raze_always_inline std::ranges::swap_ranges_result<iterator1_type, iterator2_type> result() const {
+			return { _source1.wrap(_in1_iterator), _source2.wrap(_in2_iterator) };
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source1> && constexpr_sized_source<Source2>) {
+			constexpr auto sz1 = Source1::static_size();
+			constexpr auto sz2 = Source2::static_size();
+			if constexpr (sizetype(sz1) < sizetype(sz2)) return sz1;
+			else return sz2;
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const {
+			return math::min(_source1.size(), _source2.size());
 		}
 	};
 
-	template <std::input_iterator _Iterator1_, std::sentinel_for<_Iterator1_> _Sentinel1_,
-		std::input_iterator _Iterator2_, std::sentinel_for<_Iterator2_> _Sentinel2_>
-	constexpr raze_always_inline std::ranges::swap_ranges_result<_Iterator1_, _Iterator2_> operator()(
-		_Iterator1_ __first1, _Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2) const noexcept
-			requires(std::indirectly_swappable<_Iterator1_, _Iterator2_>)
+	template <class Source1, class Source2>
+	kernel(Source1&&, Source2&&) -> kernel<std::remove_cvref_t<Source1>, std::remove_cvref_t<Source2>>;
+
+	template <std::input_iterator InIt1, std::sentinel_for<InIt1> Sent1,
+		std::input_iterator InIt2, std::sentinel_for<InIt2> Sent2>
+	constexpr raze_always_inline std::ranges::swap_ranges_result<InIt1, InIt2> operator()(
+		InIt1 first1, Sent1 last1, InIt2 first2, Sent2 last2) const
+			requires(std::indirectly_swappable<InIt1, InIt2>)
 	{
-		auto __r = __swap_ranges_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
-			traits::__usent<_Iterator1_>(std::move(__last1)),
-			traits::__uiter<_Sentinel2_>(std::move(__first2)),
-			traits::__usent<_Iterator2_>(std::move(__last2)));
-
-		__seek_iter(__first1, std::move(__r.in1));
-		__seek_iter(__first2, std::move(__r.in2));
-
-		return { std::move(__first1), std::move(__first2) };
+		return this->dispatch(get_source(std::move(first1), std::move(last1)),
+			get_source(std::move(first2), std::move(last2)));
 	}
 
-	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_>
+	template <std::ranges::input_range R1, std::ranges::input_range R2>
 	constexpr raze_always_inline std::ranges::swap_ranges_result<
-		std::ranges::iterator_t<_Range1_>, std::ranges::iterator_t<_Range2_>> operator()(
-		_Range1_&& __range1, _Range2_&& __range2) const noexcept
-			requires(!constexpr_sized_range<_Range1_> && !constexpr_sized_range<_Range2_> &&
-				std::indirectly_swappable<std::ranges::iterator_t<_Range1_>, std::ranges::iterator_t<_Range2_>>)
+		std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>> operator()(R1&& r1, R2&& r2) const
+			requires(std::indirectly_swappable<std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>>)
 	{
-		auto __begin1 = std::ranges::begin(__range1);
-		auto __begin2 = std::ranges::begin(__range2);
-
-		auto __r = __swap_ranges_unchecked(traits::__r_uiter<_Range1_>(std::move(__begin1)),
-			traits::__uend(__range1),
-			traits::__r_uiter<_Range2_>(std::move(__begin2)),
-			traits::__uend(__range2));
-
-		__seek_iter(__begin1, std::move(__r.in1));
-		__seek_iter(__begin2, std::move(__r.in2));
-
-		return { std::move(__begin1), std::move(__begin2) };
-	}
-
-	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_>
-	constexpr raze_always_inline std::ranges::swap_ranges_result<
-		std::ranges::iterator_t<_Range1_>, std::ranges::iterator_t<_Range2_>> operator()(
-		_Range1_&& __range1, _Range2_&& __range2) const noexcept
-			requires(constexpr_sized_range<_Range1_> && constexpr_sized_range<_Range2_> &&
-				std::indirectly_swappable<std::ranges::iterator_t<_Range1_>, std::ranges::iterator_t<_Range2_>>)
-	{
-		constexpr auto __size1 = __range_constexpr_size<_Range1_>();
-		constexpr auto __size2 = __range_constexpr_size<_Range2_>();
-		constexpr auto __min_size = (__size1 < __size2) ? __size1 : __size2;
-
-		auto __begin1 = std::ranges::begin(__range1);
-		auto __begin2 = std::ranges::begin(__range2);
-
-		auto __r = __swap_ranges_unchecked(traits::__r_uiter<_Range1_>(std::move(__begin1)),
-			traits::__uend(__range1),
-			traits::__r_uiter<_Range2_>(std::move(__begin2)),
-			traits::__uend(__range2),
-			std::integral_constant<sizetype, __min_size>{});
-
-		__seek_iter(__begin1, std::move(__r.in1));
-		__seek_iter(__begin2, std::move(__r.in2));
-
-		return { std::move(__begin1), std::move(__begin2) };
-	}
-
-private:
-	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_>
-	constexpr raze_always_inline std::ranges::swap_ranges_result<_Iterator1_, _Iterator2_> __swap_ranges_unchecked(
-		_Iterator1_ __first1, _Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2) const noexcept
-	{
-		__verify_range(__first1, __last1);
-		__verify_range(__first2, __last2);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value1_ = std::iter_value_t<_Iterator1_>;
-		using _Value2_ = std::iter_value_t<_Iterator2_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() &&  std::contiguous_iterator<_Iterator1_> 
-			&& std::contiguous_iterator<_Iterator2_> && std::same_as<_Value1_, _Value2_> && std::is_trivially_copyable_v<_Value1_>)
-		{
-			if not consteval {
-				auto* __f1_ptr = std::to_address(__first1);
-				auto* __f2_ptr = std::to_address(__first2);
-
-				const auto __offset = algorithm::__swap_ranges[_Traits_::traits()](__f1_ptr, std::to_address(__last1),
-					__f2_ptr, std::to_address(__last2));
-
-				__seek_iter(__first1, __bytes_pointer_offset(__f1_ptr, __offset));
-				__seek_iter(__first2, __bytes_pointer_offset(__f2_ptr, __offset));
-
-				return std::ranges::swap_ranges_result(__first1, __first2);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2));
-	}
-
-	template <class _Iterator1_, class _Sentinel1_, class _Iterator2_, class _Sentinel2_, sizetype _Size_>
-	constexpr raze_always_inline std::ranges::swap_ranges_result<_Iterator1_, _Iterator2_> __swap_ranges_unchecked(
-		_Iterator1_ __first1, _Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
-		std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first1, __last1);
-		__verify_range(__first2, __last2);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value1_ = std::iter_value_t<_Iterator1_>;
-		using _Value2_ = std::iter_value_t<_Iterator2_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator1_> 
-			&& std::contiguous_iterator<_Iterator2_> && std::same_as<_Value1_, _Value2_> && std::is_trivially_copyable_v<_Value1_>)
-		{
-			if not consteval {
-				auto* __f1_ptr = std::to_address(__first1);
-				auto* __f2_ptr = std::to_address(__first2);
-
-				const auto __offset = algorithm::__swap_ranges[_Traits_::traits()](__f1_ptr, std::to_address(__last1),
-					__f2_ptr, std::to_address(__last2), std::integral_constant<sizetype, _Size_ * sizeof(_Value1_)>{});
-
-				__seek_iter(__first1, __bytes_pointer_offset(__f1_ptr, __offset));
-				__seek_iter(__first2, __bytes_pointer_offset(__f2_ptr, __offset));
-
-				return std::ranges::swap_ranges_result(__first1, __first2);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first1, __last1, __first2, __last2));
+		return this->dispatch(get_source(std::forward<R1>(r1)), get_source(std::forward<R2>(r2)));
 	}
 };
 
-constexpr inline auto swap_ranges = raze::options::function_with_traits<_Swap_ranges>;
+constexpr inline auto swap_ranges = options::function_with_traits<swap_ranges_t>[options::unroll<4>][swap_ranges_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -21,45 +21,58 @@ struct unroller_t {
 
 		template <class F>
 		constexpr raze_always_inline auto operator()(sizetype aligned_size, sizetype tail_size, F f) const noexcept
-			requires(!std::same_as<Tag, vx::scalar_tag>) 
+			requires(!std::same_as<Tag, vx::scalar_tag>)
 		{
-			constexpr auto has_early_exit = std::same_as<decltype(f(Tag{}, aligned_size)), bool>;
-			constexpr auto unrolling = get_unrolling<Traits>();
-			const auto guard = vx::make_guard<Tag>();
+			if constexpr (requires{ f(Tag{}, aligned_size); }) {
+				constexpr auto has_early_exit = std::same_as<decltype(f(Tag{}, aligned_size)), bool > ;
+				constexpr auto unrolling = get_unrolling<Traits>();
+				const auto guard = vx::make_guard<Tag>();
 
 #if defined(raze_cpp_msvc_only)
-			// Ignore unrolling
-			if constexpr (has_early_exit) {
-				if (!f(Tag{}, aligned_size)) {
-					if constexpr (requires { f.result(); }) return f.result();
-					else return;
+				// Ignore unrolling
+				if constexpr (has_early_exit) {
+					if (!f(Tag{}, aligned_size)) {
+						if constexpr (requires { f.result(); }) return f.result();
+						else return;
+					}
 				}
-			}
-			else {
-				f(Tag{}, aligned_size);
-			}
+				else {
+					f(Tag{}, aligned_size);
+				}
 #else
-			if constexpr (unrolling > 1) {
-				 auto unrolled_size = aligned_size - (aligned_size % (sizeof(Tag) * unrolling));
+				if constexpr (unrolling > 1) {
+					auto unrolled_size = aligned_size - (aligned_size % (sizeof(Tag) * unrolling));
 
-				 if (unrolled_size != 0) {
-					 if constexpr (has_early_exit) {
-						 if (!f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
-							 * unrolling>>{}, unrolled_size))
-						 {
-							 if constexpr (requires { f.result(); }) return f.result();
-							 else return;
-						 }
-					 }
-					 else {
-						 f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
-							 * unrolling>>{}, unrolled_size);
-					 }
-				 }
+					if (unrolled_size != 0) {
+						if constexpr (has_early_exit) {
+							if (!f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
+								* unrolling>>{}, unrolled_size))
+							{
+								if constexpr (requires { f.result(); }) return f.result();
+								else return;
+							}
+						}
+						else {
+							f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
+								* unrolling>>{}, unrolled_size);
+						}
+					}
 
-				aligned_size -= unrolled_size;
+					aligned_size -= unrolled_size;
 
-				if (aligned_size >= sizeof(Tag)) {
+					if (aligned_size >= sizeof(Tag)) {
+						if constexpr (has_early_exit) {
+							if (!f(Tag{}, aligned_size)) {
+								if constexpr (requires { f.result(); }) return f.result();
+								else return;
+							}
+						}
+						else {
+							f(Tag{}, aligned_size);
+						}
+					}
+				}
+				else {
 					if constexpr (has_early_exit) {
 						if (!f(Tag{}, aligned_size)) {
 							if constexpr (requires { f.result(); }) return f.result();
@@ -70,26 +83,18 @@ struct unroller_t {
 						f(Tag{}, aligned_size);
 					}
 				}
-			}
-			else {
-				if constexpr (has_early_exit) {
-					if (!f(Tag{}, aligned_size)) {
-						if constexpr (requires { f.result(); }) return f.result();
-						else return;
-					}
-				}
-				else {
-					f(Tag{}, aligned_size);
-				}
-			}
 #endif // defined(raze_cpp_msvc)
 
-			constexpr auto shift = std::countr_zero(sizeof(typename Tag::value_type));
-			constexpr auto can_process_tail = requires { f(Tag{}, algorithm::tail_mask(tail_size,
-				make_mask_generator(tail_size >> shift))); };
+				constexpr auto shift = std::countr_zero(sizeof(typename Tag::value_type));
+				constexpr auto can_process_tail = requires { f(Tag{}, algorithm::tail_mask(tail_size,
+					make_mask_generator(tail_size >> shift))); };
 
-			if constexpr (vx::native_conditional_memory_access<vx::abi_t<Tag>::isa, typename Tag::value_type> && can_process_tail) {
-				f(Tag{}, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
+				if constexpr (vx::native_conditional_memory_access<vx::abi_t<Tag>::isa, typename Tag::value_type> && can_process_tail) {
+					f(Tag{}, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
+				}
+				else {
+					f();
+				}
 			}
 			else {
 				f();

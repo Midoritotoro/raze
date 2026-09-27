@@ -91,8 +91,8 @@ bytes_distance(const options::as<Range>&) noexcept {
 }
 
 template <std::ranges::range Range>
-constexpr auto bytes_distance(Range&& r) noexcept(noexcept(std::ranges::size(r))) {
-    return std::ranges::size(r) * sizeof(std::ranges::range_value_t<Range>);
+constexpr auto bytes_distance(Range&& r) noexcept(noexcept(std::ranges::distance(r))) {
+    return std::ranges::distance(r) * sizeof(std::ranges::range_value_t<Range>);
 }
 
 template <std::input_iterator It, std::sentinel_for<It> Sent>

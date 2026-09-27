@@ -83,6 +83,7 @@ struct dispatchable {
 
         constexpr auto use_autovec = options::is_autovec<TraitsType>() ||
             options::get_strategy<TraitsType>().is_autovec();
+        constexpr auto vector = WorkType::vectorizable();
 
         if constexpr (!options::always_scalar<TraitsType>() &&
             WorkType::vectorizable() && (options::get_strategy<TraitsType>().is_manual()

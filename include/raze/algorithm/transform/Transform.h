@@ -1,508 +1,296 @@
-#pragma once 
-
+#pragma once
 
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
-#include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
-#include <algorithm>
+#include <src/raze/algorithm/Destination.h>
+#include <raze/math/Math.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Transform : _Traits_ {
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
-	struct __unary_impl {
-		_InputIterator_ _in_iterator;
-		_Sentinel_ _in_sentinel;
-		_OutIterator_ _out_iterator;
-		_Function_ _function;
+constexpr auto transform_strategy = options::strategy<strategy<>()
+	.for_gcc<strategy_mode::autovec>()
+	.for_clang<strategy_mode::autovec>()>;
+
+template <class Traits>
+struct transform_t : Traits, dispatchable<transform_t<Traits>> {
+	template <class... Ts>
+	struct kernel;
+
+	template <source Source, destination Destination, class Function, class Projection>
+	struct kernel<Source, Destination, Function, Projection> {
+		using source_type = std::remove_cvref_t<Source>;
+		using destination_type = std::remove_cvref_t<Destination>;
+
+		using iterator_type = typename source_type::iterator_type;
+		using destination_iterator_type = typename destination_type::iterator_type;
+
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
+
+		using vector_value_type = std::iter_value_t<unchecked_iterator_type>;
+
+		static consteval bool vectorizable() noexcept {
+			return contiguous_source<Source> && contiguous_destination<Destination> &&
+				vectorizable_unary_function<Function, unchecked_iterator_type> &&
+				vectorizable_projection<Projection, unchecked_iterator_type>;
+		}
+
+		destination_type _destination;
+		source_type _source;
+		unchecked_iterator_type _in_iterator;
+		unchecked_sentinel_type _in_sentinel;
+		unchecked_destination_type _out_iterator;
+		Function _function;
 		Projection _proj;
 
-		constexpr explicit __unary_impl(_InputIterator_ __in_it, _Sentinel_ __in_sent,
-			_OutIterator_ __out_it, _Function_ __f, Projection __proj) noexcept:
-				_in_iterator(__in_it), _in_sentinel(__in_sent), _out_iterator(__out_it), _function(__f), _proj(__proj)
+		constexpr explicit kernel(Source&& source, Destination&& dest, Function f, Projection proj)
+			: _source(std::forward<Source>(source)),
+			  _destination(std::forward<Destination>(dest)),
+			  _function(f), _proj(proj),
+			  _out_iterator(_destination.ubegin()),
+			  _in_iterator(_source.ubegin()), _in_sentinel(_source.uend())
 		{}
 
-		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
-			if (_in_iterator == _in_sentinel) return true;
-			*_out_iterator++ = _function(_proj(*_in_iterator++));
-			return false;
+		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+			auto* raze_restrict in_ptr = std::to_address(_in_iterator);
+			auto* raze_restrict in_last = std::to_address(_in_sentinel);
+			auto* raze_restrict out_ptr = std::to_address(_out_iterator);
+
+			for (; in_ptr != in_last; ++in_ptr, ++out_ptr)
+				*out_ptr = _function(_proj(*in_ptr));
+
+			source_type::from_ptr(_in_iterator, in_ptr);
+			destination_type::from_ptr(_out_iterator, out_ptr);
 		}
 
-		constexpr raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> result() const noexcept {
-			return { _in_iterator, _out_iterator };
+		raze_always_inline constexpr void operator()() {
+			raze_disable_unrolling
+			for (; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator)
+				*_out_iterator = _function(_proj(*_in_iterator));
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			auto* in_ptr = std::to_address(_in_iterator);
+			auto* out_ptr = std::to_address(_out_iterator);
+			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
+
+			do {
+				vx::store(out_ptr, _function(_proj(vx::load<Tag>(in_ptr))));
+				advance_bytes(in_ptr, out_ptr, sizeof(Tag));
+			} while (in_ptr != aligned_end);
+
+			source_type::from_ptr(_in_iterator, in_ptr);
+			destination_type::from_ptr(_out_iterator, out_ptr);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			auto* in_ptr = std::to_address(_in_iterator);
+			auto* out_ptr = std::to_address(_out_iterator);
+
+			const auto data = vx::load<Tag>(in_ptr);
+			vx::store[ignore](out_ptr, _function(_proj(data)));
+
+			advance_bytes(in_ptr, out_ptr, ignore.tail_bytes());
+
+			source_type::from_ptr(_in_iterator, in_ptr);
+			destination_type::from_ptr(_out_iterator, out_ptr);
+		}
+
+		constexpr raze_always_inline std::ranges::unary_transform_result<iterator_type, destination_iterator_type> result() const {
+			return { _source.wrap(_in_iterator), _destination.wrap(_out_iterator) };
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source>) {
+			return Source::static_size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const {
+			return _source.size();
 		}
 	};
 
-	template <class _InputIterator1_, class _Sentinel1_, class _InputIterator2_, class _Sentinel2_,
-		class _OutIterator_, class _Function_, class _Projection1_, class _Projection2_>
-	struct __binary_impl {
-		_InputIterator1_ _in_iterator1;
-		_Sentinel1_ _in_sentinel1;
-		_InputIterator2_ _in_iterator2;
-		_Sentinel2_ _in_sentinel2;
-		_OutIterator_ _out_iterator;
-		_Function_ _function;
-		_Projection1_ _proj1;
-		_Projection2_ _proj2;
+	template <source Source1, source Source2, destination Destination, class Function, class Projection1, class Projection2>
+	struct kernel<Source1, Source2, Destination, Function, Projection1, Projection2> {
+		using source1_type = std::remove_cvref_t<Source1>;
+		using source2_type = std::remove_cvref_t<Source2>;
+		using destination_type = std::remove_cvref_t<Destination>;
 
-		constexpr explicit __binary_impl(_InputIterator1_ __in1, _Sentinel1_ __sent1, _InputIterator2_ __in2, _Sentinel2_ __sent2,
-			_OutIterator_ __out_it, _Function_ __f, _Projection1_ __proj1, _Projection2_ __proj2) noexcept:
-			_in_iterator1(__in1), _in_sentinel1(__sent1), _in_iterator2(__in2), _in_sentinel2(__sent2),
-			_out_iterator(__out_it), _function(__f), _proj1(__proj1), _proj2(__proj2)
+		using iterator1_type = typename source1_type::iterator_type;
+		using iterator2_type = typename source2_type::iterator_type;
+		using destination_iterator_type = typename destination_type::iterator_type;
+
+		using unchecked_iterator1_type = typename source1_type::unchecked_iterator_type;
+		using unchecked_sentinel1_type = typename source1_type::unchecked_sentinel_type;
+		using unchecked_iterator2_type = typename source2_type::unchecked_iterator_type;
+		using unchecked_sentinel2_type = typename source2_type::unchecked_sentinel_type;
+		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
+
+		using vector_value_type = std::iter_value_t<unchecked_iterator1_type>;
+
+		static consteval bool vectorizable() noexcept {
+			return contiguous_source<Source1> && contiguous_source<Source2> && contiguous_destination<Destination> &&
+				vectorizable_binary_function<Function, unchecked_iterator1_type, unchecked_iterator2_type> &&
+				vectorizable_projection<Projection1, unchecked_iterator1_type> &&
+				vectorizable_projection<Projection2, unchecked_iterator2_type>;
+		}
+
+		destination_type _destination;
+		source1_type _source1;
+		source2_type _source2;
+		unchecked_iterator1_type _in1_iterator;
+		unchecked_sentinel1_type _in1_sentinel;
+		unchecked_iterator2_type _in2_iterator;
+		unchecked_sentinel2_type _in2_sentinel;
+		unchecked_destination_type _out_iterator;
+		Function _function;
+		Projection1 _proj1;
+		Projection2 _proj2;
+
+		constexpr explicit kernel(Source1&& source1, Source2&& source2, Destination&& dest,
+		         Function f, Projection1 proj1, Projection2 proj2)
+			: _source1(std::forward<Source1>(source1)),
+			  _source2(std::forward<Source2>(source2)),
+			  _destination(std::forward<Destination>(dest)),
+			  _function(f), _proj1(proj1), _proj2(proj2),
+			  _out_iterator(_destination.ubegin()),
+			  _in1_iterator(_source1.ubegin()), _in1_sentinel(_source1.uend()),
+			  _in2_iterator(_source2.ubegin()), _in2_sentinel(_source2.uend())
 		{}
 
-		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
-			if (_in_iterator1 == _in_sentinel1 || _in_iterator2 == _in_sentinel2) return true;
-			*_out_iterator++ = _function(_proj1(*_in_iterator1++), _proj2(*_in_iterator2++));
-			return false;
+		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+			auto* raze_restrict in1_ptr = std::to_address(_in1_iterator);
+			auto* raze_restrict in1_last = std::to_address(_in1_sentinel);
+			auto* raze_restrict in2_ptr = std::to_address(_in2_iterator);
+			auto* raze_restrict in2_last = std::to_address(_in2_sentinel);
+			auto* raze_restrict out_ptr = std::to_address(_out_iterator);
+
+			for (; in1_ptr != in1_last && in2_ptr != in2_last; ++in1_ptr, ++in2_ptr, ++out_ptr)
+				*out_ptr = _function(_proj1(*in1_ptr), _proj2(*in2_ptr));
+
+			source1_type::from_ptr(_in1_iterator, in1_ptr);
+			source2_type::from_ptr(_in2_iterator, in2_ptr);
+			destination_type::from_ptr(_out_iterator, out_ptr);
 		}
 
-		constexpr raze_always_inline std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_> result() const noexcept {
-			return { _in_iterator1, _in_iterator2, _out_iterator };
+		raze_always_inline constexpr void operator()() {
+			raze_disable_unrolling
+			for (; _in1_iterator != _in1_sentinel && _in2_iterator != _in2_sentinel; ++_in1_iterator, ++_in2_iterator, ++_out_iterator)
+				*_out_iterator = _function(_proj1(*_in1_iterator), _proj2(*_in2_iterator));
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			auto* in1_ptr = std::to_address(_in1_iterator);
+			auto* in2_ptr = std::to_address(_in2_iterator);
+			auto* out_ptr = std::to_address(_out_iterator);
+			const auto aligned_end = bytes_pointer_offset(in1_ptr, aligned_size);
+
+			do {
+				vx::store(out_ptr, _function(_proj1(vx::load<Tag>(in1_ptr)), _proj2(vx::load<Tag>(in2_ptr))));
+				advance_bytes(in1_ptr, in2_ptr, sizeof(Tag));
+				advance_bytes(out_ptr, sizeof(Tag));
+			} while (in1_ptr != aligned_end);
+
+			source1_type::from_ptr(_in1_iterator, in1_ptr);
+			source2_type::from_ptr(_in2_iterator, in2_ptr);
+			destination_type::from_ptr(_out_iterator, out_ptr);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			auto* in1_ptr = std::to_address(_in1_iterator);
+			auto* in2_ptr = std::to_address(_in2_iterator);
+			auto* out_ptr = std::to_address(_out_iterator);
+
+			const auto data1 = vx::load<Tag>(in1_ptr);
+			const auto data2 = vx::load<Tag>(in2_ptr);
+			vx::store[ignore](out_ptr, _function(_proj1(data1), _proj2(data2)));
+
+			advance_bytes(in1_ptr, in2_ptr, ignore.tail_bytes());
+			advance_bytes(out_ptr, ignore.tail_bytes());
+
+			source1_type::from_ptr(_in1_iterator, in1_ptr);
+			source2_type::from_ptr(_in2_iterator, in2_ptr);
+			destination_type::from_ptr(_out_iterator, out_ptr);
+		}
+
+		constexpr raze_always_inline std::ranges::binary_transform_result<iterator1_type, iterator2_type, destination_iterator_type> result() const {
+			return { _source1.wrap(_in1_iterator), _source2.wrap(_in2_iterator), _destination.wrap(_out_iterator) };
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source1> && constexpr_sized_source<Source2>) {
+			constexpr auto sz1 = Source1::static_size();
+			constexpr auto sz2 = Source2::static_size();
+			if constexpr (sizetype(sz1) < sizetype(sz2)) return sz1;
+			else return sz2;
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const {
+			return math::min(_source1.size(), _source2.size());
 		}
 	};
 
-	template <class _Tag_>
-	struct __vectorized_unary_transform {
-		template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
-		raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
-			_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f,
-			Projection __proj) const noexcept requires(!vx::simd_type<_Tag_>)
-		{
-			for (; __first != __last; ++__first, ++__result)
-				*__result = __f(__proj(*__first));
+	template <class Source, class Destination, class Function, class Projection>
+	kernel(Source&&, Destination&&, Function, Projection)
+		-> kernel<std::remove_cvref_t<Source>, std::remove_cvref_t<Destination>, std::remove_cvref_t<Function>, std::remove_cvref_t<Projection>>;
 
-			return { std::move(__first), std::move(__result) };
-		}
-	
-		template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
-		raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
-			sizetype __aligned_size, sizetype __tail_size, _InputIterator_ __first, _Sentinel_ __last,
-			_OutIterator_ __result, _Function_ __f, Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __in_ptr = std::to_address(__first);
-			auto* __out_ptr = std::to_address(__result);
+	template <class Source1, class Source2, class Destination, class Function, class Projection1, class Projection2>
+	kernel(Source1&&, Source2&&, Destination&&, Function, Projection1, Projection2)
+		-> kernel<std::remove_cvref_t<Source1>, std::remove_cvref_t<Source2>, std::remove_cvref_t<Destination>, std::remove_cvref_t<Function>, std::remove_cvref_t<Projection1>, std::remove_cvref_t<Projection2>>;
 
-			raze_assume(__in_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
-
-			const auto __aligned_end = __bytes_pointer_offset(__in_ptr, __aligned_size);
-
-			do {
-				vx::store(__out_ptr, __f(__proj(vx::load<_Tag_>(__in_ptr))));
-				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
-			} while (__in_ptr != __aligned_end);
-
-			__seek_iter(__first, __in_ptr);
-			__seek_iter(__result, __out_ptr);
-
-			for (; __first != __last; ++__first, ++__result)
-				*__result = __f(__proj(*__first));
-
-			return { std::move(__first), std::move(__result) };
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
-		raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
-			std::integral_constant<sizetype, _AlignedSize_>, std::integral_constant<sizetype, _TailSize_>,
-			_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, Projection __proj)
-				const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __in_ptr = std::to_address(__first);
-			auto* __out_ptr = std::to_address(__result);
-
-			raze_assume(__in_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
-
-			auto __left = __iterations_aligned;
-
-			do {
-				vx::store(__out_ptr, __f(__proj(vx::load<_Tag_>(__in_ptr))));
-				__advance_bytes(__in_ptr, __out_ptr, sizeof(_Tag_));
-			} while (--__left);
-
-			__seek_iter(__first, __in_ptr);
-			__seek_iter(__result, __out_ptr);
-
-			for (; __first != __last; ++__first, ++__result)
-				*__result = __f(__proj(*__first));
-
-			return { std::move(__first), std::move(__result) };
-		}
-	};
-
-	template <class _Tag_>
-	struct __vectorized_binary_transform {
-		template <class _InputIterator1_, class _Sentinel1_, class _InputIterator2_, class _Sentinel2_,
-			class _OutIterator_, class _Function_, class _Projection1_, class _Projection2_>
-		raze_always_inline std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_> operator()(
-			_InputIterator1_ __first1, _Sentinel1_ __last1, _InputIterator2_ __first2, _Sentinel2_ __last2,
-			_OutIterator_ __result, _Function_ __f, _Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(!vx::simd_type<_Tag_>)
-		{
-			for (; __first1 != __last1 && __first2 != __last2; ++__first1, ++__first2, ++__result)
-				*__result = __f(__proj1(*__first1), __proj2(*__first2));
-
-			return { std::move(__first1), std::move(__first2), std::move(__result) };
-		}
-
-		template <class _InputIterator1_, class _Sentinel1_, class _InputIterator2_, class _Sentinel2_,
-			class _OutIterator_, class _Function_, class _Projection1_, class _Projection2_>
-		raze_always_inline std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_> operator()(
-			sizetype __aligned_size, sizetype __tail_size, _InputIterator1_ __first1, _Sentinel1_ __last1,
-			_InputIterator2_ __first2, _Sentinel2_ __last2, _OutIterator_ __result, _Function_ __f,
-			_Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __in1_ptr = std::to_address(__first1);
-			auto* __in2_ptr = std::to_address(__first2);
-			auto* __out_ptr = std::to_address(__result);
-
-			raze_assume(__in1_ptr != nullptr);
-			raze_assume(__in2_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
-
-			const auto __aligned_end = __bytes_pointer_offset(__in1_ptr, __aligned_size);
-
-			do {
-				vx::store(__out_ptr, __f(__proj1(vx::load<_Tag_>(__in1_ptr)), __proj2(vx::load<_Tag_>(__in2_ptr))));
-				__advance_bytes(__in1_ptr, __in2_ptr, sizeof(_Tag_));
-				__advance_bytes(__out_ptr, sizeof(_Tag_));
-			} while (__in1_ptr != __aligned_end);
-
-			__seek_iter(__first1, __in1_ptr);
-			__seek_iter(__first2, __in2_ptr);
-			__seek_iter(__result, __out_ptr);
-
-			for (; __first1 != __last1 && __first2 != __last2; ++__first1, ++__first2, ++__result)
-				*__result = __f(__proj1(*__first1), __proj2(*__first2));
-
-			return { std::move(__first1), std::move(__first2), std::move(__result) };
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _InputIterator1_, class _Sentinel1_, class _InputIterator2_, class _Sentinel2_,
-			class _OutIterator_, class _Function_, class _Projection1_, class _Projection2_>
-		raze_always_inline std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_> operator()(
-			std::integral_constant<sizetype, _AlignedSize_>, std::integral_constant<sizetype, _TailSize_>, _InputIterator1_ __first1,
-			_Sentinel1_ __last1, _InputIterator2_ __first2, _Sentinel2_ __last2, _OutIterator_ __result, _Function_ __f,
-			_Projection1_ __proj1, _Projection2_ __proj2) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __in1_ptr = std::to_address(__first1);
-			auto* __in2_ptr = std::to_address(__first2);
-			auto* __out_ptr = std::to_address(__result);
-
-			raze_assume(__in1_ptr != nullptr);
-			raze_assume(__in2_ptr != nullptr);
-			raze_assume(__out_ptr != nullptr);
-
-			auto __left = __iterations_aligned;
-
-			do {
-				vx::store(__out_ptr, __f(__proj1(vx::load<_Tag_>(__in1_ptr)), __proj2(vx::load<_Tag_>(__in2_ptr))));
-				__advance_bytes(__in1_ptr, __in2_ptr, sizeof(_Tag_));
-				__advance_bytes(__out_ptr, sizeof(_Tag_));
-			} while (--__left);
-
-			__seek_iter(__first1, __in1_ptr);
-			__seek_iter(__first2, __in2_ptr);
-			__seek_iter(__result, __out_ptr);
-
-			for (; __first1 != __last1 && __first2 != __last2; ++__first1, ++__first2, ++__result)
-				*__result = __f(__proj1(*__first1), __proj2(*__first2));
-
-			return { std::move(__first1), std::move(__first2), std::move(__result) };
-		}
-	};
-
-	template <std::input_iterator _InputIterator_, std::sentinel_for<_InputIterator_> _Sentinel_,
-		std::weakly_incrementable _OutIterator_, class _Function_, class Projection = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> operator()(
-		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, Projection __proj = {}) const noexcept
-			requires(std::indirectly_writable<_OutIterator_, std::indirect_result_t<_Function_, std::projected<_InputIterator_, Projection>>>)
+	template <std::input_iterator InIt, std::sentinel_for<InIt> Sent,
+	    std::weakly_incrementable OutIt, class Function, class Proj = std::identity>
+	constexpr raze_always_inline std::ranges::unary_transform_result<InIt, OutIt> operator()(
+		InIt first, Sent last, OutIt out, Function f, Proj proj = {}) const
+			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function, std::projected<InIt, Proj>>>)
 	{
-		auto __r = __transform_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_InputIterator_>(std::move(__last)), 
-			algorithm::__uiter(std::move(__result)),
-			traits::fwd_fn(__f), traits::fwd_fn(__proj));
-
-		__seek_iter(__first, std::move(__r.in));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__first), std::move(__result) };
+		return this->dispatch(get_source(std::move(first), std::move(last)),
+			get_destination(std::move(out)), traits::fwd_fn(f), traits::fwd_fn(proj));
 	}
 
-	template <std::ranges::input_range Range, std::weakly_incrementable _OutIterator_,
-		class _Function_, class Projection = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<Range>, _OutIterator_> operator()(
-		Range&& __range, _OutIterator_ __result, _Function_ __f, Projection __proj = {}) const noexcept
-			requires(!constexpr_sized_range<Range> && std::indirectly_writable<_OutIterator_,
-				std::indirect_result_t<_Function_, std::projected<std::ranges::iterator_t<Range>, Projection>>>)
+	template <std::ranges::input_range R, std::weakly_incrementable OutIt,
+	    class Function, class Proj = std::identity>
+	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<R>, OutIt>
+		operator()(R&& r, OutIt out, Function f, Proj proj = {}) const
+			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function, 
+				std::projected<std::ranges::iterator_t<R>, Proj>>>)
 	{
-		auto __begin = std::ranges::begin(__range);
-		auto __end = std::ranges::end(__range);
-
-		auto __r = __transform_unchecked(
-			traits::__r_uiter<Range>(std::move(__begin)),
-			traits::__r_usent<Range>(std::move(__end)),
-			algorithm::__uiter(std::move(__result)),
-			traits::fwd_fn(__f), traits::fwd_fn(__proj));
-
-		__seek_iter(__begin, std::move(__r.in));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__begin), std::move(__result) };
+		return this->dispatch(get_source(std::forward<R>(r)),
+			get_destination(std::move(out)), traits::fwd_fn(f), traits::fwd_fn(proj));
 	}
 
-	template <std::ranges::input_range Range, std::weakly_incrementable _OutIterator_,
-		class _Function_, class Projection = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<Range>, _OutIterator_> operator()(
-		Range&& __range, _OutIterator_ __result, _Function_ __f, Projection __proj = {}) const noexcept
-			requires(constexpr_sized_range<Range> && std::indirectly_writable<_OutIterator_,
-				std::indirect_result_t<_Function_, std::projected<std::ranges::iterator_t<Range>, Projection>>>)
+	template <std::input_iterator InIt1, std::sentinel_for<InIt1> Sent1,
+		std::input_iterator InIt2, std::sentinel_for<InIt2> Sent2, std::weakly_incrementable OutIt, 
+		class Function, class Proj1 = std::identity, class Proj2 = std::identity>
+	constexpr raze_always_inline std::ranges::binary_transform_result<InIt1, InIt2, OutIt> operator()(
+		InIt1 first1, Sent1 last1, InIt2 first2, Sent2 last2, OutIt out,
+		Function f, Proj1 proj1 = {}, Proj2 proj2 = {}) const
+			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function,
+				std::projected<InIt1, Proj1>, std::projected<InIt2, Proj2>>>)
 	{
-		auto __begin = std::ranges::begin(__range);
-		auto __end = std::ranges::end(__range);
-
-		auto __r = __transform_unchecked(
-			traits::__r_uiter<Range>(std::move(__begin)),
-			traits::__r_usent<Range>(std::move(__end)),
-			algorithm::__uiter(std::move(__result)),
-			traits::fwd_fn(__f), traits::fwd_fn(__proj),
-			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
-
-		__seek_iter(__begin, std::move(__r.in));
-		__seek_iter(__end, std::move(__r.out));
-
-		return { std::move(__begin), std::move(__end) };
+		return this->dispatch(get_source(std::move(first1), std::move(last1)),
+			get_source(std::move(first2), std::move(last2)), get_destination(std::move(out)),
+			traits::fwd_fn(f), traits::fwd_fn(proj1), traits::fwd_fn(proj2));
 	}
 
-	template <std::input_iterator _InputIterator1_, std::sentinel_for<_InputIterator1_> _Sentinel1_,
-		std::input_iterator _InputIterator2_, std::sentinel_for<_InputIterator2_> _Sentinel2_,
-		std::weakly_incrementable _OutIterator_, class _Function_, class _Projection1_ = std::identity, 
-		class _Projection2_ = std::identity>
-	constexpr raze_always_inline std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_> operator()(
-		_InputIterator1_ __first1, _Sentinel1_ __last1, _InputIterator2_ __first2, _Sentinel2_ __last2, _OutIterator_ __result, 
-		_Function_ __f, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept requires(std::indirectly_writable<_OutIterator_,
-			std::indirect_result_t<_Function_, std::projected<_InputIterator1_, _Projection1_>, std::projected<_InputIterator2_, _Projection2_>>>)
-	{
-		auto __r = __binary_transform_unchecked(traits::__uiter<_Sentinel1_>(std::move(__first1)),
-			traits::__usent<_InputIterator1_>(std::move(__last1)),
-			traits::__uiter<_Sentinel2_>(std::move(__first2)),
-			traits::__usent<_InputIterator2_>(std::move(__last2)),
-			algorithm::__uiter(std::move(__result)),
-			traits::fwd_fn(__f), traits::fwd_fn(__proj1),
-			traits::fwd_fn(__proj2));
-
-		__seek_iter(__first1, std::move(__r.in1));
-		__seek_iter(__first2, std::move(__r.in2));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__first1), std::move(__first2), std::move(__result) };
-	}
-
-	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_,
-		std::weakly_incrementable _OutIterator_, class _Function_,
-		class _Projection1_ = std::identity, class _Projection2_ = std::identity>
+	template <std::ranges::input_range R1, std::ranges::input_range R2,
+		std::weakly_incrementable OutIt, class Function, class Proj1 = std::identity,
+		class Proj2 = std::identity>
 	constexpr raze_always_inline std::ranges::binary_transform_result<
-		std::ranges::iterator_t<_Range1_>, std::ranges::iterator_t<_Range2_>, _OutIterator_> operator()(
-		_Range1_&& __range1, _Range2_&& __range2, _OutIterator_ __result,
-		_Function_ __f, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires(!constexpr_sized_range<_Range1_> && !constexpr_sized_range<_Range2_> &&
-				std::indirectly_writable<_OutIterator_,
-					std::indirect_result_t<_Function_,
-						std::projected<std::ranges::iterator_t<_Range1_>, _Projection1_>,
-						std::projected<std::ranges::iterator_t<_Range2_>, _Projection2_>>>)
+		std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>, OutIt> operator()(
+		R1&& r1, R2&& r2, OutIt out, Function f, Proj1 proj1 = {}, Proj2 proj2 = {}) const
+			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function, 
+				std::projected<std::ranges::iterator_t<R1>, Proj1>, std::projected<std::ranges::iterator_t<R2>, Proj2>>>)
 	{
-		auto __begin1 = std::ranges::begin(__range1);
-		auto __begin2 = std::ranges::begin(__range2);
-
-		auto __r = __binary_transform_unchecked(
-			traits::__r_uiter<_Range1_>(std::move(__begin1)),
-			traits::__uend(__range1),
-			traits::__r_uiter<_Range2_>(std::move(__begin2)),
-			traits::__uend(__range2),
-			algorithm::__uiter(std::move(__result)),
-			traits::fwd_fn(__f),
-			traits::fwd_fn(__proj1), traits::fwd_fn(__proj2));
-
-		__seek_iter(__begin1, std::move(__r.in1));
-		__seek_iter(__begin2, std::move(__r.in2));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__begin1), std::move(__begin2), std::move(__result) };
-	}
-
-	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_,
-		std::weakly_incrementable _OutIterator_, class _Function_,
-		class _Projection1_ = std::identity, class _Projection2_ = std::identity>
-	constexpr raze_always_inline std::ranges::binary_transform_result<
-		std::ranges::iterator_t<_Range1_>, std::ranges::iterator_t<_Range2_>, _OutIterator_> operator()(
-		_Range1_&& __range1, _Range2_&& __range2, _OutIterator_ __result,
-		_Function_ __f, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires(constexpr_sized_range<_Range1_> && constexpr_sized_range<_Range2_> &&
-				std::indirectly_writable<_OutIterator_,
-					std::indirect_result_t<_Function_,
-						std::projected<std::ranges::iterator_t<_Range1_>, _Projection1_>,
-						std::projected<std::ranges::iterator_t<_Range2_>, _Projection2_>>>)
-	{
-		constexpr auto __size1 = __range_constexpr_size<_Range1_>();
-		constexpr auto __size2 = __range_constexpr_size<_Range2_>();
-		constexpr auto __min_size = (__size1 < __size2) ? __size1 : __size2;
-	
-		auto __begin1 = std::ranges::begin(__range1);
-		auto __begin2 = std::ranges::begin(__range2);
-
-		auto __r = __binary_transform_unchecked(
-			traits::__r_uiter<_Range1_>(std::move(__begin1)),
-			traits::__uend(__range1),
-			traits::__r_uiter<_Range2_>(std::move(__begin2)),
-			traits::__uend(__range2),
-			algorithm::__uiter(std::move(__result)),
-			traits::fwd_fn(__f),
-			traits::fwd_fn(__proj1), traits::fwd_fn(__proj2),
-			std::integral_constant<sizetype, __min_size>{});
-
-		__seek_iter(__begin1, std::move(__r.in1));
-		__seek_iter(__begin2, std::move(__r.in2));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__begin1), std::move(__begin2), std::move(__result) };
-	}
-
-private:
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection>
-	constexpr raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> __transform_unchecked(
-		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result, _Function_ __f, Projection __proj) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _InValue_ = std::iter_value_t<_InputIterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<Projection, _InputIterator_> &&
-			traits::__is_lightweight_callable_v<_Function_>)
-		{
-			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_unary_transform, _InValue_,
-					std::ranges::unary_transform_result<_InputIterator_, _OutIterator_>>(
-					algorithm::distance(__first, __last) * sizeof(_InValue_),
-					__first, __last, __result, __f, __proj);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__unary_impl(__first, __last, __result, __f, __proj));
-	}
-
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, class _Function_, class Projection, sizetype _Size_>
-	constexpr raze_always_inline std::ranges::unary_transform_result<_InputIterator_, _OutIterator_> __transform_unchecked(
-		_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result,
-		_Function_ __f, Projection __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _InValue_ = std::iter_value_t<_InputIterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_> &&
-			vectorizable_unary_function<_Function_, _InputIterator_> && vectorizable_projection<Projection, _InputIterator_> &&
-			traits::__is_lightweight_callable_v<_Function_>)
-		{
-			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_InValue_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_unary_transform, _InValue_,
-					std::ranges::unary_transform_result<_InputIterator_, _OutIterator_>>(
-					__bytes, __first, __last, __result, __f, __proj);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__unary_impl(__first, __last, __result, __f, __proj));
-	}
-
-	template <class _InputIterator1_, class _Sentinel1_, class _InputIterator2_, class _Sentinel2_,
-		class _OutIterator_, class _Function_, class _Projection1_, class _Projection2_>
-	constexpr raze_always_inline std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_> __binary_transform_unchecked(
-		_InputIterator1_ __first1, _Sentinel1_ __last1, _InputIterator2_ __first2, _Sentinel2_ __last2,
-		_OutIterator_ __result, _Function_ __f,
-		_Projection1_ __proj1, _Projection2_ __proj2) const noexcept
-	{
-		__verify_range(__first1, __last1);
-		__verify_range(__first2, __last2);
-
-		using _TraitsType = decltype(this->traits());
-		using _InValue1_ = std::iter_value_t<_InputIterator1_>;
-		using _InValue2_ = std::iter_value_t<_InputIterator2_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_InputIterator1_> && std::contiguous_iterator<_InputIterator2_> &&
-			std::contiguous_iterator<_OutIterator_> && std::same_as<_InValue1_, _InValue2_> &&
-			vectorizable_binary_function<_Function_, _InputIterator1_, _InputIterator2_> &&
-			vectorizable_projection<_Projection1_, _InputIterator1_> && vectorizable_projection<_Projection2_, _InputIterator2_> &&
-			traits::__is_lightweight_callable_v<_Function_>)
-		{
-			if not consteval {
-				const auto __dist1 = algorithm::distance(__first1, __last1);
-				const auto __dist2 = algorithm::distance(__first2, __last2);
-				const auto __min_dist = (__dist1 < __dist2) ? __dist1 : __dist2;
-
-				return vx::__dispatch_sized_impl<__vectorized_binary_transform, _InValue1_,
-					std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_>>(
-					__min_dist * sizeof(_InValue1_),
-					__first1, __last1, __first2, __last2, __result, __f, __proj1, __proj2);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(
-			__binary_impl(__first1, __last1, __first2, __last2, __result, __f, __proj1, __proj2));
-	}
-
-	template <class _InputIterator1_, class _Sentinel1_, class _InputIterator2_, class _Sentinel2_,
-		class _OutIterator_, class _Function_, class _Projection1_, class _Projection2_, sizetype _Size_>
-	constexpr raze_always_inline std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_> __binary_transform_unchecked(
-		_InputIterator1_ __first1, _Sentinel1_ __last1, _InputIterator2_ __first2, _Sentinel2_ __last2,
-		_OutIterator_ __result, _Function_ __f,
-		_Projection1_ __proj1, _Projection2_ __proj2, std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first1, __last1);
-		__verify_range(__first2, __last2);
-
-		using _TraitsType = decltype(this->traits());
-		using _InValue1_ = std::iter_value_t<_InputIterator1_>;
-		using _InValue2_ = std::iter_value_t<_InputIterator2_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InputIterator1_> 
-			&& std::contiguous_iterator<_InputIterator2_> &&
-			std::contiguous_iterator<_OutIterator_> && std::same_as<_InValue1_, _InValue2_> &&
-			vectorizable_binary_function<_Function_, _InputIterator1_, _InputIterator2_> &&
-			vectorizable_projection<_Projection1_, _InputIterator1_> &&
-			vectorizable_projection<_Projection2_, _InputIterator2_> &&
-			traits::__is_lightweight_callable_v<_Function_>)
-		{
-			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_InValue1_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_binary_transform, _InValue1_,
-					std::ranges::binary_transform_result<_InputIterator1_, _InputIterator2_, _OutIterator_>>(
-					__bytes, __first1, __last1, __first2, __last2, __result, __f, __proj1, __proj2);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(
-			__binary_impl(__first1, __last1, __first2, __last2, __result, __f, __proj1, __proj2));
+		return this->dispatch(get_source(std::forward<R1>(r1)), get_source(std::forward<R2>(r2)),
+			get_destination(std::move(out)), traits::fwd_fn(f), traits::fwd_fn(proj1), traits::fwd_fn(proj2));
 	}
 };
 
-constexpr inline auto transform = raze::options::function_with_traits<_Transform>;
+constexpr inline auto transform = options::function_with_traits<transform_t>[options::unroll<4>][transform_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

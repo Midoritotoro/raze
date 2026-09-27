@@ -91,13 +91,13 @@ struct range_data_source {
 	}
 
 	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
-		std::iter_value_t<iterator_type>* ptr)
+		std::iter_value_t<iterator_type>* ptr) requires(!std::same_as<iterator_type, unchecked_iterator_type>)
 	{
 		traits::seek_iter(uit, ptr);
 	}
 
 	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
-		const std::iter_value_t<iterator_type>* ptr)
+		const std::iter_value_t<iterator_type>* ptr) requires(!std::same_as<iterator_type, unchecked_iterator_type>)
 	{
 		traits::seek_iter(uit, ptr);
 	}
@@ -292,6 +292,29 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
 	iterator_type _it;
 };
 
+template <class It>
+struct is_counted_iterator : std::false_type {};
+
+template <class It>
+struct is_counted_iterator<std::counted_iterator<It>> : std::true_type {};
+
+template <class It>
+inline constexpr bool is_counted_iterator_v = is_counted_iterator<It>::value;
+
+template <class Range>
+concept counted_range = is_counted_iterator_v<std::ranges::iterator_t<Range>> &&
+	std::same_as<std::ranges::sentinel_t<Range>, std::default_sentinel_t>;
+
+template <class Range>
+	requires counted_range<Range>
+struct range_data_source<Range> : iter_data_source<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>> {
+	using base_type = iter_data_source<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>;
+
+	constexpr explicit range_data_source(Range&& r) :
+		base_type(std::ranges::begin(r), std::ranges::end(r))
+	{}
+};
+
 template <class Range>
 raze_nodiscard raze_always_inline constexpr auto get_source(Range&& r) {
 	return range_data_source<Range>(std::forward<Range>(r));
@@ -326,9 +349,14 @@ concept source = requires(
 	{ src.wrap(uit) } -> std::same_as<typename Source::iterator_type>;
 };
 
+template <class It>
+concept contiguous_or_counted_contiguous_iterator =
+	std::contiguous_iterator<It> ||
+	(requires(It it) { { it.base() } -> std::contiguous_iterator; });
+
 template <class Source>
 concept contiguous_source = source<Source> &&
-	std::contiguous_iterator<typename Source::iterator_type> &&
+	contiguous_or_counted_contiguous_iterator<typename Source::iterator_type> &&
 	requires(typename Source::iterator_type it,
 		typename Source::unchecked_iterator_type uit,
 		std::iter_value_t<typename Source::unchecked_iterator_type>* ptr,
