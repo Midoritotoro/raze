@@ -23,7 +23,7 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
     }
 
     template <any_iterator_or_pointer Mem, simd_type V>
-    static raze_always_inline auto deferred_call(auto opts, Mem it, const V& x) noexcept {
+    static raze_always_inline auto deferred_call(auto const& opts, Mem it, const V& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;

@@ -34,8 +34,8 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		Source _source;
 		unchecked_iterator_type _iterator;
 		unchecked_sentinel_type _sentinel;
-		Predicate _predicate;
-		Projection _proj;
+		raze_no_unique_address Predicate _predicate;
+		raze_no_unique_address Projection _proj;
 		Value _new_value;
 
 		constexpr kernel(Source&& src, Predicate pred, Projection proj, Value new_val):
@@ -70,18 +70,19 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 
 			raze_disable_unrolling
 			do {
-				vx::store[_predicate(_proj(vx::load<Tag>(ptr)))](ptr, new_value);
+				auto mask = _predicate(_proj(vx::load<Tag>(ptr)));
+				vx::store[mask](ptr, new_value);
 				advance_bytes(ptr, sizeof(Tag));
 			} while (ptr != aligned_end);
 
 			source_type::from_ptr(_iterator, ptr);
 		}
 
-		template <vectorizable_tag Tag>
+	/*	template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
 			auto* ptr = std::to_address(_iterator);
 			vx::store[_predicate(_proj(vx::load<Tag>[ignore](ptr))) & ignore()](ptr, Tag(_new_value));
-		}
+		}*/
 
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source>) {
 			return Source::static_size();

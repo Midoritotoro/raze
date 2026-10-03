@@ -20,7 +20,7 @@ struct unroller_t {
 		}
 
 		template <class F>
-		constexpr raze_always_inline auto operator()(sizetype aligned_size, sizetype tail_size, F f) const noexcept
+		constexpr raze_always_inline auto operator()(sizetype aligned_size, sizetype tail_size, F& f) const noexcept
 			requires(!std::same_as<Tag, vx::scalar_tag>)
 		{
 			if constexpr (requires{ f(Tag{}, aligned_size); }) {

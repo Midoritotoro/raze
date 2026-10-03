@@ -14,7 +14,7 @@ struct range_data_source {
 	using unchecked_iterator_type = decltype(traits::ubegin(std::declval<Range>()));
 	using unchecked_sentinel_type = decltype(traits::uend(std::declval<Range>()));
 
-	constexpr explicit range_data_source(Range&& r) :
+	raze_always_inline constexpr explicit range_data_source(Range&& r) :
 		_range(std::forward<Range>(r))
 	{}
 
@@ -102,6 +102,12 @@ struct range_data_source {
 		traits::seek_iter(uit, ptr);
 	}
 
+	static raze_always_inline auto to_raw_range(unchecked_iterator_type it, unchecked_sentinel_type sent)
+		requires(std::random_access_iterator<unchecked_iterator_type>)
+	{
+		return std::pair { std::to_address(it), std::to_address(sent) };
+	}
+
 	Range _range;
 };
 
@@ -113,7 +119,7 @@ struct iter_data_source {
 	using unchecked_iterator_type = decltype(traits::uiter_s<Sent>(std::declval<It>()));
 	using unchecked_sentinel_type = decltype(traits::usent<It>(std::declval<Sent>()));
 
-	constexpr iter_data_source(It it, Sent sent) :
+	raze_always_inline constexpr iter_data_source(It it, Sent sent) :
 		_it(std::move(it)), _sent(std::move(sent))
 	{}
 
@@ -140,27 +146,25 @@ struct iter_data_source {
 	raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
 		return traits::usent<It>(_sent);
 	}
-
+	
+	template <class Iterator>
 	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(iterator_type it) 
+		unwrap(Iterator iter)
 	{
-		return traits::uiter_s<Sent>(std::move(it));
-	}
+		using Iter = std::remove_cvref_t<Iterator>;
 
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(std::iter_value_t<unchecked_iterator_type>* ptr) 
-	{
-		unchecked_iterator_type it;
-		traits::seek_iter(it, ptr);
-		return it;
-	}
-
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(const std::iter_value_t<unchecked_iterator_type>* ptr)
-	{
-		unchecked_iterator_type it;
-		traits::seek_iter(it, ptr);
-		return it;
+		if constexpr (std::same_as<Iter, iterator_type>) return traits::uiter_s<Sent>(std::move(iter));
+		else if constexpr ((std::same_as<Iter, std::iter_value_t<unchecked_iterator_type>*> ||
+			std::same_as<Iter, const std::iter_value_t<unchecked_iterator_type>*>) &&
+			!std::same_as<iterator_type, std::iter_value_t<unchecked_iterator_type>*>) 
+		{
+			unchecked_iterator_type it;
+			traits::seek_iter(it, iter);
+			return it;
+		}
+		else {
+			return iter;
+		}
 	}
 
 	raze_nodiscard raze_always_inline constexpr iterator_type
@@ -193,6 +197,12 @@ struct iter_data_source {
 		traits::seek_iter(it, ptr);
 	}
 
+	static raze_always_inline auto to_raw_range(unchecked_iterator_type it,	
+		unchecked_sentinel_type sent) requires(std::random_access_iterator<unchecked_iterator_type>)
+	{
+		return std::pair { std::to_address(it), std::to_address(sent) };
+	}
+
 	iterator_type _it;
 	sentinel_type _sent;
 };
@@ -207,7 +217,7 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
 	using unchecked_iterator_type = std::counted_iterator<unchecked_base_iterator_type>;
 	using unchecked_sentinel_type = std::default_sentinel_t;
 
-	constexpr iter_data_source(iterator_type it, sentinel_type):
+	raze_always_inline constexpr iter_data_source(iterator_type it, sentinel_type):
 		_it(std::move(it))
 	{}
 
@@ -289,7 +299,53 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
 		it = { std::move(base), it.count() - offset };
 	}
 
+	static raze_always_inline auto to_raw_range(unchecked_iterator_type it, unchecked_sentinel_type sent)
+		requires(std::random_access_iterator<typename unchecked_iterator_type::iterator_type>)
+	{
+		using underlying_iterator = typename iterator_type::iterator_type;
+
+		underlying_iterator underlying_first = it.base();
+		underlying_iterator underlying_last = it.base();
+		std::ranges::advance(underlying_last, it.count());
+
+		return std::pair { std::to_address(underlying_first), std::to_address(underlying_last) };
+	}
+
 	iterator_type _it;
+};
+
+template <class T>
+struct iter_data_source<T*, T*> {
+    using iterator_type = T*;
+    using sentinel_type = T*;
+    using unchecked_iterator_type = T*;
+    using unchecked_sentinel_type = T*;
+
+    T* _it;
+    T* _sent;
+
+    raze_always_inline constexpr iter_data_source(T* it, T* sent) noexcept :
+        _it(it), _sent(sent)
+    {}
+
+    raze_nodiscard raze_always_inline constexpr bool empty() const noexcept { return _it == _sent; }
+    raze_nodiscard raze_always_inline constexpr auto size() const noexcept { return static_cast<sizetype>(_sent - _it) * sizeof(T); }
+
+    raze_nodiscard raze_always_inline constexpr T* begin() const noexcept { return _it; }
+    raze_nodiscard raze_always_inline constexpr T* end() const noexcept { return _sent; }
+    raze_nodiscard raze_always_inline constexpr T* ubegin() const noexcept { return _it; }
+    raze_nodiscard raze_always_inline constexpr T* uend() const noexcept { return _sent; }
+
+    template <class Iter>
+    raze_nodiscard static raze_always_inline constexpr T* unwrap(Iter iter) noexcept { return std::to_address(iter); }
+    raze_nodiscard raze_always_inline constexpr T* wrap(T* uit) const noexcept { return uit; }
+
+    static raze_always_inline constexpr void from_ptr(T*& uit, T* ptr) noexcept { uit = ptr; }
+    static raze_always_inline constexpr void from_ptr(T*& uit, const T* ptr) noexcept { uit = const_cast<T*>(ptr); }
+
+    static raze_always_inline auto to_raw_range(T* it, T* sent) noexcept {
+        return std::pair<const T*, const T*>{ it, sent };
+    }
 };
 
 template <class It>
@@ -362,12 +418,16 @@ concept contiguous_source = source<Source> &&
 		std::iter_value_t<typename Source::unchecked_iterator_type>* ptr,
 		const std::iter_value_t<typename Source::unchecked_iterator_type>* cptr,
 		std::iter_value_t<typename Source::iterator_type>* iptr,
-		const std::iter_value_t<typename Source::iterator_type>* ciptr)
+		const std::iter_value_t<typename Source::iterator_type>* ciptr,
+		typename Source::unchecked_sentinel_type usent)
 {
 		{ Source::from_ptr(uit, ptr) } -> std::same_as<void>;
 		{ Source::from_ptr(uit, cptr) } -> std::same_as<void>;
 		{ Source::from_ptr(it, iptr) } -> std::same_as<void>;
 		{ Source::from_ptr(it, ciptr) } -> std::same_as<void>;
+		{ Source::to_raw_range(uit, usent) } -> std::convertible_to<std::pair<
+			const std::iter_value_t<typename Source::unchecked_iterator_type>*,
+			const std::iter_value_t<typename Source::unchecked_iterator_type>*>>;
 };
 
 template <class Source>

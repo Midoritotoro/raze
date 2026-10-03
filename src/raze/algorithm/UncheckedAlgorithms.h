@@ -83,7 +83,6 @@ struct dispatchable {
 
         constexpr auto use_autovec = options::is_autovec<TraitsType>() ||
             options::get_strategy<TraitsType>().is_autovec();
-        constexpr auto vector = WorkType::vectorizable();
 
         if constexpr (!options::always_scalar<TraitsType>() &&
             WorkType::vectorizable() && (options::get_strategy<TraitsType>().is_manual()
@@ -111,15 +110,15 @@ struct dispatchable {
 
 #pragma strict_gs_check(on)
 
-template <class _Type_>
-concept vectorizable_tag = !std::same_as<_Type_, vx::scalar_tag> && vx::simd_type<_Type_>;
+template <class T>
+concept vectorizable_tag = !std::same_as<T, vx::scalar_tag> && vx::simd_type<T>;
 
-template <class _Type_>
-concept scalar_tag = std::same_as<_Type_, vx::scalar_tag>;
+template <class T>
+concept scalar_tag = std::same_as<T, vx::scalar_tag>;
 
-template <class _Type_>
-concept tail_tag = requires(_Type_) {
-    typename _Type_::original_type;
-} && !vx::simd_type<_Type_>;
+template <class T>
+concept tail_tag = requires(T) {
+    typename T::original_type;
+} && !vx::simd_type<T>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

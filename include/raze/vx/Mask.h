@@ -25,7 +25,7 @@ public:
 	using abi_type = Abi;
 
 	raze_always_inline simd_mask() noexcept {
-		_storage.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+		_storage.__for_each_chunk([] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
 			chunk = mask_zero_<abi_type::isa, typename Chunk::unwrapped_type>();
 		});
 	}
@@ -40,7 +40,7 @@ public:
 	raze_always_inline simd_mask(uninitialized_tag) noexcept {}
 
 	raze_no_stack_protector raze_always_inline explicit simd_mask(bool v) noexcept {
-		_storage.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+		_storage.__for_each_chunk([v] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
 			chunk = mask_broadcast_<abi_type::isa, Chunk::size, typename Chunk::unwrapped_type, value_type>(v);
 		});
 	}
@@ -79,7 +79,7 @@ public:
 		if constexpr (sizeof(Value) == 1 && std::contiguous_iterator<Unwrapped> && sizeof(T) == 1) {
 			auto current = reinterpret_cast<bool*>(std::to_address(out));
 
-			__for_each_chunk([&] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
+			__for_each_chunk([&current, policy] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
 				store_mask_<abi_type::isa, Chunk::size, value_type>(current, chunk.data(), policy);
 				algorithm::advance_bytes(current, Chunk::size * sizeof(value_type));
 			});
@@ -173,7 +173,7 @@ public:
 	raze_always_inline void __for_each_chunk(F&& f, Args&& ... args) const noexcept {
 		_storage.__for_each_chunk(std::forward<F>(f), std::forward<Args>(args)...);
 	}
-
+	
 	template <class F, class ... Args>
 	raze_always_inline void __for_each_chunk_reverse(F&& f, Args&& ... args) const noexcept {
 		_storage.__for_each_chunk_reverse(std::forward<F>(f), std::forward<Args>(args)...);

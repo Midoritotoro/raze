@@ -39,7 +39,7 @@ public:
         else return simd_tuple_size<tuple_type>::value;
     }
 
-    raze_nodiscard raze_always_inline const tuple_type& storage() const noexcept {
+    raze_nodiscard raze_always_inline tuple_type storage() const noexcept {
         return _data;
     }
 

@@ -38,7 +38,7 @@ struct configurable_is_less_t: options::conditional_callable<configurable_is_les
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
-        simd_mask<Value, Abi> r;
+        simd_mask<Value, Abi> r(uninitialized);
 
         auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
             chunk = less_<Abi::isa, Value>(ustorage<Args>(args)...);

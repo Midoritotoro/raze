@@ -67,7 +67,7 @@ public:
     raze_no_stack_protector simd(simd&&) noexcept = default;
     raze_no_stack_protector simd& operator=(const simd&) noexcept = default;
     raze_no_stack_protector simd& operator=(simd&&) noexcept = default;
-
+    raze_no_stack_protector simd(uninitialized_tag) noexcept {}
 
     /**
      * @brief Constructs a SIMD vector by broadcasting a scalar value.
@@ -86,9 +86,9 @@ public:
      * @brief Returns a SIMD vector with all lanes set to zero.
     */
     raze_nodiscard static raze_no_stack_protector raze_always_inline simd zero() noexcept {
-        simd r;
+        simd r{ uninitialized };
 
-        r.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+        r.__for_each_chunk([] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
             using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
             chunk = zero_<isa, Storage>();
         });
@@ -100,9 +100,9 @@ public:
      * @brief Returns a SIMD vector with all lanes set to `value`.
     */
     raze_nodiscard raze_no_stack_protector static raze_always_inline simd broadcast(value_type v) noexcept {
-        simd r {};
+        simd r {uninitialized};
         
-        r.__for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+        r.__for_each_chunk([v] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
             using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
             chunk = broadcast_<isa, Storage>(v);
         });
@@ -348,7 +348,7 @@ public:
         return _storage;
     }
 
-    raze_nodiscard raze_always_inline storage_type __storage() const noexcept {
+    raze_nodiscard raze_always_inline const storage_type& __storage() const noexcept {
         return _storage;
     }
 

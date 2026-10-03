@@ -9,37 +9,35 @@ template <template <class> class F, class T, class Ret, arch::ISA Forced, arch::
 struct configurable_isa_dispatcher_t {
     template <class Options>
     struct impl : options::callable<impl, Options>{
-        template <class ... Args>
-        raze_always_inline Ret operator()(sizetype size, Args&& ... args) const {
-            return options::dispatch_call(*this, size, std::forward<Args>(args)...);
+        template <class Work>
+        raze_always_inline Ret operator()(sizetype size, Work& work) const {
+            return options::dispatch_call(*this, size, work);
         }
 
-        template <sizetype Size, class ... Args>
+        template <sizetype Size, class Work>
         raze_always_inline Ret operator()(std::integral_constant<sizetype, Size> size,
-            Args&& ... args) const
+            Work& work) const
         {
-            return options::dispatch_call(*this, size, std::forward<Args>(args)...);
+            return options::dispatch_call(*this, size, work);
         }
 
-        template <sizetype Size, class ... Args>
+        template <sizetype Size, class Work>
         static raze_always_inline Ret deferred_call(auto opts,
-            std::integral_constant<sizetype, Size> size, Args&& ... args) requires(sizeof...(Candidates) == 0)
+            std::integral_constant<sizetype, Size> size, Work& work) requires(sizeof...(Candidates) == 0)
         {
             if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = (vx::default_width<Forced> / 8);
 
                 if constexpr (Size < vector_size)
-                    return F<vx::scalar_tag>()(std::forward<Args>(args)...);
+                    return F<vx::scalar_tag>()(work);
 
                 constexpr auto aligned_size = Size & ~sizetype(vector_size - 1);
                 using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
                 return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                    std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                    std::integral_constant<sizetype, Size - aligned_size>{}, work);
             }
             else {
-                if constexpr (Size < 16)
-                    return F<vx::scalar_tag>()(std::forward<Args>(args)...);
-
+                if constexpr (Size < 16) return F<vx::scalar_tag>()(work);
                 i32 all = arch::ProcessorFeatures::all();
 
                 if constexpr (Size >= 64) {
@@ -50,12 +48,12 @@ struct configurable_isa_dispatcher_t {
 
                         if constexpr (has_avx512f<target_isa()>) {
                             return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
                         }
                         else {
                             if (arch::ProcessorFeatures::has<arch::features::AVX512F>(all)) {
                                 return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                    std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                                    std::integral_constant<sizetype, Size - aligned_size>{}, work);
                             }
                         }
                     }
@@ -64,12 +62,12 @@ struct configurable_isa_dispatcher_t {
 
                         if constexpr (has_avx512bw<target_isa()>) {
                             return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
                         }
                         else {
                             if (arch::ProcessorFeatures::has<arch::features::AVX512BW>(all)) {
                                 return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                    std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                                    std::integral_constant<sizetype, Size - aligned_size>{}, work);
                             }
                         }
                     }
@@ -81,12 +79,12 @@ struct configurable_isa_dispatcher_t {
 
                     if constexpr (has_avx2<target_isa()>) {
                         return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                            std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                            std::integral_constant<sizetype, Size - aligned_size>{}, work);
                     }
                     else {
                         if (arch::ProcessorFeatures::has<arch::features::AVX2>(all))
                             return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
                     }
                 }
 
@@ -96,97 +94,96 @@ struct configurable_isa_dispatcher_t {
 
                     if constexpr (has_sse42<target_isa()>) {
                         return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                            std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                            std::integral_constant<sizetype, Size - aligned_size>{}, work);
                     }
                     else {
                         if (arch::ProcessorFeatures::has<arch::features::SSE42>(all))
                             return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
                     }
 
                     return F<simd<T, runtime_abi<arch::ISA::SSE2, 16 / sizeof(T)>>>()(
                         std::integral_constant<sizetype, aligned_size>{},
-                        std::integral_constant<sizetype, Size - aligned_size>{}, std::forward<Args>(args)...);
+                        std::integral_constant<sizetype, Size - aligned_size>{}, work);
                 }
             }
         }
 
-        template <class ... Args>
+        template <class Work>
         static raze_always_inline Ret deferred_call(auto opts,
-            sizetype size, Args&& ... args) requires(sizeof...(Candidates) == 0)
+            sizetype size, Work& work) requires(sizeof...(Candidates) == 0)
         {
            if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = (vx::default_width<Forced> / 8);
 
                 if (size < vector_size)
-                    return F<vx::scalar_tag>()(std::forward<Args>(args)...);
+                    return F<vx::scalar_tag>()(work);
 
                 const auto aligned_size = size & ~sizetype(vector_size - 1);
                 using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
-                return F<V>()(aligned_size, size - aligned_size, std::forward<Args>(args)...);
+                return F<V>()(aligned_size, size - aligned_size, work);
            }
            else {
-                if (size < 16) return F<vx::scalar_tag>()(std::forward<Args>(args)...);
                 const auto all = arch::ProcessorFeatures::all();
 
                 if (size >= 64) {
                     if constexpr (sizeof(T) >= 4) {
                         if (arch::ProcessorFeatures::has<arch::features::AVX512F>(all))
                             return F<simd<T, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(T)>>>()(
-                                size & ~0x3F, size & 0x3F, std::forward<Args>(args)...);
+                                size & ~0x3F, size & 0x3F, work);
                     }
                     else {
                         if (arch::ProcessorFeatures::has<arch::features::AVX512BW>(all))
                             return F<simd<T, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(T)>>>()(
-                                size & ~0x3F, size & 0x3F, std::forward<Args>(args)...);
+                                size & ~0x3F, size & 0x3F, work);
                     }
                 }
 
                 if (size >= 32 && arch::ProcessorFeatures::has<arch::features::AVX2>(all))
                     return F<simd<T, runtime_abi<arch::ISA::AVX2, 32 / sizeof(T)>>>()(
-                        size & ~0x1F, size & 0x1F, std::forward<Args>(args)...);
+                        size & ~0x1F, size & 0x1F, work);
 
                 return F<simd<T, runtime_abi<arch::ISA::SSE2, 16 / sizeof(T)>>>()(
-                    size & ~0xF, size & 0xF, std::forward<Args>(args)...);
+                    size & ~0xF, size & 0xF, work);
            }
         }
 
-        template <arch::ISA ISA, arch::ISA ... Rest, class ... Args>
-        static raze_always_inline Ret try_dispatch(sizetype size, i32 all, Args&& ... args) {
+        template <arch::ISA ISA, arch::ISA ... Rest, class Work>
+        static raze_always_inline Ret try_dispatch(sizetype size, i32 all, Work& work) {
             constexpr auto vector_size = vx::default_width<ISA> / 8;
 
             if (size >= vector_size && arch::ProcessorFeatures::has<arch::feature_of(ISA)>(all)) {
                 using V = simd<T, runtime_abi<ISA, vector_size / sizeof(T)>>;
-                return F<V>()(size & ~(vector_size - 1), size & (vector_size - 1), std::forward<Args>(args)...);
+                return F<V>()(size & ~(vector_size - 1), size & (vector_size - 1), work);
             }
 
-            if constexpr (sizeof...(Rest) != 0) return try_dispatch<Rest...>(size, all, std::forward<Args>(args)...);
-            else F<vx::scalar_tag>()(std::forward<Args>(args)...);
+            if constexpr (sizeof...(Rest) != 0) return try_dispatch<Rest...>(size, all, work);
+            else F<vx::scalar_tag>()(work);
         }
 
-        template <class ... Args>
+        template <class Work>
         static raze_always_inline Ret deferred_call(auto opts,
-            sizetype size, Args&& ... args) requires(sizeof...(Candidates) != 0)
+            sizetype size, Work& work) requires(sizeof...(Candidates) != 0)
         {
             if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = vx::default_width<Forced> / 8;
 
                 if (size < vector_size)
-                    return F<vx::scalar_tag>()(std::forward<Args>(args)...);
+                    return F<vx::scalar_tag>()(work);
 
                 using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
-                return F<V>()(size & ~sizetype(vector_size - 1), size & (vector_size - 1), std::forward<Args>(args)...);
+                return F<V>()(size & ~sizetype(vector_size - 1), size & (vector_size - 1), work);
             }
             else {
-                if (size < 16) return F<vx::scalar_tag>()(std::forward<Args>(args)...);
-                return try_dispatch<Candidates...>(size, arch::ProcessorFeatures::all(), std::forward<Args>(args)...);
+                if (size < 16) return F<vx::scalar_tag>()(work);
+                return try_dispatch<Candidates...>(size, arch::ProcessorFeatures::all(), work);
             }
         }
     };
 };
 
 consteval raze_always_inline arch::ISA forced_isa() noexcept {
-#if defined(raze_cpp_clang) || defined(raze_cpp_gnu) || RAZE_ISA_FORCE_ENABLED
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 	return target_isa();
 #else
     return arch::ISA::None;

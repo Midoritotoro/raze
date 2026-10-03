@@ -13,7 +13,7 @@ struct if_ {
         _condition(condition)
     {}
 
-    raze_always_inline Condition mask() const noexcept {
+    raze_always_inline const Condition& mask() const noexcept {
         return _condition;
     }
 

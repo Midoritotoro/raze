@@ -84,6 +84,8 @@ if(MSVC)
     target_compile_options(
         raze
         INTERFACE
+        /O2
+        /Ob3
         /bigobj
         /permissive-
         /utf-8

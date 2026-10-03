@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/EqualTo.h>
@@ -31,8 +32,8 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		source_type _source;
 		unchecked_iterator_type _iterator;
 		unchecked_sentinel_type _sentinel;
-		F _f;
-		Proj _proj;
+		raze_no_unique_address F _f;
+		raze_no_unique_address Proj _proj;
 
 		constexpr explicit kernel(Source&& src, F f, Proj proj):
 			_source(std::forward<Source>(src)), _iterator(_source.ubegin()),
@@ -40,8 +41,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			auto* raze_restrict first = std::to_address(_iterator);
-			auto* raze_restrict last = std::to_address(_sentinel);
+			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
 			for (; first != last; ++first)
 				_f(_proj(*first));
