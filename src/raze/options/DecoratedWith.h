@@ -2,7 +2,8 @@
 
 #include <src/raze/options/Concepts.h>
 #include <src/raze/options/Foldable.h>
-
+#include <src/raze/options/Fetch.h>
+#include <src/raze/options/IgnoreNone.h>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
@@ -27,8 +28,7 @@ struct decorated_with:
     }
 
     raze_nodiscard constexpr raze_always_inline auto options() const noexcept {
-        return fold_left(accumulate_decorations{}, std::tuple<Options...>{},
-            static_cast<const OptionsValues&>(*this));
+        return static_cast<const OptionsValues&>(*this);
     }
 };
 

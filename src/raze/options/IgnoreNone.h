@@ -22,4 +22,7 @@ struct ignore_none_ {
 
 constexpr inline ignore_none_ ignore_none = {};
 
+template <class Mask>
+concept complete_mask = !std::same_as<Mask, unknown_key> && !std::same_as<Mask, ignore_none_>;
+
 __RAZE_OPTIONS_NAMESPACE_END
