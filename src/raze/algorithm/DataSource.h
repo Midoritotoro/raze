@@ -304,11 +304,10 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
 	{
 		using underlying_iterator = typename iterator_type::iterator_type;
 
-		underlying_iterator underlying_first = it.base();
 		underlying_iterator underlying_last = it.base();
 		std::ranges::advance(underlying_last, it.count());
 
-		return std::pair { std::to_address(underlying_first), std::to_address(underlying_last) };
+		return std::pair { std::to_address(it.base()), std::to_address(underlying_last) };
 	}
 
 	iterator_type _it;

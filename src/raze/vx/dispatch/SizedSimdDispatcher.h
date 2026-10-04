@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 #include <raze/vx/Simd.h>
 #include <raze/options/Options.h>
@@ -8,7 +8,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 template <template <class> class F, class T, class Ret, arch::ISA Forced, arch::ISA ... Candidates>
 struct configurable_isa_dispatcher_t {
     template <class Options>
-    struct impl : options::callable<impl, Options>{
+    struct impl : options::callable<impl, Options> {
         template <class Work>
         raze_always_inline Ret operator()(sizetype size, Work& work) const {
             return options::dispatch_call(*this, size, work);
@@ -21,161 +21,192 @@ struct configurable_isa_dispatcher_t {
             return options::dispatch_call(*this, size, work);
         }
 
+        static constexpr arch::ISA avx512_isa() noexcept {
+            return sizeof(T) >= 4 ? arch::ISA::AVX512F : arch::ISA::AVX512BW;
+        }
+
+        static constexpr bool compile_has_avx512() noexcept {
+            return sizeof(T) >= 4 ? has_avx512f<target_isa()> : has_avx512bw<target_isa()>;
+        }
+
+        static raze_always_inline bool runtime_has_avx512(i32 all) noexcept {
+            return sizeof(T) >= 4
+                ? arch::ProcessorFeatures::has<arch::features::AVX512F>(all)
+                : arch::ProcessorFeatures::has<arch::features::AVX512BW>(all);
+        }
+
+        static raze_always_inline arch::ISA detect_best_isa(i32 all) noexcept {
+            if constexpr (compile_has_avx512())
+                return avx512_isa();
+            else if (runtime_has_avx512(all))
+                return avx512_isa();
+
+            if constexpr (has_avx2<target_isa()>)
+                return arch::ISA::AVX2;
+            else if (arch::ProcessorFeatures::has<arch::features::AVX2>(all))
+                return arch::ISA::AVX2;
+
+            if constexpr (has_sse42<target_isa()>)
+                return arch::ISA::SSE42;
+            else if (arch::ProcessorFeatures::has<arch::features::SSE42>(all))
+                return arch::ISA::SSE42;
+
+            return arch::ISA::SSE2;
+        }
+
+        static raze_always_inline arch::ISA detect_best_isa_at_most_avx2(i32 all) noexcept {
+            if constexpr (has_avx2<target_isa()>)
+                return arch::ISA::AVX2;
+            else if (arch::ProcessorFeatures::has<arch::features::AVX2>(all)
+                  || runtime_has_avx512(all))
+                return arch::ISA::AVX2;
+
+            if constexpr (has_sse42<target_isa()>)
+                return arch::ISA::SSE42;
+            else if (arch::ProcessorFeatures::has<arch::features::SSE42>(all))
+                return arch::ISA::SSE42;
+
+            return arch::ISA::SSE2;
+        }
+
+        template <arch::ISA ISA, sizetype VecBytes, class Work>
+        static raze_always_inline Ret call_dyn(sizetype size, Work& work) {
+            using V = simd<T, runtime_abi<ISA, VecBytes / sizeof(T)>>;
+            return F<V>()(size & ~sizetype(VecBytes - 1),
+                          size &  sizetype(VecBytes - 1), work);
+        }
+
+        template <arch::ISA ISA, sizetype VecBytes, sizetype Size, class Work>
+        static raze_always_inline Ret call_const(Work& work) {
+            using V = simd<T, runtime_abi<ISA, VecBytes / sizeof(T)>>;
+            constexpr auto aligned = Size & ~sizetype(VecBytes - 1);
+            return F<V>()(std::integral_constant<sizetype, aligned>{},
+                          std::integral_constant<sizetype, Size - aligned>{}, work);
+        }
+
         template <sizetype Size, class Work>
-        static raze_always_inline Ret deferred_call(auto opts,
-            std::integral_constant<sizetype, Size> size, Work& work) requires(sizeof...(Candidates) == 0)
+        static raze_always_inline Ret deferred_call(auto,
+            std::integral_constant<sizetype, Size> size, Work& work)
+            requires(sizeof...(Candidates) == 0)
         {
             if constexpr (Forced != arch::ISA::None) {
-                constexpr auto vector_size = (vx::default_width<Forced> / 8);
-
+                constexpr auto vector_size = vx::default_width<Forced> / 8;
                 if constexpr (Size < vector_size)
                     return F<vx::scalar_tag>()(work);
-
-                constexpr auto aligned_size = Size & ~sizetype(vector_size - 1);
-                using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
-                return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                    std::integral_constant<sizetype, Size - aligned_size>{}, work);
+                return call_const<Forced, vector_size, Size>(work);
+            }
+            else if constexpr (Size < 16) {
+                return F<vx::scalar_tag>()(work);
+            }
+            else if constexpr (Size < 32) {
+                if constexpr (has_sse42<target_isa()>) return call_const<arch::ISA::SSE42, 16, Size>(work);
+                else return call_const<arch::ISA::SSE2, 16, Size>(work);
+            }
+            else if constexpr (Size < 64) {
+                if constexpr (has_avx2<target_isa()>) {
+                    return call_const<arch::ISA::AVX2, 32, Size>(work);
+                }
+                else {
+                    const i32 all = arch::ProcessorFeatures::all();
+                    switch (detect_best_isa_at_most_avx2(all)) {
+                        case arch::ISA::AVX2:
+                            return call_const<arch::ISA::AVX2, 32, Size>(work);
+                        case arch::ISA::SSE42:
+                            return call_const<arch::ISA::SSE42, 16, Size>(work);
+                        default:
+                            return call_const<arch::ISA::SSE2, 16, Size>(work);
+                    }
+                }
+            }
+            else if constexpr (compile_has_avx512()) {
+                return call_const<avx512_isa(), 64, Size>(work);
             }
             else {
-                if constexpr (Size < 16) return F<vx::scalar_tag>()(work);
-                i32 all = arch::ProcessorFeatures::all();
-
-                if constexpr (Size >= 64) {
-                    constexpr auto aligned_size = Size & ~0x3F;
-
-                    if constexpr (sizeof(T) >= 4) {
-                        using V = simd<T, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(T)>>;
-
-                        if constexpr (has_avx512f<target_isa()>) {
-                            return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                        }
-                        else {
-                            if (arch::ProcessorFeatures::has<arch::features::AVX512F>(all)) {
-                                return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                    std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                            }
-                        }
-                    }
-                    else {
-                        using V = simd<T, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(T)>>;
-
-                        if constexpr (has_avx512bw<target_isa()>) {
-                            return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                        }
-                        else {
-                            if (arch::ProcessorFeatures::has<arch::features::AVX512BW>(all)) {
-                                return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                    std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                            }
-                        }
-                    }
-                }
-
-                if constexpr (Size >= 32) {
-                    constexpr auto aligned_size = Size & ~0x1F;
-                    using V = simd<T, runtime_abi<arch::ISA::AVX2, 32 / sizeof(T)>>;
-
-                    if constexpr (has_avx2<target_isa()>) {
-                        return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                            std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                    }
-                    else {
-                        if (arch::ProcessorFeatures::has<arch::features::AVX2>(all))
-                            return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                    }
-                }
-
-                if constexpr (Size >= 16) {
-                    constexpr auto aligned_size = Size & ~0xF;
-                    using V = simd<T, runtime_abi<arch::ISA::SSE42, 16 / sizeof(T)>>;
-
-                    if constexpr (has_sse42<target_isa()>) {
-                        return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                            std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                    }
-                    else {
-                        if (arch::ProcessorFeatures::has<arch::features::SSE42>(all))
-                            return F<V>()(std::integral_constant<sizetype, aligned_size>{},
-                                std::integral_constant<sizetype, Size - aligned_size>{}, work);
-                    }
-
-                    return F<simd<T, runtime_abi<arch::ISA::SSE2, 16 / sizeof(T)>>>()(
-                        std::integral_constant<sizetype, aligned_size>{},
-                        std::integral_constant<sizetype, Size - aligned_size>{}, work);
+                const i32 all = arch::ProcessorFeatures::all();
+                switch (detect_best_isa(all)) {
+                    case arch::ISA::AVX512F:
+                    case arch::ISA::AVX512BW:
+                        return call_const<avx512_isa(), 64, Size>(work);
+                    case arch::ISA::AVX2:
+                        return call_const<arch::ISA::AVX2, 32, Size>(work);
+                    case arch::ISA::SSE42:
+                        return call_const<arch::ISA::SSE42, 16, Size>(work);
+                    default:
+                        return call_const<arch::ISA::SSE2, 16, Size>(work);
                 }
             }
         }
 
         template <class Work>
-        static raze_always_inline Ret deferred_call(auto opts,
-            sizetype size, Work& work) requires(sizeof...(Candidates) == 0)
+        static raze_always_inline Ret deferred_call(auto, sizetype size, Work& work)
+            requires(sizeof...(Candidates) == 0)
         {
-           if constexpr (Forced != arch::ISA::None) {
-                constexpr auto vector_size = (vx::default_width<Forced> / 8);
+            if constexpr (Forced != arch::ISA::None) {
+                constexpr auto vector_size = vx::default_width<Forced> / 8;
+                if (size < vector_size) return F<vx::scalar_tag>()(work);
+                return call_dyn<Forced, vector_size>(size, work);
+            }
 
-                if (size < vector_size)
-                    return F<vx::scalar_tag>()(work);
+            if constexpr (compile_has_avx512()) {
+                if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
+                if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
+                return call_dyn<arch::ISA::SSE2, 16>(size, work);
+            }
+            else if constexpr (has_avx2<target_isa()>) {
+                const i32 all = arch::ProcessorFeatures::all();
 
-                const auto aligned_size = size & ~sizetype(vector_size - 1);
-                using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
-                return F<V>()(aligned_size, size - aligned_size, work);
-           }
-           else {
-                const auto all = arch::ProcessorFeatures::all();
-
-                if (size >= 64) {
-                    if constexpr (sizeof(T) >= 4) {
-                        if (arch::ProcessorFeatures::has<arch::features::AVX512F>(all))
-                            return F<simd<T, runtime_abi<arch::ISA::AVX512F, 64 / sizeof(T)>>>()(
-                                size & ~0x3F, size & 0x3F, work);
-                    }
-                    else {
-                        if (arch::ProcessorFeatures::has<arch::features::AVX512BW>(all))
-                            return F<simd<T, runtime_abi<arch::ISA::AVX512BW, 64 / sizeof(T)>>>()(
-                                size & ~0x3F, size & 0x3F, work);
-                    }
+                if (runtime_has_avx512(all)) {
+                    if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
+                    if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
+                    return call_dyn<arch::ISA::SSE2, 16>(size, work);
                 }
 
-                if (size >= 32 && arch::ProcessorFeatures::has<arch::features::AVX2>(all))
-                    return F<simd<T, runtime_abi<arch::ISA::AVX2, 32 / sizeof(T)>>>()(
-                        size & ~0x1F, size & 0x1F, work);
+                if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
+                return call_dyn<arch::ISA::SSE2, 16>(size, work);
+            }
+            else {
+                const i32 all = arch::ProcessorFeatures::all();
 
-                return F<simd<T, runtime_abi<arch::ISA::SSE2, 16 / sizeof(T)>>>()(
-                    size & ~0xF, size & 0xF, work);
-           }
+                switch (detect_best_isa(all)) {
+                    case arch::ISA::AVX512F:
+                    case arch::ISA::AVX512BW:
+                        if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
+                        [[fallthrough]];
+                    case arch::ISA::AVX2:
+                        if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
+                        [[fallthrough]];
+                    default:
+                        return call_dyn<arch::ISA::SSE2, 16>(size, work);
+                }
+            }
         }
 
         template <arch::ISA ISA, arch::ISA ... Rest, class Work>
         static raze_always_inline Ret try_dispatch(sizetype size, i32 all, Work& work) {
             constexpr auto vector_size = vx::default_width<ISA> / 8;
 
-            if (size >= vector_size && arch::ProcessorFeatures::has<arch::feature_of(ISA)>(all)) {
-                using V = simd<T, runtime_abi<ISA, vector_size / sizeof(T)>>;
-                return F<V>()(size & ~(vector_size - 1), size & (vector_size - 1), work);
-            }
+            if (size >= vector_size && arch::ProcessorFeatures::has<arch::feature_of(ISA)>(all))
+                return call_dyn<ISA, vector_size>(size, work);
 
-            if constexpr (sizeof...(Rest) != 0) return try_dispatch<Rest...>(size, all, work);
-            else F<vx::scalar_tag>()(work);
+            if constexpr (sizeof...(Rest) != 0)
+                return try_dispatch<Rest...>(size, all, work);
+            else
+                return F<vx::scalar_tag>()(work);
         }
 
         template <class Work>
-        static raze_always_inline Ret deferred_call(auto opts,
-            sizetype size, Work& work) requires(sizeof...(Candidates) != 0)
+        static raze_always_inline Ret deferred_call(auto, sizetype size, Work& work)
+            requires(sizeof...(Candidates) != 0)
         {
             if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = vx::default_width<Forced> / 8;
-
                 if (size < vector_size)
                     return F<vx::scalar_tag>()(work);
-
-                using V = simd<T, runtime_abi<Forced, vector_size / sizeof(T)>>;
-                return F<V>()(size & ~sizetype(vector_size - 1), size & (vector_size - 1), work);
+                return call_dyn<Forced, vector_size>(size, work);
             }
             else {
-                if (size < 16) return F<vx::scalar_tag>()(work);
+                if (size < 16)
+                    return F<vx::scalar_tag>()(work);
                 return try_dispatch<Candidates...>(size, arch::ProcessorFeatures::all(), work);
             }
         }
@@ -184,9 +215,10 @@ struct configurable_isa_dispatcher_t {
 
 consteval raze_always_inline arch::ISA forced_isa() noexcept {
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
-	return target_isa();
+    return target_isa();
 #else
-    return arch::ISA::None;
+    if constexpr (static_cast<int>(target_isa()) == static_cast<int>(arch::ISA::SSE2)) return arch::ISA::None;
+    else return target_isa();
 #endif
 }
 
