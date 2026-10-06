@@ -33,8 +33,8 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> &&
-				vectorizable_unary_function<Function, unchecked_iterator_type> &&
-				vectorizable_projection<Projection, unchecked_iterator_type>;
+				vectorizable_unary_function<Function, iterator_type> &&
+				vectorizable_projection<Projection, iterator_type>;
 		}
 
 		destination_type _destination;
@@ -133,9 +133,9 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source1> && contiguous_source<Source2> && contiguous_destination<Destination> &&
-				vectorizable_binary_function<Function, unchecked_iterator1_type, unchecked_iterator2_type> &&
-				vectorizable_projection<Projection1, unchecked_iterator1_type> &&
-				vectorizable_projection<Projection2, unchecked_iterator2_type>;
+				vectorizable_binary_function<Function, iterator1_type, iterator2_type> &&
+				vectorizable_projection<Projection1, iterator1_type> &&
+				vectorizable_projection<Projection2, iterator2_type>;
 		}
 
 		destination_type _destination;
@@ -162,10 +162,9 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			auto* raze_restrict in1_ptr = std::to_address(_in1_iterator);
-			auto* raze_restrict in1_last = std::to_address(_in1_sentinel);
-			auto* raze_restrict in2_ptr = std::to_address(_in2_iterator);
-			auto* raze_restrict in2_last = std::to_address(_in2_sentinel);
+			auto [in1_ptr, in1_last] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
+			auto [in2_ptr, in2_last] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
+
 			auto* raze_restrict out_ptr = std::to_address(_out_iterator);
 
 			for (; in1_ptr != in1_last && in2_ptr != in2_last; ++in1_ptr, ++in2_ptr, ++out_ptr)
@@ -291,6 +290,135 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 	}
 };
 
+/**
+ * @brief Applies a given function to a range (or a pair of ranges) and stores the result in another range.
+ *
+ * 1) **Unary transform (iterator-sentinel)**: Applies the unary function `f` to each element in `[first, last)`
+ *    projected by `proj`, and writes the results to the destination range beginning at `out`.
+ *
+ * 2) **Unary transform (range)**: Same as (1), but uses `r` as the input range, as if by:
+ *    `transform(std::ranges::begin(r), std::ranges::end(r), std::move(out), f, proj)`.
+ *
+ * 3) **Binary transform (iterator-sentinel)**: Applies the binary function `f` to pairs of elements from
+ *    `[first1, last1)` and `[first2, last2)` projected by `proj1` and `proj2` respectively, and writes the results
+ *    to `out`. Evaluation stops when either input range reaches its end.
+ *
+ * 4) **Binary transform (range)**: Same as (3), but uses `r1` and `r2` as the input ranges, as if by:
+ *    `transform(std::ranges::begin(r1), std::ranges::end(r1), std::ranges::begin(r2), std::ranges::end(r2), std::move(out), f, proj1, proj2)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Unary iterator-sentinel overload
+ * template< std::input_iterator InIt, std::sentinel_for<InIt> Sent,
+ *           std::weakly_incrementable OutIt, class Function, class Proj = std::identity >
+ *   requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function, std::projected<InIt, Proj>>>)
+ * constexpr std::ranges::unary_transform_result<InIt, OutIt>
+ * transform( InIt first, Sent last, OutIt out, Function f, Proj proj = {} );
+ *
+ * // (2) Unary range overload
+ * template< std::ranges::input_range R, std::weakly_incrementable OutIt,
+ *           class Function, class Proj = std::identity >
+ *   requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function, std::projected<std::ranges::iterator_t<R>, Proj>>>)
+ * constexpr std::ranges::unary_transform_result<std::ranges::iterator_t<R>, OutIt>
+ * transform( R&& r, OutIt out, Function f, Proj proj = {} );
+ *
+ * // (3) Binary iterator-sentinel overload
+ * template< std::input_iterator InIt1, std::sentinel_for<InIt1> Sent1,
+ *           std::input_iterator InIt2, std::sentinel_for<InIt2> Sent2,
+ *           std::weakly_incrementable OutIt, class Function,
+ *           class Proj1 = std::identity, class Proj2 = std::identity >
+ *   requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function,
+ *            std::projected<InIt1, Proj1>, std::projected<InIt2, Proj2>>>)
+ * constexpr std::ranges::binary_transform_result<InIt1, InIt2, OutIt>
+ * transform( InIt1 first1, Sent1 last1, InIt2 first2, Sent2 last2, OutIt out,
+ *            Function f, Proj1 proj1 = {}, Proj2 proj2 = {} );
+ *
+ * // (4) Binary range overload
+ * template< std::ranges::input_range R1, std::ranges::input_range R2,
+ *           std::weakly_incrementable OutIt, class Function,
+ *           class Proj1 = std::identity, class Proj2 = std::identity >
+ *   requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function,
+ *            std::projected<std::ranges::iterator_t<R1>, Proj1>, std::projected<std::ranges::iterator_t<R2>, Proj2>>>)
+ * constexpr std::ranges::binary_transform_result<std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>, OutIt>
+ * transform( R1&& r1, R2&& r2, OutIt out,
+ *            Function f, Proj1 proj1 = {}, Proj2 proj2 = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last`   - the range of elements to transform (unary)
+ * - `r`               - the range of elements to transform (unary)
+ * - `first1`, `last1` - the first range of elements to transform (binary)
+ * - `first2`, `last2` - the second range of elements to transform (binary)
+ * - `r1`              - the first range of elements to transform (binary)
+ * - `r2`              - the second range of elements to transform (binary)
+ * - `out`             - the beginning of the destination range
+ * - `f`               - transformation function (unary or binary)
+ * - `proj`, `proj1`, `proj2` - projections to apply to input elements (default to `std::identity`)
+ *
+ * ### Return value
+ * - For **unary overloads** (1, 2): A `std::ranges::unary_transform_result` containing:
+ *   - `in`: an iterator pointing to the end of the input range (`last`).
+ *   - `out`: an iterator pointing past the last written element in the destination range.
+ * - For **binary overloads** (3, 4): A `std::ranges::binary_transform_result` containing:
+ *   - `in1`: an iterator pointing past the last consumed element in the first range.
+ *   - `in2`: an iterator pointing past the last consumed element in the second range.
+ *   - `out`: an iterator pointing past the last written element in the destination range.
+ *
+ * ### Complexity
+ * - Unary: Exactly `last - first` (or `std::ranges::distance(r)`) invocations of `f` and `proj`.
+ * - Binary: Exactly `min(last1 - first1, last2 - first2)` (or `min(distance(r1), distance(r2))`) invocations of `f`, `proj1`, and `proj2`.
+ *
+ * ### Decorators and Options
+ * The algorithm object supports compile-time modifiers via `operator[]`:
+ * ```cpp
+ * transform[raze::options::fscalar](...);
+ * transform[raze::options::unroll<2>](...);
+ * transform[raze::options::fstatic][raze::options::unroll<2>](...);
+ * ```
+ * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
+ * and valid combinations, see the **options documentation**.
+ *
+ * ### Notes
+ * - Unlike `std::ranges::transform` for binary operations, this algorithm safely processes
+ *   ranges of mismatched lengths up to the length of the shorter range.
+ * - If sources and destinations model contiguous buffers, and user-provided functions/projections
+ *   satisfy vectorization requirements, explicit SIMD instructions (AVX-512, AVX2, SSE)
+ *   or platform-specific autovectorization paths are utilized.
+ * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <functional>
+ * #include <raze/algorithm/transform/Transform.h>
+ *
+ * void println(const auto& seq) {
+ *     for (const auto& elem : seq) std::cout << elem << ' ';
+ *     std::cout << '\n';
+ * }
+ *
+ * int main() {
+ *     const std::vector<int> a{1, 2, 3, 4, 5};
+ *     const std::vector<int> b{10, 20, 30, 40, 50, 60, 70};
+ *     std::vector<int> res(a.size());
+ *
+ *     // Unary transform: square each element of 'a'
+ *     raze::algorithm::transform(a, res.begin(), [](int x) { return x * x; });
+ *     println(res);
+ *
+ *     // Binary transform: pairwise addition of 'a' and 'b' up to min(a.size(), b.size())
+ *     raze::algorithm::transform(a, b, res.begin(), std::plus<>{});
+ *     println(res);
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 1 4 9 16 25 
+ * 11 22 33 44 55 
+ * ```
+ */
 constexpr inline auto transform = options::function_with_traits<transform_t>[options::unroll<4>][transform_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

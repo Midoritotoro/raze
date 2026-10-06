@@ -8,309 +8,295 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Range>
 struct range_data_source {
-	using iterator_type = decltype(std::ranges::begin(std::declval<Range>()));
-	using sentinel_type = decltype(std::ranges::end(std::declval<Range>()));
+    using iterator_type = decltype(std::ranges::begin(std::declval<Range>()));
+    using sentinel_type = decltype(std::ranges::end(std::declval<Range>()));
 
-	using unchecked_iterator_type = decltype(traits::ubegin(std::declval<Range>()));
-	using unchecked_sentinel_type = decltype(traits::uend(std::declval<Range>()));
+    using unchecked_iterator_type = decltype(traits::ubegin(std::declval<Range>()));
+    using unchecked_sentinel_type = decltype(traits::uend(std::declval<Range>()));
 
-	raze_always_inline constexpr explicit range_data_source(Range&& r) :
-		_range(std::forward<Range>(r))
-	{}
+    raze_always_inline constexpr explicit range_data_source(Range&& r) :
+        _range(std::forward<Range>(r))
+    {}
 
-	raze_nodiscard raze_always_inline constexpr bool empty() const {
-		return ubegin() == uend();
-	}
-	
-	raze_nodiscard raze_always_inline constexpr auto size() const {
-		return bytes_distance(_range);
-	}
+    raze_nodiscard raze_always_inline constexpr bool empty() const {
+        return ubegin() == uend();
+    }
 
-	raze_nodiscard static raze_always_inline constexpr auto static_size()
-		requires(constexpr_sized_range<Range>)
-	{
-		return bytes_distance(options::as<std::remove_cvref_t<Range>>());
-	}
+    raze_nodiscard raze_always_inline constexpr auto size() const {
+        return bytes_distance(_range);
+    }
 
-	raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
-		return std::ranges::begin(_range);
-	}
+    raze_nodiscard static raze_always_inline constexpr auto static_size()
+        requires(constexpr_sized_range<Range>)
+    {
+        return bytes_distance(options::as<std::remove_cvref_t<Range>>());
+    }
 
-	raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
-		return std::ranges::end(_range);
-	}
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+        return std::ranges::begin(_range);
+    }
 
-	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
-		return traits::ubegin(_range);
-	}
+    raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
+        return std::ranges::end(_range);
+    }
 
-	raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
-		return traits::uend(_range);
-	}
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+        return traits::ubegin(_range);
+    }
 
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(iterator_type it)
-	{
-		return traits::r_uiter<Range>(std::move(it));
-	}
+    raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
+        return traits::uend(_range);
+    }
 
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(std::iter_value_t<unchecked_iterator_type>* ptr) 
-	{
-		unchecked_iterator_type it;
-		traits::seek_iter(it, ptr);
-		return it;
-	}
+    raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
+        unwrap(iterator_type it)
+    {
+        return traits::r_uiter<Range>(std::move(it));
+    }
 
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(const std::iter_value_t<unchecked_iterator_type>* ptr) 
-	{
-		unchecked_iterator_type it;
-		traits::seek_iter(it, ptr);
-		return it;
-	}
+    raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
+        unwrap(std::iter_value_t<unchecked_iterator_type>* ptr)
+    {
+        unchecked_iterator_type it;
+        traits::seek_iter(it, ptr);
+        return it;
+    }
 
-	raze_nodiscard raze_always_inline constexpr iterator_type
-		wrap(unchecked_iterator_type uit) const
-	{
-		iterator_type it = std::ranges::begin(_range);
-		traits::seek_iter(it, uit);
-		return it;
-	}
+    raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
+        unwrap(const std::iter_value_t<unchecked_iterator_type>* ptr)
+    {
+        unchecked_iterator_type it;
+        traits::seek_iter(it, ptr);
+        return it;
+    }
 
-	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
-		std::iter_value_t<unchecked_iterator_type>* ptr)
-	{
-		traits::seek_iter(uit, ptr);
-	}
+    raze_nodiscard raze_always_inline constexpr iterator_type
+        wrap(unchecked_iterator_type uit) const
+    {
+        iterator_type it = std::ranges::begin(_range);
+        traits::seek_iter(it, uit);
+        return it;
+    }
 
-	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
-		const std::iter_value_t<unchecked_iterator_type>* ptr)
-	{
-		traits::seek_iter(uit, ptr);
-	}
+    static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
+        std::iter_value_t<unchecked_iterator_type>* ptr)
+            requires std::contiguous_iterator<unchecked_iterator_type>
+    {
+        traits::seek_iter(uit, ptr);
+    }
 
-	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
-		std::iter_value_t<iterator_type>* ptr) requires(!std::same_as<iterator_type, unchecked_iterator_type>)
-	{
-		traits::seek_iter(uit, ptr);
-	}
+    static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
+        const std::iter_value_t<unchecked_iterator_type>* ptr)
+            requires std::contiguous_iterator<unchecked_iterator_type>
+    {
+        traits::seek_iter(uit, ptr);
+    }
 
-	static raze_always_inline constexpr void from_ptr(iterator_type& uit,
-		const std::iter_value_t<iterator_type>* ptr) requires(!std::same_as<iterator_type, unchecked_iterator_type>)
-	{
-		traits::seek_iter(uit, ptr);
-	}
+    static raze_always_inline constexpr void from_ptr(iterator_type& uit,
+        std::iter_value_t<iterator_type>* ptr)
+            requires(!std::same_as<iterator_type, unchecked_iterator_type> &&
+                     std::contiguous_iterator<iterator_type>)
+    {
+        traits::seek_iter(uit, ptr);
+    }
 
-	static raze_always_inline auto to_raw_range(unchecked_iterator_type it, unchecked_sentinel_type sent)
-		requires(std::random_access_iterator<unchecked_iterator_type>)
-	{
-		return std::pair { std::to_address(it), std::to_address(sent) };
-	}
+    static raze_always_inline constexpr void from_ptr(iterator_type& uit,
+        const std::iter_value_t<iterator_type>* ptr)
+            requires(!std::same_as<iterator_type, unchecked_iterator_type> &&
+                     std::contiguous_iterator<iterator_type>)
+    {
+        traits::seek_iter(uit, ptr);
+    }
 
-	Range _range;
+    static raze_always_inline auto to_raw_range(
+        unchecked_iterator_type it, unchecked_sentinel_type sent)
+            requires std::contiguous_iterator<unchecked_iterator_type>
+    {
+        return std::pair{ std::to_address(it), std::to_address(sent) };
+    }
+
+    Range _range;
 };
 
 template <class It, class Sent>
 struct iter_data_source {
-	using iterator_type = It;
-	using sentinel_type = Sent;
+    using iterator_type = It;
+    using sentinel_type = Sent;
 
-	using unchecked_iterator_type = decltype(traits::uiter_s<Sent>(std::declval<It>()));
-	using unchecked_sentinel_type = decltype(traits::usent<It>(std::declval<Sent>()));
+    using unchecked_iterator_type = decltype(traits::uiter_s<Sent>(std::declval<It>()));
+    using unchecked_sentinel_type = decltype(traits::usent<It>(std::declval<Sent>()));
 
-	raze_always_inline constexpr iter_data_source(It it, Sent sent) :
-		_it(std::move(it)), _sent(std::move(sent))
-	{}
+    raze_always_inline constexpr iter_data_source(It it, Sent sent) :
+        _it(std::move(it)), _sent(std::move(sent))
+    {}
 
-	raze_nodiscard raze_always_inline constexpr bool empty() const {
-		return _it == _sent;
-	}
+    raze_nodiscard raze_always_inline constexpr bool empty() const {
+        return _it == _sent;
+    }
 
-	raze_nodiscard raze_always_inline constexpr auto size() const {
-		return bytes_distance(ubegin(), uend());
-	}
+    raze_nodiscard raze_always_inline constexpr auto size() const {
+        return bytes_distance(ubegin(), uend());
+    }
 
-	raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
-		return _it;
-	}
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+        return _it;
+    }
 
-	raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
-		return _sent;
-	}
+    raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
+        return _sent;
+    }
 
-	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
-		return traits::uiter_s<Sent>(_it);
-	}
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+        return traits::uiter_s<Sent>(_it);
+    }
 
-	raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
-		return traits::usent<It>(_sent);
-	}
-	
-	template <class Iterator>
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(Iterator iter)
-	{
-		using Iter = std::remove_cvref_t<Iterator>;
+    raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
+        return traits::usent<It>(_sent);
+    }
 
-		if constexpr (std::same_as<Iter, iterator_type>) return traits::uiter_s<Sent>(std::move(iter));
-		else if constexpr ((std::same_as<Iter, std::iter_value_t<unchecked_iterator_type>*> ||
-			std::same_as<Iter, const std::iter_value_t<unchecked_iterator_type>*>) &&
-			!std::same_as<iterator_type, std::iter_value_t<unchecked_iterator_type>*>) 
-		{
-			unchecked_iterator_type it;
-			traits::seek_iter(it, iter);
-			return it;
-		}
-		else {
-			return iter;
-		}
-	}
+    template <class Iterator>
+    raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
+        unwrap(Iterator iter)
+    {
+        using Iter = std::remove_cvref_t<Iterator>;
 
-	raze_nodiscard raze_always_inline constexpr iterator_type
-		wrap(unchecked_iterator_type uit) const
-	{
-		iterator_type it = _it;
-		traits::seek_iter(it, uit);
-		return it;
-	}
+        if constexpr (std::same_as<Iter, iterator_type>)
+            return traits::uiter_s<Sent>(std::move(iter));
+        else if constexpr ((std::same_as<Iter, std::iter_value_t<unchecked_iterator_type>*> ||
+            std::same_as<Iter, const std::iter_value_t<unchecked_iterator_type>*>) &&
+            !std::same_as<iterator_type, std::iter_value_t<unchecked_iterator_type>*>)
+        {
+            unchecked_iterator_type it;
+            traits::seek_iter(it, iter);
+            return it;
+        }
+        else {
+            return iter;
+        }
+    }
 
-	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
-		std::iter_value_t<unchecked_iterator_type>* ptr)
-			requires(!std::same_as< unchecked_iterator_type, iterator_type>)
-	{
-		traits::seek_iter(uit, ptr);
-	}
+    raze_nodiscard raze_always_inline constexpr iterator_type
+        wrap(unchecked_iterator_type uit) const
+    {
+        iterator_type it = _it;
+        traits::seek_iter(it, uit);
+        return it;
+    }
 
-	static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
-		const std::iter_value_t<unchecked_iterator_type>* ptr) 
-			requires(!std::same_as< unchecked_iterator_type, iterator_type>)
-	{
-		traits::seek_iter(uit, ptr);
-	}
+    static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
+        std::iter_value_t<unchecked_iterator_type>* ptr)
+            requires(!std::same_as<unchecked_iterator_type, iterator_type> &&
+                     std::contiguous_iterator<unchecked_iterator_type>)
+    {
+        traits::seek_iter(uit, ptr);
+    }
 
-	static raze_always_inline constexpr void from_ptr(iterator_type& it, std::iter_value_t<iterator_type>* ptr) {
-		traits::seek_iter(it, ptr);
-	}
+    static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
+        const std::iter_value_t<unchecked_iterator_type>* ptr)
+            requires(!std::same_as<unchecked_iterator_type, iterator_type> &&
+                     std::contiguous_iterator<unchecked_iterator_type>)
+    {
+        traits::seek_iter(uit, ptr);
+    }
 
-	static raze_always_inline constexpr void from_ptr(iterator_type& it, const std::iter_value_t<iterator_type>* ptr) {
-		traits::seek_iter(it, ptr);
-	}
+    static raze_always_inline constexpr void from_ptr(iterator_type& it,
+        std::iter_value_t<iterator_type>* ptr)
+            requires std::contiguous_iterator<iterator_type>
+    {
+        traits::seek_iter(it, ptr);
+    }
 
-	static raze_always_inline auto to_raw_range(unchecked_iterator_type it,	
-		unchecked_sentinel_type sent) requires(std::random_access_iterator<unchecked_iterator_type>)
-	{
-		return std::pair { std::to_address(it), std::to_address(sent) };
-	}
+    static raze_always_inline constexpr void from_ptr(iterator_type& it,
+        const std::iter_value_t<iterator_type>* ptr)
+            requires std::contiguous_iterator<iterator_type>
+    {
+        traits::seek_iter(it, ptr);
+    }
 
-	iterator_type _it;
-	sentinel_type _sent;
+    static raze_always_inline auto to_raw_range(
+        unchecked_iterator_type it, unchecked_sentinel_type sent)
+            requires std::contiguous_iterator<unchecked_iterator_type>
+    {
+        return std::pair{ std::to_address(it), std::to_address(sent) };
+    }
+
+    iterator_type _it;
+    sentinel_type _sent;
 };
 
 template <class It>
 struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
-	using iterator_type = std::counted_iterator<It>;
-	using sentinel_type = std::default_sentinel_t;
+    using iterator_type = std::counted_iterator<It>;
+    using sentinel_type = std::default_sentinel_t;
 
-	using base_iterator_type = It;
-	using unchecked_base_iterator_type = traits::unwrapped_iterator_type<It>;
-	using unchecked_iterator_type = std::counted_iterator<unchecked_base_iterator_type>;
-	using unchecked_sentinel_type = std::default_sentinel_t;
+    using base_iterator_type = It;
+    using unchecked_base_iterator_type = traits::unwrapped_iterator_type<It>;
+    using unchecked_iterator_type = std::counted_iterator<unchecked_base_iterator_type>;
+    using unchecked_sentinel_type = std::default_sentinel_t;
 
-	raze_always_inline constexpr iter_data_source(iterator_type it, sentinel_type):
-		_it(std::move(it))
-	{}
+    raze_always_inline constexpr iter_data_source(iterator_type it, sentinel_type) :
+        _it(std::move(it))
+    {}
 
-	raze_nodiscard raze_always_inline constexpr bool empty() const {
-		return _it.count() == 0;
-	}
+    raze_nodiscard raze_always_inline constexpr bool empty() const {
+        return _it.count() == 0;
+    }
 
-	raze_nodiscard raze_always_inline constexpr auto size() const {
-		return static_cast<sizetype>(_it.count()) * sizeof(std::iter_value_t<unchecked_base_iterator_type>);
-	}
+    raze_nodiscard raze_always_inline constexpr auto size() const {
+        return static_cast<sizetype>(_it.count())
+            * sizeof(std::iter_value_t<unchecked_base_iterator_type>);
+    }
 
-	raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
-		return _it;
-	}
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+        return _it;
+    }
 
-	raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
-		return {};
-	}
+    raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
+        return {};
+    }
 
-	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
-		return { traits::uiter(_it.base()), _it.count() };
-	}
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+        return { traits::uiter(_it.base()), _it.count() };
+    }
 
-	raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
-		return {};
-	}
+    raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
+        return {};
+    }
 
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
-		unwrap(iterator_type it)
-	{
-		return { traits::uiter(it.base()), it.count() };
-	}
+    raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
+        unwrap(iterator_type it)
+    {
+        return { traits::uiter(it.base()), it.count() };
+    }
 
-	raze_nodiscard raze_always_inline constexpr iterator_type
-		wrap(unchecked_iterator_type it) const
-	{
-		auto base = _it.base();
-		traits::seek_iter(base, it.base());
-		return { std::move(base), it.count() };
-	}
+    raze_nodiscard raze_always_inline constexpr iterator_type
+        wrap(unchecked_iterator_type it) const
+    {
+        auto base = _it.base();
+        traits::seek_iter(base, it.base());
+        return { std::move(base), it.count() };
+    }
 
-	static raze_always_inline constexpr void from_ptr(
-		unchecked_iterator_type& it,
-		std::iter_value_t<unchecked_iterator_type>* ptr)
-	{
-		auto base = it.base();
-		const auto offset = ptr - std::to_address(base);
-		std::ranges::advance(base, offset);
-		it = { std::move(base), it.count() - offset };
-	}
+    template <class Iter, class Ptr>
+    static raze_always_inline constexpr void from_ptr(Iter& it, Ptr* ptr)
+        requires std::contiguous_iterator<
+            std::remove_cvref_t<decltype(it.base())>>
+    {
+        auto base = it.base();
+        const auto offset = ptr - std::to_address(base);
+        std::ranges::advance(base, offset);
+        it = Iter{ std::move(base), it.count() - offset };
+    }
 
-	static raze_always_inline constexpr void from_ptr(
-		unchecked_iterator_type& it,
-		const std::iter_value_t<unchecked_iterator_type>* ptr)
-	{
-		auto base = it.base();
-		const auto offset = ptr - std::to_address(base);
-		std::ranges::advance(base, offset);
-		it = { std::move(base), it.count() - offset };
-	}
+    static raze_always_inline auto to_raw_range(
+        unchecked_iterator_type it, unchecked_sentinel_type)
+            requires std::contiguous_iterator<unchecked_base_iterator_type>
+    {
+        auto* const first = std::to_address(it.base());
+        return std::pair{ first, first + it.count() };
+    }
 
-	static raze_always_inline constexpr void from_ptr(
-		iterator_type& it,
-		std::iter_value_t<base_iterator_type>* ptr)
-	{
-		auto base = it.base();
-		const auto offset = ptr - std::to_address(base);
-		std::ranges::advance(base, offset);
-		it = { std::move(base), it.count() - offset };
-	}
-
-	static raze_always_inline constexpr void from_ptr(
-		iterator_type& it,
-		const std::iter_value_t<base_iterator_type>* ptr)
-	{
-		auto base = it.base();
-		const auto offset = ptr - std::to_address(base);
-		std::ranges::advance(base, offset);
-		it = { std::move(base), it.count() - offset };
-	}
-
-	static raze_always_inline auto to_raw_range(unchecked_iterator_type it, unchecked_sentinel_type sent)
-		requires(std::random_access_iterator<typename unchecked_iterator_type::iterator_type>)
-	{
-		using underlying_iterator = typename iterator_type::iterator_type;
-
-		underlying_iterator underlying_last = it.base();
-		std::ranges::advance(underlying_last, it.count());
-
-		return std::pair { std::to_address(it.base()), std::to_address(underlying_last) };
-	}
-
-	iterator_type _it;
+    iterator_type _it;
 };
 
 template <class T>
@@ -328,7 +314,9 @@ struct iter_data_source<T*, T*> {
     {}
 
     raze_nodiscard raze_always_inline constexpr bool empty() const noexcept { return _it == _sent; }
-    raze_nodiscard raze_always_inline constexpr auto size() const noexcept { return static_cast<sizetype>(_sent - _it) * sizeof(T); }
+    raze_nodiscard raze_always_inline constexpr auto size() const noexcept {
+        return static_cast<sizetype>(_sent - _it) * sizeof(T);
+    }
 
     raze_nodiscard raze_always_inline constexpr T* begin() const noexcept { return _it; }
     raze_nodiscard raze_always_inline constexpr T* end() const noexcept { return _sent; }
@@ -336,14 +324,18 @@ struct iter_data_source<T*, T*> {
     raze_nodiscard raze_always_inline constexpr T* uend() const noexcept { return _sent; }
 
     template <class Iter>
-    raze_nodiscard static raze_always_inline constexpr T* unwrap(Iter iter) noexcept { return std::to_address(iter); }
+    raze_nodiscard static raze_always_inline constexpr T* unwrap(Iter iter) noexcept {
+        return std::to_address(iter);
+    }
     raze_nodiscard raze_always_inline constexpr T* wrap(T* uit) const noexcept { return uit; }
 
     static raze_always_inline constexpr void from_ptr(T*& uit, T* ptr) noexcept { uit = ptr; }
-    static raze_always_inline constexpr void from_ptr(T*& uit, const T* ptr) noexcept { uit = const_cast<T*>(ptr); }
+    static raze_always_inline constexpr void from_ptr(T*& uit, const T* ptr) noexcept {
+        uit = const_cast<T*>(ptr);
+    }
 
     static raze_always_inline auto to_raw_range(T* it, T* sent) noexcept {
-        return std::pair<const T*, const T*>{ it, sent };
+        return std::pair<T*, T*>{ it, sent };
     }
 };
 
@@ -358,83 +350,90 @@ inline constexpr bool is_counted_iterator_v = is_counted_iterator<It>::value;
 
 template <class Range>
 concept counted_range = is_counted_iterator_v<std::ranges::iterator_t<Range>> &&
-	std::same_as<std::ranges::sentinel_t<Range>, std::default_sentinel_t>;
+    std::same_as<std::ranges::sentinel_t<Range>, std::default_sentinel_t>;
 
 template <class Range>
-	requires counted_range<Range>
-struct range_data_source<Range> : iter_data_source<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>> {
-	using base_type = iter_data_source<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>;
+    requires counted_range<Range>
+struct range_data_source<Range>
+    : iter_data_source<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>
+{
+    using base_type = iter_data_source<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>;
 
-	constexpr explicit range_data_source(Range&& r) :
-		base_type(std::ranges::begin(r), std::ranges::end(r))
-	{}
+    constexpr explicit range_data_source(Range&& r) :
+        base_type(std::ranges::begin(r), std::ranges::end(r))
+    {}
 };
 
 template <class Range>
 raze_nodiscard raze_always_inline constexpr auto get_source(Range&& r) {
-	return range_data_source<Range>(std::forward<Range>(r));
+    return range_data_source<Range>(std::forward<Range>(r));
 }
 
 template <class It, class Sent>
 raze_nodiscard raze_always_inline constexpr auto get_source(It it, Sent sent) {
-	return iter_data_source<It, Sent>(std::move(it), std::move(sent));
+    return iter_data_source<It, Sent>(std::move(it), std::move(sent));
 }
 
 template <class Source>
 concept source = requires(
-	Source src,
-	typename Source::iterator_type it,
-	typename Source::unchecked_iterator_type uit)
+    Source src,
+    typename Source::iterator_type it,
+    typename Source::unchecked_iterator_type uit)
 {
-	typename Source::iterator_type;
-	typename Source::sentinel_type;
+    typename Source::iterator_type;
+    typename Source::sentinel_type;
 
-	typename Source::unchecked_iterator_type;
-	typename Source::unchecked_sentinel_type;
+    typename Source::unchecked_iterator_type;
+    typename Source::unchecked_sentinel_type;
 
-	{ src.empty() } -> std::convertible_to<bool>;
-	{ src.size() } -> std::convertible_to<sizetype>;
+    { src.empty() } -> std::convertible_to<bool>;
+    { src.size() } -> std::convertible_to<sizetype>;
 
-	{ src.begin() } -> std::same_as<typename Source::iterator_type>;
-	{ src.end() } -> std::same_as<typename Source::sentinel_type>;
-	{ src.ubegin() } -> std::same_as<typename Source::unchecked_iterator_type>;
-	{ src.uend() } -> std::same_as<typename Source::unchecked_sentinel_type>;
+    { src.begin() } -> std::same_as<typename Source::iterator_type>;
+    { src.end() } -> std::same_as<typename Source::sentinel_type>;
+    { src.ubegin() } -> std::same_as<typename Source::unchecked_iterator_type>;
+    { src.uend() } -> std::same_as<typename Source::unchecked_sentinel_type>;
 
-	{ Source::unwrap(it) } -> std::same_as<typename Source::unchecked_iterator_type>;
-	{ src.wrap(uit) } -> std::same_as<typename Source::iterator_type>;
+    { Source::unwrap(it) } -> std::same_as<typename Source::unchecked_iterator_type>;
+    { src.wrap(uit) } -> std::same_as<typename Source::iterator_type>;
 };
 
 template <class It>
-concept contiguous_or_counted_contiguous_iterator =
-	std::contiguous_iterator<It> ||
-	(requires(It it) { { it.base() } -> std::contiguous_iterator; });
+inline constexpr bool has_contiguous_storage_v =
+    std::contiguous_iterator<std::remove_cvref_t<It>>;
+
+template <class It>
+inline constexpr bool has_contiguous_storage_v<std::counted_iterator<It>> =
+    has_contiguous_storage_v<It>;
 
 template <class Source>
 concept contiguous_source = source<Source> &&
-	contiguous_or_counted_contiguous_iterator<typename Source::iterator_type> &&
-	requires(typename Source::iterator_type it,
-		typename Source::unchecked_iterator_type uit,
-		std::iter_value_t<typename Source::unchecked_iterator_type>* ptr,
-		const std::iter_value_t<typename Source::unchecked_iterator_type>* cptr,
-		std::iter_value_t<typename Source::iterator_type>* iptr,
-		const std::iter_value_t<typename Source::iterator_type>* ciptr,
-		typename Source::unchecked_sentinel_type usent)
+    has_contiguous_storage_v<typename Source::unchecked_iterator_type> &&
+    requires(
+        typename Source::iterator_type it,
+        typename Source::unchecked_iterator_type uit,
+        std::iter_value_t<typename Source::unchecked_iterator_type>* ptr,
+        const std::iter_value_t<typename Source::unchecked_iterator_type>* cptr,
+        std::iter_value_t<typename Source::iterator_type>* iptr,
+        const std::iter_value_t<typename Source::iterator_type>* ciptr,
+        typename Source::unchecked_sentinel_type usent)
 {
-		{ Source::from_ptr(uit, ptr) } -> std::same_as<void>;
-		{ Source::from_ptr(uit, cptr) } -> std::same_as<void>;
-		{ Source::from_ptr(it, iptr) } -> std::same_as<void>;
-		{ Source::from_ptr(it, ciptr) } -> std::same_as<void>;
-		{ Source::to_raw_range(uit, usent) } -> std::convertible_to<std::pair<
-			const std::iter_value_t<typename Source::unchecked_iterator_type>*,
-			const std::iter_value_t<typename Source::unchecked_iterator_type>*>>;
+    { Source::from_ptr(uit, ptr) } -> std::same_as<void>;
+    { Source::from_ptr(uit, cptr) } -> std::same_as<void>;
+    { Source::from_ptr(it, iptr) } -> std::same_as<void>;
+    { Source::from_ptr(it, ciptr) } -> std::same_as<void>;
+    { Source::to_raw_range(uit, usent) } -> std::convertible_to<std::pair<
+        const std::iter_value_t<typename Source::unchecked_iterator_type>*,
+        const std::iter_value_t<typename Source::unchecked_iterator_type>*>>;
 };
 
 template <class Source>
 concept constexpr_sized_source = source<Source> && requires(Source src) {
-	{ Source::static_size() } -> std::convertible_to<sizetype>;
+    { Source::static_size() } -> std::convertible_to<sizetype>;
 };
 
 template <class Source>
-concept modifiable_source = source<Source> && std::permutable<typename Source::unchecked_iterator_type>;
+concept modifiable_source = source<Source> &&
+    std::permutable<typename Source::unchecked_iterator_type>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

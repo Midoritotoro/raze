@@ -19,51 +19,83 @@ RTTS_CASE_TPL("raze::algorithm::for_each_n", rtts::algorithm::all_types)
 <class T> (rtts::type<T>) {
     auto cfg = rtts::algorithm::config::thorough();
 
+    const T add_val = rtts::random::generator<T>(42)();
+    auto op_scalar = [add_val](T& x) { x += add_val; };
+    auto op_vector = [add_val](auto& x) { x += add_val; };
+
     {
-        const T add = rtts::random::generator<T>(42)();
-        auto op = [add](T& x) { x += add; };
+        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
+            [op_scalar](auto c) { return raze::algorithm::for_each_n(c.first(), c.count(), op_scalar); },
+            [op_scalar](auto c) { return std_for_each_n(c.first(), c.count(), op_scalar); });
 
         rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [op](auto c) { return raze::algorithm::for_each_n(c.first(), c.count(), op); },
-            [op](auto c) { return std_for_each_n(c.first(), c.count(), op); });
+            [op_vector](auto c) { return raze::algorithm::for_each_n(c.first(), c.count(), op_vector); },
+            [op_vector](auto c) { return std_for_each_n(c.first(), c.count(), op_vector); });
     }
 
     {
-        const T mul = rtts::random::generator<T>(40000)();
-        auto op = [mul](T& x) { x *= mul; };
+        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
+            [op_vector](auto c) { return raze::algorithm::for_each_n[raze::options::fscalar](c.first(), c.count(), op_vector); },
+            [op_vector](auto c) { return std_for_each_n(c.first(), c.count(), op_vector); });
 
         rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [op](auto c) { return raze::algorithm::for_each_n(c.first(), c.count(), op); },
-            [op](auto c) { return std_for_each_n(c.first(), c.count(), op); });
-    }
+            [op_vector](auto c) { return raze::algorithm::for_each_n[raze::options::unroll<1>](c.first(), c.count(), op_vector); },
+            [op_vector](auto c) { return std_for_each_n(c.first(), c.count(), op_vector); });
 
-    rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-        [](auto c) { return raze::algorithm::for_each_n(c.first(), c.count(), [](auto& x) { x += T(1); }); },
-        [](auto c) { return std_for_each_n(c.first(), c.count(), [](auto& x) { x += T(1); }); });
+        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
+            [op_vector](auto c) { return raze::algorithm::for_each_n[raze::options::fstatic](c.first(), c.count(), op_vector); },
+            [op_vector](auto c) { return std_for_each_n(c.first(), c.count(), op_vector); });
+
+        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
+            [op_vector](auto c) { return raze::algorithm::for_each_n[raze::options::fscalar][raze::options::unroll<2>](c.first(), c.count(), op_vector); },
+            [op_vector](auto c) { return std_for_each_n(c.first(), c.count(), op_vector); });
+
+        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
+            [op_vector](auto c) { return raze::algorithm::for_each_n[raze::options::fstatic][raze::options::unroll<2>](c.first(), c.count(), op_vector); },
+            [op_vector](auto c) { return std_for_each_n(c.first(), c.count(), op_vector); });
+    }
 
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
-        [](auto c) constexpr { return raze::algorithm::for_each_n(c.first(), c.count(), [](T& x) constexpr { x += T(10); }); },
-        [](auto c) constexpr { return std_for_each_n(c.first(), c.count(), [](T& x) constexpr { x += T(10); }); }));
+        [](auto c) constexpr { return raze::algorithm::for_each_n(c.first(), c.count(), [](T& x) constexpr { x += T(1); }); },
+        [](auto c) constexpr { return std_for_each_n(c.first(), c.count(), [](T& x) constexpr { x += T(1); }); }));
+
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
+        [](auto c) constexpr { return raze::algorithm::for_each_n[raze::options::fscalar](c.first(), c.count(), [](auto& x) constexpr { x += T(1); }); },
+        [](auto c) constexpr { return std_for_each_n(c.first(), c.count(), [](auto& x) constexpr { x += T(1); }); }));
+
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
+        [](auto c) constexpr { return raze::algorithm::for_each_n[raze::options::unroll<2>](c.first(), c.count(), [](auto& x) constexpr { x += T(1); }); },
+        [](auto c) constexpr { return std_for_each_n(c.first(), c.count(), [](auto& x) constexpr { x += T(1); }); }));
 };
 
 RTTS_CASE_TPL("raze::algorithm::for_each_n.projection", rtts::algorithm::all_types)
 <class T> (rtts::type<T>) {
     auto cfg = rtts::algorithm::config::thorough();
-    const T add = rtts::random::generator<T>(100000)();
 
-    auto op = [add](T& x) { x += add; };
-    auto proj = [](T& x) -> T& { return x; };
+    const T add_val = rtts::random::generator<T>(100000)();
+    auto op = [add_val](auto& x) { x += add_val; };
+    auto proj = [](auto& x) -> auto& { return x; };
 
     rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
         [op, proj](auto c) { return raze::algorithm::for_each_n(c.first(), c.count(), op, proj); },
         [op, proj](auto c) { return std_for_each_n(c.first(), c.count(), op, proj); });
 
     rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-        [op, proj](auto c) { return raze::algorithm::for_each_n(c.first(), c.count(), op, proj); },
+        [op, proj](auto c) { return raze::algorithm::for_each_n[raze::options::fscalar](c.first(), c.count(), op, proj); },
+        [op, proj](auto c) { return std_for_each_n(c.first(), c.count(), op, proj); });
+
+    rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
+        [op, proj](auto c) { return raze::algorithm::for_each_n[raze::options::unroll<2>](c.first(), c.count(), op, proj); },
         [op, proj](auto c) { return std_for_each_n(c.first(), c.count(), op, proj); });
 
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
         [](auto c) constexpr { return raze::algorithm::for_each_n(c.first(), c.count(), 
+            [](T& x) constexpr { x += T(10); }, [](T& x) constexpr -> T& { return x; }); },
+        [](auto c) constexpr { return std_for_each_n(c.first(), c.count(),
+            [](T& x) constexpr { x += T(10); }, [](T& x) constexpr -> T& { return x; }); }));
+
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
+        [](auto c) constexpr { return raze::algorithm::for_each_n[raze::options::fscalar](c.first(), c.count(), 
             [](T& x) constexpr { x += T(10); }, [](T& x) constexpr -> T& { return x; }); },
         [](auto c) constexpr { return std_for_each_n(c.first(), c.count(),
             [](T& x) constexpr { x += T(10); }, [](T& x) constexpr -> T& { return x; }); }));

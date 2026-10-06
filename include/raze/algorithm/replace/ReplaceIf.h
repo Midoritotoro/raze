@@ -27,8 +27,8 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> &&
-				vectorizable_unary_predicate<Predicate, unchecked_iterator_type> &&
-				vectorizable_projection<Projection, unchecked_iterator_type>;
+				vectorizable_unary_predicate<Predicate, iterator_type> &&
+				vectorizable_projection<Projection, iterator_type>;
 		}
 
 		Source _source;
@@ -46,8 +46,7 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		}
 	
 		void operator()(autovectorizable) requires(vectorizable()) {
-			auto* raze_restrict first = std::to_address(_iterator);
-			auto* raze_restrict last = std::to_address(_sentinel);
+			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
 			for (; first != last; ++first)
 				*first = _predicate(_proj(*first)) ? _new_value : *first;
@@ -115,6 +114,89 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 	}
 };
 
+/**
+ * @brief Replaces all elements satisfying a specific predicate in a range with a new value.
+ *
+ * 1) Replaces each element `*i` in `[first, last)` with `new_value` if
+ *    `bool(std::invoke(pred, std::invoke(proj, *i)))` evaluates to `true`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `replace_if(std::ranges::begin(r), std::ranges::end(r), pred, new_value, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::permutable Iterator, std::sentinel_for<Iterator> Sentinel,
+ *           class Predicate, class Value, class Projection = std::identity >
+ *   requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
+ * constexpr void replace_if( Iterator first, Sentinel last,
+ *                            Predicate pred, Value new_value, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range Range,
+ *           class Predicate, class Value, class Projection = std::identity >
+ *   requires std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>
+ *         && std::permutable<std::ranges::iterator_t<Range>>
+ * constexpr void replace_if( Range&& r,
+ *                            Predicate pred, Value new_value, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to modify
+ * - `r`           - the range of elements to modify
+ * - `pred`        - predicate to apply to the projected elements
+ * - `new_value`   - the replacement value
+ * - `proj`        - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * (none)
+ *
+ * ### Complexity
+ * Exactly `last - first` (or `std::ranges::distance(r)`) applications of `pred` and `proj`.
+ *
+ * ### Decorators and Options
+ * The algorithm object supports compile-time modifiers via `operator[]`:
+ * ```cpp
+ * replace_if[raze::options::fscalar](...);
+ * replace_if[raze::options::unroll<2>](...);
+ * replace_if[raze::options::fstatic][raze::options::unroll<2>](...);
+ * ```
+ * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
+ * and valid combinations, see the **options documentation**.
+ *
+ * ### Notes
+ * - If the source models `contiguous_source`, and both `Predicate` and `Projection` satisfy
+ *   vectorization requirements, explicit SIMD vectorization (AVX-512, AVX2, SSE)
+ *   or platform-specific autovectorization paths are utilized.
+ * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/replace/ReplaceIf.h>
+ *
+ * void println(const auto& seq) {
+ *     for (const auto& elem : seq) std::cout << elem << ' ';
+ *     std::cout << '\n';
+ * }
+ *
+ * int main() {
+ *     std::vector<int> v{5, 7, 4, 2, 8, 6, 1, 9, 0, 3};
+ *     println(v);
+ *
+ *     // Replace all odd numbers with 0
+ *     raze::algorithm::replace_if(v, [](int n) { return n % 2 != 0; }, 0);
+ *     println(v);
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 5 7 4 2 8 6 1 9 0 3 
+ * 0 0 4 2 8 6 0 0 0 0 
+ * ```
+ */
 constexpr inline auto replace_if = options::function_with_traits<replace_if_t>[options::unroll<4>][replace_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

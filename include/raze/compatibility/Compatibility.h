@@ -26,7 +26,6 @@
 #include <raze/compatibility/UnreachableCode.h>
 #include <raze/compatibility/Warnings.h>
 #include <raze/compatibility/StaticOperators.h>
-#include <raze/compatibility/AutoVectorization.h>
 #include <raze/compatibility/StackProtection.h>
 #include <raze/compatibility/Unroll.h>
 #include <raze/compatibility/TargetClones.h>

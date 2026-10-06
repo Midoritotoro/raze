@@ -25,8 +25,8 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> &&
-				vectorizable_unary_function<F, unchecked_iterator_type> &&
-				vectorizable_projection<Proj, unchecked_iterator_type>;
+				vectorizable_unary_function<F, iterator_type> &&
+				vectorizable_projection<Proj, iterator_type>;
 		}
 
 		source_type _source;
@@ -41,9 +41,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
-
-			for (; first != last; ++first)
+			for (auto [first, last] = source_type::to_raw_range(_iterator, _sentinel); first != last; ++first)
 				_f(_proj(*first));
 		}
 
@@ -113,6 +111,86 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 	}
 };
 
+/**
+ * @brief Applies a function object to the result of dereferencing each iterator in a range, in order.
+ *
+ * 1) Applies `f` to the result of dereferencing every iterator in the range `[first, sent)`,
+ *    projected by `proj`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `for_each(std::ranges::begin(r), std::ranges::end(r), std::move(f), proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator InIt, std::sentinel_for<InIt> Sent,
+ *           class F, class Proj = std::identity >
+ *   requires(std::indirectly_unary_invocable<F, std::projected<InIt, Proj>>)
+ * constexpr std::ranges::for_each_result<InIt, F>
+ * for_each( InIt first, Sent sent, F f, Proj proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R, class F, class Proj = std::identity >
+ *   requires(std::indirectly_unary_invocable<F, std::projected<std::ranges::iterator_t<R>, Proj>>)
+ * constexpr std::ranges::for_each_result<std::ranges::iterator_t<R>, F>
+ * for_each( R&& r, F f, Proj proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `sent` - the range of elements to iterate over
+ * - `r`           - the range of elements to iterate over
+ * - `f`           - unary function object to apply to projected elements
+ * - `proj`        - projection to apply to elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * A `std::ranges::for_each_result` containing:
+ * - `in`: an iterator pointing to the end of the input range (`sent`).
+ * - `fun`: the function object `f` passed as an argument.
+ *
+ * ### Complexity
+ * Linear: exactly `sent - first` (or `std::ranges::distance(r)`) invocations of `f` and applications of `proj`.
+ *
+ * ### Decorators and Options
+ * The algorithm object supports compile-time modifiers via `operator[]`:
+ * ```cpp
+ * for_each[raze::options::fscalar](...);
+ * for_each[raze::options::unroll<2>](...);
+ * for_each[raze::options::fstatic][raze::options::unroll<2>](...);
+ * ```
+ * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
+ * and valid combinations, see the **options documentation**.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/for_each/ForEach.h>
+ *
+ * void println(const auto& seq) {
+ *     for (const auto& elem : seq) std::cout << elem << ' ';
+ *     std::cout << '\n';
+ * }
+ *
+ * int main() {
+ *     std::vector<int> v{1, 2, 3, 4, 5};
+ *
+ *     // In-place modification: double each element
+ *     raze::algorithm::for_each(v, [](int& x) { x *= 2; });
+ *     println(v);
+ *
+ *     // Non-modifying traversal with side effects
+ *     int sum = 0;
+ *     raze::algorithm::for_each(v, [&sum](int x) { sum += x; });
+ *     std::cout << "Sum: " << sum << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 2 4 6 8 10 
+ * Sum: 30
+ * ```
+ */
 constexpr inline auto for_each = options::function_with_traits<for_each_t>[options::unroll<4>][for_each_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END
