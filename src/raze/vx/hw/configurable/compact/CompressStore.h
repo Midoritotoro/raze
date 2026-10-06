@@ -11,8 +11,13 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+struct unsafe_mode {};
+constexpr inline auto unsafe = raze::options::flag(unsafe_mode{});
+struct unsafe_option : raze::options::exact_option<unsafe> {};
+
+
 template <class Options>
-struct configurable_compress_store_t : options::conditional_callable<configurable_compress_store_t, Options, aligned_option> {
+struct configurable_compress_store_t : options::conditional_callable<configurable_compress_store_t, Options, aligned_option, unsafe_option> {
     template <any_iterator_or_pointer Mem, simd_type T, simd_mask_type M>
     raze_always_inline Mem operator()(Mem it, const T& x, const M& mask) const noexcept {
         return options::dispatch_call(*this, it, x, mask);

@@ -40,10 +40,10 @@ RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
         alignas(std::hardware_constructive_interference_size) T dst[N], expected[N];
         mask_compress_any<V>(src, src, expected, mask);
 
-        raze::vx::compress_store(dst, v, mask);
+        auto new_dest = raze::vx::compress_store(dst, v, mask);
         const auto count = raze::vx::count_set(!mask);
         
-        RTTS_EXPECT(std::equal(dst, dst + count, expected, expected + count));
+        RTTS_EXPECT(std::equal(dst, dst + count, expected, expected + count) && (new_dest == (dst + count)));
     }
 };
 

@@ -3,7 +3,7 @@
 #include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
 #include <src/raze/vx/hw/x86/compact/CompressTables.h>
 #include <src/raze/vx/hw/x86/memory/Load.h>
-#include <src/raze/vx/hw/x86/memory/Store.h>
+#include <src/raze/vx/hw/x86/memory/MaskStore.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/math/PopulationCount.h>
 #include <src/raze/math/IntegralTypesConversions.h>
@@ -34,12 +34,6 @@ template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mas
 raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_mask) noexcept {
 	constexpr auto size = sizeof(V) / sizeof(T);
 	auto int_mask = to_mask_<ISA, T>(compress_mask);
-	//using IntMask = decltype(int_mask);
-
-	//if constexpr (traits::is_nonbool_integral_v<IntMask>) {
-	//	constexpr auto limit_mask = (size == raze_sizeof_in_bits(IntMask)) ? math::max_limit<IntMask>() : IntMask((IntMask(1) << size) - 1);
-	//	int_mask &= limit_mask;
-	//}
 
 	if constexpr (sizeof(V) == 16) {
 		if constexpr (has_avx512vl<ISA>) {
@@ -77,8 +71,9 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto shuffle_mask_lo = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_low]));
 				const auto shuffle_mask_hi = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_sse<sizeof(T)>.shuffle[mask_high]));
 
+				const auto x_in_low = _mm_srli_si128(as<__m128i>(x), 8);
 				const auto packed_lo = _mm_shuffle_epi8(as<__m128i>(x), shuffle_mask_lo);
-				const auto packed_hi = _mm_shuffle_epi8(_mm_srli_si128(as<__m128i>(x), 8), as<__m128i>(shuffle_mask_hi));
+				const auto packed_hi = _mm_shuffle_epi8(x_in_low, as<__m128i>(shuffle_mask_hi));
 
 				_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), as<__m128i>(packed_lo));
 				algorithm::advance_bytes(dst_ptr, count_lo);
@@ -101,12 +96,12 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 						case 1: return { 8, as<Vec>(_mm_shuffle_pd(as<__m128d>(v), as<__m128d>(v), 0x3)) };
 						case 2: return { 8, v };
 						case 3: return { 0, v };
-						default: { raze_assert_unreachable(); return { 0, v }; }
+						// default: { raze_assert_unreachable(); return { 0, v }; }
 					}
 				};
 
 				const auto& [processed_bytes, packed] = calculate(int_mask, x);
-				_mm_storeu_si128(reinterpret_cast<__m128i*>(ptr), as<__m128i>(packed));
+				store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 			else if constexpr (sizeof(T) == 4) {
@@ -128,11 +123,12 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 						case 0xD: return { 4, as<Vec>(_mm_shuffle_ps(as<__m128>(v), as<__m128>(v), 0x55)) };
 						case 0xE: return { 4, v };
 						case 0xF: return { 0, v };
-						default: { raze_assert_unreachable(); return { 0, v }; }
+						// default: { raze_assert_unreachable(); return { 0, v }; }
 					}
 				};
+
 				const auto& [processed_bytes, packed] = calculate(int_mask, x);
-				_mm_storeu_si128(static_cast<__m128i*>(ptr), as<__m128i>(packed));
+				store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 		}

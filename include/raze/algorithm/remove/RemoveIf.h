@@ -7,7 +7,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
-struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
+struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>, arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3> {
 	template <source Source, class Predicate, class Projection>
 	struct kernel {
 		using source_type = std::remove_cvref_t<Source>;
@@ -19,8 +19,8 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> &&
-				vectorizable_unary_predicate<Predicate, unchecked_iterator_type> &&
-				vectorizable_projection<Projection, unchecked_iterator_type>;
+				vectorizable_unary_predicate<Predicate, iterator_type> &&
+				vectorizable_projection<Projection, iterator_type>;
 		}
 
 		source_type _source;
@@ -35,22 +35,6 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 			  _write_iterator(_source.ubegin()), _in_iterator(_source.ubegin()),
 			  _in_sentinel(_source.uend())
 		{}
-
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			auto* raze_restrict in_ptr = std::to_address(_in_iterator);
-			auto* raze_restrict in_last = std::to_address(_in_sentinel);
-			auto* raze_restrict out_ptr = std::to_address(_write_iterator);
-
-			for (; in_ptr != in_last; ++in_ptr) {
-				if (!_predicate(_proj(*in_ptr))) {
-					*out_ptr = *in_ptr;
-					++out_ptr;
-				}
-			}
-
-			source_type::from_ptr(_in_iterator, in_ptr);
-			source_type::from_ptr(_write_iterator, out_ptr);
-		}
 
 		raze_always_inline constexpr void operator()() {
 			raze_disable_unrolling

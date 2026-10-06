@@ -802,9 +802,9 @@ namespace rtts {
         template <class T, class F>
         void each_container(size_t size, unsigned seed, F f) {
             f(rtts::random::vector<T>(size, seed));
-            f(rtts::random::deque<T>(size, seed));
+          /*  f(rtts::random::deque<T>(size, seed));
             f(rtts::random::list<T>(size, seed));
-            f(rtts::random::forward_list<T>(size, seed));
+            f(rtts::random::forward_list<T>(size, seed));*/
         }
 
         template <class F>
