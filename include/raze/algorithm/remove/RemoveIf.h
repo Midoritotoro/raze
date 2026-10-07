@@ -80,8 +80,8 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 		}
 
 		static consteval auto targets() {
-			if constexpr (sizeof(vector_value_type) >= 4) return algorithm::targets<arch::ISA::AVX512F, arch::ISA::AVX2, arch::ISA::SSE42, arch::ISA::SSSE3>{};
-			else return algorithm::targets<arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSE42, arch::ISA::SSSE3>{};
+			if constexpr (sizeof(vector_value_type) >= 4) return algorithm::targets<arch::ISA::AVX512F, arch::ISA::AVX2, arch::ISA::SSSE3>{};
+			else return algorithm::targets<arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3>{};
 		}
 	};
 

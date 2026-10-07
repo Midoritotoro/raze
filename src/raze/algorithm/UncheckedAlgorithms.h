@@ -62,7 +62,7 @@ consteval u32 to_feature_mask() {
 template <arch::ISA Required, arch::ISA Target>
 consteval auto single_satisfies() {
     constexpr auto target_m = to_feature_mask<Target>();
-    constexpr auto required_m = to_feature_mask<Target>();
+    constexpr auto required_m = to_feature_mask<Required>();
     return (target_m & required_m) == required_m;
 }
 
@@ -85,28 +85,43 @@ static consteval auto is_best_isa_default() {
     return (sizeof(T) >= 4 && vx::has_avx512f<vx::target_isa()>) || (vx::has_avx512bw<vx::target_isa()>);
 }
 
+template <arch::ISA First, arch::ISA ... Rest>
+consteval arch::ISA find_best_isa() {
+    if constexpr (sizeof...(Rest) == 0) return First;
+    else {
+        constexpr arch::ISA best_rest = find_best_isa<Rest...>();
+
+        if constexpr (to_feature_mask<First>() >= to_feature_mask<best_rest>()) return First;
+        else return best_rest;
+    }
+}
+
 template <arch::ISA ... Features>
-class targets {
+struct targets {
     static constexpr std::array<arch::ISA, sizeof...(Features)> features = { Features... };
 
     template <class T, class Traits, class Kernel, bool IsFstatic>
     static consteval auto make_dispatcher() {
-        if constexpr (IsFstatic) {
-            return vx::dispatch<options::unroller_t<Traits>::template impl, T>;
-        }
+        if constexpr (IsFstatic) return vx::dispatch<options::unroller_t<Traits>::template impl, T, vx::target_isa()>;
+        else return vx::dispatch<options::unroller_t<Traits>::template impl, T, arch::ISA::None, Features...>;
     }
 
     template <class T>
     static consteval bool have_best_isa() {
-        if constexpr (sizeof...(Features) == 0) return is_best_isa_default<T>();
-        else return satisfies_t<features[0], Features...>::value;
+        if constexpr (sizeof...(Features) == 0) {
+            return is_best_isa_default<T>();
+        }
+        else {
+            constexpr arch::ISA best_feature = find_best_isa<Features...>();
+            return single_satisfies<best_feature, vx::target_isa()>();
+        }
     }
 };
 
 template <class F>
 class dispatchable {
     template <class Kernel>
-    static consteval get_targets() {
+    static consteval auto get_targets() {
         if constexpr (requires { Kernel::targets(); }) return Kernel::targets();
         else return targets<>{};
     }
@@ -123,16 +138,13 @@ public:
             if (work.exit()) return work.default_result();
         }
 
-        constexpr auto targets = get_targets();
+        constexpr auto targets = get_targets<Kernel>();
 
-        constexpr auto is_fstatic =
-#if defined(raze_cpp_msvc_only)
-            options::is_fstatic<Traits>() || targets.template have_best_isa<Value, Kernel>();
-#else
-            options::get_strategy<Traits>().is_manual() || options::is_fstatic<Traits>();
+        constexpr auto is_fstatic = targets.template have_best_isa<Value>() || options::is_fstatic<Traits>()
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+            || options::get_strategy<Traits>().is_manual()
 #endif
-
-        static_assert(is_fstatic);
+            ;
 
         if constexpr ((!options::is_fscalar<Traits>() && Kernel::vectorizable()) &&
             (options::get_strategy<Traits>().is_manual() || is_fstatic))
