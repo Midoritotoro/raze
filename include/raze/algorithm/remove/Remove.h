@@ -4,10 +4,6 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-constexpr auto remove_strategy = options::strategy<strategy<>()
-	.for_gcc<strategy_mode::autovec>()
-	.for_clang<strategy_mode::autovec>()>;
-
 template <class Traits>
 struct remove_t : Traits {
 	template <std::permutable It, std::sentinel_for<It> Sent, class T = std::iter_value_t<It>, class Proj = std::identity>

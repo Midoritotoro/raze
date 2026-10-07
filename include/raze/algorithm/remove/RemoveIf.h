@@ -6,8 +6,12 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+constexpr auto remove_strategy = options::strategy<strategy<>()
+	.for_gcc<strategy_mode::manual>()
+	.for_clang<strategy_mode::manual>()>;
+
 template <class Traits>
-struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>, arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3> {
+struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 	template <source Source, class Predicate, class Projection>
 	struct kernel {
 		using source_type = std::remove_cvref_t<Source>;
@@ -74,6 +78,11 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>, arch::ISA::AVX512
 		raze_nodiscard constexpr raze_always_inline auto size() const {
 			return _source.size();
 		}
+
+		static consteval auto targets() {
+			if constexpr (sizeof(vector_value_type) >= 4) return algorithm::targets<arch::ISA::AVX512F, arch::ISA::AVX2, arch::ISA::SSE42, arch::ISA::SSSE3>{};
+			else return algorithm::targets<arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSE42, arch::ISA::SSSE3>{};
+		}
 	};
 
 	template <class Source, class Predicate, class Projection>
@@ -100,6 +109,6 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>, arch::ISA::AVX512
 	}
 };
 
-constexpr inline auto remove_if = options::function_with_traits<remove_if_t>[options::unroll<4>];
+constexpr inline auto remove_if = options::function_with_traits<remove_if_t>[options::unroll<4>][remove_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END
