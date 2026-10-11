@@ -17,7 +17,7 @@ raze_always_inline M load_mask_(const bool* mem, Policy policy = Policy{}) noexc
 	else if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>)
 		return *mem;
 	else if constexpr (N >= 16)
-		return to_mask_<ISA, byte>(negate_<ISA, byte>(load_<ISA, 
+		return to_mask_<ISA, char>(negate_<ISA, char>(load_<ISA,
 			traits::deduce_simd_vector_type<Signed, N * 8>>(mem, policy)));
 	else {
 		M mask = 0;

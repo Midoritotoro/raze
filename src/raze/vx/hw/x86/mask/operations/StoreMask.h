@@ -18,8 +18,8 @@ raze_always_inline void store_mask_(bool* mem, M mask, Policy policy = Policy{})
 	else if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>)
 		*mem = mask;
 	else if constexpr (N >= 16)
-		store_(mem, negate_<ISA, byte>(to_vector_<ISA, 
-			traits::deduce_simd_vector_type<Signed, N * 8>, byte>(mask)), policy);
+		store_(mem, negate_<ISA, char>(to_vector_<ISA,
+			traits::deduce_simd_vector_type<Signed, N * 8>, char>(mask)), policy);
 	else {
 		for (auto i = 0; i < N; ++i)
 			*mem++ = static_cast<bool>(math::bit_test(mask, i));

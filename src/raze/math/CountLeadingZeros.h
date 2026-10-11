@@ -84,10 +84,12 @@ constexpr raze_always_inline i32 bit_hacks_clz(T v) noexcept {
 template <bool Unsafe, std::unsigned_integral T>
 raze_always_inline i32 bsr_clz(T v) noexcept {
     constexpr auto digits = std::numeric_limits<T>::digits;
+
+#if defined(raze_cpp_msvs_only)
     ulong index;
 
     if constexpr (digits == 64) {
-        raze_maybe_unused_attribute auto r = _BitScanReverse64(&index, static_cast<u32>(v));
+        raze_maybe_unused_attribute auto r = _BitScanReverse64(&index, static_cast<u64>(v));
         if constexpr (!Unsafe) { if (!r) return digits; }
     }
     else if constexpr (digits <= 32) {
@@ -96,6 +98,14 @@ raze_always_inline i32 bsr_clz(T v) noexcept {
     }
 
     return digits - 1 - index;
+#else
+    if constexpr (!Unsafe) {
+        if (v == 0) return digits;
+    }
+
+    if constexpr (digits == 64)  return __builtin_clzll(static_cast<unsigned long long>(v));
+    else return digits - 1 - _bit_scan_reverse(static_cast<i32>(v));
+#endif
 }
 
 #endif // defined(raze_processor_x86)
@@ -134,7 +144,7 @@ struct clz_n_bits_implementation {
     constexpr raze_always_inline i32 operator()(T v) const noexcept {
         constexpr auto offset = raze_sizeof_in_bits(T) - Bits;
 
-        if constexpr (vx::has_avx2<ISA>) return lzcnt_clz(v) - offset;
+        if constexpr (vx::has_bmi1<ISA>) return lzcnt_clz(v) - offset;
         else return bsr_clz<Unsafe>(v) - offset;
     }
 };
@@ -157,7 +167,7 @@ struct clz_not_n_bits_implementation {
         v = T(~v);
         if constexpr (Bits < 8) v &= mask;
 
-        if constexpr (vx::has_avx2<ISA>) return lzcnt_clz(v) - offset;
+        if constexpr (vx::has_bmi1<ISA>) return lzcnt_clz(v) - offset;
         else return bsr_clz<Unsafe>(v) - offset;
     }
 };

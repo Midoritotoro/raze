@@ -13,7 +13,7 @@ raze_disable_warning_msvc(4293)
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-#if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
+#if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
 
 #  if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 
@@ -37,7 +37,7 @@ __RAZE_MATH_NAMESPACE_BEGIN
 
 #  endif // defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 
-#endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64) || defined(raze_processor_arm_64))
+#endif // (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
 
 
 template <std::unsigned_integral T>

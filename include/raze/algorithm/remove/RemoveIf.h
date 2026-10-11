@@ -56,6 +56,7 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 			auto* out_ptr = std::to_address(_write_iterator);
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
 
+			raze_disable_unrolling
 			do {
 				const auto loaded = vx::load<Tag>(in_ptr);
 				const auto mask = _predicate(_proj(loaded));
@@ -109,6 +110,6 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 	}
 };
 
-constexpr inline auto remove_if = options::function_with_traits<remove_if_t>[options::unroll<4>][remove_strategy];
+constexpr inline auto remove_if = options::function_with_traits<remove_if_t>[remove_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -26,7 +26,6 @@ struct configurable_find_next_set_t : raze::options::conditional_callable<config
 
     template <simd_mask_type M>
     static raze_always_inline auto deferred_call(auto opts, const M& x, i32 from) noexcept {
-        using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename M::value_type;
         using Abi = typename M::abi_type;
 

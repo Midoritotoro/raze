@@ -5,7 +5,7 @@
 #include <src/raze/traits/TypeCheck.h>
 #include <src/raze/traits/IsVirtualBaseOf.h>
 #include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
-
+#include <immintrin.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -158,28 +158,25 @@ concept has_avx512vl = static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX5
     || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMIVL)
     || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX512VBMI2VL);
 
+#if defined(__BMI__)
+#  define __RAZE_COMPILER_HAS_BMI1 1
+#else
+#  define __RAZE_COMPILER_HAS_BMI1 0
+#endif
 
 #if defined(__BMI2__)
-#  if defined(raze_cpp_clang)
-#    if __has_feature(bmi2)
-       template <arch::ISA ISA>
-       concept has_bmi2 = true;
-#    else
-       template <arch::ISA ISA>
-       concept has_bmi2 = false;
-#    endif // __has_feature(bmi2)
-#  else
-    template <arch::ISA ISA>
-    concept has_bmi2 = true;
-#  endif
+#  define __RAZE_COMPILER_HAS_BMI2 1
 #else
-#  if defined(raze_cpp_msvc_only)
-    template <arch::ISA ISA>
-    concept has_bmi2 = has_avx2<ISA>;
-#  else 
-    template <arch::ISA ISA>
-    concept has_bmi2 = false;
-#  endif // defined(raze_cpp_msvc_only)
-#endif // defined(__BMI2__)
+#  define __RAZE_COMPILER_HAS_BMI2 0
+#endif
+
+constexpr inline bool __raze_compiler_has_bmi1 = __RAZE_COMPILER_HAS_BMI1;
+constexpr inline bool __raze_compiler_has_bmi2 = __RAZE_COMPILER_HAS_BMI2;
+
+template <arch::ISA ISA>
+concept has_bmi1 = has_avx2<ISA> && __raze_compiler_has_bmi1;
+
+template <arch::ISA ISA>
+concept has_bmi2 = has_avx2<ISA> && __raze_compiler_has_bmi2;
 
 __RAZE_VX_NAMESPACE_END

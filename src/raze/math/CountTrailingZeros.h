@@ -92,22 +92,30 @@ constexpr raze_always_inline i32 bit_hacks_ctz(T v) noexcept {
 template <bool Unsafe, std::unsigned_integral T>
 raze_always_inline i32 bsf_ctz(T v) noexcept {
     constexpr auto digits = std::numeric_limits<T>::digits;
-    constexpr auto max = std::numeric_limits<T>::max();
 
+#if defined(raze_cpp_msvc_only)
     ulong index;
 
     if constexpr (digits == 64) {
-        auto r = _BitScanForward64(&index, v);
-        if constexpr (Unsafe) return index;
+        auto r = _BitScanForward64(&index, static_cast<u64>(v));
+        if constexpr (Unsafe) return static_cast<i32>(index);
         else { if (!r) return digits; }
     }
     else {
-        auto r = _BitScanForward(&index, v);
-        if constexpr (Unsafe) return index;
+        auto r = _BitScanForward(&index, static_cast<u32>(v));
+        if constexpr (Unsafe) return static_cast<i32>(index);
         else { if (!r) return digits; }
     }
 
-    return index;
+    return static_cast<i32>(index);
+#else
+    if constexpr (!Unsafe) {
+        if (v == 0) return digits;
+    }
+
+    if constexpr (digits == 64) return __builtin_ctzll(static_cast<unsigned long long>(v));
+    else return _bit_scan_forward(static_cast<i32>(v));
+#endif
 }
 
 template <std::unsigned_integral T>
@@ -144,7 +152,7 @@ struct ctz_n_bits_implementation {
 
         using UT = typename IntegerForSize<mask_size>::Unsigned;
 
-        if constexpr (!vx::has_avx2<ISA>) {
+        if constexpr (!vx::has_bmi1<ISA>) {
             if constexpr (Bits != 32 && Bits != 64) return bsf_ctz<Unsafe>(static_cast<UT>(v | sent));
             else return bsf_ctz<Unsafe>(v);
         }
@@ -176,7 +184,7 @@ struct ctz_not_n_bits_implementation {
 
         using UT = typename IntegerForSize<mask_size>::Unsigned;
 
-        if constexpr (!vx::has_avx2<ISA>) {
+        if constexpr (!vx::has_bmi1<ISA>) {
             if constexpr (Bits != 32 && Bits != 64) return bsf_ctz<Unsafe>(static_cast<UT>((v ^ mask) | sent));
             else return bsf_ctz<Unsafe>(v ^ mask);
         }

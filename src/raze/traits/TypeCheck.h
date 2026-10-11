@@ -6,7 +6,7 @@
 #include <raze/compatibility/CxxVersionDetection.h>
 
 #include <type_traits>
-#include <xmemory>
+#include <memory>
 
 __RAZE_TRAITS_NAMESPACE_BEGIN
 

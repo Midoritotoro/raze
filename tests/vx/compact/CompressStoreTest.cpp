@@ -16,9 +16,6 @@ void mask_compress_any(const typename V::value_type*  a,
     for (int j = 0; j < N; ++j)
         if (!mask[j])
             dst[m++] = a[j];
-
-    for (int i = m; i < N; ++i)
-        dst[i] = src[i];
 }
 
 RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
@@ -38,12 +35,29 @@ RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
         Mask mask = rtts::simd::make_random_mask<Mask>();
 
         alignas(std::hardware_constructive_interference_size) T dst[N], expected[N];
+        std::ranges::fill(dst, 0);
+        std::ranges::fill(expected, 0);
+
+        mask_compress_any<V>(src, src, expected, mask);
+
+        auto new_dest = raze::vx::compress_store[raze::vx::unsafe](dst, v, mask);
+        const auto count = raze::vx::count_set(!mask);
+        
+        RTTS_EXPECT(std::equal(dst, dst + count, expected, expected + count) && (new_dest == (dst + count)));
+    }
+
+    for (int i = 0; i < 1000; ++i) {
+        Mask mask = rtts::simd::make_random_mask<Mask>();
+
+        alignas(std::hardware_constructive_interference_size) T dst[N], expected[N];
+        std::ranges::fill(dst, 0);
+        std::ranges::fill(expected, 0);
         mask_compress_any<V>(src, src, expected, mask);
 
         auto new_dest = raze::vx::compress_store(dst, v, mask);
         const auto count = raze::vx::count_set(!mask);
-        
-        RTTS_EXPECT(std::equal(dst, dst + count, expected, expected + count) && (new_dest == (dst + count)));
+
+        RTTS_EXPECT(std::equal(dst, dst + mask.size(), expected, expected + mask.size()) && (new_dest == (dst + count)));
     }
 };
 

@@ -5,6 +5,7 @@
 #include <src/raze/math/SinTables.h>
 #include <src/raze/math/Fma.h>
 #include <src/raze/math/Fms.h>
+#include <cmath>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 

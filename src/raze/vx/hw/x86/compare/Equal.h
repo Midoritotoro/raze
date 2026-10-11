@@ -10,11 +10,11 @@ raze_always_inline auto equal_(V x, V y) noexcept {
     if constexpr (sizeof(V) == 16) {
         if constexpr (pd<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm_cmp_pd_mask(x, y, _CMP_EQ_OQ);
-            else return _mm_cmpeq_pd(x, y);
+            else return as<V>(_mm_cmpeq_pd(as<__m128d>(x), as<__m128d>(y)));
         }
         else if constexpr (ps<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm_cmp_ps_mask(x, y, _CMP_EQ_OQ);
-            else return _mm_cmpeq_ps(x, y);
+            else return as<V>(_mm_cmpeq_ps(as<__m128>(x), as<__m128>(y)));
         }
         else if constexpr (epi64<T> || epu64<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm_cmpeq_epi64_mask(x, y);
@@ -38,10 +38,10 @@ raze_always_inline auto equal_(V x, V y) noexcept {
         }
     }
     else if constexpr (sizeof(V) == 32) {
-        auto fallback_avx = [] (auto x, auto y) raze_always_inline_lambda {
-            const auto low = equal_<arch::ISA::SSE42, T>(as<__m128i>(x), as<__m128i>(y));
-            const auto high = equal_<arch::ISA::SSE42, T>(_mm256_extractf128_si256(as<__m256i>(x), 1),
-                _mm256_extractf128_si256(as<__m256i>(y), 1));
+        auto fallback_avx = [] (auto a, auto b) raze_always_inline_lambda {
+            const auto low = equal_<arch::ISA::SSE42, T>(as<__m128i>(a), as<__m128i>(b));
+            const auto high = equal_<arch::ISA::SSE42, T>(_mm256_extractf128_si256(as<__m256i>(a), 1),
+                _mm256_extractf128_si256(as<__m256i>(b), 1));
 
             return as<V>(_mm256_insertf128_si256(as<__m256i>(low), high, 1));
         };

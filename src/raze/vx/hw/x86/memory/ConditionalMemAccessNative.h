@@ -1,4 +1,4 @@
-#pragma 
+#pragma once
 
 #include <raze/compatibility/Compatibility.h>
 #include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>

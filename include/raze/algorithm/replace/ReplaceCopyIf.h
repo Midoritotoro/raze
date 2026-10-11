@@ -5,6 +5,7 @@
 #include <src/raze/algorithm/EqualTo.h>
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -45,18 +46,18 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 
 		constexpr explicit kernel(Source&& source, Destination&& dest,
 			Predicate pred, Projection proj, const T& new_val):
-				_source(std::forward<Source>(source)), _destination(std::forward<Destination>(dest)),
-				_predicate(pred), _proj(proj), _new_value(new_val),  
-				_out_iterator(_destination.ubegin()), _in_iterator(_source.ubegin()), _in_sentinel(_source.uend())
+				_destination(std::forward<Destination>(dest)), _source(std::forward<Source>(source)),
+				_in_iterator(_source.ubegin()), _in_sentinel(_source.uend()), _out_iterator(_destination.ubegin()),
+				_predicate(pred), _proj(proj), _new_value(new_val)
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+		/*raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto* raze_restrict dest = std::to_address(_out_iterator);
 
 			for (; first != last; ++first, ++dest)
 				*dest = _predicate(_proj(*first)) ? _new_value : *first;
-		}
+		}*/
 
 		raze_always_inline constexpr void operator()() {
 			raze_disable_unrolling
@@ -64,13 +65,14 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 				*_out_iterator = _predicate(_proj(*_in_iterator)) ? _new_value : *_in_iterator;
 		}
 
-		template <vectorizable_tag Tag>
+		/*template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
 
+			raze_disable_unrolling
 			do {
 				const auto data = vx::load<Tag>(in_ptr);
 				vx::store(out_ptr, vx::select[_predicate(_proj(data)), data](Tag(_new_value)));
@@ -93,7 +95,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 
 			source_type::from_ptr(_in_iterator, in_ptr);
 			destination_type::from_ptr(_out_iterator, out_ptr);
-		}
+		}*/
 
 		constexpr raze_always_inline std::ranges::unary_transform_result<iterator_type, destination_iterator_type> result() const {
 			return { _source.wrap(_in_iterator), _destination.wrap(_out_iterator) };

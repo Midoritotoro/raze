@@ -8,7 +8,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 template <class Gen>
 struct tail_mask {
 	using mask_type = decltype(std::declval<Gen>()());
-	tail_mask(sizetype tail_bytes, Gen&& gen) : _tail_bytes(tail_bytes), _gen(std::move(gen)) {}
+	tail_mask(sizetype tail_bytes, Gen&& gen) : _gen(std::move(gen)), _tail_bytes(tail_bytes) {}
 
 	raze_always_inline operator mask_type() const {
 		return _gen();

@@ -3,7 +3,9 @@
 #include <src/raze/vx/hw/common/PatternsCheck.h>
 #include <src/raze/vx/hw/x86/shuffle/GenericShuffle.h>
 
+#if defined(raze_cpp_msvc)
 #pragma strict_gs_check(off)
+#endif // defined(raze_cpp_msvc)
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -40,7 +42,6 @@ consteval auto make_slide_left_pshufb_table_() noexcept {
 
 template <arch::ISA ISA, arithmetic_type T, intrin_type V>
 raze_always_inline auto make_pshufb_slide_left_idx_(V, i32 sh) noexcept {
-    using IdxType = typename IntegerForSizeof<T>::Unsigned;
     alignas(sizeof(V)) static constexpr auto table_u8 = make_slide_left_pshufb_table_<sizeof(V), sizeof(T), u8>();
     return rotate_indices<V, u8> { load_<ISA, V>(table_u8[sh & (sizeof(V) - 1)].data(), aligned_policy{}) };
 }
@@ -186,4 +187,6 @@ raze_always_inline V slide_left_(const V& x, i32 sh) noexcept {
 
 __RAZE_VX_NAMESPACE_END
 
+#if defined(raze_cpp_msvc)
 #pragma strict_gs_check(on)
+#endif // defined(raze_cpp_msvc)

@@ -77,9 +77,9 @@ struct configurable_isa_dispatcher_t {
         template <arch::ISA ISA, sizetype VecBytes, sizetype Size, class Work>
         static raze_always_inline decltype(auto) call_const(Work& work) {
             using V = simd<T, runtime_abi<ISA, VecBytes / sizeof(T)>>;
-            constexpr auto aligned = Size & ~sizetype(VecBytes - 1);
-            return F<V>()(std::integral_constant<sizetype, aligned>{},
-                          std::integral_constant<sizetype, Size - aligned>{}, work);
+            constexpr auto aligned_sz = Size & ~sizetype(VecBytes - 1);
+            return F<V>()(std::integral_constant<sizetype, aligned_sz>{},
+                          std::integral_constant<sizetype, Size - aligned_sz>{}, work);
         }
 
         template <sizetype Size, class Work>

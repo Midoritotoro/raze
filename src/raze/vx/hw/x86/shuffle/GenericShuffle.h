@@ -376,23 +376,23 @@ raze_always_inline auto generic_shuffle_native_(V x, Pattern p) noexcept {
 			else if constexpr (has_avx2<ISA>)
 				return as<V>(_mm256_permutevar8x32_epi32(as<__m256i>(x), p.template as_native<__m256i>()));
 			else if constexpr (is_dup_low(p)) {
-				auto split = _mm256_permute2f128_ps(as<__m256>(x), as<__m256>(x), 0);
+				auto splitv = _mm256_permute2f128_ps(as<__m256>(x), as<__m256>(x), 0);
 				
 				if constexpr (!is_dup_low_identity(p))
-					split = _mm256_permute_ps(split, to_pshufd_mask(p));
+					splitv = _mm256_permute_ps(splitv, to_pshufd_mask(p));
 
-				return as<V>(split);
+				return as<V>(splitv);
 			}
 			else if constexpr (is_dup_high(p)) {
 				constexpr auto mask = (((p[4] - 4) & 0x03) | (((p[5] - 4) & 0x03) << 2)
 					| (((p[6] - 4) & 0x03) << 4) | (((p[7] - 4) & 0x03) << 6));
 
-				auto split = _mm256_permute2f128_ps(as<__m256>(x), as<__m256>(x), 0x11);
+				auto splitv = _mm256_permute2f128_ps(as<__m256>(x), as<__m256>(x), 0x11);
 
 				if constexpr (!is_dup_low_identity(p))
-					split = _mm256_permute_ps(split, mask);
+					splitv = _mm256_permute_ps(splitv, mask);
 
-				return as<V>(split);
+				return as<V>(splitv);
 			}
 			else if constexpr (is_low_half(p)) {
 				const auto broadcasted_low_lane = _mm256_permute2f128_ps(as<__m256>(x), as<__m256>(x), 0);

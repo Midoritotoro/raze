@@ -13,7 +13,8 @@
 
 #include <iostream>
 #include <src/raze/math/BitTest.h>
-
+#include <memory>
+#include <cstring>
 
 __RAZE_ARCH_NAMESPACE_BEGIN
 

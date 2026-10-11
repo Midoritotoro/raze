@@ -3,6 +3,7 @@
 #include <raze/compatibility/Compatibility.h>
 #include <src/raze/vx/Concepts.h>
 #include <src/raze/traits/FunctionPass.h>
+#include <raze/vx/Abi.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

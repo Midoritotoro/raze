@@ -149,7 +149,7 @@
 #    define raze_deprecated_warning(message)                                           \
        raze_do_pragma("GCC diagnostic push")                                           \
        raze_do_pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")          \
-       raze_do_pragma("message \"" __FILE__ "(" __LINE__ ") : warning: " message "\"") \ 
+       raze_do_pragma("message \"" __FILE__ "(" __LINE__ ") : warning: " message "\"") \
        raze_do_pragma("GCC diagnostic pop")
 #  else
 #    define raze_deprecated_warning(message)

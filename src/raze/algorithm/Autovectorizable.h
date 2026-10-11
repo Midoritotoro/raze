@@ -5,7 +5,9 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+#if defined(raze_cpp_msvc)
 #pragma strict_gs_check(off)
+#endif
 
 struct autovectorizable {};
 
@@ -79,6 +81,8 @@ raze_always_inline constexpr auto invoke_scalar_autovec(Work&& w) {
 
 #endif
 
+#if defined(raze_cpp_msvc)
 #pragma strict_gs_check(on)
+#endif
 
 __RAZE_ALGORITHM_NAMESPACE_END

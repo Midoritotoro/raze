@@ -4,7 +4,7 @@
 #include <raze/compatibility/CxxVersionDetection.h>
 
 #include <type_traits>
-#include <xutility>
+#include <utility>
 #include <ranges>
 #include <concepts>
 
@@ -112,7 +112,7 @@ concept unwrappable_sentinel_for = weakly_unwrappable_sentinel<Sent> && weakly_u
 	};
 
 template <class Sent, class Iter>
-raze_nodiscard raze_always_inline constexpr decltype(auto) uiter_s(Iter&& it)
+raze_nodiscard raze_always_inline constexpr auto uiter_s(Iter&& it)
 	noexcept(!unwrappable_sentinel_for<Sent, Iter> || is_nothrow_unwrappable_v<Iter>)
 		requires(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>)
 {
@@ -122,7 +122,7 @@ raze_nodiscard raze_always_inline constexpr decltype(auto) uiter_s(Iter&& it)
 }
 
 template <class It>
-raze_always_inline constexpr decltype(auto) uiter(It&& it)
+raze_always_inline constexpr auto uiter(It&& it)
 	noexcept(traits::is_iterator_unwrappable_v<It> == false || traits::is_nothrow_unwrappable_v<It>)
 {
 	if constexpr (std::is_pointer_v<std::decay_t<It>>) return it + 0;
@@ -131,7 +131,7 @@ raze_always_inline constexpr decltype(auto) uiter(It&& it)
 }
 
 template <class Iter, class Sent>
-raze_nodiscard raze_always_inline constexpr decltype(auto) usent(Sent&& sent)
+raze_nodiscard raze_always_inline constexpr auto usent(Sent&& sent)
 	noexcept(!unwrappable_sentinel_for<Sent, Iter> || is_nothrow_unwrappable_v<Sent>) 
 {
 	static_assert(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>);
@@ -142,7 +142,7 @@ raze_nodiscard raze_always_inline constexpr decltype(auto) usent(Sent&& sent)
 }
 
 template <std::ranges::range R, class Iter>
-raze_nodiscard raze_always_inline constexpr decltype(auto) r_uiter(Iter&& it)
+raze_nodiscard raze_always_inline constexpr auto r_uiter(Iter&& it)
 	noexcept(noexcept(uiter_s<std::ranges::sentinel_t<R>>(static_cast<Iter&&>(it))))
 {
 	static_assert(std::same_as<std::remove_cvref_t<Iter>, std::ranges::iterator_t<R>>);
@@ -150,7 +150,7 @@ raze_nodiscard raze_always_inline constexpr decltype(auto) r_uiter(Iter&& it)
 }
 
 template <std::ranges::range R, class Sent>
-raze_nodiscard raze_always_inline constexpr decltype(auto) r_usent(Sent&& sent)
+raze_nodiscard raze_always_inline constexpr auto r_usent(Sent&& sent)
 	noexcept(noexcept(usent<std::ranges::iterator_t<R>>(static_cast<Sent&&>(sent))))
 {
 	static_assert(std::same_as<std::remove_cvref_t<Sent>, std::ranges::sentinel_t<R>>);
@@ -173,8 +173,26 @@ using unwrapped_sentinel_t = ranges_unwrap_sent_t<std::ranges::sentinel_t<Range>
   constexpr inline auto ubegin = std::ranges::_Ubegin;
   constexpr inline auto uend = std::ranges::_Uend;
 #else 
-  constexpr inline auto ubegin = std::identity{};
-  constexpr inline auto uend = std::identity{};
+  struct ubegin_fn {
+      template <std::ranges::range R>
+      raze_nodiscard raze_always_inline constexpr auto operator()(R&& r) const
+          noexcept(noexcept(r_uiter<R>(std::ranges::begin(r))))
+      {
+          return r_uiter<R>(std::ranges::begin(r));
+      }
+  };
+
+  struct uend_fn {
+      template <std::ranges::range R>
+      raze_nodiscard raze_always_inline constexpr auto operator()(R&& r) const
+          noexcept(noexcept(r_usent<R>(std::ranges::end(r))))
+      {
+          return r_usent<R>(std::ranges::end(r));
+      }
+  };
+
+  constexpr inline ubegin_fn ubegin{};
+  constexpr inline uend_fn uend{};
 #endif // defined(raze_cpp_msvc)
 
 template <std::forward_iterator Iter, class Sent>
@@ -232,9 +250,16 @@ raze_always_inline constexpr void seek_iter(It& it, UIt&& uit) noexcept(
 	traits::is_wrapped_iterator_seekable_v<It, UIt> == false || 
 	traits::is_wrapped_iterator_nothrow_seekable_v<It, UIt>)
 {
-    if constexpr (traits::is_wrapped_iterator_seekable_v<It, UIt>)
-        it._Seek_to(std::forward<UIt>(uit));
-    else it = std::forward<UIt>(uit);
+	if constexpr (traits::is_wrapped_iterator_seekable_v<It, UIt>)
+		it._Seek_to(std::forward<UIt>(uit));
+	else if constexpr (requires { it = std::forward<UIt>(uit); })
+		it = std::forward<UIt>(uit);
+	else if constexpr (requires { it += (uit - std::to_address(it)); })
+		it += (uit - std::to_address(it));
+	else if constexpr (requires { it = It(std::forward<UIt>(uit)); })
+		it = It(std::forward<UIt>(uit));
+	else
+		static_assert(false);
 }
 
 __RAZE_TRAITS_NAMESPACE_END

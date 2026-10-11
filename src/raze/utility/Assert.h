@@ -78,7 +78,6 @@ inline const char* extract_basename(const char* path, size_t size) noexcept {
 	return_value)
 
 #define raze_assert(condition) raze_assert_log((condition), "\"" #condition "\"")
-#define raze_assert_unreachable() raze_assert(false)
 
 #if !defined(NDEBUG)
 
@@ -95,5 +94,7 @@ inline const char* extract_basename(const char* path, size_t size) noexcept {
 #define raze_debug_assert_log(condition, message)
 
 #endif // !defined(NDEBUG)
+
+#define raze_assert_unreachable() raze_debug_assert(false)
 
 __RAZE_NAMESPACE_END

@@ -38,8 +38,8 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		vector_value_type _value;
 
 		constexpr explicit kernel(Source&& source, const T& value)
-			: _source(std::forward<Source>(source)), _value(math::bit_cast<vector_value_type>(value)),
-			  _iterator(_source.ubegin()), _sentinel(_source.uend())
+			: _source(std::forward<Source>(source)), _iterator(_source.ubegin()), 
+			_sentinel(_source.uend()), _value(math::bit_cast<vector_value_type>(value))
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {

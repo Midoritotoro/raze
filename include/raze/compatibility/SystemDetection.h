@@ -81,7 +81,9 @@
 #endif
 
 #if defined(raze_os_win)
+#if !defined(NOMINMAX)
 #  define NOMINMAX
+#endif
 #endif // defined(raze_os_win)
 
 #if defined(raze_os_windows)

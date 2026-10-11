@@ -95,7 +95,6 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		class Predicate, class Value, class Projection = std::identity>
 	constexpr raze_always_inline void operator()(Iterator first, Sentinel sent,
 		Predicate pred, Value new_value, Projection proj = {}) const
-			requires(std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>)
 	{
 		this->dispatch(get_source(std::move(first), std::move(sent)),
 			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
@@ -105,9 +104,6 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		class Projection = std::identity>
 	constexpr raze_always_inline void operator()(Range&& r, Predicate pred,
 		Value new_value, Projection proj = {}) const
-			requires(std::indirect_unary_predicate<Predicate,
-				std::projected<std::ranges::iterator_t<Range>, Projection>>
-				&& std::permutable<std::ranges::iterator_t<Range>>)
 	{
 		this->dispatch(get_source(std::forward<Range>(r)),
 			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);

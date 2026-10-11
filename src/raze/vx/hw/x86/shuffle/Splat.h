@@ -56,8 +56,6 @@ raze_always_inline V splat_native_(V x, std::integral_constant<sizetype, I> i) n
 		else if constexpr (sizeof(T) == 8) return generic_shuffle_native_<ISA, T, V>(x,
 			make_splat_pattern<simd<T, runtime_abi<ISA, 4>>, i>{});
 		else if constexpr (sizeof(T) == 4) {
-			constexpr auto index = std::integral_constant<sizetype, i % (size / 2)>{};
-
 			if constexpr (i < (size / 2)) {
 				const auto half = splat_native_<ISA, T>(as<__m128i>(x), index);
 				return as<V>(_mm256_insertf128_si256(as<__m256i>(half), as<__m128i>(half), 1));

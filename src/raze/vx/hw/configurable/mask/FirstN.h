@@ -19,7 +19,7 @@ struct configurable_first_n_t : options::conditional_callable<configurable_first
     }
 
     template <simd_mask_type M>
-    static raze_always_inline auto deferred_call(auto opts, i32 n, const options::as<M>&) noexcept {
+    static raze_always_inline auto deferred_call(auto, i32 n, const options::as<M>&) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
         static_assert(!options::complete_mask<Mask>, "Not supported. ");
 

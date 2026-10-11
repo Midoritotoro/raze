@@ -24,6 +24,6 @@ struct remove_t : Traits {
 	}
 };
 
-constexpr inline auto remove = options::function_with_traits<remove_t>[options::unroll<4>][remove_strategy];
+constexpr inline auto remove = options::function_with_traits<remove_t>[remove_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

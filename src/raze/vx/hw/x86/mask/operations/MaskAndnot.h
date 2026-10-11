@@ -3,6 +3,7 @@
 #include <src/raze/vx/hw/x86/cast/As.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/vx/hw/x86/bitwise/Andnot.h>
+#include <src/raze/vx/hw/x86/bitwise/BitAnd.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

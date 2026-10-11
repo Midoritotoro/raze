@@ -2,6 +2,7 @@
 
 #include <raze/compatibility/Compatibility.h>
 #include <concepts>
+#include <limits.h>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 

@@ -32,11 +32,13 @@ struct configurable_compress_store_t : options::conditional_callable<configurabl
             "compress_store does not support masks passed via options. "
             "The mask must be supplied as the last function argument.");
 
+        constexpr auto is_unsafe = Options::contains(unsafe);
+
         x.__for_each_chunk([&] (const auto& chunk, const auto& mask_chunk) raze_always_inline_lambda {
             auto mem = std::to_address(it);
 
-            if constexpr (Options::contains(aligned)) mem = reinterpret_cast<decltype(mem)>(compress_store_<Abi::isa, Value>(mem, ustorage(chunk), ustorage(mask_chunk), aligned_policy{}));
-            else mem = reinterpret_cast<decltype(mem)>(compress_store_<Abi::isa, Value>(mem, ustorage(chunk), ustorage(mask_chunk)));
+            if constexpr (Options::contains(aligned)) mem = reinterpret_cast<decltype(mem)>(compress_store_<Abi::isa, Value, is_unsafe>(mem, ustorage(chunk), ustorage(mask_chunk), aligned_policy{}));
+            else mem = reinterpret_cast<decltype(mem)>(compress_store_<Abi::isa, Value, is_unsafe>(mem, ustorage(chunk), ustorage(mask_chunk)));
 
             traits::seek_iter(it, mem);
         }, mask.__storage().storage());

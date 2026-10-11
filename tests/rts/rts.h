@@ -341,6 +341,36 @@ namespace rtts {
         } \
     }(LHS, GEN)
 
+#define RTTS_ALL_VALIDATE_VECTOR(LHS, GEN) \
+        [&](auto const& a, auto const& b) { \
+            bool ok = true; \
+            size_t i = 0; \
+            for(; i < v.size(); ++i) { if(a[i] != b(i)) { ok = false; break; } } \
+            if(ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
+            else { RTTS_FAIL("Expected: " << #LHS << " == " << #GEN << " but vectors differ."); return ::rtts::detail::logger{}; } \
+        }(LHS, GEN)
+
+#define RTTS_ALL_VALIDATE_BITS_VECTOR(LHS, GEN) \
+    [&](auto const& rtts_a, auto const& rtts_gen) { \
+        bool rtts_ok = true; \
+        size_t rtts_bad = 0; \
+        size_t rtts_i = 0; \
+        auto rtts_bad_val = typename std::decay_t<decltype(rtts_a)>::value_type{}; \
+        for(; rtts_i < rtts_a.size(); ++rtts_i) { \
+            if(::rtts::detail::to_bits(rtts_a[rtts_i]) != ::rtts::detail::to_bits(rtts_gen(rtts_i))) { \
+                rtts_ok = false; rtts_bad = rtts_i; rtts_bad_val = rtts_a[rtts_i]; break; \
+            } \
+        } \
+        if(rtts_ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
+        else { \
+            RTTS_FAIL("Expected bitwise: " << #LHS << " == " << #GEN \
+                << " but differ at [" << rtts_bad << "]: " \
+                << ::rtts::detail::bits_to_string(rtts_bad_val) \
+                << " != " << ::rtts::detail::bits_to_string(rtts_gen(rtts_bad))); \
+            return ::rtts::detail::logger{}; \
+        } \
+    }(LHS, GEN)
+
     namespace algorithm {
         using all_types = types<
             char, short, int, long long,
@@ -666,17 +696,32 @@ namespace rtts {
         };
 
         template <class It>
-        constexpr auto base(It it) {
-            if constexpr (requires { it.base(); }) return it.base();
-            else return it;
+        struct is_counted_iterator : std::false_type {};
+
+        template <class It>
+        struct is_counted_iterator<std::counted_iterator<It>> : std::true_type {};
+
+        template <class It>
+        inline constexpr bool is_counted_iterator_v = is_counted_iterator<std::remove_cvref_t<It>>::value;
+
+        // Разворачиваем ТОЛЬКО counted_iterator, не трогая обычные итераторы (у которых в GCC есть опасный .base())
+        template <class It>
+        constexpr auto base(It&& it) {
+            if constexpr (is_counted_iterator_v<It>) return it.base();
+            else return std::forward<It>(it);
         }
 
         template <class Container, class It>
-        constexpr size_t position(Container const& value, It it) {
+        constexpr size_t position(const Container& value, It it) {
             if constexpr (std::is_same_v<std::decay_t<It>, std::default_sentinel_t>) {
                 return static_cast<size_t>(std::ranges::distance(value));
             } else {
-                return static_cast<size_t>(std::ranges::distance(value.begin(), base(it)));
+                auto b = base(it);
+                if constexpr (std::contiguous_iterator<decltype(b)> && std::ranges::contiguous_range<Container>) {
+                    return static_cast<size_t>(std::to_address(b) - std::to_address(value.begin()));
+                } else {
+                    return static_cast<size_t>(std::ranges::distance(value.begin(), b));
+                }
             }
         }
 
@@ -802,9 +847,9 @@ namespace rtts {
         template <class T, class F>
         void each_container(size_t size, unsigned seed, F f) {
             f(rtts::random::vector<T>(size, seed));
-          /*  f(rtts::random::deque<T>(size, seed));
+            f(rtts::random::deque<T>(size, seed));
             f(rtts::random::list<T>(size, seed));
-            f(rtts::random::forward_list<T>(size, seed));*/
+            f(rtts::random::forward_list<T>(size, seed));
         }
 
         template <class F>
@@ -967,8 +1012,6 @@ namespace rtts {
         try {
             for (auto& t : detail::suite()) {
                 auto test_count = detail::global_runtime.test_count;
-                auto failure_count = detail::global_runtime.failure_count;
-
                 detail::global_runtime.fail_status = false;
 
                 t();

@@ -313,10 +313,38 @@ struct shuffle_pattern {
     }
 
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+    template <typename T, std::size_t Bytes>
+    struct make_gnu_vector;
+
+#define RAZE_IMPL_MAKE_GNU_VECTOR(TYPE)                                \
+    template <std::size_t Bytes>                                        \
+    struct make_gnu_vector<TYPE, Bytes> {                               \
+        typedef TYPE type __attribute__((vector_size(Bytes)));          \
+    };
+
+    RAZE_IMPL_MAKE_GNU_VECTOR(char)
+    RAZE_IMPL_MAKE_GNU_VECTOR(signed char)
+    RAZE_IMPL_MAKE_GNU_VECTOR(unsigned char)
+    RAZE_IMPL_MAKE_GNU_VECTOR(short)
+    RAZE_IMPL_MAKE_GNU_VECTOR(unsigned short)
+    RAZE_IMPL_MAKE_GNU_VECTOR(int)
+    RAZE_IMPL_MAKE_GNU_VECTOR(unsigned int)
+    RAZE_IMPL_MAKE_GNU_VECTOR(long)
+    RAZE_IMPL_MAKE_GNU_VECTOR(unsigned long)
+    RAZE_IMPL_MAKE_GNU_VECTOR(long long)
+    RAZE_IMPL_MAKE_GNU_VECTOR(unsigned long long)
+    RAZE_IMPL_MAKE_GNU_VECTOR(float)
+    RAZE_IMPL_MAKE_GNU_VECTOR(double)
+
+#undef RAZE_IMPL_MAKE_GNU_VECTOR
+
+    template <typename T, std::size_t Bytes>
+    using make_gnu_vector_t = typename make_gnu_vector<std::remove_cv_t<T>, Bytes>::type;
+
     template <intrin_type Intrin>
     raze_always_inline static auto builtin_shufflevector(Intrin v, Intrin v2) noexcept {
         using T = typename V::value_type;
-        using ExtVec = T __attribute__((vector_size(sizeof(Intrin))));
+        using ExtVec = make_gnu_vector_t<T, sizeof(Intrin)>;
 
         ExtVec ext = __builtin_bit_cast(ExtVec, v);
         ExtVec ext2 = __builtin_bit_cast(ExtVec, v2);
@@ -326,7 +354,7 @@ struct shuffle_pattern {
     template <intrin_type Intrin>
     raze_always_inline static Intrin builtin_shufflevector(Intrin v) noexcept {
         using T = typename V::value_type;
-        using ExtVec = T __attribute__((vector_size(sizeof(Intrin))));
+        using ExtVec = make_gnu_vector_t<T, sizeof(Intrin)>;
 
         ExtVec ext = __builtin_bit_cast(ExtVec, v);
         return __builtin_bit_cast(Intrin, __builtin_shufflevector(ext, ext, Idxs...));

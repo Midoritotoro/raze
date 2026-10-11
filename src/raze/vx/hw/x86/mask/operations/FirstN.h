@@ -15,10 +15,10 @@ consteval auto first_n_vtable() noexcept {
     using MaskType = typename IntegerForSizeof<T>::Unsigned;
     auto table = std::array<MaskType, VectorLength * 2>{};
 
-    for (auto i = 0; i < VectorLength; ++i)
+    for (sizetype i = 0; i < VectorLength; ++i)
         table[i] = ~MaskType(0);
 
-    for (auto i = VectorLength; i < VectorLength * 2; ++i)
+    for (sizetype i = VectorLength; i < VectorLength * 2; ++i)
         table[i] = 0;
 
     return table;

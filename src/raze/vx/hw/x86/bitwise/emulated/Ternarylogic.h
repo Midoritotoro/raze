@@ -300,7 +300,7 @@ raze_nodiscard raze_always_inline V ternarylogic_emulated_(V x, V y, V z,
 template <class V, u8 Op, raw_mask_type M, class Select, class Or,
     class Xor, class And, class Andnot, class Not, class Zero>
 raze_always_inline V ternarylogic_emulated_(V x, V y, V z,
-    std::integral_constant<u8, Op> op, M mask, Select select, V src, Or or_,
+    std::integral_constant<u8, Op> op, M mask, Select selector, V src, Or or_,
     Xor xor_, And and_, Andnot andn_, Not not_, Zero zero) noexcept
 {
     return selector(ternarylogic_emulated_(x, y, z, op, or_, xor_, and_, andn_, not_, zero), src, mask);

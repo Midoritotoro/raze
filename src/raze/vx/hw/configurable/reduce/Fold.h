@@ -51,9 +51,7 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
     static raze_always_inline auto deferred_call(auto opts, V x, F f) noexcept
         requires(!std::is_same_v<traits::function_unwrapped<std::remove_cvref_t<F>>, std::remove_cvref_t<decltype(add)>>)
     {
-        using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
-        using Abi = typename V::abi_type;
 
         if constexpr (V::size() == 1) {
             if constexpr (Options::contains(broadcast)) return select[opts](x);

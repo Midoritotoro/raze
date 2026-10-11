@@ -8,6 +8,16 @@ raze_disable_warning_msvc(4310)
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+raze_always_inline u32 scan_reverse_(u32 v) noexcept {
+#if defined(raze_cpp_msvc)
+    ulong index;
+    _BitScanReverse(&index, static_cast<unsigned long>(v));
+    return static_cast<u32>(index);
+#else
+    return static_cast<u32>(_bit_scan_reverse(static_cast<i32>(v)));
+#endif
+}
+
 template <class	T>
 class vector_divisor;
 
@@ -45,8 +55,7 @@ private:
 			shift = 30;
 		}
 		else if (absolute_divisor > 1) {
-			ulong32 leading_zeros;
-			_BitScanReverse(&leading_zeros, static_cast<u32>(absolute_divisor - 1));
+			const auto leading_zeros = scan_reverse_(static_cast<u32>(absolute_divisor - 1));
 
 			shift = leading_zeros;
 			multiplier = i32((i64(1) << (32 + shift)) / absolute_divisor - ((i64(1) << 32) - 1));
@@ -117,9 +126,7 @@ private:
 				break;
 			default:
 				{
-					ulong32 leading_zeros;
-					_BitScanReverse(&leading_zeros, static_cast<u32>(divisor - 1u));
-					++leading_zeros;
+					const auto leading_zeros = scan_reverse_(static_cast<u32>(divisor - 1u)) + 1;
 
 					multiplier = 1 + u32((u64(u32(
 						leading_zeros < 32 ? 1 << leading_zeros : 0) - divisor) << 32) / divisor);
@@ -177,8 +184,7 @@ private:
 			shift = 14;
 		}
 		else if (absolute_divisor > 1) {
-			ulong32 leading_zeros;
-			_BitScanReverse(&leading_zeros, static_cast<u16>(absolute_divisor - 1));
+			const auto leading_zeros = scan_reverse_(static_cast<u16>(absolute_divisor - 1));
 
 			shift = leading_zeros;
 			multiplier = i32((i32(1) << (16 + shift)) / absolute_divisor - ((i64(1) << 16) - 1));
@@ -247,9 +253,7 @@ private:
 				break;
 			default:
 				{
-					ulong32 leading_zeros;
-					_BitScanReverse(&leading_zeros, static_cast<u16>(divisor - 1u));
-					++leading_zeros;
+					const auto leading_zeros = scan_reverse_(static_cast<u16>(divisor - 1u)) + 1;
 
 					const auto power = u16(1 << leading_zeros);
 
@@ -272,6 +276,5 @@ private:
 	__m128i _shift2;
 	__m128i _multiplier;
 };
-
 
 __RAZE_VX_NAMESPACE_END

@@ -66,7 +66,7 @@ constexpr sizetype get_unrolling() {
 
 struct strategy_key_t : as_keyword<strategy_key_t> {
     template <class Value>
-    constexpr auto operator=(const Value& v) const noexcept {
+    constexpr auto operator=(const Value&) const noexcept {
         return option<strategy_key_t, Value>{};
     }
 };

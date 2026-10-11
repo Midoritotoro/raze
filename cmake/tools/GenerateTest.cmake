@@ -7,6 +7,7 @@ set(RAZE_TEST_ARCH_CONFIGS
     "AVX|-mavx|/arch:AVX|RAZE_HAS_AVX_SUPPORT=1"
     "FMA3|-mfma|/arch:AVX|RAZE_HAS_FMA3_SUPPORT=1"
     "AVX2|-mavx2|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
+    "AVX2BMI2|-mavx2 -mbmi2 -mbmi|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
     "AVX512F|-mavx512f|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1"
     "AVX512BW|-mavx512f -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
     "AVX512DQ|-mavx512f -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
@@ -720,12 +721,19 @@ function(raze_generate_test root main_source rootpath file)
         target_compile_options(${main_target} PRIVATE
             /bigobj
             /permissive-
-            /Od
             /MP
         )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(
+            ${main_target}
+            PRIVATE
+                ${flags_list}
+                 -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always  -Wno-ignored-attributes 
+                -Wno-ignored-attributes
+        )   
     else()
         target_compile_options(${main_target} PRIVATE
-            -g
+           
         )
     endif()
 
@@ -807,7 +815,6 @@ function(raze_generate_test root main_source rootpath file)
             )
 
         else()
-
             separate_arguments(
                 flags_list
                 UNIX_COMMAND
@@ -818,7 +825,7 @@ function(raze_generate_test root main_source rootpath file)
                 ${isa_target}
                 PRIVATE
                     ${flags_list}
-                    -g
+                    -g -Wno-psabi
             )
 
         endif()
@@ -951,28 +958,38 @@ function(raze_configure_test_target target)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${target} PRIVATE /bigobj /permissive- /Od /MP)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(${target} PRIVATE   -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always   
+                -Wno-ignored-attributes -Wno-psabi
+                -Wno-ignored-attributes)    
     else()
-        target_compile_options(${target} PRIVATE -O0 -g)
+        target_compile_options(${target} PRIVATE  -Wno-psabi)
     endif()
 endfunction()
 
 
-function(raze_configure_native_test_target target)
+function(raze_configure_default_arch_test_target target)
     raze_configure_test_target(${target})
 
     target_compile_definitions(
         ${target}
         PRIVATE
-            RAZE_TEST_ARCH_NAMESPACE=raze_test_native
+            RAZE_TEST_ARCH_NAMESPACE=raze_test_default_arch
     )
 
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(${target} PRIVATE -march=native)
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(${target} PRIVATE /bigobj /permissive- /Od /MP)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(${target} PRIVATE -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always   
+                -Wno-ignored-attributes -Wno-psabi
+                -Wno-ignored-attributes)    
+    else()
+        target_compile_options(${target} PRIVATE  )
     endif()
 endfunction()
 
 
-function(raze_generate_native_test root main_source rootpath file)
+function(raze_generate_default_arch_test root main_source rootpath file)
     if(ARGC GREATER 4)
         set(parent_target ${ARGV4})
     else()
@@ -1009,7 +1026,7 @@ function(raze_generate_native_test root main_source rootpath file)
         FOLDER "Tests"
     )
 
-    raze_configure_native_test_target(${test})
+    raze_configure_default_arch_test_target(${test})
 
     add_test(
         NAME ${test}
@@ -1027,7 +1044,7 @@ function(raze_generate_native_test root main_source rootpath file)
 endfunction()
 
 
-function(raze_glob_native_unit root relative pattern)
+function(raze_glob_default_arch_unit root relative pattern)
     if(ARGC GREATER 3)
         set(parent_target ${ARGV3})
     else()
@@ -1048,7 +1065,7 @@ function(raze_glob_native_unit root relative pattern)
             continue()
         endif()
 
-        raze_generate_native_test(
+        raze_generate_default_arch_test(
             "${root}"
             "${main_source}"
             "${relative}/"

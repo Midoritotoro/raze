@@ -11,7 +11,6 @@
        raze_do_pragma(clang loop vectorize(disable)) \
        raze_do_pragma(clang loop interleave(disable))
 #  elif defined(raze_cpp_gnu)
-#    define raze_disable_unrolling raze_do_pragma(GCC unroll 1) \
-        raze_do_pragma(GCC optimize("no-tree-vectorize"))
+#    define raze_disable_unrolling raze_do_pragma(GCC unroll 1)
 #  endif // defined(raze_cpp_msvc_only)
 #endif // !defined(raze_disable_unrolling)

@@ -56,6 +56,7 @@ struct range_data_source {
 
     raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
         unwrap(std::iter_value_t<unchecked_iterator_type>* ptr)
+        requires (!std::same_as<iterator_type, std::iter_value_t<unchecked_iterator_type>*>)
     {
         unchecked_iterator_type it;
         traits::seek_iter(it, ptr);
@@ -64,6 +65,8 @@ struct range_data_source {
 
     raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
         unwrap(const std::iter_value_t<unchecked_iterator_type>* ptr)
+        requires (!std::same_as<iterator_type, const std::iter_value_t<unchecked_iterator_type>*> &&
+    !std::same_as<std::iter_value_t<unchecked_iterator_type>*, const std::iter_value_t<unchecked_iterator_type>*>)
     {
         unchecked_iterator_type it;
         traits::seek_iter(it, ptr);

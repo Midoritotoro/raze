@@ -62,33 +62,27 @@
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",
-      "buildCommandArgs": "-v",
+      "buildCommandArgs": "",
       "ctestCommandArgs": "",
-      "inheritEnvironments": [ "mingw_64" ],
-      "environments": [
+      "inheritEnvironments": [],
+      "environmentVariables": [
         {
-          "MINGW64_ROOT": "C:/msys64/mingw64",
-          "BIN_ROOT": "${env.MINGW64_ROOT}/bin",
-          "FLAVOR": "x86_64-w64-mingw32",
-          "TOOLSET_VERSION": "9.1.0",
-          "PATH": "${env.MINGW64_ROOT}/bin;${env.MINGW64_ROOT}/../usr/local/bin;${env.MINGW64_ROOT}/../usr/bin;${env.MINGW64_ROOT}/../bin;${env.PATH}",
-          "INCLUDE": "${env.INCLUDE};${env.MINGW64_ROOT}/include/c++/${env.TOOLSET_VERSION};${env.MINGW64_ROOT}/include/c++/${env.TOOLSET_VERSION}/tr1;${env.MINGW64_ROOT}/include/c++/${env.TOOLSET_VERSION}/${env.FLAVOR}",
-          "environment": "mingw_64"
+          "name": "PATH",
+          "value": "D:/Libraries/win64/msys64/ucrt64/bin;${env.SystemRoot}/system32;${env.SystemRoot}"
         }
       ],
       "variables": [
         {
           "name": "CMAKE_C_COMPILER",
-          "value": "${env.BIN_ROOT}/gcc.exe",
-          "type": "STRING"
+          "value": "gcc.exe",
+          "type": "FILEPATH"
         },
         {
           "name": "CMAKE_CXX_COMPILER",
-          "value": "${env.BIN_ROOT}/g++.exe",
-          "type": "STRING"
+          "value": "g++.exe",
+          "type": "FILEPATH"
         }
-      ],
-      "intelliSenseMode": "linux-gcc-x64"
+      ]
     }
   ]
 }

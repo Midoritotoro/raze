@@ -20,7 +20,7 @@ struct settings {
     }
 
     template <concepts::keyword Keyword>
-    static raze_always_inline constexpr auto contains(const Keyword& kw) noexcept {
+    static raze_always_inline constexpr auto contains(const Keyword&) noexcept {
         using found = decltype((std::declval<base>())(Keyword{}));
         return !std::same_as<found, unknown_key>;
     }

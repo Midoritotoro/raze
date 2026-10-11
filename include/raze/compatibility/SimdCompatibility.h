@@ -7,7 +7,7 @@
 
 #include <raze/arch/CpuFeature.h>
 
-#if defined(raze_processor_x86) && defined(raze_cpp_msvc)
+#if defined(raze_processor_x86) && defined(raze_cpp_msvc_only)
 
 #  if (defined(_M_X64) || _M_IX86_FP >= 2)
 #    define __SSE__ 1

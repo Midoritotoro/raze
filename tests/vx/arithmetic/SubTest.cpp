@@ -28,10 +28,10 @@ RTTS_CASE_TPL("raze::vx::sub", rtts::simd::all_simd_infos)
     auto r1 = raze::vx::sub(a, b);
     auto r2 = raze::vx::sub[m](a, b);
     auto r3 = raze::vx::sub[m, src](a, b);
-
-    RTTS_ALL_VALIDATE_BITS(r1, [&](auto i) { return T(arrA[i] - arrB[i]); });
-    RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? T(arrA[i] - arrB[i]) : T(0); });
-    RTTS_ALL_VALIDATE_BITS(r3, [&](auto i) { return m[i] ? T(arrA[i] - arrB[i]) : arrSrc[i]; });
+    printf("Fff");
+    RTTS_ALL_VALIDATE_BITS (r1, [&](auto i) { return T(arrA[i] - arrB[i]); });
+    RTTS_ALL_VALIDATE_BITS (r2, [&](auto i) { return m[i] ? T(arrA[i] - arrB[i]) : T(0); });
+    RTTS_ALL_VALIDATE_BITS  (r3, [&](auto i) { return m[i] ? T(arrA[i] - arrB[i]) : arrSrc[i]; });
 };
 
 RAZE_TEST_NAMESPACE_END

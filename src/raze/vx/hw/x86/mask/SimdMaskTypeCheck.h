@@ -3,6 +3,7 @@
 #include <src/raze/traits/TypeCheck.h>
 #include <src/raze/traits/IsVirtualBaseOf.h>
 #include <raze/vx/Config.h>
+#include <immintrin.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

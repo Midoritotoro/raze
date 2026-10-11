@@ -56,9 +56,9 @@ struct x86_abi {
 	static constexpr auto isa = target_isa();
 };
 
-#if defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
+#if defined(raze_processor_x86_64)
   using default_abi = x86_abi<4>;
-#endif // defined(raze_processor_x86_64) && defined(raze_cpp_msvc)
+#endif // defined(raze_processor_x86_64)
 
 template <class Abi, sizetype Elements>
 struct resize_abi {
