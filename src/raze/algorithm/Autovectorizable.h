@@ -23,11 +23,11 @@ concept autovectorizable_kernel = requires(Work& w) { w(autovectorizable{}); };
 #endif
 
 template <class Work>
-struct llvm_invoke_autovec_helper_t {
+struct invoke_autovec_helper_t {
     using value_type = typename Work::vector_value_type;
 
     Work& _work;
-    llvm_invoke_autovec_helper_t(Work& w) : _work(w) {}
+    invoke_autovec_helper_t(Work& w) : _work(w) {}
 
     raze_always_inline void operator()() {
         constexpr bool top = sizeof(value_type) >= 4
@@ -67,7 +67,7 @@ struct llvm_invoke_autovec_helper_t {
 
 template <class Work>
 raze_always_inline auto invoke_scalar_autovec_impl(Work& w) {
-    auto c = llvm_invoke_autovec_helper_t<Work>(w);
+    auto c = invoke_autovec_helper_t<Work>(w);
     c();
 }
 

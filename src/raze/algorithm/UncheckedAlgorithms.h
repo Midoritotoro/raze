@@ -109,7 +109,8 @@ public:
 
     template <class T, class Kernel = void>
     static consteval bool have_best_isa() {
-        if constexpr (sizeof...(Features) == 0) return is_best_isa_default<T>();
+        if constexpr (std::same_as<T, void>) return false;
+        else if constexpr (sizeof...(Features) == 0) return is_best_isa_default<T>();
         else {
             constexpr arch::ISA best_feature = find_best_isa<Features...>();
             return single_satisfies<best_feature, vx::target_isa()>();
@@ -118,6 +119,7 @@ public:
 
     template <class T>
     static consteval arch::ISA resolve_static_isa() {
+        if constexpr (std::same_as<T, void>) return arch::ISA::None;
         if constexpr (sizeof...(Features) == 0) return vx::target_isa();
         else return find_best_supported_isa<vx::target_isa(), Features...>();
     }
@@ -150,39 +152,40 @@ public:
         }
 
         constexpr auto target_policy = get_targets<Kernel>();
-
         constexpr bool has_best = target_policy.template have_best_isa<Value, Kernel>();
-        constexpr arch::ISA static_isa = target_policy.template resolve_static_isa<Value>();
-        constexpr bool has_supported_isa = (static_isa != arch::ISA::None);
 
-#if defined(raze_cpp_clang) || defined(raze_cpp_gnu) || defined(__clang__) || defined(__GNUC__)
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
         constexpr bool is_gcc_or_clang = true;
 #else
         constexpr bool is_gcc_or_clang = false;
 #endif
 
-        constexpr bool is_fstatic = is_gcc_or_clang ? has_supported_isa
-            : (has_best || options::is_fstatic<Traits>() || options::get_strategy<Traits>().is_manual());
+#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
+        constexpr auto can_auto_vectorize = !options::is_fscalar<Traits>() && autovectorizable_kernel<Kernel>
+            && options::get_strategy<Traits>().is_autovec();
+#else
+        // GCC doesn`t support function multiversioning on windows
+        constexpr auto can_auto_vectorize = false;
+#endif
 
-        constexpr bool can_vectorize = !options::is_fscalar<Traits>() && Kernel::vectorizable() &&
-            (is_gcc_or_clang ? has_supported_isa : true);
+        constexpr bool can_manual_vectorize = !options::is_fscalar<Traits>() && Kernel::vectorizable() &&
+            (has_best || !can_auto_vectorize);
 
-        if constexpr (can_vectorize) {
+        if constexpr (can_manual_vectorize) {
             if !consteval {
-                constexpr auto dispatcher = target_policy.template make_dispatcher<Value, Traits, Kernel, is_fstatic, static_isa>();
+                constexpr arch::ISA static_isa = target_policy.template resolve_static_isa<Value>();
+                constexpr bool has_supported_isa = (static_isa != arch::ISA::None);
+                constexpr bool is_fstatic = is_gcc_or_clang ? (has_supported_isa && (
+                    !options::get_strategy<Traits>().is_autovec() || !autovectorizable_kernel<Kernel>))
+                    : (has_best || (options::is_fstatic<Traits>() && options::get_strategy<Traits>().is_manual()));
 
+                constexpr auto dispatcher = target_policy.template make_dispatcher<Value, Traits, Kernel, is_fstatic, static_isa>();
                 return dispatcher(work.size(), work);
             }
         }
-#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
-        else if constexpr (!options::is_fscalar<Traits>() && autovectorizable_kernel<Kernel>
-            && options::get_strategy<Traits>().is_autovec())
-        {
-            return invoke_scalar_autovec(work);
-        }
-#endif
+        else if constexpr (can_auto_vectorize) return invoke_scalar_autovec(work);
 
-        return options::unroller<Traits, vx::scalar_tag>(work);
+       return options::unroller<Traits, vx::scalar_tag>(work);
     }
 };
 

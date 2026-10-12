@@ -85,7 +85,7 @@ template <bool Unsafe, std::unsigned_integral T>
 raze_always_inline i32 bsr_clz(T v) noexcept {
     constexpr auto digits = std::numeric_limits<T>::digits;
 
-#if defined(raze_cpp_msvs_only)
+#if defined(raze_cpp_msvc_only)
     ulong index;
 
     if constexpr (digits == 64) {

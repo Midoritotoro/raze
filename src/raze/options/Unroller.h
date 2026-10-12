@@ -28,7 +28,7 @@ struct unroller_t {
 				constexpr auto unrolling = get_unrolling<Traits>();
 				const auto guard = vx::make_guard<Tag>();
 
-#if defined(raze_cpp_msvc_only)
+#if defined(raze_cpp_msvc_only) || (raze_cpp_gnu && !defined(RAZE_GCC_SRA_LARGE_LIMIT))
 				// Ignore unrolling
 				if constexpr (has_early_exit) {
 					if (!f(Tag{}, aligned_size)) {

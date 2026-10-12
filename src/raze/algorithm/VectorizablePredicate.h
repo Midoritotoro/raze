@@ -65,4 +65,23 @@ concept is_less_comparator = std::is_same_v<std::remove_cvref_t<traits::function
 template <class Comp>
 concept is_greater_comparator = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Comp>>, std::greater<>>;
 
+template <class T, class U>
+concept has_common_type = requires { typename std::common_type<T, U>::type; };
+
+template <class T, class U, bool HasCommon = false>
+struct common_type_or_void;
+
+template <class T, class U>
+struct common_type_or_void<T, U, false> { 
+    using type = void;
+};
+
+template <class T, class U>
+struct common_type_or_void<T, U, true> {
+    using type = std::common_type_t<T, U>;
+};
+
+template <class T, class U>
+using common_type_or_void_t = typename common_type_or_void<T, U>::type;
+
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -76,7 +76,7 @@ set_target_properties(
     EXPORT_NAME raze
 )
 
-if(MSVC)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
     target_compile_options(
         raze
         INTERFACE
@@ -86,6 +86,9 @@ if(MSVC)
         /Zc:__cplusplus
         /nologo
     )
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Gnu")
+     target_compile_options(raze INTERFACE $<$<COMPILE_LANGUAGE:CXX>:--param=sra-max-scalarization-size-Ospeed=4096>)
+     target_compile_definitions(raze INTERFACE RAZE_GCC_SRA_LARGE_LIMIT=1)
 endif()
 raze_link_clang_rt_builtins(raze)
 

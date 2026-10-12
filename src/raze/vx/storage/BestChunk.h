@@ -89,7 +89,11 @@ struct build_tuple {
     static constexpr auto chunk_elems = sizeof(chunk_type) / sizeof(T);
     static constexpr auto next = (Remaining > chunk_elems) ? (Remaining - chunk_elems) : 0;
     
-    using type = simd_tuple_node<chunk_type, typename build_tuple<T, Abi, next>::type>;
+    using type = std::conditional_t<
+        next == 0,
+        simd_tuple_leaf<chunk_type>,
+        simd_tuple_node<chunk_type, typename build_tuple<T, Abi, next>::type>
+    >;
 };
 
 template <class T, class Abi> 

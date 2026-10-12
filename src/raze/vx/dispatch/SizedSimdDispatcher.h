@@ -144,7 +144,8 @@ struct configurable_isa_dispatcher_t {
                 if (size < vector_size) return F<vx::scalar_tag>()(work);
                 return call_dyn<Forced, vector_size>(size, work);
             }
-
+            else 
+#if defined(raze_cpp_msvc_only)
             if constexpr (compile_has_avx512()) {
                 if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
                 if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
@@ -184,6 +185,20 @@ struct configurable_isa_dispatcher_t {
                         break;
                 }
             }
+#else
+            if constexpr (compile_has_avx512()) {
+                if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
+                if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
+                if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
+            }
+            else if constexpr (has_avx2<target_isa()>) {
+                if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
+                if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
+            }
+            else {
+                if (size >= 16) return call_dyn<target_isa(), 16>(size, work);
+            }
+#endif
 
             return F<vx::scalar_tag>()(work);
         }
