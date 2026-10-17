@@ -81,9 +81,6 @@ RTTS_CASE_TPL("raze::math::abs", rtts::simd::all_simd_infos)
 
             for (size_t i = 0; i < N; ++i) {
                 const T expected_m = m[i] ? raze::math::abs(arr[i]) : T(0);
-                if (r[i] != expected_m) {
-                    int d = 0;
-                }
                 RTTS_EXPECT(r[i] == expected_m);
             }
         }

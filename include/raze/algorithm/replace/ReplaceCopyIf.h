@@ -27,7 +27,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
 
-		using vector_value_type =  std::iter_value_t<iterator_type>;
+		using vector_value_type = std::iter_value_t<iterator_type>;
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> && 
@@ -58,6 +58,9 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 
 			for (; first != last; ++first, ++dest)
 				*dest = _predicate(_proj(*first)) ? _new_value : *first;
+
+			source_type::from_ptr(_in_iterator, first);
+			destination_type::from_ptr(_out_iterator, dest);
 		}
 
 		raze_always_inline constexpr void operator()() {

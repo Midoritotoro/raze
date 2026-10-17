@@ -11,24 +11,24 @@ constexpr auto& get(simd_tuple_node<H, T>& node) noexcept {
     else return get<Idx - 1>(node._tail);
 }
 
-template <std::size_t Idx, class H, class T>
+template <sizetype Idx, class H, class T>
 constexpr const auto& get(const simd_tuple_node<H, T>& node) noexcept {
     if constexpr (Idx == 0)  return node._head;
     else return get<Idx - 1>(node._tail);
 }
 
-template <std::size_t Idx, class T>
+template <sizetype Idx, class T>
 constexpr const auto& get(const T& v) noexcept {
     return v;
 }
 
-template <std::size_t Idx, class T>
+template <sizetype Idx, class T>
 constexpr auto& get(T& v) noexcept {
     return v;
 }
 
 template <class Tuple, class F>
-raze_always_inline void visit_chunk_by_index(Tuple& tuple, i32 i, F&& f) noexcept
+raze_always_inline void visit_chunk_by_index(Tuple& tuple, sizetype i, F&& f) noexcept
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
 {
     [&] <std::size_t... I> (std::index_sequence<I...>) raze_always_inline_lambda {
@@ -74,7 +74,7 @@ template <class Tuple, class F, class ... Args>
 raze_always_inline void for_each_tuple(Tuple& tuple, F&& f, Args&& ... args) noexcept
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
 {
-    [&] <u64 ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
+    [&] <sizetype ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
         ([&] (auto current) raze_always_inline_lambda {
             f(get<current>(tuple), get<current>(std::forward<Args>(args))...);
         }(std::integral_constant<std::size_t, I>{}), ...);
@@ -85,7 +85,7 @@ template <class Tuple, class F, class ... Args>
 raze_always_inline bool for_each_tuple_all_of(Tuple& tuple, F&& f, Args&& ... args) noexcept
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
 {
-    return [&] <u64 ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
+    return [&] <sizetype ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
         return ([&] (auto current) raze_always_inline_lambda {
             return f(get<current>(tuple), get<current>(std::forward<Args>(args))...);
         }(std::integral_constant<std::size_t, I>{}) && ...);
@@ -96,7 +96,7 @@ template <class Tuple, class F, class ... Args>
 raze_always_inline bool for_each_tuple_any_of(Tuple& tuple, F&& f, Args&& ... args) noexcept
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
 {
-    return [&] <u64 ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
+    return [&] <sizetype ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
         return ([&] (auto current) raze_always_inline_lambda {
             return f(get<current>(tuple), get<current>(std::forward<Args>(args))...);
         }(std::integral_constant<std::size_t, I>{}) || ...);
@@ -108,7 +108,7 @@ raze_always_inline void for_each_tuple_reverse(Tuple& tuple, F&& f, Args&& ... a
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
 {
     constexpr sizetype N = simd_tuple_size<std::remove_cvref_t<Tuple>>::value;
-    [&] <u64 ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
+    [&] <sizetype ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
         ([&] (auto current) raze_always_inline_lambda {
             f(get<current>(tuple), get<current>(std::forward<Args>(args))...);
         }(std::integral_constant<std::size_t, N - 1 - I>{}), ...);
@@ -120,7 +120,7 @@ raze_always_inline bool for_each_tuple_all_of_reverse(Tuple& tuple, F&& f, Args&
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
 {
     constexpr sizetype N = simd_tuple_size<std::remove_cvref_t<Tuple>>::value;
-    return [&] <u64 ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
+    return [&] <sizetype ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
         return ([&] (auto current) raze_always_inline_lambda {
             return f(get<current>(tuple), get<current>(std::forward<Args>(args))...);
         }(std::integral_constant<std::size_t, N - 1 - I>{}) && ...);
@@ -132,7 +132,7 @@ raze_always_inline bool for_each_tuple_any_of_reverse(Tuple& tuple, F&& f, Args&
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
 {
     constexpr sizetype N = simd_tuple_size<std::remove_cvref_t<Tuple>>::value;
-    return [&] <u64 ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
+    return [&] <sizetype ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
         return ([&] (auto current) raze_always_inline_lambda {
             return f(get<current>(tuple), get<current>(std::forward<Args>(args))...);
         }(std::integral_constant<std::size_t, N - 1 - I>{}) || ...);

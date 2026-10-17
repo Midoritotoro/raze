@@ -87,8 +87,12 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         /nologo
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Gnu")
-     target_compile_options(raze INTERFACE $<$<COMPILE_LANGUAGE:CXX>:--param=sra-max-scalarization-size-Ospeed=4096>)
+     target_compile_options(raze INTERFACE -Werror    -fdiagnostics-color=always   -Wno-reserved-macro-identifier
+        -Wno-ignored-attributes -Wno-psabi -Wno-ignored-attributes $<$<COMPILE_LANGUAGE:CXX>:--param=sra-max-scalarization-size-Ospeed=4096>)
      target_compile_definitions(raze INTERFACE RAZE_GCC_SRA_LARGE_LIMIT=1)
+else() 
+        target_compile_options(raze INTERFACE -Werror   -Wno-reserved-macro-identifier -fdiagnostics-color=always   
+        -Wno-ignored-attributes -Wno-psabi -Wno-ignored-attributes)
 endif()
 raze_link_clang_rt_builtins(raze)
 

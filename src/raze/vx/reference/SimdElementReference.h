@@ -10,11 +10,10 @@ class simd_element_reference {
 public:
 	using value_type = typename V::value_type;
 
-	simd_element_reference(V& v, i32 i) noexcept:
-		_reference(v),
-		_index(i)
+	simd_element_reference(V& v, sizetype i) noexcept:
+		_reference(v), _index(i)
 	{
-		raze_debug_assert_log(i >= 0 && i < V::size(), "Index out of range. ");
+		raze_debug_assert_log(i < V::size(), "Index out of range. ");
 	}
 
 	raze_always_inline operator value_type() const noexcept {
@@ -137,7 +136,7 @@ private:
 	}
 
 	V& _reference;
-	i32 _index = 0;
+	sizetype _index = 0;
 };
 
 __RAZE_VX_NAMESPACE_END

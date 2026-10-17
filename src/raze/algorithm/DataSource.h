@@ -113,7 +113,7 @@ struct range_data_source {
 
     static raze_always_inline auto to_raw_range(
         unchecked_iterator_type it, unchecked_sentinel_type sent)
-            requires std::contiguous_iterator<unchecked_iterator_type>
+            requires(std::contiguous_iterator<unchecked_iterator_type>)
     {
         return std::pair{ std::to_address(it), std::to_address(sent) };
     }
@@ -218,7 +218,7 @@ struct iter_data_source {
 
     static raze_always_inline auto to_raw_range(
         unchecked_iterator_type it, unchecked_sentinel_type sent)
-            requires std::contiguous_iterator<unchecked_iterator_type>
+            requires(std::contiguous_iterator<unchecked_iterator_type>)
     {
         return std::pair{ std::to_address(it), std::to_address(sent) };
     }
@@ -293,7 +293,7 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
 
     static raze_always_inline auto to_raw_range(
         unchecked_iterator_type it, unchecked_sentinel_type)
-            requires std::contiguous_iterator<unchecked_base_iterator_type>
+            requires(std::contiguous_iterator<unchecked_base_iterator_type>)
     {
         auto* const first = std::to_address(it.base());
         return std::pair{ first, first + it.count() };

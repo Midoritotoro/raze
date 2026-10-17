@@ -5,7 +5,7 @@ set(RAZE_TEST_ARCH_CONFIGS
     "SSE41|-msse4.1| |RAZE_HAS_SSE41_SUPPORT=1"
     "SSE42|-msse4.2| |RAZE_HAS_SSE42_SUPPORT=1"
     "AVX|-mavx|/arch:AVX|RAZE_HAS_AVX_SUPPORT=1"
-    "FMA3|-mfma|/arch:AVX|RAZE_HAS_FMA3_SUPPORT=1"
+    "FMA3|-mfma -mavx|/arch:AVX|RAZE_HAS_FMA3_SUPPORT=1"
     "AVX2|-mavx2|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
     "AVX2BMI2|-mavx2 -mbmi2 -mbmi|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
     "AVX512F|-mavx512f|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1"
@@ -728,12 +728,12 @@ function(raze_generate_test root main_source rootpath file)
             ${main_target}
             PRIVATE
                 ${flags_list}
-                 -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always  -Wno-ignored-attributes 
+                 -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always  -Wno-ignored-attributes  -Wno-reserved-macro-identifier
                 -Wno-ignored-attributes
         )   
     else()
         target_compile_options(${main_target} PRIVATE
-           
+           -Wno-reserved-macro-identifier
         )
     endif()
 
@@ -959,11 +959,9 @@ function(raze_configure_test_target target)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${target} PRIVATE /bigobj /permissive- /Od /MP)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(${target} PRIVATE   -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always   
-                -Wno-ignored-attributes -Wno-psabi
-                -Wno-ignored-attributes)    
+        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier)    
     else()
-        target_compile_options(${target} PRIVATE  -Wno-psabi)
+        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier)
     endif()
 endfunction()
 
@@ -980,11 +978,9 @@ function(raze_configure_default_arch_test_target target)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${target} PRIVATE /bigobj /permissive- /Od /MP)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(${target} PRIVATE -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always   
-                -Wno-ignored-attributes -Wno-psabi
-                -Wno-ignored-attributes)    
+        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier)    
     else()
-        target_compile_options(${target} PRIVATE  )
+        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier )
     endif()
 endfunction()
 

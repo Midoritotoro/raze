@@ -16,7 +16,7 @@ constexpr raze_always_inline auto make_insert_mask() noexcept {
     constexpr auto length = (sizeof(V) / sizeof(T)) << 1;
     auto mask = insert_mask<V, T>();
 
-    for (auto i = 0; i < length; ++i)
+    for (sizetype i = 0; i < length; ++i)
         mask.array[i] = 0;
 
     mask.offset = length >> 1;

@@ -105,9 +105,13 @@ template <arch::ISA ISA>
 concept has_avx = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::AVX);
 
 template <arch::ISA ISA>
-concept has_fma3 = static_cast<int>(ISA) == static_cast<int>(arch::ISA::FMA3) 
-    || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX2FMA3)
-    || static_cast<int>(ISA) >= static_cast<int>(arch::ISA::AVX512F);
+concept has_fma3 = 
+#if RAZE_HAS_FMA3_SUPPORT
+    true;
+#else
+    static_cast<int>(ISA) == static_cast<int>(arch::ISA::FMA3) 
+        || static_cast<int>(ISA) == static_cast<int>(arch::ISA::AVX2FMA3);
+#endif
 
 template <arch::ISA ISA>
 concept has_avx2 = static_cast<int>(ISA) >= static_cast<int>(arch::ISA::AVX2);

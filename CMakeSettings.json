@@ -56,9 +56,38 @@
       "inheritEnvironments": [ "clang_cl_x64_x64" ]
     },
     {
-      "name": "Mingw64-Debug",
+      "name": "GCC-Debug",
       "generator": "Ninja",
       "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [],
+      "environmentVariables": [
+        {
+          "name": "PATH",
+          "value": "D:/Libraries/win64/msys64/ucrt64/bin;${env.SystemRoot}/system32;${env.SystemRoot}"
+        }
+      ],
+      "variables": [
+        {
+          "name": "CMAKE_C_COMPILER",
+          "value": "gcc.exe",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_CXX_COMPILER",
+          "value": "g++.exe",
+          "type": "FILEPATH"
+        }
+      ]
+    },
+    {
+      "name": "GCC-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
       "buildRoot": "${projectDir}\\out\\build\\${name}",
       "installRoot": "${projectDir}\\out\\install\\${name}",
       "cmakeCommandArgs": "",

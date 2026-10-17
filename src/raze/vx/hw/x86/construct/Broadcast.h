@@ -83,9 +83,9 @@ raze_always_inline V broadcast_(WrappedType value) noexcept
 		else if constexpr (epi16<T> || epu16<T>) {
 			if constexpr (has_avx512bw<ISA>) return as<V>(_mm512_set1_epi16(value));
 			else {
-				i32 x = value;
+				u32 x = static_cast<u16>(value);
 				x |= x << 16;
-				return as<V>(_mm512_set1_epi32(x));
+				return as<V>(_mm512_set1_epi32(static_cast<i32>(x)));
 			}
 		}
 		else if constexpr (epi8<T> || epu8<T>) {

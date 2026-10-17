@@ -16,7 +16,7 @@ raze_nodiscard raze_always_inline V div_fallback_(V x, V y) noexcept {
 		return x / y;
 	}
 	else {
-		constexpr auto size = sizeof(V) / sizeof(T);
+		constexpr sizetype size = sizeof(V) / sizeof(T);
 
 		alignas(sizeof(V)) T dest[size];
 
@@ -26,7 +26,7 @@ raze_nodiscard raze_always_inline V div_fallback_(V x, V y) noexcept {
 		store_(left, x, aligned_policy{});
 		store_(right, y, aligned_policy{});
 
-		for (auto i = 0; i < size; ++i)
+		for (sizetype i = 0; i < size; ++i)
 			dest[i] = left[i] / right[i];
 
 		return load_<ISA, V>(dest, aligned_policy{});
@@ -39,14 +39,14 @@ raze_nodiscard raze_always_inline V div_fallback_(V x, T y) noexcept {
 		return x / y;
 	}
 	else {
-		constexpr auto size = sizeof(V) / sizeof(T);
+		constexpr sizetype size = sizeof(V) / sizeof(T);
 
 		alignas(sizeof(V)) T dest[size];
 		alignas(sizeof(V)) T left[size];
 
 		store_(left, x, aligned_policy{});
 
-		for (auto i = 0; i < size; ++i)
+		for (sizetype i = 0; i < size; ++i)
 			dest[i] = left[i] / y;
 
 		return load_<ISA, V>(dest, aligned_policy{});

@@ -30,7 +30,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
         else if constexpr (epu64<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm_cmplt_epu64_mask(x, y);
             else if constexpr (has_sse42<ISA>) {
-                const auto sign = _mm_set1_epi64x(0x8000000000000000);
+                const auto sign = _mm_set1_epi64x(0x8000000000000000ll);
                 return _mm_cmpgt_epi64(_mm_xor_si128(y, sign), _mm_xor_si128(x, sign));
             }
             else {
@@ -87,7 +87,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
         else if constexpr (epu64<T>) {
             if constexpr (has_avx512vl<ISA>) return _mm256_cmplt_epu64_mask(x, y);
             else if constexpr (has_avx2<ISA>) {
-                const auto sign = _mm256_set1_epi64x(0x8000000000000000);
+                const auto sign = _mm256_set1_epi64x(0x8000000000000000ll);
                 return _mm256_cmpgt_epi64(_mm256_xor_si256(y, sign), _mm256_xor_si256(x, sign));
             }
             else return avx_less_fallback_<T>(x, y);
@@ -113,7 +113,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
         else if constexpr (epu16<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm256_cmplt_epu16_mask(x, y);
             else if constexpr (has_avx2<ISA>) {
-                const auto sign = _mm256_set1_epi16(0x8000);
+                const auto sign = _mm256_set1_epi16(i16(0x8000));
                 return _mm256_cmpgt_epi16(_mm256_xor_si256(y, sign), _mm256_xor_si256(x, sign));
             }
             else return avx_less_fallback_<T>(x, y);
@@ -126,7 +126,7 @@ raze_always_inline auto less_(V x, V y) noexcept {
         else if constexpr (epu8<T>) {
             if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return _mm256_cmplt_epu8_mask(x, y);
             else if constexpr (has_avx2<ISA>) {
-                const auto sign = _mm256_set1_epi8(0x80);
+                const auto sign = _mm256_set1_epi8(i8(0x80));
                 return _mm256_cmpgt_epi8(_mm256_xor_si256(y, sign), _mm256_xor_si256(x, sign));
             }
             else return avx_less_fallback_<T>(x, y);

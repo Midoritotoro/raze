@@ -59,8 +59,8 @@
 #endif // !defined(RAZE_HAS_AVX2_SUPPORT)
 
 #if !defined(RAZE_HAS_FMA3_SUPPORT)
-#  if defined(__FMA3__)
-#    define RAZE_HAS_FMA3_SUPPORT 1
+#  if defined(__FMA__)
+#    define RAZE_HAS_FMA3_SUPPORT 1 
 #  else
 #    define RAZE_HAS_FMA3_SUPPORT 0
 #  endif // defined(__FMA3__)

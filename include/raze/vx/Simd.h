@@ -42,7 +42,7 @@ concept correct_simd_binary_op = simd_type<V> &&
 */
 
 template <class T, class Abi>
-class __attribute__((may_alias)) simd {
+class simd {
     static_assert(traits::is_vector_type_supported_v<std::decay_t<T>>, "Unsupported element type. ");
 public:
     static constexpr auto isa = Abi::isa;
@@ -348,7 +348,7 @@ public:
         return _storage;
     }
 
-    raze_nodiscard raze_always_inline const storage_type& __storage() const noexcept {
+    raze_nodiscard raze_always_inline storage_type __storage() const noexcept {
         return _storage;
     }
 

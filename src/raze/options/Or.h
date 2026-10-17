@@ -11,8 +11,8 @@ struct or_ {
     using alternative_type = Value;
     using condition_type = Condition;
 
-    constexpr or_(const Condition& condition, const Value& v) noexcept:
-        _condition(condition), _alternative(v)
+    constexpr or_(const Condition& c, const Value& v) noexcept:
+        _cond(c), _alternative(v)
     {}
 
     constexpr or_(const or_&) noexcept = default;
@@ -26,10 +26,10 @@ struct or_ {
     }
 
     raze_always_inline Condition mask() const noexcept {
-        return _condition;
+        return _cond;
     }
 
-    Condition _condition;
+    Condition _cond;
     Value _alternative;
 };
 

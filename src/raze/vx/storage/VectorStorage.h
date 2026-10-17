@@ -116,21 +116,21 @@ public:
         else return for_each_tuple_any_of_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    raze_always_inline void insert(i32 i, T v) noexcept {
-        raze_debug_assert(i >= 0 && i < Abi::size);
+    raze_always_inline void insert(sizetype i, T v) noexcept {
+        raze_debug_assert(i < Abi::size);
 
         if constexpr (use_native) insert_<Abi::isa>(ustorage(_data), i, v);
-        else visit_chunk_by_index(_data, i, [&](auto& chunk, i32 lane) raze_always_inline_lambda {
+        else visit_chunk_by_index(_data, i, [&](auto& chunk, sizetype lane) raze_always_inline_lambda {
             insert_<Abi::isa>(ustorage(chunk), lane, v);
         });
     }
 
-    raze_nodiscard raze_always_inline T extract(i32 i) const noexcept {
-        raze_debug_assert(i >= 0 && i < Abi::size);
+    raze_nodiscard raze_always_inline T extract(sizetype i) const noexcept {
+        raze_debug_assert(i < Abi::size);
         T r{};
 
         if constexpr (use_native) r = extract_<Abi::isa, T>(ustorage(_data), i);
-        else visit_chunk_by_index(_data, i, [&](const auto& chunk, i32 lane) raze_always_inline_lambda {
+        else visit_chunk_by_index(_data, i, [&](const auto& chunk, sizetype lane) raze_always_inline_lambda {
             r = extract_<Abi::isa, T>(ustorage(chunk), lane);
         });
 
@@ -139,7 +139,7 @@ public:
 
     template <sizetype I>
     raze_nodiscard raze_always_inline T extract(std::integral_constant<sizetype, I> i) const noexcept {
-        static_assert(i >= 0 && i < Abi::size);
+        static_assert(i < Abi::size);
         T r{};
 
         if constexpr (use_native) r = extract_<Abi::isa, T>(ustorage(_data), i);

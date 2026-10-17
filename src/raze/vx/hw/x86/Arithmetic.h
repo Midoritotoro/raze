@@ -12,3 +12,4 @@
 #include <src/raze/vx/hw/x86/arithmetic/Sub.h>
 #include <src/raze/vx/hw/x86/arithmetic/VerticalMax.h>
 #include <src/raze/vx/hw/x86/arithmetic/VerticalMin.h>
+#include <src/raze/vx/hw/x86/arithmetic/Convert.h>

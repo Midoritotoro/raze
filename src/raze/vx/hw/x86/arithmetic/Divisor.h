@@ -48,16 +48,15 @@ public:
 private:
 	raze_always_inline void from_divisor(i32 divisor) noexcept {
 		auto shift = i32(0), multiplier = i32(0);
-		const auto absolute_divisor = std::abs(divisor);
 
 		if (static_cast<u32>(divisor) == 0x80000000u) {
 			multiplier = 0x80000001;
 			shift = 30;
 		}
-		else if (absolute_divisor > 1) {
-			const auto leading_zeros = scan_reverse_(static_cast<u32>(absolute_divisor - 1));
+		else if (const auto absolute_divisor = std::abs(divisor); absolute_divisor > 1) {
+			const auto log2 = scan_reverse_(static_cast<u32>(absolute_divisor - 1));
 
-			shift = leading_zeros;
+			shift = log2;
 			multiplier = i32((i64(1) << (32 + shift)) / absolute_divisor - ((i64(1) << 32) - 1));
 		}
 		else {
@@ -126,13 +125,13 @@ private:
 				break;
 			default:
 				{
-					const auto leading_zeros = scan_reverse_(static_cast<u32>(divisor - 1u)) + 1;
+					const auto log2 = scan_reverse_(static_cast<u32>(divisor - 1u)) + 1;
 
 					multiplier = 1 + u32((u64(u32(
-						leading_zeros < 32 ? 1 << leading_zeros : 0) - divisor) << 32) / divisor);
+						log2 < 32 ? 1 << log2 : 0) - divisor) << 32) / divisor);
 
 					shift1 = 1; 
-					shift2 = leading_zeros - 1;
+					shift2 = log2 - 1;
 				}
 		}
 		
@@ -141,8 +140,8 @@ private:
 
 	raze_always_inline void init(u32 multiplier, i32 shift1, i32 shift2) noexcept {
 		_multiplier = _mm_set1_epi32(static_cast<i32>(multiplier));
-		_shift1		= _mm_set_epi32(0, 0, 0, shift1);
-		_shift2		= _mm_set_epi32(0, 0, 0, shift2);
+		_shift1		= _mm_cvtsi32_si128(shift1);
+		_shift2		= _mm_cvtsi32_si128(shift2);
 	}
 
 	__m128i _shift2;
@@ -184,9 +183,9 @@ private:
 			shift = 14;
 		}
 		else if (absolute_divisor > 1) {
-			const auto leading_zeros = scan_reverse_(static_cast<u16>(absolute_divisor - 1));
+			const auto log2 = scan_reverse_(static_cast<u16>(absolute_divisor - 1));
 
-			shift = leading_zeros;
+			shift = log2;
 			multiplier = i32((i32(1) << (16 + shift)) / absolute_divisor - ((i64(1) << 16) - 1));
 		}
 		else {
@@ -253,13 +252,13 @@ private:
 				break;
 			default:
 				{
-					const auto leading_zeros = scan_reverse_(static_cast<u16>(divisor - 1u)) + 1;
+					const auto log2 = scan_reverse_(static_cast<u16>(divisor - 1u)) + 1;
 
-					const auto power = u16(1 << leading_zeros);
+					const auto power = u16(1 << log2);
 
 					multiplier = 1u + u16((u32(power - divisor) << 16) / divisor);
 					shift1 = 1; 
-					shift2 = leading_zeros - 1;
+					shift2 = log2 - 1;
 				}
 		}
 		
@@ -268,8 +267,8 @@ private:
 
 	raze_always_inline void init(u32 multiplier, i32 shift1, i32 shift2) noexcept {
 		_multiplier = _mm_set1_epi16(static_cast<i16>(multiplier));
-		_shift1		= _mm_setr_epi32(shift1, 0, 0, 0);
-		_shift2		= _mm_setr_epi32(shift2, 0, 0, 0);
+		_shift1		= _mm_cvtsi32_si128(shift1);
+		_shift2		= _mm_cvtsi32_si128(shift2);
 	}
 
 	__m128i _shift1;

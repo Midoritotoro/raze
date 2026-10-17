@@ -13,11 +13,11 @@ class simd_mask_reference {
 public:
 	using value_type = bool;
 
-	simd_mask_reference(Mask& mask, i32 i) noexcept :
+	simd_mask_reference(Mask& mask, sizetype i) noexcept :
 		_reference(mask),
 		_index(i)
 	{
-		raze_debug_assert(i >= 0 && i < Mask::size());
+		raze_debug_assert(i < Mask::size());
 	}
 
 	raze_always_inline operator value_type() const noexcept {
@@ -130,7 +130,7 @@ private:
 	}
 
 	Mask& _reference;
-	i32 _index = 0;
+	sizetype _index = 0;
 };
 
 __RAZE_VX_NAMESPACE_END

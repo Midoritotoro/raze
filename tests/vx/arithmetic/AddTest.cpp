@@ -29,9 +29,9 @@ RTTS_CASE_TPL("raze::vx::add", rtts::simd::all_simd_infos)
     auto r2 = raze::vx::add[m](a, b);
     auto r3 = raze::vx::add[m, src](a, b);
 
-    RTTS_ALL_VALIDATE_BITS(r1, [&](auto i) { return T(arrA[i] + arrB[i]); });
-    RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? T(arrA[i] + arrB[i]) : T(0); });
-    RTTS_ALL_VALIDATE_BITS(r3, [&](auto i) { return m[i] ? T(arrA[i] + arrB[i]) : arrSrc[i]; });
+    RTTS_ALL_VALIDATE_VECTOR(r1, [&](auto i) { return T(arrA[i] + arrB[i]); });
+    RTTS_ALL_VALIDATE_VECTOR(r2, [&](auto i) { return m[i] ? T(arrA[i] + arrB[i]) : T(0); });
+    RTTS_ALL_VALIDATE_VECTOR(r3, [&](auto i) { return m[i] ? T(arrA[i] + arrB[i]) : arrSrc[i]; });
 };
 
 RAZE_TEST_NAMESPACE_END

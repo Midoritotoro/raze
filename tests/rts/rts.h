@@ -299,22 +299,22 @@ namespace rtts {
         }(EXPR)
 
 #define RTTS_EQUAL(LHS, RHS) \
-        [&](auto&& a, auto&& b) { \
-            if (a == b) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
-            else { RTTS_FAIL("Expected: " << #LHS << " == " << #RHS << " but " << ::rtts::as_string(a) << " != " << ::rtts::as_string(b)); return ::rtts::detail::logger{}; } \
+        [&](auto&& rtts_a, auto&& rtts_b) { \
+            if (rtts_a == rtts_b) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
+            else { RTTS_FAIL("Expected: " << #LHS << " == " << #RHS << " but " << ::rtts::as_string(rtts_a) << " != " << ::rtts::as_string(rtts_b)); return ::rtts::detail::logger{}; } \
         }(LHS, RHS)
 
 #define RTTS_ALL_EQUAL(LHS, RHS) \
-        [&](auto const& a, auto const& b) { \
-            if (!std::ranges::equal(a, b)) { RTTS_FAIL("Expected: " << #LHS << " == " << #RHS << " but containers differ."); return ::rtts::detail::logger{}; } \
+        [&](auto const& rtts_a, auto const& rtts_b) { \
+            if (!std::ranges::equal(rtts_a, rtts_b)) { RTTS_FAIL("Expected: " << #LHS << " == " << #RHS << " but containers differ."); return ::rtts::detail::logger{}; } \
             else { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
         }(LHS, RHS)
 
 #define RTTS_ALL_VALIDATE(LHS, GEN) \
-        [&](auto const& a, auto const& b) { \
+        [&](auto const& rtts_a, auto const& rtts_b) { \
             bool ok = true; \
             size_t i = 0; \
-            for(auto const& elem : a) { if(elem != b(i)) { ok = false; break; } ++i; } \
+            for(auto const& elem : rtts_a) { if(elem != rtts_b(i)) { ok = false; break; } ++i; } \
             if(ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
             else { RTTS_FAIL("Expected: " << #LHS << " == " << #GEN << " but vectors differ."); return ::rtts::detail::logger{}; } \
         }(LHS, GEN)
@@ -342,10 +342,10 @@ namespace rtts {
     }(LHS, GEN)
 
 #define RTTS_ALL_VALIDATE_VECTOR(LHS, GEN) \
-        [&](auto const& a, auto const& b) { \
+        [&](auto const& rtts_a, auto const& rtts_b) { \
             bool ok = true; \
             size_t i = 0; \
-            for(; i < v.size(); ++i) { if(a[i] != b(i)) { ok = false; break; } } \
+            for(; i < rtts_a.size(); ++i) { if(rtts_a[i] != rtts_b(i)) { ok = false; break; } } \
             if(ok) { ::rtts::detail::global_runtime.pass(); return ::rtts::detail::logger{false}; } \
             else { RTTS_FAIL("Expected: " << #LHS << " == " << #GEN << " but vectors differ."); return ::rtts::detail::logger{}; } \
         }(LHS, GEN)
@@ -381,27 +381,123 @@ namespace rtts {
 
     namespace random {
         template <class T>
-        struct generator {
-            std::mt19937 gen;
+        struct interval {
+            T min;
+            T max;
+        };
 
-            explicit generator(unsigned seed = 42) : gen(seed) {}
+        template <class T>
+        struct domain {
+            std::vector<interval<T>> intervals;
+
+            domain() = default;
+            domain(std::initializer_list<interval<T>> list) : intervals(list) {}
+
+            static domain<T> range(T min, T max) {
+                return domain{ { min, max } };
+            }
+
+            static domain<T> standard() {
+                if constexpr (std::is_floating_point_v<T>) {
+                    return range(T(-1000), T(1000));
+                }
+                else if constexpr (std::is_signed_v<T>) {
+                    constexpr T min_v = (sizeof(T) <= 2) ? (std::numeric_limits<T>::min() + 1) : T(-10000);
+                    constexpr T max_v = (sizeof(T) <= 2) ? std::numeric_limits<T>::max() : T(10000);
+                    return range(min_v, max_v);
+                }
+                else {
+                    constexpr T max_v = (sizeof(T) <= 2) ? std::numeric_limits<T>::max() : T(20000);
+                    return range(T(0), max_v);
+                }
+            }
+
+            static domain<T> non_zero() {
+                if constexpr (std::is_floating_point_v<T>) {
+                    return domain{ { T(-1000), T(-0.1) },{ T(0.1), T(1000) } };
+                }
+                else if constexpr (std::is_signed_v<T>) {
+                    constexpr T min_v = (sizeof(T) <= 2) ? (std::numeric_limits<T>::min() + 1) : T(-10000);
+                    constexpr T max_v = (sizeof(T) <= 2) ? std::numeric_limits<T>::max() : T(10000);
+                    return domain{ { min_v, T(-1) },{ T(1), max_v } };
+                }
+                else {
+                    constexpr T max_v = (sizeof(T) <= 2) ? std::numeric_limits<T>::max() : T(20000);
+                    return range(T(1), max_v);
+                }
+            }
+
+            static domain<T> positive() {
+                if constexpr (std::is_floating_point_v<T>) {
+                    return range(T(0.01), T(1000));
+                }
+                else {
+                    constexpr T max_v = (sizeof(T) <= 2) ? std::numeric_limits<T>::max() : T(20000);
+                    return range(T(1), max_v);
+                }
+            }
+
+            static domain<T> shift_count() {
+                static_assert(std::is_integral_v<T>, "Shift count only applies to integers");
+                return range(T(0), static_cast<T>(sizeof(T) * 8 - 1));
+            }
+        };
+
+        template <class T>
+        struct generator {
+            std::mt19937_64 rng;
+
+            explicit generator(uint64_t seed = 42) : rng(seed) {}
 
             T operator()() {
-                if constexpr (std::is_same_v<T, bool>) {
-                    return (gen() & 1) != 0;
-                } else if constexpr (std::is_integral_v<T>) {
-                    if constexpr (std::is_signed_v<T>) {
-                        std::uniform_int_distribution<long long> dist(-1000, 1000);
-                        return static_cast<T>(dist(gen));
-                    } else {
-                        std::uniform_int_distribution<unsigned long long> dist(0, 2000);
-                        return static_cast<T>(dist(gen));
+                return sample(domain<T>::standard());
+            }
+
+            T operator()(const domain<T>& dom) {
+                return sample(dom);
+            }
+
+            template <std::ranges::range R>
+            void fill(R&& range, const domain<T>& dom = domain<T>::standard()) {
+                for (auto& elem : range) {
+                    elem = sample(dom);
+                }
+            }
+
+        private:
+            T sample(const domain<T>& dom) {
+                if constexpr (std::is_floating_point_v<T>) {
+                    double total_len = 0.0;
+                    for (const auto& iv : dom.intervals) total_len += (iv.max - iv.min);
+
+                    std::uniform_real_distribution<double> dist(0.0, total_len);
+                    double pick = dist(rng);
+
+                    for (const auto& iv : dom.intervals) {
+                        double len = iv.max - iv.min;
+                        if (pick <= len) return static_cast<T>(iv.min + pick);
+                        pick -= len;
                     }
-                } else if constexpr (std::is_floating_point_v<T>) {
-                    std::uniform_real_distribution<T> dist(T(-1000), T(1000));
-                    return dist(gen);
-                } else {
-                    static_assert(std::is_arithmetic_v<T>, "Unsupported random type");
+                    return dom.intervals.back().max;
+                }
+                else {
+                    using DistType = std::conditional_t<(sizeof(T) < sizeof(short)),
+                        std::conditional_t<std::is_signed_v<T>, int, unsigned int>, T>;
+
+                    uint64_t total_count = 0;
+                    for (const auto& iv : dom.intervals) {
+                        total_count += static_cast<uint64_t>(DistType(iv.max) - DistType(iv.min)) + 1;
+                    }
+
+                    std::uniform_int_distribution<uint64_t> dist(0, total_count - 1);
+                    uint64_t pick = dist(rng);
+
+                    for (const auto& iv : dom.intervals) {
+                        uint64_t count = static_cast<uint64_t>(DistType(iv.max) - DistType(iv.min)) + 1;
+                        if (pick < count) return static_cast<T>(DistType(iv.min) + pick);
+                        pick -= count;
+                    }
+                    return dom.intervals.back().max;
                 }
             }
         };
@@ -608,12 +704,7 @@ namespace rtts {
             Container second;
             std::vector<T> output;
             std::vector<T> output2;
-            std::vector<T> pattern;
-            size_t pattern_size = 0;
             size_t count = 0;
-            T value_arg{};
-            T other_arg = T(17);
-            T replacement = T(42);
 
             size_t size() const { return static_cast<size_t>(std::ranges::distance(value)); }
         };
@@ -641,17 +732,13 @@ namespace rtts {
             }
 
             constexpr auto first2() const {
-                if constexpr (Counted)
-                    return std::counted_iterator(data.second.begin(), static_cast<std::ptrdiff_t>(std::ranges::distance(data.second)));
-                else
-                    return data.second.begin();
+                if constexpr (Counted) return std::counted_iterator(data.second.begin(), static_cast<std::ptrdiff_t>(std::ranges::distance(data.second)));
+                else return data.second.begin();
             }
 
             constexpr auto last2() const {
-                if constexpr (Counted)
-                    return std::default_sentinel;
-                else
-                    return data.second.end();
+                if constexpr (Counted) return std::default_sentinel;
+                else return data.second.end();
             }
 
             constexpr auto range2() const {
@@ -666,32 +753,8 @@ namespace rtts {
                 return data.output2.begin();
             }
 
-            constexpr auto pattern_first() const {
-                return data.pattern.begin();
-            }
-
-            constexpr auto pattern_last() const {
-                return data.pattern.begin() + data.pattern_size;
-            }
-
-            constexpr auto pattern_range() const {
-                return std::ranges::subrange(pattern_first(), pattern_last());
-            }
-
             constexpr size_t count() const {
                 return data.count;
-            }
-
-            constexpr auto& value() const {
-                return data.value_arg;
-            }
-
-            constexpr auto& other() const {
-                return data.other_arg;
-            }
-
-            constexpr auto& replacement() const {
-                return data.replacement;
             }
         };
 
@@ -704,7 +767,6 @@ namespace rtts {
         template <class It>
         inline constexpr bool is_counted_iterator_v = is_counted_iterator<std::remove_cvref_t<It>>::value;
 
-        // Разворачиваем ТОЛЬКО counted_iterator, не трогая обычные итераторы (у которых в GCC есть опасный .base())
         template <class It>
         constexpr auto base(It&& it) {
             if constexpr (is_counted_iterator_v<It>) return it.base();
@@ -896,14 +958,8 @@ namespace rtts {
             f.output.resize(sz);
             f.output2.resize(sz);
 
-            size_t pat_sz = std::min<size_t>(3, sz);
-            f.pattern.resize(pat_sz);
-            std::copy_n(f.value.begin(), pat_sz, f.pattern.begin());
-            f.pattern_size = pat_sz;
-
-            f.value_arg = f.value.empty() ? T{} : f.value.front();
-            f.other_arg = T(17);
-            f.replacement = T(42);
+            std::ranges::fill(f.output, 0);
+            std::ranges::fill(f.output2, 0);
 
             return f;
         }

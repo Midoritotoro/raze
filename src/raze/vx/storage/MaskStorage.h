@@ -119,7 +119,7 @@ public:
         else return for_each_tuple_any_of_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }
 
-    raze_always_inline void insert(i32 i, bool v) noexcept {
+    raze_always_inline void insert(sizetype i, bool v) noexcept {
         using Signed = typename IntegerForSizeof<T>::Signed;
         auto& data_internal = ustorage(_data);
 
@@ -129,7 +129,7 @@ public:
             else v ? math::bit_test_and_set(data_internal, i) : math::bit_test_and_reset(data_internal, i);
         }
         else {
-            visit_chunk_by_index(_data, i, [&] <class Chunk> (Chunk& chunk, i32 lane) raze_always_inline_lambda {
+            visit_chunk_by_index(_data, i, [&] <class Chunk> (Chunk& chunk, sizetype lane) raze_always_inline_lambda {
                 auto& uchunk = ustorage(chunk);
 
                 if constexpr (intrin_type<typename Chunk::unwrapped_type>) insert_<Abi::isa>(uchunk, lane, v ? Signed(-1) : Signed(0));
@@ -139,7 +139,7 @@ public:
         }
     }
 
-    raze_always_inline bool extract(i32 i) const noexcept {
+    raze_always_inline bool extract(sizetype i) const noexcept {
         using Signed = typename IntegerForSizeof<T>::Signed;
 
         if constexpr (use_native) {
@@ -150,7 +150,7 @@ public:
         else {
             bool r{};
 
-            visit_chunk_by_index(_data, i, [&] <class Chunk> (const Chunk& chunk, i32 lane) raze_always_inline_lambda {
+            visit_chunk_by_index(_data, i, [&] <class Chunk> (const Chunk& chunk, sizetype lane) raze_always_inline_lambda {
                 if constexpr (intrin_type<typename Chunk::unwrapped_type>) r = (extract_<Abi::isa, Signed>(ustorage(chunk), lane) == 0) ? false : true;
                 else if constexpr (std::is_same_v<std::remove_cvref_t<typename Chunk::unwrapped_type>, bool>) r = ustorage(chunk);
                 else r = math::bit_test(ustorage(chunk), lane);

@@ -35,9 +35,9 @@ RTTS_CASE_TPL("raze::vx::clamp", rtts::simd::all_simd_infos)
     auto r2 = raze::vx::clamp[m](v, low, high);
     auto r3 = raze::vx::clamp[m, src](v, low, high);
 
-    RTTS_ALL_VALIDATE_BITS(r1, [&](auto i) { return scalar_eval(i); });
-    RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });
-    RTTS_ALL_VALIDATE_BITS(r3, [&](auto i) { return m[i] ? scalar_eval(i) : arrSrc[i]; });
+    RTTS_ALL_VALIDATE_VECTOR(r1, [&](auto i) { return scalar_eval(i); });
+    RTTS_ALL_VALIDATE_VECTOR(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });
+    RTTS_ALL_VALIDATE_VECTOR(r3, [&](auto i) { return m[i] ? scalar_eval(i) : arrSrc[i]; });
 };
 
 RAZE_TEST_NAMESPACE_END

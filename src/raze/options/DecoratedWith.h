@@ -23,8 +23,7 @@ struct decorated_with:
             this->process(values, opts);
         })
     {
-        auto values = static_cast<const OptionsValues&>(*this);
-        return process(values, opts);
+        return this->process(this->options(), opts);
     }
 
     raze_nodiscard constexpr raze_always_inline auto options() const noexcept {
