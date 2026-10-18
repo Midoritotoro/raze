@@ -2,6 +2,7 @@
 
 #include <raze/options/Options.h>
 #include <src/raze/vx/Concepts.h>
+#include <src/raze/vx/Storage.h>
 #include <tuple>
 #include <utility>
 #include <type_traits>
@@ -13,11 +14,9 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class T>
-struct is_std_tuple : std::false_type {};
-
-template <class... Ts>
-struct is_std_tuple<std::tuple<Ts...>> : std::true_type {};
+struct saturated_mode {};
+inline constexpr auto saturated = raze::options::flag(saturated_mode{});
+struct saturated_option : raze::options::exact_option<saturated> {};
 
 template <class R>
 struct reg_count {
@@ -39,12 +38,6 @@ raze_always_inline auto get_src_chunk(const V& x) noexcept {
     return ustorage(chunk);
 }
 
-template <class DstChunk, class Reg>
-raze_always_inline void assign_chunk(DstChunk& dst, Reg reg) noexcept {
-    using DstStorage = std::remove_cvref_t<decltype(ustorage(dst))>;
-    if constexpr (intrin_type<DstStorage>) ustorage(dst) = as<DstStorage>(reg);
-    else ustorage(dst) = reg;
-}
 
 template <sizetype Idx, class V, class To>
 consteval sizetype get_chunk_dst_offset() {
@@ -53,9 +46,9 @@ consteval sizetype get_chunk_dst_offset() {
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
-        return [] <sizetype... Is> (std::index_sequence<Is...>) {
-            return (reg_count_v<deduce_convert_return_type<Abi::isa, Value, To, 
-                decltype(get_src_chunk<Is>(std::declval<const V&>()))>> + ...);
+        return[] <sizetype... Is> (std::index_sequence<Is...>) {
+            return (reg_count_v<deduce_convert_return_type<Abi::isa, Value, To,
+                decltype(get_src_chunk<Is>(std::declval<const V&>()))>> +...);
         }(std::make_index_sequence<Idx>{});
     }
 }
@@ -75,21 +68,21 @@ consteval bool chunk_size_matches() {
     using InChunk = decltype(get_src_chunk<Idx>(std::declval<const V&>()));
     using OutRegs = deduce_convert_return_type<Abi::isa, Value, To, InChunk>;
 
-    if constexpr (is_std_tuple<OutRegs>::value) {
-        return [] <sizetype... Ks> (std::index_sequence<Ks...>) {
+    if constexpr (vx::is_std_tuple_v<OutRegs>) {
+        return[] <sizetype... Ks> (std::index_sequence<Ks...>) {
             return ((sizeof(std::tuple_element_t<Ks, OutRegs>) ==
-                     sizeof(std::remove_cvref_t<decltype(ustorage(std::declval<Result&>().template __get<offset + Ks>()))>)) && ...);
+                sizeof(std::remove_cvref_t<decltype(ustorage(std::declval<Result&>().template __get<offset + Ks>()))>)) && ...);
         }(std::make_index_sequence<std::tuple_size_v<OutRegs>>{});
-    } 
+    }
     else {
         using DstChunk = std::remove_cvref_t<decltype(ustorage(std::declval<Result&>().template __get<offset>()))>;
         return sizeof(OutRegs) == sizeof(DstChunk);
     }
 }
 
+
 template <class V, class Result>
 consteval bool check_all_chunk_sizes_match() {
-    using Value = typename V::value_type;
     using To = typename Result::value_type;
 
     constexpr sizetype num_src = V::__chunks_count();
@@ -104,10 +97,21 @@ consteval bool check_all_chunk_sizes_match() {
     }
 }
 
+template <bool Saturated, sizetype I, class V, class T, class Dst>
+raze_always_inline void convert_chunk_into(Dst& dst, const V& x) noexcept {
+    using Value = typename V::value_type;
+    using Abi = typename V::abi_type;
+
+    constexpr sizetype offset = get_chunk_dst_offset<I, V, T>();
+    auto in_reg = get_src_chunk<I>(x);
+    auto r = convert_<Abi::isa, Saturated, Value, T>(in_reg);
+    assign_regs<offset>(dst, std::move(r)); 
+}
+
 template <arithmetic_type T>
 struct configurable_convert_t {
     template <class Options>
-    struct convert : options::conditional_callable<convert, Options> {
+    struct convert : options::conditional_callable<convert, Options, saturated_option> {
         template <simd_type V>
         raze_nodiscard raze_always_inline auto operator()(const V& x) const noexcept {
             return options::dispatch_call(*this, x);
@@ -115,34 +119,19 @@ struct configurable_convert_t {
 
         template <simd_type V>
         static raze_always_inline auto deferred_call(auto, const V& x) noexcept {
-            using Value = typename V::value_type;
             using Abi = typename V::abi_type;
             using ResultSimd = simd<T, Abi>;
 
             ResultSimd res(uninitialized);
 
             constexpr sizetype num_src_chunks = V::__chunks_count();
-            constexpr bool can_fast_convert = check_all_chunk_sizes_match<V, ResultSimd>();
+            constexpr bool     can_fast_convert = check_all_chunk_sizes_match<V, ResultSimd>();
 
             if constexpr (can_fast_convert) {
                 [&] <sizetype... Is> (std::index_sequence<Is...>) raze_always_inline_lambda {
-                    ([&] () raze_always_inline_lambda {
-                        constexpr sizetype offset = get_chunk_dst_offset<Is, V, T>();
-
-                        auto in_reg = get_src_chunk<Is>(x);
-                        auto r = convert_<Abi::isa, Value, T>(in_reg);
-                    
-                        using RetT = decltype(r);
-
-                        if constexpr (is_std_tuple<RetT>::value) {
-                            [&] <sizetype... Ks> (std::index_sequence<Ks...>) raze_always_inline_lambda {
-                                (assign_chunk(res.template __get<offset + Ks>(), std::get<Ks>(std::move(r))), ...);
-                            }(std::make_index_sequence<std::tuple_size_v<RetT>>{});
-                        }
-                        else assign_chunk(res.template __get<offset>(), r);
-                    }(), ...);
+                    (convert_chunk_into<Options::contains(saturated), Is, V, T>(res, x), ...);
                 }(std::make_index_sequence<num_src_chunks>{});
-            } 
+            }
             else {
                 for (sizetype i = 0; i < Abi::size; ++i)
                     res[i] = static_cast<T>(x[i]);
@@ -153,7 +142,7 @@ struct configurable_convert_t {
     };
 };
 
-template <arithmetic_type T> 
+template <arithmetic_type T>
 constexpr inline auto convert = options::functor<configurable_convert_t<T>::template convert>;
 
-__RAZE_VX_NAMESPACE_END
+__RAZE_VX_NAMESPACE_END 

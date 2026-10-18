@@ -18,12 +18,4 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 
-struct saturated_mode {};
-
-inline constexpr auto saturated = raze::options::flag(saturated_mode{});
-
-struct saturated_option :
-	raze::options::exact_option<saturated>
-{};
-
 __RAZE_VX_NAMESPACE_END

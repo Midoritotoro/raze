@@ -27,6 +27,35 @@ constexpr auto& get(T& v) noexcept {
     return v;
 }
 
+template <class T> struct is_std_tuple : std::false_type {};
+template <class... Ts> struct is_std_tuple<std::tuple<Ts...>> : std::true_type {};
+template <class T> inline constexpr bool is_std_tuple_v = is_std_tuple<std::remove_cvref_t<T>>::value;
+
+template <class Chunk, class Reg>
+raze_always_inline void assign_chunk(Chunk& slot, Reg&& reg) noexcept {
+    auto& s = ustorage(slot);
+    using S = std::remove_cvref_t<decltype(s)>;
+    if constexpr (intrin_type<S>) s = as<S>(std::forward<Reg>(reg));
+    else s = std::forward<Reg>(reg);
+}
+
+template <sizetype Offset, class Dst, class Reg>
+raze_always_inline void assign_regs(Dst& dst, Reg&& reg) noexcept
+    requires (!is_std_tuple_v<std::remove_cvref_t<Reg>>)
+{
+    assign_chunk(dst.template __get<Offset>(), std::forward<Reg>(reg));
+}
+
+template <sizetype Offset, class Dst, class Tuple>
+raze_always_inline void assign_regs(Dst& dst, Tuple&& regs) noexcept
+    requires(is_std_tuple_v<std::remove_cvref_t<Tuple>>)
+{
+    using T = std::remove_cvref_t<Tuple>;
+    [&] <sizetype... Ks> (std::index_sequence<Ks...>) raze_always_inline_lambda {
+        (assign_chunk(dst.template __get<Offset + Ks>(), std::get<Ks>(std::forward<Tuple>(regs))), ...);
+    }(std::make_index_sequence<std::tuple_size_v<T>>{});
+}
+
 template <class Tuple, class F>
 raze_always_inline void visit_chunk_by_index(Tuple& tuple, sizetype i, F&& f) noexcept
     requires(is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
