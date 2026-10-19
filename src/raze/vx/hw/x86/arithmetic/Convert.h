@@ -257,12 +257,12 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                     if constexpr (frm_sgn) return _mm512_cvtepi8_epi16(x);
                     else return _mm512_cvtepu8_epi16(x);
                 }
-                //else if constexpr (y_to_z && has_avx2_v) {
-                //    auto lo = _mm256_castsi256_si128(x);
-                //    auto hi = _mm256_extracti128_si256(x, 1);
-                //    if constexpr (frm_sgn) return std::tuple{ _mm256_cvtepi8_epi16(lo), _mm256_cvtepi8_epi16(hi) };
-                //    else return std::tuple{ _mm256_cvtepu8_epi16(lo), _mm256_cvtepu8_epi16(hi) };
-                //}
+                else if constexpr (y_to_z && has_avx2_v) {
+                    auto lo = _mm256_castsi256_si128(x);
+                    auto hi = _mm256_extracti128_si256(x, 1);
+                    if constexpr (frm_sgn) return pack_or_tuple<ISA>(_mm256_cvtepi8_epi16(lo), _mm256_cvtepi8_epi16(hi));
+                    else return pack_or_tuple<ISA>(_mm256_cvtepu8_epi16(lo), _mm256_cvtepu8_epi16(hi));
+                }
                 else if constexpr (sizeof(R) == 128 && has_bw) {
                     auto x0 = _mm512_castsi512_si128(x);
                     auto x1 = _mm512_extracti32x4_epi32(x, 1);
@@ -1585,51 +1585,43 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                             _mm256_cvtepi32_pd(_mm256_castsi256_si128(hi32)),
                             _mm256_cvtepi32_pd(_mm256_extracti128_si256(hi32, 1)) };
                     }
-                    //else if constexpr (sizeof(R) == 128 && has_avx<ISA> && has_s41) {
-                    //    __m128i e0, e1, e2, e3;
-                    //    if constexpr (frm_sgn) {
-                    //        e0 = _mm_cvtepi8_epi32(x);
-                    //        e1 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 4));
-                    //        e2 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 8));
-                    //        e3 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 12));
-                    //    }
-                    //    else {
-                    //        e0 = _mm_cvtepu8_epi32(x);
-                    //        e1 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 4));
-                    //        e2 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 8));
-                    //        e3 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 12));
-                    //    }
-                    //    __m256d q0 = _mm256_cvtepi32_pd(e0);
-                    //    __m256d q1 = _mm256_cvtepi32_pd(_mm_srli_si128(e0, 8));
-                    //    __m256d q2 = _mm256_cvtepi32_pd(e1);
-                    //    __m256d q3 = _mm256_cvtepi32_pd(_mm_srli_si128(e1, 8));
-                    //    __m256d q4 = _mm256_cvtepi32_pd(e2);
-                    //    __m256d q5 = _mm256_cvtepi32_pd(_mm_srli_si128(e2, 8));
-                    //    __m256d q6 = _mm256_cvtepi32_pd(e3);
-                    //    __m256d q7 = _mm256_cvtepi32_pd(_mm_srli_si128(e3, 8));
-                    //    return std::tuple{ q0, q1, q2, q3, q4, q5, q6, q7 };
-                    //}
-                    //else if constexpr (sizeof(R) == 128 && has_s41) {
-                    //    __m128i e0, e1, e2, e3;
-                    //    if constexpr (frm_sgn) {
-                    //        e0 = _mm_cvtepi8_epi32(x);
-                    //        e1 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 4));
-                    //        e2 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 8));
-                    //        e3 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 12));
-                    //    }
-                    //    else {
-                    //        e0 = _mm_cvtepu8_epi32(x);
-                    //        e1 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 4));
-                    //        e2 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 8));
-                    //        e3 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 12));
-                    //    }
-                    //    return std::tuple{
-                    //        _mm_cvtepi32_pd(e0), _mm_cvtepi32_pd(_mm_srli_si128(e0, 8)),
-                    //        _mm_cvtepi32_pd(e1), _mm_cvtepi32_pd(_mm_srli_si128(e1, 8)),
-                    //        _mm_cvtepi32_pd(e2), _mm_cvtepi32_pd(_mm_srli_si128(e2, 8)),
-                    //        _mm_cvtepi32_pd(e3), _mm_cvtepi32_pd(_mm_srli_si128(e3, 8)) };
-                    //}
-                   /* else if constexpr (sizeof(R) == 128 && has_sse2<ISA>) {
+                    else if constexpr (sizeof(V) == 16 && sizeof(R) == 128 && has_avx<ISA> && has_s41) {
+                        __m128i e0, e1, e2, e3;
+                        if constexpr (frm_sgn) {
+                            e0 = _mm_cvtepi8_epi32(x);
+                            e1 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 4));
+                            e2 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 8));
+                            e3 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 12));
+                        }
+                        else {
+                            e0 = _mm_cvtepu8_epi32(x);
+                            e1 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 4));
+                            e2 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 8));
+                            e3 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 12));
+                        }
+                        return std::tuple{ _mm256_cvtepi32_pd(e0), _mm256_cvtepi32_pd(e1), _mm256_cvtepi32_pd(e2), _mm256_cvtepi32_pd(e3) };
+                    }
+                    else if constexpr (sizeof(V) == 16 && sizeof(R) == 128 && has_s41) {
+                        __m128i e0, e1, e2, e3;
+                        if constexpr (frm_sgn) {
+                            e0 = _mm_cvtepi8_epi32(x);
+                            e1 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 4));
+                            e2 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 8));
+                            e3 = _mm_cvtepi8_epi32(_mm_srli_si128(x, 12));
+                        }
+                        else {
+                            e0 = _mm_cvtepu8_epi32(x);
+                            e1 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 4));
+                            e2 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 8));
+                            e3 = _mm_cvtepu8_epi32(_mm_srli_si128(x, 12));
+                        }
+                        return std::tuple{
+                            _mm_cvtepi32_pd(e0), _mm_cvtepi32_pd(_mm_srli_si128(e0, 8)),
+                            _mm_cvtepi32_pd(e1), _mm_cvtepi32_pd(_mm_srli_si128(e1, 8)),
+                            _mm_cvtepi32_pd(e2), _mm_cvtepi32_pd(_mm_srli_si128(e2, 8)),
+                            _mm_cvtepi32_pd(e3), _mm_cvtepi32_pd(_mm_srli_si128(e3, 8)) };
+                    }
+                   else if constexpr (sizeof(V) && sizeof(R) == 128 && has_sse2<ISA>) {
                         __m128i lo16, hi16;
                         if constexpr (frm_sgn) {
                             lo16 = _mm_srai_epi16(_mm_unpacklo_epi8(x, x), 8);
@@ -1659,40 +1651,23 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                             _mm_cvtepi32_pd(e1), _mm_cvtepi32_pd(_mm_srli_si128(e1, 8)),
                             _mm_cvtepi32_pd(e2), _mm_cvtepi32_pd(_mm_srli_si128(e2, 8)),
                             _mm_cvtepi32_pd(e3), _mm_cvtepi32_pd(_mm_srli_si128(e3, 8)) };
-                    }*/
+                    }
                     else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                 }
                 else if constexpr (sizeof(From) == 2) {
                     if constexpr (x_to_z) {
-                        /*if constexpr (has_zmm) {
-                            if constexpr (frm_sgn) return _mm512_cvtepi32_pd(_mm512_cvtepi16_epi32(x));
-                            else return _mm512_cvtepu32_pd(_mm512_cvtepu16_epi32(x));
+                        if constexpr (has_zmm) {
+                            if constexpr (frm_sgn) return _mm512_cvtepi32_pd(_mm256_cvtepi16_epi32(x));
+                            else return _mm512_cvtepu32_pd(_mm256_cvtepu16_epi32(x));
                         }
                         else if constexpr (has_avx2_v) {
                             __m256i w32;
                             if constexpr (frm_sgn) w32 = _mm256_cvtepi16_epi32(x);
                             else w32 = _mm256_cvtepu16_epi32(x);
-                            return std::tuple{
-                                _mm256_cvtepi32_pd(_mm256_castsi256_si128(w32)),
-                                _mm256_cvtepi32_pd(_mm256_extracti128_si256(w32, 1)) };
-                        }*/
-                        //else if constexpr (has_avx<ISA> && has_s41) {
-                        //    __m128i w0, w1;
-                        //    if constexpr (frm_sgn) {
-                        //        w0 = _mm_cvtepi16_epi32(x);
-                        //        w1 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 8));
-                        //    }
-                        //    else {
-                        //        w0 = _mm_cvtepu16_epi32(x);
-                        //        w1 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 8));
-                        //    }
-                        //    return std::tuple{
-                        //        _mm256_cvtepi32_pd(w0),
-                        //        _mm256_cvtepi32_pd(_mm_srli_si128(w0, 8)),
-                        //        _mm256_cvtepi32_pd(w1),
-                        //        _mm256_cvtepi32_pd(_mm_srli_si128(w1, 8)) };
-                        //}
-                        /*else if constexpr (has_s41) {
+                            return pack_or_tuple<ISA>(_mm256_cvtepi32_pd(_mm256_castsi256_si128(w32)),
+                                _mm256_cvtepi32_pd(_mm256_extracti128_si256(w32, 1)));
+                        }
+                        else if constexpr (sizeof(V) == 16 && has_avx<ISA> && has_s41) {
                             __m128i w0, w1;
                             if constexpr (frm_sgn) {
                                 w0 = _mm_cvtepi16_epi32(x);
@@ -1702,11 +1677,22 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                                 w0 = _mm_cvtepu16_epi32(x);
                                 w1 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 8));
                             }
-                            return std::tuple{
-                                _mm_cvtepi32_pd(w0), _mm_cvtepi32_pd(_mm_srli_si128(w0, 8)),
-                                _mm_cvtepi32_pd(w1), _mm_cvtepi32_pd(_mm_srli_si128(w1, 8)) };
-                        }*/
-                        /*else if constexpr (has_sse2<ISA>) {
+                            return pack_or_tuple<ISA>(_mm256_cvtepi32_pd(w0), _mm256_cvtepi32_pd(w1));
+                        }
+                        else if constexpr (sizeof(V) == 16 && has_s41) {
+                            __m128i w0, w1;
+                            if constexpr (frm_sgn) {
+                                w0 = _mm_cvtepi16_epi32(x);
+                                w1 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 8));
+                            }
+                            else {
+                                w0 = _mm_cvtepu16_epi32(x);
+                                w1 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 8));
+                            }
+                            return pack_or_tuple<ISA>(_mm_cvtepi32_pd(w0), _mm_cvtepi32_pd(_mm_srli_si128(w0, 8)),
+                                _mm_cvtepi32_pd(w1), _mm_cvtepi32_pd(_mm_srli_si128(w1, 8)));
+                        }
+                        else if constexpr (sizeof(V) == 16 && has_sse2<ISA>) {
                             __m128i w0, w1;
                             if constexpr (frm_sgn) {
                                 w0 = _mm_srai_epi32(_mm_unpacklo_epi16(x, x), 16);
@@ -1717,11 +1703,10 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                                 w0 = _mm_unpacklo_epi16(x, zero);
                                 w1 = _mm_unpackhi_epi16(x, zero);
                             }
-                            return std::tuple{
-                                _mm_cvtepi32_pd(w0), _mm_cvtepi32_pd(_mm_srli_si128(w0, 8)),
-                                _mm_cvtepi32_pd(w1), _mm_cvtepi32_pd(_mm_srli_si128(w1, 8)) };
+                            return pack_or_tuple<ISA>(_mm_cvtepi32_pd(w0), _mm_cvtepi32_pd(_mm_srli_si128(w0, 8)),
+                                _mm_cvtepi32_pd(w1), _mm_cvtepi32_pd(_mm_srli_si128(w1, 8)));
                         }
-                        else*/ return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
+                        else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
                     else if constexpr (sizeof(R) == 128 && sizeof(V) == 32 && has_zmm) {
                         __m512i e32;
