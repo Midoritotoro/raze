@@ -2,8 +2,10 @@
 
 #include <src/raze/vx/hw/x86/memory/Load.h>
 #include <src/raze/vx/hw/x86/memory/Store.h>
+#include <src/raze/math/SaturatingCast.h>
 #include <tuple>
 #include <utility>
+
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -90,25 +92,8 @@ raze_always_inline auto pack_or_tuple(Part p0, Part p1, Part p2, Part p3) noexce
 
 template <bool Saturated, class To, class From>
 raze_always_inline To scalar_narrow_(From v) noexcept {
-    if constexpr (!Saturated) return static_cast<To>(v);
-    else if constexpr (std::is_floating_point_v<From>) {
-        long double d = static_cast<long double>(v);
-        long double mn = static_cast<long double>(std::numeric_limits<To>::lowest());
-        long double mx = static_cast<long double>(std::numeric_limits<To>::max());
-        if (!(d == d)) return To{};
-        if (d < mn) return static_cast<To>(mn);
-        if (d > mx) return static_cast<To>(mx);
-        return static_cast<To>(d);
-    }
-    else {
-        using Wide = std::conditional_t<std::is_signed_v<From>, int64_t, uint64_t>;
-        Wide w = static_cast<Wide>(v);
-        Wide mn = static_cast<Wide>(std::numeric_limits<To>::lowest());
-        Wide mx = static_cast<Wide>(std::numeric_limits<To>::max());
-        if (w < mn) return std::numeric_limits<To>::lowest();
-        if (w > mx) return std::numeric_limits<To>::max();
-        return static_cast<To>(w);
-    }
+    if constexpr (Saturated) return math::saturating_cast<To>(v);
+    else return static_cast<To>(v);
 }
 
 template <arch::ISA ISA, class Target, class To, sizetype N>
@@ -125,13 +110,15 @@ raze_always_inline Target load_target_from_buffer_(const To* buf) noexcept {
 
 template <arch::ISA ISA, bool Saturated, class From, class To, class V>
 raze_always_inline deduce_convert_return_type<ISA, From, To, V> scalar_fallback_convert_(V x) noexcept {
-    constexpr sizetype count = sizeof(V) / sizeof(From);
-    alignas(64) From arr[count];
-    store_(arr, x);
     using Ret = deduce_convert_return_type<ISA, From, To, V>;
-    constexpr sizetype ret_bytes = sizeof(Ret);
-    constexpr sizetype out_count = (ret_bytes > count * sizeof(To)) ? (ret_bytes / sizeof(To)) : count;
-    alignas(64) To out[out_count]{};
+    constexpr sizetype count = sizeof(V) / sizeof(From);
+    constexpr sizetype out_count = (sizeof(Ret) > count * sizeof(To)) ? (sizeof(Ret) / sizeof(To)) : count;
+
+    alignas(64) From arr[count];
+    alignas(64) To out[out_count] = {};
+
+    store_(arr, x);
+
     for (sizetype i = 0; i < count; ++i) out[i] = scalar_narrow_<Saturated, To, From>(arr[i]);
     return load_target_from_buffer_<ISA, Ret, To, count>(out);
 }
@@ -248,6 +235,18 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
         constexpr bool i64_to_i32 = i_to_i && sizeof(From) == 8 && sizeof(To) == 4;
 
         if constexpr (i_to_i) {
+            constexpr bool is_sat_widen_sgn_to_unsgn = Saturated && frm_sgn && !to_sgn && sizeof(To) > sizeof(From);
+            constexpr bool is_sat_narrow_from_unsgn = Saturated && !frm_sgn && sizeof(To) < sizeof(From);
+
+            constexpr bool is_sat_narrow_from_i64 = Saturated && sizeof(From) == 8 && sizeof(To) < 8;
+            constexpr bool is_sat_narrow_from_i32 = Saturated && sizeof(From) == 4 && sizeof(To) < 4;
+            constexpr bool is_sat_narrow_from_i16 = Saturated && sizeof(From) == 2 && sizeof(To) < 2;
+
+            if constexpr (is_sat_widen_sgn_to_unsgn || is_sat_narrow_from_unsgn ||
+                is_sat_narrow_from_i64 || is_sat_narrow_from_i32 || is_sat_narrow_from_i16) {
+                return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
+            }
+
             if constexpr (i8_to_i16) {
                 if constexpr (x_to_y && has_avx2_v) {
                     if constexpr (frm_sgn) return _mm256_cvtepi8_epi16(x);
@@ -481,9 +480,8 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                         }
                     }
                     else {
-                        const __m128i zero = _mm_setzero_si128();
-                        if constexpr (epu8<To>) return _mm_packus_epi16(x, zero);
-                        else return _mm_packs_epi16(x, zero);
+                        if constexpr (epu8<To>) return _mm_packus_epi16(x, _mm_setzero_si128());
+                        else return _mm_packs_epi16(x, _mm_setzero_si128());
                     }
                 }
                 else if constexpr (y_to_x) {
@@ -1092,266 +1090,157 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
             else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
         }
         else if constexpr (f_to_i) {
+            if constexpr (!Saturated && !to_sgn) {
+                return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
+            }
+
             if constexpr (sizeof(From) == 4) {
-                if constexpr (sizeof(To) == 4) {
+                if constexpr (sizeof(To) == 4 && !Saturated) {
                     if constexpr (to_sgn) {
                         if constexpr (x_to_x) return _mm_cvttps_epi32(x);
                         else if constexpr (y_to_y && has_ymm_v) return _mm256_cvttps_epi32(x);
                         else if constexpr (z_to_z && has_zmm) return _mm512_cvttps_epi32(x);
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
-                    else {
-                        if constexpr (x_to_x && has_zmm && has_vl) return _mm_cvttps_epu32(x);
-                        else if constexpr (y_to_y && has_zmm && has_vl) return _mm256_cvttps_epu32(x);
-                        else if constexpr (z_to_z && has_zmm) return _mm512_cvttps_epu32(x);
-                        else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
-                    }
                 }
-                else if constexpr (sizeof(To) == 8) {
+                else if constexpr (sizeof(To) == 8 && !Saturated) {
                     if constexpr (x_to_y && has_dqvl) {
                         if constexpr (to_sgn) return _mm256_cvttps_epi64(x);
-                        else return _mm256_cvttps_epu64(x);
                     }
                     else if constexpr (y_to_z && has_dq) {
                         if constexpr (to_sgn) return _mm512_cvttps_epi64(x);
-                        else return _mm512_cvttps_epu64(x);
                     }
                     else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                 }
-                else if constexpr (sizeof(To) == 2) {
+                else if constexpr (sizeof(To) == 2 && !Saturated) {
                     if constexpr (x_to_x) {
                         auto i32 = _mm_cvttps_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu16<To>) return _mm_cvtusepi32_epi16(i32);
-                                else return _mm_cvtsepi32_epi16(i32);
-                            }
-                            else return _mm_cvtepi32_epi16(i32);
+                            return _mm_cvtepi32_epi16(i32);
                         }
-                        else if constexpr (!Saturated) {
-                            if constexpr (has_ssse3<ISA>) {
-                                const __m128i m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1);
-                                return _mm_shuffle_epi8(i32, m);
-                            }
-                            else {
-                                auto m = _mm_srai_epi32(_mm_slli_epi32(i32, 16), 16);
-                                return _mm_packs_epi32(m, _mm_setzero_si128());
-                            }
+                        else if constexpr (has_ssse3<ISA>) {
+                            const __m128i m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1);
+                            return _mm_shuffle_epi8(i32, m);
                         }
                         else {
-                            const __m128i zero = _mm_setzero_si128();
-                            if constexpr (epu16<To>) {
-                                if constexpr (has_s41) return _mm_packus_epi32(i32, zero);
-                                else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
-                            }
-                            else return _mm_packs_epi32(i32, zero);
+                            auto m = _mm_srai_epi32(_mm_slli_epi32(i32, 16), 16);
+                            return _mm_packs_epi32(m, _mm_setzero_si128());
                         }
                     }
                     else if constexpr (y_to_x && has_avx2_v) {
                         auto i32 = _mm256_cvttps_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu16<To>) return _mm256_cvtusepi32_epi16(i32);
-                                else return _mm256_cvtsepi32_epi16(i32);
-                            }
-                            else return _mm256_cvtepi32_epi16(i32);
+                            return _mm256_cvtepi32_epi16(i32);
                         }
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
                     else if constexpr (z_to_y && has_bw) {
                         auto i32 = _mm512_cvttps_epi32(x);
-                        if constexpr (Saturated) {
-                            if constexpr (epu16<To>) return _mm512_cvtusepi32_epi16(i32);
-                            else return _mm512_cvtsepi32_epi16(i32);
-                        }
-                        else return _mm512_cvtepi32_epi16(i32);
+                        return _mm512_cvtepi32_epi16(i32);
                     }
                     else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                 }
-                else if constexpr (sizeof(To) == 1) {
+                else if constexpr (sizeof(To) == 1 && !Saturated) {
                     if constexpr (x_to_x) {
                         auto i32 = _mm_cvttps_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu8<To>) return _mm_cvtusepi32_epi8(i32);
-                                else return _mm_cvtsepi32_epi8(i32);
-                            }
-                            else return _mm_cvtepi32_epi8(i32);
+                            return _mm_cvtepi32_epi8(i32);
                         }
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
                     else if constexpr (y_to_x && has_avx2_v) {
                         auto i32 = _mm256_cvttps_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu8<To>) return _mm256_cvtusepi32_epi8(i32);
-                                else return _mm256_cvtsepi32_epi8(i32);
-                            }
-                            else return _mm256_cvtepi32_epi8(i32);
+                            return _mm256_cvtepi32_epi8(i32);
                         }
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
                     else if constexpr (z_to_x && has_bw) {
                         auto i32 = _mm512_cvttps_epi32(x);
-                        if constexpr (Saturated) {
-                            if constexpr (epu8<To>) return _mm512_cvtusepi32_epi8(i32);
-                            else return _mm512_cvtsepi32_epi8(i32);
-                        }
-                        else return _mm512_cvtepi32_epi8(i32);
+                        return _mm512_cvtepi32_epi8(i32);
                     }
                     else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                 }
                 else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
             }
             else if constexpr (sizeof(From) == 8) {
-                if constexpr (sizeof(To) == 4) {
+                if constexpr (sizeof(To) == 4 && !Saturated) {
                     if constexpr (to_sgn) {
                         if constexpr (x_to_x) return _mm_cvttpd_epi32(x);
                         else if constexpr (y_to_x && has_ymm_v) return _mm256_cvttpd_epi32(x);
                         else if constexpr (z_to_y && has_zmm) return _mm512_cvttpd_epi32(x);
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
-                    else {
-                        if constexpr (x_to_x && has_zmm && has_vl) return _mm_cvttpd_epu32(x);
-                        else if constexpr (y_to_x && has_zmm && has_vl) return _mm256_cvttpd_epu32(x);
-                        else if constexpr (z_to_y && has_zmm) return _mm512_cvttpd_epu32(x);
-                        else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
-                    }
                 }
-                else if constexpr (sizeof(To) == 8) {
+                else if constexpr (sizeof(To) == 8 && !Saturated) {
                     if constexpr (x_to_x && has_dqvl) {
-                        if constexpr (to_sgn) {
-                            if constexpr (Saturated) return _mm_cvtpd_epi64(x);
-                            else return _mm_cvttpd_epi64(x);
-                        }
-                        else {
-                            if constexpr (Saturated) return _mm_cvtpd_epu64(x);
-                            else return _mm_cvttpd_epu64(x);
-                        }
+                        if constexpr (to_sgn) return _mm_cvttpd_epi64(x);
                     }
                     else if constexpr (y_to_y && has_dqvl) {
-                        if constexpr (to_sgn) {
-                            if constexpr (Saturated) return _mm256_cvtpd_epi64(x);
-                            else return _mm256_cvttpd_epi64(x);
-                        }
-                        else {
-                            if constexpr (Saturated) return _mm256_cvtpd_epu64(x);
-                            else return _mm256_cvttpd_epu64(x);
-                        }
+                        if constexpr (to_sgn) return _mm256_cvttpd_epi64(x);
                     }
                     else if constexpr (z_to_z && has_dq) {
-                        if constexpr (to_sgn) {
-                            if constexpr (Saturated) return _mm512_cvtpd_epi64(x);
-                            else return _mm512_cvttpd_epi64(x);
-                        }
-                        else {
-                            if constexpr (Saturated) return _mm512_cvtpd_epu64(x);
-                            else return _mm512_cvttpd_epu64(x);
-                        }
+                        if constexpr (to_sgn) return _mm512_cvttpd_epi64(x);
                     }
                     else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                 }
-                else if constexpr (sizeof(To) == 2) {
+                else if constexpr (sizeof(To) == 2 && !Saturated) {
                     if constexpr (x_to_x && has_sse2<ISA>) {
                         auto i32 = _mm_cvttpd_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu16<To>) return _mm_cvtusepi32_epi16(i32);
-                                else return _mm_cvtsepi32_epi16(i32);
-                            }
-                            else return _mm_cvtepi32_epi16(i32);
+                            return _mm_cvtepi32_epi16(i32);
                         }
-                        else if constexpr (!Saturated) {
-                            if constexpr (has_ssse3<ISA>) {
-                                const __m128i m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1);
-                                return _mm_shuffle_epi8(i32, m);
-                            }
-                            else {
-                                auto m = _mm_srai_epi32(_mm_slli_epi32(i32, 16), 16);
-                                return _mm_packs_epi32(m, _mm_setzero_si128());
-                            }
+                        else if constexpr (has_ssse3<ISA>) {
+                            const __m128i m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1);
+                            return _mm_shuffle_epi8(i32, m);
                         }
                         else {
-                            const __m128i zero = _mm_setzero_si128();
-                            if constexpr (epu16<To>) {
-                                if constexpr (has_s41) return _mm_packus_epi32(i32, zero);
-                                else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
-                            }
-                            else return _mm_packs_epi32(i32, zero);
+                            auto m = _mm_srai_epi32(_mm_slli_epi32(i32, 16), 16);
+                            return _mm_packs_epi32(m, _mm_setzero_si128());
                         }
                     }
                     else if constexpr (y_to_x && has_ymm_v) {
                         auto i32 = _mm256_cvttpd_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu16<To>) return _mm_cvtusepi32_epi16(i32);
-                                else return _mm_cvtsepi32_epi16(i32);
-                            }
-                            else return _mm_cvtepi32_epi16(i32);
+                            return _mm_cvtepi32_epi16(i32);
                         }
-                        else if constexpr (!Saturated) {
-                            if constexpr (has_ssse3<ISA>) {
-                                const __m128i m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1);
-                                return _mm_shuffle_epi8(i32, m);
-                            }
-                            else {
-                                auto m = _mm_srai_epi32(_mm_slli_epi32(i32, 16), 16);
-                                return _mm_packs_epi32(m, _mm_setzero_si128());
-                            }
+                        else if constexpr (has_ssse3<ISA>) {
+                            const __m128i m = _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1);
+                            return _mm_shuffle_epi8(i32, m);
                         }
                         else {
-                            const __m128i zero = _mm_setzero_si128();
-                            if constexpr (epu16<To>) {
-                                if constexpr (has_s41) return _mm_packus_epi32(i32, zero);
-                                else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
-                            }
-                            else return _mm_packs_epi32(i32, zero);
+                            auto m = _mm_srai_epi32(_mm_slli_epi32(i32, 16), 16);
+                            return _mm_packs_epi32(m, _mm_setzero_si128());
                         }
                     }
                     else if constexpr (z_to_x && has_zmm) {
                         auto i32 = _mm512_cvttpd_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu16<To>) return _mm256_cvtusepi32_epi16(i32);
-                                else return _mm256_cvtsepi32_epi16(i32);
-                            }
-                            else return _mm256_cvtepi32_epi16(i32);
+                            return _mm256_cvtepi32_epi16(i32);
                         }
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
                     else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                 }
-                else if constexpr (sizeof(To) == 1) {
+                else if constexpr (sizeof(To) == 1 && !Saturated) {
                     if constexpr (x_to_x && has_sse2<ISA>) {
                         auto i32 = _mm_cvttpd_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu8<To>) return _mm_cvtusepi32_epi8(i32);
-                                else return _mm_cvtsepi32_epi8(i32);
-                            }
-                            else return _mm_cvtepi32_epi8(i32);
+                            return _mm_cvtepi32_epi8(i32);
                         }
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
                     else if constexpr (y_to_x && has_ymm_v) {
                         auto i32 = _mm256_cvttpd_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu8<To>) return _mm_cvtusepi32_epi8(i32);
-                                else return _mm_cvtsepi32_epi8(i32);
-                            }
-                            else return _mm_cvtepi32_epi8(i32);
+                            return _mm_cvtepi32_epi8(i32);
                         }
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
                     else if constexpr (z_to_x && has_zmm) {
                         auto i32 = _mm512_cvttpd_epi32(x);
                         if constexpr (has_bwvl) {
-                            if constexpr (Saturated) {
-                                if constexpr (epu8<To>) return _mm256_cvtusepi32_epi8(i32);
-                                else return _mm256_cvtsepi32_epi8(i32);
-                            }
-                            else return _mm256_cvtepi32_epi8(i32);
+                            return _mm256_cvtepi32_epi8(i32);
                         }
                         else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                     }
@@ -1621,7 +1510,7 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                             _mm_cvtepi32_pd(e2), _mm_cvtepi32_pd(_mm_srli_si128(e2, 8)),
                             _mm_cvtepi32_pd(e3), _mm_cvtepi32_pd(_mm_srli_si128(e3, 8)) };
                     }
-                   else if constexpr (sizeof(V) && sizeof(R) == 128 && has_sse2<ISA>) {
+                    else if constexpr (sizeof(V) == 16 && sizeof(R) == 128 && has_sse2<ISA>) {
                         __m128i lo16, hi16;
                         if constexpr (frm_sgn) {
                             lo16 = _mm_srai_epi16(_mm_unpacklo_epi8(x, x), 8);
@@ -1803,16 +1692,21 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> convert_(V x) no
                 else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
             }
             else if constexpr (sizeof(From) == 8) {
-                if constexpr (x_to_x) return _mm_cvtpd_ps(x);
-                else if constexpr (y_to_x) {
-                    if constexpr (has_ymm_v) return _mm256_cvtpd_ps(x);
+                if constexpr (Saturated) {
+                    return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
+                }
+                else {
+                    if constexpr (x_to_x) return _mm_cvtpd_ps(x);
+                    else if constexpr (y_to_x) {
+                        if constexpr (has_ymm_v) return _mm256_cvtpd_ps(x);
+                        else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
+                    }
+                    else if constexpr (z_to_y) {
+                        if constexpr (has_zmm) return _mm512_cvtpd_ps(x);
+                        else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
+                    }
                     else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
                 }
-                else if constexpr (z_to_y) {
-                    if constexpr (has_zmm) return _mm512_cvtpd_ps(x);
-                    else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
-                }
-                else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
             }
             else return scalar_fallback_convert_<ISA, Saturated, From, To>(x);
         }

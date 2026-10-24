@@ -38,7 +38,6 @@ raze_always_inline auto get_src_chunk(const V& x) noexcept {
     return ustorage(chunk);
 }
 
-
 template <sizetype Idx, class V, class To>
 consteval sizetype get_chunk_dst_offset() {
     if constexpr (Idx == 0) return 0;
@@ -46,7 +45,7 @@ consteval sizetype get_chunk_dst_offset() {
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
-        return[] <sizetype... Is> (std::index_sequence<Is...>) {
+        return [] <sizetype... Is> (std::index_sequence<Is...>) {
             return (reg_count_v<deduce_convert_return_type<Abi::isa, Value, To,
                 decltype(get_src_chunk<Is>(std::declval<const V&>()))>> +...);
         }(std::make_index_sequence<Idx>{});
@@ -125,16 +124,19 @@ struct configurable_convert_t {
             ResultSimd res(uninitialized);
 
             constexpr sizetype num_src_chunks = V::__chunks_count();
-            constexpr bool     can_fast_convert = check_all_chunk_sizes_match<V, ResultSimd>();
+            constexpr auto can_fast_convert = check_all_chunk_sizes_match<V, ResultSimd>();
+            constexpr auto is_saturated = Options::contains(saturated);
 
             if constexpr (can_fast_convert) {
                 [&] <sizetype... Is> (std::index_sequence<Is...>) raze_always_inline_lambda {
-                    (convert_chunk_into<Options::contains(saturated), Is, V, T>(res, x), ...);
+                    (convert_chunk_into<is_saturated, Is, V, T>(res, x), ...);
                 }(std::make_index_sequence<num_src_chunks>{});
             }
             else {
-                for (sizetype i = 0; i < Abi::size; ++i)
-                    res[i] = static_cast<T>(x[i]);
+                for (sizetype i = 0; i < Abi::size; ++i) {
+                    if constexpr (is_saturated) res[i] = math::saturating_cast<T>(x[i]);
+                    else res[i] = static_cast<T>(x[i]);
+                }
             }
 
             return res;

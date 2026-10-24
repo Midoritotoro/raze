@@ -10,7 +10,7 @@
 #include <src/raze/math/Fnms.h>
 #include <src/raze/math/Sin.h>
 #include <src/raze/math/Cos.h>
-
+#include <src/raze/math/SaturatingCast.h>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
