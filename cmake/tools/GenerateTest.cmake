@@ -733,7 +733,7 @@ function(raze_generate_test root main_source rootpath file)
         )   
     else()
         target_compile_options(${main_target} PRIVATE
-           -Wno-reserved-macro-identifier
+           -Wno-reserved-macro-identifier 
         )
     endif()
 

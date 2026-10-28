@@ -36,24 +36,37 @@ raze_always_inline void assign_chunk(Chunk& slot, Reg&& reg) noexcept {
     auto& s = ustorage(slot);
     using S = std::remove_cvref_t<decltype(s)>;
     if constexpr (intrin_type<S>) s = as<S>(std::forward<Reg>(reg));
-    else s = std::forward<Reg>(reg);
+    else                          s = std::forward<Reg>(reg);
 }
 
 template <sizetype Offset, class Dst, class Reg>
 raze_always_inline void assign_regs(Dst& dst, Reg&& reg) noexcept
-    requires (!is_std_tuple_v<std::remove_cvref_t<Reg>>)
+    requires (!is_std_tuple_v<std::remove_cvref_t<Reg>>
+              && !is_simd_tuple<std::remove_cvref_t<Reg>>::value)
 {
     assign_chunk(dst.template __get<Offset>(), std::forward<Reg>(reg));
 }
 
 template <sizetype Offset, class Dst, class Tuple>
 raze_always_inline void assign_regs(Dst& dst, Tuple&& regs) noexcept
-    requires(is_std_tuple_v<std::remove_cvref_t<Tuple>>)
+    requires (is_std_tuple_v<std::remove_cvref_t<Tuple>>)
 {
     using T = std::remove_cvref_t<Tuple>;
     [&] <sizetype... Ks> (std::index_sequence<Ks...>) raze_always_inline_lambda {
-        (assign_chunk(dst.template __get<Offset + Ks>(), std::get<Ks>(std::forward<Tuple>(regs))), ...);
+        (assign_chunk(dst.template __get<Offset + Ks>(),
+                      std::get<Ks>(std::forward<Tuple>(regs))), ...);
     }(std::make_index_sequence<std::tuple_size_v<T>>{});
+}
+
+template <sizetype Offset, class Dst, class Tuple>
+raze_always_inline void assign_regs(Dst& dst, Tuple&& regs) noexcept
+    requires (is_simd_tuple<std::remove_cvref_t<Tuple>>::value)
+{
+    constexpr sizetype N = simd_tuple_size<std::remove_cvref_t<Tuple>>::value;
+    [&] <sizetype... Ks> (std::index_sequence<Ks...>) raze_always_inline_lambda {
+        (assign_chunk(dst.template __get<Offset + Ks>(),
+                      get<Ks>(std::forward<Tuple>(regs))), ...);
+    }(std::make_index_sequence<N>{});
 }
 
 template <class Tuple, class F>
@@ -167,6 +180,5 @@ raze_always_inline bool for_each_tuple_any_of_reverse(Tuple& tuple, F&& f, Args&
         }(std::integral_constant<std::size_t, N - 1 - I>{}) || ...);
     }(std::make_integer_sequence<sizetype, N>{});
 }
-
 
 __RAZE_VX_NAMESPACE_END

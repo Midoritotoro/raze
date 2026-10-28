@@ -1,8 +1,10 @@
-#pragma once 
+#pragma once
 
 #include <raze/options/Options.h>
 #include <src/raze/vx/Concepts.h>
 #include <src/raze/vx/Storage.h>
+#include <src/raze/vx/storage/Node.h>
+#include <src/raze/vx/storage/Size.h>
 #include <tuple>
 #include <utility>
 #include <type_traits>
@@ -19,14 +21,18 @@ inline constexpr auto saturated = raze::options::flag(saturated_mode{});
 struct saturated_option : raze::options::exact_option<saturated> {};
 
 template <class R>
-struct reg_count {
-    static constexpr sizetype value = 1;
-};
+struct reg_count { static constexpr sizetype value = 1; };
 
 template <class... Ts>
-struct reg_count<std::tuple<Ts...>> {
-    static constexpr sizetype value = sizeof...(Ts);
+struct reg_count<std::tuple<Ts...>> { static constexpr sizetype value = sizeof...(Ts); };
+
+template <class H, class T>
+struct reg_count<simd_tuple_node<H, T>> {
+    static constexpr sizetype value = 1 + reg_count<std::remove_cvref_t<T>>::value;
 };
+
+template <>
+struct reg_count<simd_tuple_nil> { static constexpr sizetype value = 0; };
 
 template <class R>
 inline constexpr sizetype reg_count_v = reg_count<std::remove_cvref_t<R>>::value;
@@ -43,7 +49,7 @@ consteval sizetype get_chunk_dst_offset() {
     if constexpr (Idx == 0) return 0;
     else {
         using Value = typename V::value_type;
-        using Abi = typename V::abi_type;
+        using Abi   = typename V::abi_type;
 
         return [] <sizetype... Is> (std::index_sequence<Is...>) {
             return (reg_count_v<deduce_convert_return_type<Abi::isa, Value, To,
@@ -67,44 +73,40 @@ consteval bool chunk_size_matches() {
     using InChunk = decltype(get_src_chunk<Idx>(std::declval<const V&>()));
     using OutRegs = deduce_convert_return_type<Abi::isa, Value, To, InChunk>;
 
+    auto slot_size = [] <sizetype K> () constexpr {
+        return sizeof(std::remove_cvref_t<decltype(ustorage(std::declval<Result&>().template __get<K>()))>);
+    };
+
     if constexpr (vx::is_std_tuple_v<OutRegs>) {
-        return[] <sizetype... Ks> (std::index_sequence<Ks...>) {
+        return [=] <sizetype... Ks> (std::index_sequence<Ks...>) {
             return ((sizeof(std::tuple_element_t<Ks, OutRegs>) ==
-                sizeof(std::remove_cvref_t<decltype(ustorage(std::declval<Result&>().template __get<offset + Ks>()))>)) && ...);
+                slot_size.template operator() < offset + Ks > ()) && ...);
         }(std::make_index_sequence<std::tuple_size_v<OutRegs>>{});
     }
-    else {
-        using DstChunk = std::remove_cvref_t<decltype(ustorage(std::declval<Result&>().template __get<offset>()))>;
-        return sizeof(OutRegs) == sizeof(DstChunk);
+    else if constexpr (is_simd_tuple<OutRegs>::value) {
+        return [=] <sizetype... Ks> (std::index_sequence<Ks...>) {
+            return ((sizeof(simd_tuple_element_t<Ks, OutRegs>) ==
+                slot_size.template operator() < offset + Ks > ()) && ...);
+        }(std::make_index_sequence<simd_tuple_size<OutRegs>::value>{});
     }
+    else return sizeof(OutRegs) == slot_size.template operator() < offset > ();
 }
-
 
 template <class V, class Result>
 consteval bool check_all_chunk_sizes_match() {
     using To = typename Result::value_type;
 
-    constexpr sizetype num_src = V::__chunks_count();
-    constexpr sizetype num_dst = Result::__chunks_count();
-    constexpr sizetype total_produced = get_total_dst_regs<V, To>();
-
-    if constexpr (num_dst != total_produced) return false;
-    else {
-        return [] <sizetype... Is> (std::index_sequence<Is...>) {
-            return (chunk_size_matches<Is, V, Result>() && ...);
-        }(std::make_index_sequence<num_src>{});
-    }
+    if constexpr (Result::__chunks_count() != get_total_dst_regs<V, To>()) return false;
+    else return [] <sizetype... Is> (std::index_sequence<Is...>) {
+        return (chunk_size_matches<Is, V, Result>() && ...);
+    }(std::make_index_sequence<V::__chunks_count()>{});
 }
 
 template <bool Saturated, sizetype I, class V, class T, class Dst>
 raze_always_inline void convert_chunk_into(Dst& dst, const V& x) noexcept {
     using Value = typename V::value_type;
     using Abi = typename V::abi_type;
-
-    constexpr sizetype offset = get_chunk_dst_offset<I, V, T>();
-    auto in_reg = get_src_chunk<I>(x);
-    auto r = convert_<Abi::isa, Saturated, Value, T>(in_reg);
-    assign_regs<offset>(dst, std::move(r)); 
+    assign_regs<get_chunk_dst_offset<I, V, T>()>(dst, convert_<Abi::isa, Saturated, Value, T>(get_src_chunk<I>(x)));
 }
 
 template <arithmetic_type T>
@@ -147,4 +149,4 @@ struct configurable_convert_t {
 template <arithmetic_type T>
 constexpr inline auto convert = options::functor<configurable_convert_t<T>::template convert>;
 
-__RAZE_VX_NAMESPACE_END 
+__RAZE_VX_NAMESPACE_END
