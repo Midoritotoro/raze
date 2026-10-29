@@ -49,9 +49,9 @@ RTTS_CASE_TPL("raze::vx::bit_shr", rtts::simd::all_simd_infos)
             auto r2 = raze::vx::bit_shr[m](a, sh);
             auto r3 = raze::vx::bit_shr[m, src](a, sh);
 
-            RTTS_ALL_VALIDATE_BITS(r1, [&](auto i) { return scalar_eval(i); });
-            RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });
-            RTTS_ALL_VALIDATE_BITS(r3, [&](auto i) { return m[i] ? scalar_eval(i) : arrSrc[i]; });
+            RTTS_ALL_VALIDATE_VECTOR(r1, [&](auto i) { return scalar_eval(i); });
+            RTTS_ALL_VALIDATE_VECTOR(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });
+            RTTS_ALL_VALIDATE_VECTOR(r3, [&](auto i) { return m[i] ? scalar_eval(i) : arrSrc[i]; });
         }
     }
 };

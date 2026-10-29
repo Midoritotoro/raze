@@ -37,7 +37,7 @@ RTTS_CASE_TPL("raze::vx::fold", rtts::simd::all_simd_infos)
     {
         auto result = raze::vx::fold[raze::vx::broadcast](v, raze::vx::add);
         T expected = std::accumulate(arr, arr + N, T(0));
-        RTTS_ALL_VALIDATE_BITS(result, [&](auto) { return expected; });
+        RTTS_ALL_VALIDATE_VECTOR(result, [&](auto) { return expected; });
     }
 
     if constexpr (!std::is_floating_point_v<T>) {
@@ -89,26 +89,6 @@ RTTS_CASE_TPL("raze::vx::fold", rtts::simd::all_simd_infos)
         auto result = raze::vx::fold(ones, raze::vx::mul);
         RTTS_EXPECT(result == T(1));
     }
-
-    /*{
-        auto result = raze::vx::fold[raze::vx::mirror](v, raze::vx::vertical_min);
-        T expected = arr[0];
-
-        for (size_t i = 1; i < N; ++i)
-            expected = std::min(expected, arr[i]);
-
-        RTTS_EXPECT(result == expected);
-    }
-
-    {
-        auto result = raze::vx::fold[raze::vx::mirror](v, raze::vx::vertical_max);
-        T expected = arr[0];
-
-        for (size_t i = 1; i < N; ++i)
-            expected = std::max(expected, arr[i]);
-
-        RTTS_EXPECT(result == expected);
-    }*/
 };
 
 RAZE_TEST_NAMESPACE_END

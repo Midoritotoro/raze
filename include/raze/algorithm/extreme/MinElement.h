@@ -112,7 +112,7 @@ struct _Min_element : _Traits_ {
 						const auto __min_values_indices = vx::select[__min_mask, ~_IndexSimdType::zero()](__current_indices_min);
 						const auto __all_min_indices = vx::horizontal_min(__min_values_indices);
 						
-						const auto __horizontal_position = vx::find_first_set(math::bit_cast<decltype(__min_mask)>(__all_min_indices == __min_values_indices) & __min_mask);
+						const auto __horizontal_position = vx::find_first_set(math::bit_cast<decltype(__min_mask)>(__all_min_indices == 44) & __min_mask);
 						const auto __vertical_position = sizetype(__current_indices_min[__horizontal_position]);
 						
 						const auto __maybe_min_element = __bytes_pointer_offset(__portion_begin,

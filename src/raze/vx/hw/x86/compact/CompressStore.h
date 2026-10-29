@@ -74,7 +74,7 @@ raze_always_inline void* compress_avx2_bmi2_(void* ptr, V x, CompressMask mask) 
 		const auto not_mask = mask_not_<ISA, size, T>(mask);
 		const auto bytes_vector = _mm_cvtsi64_si128(_pext_u64(identity_vpermps, expand(not_mask)));
 		const auto packed = _mm256_permutevar8x32_epi32(as<__m256i>(x), _mm256_cvtepu8_epi32(bytes_vector));
-		const auto bytes = math::native_popcnt_n_bits<size>(not_mask) * sizeof(T);
+		const auto bytes = math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T);
 
 		if constexpr (Unsafe) store_(ptr, packed);
 		else store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
@@ -94,23 +94,23 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				if constexpr (pd<T>) _mm_mask_compressstoreu_pd(ptr, not_mask, x);
 				else _mm_mask_compressstoreu_epi64(ptr, not_mask, x);
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 4) {
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				if constexpr (ps<T>) _mm_mask_compressstoreu_ps(ptr, not_mask, x);
 				else _mm_mask_compressstoreu_epi32(ptr, not_mask, x);
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 2 && has_avx512vbmi2<ISA>) {
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm_mask_compressstoreu_epi16(ptr, not_mask, as<__m128i>(x));
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 1 && has_avx512vbmi2<ISA>) {
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm_mask_compressstoreu_epi8(ptr, not_mask, x);
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 		}
 		if constexpr (has_ssse3<ISA> && sizeof(T) < 4 && !has_avx512vl<ISA>) {
@@ -207,23 +207,23 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				if constexpr (pd<T>) _mm256_mask_compressstoreu_pd(ptr, not_mask, x);
 				else _mm256_mask_compressstoreu_epi64(ptr, not_mask, x);
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 4) {
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				if constexpr (ps<T>) _mm256_mask_compressstoreu_ps(ptr, not_mask, x);
 				else _mm256_mask_compressstoreu_epi32(ptr, not_mask, x);
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 2 && has_avx512vbmi2<ISA>) {
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm256_mask_compressstoreu_epi16(ptr, not_mask, as<__m256i>(x));
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 			else if constexpr (sizeof(T) == 1 && has_avx512vbmi2<ISA>) {
 				const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 				_mm256_mask_compressstoreu_epi8(ptr, not_mask, as<__m256i>(x));
-				return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+				return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 			}
 		}
 		if constexpr (sizeof(T) >= 4 && has_avx2<ISA> && !has_avx512vl<ISA>) {
@@ -236,23 +236,23 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 			const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 			if constexpr (pd<T>) _mm512_mask_compressstoreu_pd(ptr, not_mask, x);
 			else _mm512_mask_compressstoreu_epi64(ptr, not_mask, x);
-			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+			return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 		}
 		else if constexpr (sizeof(T) == 4) {
 			const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 			if constexpr (ps<T>) _mm512_mask_compressstoreu_ps(ptr, not_mask, x);
 			else _mm512_mask_compressstoreu_epi32(ptr, not_mask, x);
-			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+			return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 		}
 		else if constexpr (sizeof(T) == 2 && has_avx512vbmi2<ISA>) {
 			const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 			_mm512_mask_compressstoreu_epi16(ptr, not_mask, as<__m512i>(x));
-			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+			return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 		}
 		else if constexpr (sizeof(T) == 1 && has_avx512vbmi2<ISA>) {
 			const auto not_mask = mask_not_<ISA, size, T>(int_mask);
 			_mm512_mask_compressstoreu_epi8(ptr, not_mask, as<__m512i>(x));
-			return algorithm::bytes_pointer_offset(ptr, math::native_popcnt_n_bits<size>(not_mask) * sizeof(T));
+			return algorithm::bytes_pointer_offset(ptr, math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T));
 		}
 	}
 

@@ -18,7 +18,7 @@ RTTS_CASE_TPL("raze::vx::is_less_equal", rtts::simd::all_simd_infos)
     V a = raze::vx::load<V>(arrA);
     V b = raze::vx::load<V>(arrB);
 
-    RTTS_ALL_VALIDATE(a <= b, [=](auto i) { return arrA[i] <= arrB[i]; });
+    RTTS_ALL_VALIDATE_VECTOR(a <= b, [=](auto i) { return arrA[i] <= arrB[i]; });
 };
 
 RAZE_TEST_NAMESPACE_END

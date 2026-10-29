@@ -25,12 +25,12 @@ RTTS_CASE_TPL("raze::vx::select", rtts::simd::all_simd_infos)
     auto test_mask = [&](Mask mask) {
         {
             auto r = raze::vx::select[mask, b](a);
-            RTTS_ALL_VALIDATE_BITS(r, [&](auto i) { return mask[i] ? a_arr[i] : b_arr[i]; });
+            RTTS_ALL_VALIDATE_VECTOR(r, [&](auto i) { return mask[i] ? a_arr[i] : b_arr[i]; });
         }
 
         {
             auto r = raze::vx::select[mask](a);
-            RTTS_ALL_VALIDATE_BITS(r, [&](auto i) { return mask[i] ? a_arr[i] : T(0); });
+            RTTS_ALL_VALIDATE_VECTOR(r, [&](auto i) { return mask[i] ? a_arr[i] : T(0); });
         }
     };
 

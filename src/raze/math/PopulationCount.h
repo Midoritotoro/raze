@@ -88,18 +88,22 @@ raze_always_inline i32 popcnt_population_count(T v) noexcept {
 
 #endif // defined(raze_processor_x86)
 
-template <std::unsigned_integral T>
+template <arch::ISA ISA, std::unsigned_integral T>
 constexpr raze_always_inline i32 population_count_impl(T v) noexcept {
 #if defined(raze_processor_x86)
     if !consteval {
-        if (arch::ProcessorFeatures::POPCNT())
-            return popcnt_population_count(v);
+        if constexpr (vx::has_sse42<ISA>) return popcnt_population_count(v);
+        else { 
+#if defined(raze_cpp_msvc_only)
+            if (arch::ProcessorFeatures::POPCNT())  return popcnt_population_count(v);
+#endif
+        }
     }
 #endif // defined(raze_processor_x86)
     return bit_hacks_population_count(v);
 }
 
-template <sizetype Bits, std::unsigned_integral T>
+template <arch::ISA ISA, sizetype Bits, std::unsigned_integral T>
 constexpr raze_always_inline i32 popcnt_n_bits(T v) noexcept {
     static_assert(Bits <= 64);
     static_assert(Bits <= raze_sizeof_in_bits(T));
@@ -110,21 +114,7 @@ constexpr raze_always_inline i32 popcnt_n_bits(T v) noexcept {
     constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
 
     using UT = typename IntegerForSize<mask_size>::Unsigned;
-    return population_count_impl(static_cast<UT>(v & max_for_n_bits));
-}
-
-template <sizetype Bits, std::unsigned_integral T>
-constexpr raze_always_inline i32 native_popcnt_n_bits(T v) noexcept {
-    static_assert(Bits <= 64);
-    static_assert(Bits <= raze_sizeof_in_bits(T));
-
-    constexpr auto max_for_n_bits = (Bits == raze_sizeof_in_bits(T))
-        ? math::max_limit<T>()
-        : T(((T(1) << Bits) - 1));
-    constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
-
-    using UT = typename IntegerForSize<mask_size>::Unsigned;
-    return popcnt_population_count(static_cast<UT>(v & max_for_n_bits));
+    return population_count_impl<ISA>(static_cast<UT>(v & max_for_n_bits));
 }
 
 __RAZE_MATH_NAMESPACE_END

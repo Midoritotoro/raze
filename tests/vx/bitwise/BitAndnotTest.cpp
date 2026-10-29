@@ -36,9 +36,9 @@ RTTS_CASE_TPL("raze::vx::bit_andnot", rtts::simd::all_simd_infos)
     auto r2 = raze::vx::bit_andnot[m](a, b);
     auto r3 = raze::vx::bit_andnot[m, src](a, b);
 
-    RTTS_ALL_VALIDATE_BITS(r1, [&](auto i) { return scalar_eval(i); });
-    RTTS_ALL_VALIDATE_BITS(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });
-    RTTS_ALL_VALIDATE_BITS(r3, [&](auto i) { return m[i] ? scalar_eval(i) : arrSrc[i]; });
+    RTTS_ALL_VALIDATE_VECTOR(r1, [&](auto i) { return scalar_eval(i); });
+    RTTS_ALL_VALIDATE_VECTOR(r2, [&](auto i) { return m[i] ? scalar_eval(i) : T(0); });
+    RTTS_ALL_VALIDATE_VECTOR(r3, [&](auto i) { return m[i] ? scalar_eval(i) : arrSrc[i]; });
 };
 
 RAZE_TEST_NAMESPACE_END

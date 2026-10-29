@@ -25,7 +25,7 @@ RTTS_CASE_TPL("raze::vx::load", rtts::simd::all_simd_infos)
             src[i] = static_cast<T>(i * 3 + 1);
 
         V v = raze::vx::load<V>[raze::vx::aligned](src);
-        RTTS_ALL_VALIDATE_BITS(v, [&](auto i) { return src[i]; });
+        RTTS_ALL_VALIDATE_VECTOR(v, [&](auto i) { return src[i]; });
     }
 
     {
@@ -37,7 +37,7 @@ RTTS_CASE_TPL("raze::vx::load", rtts::simd::all_simd_infos)
 
         V v = raze::vx::load<V>(src);
 
-        RTTS_ALL_VALIDATE_BITS(v, [&](auto i) { return src[i]; });
+        RTTS_ALL_VALIDATE_VECTOR(v, [&](auto i) { return src[i]; });
     }
 
     for (size_t iteration = 0; iteration < 100; ++iteration) {
@@ -51,7 +51,7 @@ RTTS_CASE_TPL("raze::vx::load", rtts::simd::all_simd_infos)
                 src[i] = static_cast<T>(i * 3 + 1);
 
             V v = raze::vx::load<V>[mask](src);
-            RTTS_ALL_VALIDATE_BITS(v, [&](auto i) { return mask[i] ? src[i] : T(0); });
+            RTTS_ALL_VALIDATE_VECTOR(v, [&](auto i) { return mask[i] ? src[i] : T(0); });
         }
 
         {
@@ -61,7 +61,7 @@ RTTS_CASE_TPL("raze::vx::load", rtts::simd::all_simd_infos)
                 src[i] = static_cast<T>(i * 5 + 2);
 
             V v = raze::vx::load<V>[mask][raze::vx::aligned](src);
-            RTTS_ALL_VALIDATE_BITS(v, [&](auto i) { return mask[i] ? src[i] : T(0); });
+            RTTS_ALL_VALIDATE_VECTOR(v, [&](auto i) { return mask[i] ? src[i] : T(0); });
         }
 
         {
@@ -72,7 +72,7 @@ RTTS_CASE_TPL("raze::vx::load", rtts::simd::all_simd_infos)
                 src[i] = static_cast<T>(i * 7 + 3);
 
             V v = raze::vx::load<V>[mask, fallback_v](src);
-            RTTS_ALL_VALIDATE_BITS(v, [&](auto i) { return mask[i] ? src[i] : fallback_v[i]; });
+            RTTS_ALL_VALIDATE_VECTOR(v, [&](auto i) { return mask[i] ? src[i] : fallback_v[i]; });
         }
 
         {
@@ -82,7 +82,7 @@ RTTS_CASE_TPL("raze::vx::load", rtts::simd::all_simd_infos)
                 src[i] = static_cast<T>(i * 11 + 4);
 
             V v = raze::vx::load<V>[mask, fallback_v][raze::vx::aligned](src);
-            RTTS_ALL_VALIDATE_BITS(v, [&](auto i) { return mask[i] ? src[i] : fallback_v[i]; });
+            RTTS_ALL_VALIDATE_VECTOR(v, [&](auto i) { return mask[i] ? src[i] : fallback_v[i]; });
         }
 
         {

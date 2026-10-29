@@ -13,30 +13,6 @@
 
 __RAZE_MATH_NAMESPACE_BEGIN
 
-#if defined (raze_processor_x86)
-#  if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
-
-#    if !defined(raze_tzcnt_u32)
-#      define raze_tzcnt_u32 __builtin_ia32_tzcnt_u32
-#    endif // !defined(raze_tzcnt_u32)
-
-#    if !defined(raze_tzcnt_u64)
-#      define raze_tzcnt_u64 __builtin_ia32_tzcnt_u64
-#    endif // !defined(raze_tzcnt_u64)
-
-#  elif defined(raze_cpp_msvc)
-
-#    if !defined(raze_tzcnt_u32)
-#      define raze_tzcnt_u32 _tzcnt_u32
-#    endif // !defined(raze_tzcnt_u32)
-
-#    if !defined(raze_tzcnt_u64)
-#      define raze_tzcnt_u64 _tzcnt_u64
-#    endif // !defined(raze_tzcnt_u64)
-
-#  endif // defined(raze_cpp_clang) || defined(raze_cpp_gnu) || defined(raze_cpp_msvc)
-#endif // defined (raze_processor_x86)
-
 constexpr raze_always_inline i32 bit_hacks_ctz_u32(u32 v) noexcept {
     auto r = u32(32);
     v &= -signed(v);
@@ -64,7 +40,7 @@ constexpr raze_always_inline i32 bit_hacks_ctz(T v) noexcept {
     else if constexpr (sizeof(T) == 2) {
         auto r = u32(16);
         v &= u16(-signed(v));
-        
+
         if (v) --r;
         if (v & 0x000000FF) r -= 8;
         if (v & 0x00000F0F) r -= 4;
@@ -86,83 +62,65 @@ constexpr raze_always_inline i32 bit_hacks_ctz(T v) noexcept {
     }
 }
 
-
-#if defined (raze_processor_x86)
-
-template <bool Unsafe, std::unsigned_integral T>
-raze_always_inline i32 bsf_ctz(T v) noexcept {
-    constexpr auto digits = std::numeric_limits<T>::digits;
+template <arch::ISA ISA, sizetype Bits, bool Unsafe, std::unsigned_integral T>
+constexpr raze_always_inline i32 ctz_bits_window(T u) noexcept {
+    constexpr auto digits    = std::numeric_limits<T>::digits;
+    constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
+    constexpr auto sent      = Bits == raze_sizeof_in_bits(T) ? 0 : T(1ull << Bits);
+    using UT = typename IntegerForSize<mask_size>::Unsigned;
 
 #if defined(raze_cpp_msvc_only)
-    ulong index;
-
-    if constexpr (digits == 64) {
-        auto r = _BitScanForward64(&index, static_cast<u64>(v));
-        if constexpr (Unsafe) return static_cast<i32>(index);
-        else { if (!r) return digits; }
+    if constexpr (!vx::has_bmi1<ISA>) {
+        ulong index;
+        if constexpr (Bits != 32 && Bits != 64) {
+            auto r = _BitScanForward(&index, static_cast<u32>(static_cast<UT>(u | sent)));
+            if constexpr (!Unsafe) { if (!r) return Bits; }
+        } 
+        else if constexpr (Bits == 64) {
+            auto r = _BitScanForward64(&index, static_cast<u64>(u));
+            if constexpr (!Unsafe) { if (!r) return digits; }
+        } 
+        else {
+            auto r = _BitScanForward(&index, static_cast<u32>(u));
+            if constexpr (!Unsafe) { if (!r) return digits; }
+        }
+        return static_cast<i32>(index);
+    } else {
+        if constexpr (Bits != 32 && Bits != 64) {
+            constexpr auto nmax = (~std::numeric_limits<UT>::max()) >> (raze_sizeof_in_bits(UT) - Bits);
+            return static_cast<i32>(_tzcnt_u32(static_cast<u32>(i32(u) | nmax)));
+        } 
+        else if constexpr (Bits == 64) return static_cast<i32>(_tzcnt_u64(static_cast<u64>(u)));
+        else return static_cast<i32>(_tzcnt_u32(static_cast<u32>(u)));
     }
-    else {
-        auto r = _BitScanForward(&index, static_cast<u32>(v));
-        if constexpr (Unsafe) return static_cast<i32>(index);
-        else { if (!r) return digits; }
-    }
-
-    return static_cast<i32>(index);
 #else
-    if constexpr (!Unsafe) {
-        if (v == 0) return digits;
+    if constexpr (!vx::has_bmi1<ISA>) {
+        if constexpr (Bits != 32 && Bits != 64) {
+            const UT uu = static_cast<UT>(u | sent);
+            if constexpr (!Unsafe) { if (uu == 0) return Bits; }
+            return static_cast<i32>(__builtin_ctz(static_cast<unsigned>(uu)));
+        }
+        else {
+            if constexpr (!Unsafe) { if (u == 0) return digits; }
+            if constexpr (Bits == 64) return static_cast<i32>(__builtin_ctzll(static_cast<unsigned long long>(u)));
+            else return static_cast<i32>(__builtin_ctz(static_cast<unsigned>(u)));
+        }
+    } else {
+        if constexpr (Bits != 32 && Bits != 64) {
+            constexpr auto nmax = (~std::numeric_limits<UT>::max()) >> (raze_sizeof_in_bits(UT) - Bits);
+            return static_cast<i32>(__builtin_ctz(static_cast<unsigned>(static_cast<u32>(i32(u) | nmax))));
+        } 
+        else if constexpr (Bits == 64) return u ? static_cast<i32>(__builtin_ctzll(static_cast<unsigned long long>(u))) : digits;
+        else return u ? static_cast<i32>(__builtin_ctz(static_cast<unsigned>(u))) : digits;
     }
-
-    if constexpr (digits == 64) return __builtin_ctzll(static_cast<unsigned long long>(v));
-    else return _bit_scan_forward(static_cast<i32>(v));
 #endif
-}
-
-template <std::unsigned_integral T>
-raze_always_inline i32 tzcnt_ctz(T v) noexcept {
-    constexpr auto digits = std::numeric_limits<T>::digits;
-    if constexpr (digits == 64) return raze_tzcnt_u64(v);
-    else return raze_tzcnt_u32(v);
-}
-
-#endif // defined(raze_processor_x86)
-
-template <std::unsigned_integral T>
-constexpr raze_always_inline i32 count_trailing_zero_bits_impl(T v) noexcept {
-#if defined(raze_processor_x86)
-    if not consteval {
-        if (arch::ProcessorFeatures::AVX2())
-            return tzcnt_ctz(v);
-        else
-            return bsf_ctz<false>(v);
-    }
-    else
-#endif // defined(raze_processor_x86)
-    {
-        return bit_hacks_ctz(v);
-    }
 }
 
 template <arch::ISA ISA, sizetype Bits, bool Unsafe>
 struct ctz_n_bits_implementation {
     template <std::unsigned_integral T>
     constexpr raze_always_inline i32 operator()(T v) const noexcept {
-        constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
-        constexpr auto sent = Bits == raze_sizeof_in_bits(T) ? 0 : T(1ull << Bits);
-
-        using UT = typename IntegerForSize<mask_size>::Unsigned;
-
-        if constexpr (!vx::has_bmi1<ISA>) {
-            if constexpr (Bits != 32 && Bits != 64) return bsf_ctz<Unsafe>(static_cast<UT>(v | sent));
-            else return bsf_ctz<Unsafe>(v);
-        }
-        else {
-            if constexpr (Bits != 32 && Bits != 64) {
-                constexpr auto nmax = (~std::numeric_limits<UT>::max()) >> (raze_sizeof_in_bits(UT) - Bits);
-                return tzcnt_ctz(static_cast<u32>(i32(v) | nmax));
-            }
-            else return tzcnt_ctz(v);
-        }
+        return ctz_bits_window<ISA, Bits, Unsafe>(v);
     }
 };
 
@@ -178,23 +136,10 @@ template <arch::ISA ISA, sizetype Bits, bool Unsafe>
 struct ctz_not_n_bits_implementation {
     template <std::unsigned_integral T>
     constexpr raze_always_inline i32 operator()(T v) const noexcept {
-        constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
         constexpr auto sent = Bits == raze_sizeof_in_bits(T) ? 0 : T(1ull << Bits);
         constexpr auto mask = T(sent - 1);
 
-        using UT = typename IntegerForSize<mask_size>::Unsigned;
-
-        if constexpr (!vx::has_bmi1<ISA>) {
-            if constexpr (Bits != 32 && Bits != 64) return bsf_ctz<Unsafe>(static_cast<UT>((v ^ mask) | sent));
-            else return bsf_ctz<Unsafe>(v ^ mask);
-        }
-        else {
-            if constexpr (Bits != 32 && Bits != 64) {
-                constexpr auto nmax = (~std::numeric_limits<UT>::max()) >> (raze_sizeof_in_bits(UT) - Bits);
-                return tzcnt_ctz(static_cast<u32>((i32(v) ^ mask) | nmax));
-            }
-            else return tzcnt_ctz(v ^ mask);
-        }
+        return ctz_bits_window<ISA, Bits, Unsafe>(static_cast<T>(v ^ mask));
     }
 };
 

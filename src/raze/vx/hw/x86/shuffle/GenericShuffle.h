@@ -489,7 +489,7 @@ raze_always_inline auto generic_shuffle_native_(V x, Pattern p) noexcept {
 				if constexpr (q0 == q1 && q1 == q2 && q2 == q3) return as<V>(_mm512_permute_ps(as<__m512>(x), q0));
 				else return as<V>(_mm512_permutevar_ps(as<__m512>(x), p.template as_native<__m512i>()));
 			}
-			else return as<V>(_mm512_permutevar_epi32(p.template as_native<__m512i>(), as<__m512i>(x)));
+			else return as<V>(_mm512_permutexvar_epi32(p.template as_native<__m512i>(), as<__m512i>(x)));
 		}
 		else if constexpr (sizeof(T) == 2) {
 			if constexpr (has_avx512bw<ISA>) return as<V>(_mm512_permutexvar_epi16(p.template as_native<__m512i>(), as<__m512i>(x)));

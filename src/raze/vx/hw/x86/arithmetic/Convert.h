@@ -112,7 +112,7 @@ raze_always_inline To scalar_narrow_(From v) noexcept {
 template <arch::ISA ISA, class Target, class To, sizetype N>
 raze_always_inline Target load_target_from_buffer_(const To* buf) noexcept {
     if constexpr (is_simd_tuple<std::remove_cvref_t<Target>>::value) {
-        return [] <sizetype... Is> (const To * b, std::index_sequence<Is...>) -> Target raze_always_inline_lambda {
+        return [] <sizetype... Is> (const To * b, std::index_sequence<Is...>) raze_always_inline_lambda {
             using FirstChunk = simd_tuple_element_t<0, Target>;
             return simd_tuple_make(load_<ISA, simd_tuple_element_t<Is, Target>>(b + Is * (sizeof(FirstChunk) / sizeof(To)))...);
         }(buf, std::make_index_sequence<simd_tuple_size<std::remove_cvref_t<Target>>::value>{});
@@ -792,8 +792,8 @@ convert_static_cast_semantics_(V x) noexcept {
                 else if constexpr (sizeof(To) == 2) {
                     if constexpr (x_to_x && has_sse2<ISA>) {
                         if constexpr (has_bwvl) return _mm_cvtepi32_epi16(_mm_cvttpd_epi32(x));
-                        else if constexpr (has_ssse3<ISA>) return _mm_shuffle_epi8(i32, _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1));
-                        else return _mm_packs_epi32(_mm_srai_epi32(_mm_slli_epi32(i32, 16), 16), _mm_setzero_si128());
+                        else if constexpr (has_ssse3<ISA>) return _mm_shuffle_epi8(_mm_cvttpd_epi32(x), _mm_setr_epi8(0, 1, 4, 5, 8, 9, 12, 13, -1, -1, -1, -1, -1, -1, -1, -1));
+                        else return _mm_packs_epi32(_mm_srai_epi32(_mm_slli_epi32(_mm_cvttpd_epi32(x), 16), 16), _mm_setzero_si128());
                     }
                     else if constexpr (y_to_x && has_ymm_v) {
                         if constexpr (has_bwvl) return _mm_cvtepi32_epi16(_mm256_cvttpd_epi32(x));
@@ -835,7 +835,7 @@ convert_static_cast_semantics_(V x) noexcept {
                         }
                         else if constexpr (has_avx2_v) {
                             if constexpr (frm_sgn) 
-                                return simd_tuple_make((_mm256_cvtepi8_epi32(x)),
+                                return simd_tuple_make(_mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(x)),
                                     _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(_mm_srli_si128(x, 8))));
                             else 
                                 return simd_tuple_make(_mm256_cvtepi32_ps(_mm256_cvtepu8_epi32(x)),
@@ -1333,7 +1333,9 @@ convert_saturated_(V x) noexcept {
 
         if constexpr (i_to_i) {
             constexpr bool need_scalar_narrowing = sizeof(To) < sizeof(From);
-            if constexpr (need_scalar_narrowing) return scalar_fallback_convert_<ISA, true, From, To>(x);
+            if constexpr (need_scalar_narrowing) {
+                return scalar_fallback_convert_<ISA, true, From, To>(x);
+            }
 
             constexpr bool sgn_to_unsgn = frm_sgn && !to_sgn;
 

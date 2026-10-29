@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <raze/arch/CpuFeature.h>
-#include <raze/math/BitMath.h>
 #include <src/raze/math/BitTestAndReset.h>
 
 raze_disable_warning_msvc(4310)
@@ -14,7 +13,7 @@ raze_always_inline u32 scan_reverse_(u32 v) noexcept {
     _BitScanReverse(&index, static_cast<unsigned long>(v));
     return static_cast<u32>(index);
 #else
-    return static_cast<u32>(_bit_scan_reverse(static_cast<i32>(v)));
+    return 31 - static_cast<u32>(__builtin_clz(static_cast<i32>(v)));
 #endif
 }
 

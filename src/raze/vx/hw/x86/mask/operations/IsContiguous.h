@@ -18,7 +18,13 @@ raze_always_inline bool is_contiguous_(M mask, i32 n, i32 k) noexcept {
 	else if constexpr (std::is_integral_v<M>) {
 		auto len = k - n;
 		
-		if constexpr (N == 64) return _tzcnt_u64((~mask) >> n) >= len;
+		if constexpr (N == 64) {
+#if defined(raze_cpp_msvc_only)
+			return _tzcnt_u64((~mask) >> n) >= len;
+#else
+			return __builtin_ctzll((~mask) >> n) >= len;
+#endif
+		}
 		else if constexpr (has_bmi2<ISA>) return _bzhi_u64((~mask) >> n, len) == 0;
 		else return (((~mask) >> n) & ((1ull << len) - 1)) == 0; // Compilers usually turn this code into bzhi,
 		// but for compatibility with MSVC Runtime Dispatch, this is implemented manually
