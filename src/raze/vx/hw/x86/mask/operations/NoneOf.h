@@ -2,7 +2,7 @@
 
 #include <src/raze/vx/hw/x86/compare/Equal.h>
 #include <src/raze/vx/hw/x86/mask/operations/ToBitmask.h>
-#include <src/raze/vx/hw/x86/construct/AllOnes.h>
+#include <src/raze/vx/hw/x86/construct/AllBits.h>
 #include <src/raze/vx/hw/x86/mask/operations/MaskAnd.h>
 
 __RAZE_VX_NAMESPACE_BEGIN

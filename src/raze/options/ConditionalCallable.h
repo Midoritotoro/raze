@@ -38,11 +38,11 @@ struct conditional_callable_impl:  callable<F, OptionsValues, Options...> {
         return base_t::operator[](or_(condition, source));
     }
 
-    template <class T, class ... Ts>
+    template <class ... Ts>
     constexpr raze_always_inline auto behavior(callable_options auto const& opts,
-         const T& x1, const Ts& ... xs) const noexcept 
+        const Ts& ... xs) const noexcept 
     {
-        return func_t::deferred_call(opts, x1, xs...);
+        return func_t::deferred_call(opts, xs...);
     }
 };
 
@@ -83,11 +83,11 @@ template <template <class> class F, class OptionsValues, class ... Options>
 struct conditional_callable: conditional_callable_impl<F, OptionsValues, conditional_option, Options...> {
     using base_t = conditional_callable_impl<F, OptionsValues, conditional_option, Options...>;
 
-    template <class T, class ... Ts>
+    template <class ... Ts>
     constexpr raze_always_inline auto behavior(callable_options auto const& opts, 
-        const T& x1, const Ts&... xs) const noexcept 
+        const Ts&... xs) const noexcept 
     {
-        return base_t::behavior(opts, x1, xs...);
+        return base_t::behavior(opts, xs...);
     }
 };
 

@@ -16,26 +16,26 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-struct broadcast_mode {};
-constexpr inline auto broadcast = raze::options::flag(broadcast_mode{});
-struct broadcast_option : raze::options::exact_option<broadcast> {};
+struct uniform_mode {};
+constexpr inline auto uniform = raze::options::flag(uniform_mode{});
+struct uniform_option : raze::options::exact_option<uniform> {};
 
 //struct mirror_mode {};
 //constexpr inline auto mirror = raze::options::flag(mirror_mode{});
 //struct mirror_option : raze::options::exact_option<mirror> {};
 
 template <class Options>
-struct configurable_fold_t : options::conditional_callable<configurable_fold_t, Options, broadcast_option> {
+struct configurable_fold_t : options::conditional_callable<configurable_fold_t, Options, uniform_option> {
     template <simd_type V, class F>
     raze_nodiscard raze_always_inline V operator()(const V& x, F f) const noexcept
-        requires(Options::contains(broadcast))
+        requires(Options::contains(uniform))
     {
         return options::dispatch_call(*this, x, traits::fwd_fn(f));
     }
 
     template <simd_type V, class F>
     raze_nodiscard raze_always_inline typename V::value_type operator()(const V& x, F f) const noexcept
-        requires(!Options::contains(broadcast))
+        requires(!Options::contains(uniform))
     {
         return options::dispatch_call(*this, x, traits::fwd_fn(f));
     }
@@ -54,7 +54,7 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
         using Value = typename V::value_type;
 
         if constexpr (V::size() == 1) {
-            if constexpr (Options::contains(broadcast)) return select[opts](x);
+            if constexpr (Options::contains(uniform)) return select[opts](x);
             else return Value(select[opts](x)[std::integral_constant<sizetype, 0>{}]);
         }
         else {
@@ -66,7 +66,7 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
                 return x;
             } (std::make_integer_sequence<sizetype, depth>{});
 
-            if constexpr (Options::contains(broadcast)) return r;
+            if constexpr (Options::contains(uniform)) return r;
             else return r[std::integral_constant<sizetype, 0>{}];
         }
     }

@@ -35,7 +35,7 @@ RTTS_CASE_TPL("raze::vx::fold", rtts::simd::all_simd_infos)
     }
 
     {
-        auto result = raze::vx::fold[raze::vx::broadcast](v, raze::vx::add);
+        auto result = raze::vx::fold[raze::vx::uniform](v, raze::vx::add);
         T expected = std::accumulate(arr, arr + N, T(0));
         RTTS_ALL_VALIDATE_VECTOR(result, [&](auto) { return expected; });
     }

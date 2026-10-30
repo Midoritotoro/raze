@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/common/PatternsCheck.h>
 #include <src/raze/vx/hw/x86/shuffle/GenericShuffle.h>
+#include <src/raze/vx/hw/configurable/construct/Zero.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -44,7 +45,7 @@ template <simd_type V, class Int>
 raze_nodiscard raze_always_inline V slide_right_fallback_(const V& x, Int sh) noexcept {
     alignas(sizeof(V)) typename V::value_type arr[V::size() * 2];
 
-    vx::store[vx::aligned](arr, V::zero());
+    vx::store[vx::aligned](arr, zero<V>());
     vx::store[vx::aligned](arr + V::size(), x);
 
     return vx::load<V>(arr + (V::size() - sh));
@@ -71,21 +72,21 @@ raze_always_inline V slide_right_native_(V x, Pattern p) noexcept {
             auto low_part = _mm256_setzero_si256();
             auto high_part = _mm256_setzero_si256();
 
-            if constexpr (shift_bytes >= sizeof(V)) return zero_<isa, V>();
+            if constexpr (shift_bytes >= sizeof(V)) return zero_<isa, V, Value>();
             else if constexpr (shift_bytes == 0) return x;
             else if constexpr (shift_bytes < 16) {
                 low_part = as<__m256i>(x);
                 high_part = _mm256_inserti128_si256(high_part, as<__m128i>(x), 1);
             }
             else if constexpr (shift_bytes < 32) low_part = _mm256_inserti128_si256(low_part, as<__m128i>(x), 1);
-            else return zero_<isa, V>();
+            else return zero_<isa, V, Value>();
 
             if constexpr ((shift_bytes % 16) == 0) return as<V>(low_part);
             return as<V>(_mm256_alignr_epi8(low_part, high_part, 16 - (shift_bytes & 0xF)));
         }
     }
     else if constexpr (sizeof(V) == 64) {
-        if constexpr (shift_bytes >= sizeof(V)) return zero_<isa, V>();
+        if constexpr (shift_bytes >= sizeof(V)) return zero_<isa, V, Value>();
 
         auto low_part = _mm512_setzero_si512();
         auto high_part = _mm512_setzero_si512();
@@ -106,7 +107,7 @@ raze_always_inline V slide_right_native_(V x, Pattern p) noexcept {
         else if constexpr (shift_bytes < 64) {
             low_part = _mm512_maskz_shuffle_i64x2(0xC0, as<__m512i>(x), as<__m512i>(x), 0x00);
         }
-        else return zero_<isa, V>();
+        else return zero_<isa, V, Value>();
 
         if constexpr ((shift_bytes % 4) == 0) return as<V>(_mm512_alignr_epi32(
             as<__m512i>(x), _mm512_setzero_si512(), (16 - (shift_bytes >> 2)) & 15));
@@ -123,7 +124,7 @@ raze_always_inline V slide_right_native_(V x, Pattern p) noexcept {
     else {
         alignas(sizeof(V)) Value arr[p.size() * 2];
 
-        store_(arr, zero_<isa, V>(), aligned_policy{});
+        store_(arr, zero_<isa, V, Value>(), aligned_policy{});
         store_(arr + p.size(), x, aligned_policy{});
 
         return load_<isa, V>(arr + (p.size() - shift));
@@ -135,7 +136,7 @@ raze_always_inline pattern_vector_t<Pattern> slide_right_(const pattern_vector_t
     using V = pattern_vector_t<Pattern>;
 
     if constexpr (get_slide_right_shift(p) == 0) return x;
-    else if constexpr (get_slide_right_shift(p) >= p.size()) return V::zero();
+    else if constexpr (get_slide_right_shift(p) >= p.size()) return zero<V>();
     else if constexpr (native<V>) {
         auto r = x;
 

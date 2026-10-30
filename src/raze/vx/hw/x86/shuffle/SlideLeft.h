@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/common/PatternsCheck.h>
 #include <src/raze/vx/hw/x86/shuffle/GenericShuffle.h>
+#include <src/raze/vx/hw/configurable/construct/Zero.h>
 
 #if defined(raze_cpp_msvc)
 #pragma strict_gs_check(off)
@@ -51,7 +52,7 @@ raze_always_inline V slide_left_fallback_(const V& x, Int sh) noexcept {
     alignas(sizeof(V)) typename V::value_type arr[V::size() * 2];
 
     vx::store[vx::aligned](arr, x);
-    vx::store[vx::aligned](arr + V::size(), V::zero());
+    vx::store[vx::aligned](arr + V::size(), zero<V>());
 
     return vx::load<V>(arr + sh);
 }
@@ -79,7 +80,7 @@ raze_always_inline V slide_left_native_(V x, Pattern p) noexcept {
                 high_part = as<__m256i>(x);
             }
             else if constexpr (shift_bytes < 32) high_part = _mm256_inserti128_si256(high_part, _mm256_extracti128_si256(as<__m256i>(x), 1), 0);
-            else return zero_<isa, V>();
+            else return zero_<isa, V, Value>();
 
             if constexpr ((shift_bytes % 16) == 0) return as<V>(high_part);
             return as<V>(_mm256_alignr_epi8(low_part, high_part, shift_bytes & 0xF));
@@ -104,7 +105,7 @@ raze_always_inline V slide_left_native_(V x, Pattern p) noexcept {
         else if constexpr (shift_bytes < 64) {
             high_part = _mm512_maskz_shuffle_i64x2(0x03, as<__m512i>(x), as<__m512i>(x), 0x03);
         }
-        else return zero_<isa, V>();
+        else return zero_<isa, V, Value>();
 
         if constexpr (has_avx512bw<isa>) {
             return as<V>(_mm512_alignr_epi8(low_part, high_part, shift_bytes & 0xF));
@@ -124,7 +125,7 @@ raze_always_inline V slide_left_native_(V x, Pattern p) noexcept {
         alignas(sizeof(V)) Value arr[p.size() * 2];
 
         store_(arr, x, aligned_policy{});
-        store_(arr + p.size(), zero_<isa, V>(), aligned_policy{});
+        store_(arr + p.size(), zero_<isa, V, Value>(), aligned_policy{});
 
         return load_<isa, V>(arr + shift);
     }
@@ -136,7 +137,7 @@ slide_left_(const pattern_vector_t<Pattern>& x, Pattern p) noexcept {
     using V = pattern_vector_t<Pattern>;
 
     if constexpr (get_slide_left_shift(p) == 0) return x;
-    else if constexpr (get_slide_left_shift(p) >= V::size()) return V::zero();
+    else if constexpr (get_slide_left_shift(p) >= V::size()) return zero<V>();
     else if constexpr (native<V>) {
         auto r = x;
 

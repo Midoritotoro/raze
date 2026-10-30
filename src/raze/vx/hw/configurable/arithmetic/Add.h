@@ -54,6 +54,7 @@ struct configurable_add_t: options::conditional_callable<configurable_add_t, Opt
     }
 };
 
+
 constexpr inline auto add = options::functor<configurable_add_t>;
 
 __RAZE_VX_NAMESPACE_END

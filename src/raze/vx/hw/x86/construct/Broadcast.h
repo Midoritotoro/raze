@@ -2,7 +2,7 @@
 
 #include <src/raze/vx/hw/x86/cast/As.h>
 #include <raze/math/BitCast.h>
-#include <src/raze/vx/hw/x86/memory/Load.h>
+#include <src/raze/vx/hw/x86/merge/Select.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -98,6 +98,72 @@ raze_always_inline V broadcast_(WrappedType value) noexcept
 	else {
 		return value;
 	}
+}
+
+template <arch::ISA	ISA, intrin_or_arithmetic_type V, class WrappedType, raw_mask_type Mask>
+raze_always_inline V broadcast_(WrappedType value, Mask mask) noexcept
+	requires(arithmetic_type<WrappedType> || has_value_type<WrappedType>)
+{
+	using T = typename unwrap_int<WrappedType>::type;
+
+	if constexpr (sizeof(V) == 16) {
+		if constexpr ((epi64<T> || epu64<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm_maskz_broadcastq_epi64(mask, _mm_cvtsi64_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi32<T> || epu32<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm_maskz_broadcastd_epi32(mask, _mm_cvtsi32_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm_maskz_broadcastw_epi16(mask, _mm_cvtsi32_si128(value)));
+		else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm_maskz_broadcastb_epi8(mask, _mm_cvtsi32_si128(value)));
+		else if constexpr (ps<T> && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm_maskz_broadcastss_ps(mask, _mm_set_ss(value)));
+	}
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr ((epi64<T> || epu64<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_maskz_broadcastq_epi64(mask, _mm_cvtsi64_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi32<T> || epu32<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_maskz_broadcastd_epi32(mask, _mm_cvtsi32_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_maskz_broadcastw_epi16(mask, _mm_cvtsi32_si128(value)));
+		else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_maskz_broadcastb_epi8(mask, _mm_cvtsi32_si128(value)));
+		else if constexpr (ps<T> && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_maskz_broadcastss_ps(mask, _mm_set_ss(value)));
+		else if constexpr (pd<T> && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_maskz_broadcastsd_pd(mask, _mm_set_sd(value)));
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T> || epu64<T>) return as<V>(_mm512_maskz_broadcastq_epi64(mask, _mm_cvtsi64_si128(math::pointer_to_integral(value))));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_maskz_broadcastd_epi32(mask, _mm_cvtsi32_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA>) return as<V>(_mm512_maskz_broadcastw_epi16(mask, _mm_cvtsi32_si128(value)));
+		else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA>) return as<V>(_mm512_maskz_broadcastb_epi8(mask, _mm_cvtsi32_si128(value)));
+		else if constexpr (ps<T>) return as<V>(_mm512_maskz_broadcastss_ps(mask, _mm_set_ss(value)));
+		else if constexpr (pd<T>) return as<V>(_mm512_maskz_broadcastsd_pd(mask, _mm_set_sd(value)));
+	}
+
+	return select_<ISA, T>(broadcast_<ISA, V>(value), mask);
+}
+
+template <arch::ISA	ISA, intrin_or_arithmetic_type V, class WrappedType, raw_mask_type Mask, intrin_or_arithmetic_type Src>
+raze_always_inline V broadcast_(WrappedType value, Mask mask, Src src) noexcept
+	requires(arithmetic_type<WrappedType> || has_value_type<WrappedType>)
+{
+	using T = typename unwrap_int<WrappedType>::type;
+
+	if constexpr (sizeof(V) == 16) {
+		if constexpr ((epi64<T> || epu64<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm_mask_broadcastq_epi64(as<__m128i>(src), mask, _mm_cvtsi64_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi32<T> || epu32<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm_mask_broadcastd_epi32(as<__m128i>(src), mask, _mm_cvtsi32_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm_mask_broadcastw_epi16(as<__m128i>(src), mask, _mm_cvtsi32_si128(value)));
+		else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm_mask_broadcastb_epi8(as<__m128i>(src), mask, _mm_cvtsi32_si128(value)));
+		else if constexpr (ps<T> && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm_mask_broadcastss_ps(as<__m128>(src), mask, _mm_set_ss(value)));
+	}
+	else if constexpr (sizeof(V) == 32) {
+		if constexpr ((epi64<T> || epu64<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_mask_broadcastq_epi64(as<__m256i>(src), mask, _mm_cvtsi64_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi32<T> || epu32<T>) && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_mask_broadcastd_epi32(as<__m256i>(src), mask, _mm_cvtsi32_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_mask_broadcastw_epi16(as<__m256i>(src), mask, _mm_cvtsi32_si128(value)));
+		else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_mask_broadcastb_epi8(as<__m256i>(src), mask, _mm_cvtsi32_si128(value)));
+		else if constexpr (ps<T> && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_mask_broadcastss_ps(as<__m256>(src), mask, _mm_set_ss(value)));
+		else if constexpr (pd<T> && has_avx512f<ISA> && has_avx512vl<ISA>) return as<V>(_mm256_mask_broadcastsd_pd(as<__m256d>(src), mask, _mm_set_sd(value)));
+	}
+	else if constexpr (sizeof(V) == 64) {
+		if constexpr (epi64<T> || epu64<T>) return as<V>(_mm512_mask_broadcastq_epi64(as<__m512i>(src), mask, _mm_cvtsi64_si128(math::pointer_to_integral(value))));
+		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_mask_broadcastd_epi32(as<__m512i>(src), mask, _mm_cvtsi32_si128(math::pointer_to_integral(value))));
+		else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA>) return as<V>(_mm512_mask_broadcastw_epi16(as<__m512i>(src), mask, _mm_cvtsi32_si128(value)));
+		else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA>) return as<V>(_mm512_mask_broadcastb_epi8(as<__m512i>(src), mask, _mm_cvtsi32_si128(value)));
+		else if constexpr (ps<T>) return as<V>(_mm512_mask_broadcastss_ps(as<__m512>(src), mask, _mm_set_ss(value)));
+		else if constexpr (pd<T>) return as<V>(_mm512_mask_broadcastsd_pd(as<__m512d>(src), mask, _mm_set_sd(value)));
+	}
+
+	return select_<ISA, T>(broadcast_<ISA, V>(value), src, mask);
 }
 
 __RAZE_VX_NAMESPACE_END

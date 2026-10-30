@@ -1,12 +1,9 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/memory/Load.h>
-#include <src/raze/vx/hw/x86/memory/Store.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 #include <array>
-#include <src/raze/vx/hw/x86/shuffle/SlideRight.h>
-#include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
-
 
 __RAZE_VX_NAMESPACE_BEGIN
 

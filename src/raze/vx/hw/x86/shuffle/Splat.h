@@ -61,7 +61,8 @@ raze_always_inline V splat_native_(V x, std::integral_constant<sizetype, I> i) n
 				return as<V>(_mm256_insertf128_si256(as<__m256i>(half), as<__m128i>(half), 1));
 			}
 			else {
-				const auto half = _mm256_permute_ps(as<__m256>(x), broadcast_pshufd_index_(std::integral_constant<sizetype, i % (size / 2)>{}));
+				constexpr auto permute = broadcast_pshufd_index_(std::integral_constant<sizetype, i % (size / 2)>{});
+				const auto half = _mm256_permute_ps(as<__m256>(x), permute);
 				return as<V>(_mm256_permute2f128_si256(as<__m256i>(half), as<__m256i>(half), 0x31));
 			}
 		}

@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <src/raze/vx/hw/x86/construct/AllOnes.h>
+#include <src/raze/vx/hw/x86/construct/AllBits.h>
 #include <src/raze/vx/hw/x86/bitwise/BitXor.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -16,7 +16,7 @@ raze_always_inline V bit_not_(V x) noexcept {
 		using Unsigned = typename IntegerForSizeof<V>::Unsigned;
 		return math::bit_cast<V>(Unsigned(~math::bit_cast<Unsigned>(x)));
 	}
-	else return bit_xor_<ISA, T>(x, all_ones_<ISA, V>());
+	else return bit_xor_<ISA, T>(x, all_bits_<ISA, V, T>());
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type	V, raw_mask_type	M>
@@ -26,7 +26,7 @@ raze_always_inline V bit_not_(V x, M mask) noexcept {
 		using Unsigned = typename IntegerForSizeof<V>::Unsigned;
 		return mask ? math::bit_cast<V>(Unsigned(~math::bit_cast<Unsigned>(x))) : 0;
 	}
-	else return bit_xor_<ISA, T>(x, all_ones_<ISA, V>(), mask);
+	else return bit_xor_<ISA, T>(x, all_bits_<ISA, V, T>(), mask);
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type	V, raw_mask_type	M>
@@ -36,7 +36,7 @@ raze_always_inline V bit_not_(V x, M mask, V src) noexcept {
 		using Unsigned = typename IntegerForSizeof<V>::Unsigned;
 		return mask ? math::bit_cast<V>(Unsigned(~math::bit_cast<Unsigned>(x))) : src;
 	}
-	else return bit_xor_<ISA, T>(x, all_ones_<ISA, V>(), mask, src);
+	else return bit_xor_<ISA, T>(x, all_bits_<ISA, V, T>(), mask, src);
 }
 
 __RAZE_VX_NAMESPACE_END

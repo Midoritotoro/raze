@@ -7,7 +7,6 @@
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/memory/Store.h>
-#  include <src/raze/vx/hw/x86/memory/StoreNt.h>
 #  include <src/raze/vx/hw/x86/memory/MaskStore.h>
 #  include <src/raze/vx/hw/x86/merge/Select.h>
 #endif // defined(raze_processor_x86)

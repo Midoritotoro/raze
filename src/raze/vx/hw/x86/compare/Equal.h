@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/cast/As.h>
-#include <iostream>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

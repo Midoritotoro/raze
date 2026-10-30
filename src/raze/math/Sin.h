@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/vx/Simd.h>
+#include <raze/vx/Algorithm.h>
 #include <src/raze/math/MathConstants.h>
 #include <src/raze/math/SinTables.h>
 #include <src/raze/math/Fma.h>

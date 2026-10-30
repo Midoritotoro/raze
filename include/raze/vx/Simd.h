@@ -1,11 +1,24 @@
 ﻿#pragma once 
 
-#include <raze/vx/Mask.h>
 #include <src/raze/vx/reference/SimdElementReference.h>
-
+#include <raze/vx/Mask.h>
 #include <raze/vx/Abi.h>
+
 #include <src/raze/vx/Storage.h>
-#include <raze/vx/Algorithm.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Add.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Sub.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Mul.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Div.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Negate.h>
+#include <src/raze/vx/hw/configurable/bitwise/ShiftRight.h>
+#include <src/raze/vx/hw/configurable/bitwise/ShiftLeft.h>
+#include <src/raze/vx/hw/configurable/compare/IsEqual.h>
+#include <src/raze/vx/hw/configurable/compare/IsGreater.h>
+#include <src/raze/vx/hw/configurable/compare/IsGreaterEqual.h>
+#include <src/raze/vx/hw/configurable/compare/IsLess.h>
+#include <src/raze/vx/hw/configurable/compare/IsLessEqual.h>
+#include <src/raze/vx/hw/configurable/compare/IsNotEqual.h>
+#include <src/raze/vx/hw/configurable/construct/Broadcast.h>
 
 
 raze_disable_warning_msvc(26495)
@@ -54,13 +67,7 @@ public:
     using value_type    = T;
     using mask_type     = simd_mask<T, Abi>;
     using abi_type      = Abi;
-
-    /**
-     * @brief Constructs an uninitialized SIMD vector.
-     *
-     * The contents of the vector are unspecified. Use `fill()` or `broadcast()`
-     * to initialize all lanes explicitly.
-    */
+ 
     raze_no_stack_protector simd() noexcept = default;
     raze_no_stack_protector ~simd() noexcept = default;
     raze_no_stack_protector simd(const simd&) noexcept = default;
@@ -75,7 +82,7 @@ public:
      * @param value  The scalar value to broadcast into all lanes.
     */
     raze_no_stack_protector raze_always_inline explicit(false) simd(value_type v) noexcept {
-        fill(v);
+        *this = broadcast<simd>(v);
     }
 
     raze_no_stack_protector raze_always_inline simd(const storage_type& s) noexcept {
@@ -83,55 +90,21 @@ public:
     }
 
     /**
-     * @brief Returns a SIMD vector with all lanes set to zero.
-    */
-    raze_nodiscard static raze_no_stack_protector raze_always_inline simd zero() noexcept {
-        simd r{ uninitialized };
-
-        r.__for_each_chunk([] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-            using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
-            chunk = zero_<isa, Storage>();
-        });
-
-        return r;
-    }
-
-    /**
-     * @brief Returns a SIMD vector with all lanes set to `value`.
-    */
-    raze_nodiscard raze_no_stack_protector static raze_always_inline simd broadcast(value_type v) noexcept {
-        simd r {uninitialized};
-        
-        r.__for_each_chunk([v] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-            using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
-            chunk = broadcast_<isa, Storage>(v);
-        });
-
-        return r;
-    }
-
-    /**
-     * @brief Fills all lanes with `value`.
-     * @return Reference to `*this`.
-    */
-    raze_no_stack_protector raze_always_inline simd& fill(value_type v) noexcept {
-        __for_each_chunk([&] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
-            using Storage = std::remove_cvref_t<decltype(ustorage(chunk))>;
-            chunk = broadcast_<isa, Storage>(v);
-        });
-
-        return *this;
-    }
-
-    /**
-     * @brief Element-wise logical left shift.
+     * @brief Element-wise left shift.
      *
-     * @param shift  Number of bits to shift.
+     * Shifts every lane left by `shift` bits: `out[i] = x[i] << shift`.
      *
      * Semantics:
-     * 
-     *  Logical shift for all element types.
-     *  If `shift >= bit_width(value_type)`, the result is zero.
+     * - Logical shift for all element types.
+     * - If `shift >= bit_width(value_type)`, every lane becomes zero.
+     *
+     * @param x      The vector to shift.
+     * @param shift  Per-lane shift amount (uniform across all lanes).
+     * @return A vector with every lane shifted left by `shift`.
+     *
+     * @code
+     * V h = v << 4;
+     * @endcode
     */
     raze_always_inline friend simd operator<<(const simd& x, u32 shift) noexcept {
         return bit_shl(x, shift);
@@ -140,21 +113,41 @@ public:
     /**
      * @brief Element-wise right shift.
      *
-     * @param shift  Number of bits to shift.
+     * Shifts every lane right by `shift` bits: `out[i] = x[i] >> shift`.
      *
      * Semantics:
-     * 
-     *  Unsigned types: logical shift.
-     * 
-     *  Signed types: arithmetic (sign-extending) shift.
-     * 
-     *  If `shift >= bit_width(value_type)`, the result is zero or
-     *  sign-extended depending on type.
+     * - Unsigned `value_type`: logical shift.
+     * - Signed `value_type`: arithmetic shift.
+     * - If `shift >= bit_width(value_type)`, the result is zero (unsigned) or
+     *   sign-extended (signed).
+     *
+     * @param x      The vector to shift.
+     * @param shift  Per-lane shift amount (uniform across all lanes).
+     * @return A vector with every lane shifted right by `shift`.
+     *
+     * @code
+     * V h = v >> 4;
+     * @endcode
     */
     raze_always_inline friend simd operator>>(const simd& x, u32 shift) noexcept {
         return bit_shr(x, shift);
     }
 
+    /**
+     * @brief Element-wise subtraction.
+     *
+     * Equivalent to `raze::vx::sub(x, y)`. Operand constraints identical to
+     * `operator+`.
+     *
+     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
+     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
+     * @return `r` with `r[i] = x[i] - y[i]` for every lane `i`.
+     *
+     * @code
+     * V r = a - b;
+     * V t = 2 - b;
+     * @endcode
+    */
     template <class L, class R>
     raze_always_inline friend simd operator-(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>)
@@ -162,6 +155,22 @@ public:
         return sub(x, y);
     }
 
+    /**
+     * @brief Element-wise addition.
+     *
+     * Equivalent to `raze::vx::add(x, y)`. Accepts either another `simd` of the
+     * same type, or a scalar convertible to `value_type` on one side (broadcast
+     * to all lanes).
+     *
+     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
+     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
+     * @return `r` with `r[i] = x[i] + y[i]` for every lane `i`.
+     *
+     * @code
+     * V r = a + b;
+     * V s = a + 1;
+     * @endcode
+    */
     template <class L, class R>
     raze_always_inline friend simd operator+(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>)
@@ -169,6 +178,20 @@ public:
         return add(x, y);
     }
 
+    /**
+     * @brief Element-wise multiplication.
+     *
+     * Equivalent to `raze::vx::mul(x, y)`. Operand constraints identical to
+     * `operator+`.
+     *
+     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
+     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
+     * @return `r` with `r[i] = x[i] * y[i]` for every lane `i`.
+     *
+     * @code
+     * V r = a * b;
+     * @endcode
+    */
     template <class L, class R>
     raze_always_inline friend simd operator*(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>)
@@ -176,6 +199,23 @@ public:
         return mul(x, y);
     }
 
+    /**
+     * @brief Element-wise division.
+     *
+     * Equivalent to `raze::vx::div(x, y)`. Operand constraints identical to
+     * `operator+`.
+     *
+     * Division-by-zero, NaN, and rounding follow the `value_type` semantics;
+     * the operator does not define a special behavior.
+     *
+     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
+     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
+     * @return `r` with `r[i] = x[i] / y[i]` for every lane `i`.
+     *
+     * @code
+     * V r = a / b;
+     * @endcode
+    */
     template <class L, class R>
     raze_always_inline friend simd operator/(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
@@ -183,6 +223,15 @@ public:
         return div(x, y);
     }
 
+    /**
+     * @brief Element-wise bitwise AND.
+     * Equivalent to `raze::vx::bit_and(x, y)`.
+     * Operand constraints identical to `operator+`.
+     * @return `r` with `r[i] = x[i] & y[i]`.
+     * @code
+     * V m = a & 0xFF;
+     * @endcode
+    */
     template <class L, class R>
     raze_always_inline friend simd operator&(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
@@ -190,6 +239,12 @@ public:
         return bit_and(x, y);
     }
 
+    /**
+     * @brief Element-wise bitwise OR.
+     * Equivalent to `raze::vx::bit_or(x, y)`.
+     * Operand constraints identical to `operator+`.
+     * @return `r` with `r[i] = x[i] | y[i]`.
+    */
     template <class L, class R>
     raze_always_inline friend simd operator|(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>)
@@ -197,6 +252,12 @@ public:
         return bit_or(x, y);
     }
 
+    /**
+     * @brief Element-wise bitwise XOR.
+     * Equivalent to `raze::vx::bit_xor(x, y)`.
+     * Operand constraints identical to `operator+`.
+     * @return `r` with `r[i] = x[i] ^ y[i]`.
+    */
     template <class L, class R>
     raze_always_inline friend simd operator^(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
@@ -204,10 +265,28 @@ public:
         return bit_xor(x, y);
     }
 
+    /**
+     * @brief Element-wise bitwise NOT.
+     * Equivalent to `raze::vx::bit_not(*this)`.
+     * @return `r` with `r[i] = ~(*this)[i]`.
+     * @code
+     * V f = ~a;
+     * @endcode
+    */
     raze_always_inline simd operator~() const noexcept {
         return bit_not(*this);
     }
 
+    /**
+     * @brief Element-wise equality comparison.
+     * Equivalent to `raze::vx::is_equal(x, y)`.
+     * @return `mask_type` with lane `i` true iff `x[i] == y[i]`.
+     * @note Returns a mask. Use `m[i]` for a per-lane bool, or pass `m` to a
+     *       masked overload (e.g. `raze::vx::add[m](a, b)`).
+     * @code
+     * auto m = a == b;
+     * @endcode
+    */
     template <class L, class R>
     raze_always_inline friend mask_type operator==(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
@@ -215,6 +294,11 @@ public:
         return is_equal(x, y);
     }
 
+    /**
+     * @brief Element-wise inequality comparison.
+     * Equivalent to `raze::vx::is_not_equal(x, y)`.
+     * @return `mask_type` with lane `i` true iff `x[i] != y[i]`.
+    */
     template <class L, class R>
     raze_always_inline friend mask_type operator!=(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
@@ -222,6 +306,11 @@ public:
         return is_not_equal(x, y);
     }
 
+    /**
+     * @brief Element-wise less-than comparison.
+     * Equivalent to `raze::vx::is_less(x, y)`.
+     * @return `mask_type` with lane `i` true iff `x[i] < y[i]`.
+    */
     template <class L, class R>
     raze_always_inline friend mask_type operator<(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
@@ -229,6 +318,11 @@ public:
         return is_less(x, y);
     }
 
+    /**
+     * @brief Element-wise less-or-equal comparison.
+     * Equivalent to `raze::vx::is_less_equal(x, y)`.
+     * @return `mask_type` with lane `i` true iff `x[i] <= y[i]`.
+    */
     template <class L, class R>
     raze_always_inline friend mask_type operator<=(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>)
@@ -236,6 +330,11 @@ public:
         return is_less_equal(x, y);
     }
 
+    /**
+     * @brief Element-wise greater-than comparison.
+     * Equivalent to `raze::vx::is_greater(x, y)`.
+     * @return `mask_type` with lane `i` true iff `x[i] > y[i]`.
+    */
     template <class L, class R>
     raze_always_inline friend mask_type operator>(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>)
@@ -243,6 +342,11 @@ public:
         return is_greater(x, y);
     }
 
+    /**
+     * @brief Element-wise greater-or-equal comparison.
+     * Equivalent to `raze::vx::is_greater_equal(x, y)`.
+     * @return `mask_type` with lane `i` true iff `x[i] >= y[i]`.
+    */
     template <class L, class R>
     raze_always_inline friend mask_type operator>=(const L& x, const R& y) noexcept
         requires(correct_simd_binary_op<simd, L, R>) 
@@ -250,83 +354,221 @@ public:
         return is_greater_equal(x, y);
     }
 
+    /**
+     * @brief In-place element-wise right shift.
+     * Equivalent to `*this = *this >> shift`.
+     * @param shift  Per-lane shift amount.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator>>=(u32 shift) noexcept {
         return *this = (*this >> shift);
     }
 
+    /**
+     * @brief In-place element-wise left shift.
+     * Equivalent to `*this = *this << shift`.
+     * @param shift  Per-lane shift amount.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator<<=(u32 shift) noexcept {
         return *this = (*this << shift);
     }
 
+    /**
+     * @brief In-place element-wise bitwise AND.
+     * Equivalent to `*this = *this & other`.
+     * @param other  `simd` of the same type.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator&=(const simd& other) noexcept {
         return *this = (*this & other);
     }
 
+    /**
+     * @brief In-place element-wise bitwise OR.
+     * Equivalent to `*this = *this | other`.
+     * @param other  `simd` of the same type.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator|=(const simd& other) noexcept {
         return *this = (*this | other);
     }
 
+    /**
+     * @brief In-place element-wise bitwise XOR.
+     * Equivalent to `*this = *this ^ other`.
+     * @param other  `simd` of the same type.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator^=(const simd& other) noexcept {
         return *this = (*this ^ other);
     }
 
+    /**
+     * @brief In-place element-wise addition.
+     * Equivalent to `*this = *this + other`.
+     * @param other  `simd` of the same type.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator+=(const simd& other) noexcept {
         return *this = (*this + other);
     }
 
+    /**
+     * @brief In-place element-wise subtraction.
+     * Equivalent to `*this = *this - other`.
+     * @param other  `simd` of the same type.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator-=(const simd& other) noexcept {
         return *this = (*this - other);
     }
 
+    /**
+     * @brief In-place element-wise multiplication.
+     * Equivalent to `*this = *this * other`.
+     * @param other  `simd` of the same type.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator*=(const simd& other) noexcept {
         return *this = (*this * other);
     }
 
+    /**
+     * @brief In-place element-wise division.
+     * Equivalent to `*this = *this / other`.
+     * @param other  `simd` of the same type.
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator/=(const simd& other) noexcept {
         return *this = (*this / other);
     }
 
+    /**
+     * @brief Unary plus: returns a copy of `*this`.
+     *
+     * Provided for symmetry with unary `operator-`, so that generic code
+     * writing `+v` compiles. No computation is performed.
+     *
+     * @return A copy of `*this`.
+    */
     raze_always_inline simd operator+() const noexcept {
         return _storage;
     }
 
+    /**
+     * @brief Element-wise negation.
+     *
+     * Equivalent to `raze::vx::neg(*this)`.
+     * @return `r` with `r[i] = -(*this)[i]` for every lane `i`.
+     *
+     * @code
+     * V n = -v;
+     * @endcode
+    */
     raze_always_inline simd operator-() const noexcept {
         return neg(*this);
     }
 
+    /**
+     * @brief Postfix increment: returns a copy, then adds 1 to every lane.
+     *
+     * Equivalent to:
+     * ```cpp
+     * simd tmp = *this;
+     * *this += simd(1);
+     * return tmp;
+     * ```
+     *
+     * @return A copy of `*this` before the increment.
+    */
     raze_nodiscard raze_always_inline simd operator++(int) noexcept {
         simd self = *this;
         *this += simd(1);
         return self;
     }
-
+    
+    /**
+     * @brief Prefix increment: adds 1 to every lane, returns `*this`.
+     *
+     * Equivalent to `*this += simd(1); return *this;`.
+     *
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator++() noexcept {
         return *this += simd(1);
     }
 
+    /**
+     * @brief Postfix decrement: returns a copy, then subtracts 1 from every lane.
+     *
+     * Equivalent to:
+     * ```cpp
+     * simd tmp = *this;
+     * *this -= simd(1);
+     * return tmp;
+     * ```
+     *
+     * @return A copy of `*this` before the decrement.
+    */
     raze_always_inline simd operator--(int) noexcept {
         simd self = *this;
         *this -= simd(1);
         return self;
     }
 
+    /**
+     * @brief Prefix decrement: subtracts 1 from every lane, returns `*this`.
+     *
+     * Equivalent to `*this -= simd(1); return *this;`.
+     *
+     * @return Reference to `*this`.
+    */
     raze_always_inline simd& operator--() noexcept {
         return *this -= simd(1);
     }
 
+    /**
+     * @brief Returns the value of lane `i` (runtime index, read-only).
+     *
+     * @param i  Lane index; must satisfy `0 <= i < size()`.
+     * @return The scalar value stored in lane `i`.
+    */
     raze_nodiscard raze_always_inline T operator[](i32 i) const noexcept {
         return __extract(i);
     }
 
+    /**
+     * @brief Returns a mutable proxy referring to lane `i` (runtime index).
+     *
+     * The proxy supports assignment (`v[i] = 42;`) and read-through. It is a
+     * `simd_element_reference<simd>`, not a `T&`, but behaves like one for
+     * scalar assignment/read.
+     *
+     * @param i  Lane index; must satisfy `0 <= i < size()`.
+     * @return A proxy referring to lane `i` of `*this`.
+    */
     raze_nodiscard raze_always_inline reference operator[](i32 i) noexcept {
         return reference(*this, i);
     }
 
+    /**
+     * @brief Returns a mutable proxy referring to lane `I` (compile-time index).
+     *
+     * @tparam I  Compile-time lane index; must satisfy `0 <= I < size()`.
+     * @return A proxy referring to lane `I` of `*this`.
+    */
     template <sizetype I>
     raze_nodiscard raze_always_inline reference operator[](std::integral_constant<sizetype, I>) noexcept {
         return reference(*this, I);
     }
 
+    /**
+     * @brief Returns the value of lane `I` (compile-time index, read-only).
+     *
+     * @tparam I  Compile-time lane index; must satisfy `0 <= I < size()`.
+     * @return The scalar value stored in lane `I`.
+    */
     template <sizetype I>
     raze_nodiscard raze_always_inline T operator[](std::integral_constant<sizetype, I> i) const noexcept {
         return __extract(i);
@@ -348,6 +590,10 @@ public:
         return _storage;
     }
 
+    raze_nodiscard static constexpr bool is_native() noexcept {
+        return storage_type::is_native();
+    }
+
     raze_nodiscard raze_always_inline storage_type __storage() const noexcept {
         return _storage;
     }
@@ -364,10 +610,6 @@ public:
     template <class _Function_, class ... _Args_>
     raze_always_inline void __for_each_chunk(_Function_&& __f, _Args_&& ... __args) const noexcept {
         _storage.__for_each_chunk(std::forward<_Function_>(__f), std::forward<_Args_>(__args)...);
-    }
-
-    raze_nodiscard static constexpr bool is_native() noexcept {
-        return storage_type::is_native();
     }
 
     template <sizetype I>

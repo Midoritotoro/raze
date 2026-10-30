@@ -5,6 +5,9 @@
 
 __RAZE_VX_NAMESPACE_BEGIN 
 
+template <arch::ISA ISA, intrin_or_arithmetic_type V, arithmetic_type T>
+raze_always_inline V zero_() noexcept;
+
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op>
 raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op) noexcept;
 
@@ -119,7 +122,7 @@ raze_always_inline V select_(V x, M	mask) noexcept {
 		}
 	}
 
-	return select_<ISA, T>(x, zero_<ISA, V>(), mask);
+	return select_<ISA, T>(x, zero_<ISA, V, T>(), mask);
 }
 
 

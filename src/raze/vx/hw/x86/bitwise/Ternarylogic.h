@@ -18,7 +18,7 @@ raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op>
         [] (auto a, auto b) raze_always_inline_lambda { return bit_and_<ISA, T>(a, b); },
         [] (auto a, auto b) raze_always_inline_lambda { return bit_andnot_<ISA, T>(a, b); },
         [] (auto a) raze_always_inline_lambda { return bit_not_<ISA, T>(a); },
-        [] () raze_always_inline_lambda { return zero_<ISA, V>(); });
+        [] () raze_always_inline_lambda { return zero_<ISA, V, T>(); });
 }
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op, raw_mask_type M>

@@ -31,7 +31,7 @@ struct counter {
         || (has_avx512bw<abi_t<V>::isa>), sizetype, simd<index_type, abi_t<V>>>;
 
     counter() noexcept {
-        if constexpr (simd_type<storage_type>) _storage = storage_type::zero();
+        if constexpr (simd_type<storage_type>) _storage = zero<storage_type>();
         else _storage = 0;
     }
 
