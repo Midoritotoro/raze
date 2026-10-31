@@ -146,6 +146,45 @@ struct configurable_convert_t {
     };
 };
 
+/**
+ * @ingroup raze_vx_arith
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Converts every lane of a SIMD vector to a different arithmetic type.
+ *
+ * Returns a SIMD vector of type `simd<T, V::abi_type>` where each lane is converted from the
+ * source element type to the destination type `T`.
+ *
+ * By default, standard C++ `static_cast` semantics are used (truncation). If the
+ * `raze::vx::saturated` option is attached, conversions are clamped to the destination
+ * type's limits.
+ *
+ * ### Saturation semantics
+ * When `[raze::vx::saturated]` is used, the conversion follows these rules:
+ * - **Float to Integer**: `NaN` becomes `0`. Values out of bounds are clamped to `min`/`max`.
+ * - **Float to Float (narrowing)**: `NaN` remains `NaN`. Out-of-bounds values are clamped.
+ * - **Integer to Integer (narrowing)**: Out-of-bounds values are clamped to `min`/`max`.
+ * - **Signed to Unsigned**: Negative values become `0`. Values exceeding `max` are clamped.
+ * - **Unsigned to Signed**: Values exceeding `max` are clamped.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <arithmetic_type T>
+ * constexpr inline *unspecified* convert;
+ * ```
+ *
+ * ### Template Parameters
+ * - `T` — The destination arithmetic type (e.g., `int8_t`, `float`).
+ *
+ * ### Parameters
+ * - `x` — The source SIMD vector.
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A vector of type `simd<T, V::abi_type>` containing the converted lanes.
+*/
 template <arithmetic_type T>
 constexpr inline auto convert = options::functor<configurable_convert_t<T>::template convert>;
 

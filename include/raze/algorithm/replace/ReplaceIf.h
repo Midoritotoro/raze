@@ -111,6 +111,9 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Replaces all elements satisfying a specific predicate in a range with a new value.
  *
  * 1) Replaces each element `*i` in `[first, last)` with `new_value` if

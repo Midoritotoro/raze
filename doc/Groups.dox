@@ -1,0 +1,31 @@
+/**
+ * @defgroup raze_algo Algorithms
+ * Range-based algorithms.
+ *
+ * Vectorized and scalar algorithms like `for_each`, `fold`, `transform`, 
+ * and `replace`. Each is an `options::functor` and accepts compile-time 
+ * modifiers through `operator[]`.
+ *
+ * @see @ref dynamic_dispatch
+ * @see @ref mask_semantics
+ */
+
+/**
+ * @defgroup raze_options Options
+ * Compile-time modifiers for algorithms and primitives.
+ *
+ * Passed to algorithm objects via `operator[]` to control vectorization 
+ * strategy, loop unrolling, and dispatch behavior.
+ */
+
+/**
+ * @defgroup raze_vx_construct Vector Construction
+ */
+
+/**
+ * @defgroup raze_vx_arith Vector Arithmetic
+ */
+
+ /**
+ * @defgroup raze_vx_bitwise Vector Bitwise
+ */

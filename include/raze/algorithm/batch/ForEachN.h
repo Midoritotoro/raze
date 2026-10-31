@@ -19,6 +19,9 @@ struct for_each_n_t : Traits {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Applies a function object to the first n elements of a sequence, in order.
  *
  * Applies the unary function `f` to the result of dereferencing every iterator in the range

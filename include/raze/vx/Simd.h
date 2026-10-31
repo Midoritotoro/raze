@@ -280,9 +280,7 @@ public:
     /**
      * @brief Element-wise equality comparison.
      * Equivalent to `raze::vx::is_equal(x, y)`.
-     * @return `mask_type` with lane `i` true iff `x[i] == y[i]`.
-     * @note Returns a mask. Use `m[i]` for a per-lane bool, or pass `m` to a
-     *       masked overload (e.g. `raze::vx::add[m](a, b)`).
+     * @return `mask_type` with lane `i` true if `x[i] == y[i]`.
      * @code
      * auto m = a == b;
      * @endcode
@@ -297,7 +295,7 @@ public:
     /**
      * @brief Element-wise inequality comparison.
      * Equivalent to `raze::vx::is_not_equal(x, y)`.
-     * @return `mask_type` with lane `i` true iff `x[i] != y[i]`.
+     * @return `mask_type` with lane `i` true if `x[i] != y[i]`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator!=(const L& x, const R& y) noexcept
@@ -309,7 +307,7 @@ public:
     /**
      * @brief Element-wise less-than comparison.
      * Equivalent to `raze::vx::is_less(x, y)`.
-     * @return `mask_type` with lane `i` true iff `x[i] < y[i]`.
+     * @return `mask_type` with lane `i` true if `x[i] < y[i]`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator<(const L& x, const R& y) noexcept
@@ -321,7 +319,7 @@ public:
     /**
      * @brief Element-wise less-or-equal comparison.
      * Equivalent to `raze::vx::is_less_equal(x, y)`.
-     * @return `mask_type` with lane `i` true iff `x[i] <= y[i]`.
+     * @return `mask_type` with lane `i` true if `x[i] <= y[i]`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator<=(const L& x, const R& y) noexcept
@@ -333,7 +331,7 @@ public:
     /**
      * @brief Element-wise greater-than comparison.
      * Equivalent to `raze::vx::is_greater(x, y)`.
-     * @return `mask_type` with lane `i` true iff `x[i] > y[i]`.
+     * @return `mask_type` with lane `i` true if `x[i] > y[i]`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator>(const L& x, const R& y) noexcept
@@ -345,7 +343,7 @@ public:
     /**
      * @brief Element-wise greater-or-equal comparison.
      * Equivalent to `raze::vx::is_greater_equal(x, y)`.
-     * @return `mask_type` with lane `i` true iff `x[i] >= y[i]`.
+     * @return `mask_type` with lane `i` true if `x[i] >= y[i]`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator>=(const L& x, const R& y) noexcept

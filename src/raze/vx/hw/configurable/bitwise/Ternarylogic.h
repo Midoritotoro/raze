@@ -56,6 +56,43 @@ struct configurable_ternarylogic_t: options::conditional_callable<configurable_t
     }
 };
 
+/**
+ * @ingroup raze_vx_bitwise
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Computes an arbitrary bitwise ternary logic operation.
+ *
+ * Evaluates a bitwise boolean function of three inputs (`x`, `y`, `z`) based on an 8-bit 
+ * truth table `Op`. It is overloaded for both standard SIMD vectors (`simd`) and 
+ * masks (`simd_mask`).
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_or_mask_type T, u8 Op>
+ * T operator()(const T& x, const T& y, const T& z, 
+ *              std::integral_constant<u8, Op> op) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `T` — The target SIMD vector or mask type. Defines the lane count, element type, and ABI.
+ * - `Op` — An 8-bit compile-time immediate representing the truth table.
+ *
+ * ### Parameters
+ * - `x` — The first input vector or mask.
+ * - `y` — The second input vector or mask.
+ * - `z` — The third input vector or mask.
+ * - `op` — A compile-time `std::integral_constant` carrying the truth table `Op`.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics
+ *
+ * ### Return value
+ * A value of type `T` resulting from the bitwise ternary logic evaluation for every selected lane.
+ *
+ * ### Notes
+ * To avoid manually calculating the `Op` immediate, use @ref as_ternary_mask with a logical 
+ * expression involving `raze::vx::A`, `raze::vx::B`, and `raze::vx::C`. 
+*/
 constexpr inline auto ternarylogic = options::functor<configurable_ternarylogic_t>;
 
 __RAZE_VX_NAMESPACE_END

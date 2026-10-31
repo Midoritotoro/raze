@@ -34,11 +34,10 @@ template <sizetype N>
 constexpr inline auto index = std::integral_constant<sizetype, N>{};
 
 /**
- * @ingroup options
+ * @ingroup raze_options
  * @brief Option decorator that sets the loop unrolling factor to @p N.
  *
- * Instructs the algorithm to duplicate loop bodies @p N times per iteration to reduce 
- * branch overhead and maximize CPU pipeline saturation.
+ * Instructs the algorithm to duplicate loop bodies @p N times per iteration.
  *
  * ### Declarations
  * ```cpp
@@ -52,8 +51,8 @@ constexpr inline auto index = std::integral_constant<sizetype, N>{};
  *
  * ### Example
  * ```cpp
- * // Execute with an unrolling factor of 8
- * raze::algorithm::replace[raze::options::unroll<8>](v, 0, 1);
+ * // Execute with an unrolling factor of 2
+ * raze::algorithm::replace[raze::options::unroll<2>](v, 0, 1);
  * ```
  */
 template <sizetype N>
@@ -84,12 +83,11 @@ constexpr auto get_strategy() noexcept {
 struct fscalar_mode {};
 
 /**
- * @ingroup options
+ * @ingroup raze_options
  * @brief Option flag that forces scalar execution mode.
  *
- * When attached to an algorithm, `fscalar` completely disables:
- * 1. Explicit SIMD hardware intrinsics (AVX-512, AVX2, SSE).
- * 2. Autovectorization pragmas and unroll directives.
+ * When attached to an algorithm, `fscalar` completely disables all 
+ * SIMD hardware intrinsics (including compiler autovectorization) .
  *
  * Forces the algorithm to execute using only standard scalar instructions and loops.
  *
@@ -114,12 +112,11 @@ constexpr bool is_fscalar() {
 struct fstatic_mode {};
 
 /**
- * @ingroup options
+ * @ingroup raze_options
  * @brief Option flag enabling static implementations dispatch.
  *
  * Instructs algorithms to prioritize compile-time properties over runtime dynamic checks and dynamic dispatch logic.
  *
- * ```
  * ### Example
  * ```cpp
  * // Static dispatch
@@ -169,3 +166,70 @@ template <template <class> class F>
 static inline constexpr auto function_with_traits = F<supports_traits<F, decltype(no_traits)>>();
 
 __RAZE_OPTIONS_NAMESPACE_END
+
+/**
+ * @page dynamic_dispatch Dynamic dispatch in `raze::algorithm`
+ *
+ * Algorithms in `raze::algorithm` 
+ * can adapt to the host CPU instruction set at runtime. However, the dispatch 
+ * mechanism heavily depends on the target compiler and the available ISA.
+ *
+ * ### Static Dispatch Override
+ *
+ * Regardless of the compiler, if the target ISA at compile time (via `-march`, 
+ * `/arch:`, or specific `-misa*` flags) already satisfies the reference ISA 
+ * (the maximum ISA required by the algorithm's implementation), the algorithm 
+ * will **always** use static dispatch. The runtime check is completely elided.
+ *
+ * ### Mechanism
+ *
+ * If the reference ISA is not guaranteed at compile time, the fallback behavior 
+ * differs by compiler:
+ *
+ * - **MSVC**: **All** algorithms use a hand-written explicit runtime dispatcher. 
+ *   CPU feature detection (e.g., via CPUID) is performed **at program startup**.
+ *   The generated dispatcher then forwards execution to the most optimized 
+ *   implementation based on the detected features.
+ *   There is no automatic compiler-driven dynamic dispatch for loops. To force 
+ *   static dispatch (using the compile-time target ISA), you must explicitly 
+ *   pass the `raze::options::fstatic` option.
+ *
+ * - **GCC / Clang**: Dynamic dispatch is **only** applied to algorithms with 
+ *   loops that are easily auto-vectorizable by the compiler. For these, 
+ *   `__attribute__((target_clones))` is emitted, generating multiple versions 
+ *   of the loop. The runtime resolver selects the best version. More complex 
+ *   algorithms (e.g., those with complex dependencies or hard-to-vectorize 
+ *   predicates) may not receive dynamic dispatch and will rely on the 
+ *   compile-time ISA.
+ *
+ * ### Affected Algorithms
+ *
+ * - **MSVC**: Every algorithm supports runtime dispatch.
+ * - **GCC / Clang**: Primarily simple map-style algorithms and linear traversals 
+ *   where the hot loop is entirely inlined and easily cloned:
+ *   - `for_each`
+ *   - `transform`
+ *   - `replace`
+ *   - and similar element-wise range operations.
+ *
+ * ### Performance Characteristics
+ *
+ * - **Zero API changes**: Call the algorithm as usual.
+ * - **Overhead**: The runtime resolution adds a negligible one-time cost 
+ *   (or a highly predictable branch per call, depending on the compiler). 
+ *   For very short ranges, the dispatch overhead may outweigh the SIMD benefit.
+ * - **Code bloat**: Expect the binary size to increase slightly, as multiple 
+ *   copies of the inner loop exist for different ISAs.
+ *
+ * ### Interplay with Options
+ *
+ * - If `fscalar` is used, the vectorized paths are bypassed entirely, 
+ *   degenerating to a scalar implementation regardless of the CPU capabilities.
+ * - If `fstatic` is used, dynamic dispatch is disabled, and the algorithm relies 
+ *   strictly on the compile-time target ISA.
+ *
+ * ### See also
+ * - @ref mask_semantics
+ * - @ref raze_options
+ * - `raze::options::strategy_mode::autovec`
+*/

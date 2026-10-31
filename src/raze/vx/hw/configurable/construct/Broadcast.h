@@ -46,6 +46,41 @@ struct configurable_broadcast_t {
     };
 };
 
+/**
+ * @ingroup raze_vx_construct
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Broadcasts a scalar value to every lane of a SIMD vector.
+ *
+ * Returns a vector of type `V` where every element is set to the given scalar value `x`.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type V>
+ * constexpr inline *unspecified* broadcast;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The scalar value to broadcast into all selected lanes.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics
+ *
+ * ### Return value
+ * A vector of type `V` with `r[i] == x` for every selected lane.
+ *
+ * ### Example
+ * ```cpp
+ * using V = raze::vx::simd<int>;
+ *
+ * auto b1 = raze::vx::broadcast<V>(42);           // [42, 42, ...]
+ * auto b2 = raze::vx::broadcast<V>[m](42);        // [42 or 0]
+ * auto b3 = raze::vx::broadcast<V>[m, src](42);   // [42 or src[i]]
+ * ```
+*/
 template <simd_type V> 
 constexpr inline auto broadcast = options::functor<configurable_broadcast_t<V>::template broadcast>;
 

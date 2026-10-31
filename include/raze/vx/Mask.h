@@ -96,9 +96,6 @@ public:
 	 * @tparam Policy  Access policy; defaults to `unaligned_policy`.
 	 * @param it       Iterator to the first lane value.
 	 * @param policy   Access policy forwarded to `copy_from`.
-	 *
-	 * @note `it` is taken by value; the range `[it, it + size())` must be valid
-	 *       for the duration of the call.
 	*/
 	template <std::forward_iterator FwdIt, class Policy = unaligned_policy>
 	raze_no_stack_protector raze_always_inline simd_mask(FwdIt it, Policy&& policy = {}) noexcept {
@@ -116,8 +113,6 @@ public:
 	 *                 `load_mask_` on the fast path; ignored on the fallback.
 	 * @param it       Iterator to the first lane value.
 	 * @param policy   Access policy.
-	 *
-	 * @note `it` is advanced `size()` times; the range `[it, it + size())` must be valid.  
 	*/
 	template <std::forward_iterator FwdIt, class Policy = unaligned_policy>
 	raze_no_stack_protector raze_always_inline void copy_from(FwdIt it, Policy&& policy = {}) noexcept
@@ -173,7 +168,9 @@ public:
 	 * @brief Returns lane `i` as `bool` (runtime index, read-only).
 	 *
 	 * @param i  Lane index; must satisfy `0 <= i < size()`.
-	 * @return `true` iff lane `i` is set.
+	 * @return `true` if lane `i` is set.
+	 * 
+	 * @note No bounds checking; out-of-range `i` is undefined behavior.
 	*/
 	raze_always_inline bool operator[](i32 i) const noexcept {
 		return __extract(i);

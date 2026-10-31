@@ -46,6 +46,34 @@ struct configurable_not_t: options::conditional_callable<configurable_not_t, Opt
     }
 };
 
+/**
+ * @ingroup raze_vx_bitwise
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Computes the element-wise bitwise NOT of a SIMD vector or mask.
+ *
+ * Returns a value of type `T` where each lane is the bitwise NOT
+ * of the corresponding lane in `x`.
+ * This operation is overloaded for both standard SIMD vectors (`simd`) and masks (`simd_mask`).
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_or_mask_type T>
+ * T operator()(const T& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `T` — The target SIMD vector or mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input vector or mask.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics
+ *
+ * ### Return value
+ * A value of type `T` with `r[i] == ~x[i]` for every selected lane.
+*/
 constexpr inline auto bit_not = options::functor<configurable_not_t>;
 
 __RAZE_VX_NAMESPACE_END

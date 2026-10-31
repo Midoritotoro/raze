@@ -1,13 +1,15 @@
 #pragma once 
 
 #include <src/raze/vx/hw/configurable/bitwise/And.h>
-#include <src/raze/vx/hw/configurable/bitwise/Andnot.h>
+#include <src/raze/vx/hw/configurable/bitwise/AndNot.h>
+#include <src/raze/vx/hw/configurable/bitwise/NotAnd.h>
 #include <src/raze/vx/hw/configurable/bitwise/Or.h>
 #include <src/raze/vx/hw/configurable/bitwise/Xor.h>
 #include <src/raze/vx/hw/configurable/bitwise/Not.h>
 #include <src/raze/vx/hw/configurable/bitwise/ShiftLeft.h>
 #include <src/raze/vx/hw/configurable/bitwise/ShiftRight.h>
 #include <src/raze/vx/hw/configurable/bitwise/Ternarylogic.h>
+#include <src/raze/vx/hw/configurable/bitwise/AsTernaryMask.h>
 
 
 #if defined(raze_processor_x86)

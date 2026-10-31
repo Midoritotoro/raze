@@ -44,6 +44,33 @@ struct configurable_neg_t: options::conditional_callable<configurable_neg_t, Opt
     }
 };
 
+/**
+ * @ingroup raze_vx_arith
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Computes the element-wise negation of a SIMD vector.
+ *
+ * Returns a vector of type `V` where each lane is the arithmetic negation
+ * of the corresponding lane in `x`.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type V>
+ * V operator()(const V& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input vector.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics
+ *
+ * ### Return value
+ * A vector of type `V` with `r[i] == -x[i]` for every selected lane.
+*/
 constexpr inline auto neg = options::functor<configurable_neg_t>;
 
 __RAZE_VX_NAMESPACE_END

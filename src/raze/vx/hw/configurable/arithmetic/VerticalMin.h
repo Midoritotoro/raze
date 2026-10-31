@@ -54,7 +54,52 @@ struct configurable_vmin_t: options::conditional_callable<configurable_vmin_t, O
     }
 };
 
+/**
+ * @ingroup raze_vx_arith
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Computes the element-wise minimum of two SIMD vectors.
+ *
+ * Returns a vector of type `V` where each lane is the minimum of the corresponding lanes in `x` and `y`.
+ * Scalar operands are automatically broadcast to the vector type `V`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Vector-Vector
+ * template <simd_type V>
+ * V operator()(const V& x, const V& y) const noexcept;
+ *
+ * // (2) Vector-Scalar
+ * template <simd_type V>
+ * V operator()(const V& x, typename V::value_type y) const noexcept;
+ *
+ * // (3) Scalar-Vector
+ * template <simd_type V>
+ * V operator()(typename V::value_type x, const V& y) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The left operand (vector or scalar).
+ * - `y` — The right operand (vector or scalar).
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics
+ *
+ * ### Return value
+ * A vector of type `V` with `r[i] == min(x[i], y[i])` for every selected lane.
+*/
 constexpr inline auto vertical_min = options::functor<configurable_vmin_t>;
+
+
+/**
+ * @ingroup raze_vx_arith
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Alias for @ref vertical_min.
+*/
 constexpr inline auto vmin = vertical_min;
 
 __RAZE_VX_NAMESPACE_END

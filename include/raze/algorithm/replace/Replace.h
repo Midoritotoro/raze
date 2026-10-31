@@ -28,6 +28,9 @@ struct replace_t : Traits {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Replaces all elements equal to a given value in a range with a new value.
  *
  * 1) Replaces each element `*i` in `[first, last)` with `new_value` if

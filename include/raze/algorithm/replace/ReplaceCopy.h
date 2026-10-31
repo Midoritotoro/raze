@@ -29,6 +29,9 @@ struct replace_copy_t : Traits {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Copies elements from a range to another range, replacing all elements equal to a given value with a new value.
  *
  * 1) Copies elements from `[first, sent)` to the destination range beginning at `out`,
