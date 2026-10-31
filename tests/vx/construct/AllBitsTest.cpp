@@ -32,7 +32,7 @@ RTTS_CASE_TPL("raze::vx::all_bits", rtts::simd::all_simd_infos)
     raze::vx::store(arrR2, r2);
     raze::vx::store(arrR3, r3);
 
-    constexpr SignedInt all_ones = -1;
+    constexpr SignedInt all_ones = SignedInt(-1);
 
     for (size_t i = 0; i < N; ++i) {
         RTTS_EXPECT(raze::math::bit_cast<SignedInt>(arrR1[i]) == all_ones);

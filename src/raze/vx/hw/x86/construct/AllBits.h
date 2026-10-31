@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/x86/compare/Equal.h>
 #include <src/raze/vx/hw/x86/construct/Zero.h>
+#include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -37,12 +38,9 @@ raze_always_inline V all_bits_() noexcept {
 
 template <arch::ISA	ISA, intrin_or_arithmetic_type V, arithmetic_type T, raw_mask_type Mask>
 raze_always_inline V all_bits_(Mask mask) noexcept {
-	if constexpr (has_avx512f<ISA>) {
-		auto z = zero_<ISA, V, T>();
-		return ternarylogic_<ISA, T>(z, z, z, std::integral_constant<u8, 0xff>{}, mask);
-	}
+	if constexpr (!std::same_as<std::remove_cvref_t<Mask>, bool>) return to_vector_<ISA, V, T>(mask);
+	else return select_<ISA, T>(all_bits_<ISA, V, T>(), mask);
 
-	return select_<ISA, T>(all_bits_<ISA, V, T>(), mask);
 }
 
 template <arch::ISA	ISA, intrin_or_arithmetic_type V, arithmetic_type T, raw_mask_type Mask>

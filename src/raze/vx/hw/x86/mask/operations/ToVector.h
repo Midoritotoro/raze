@@ -18,7 +18,7 @@ raze_always_inline auto to_vector_(M mask) noexcept {
         if constexpr (sizeof(T) == 8) {
             if constexpr (has_avx512vl<ISA>) {
                 if constexpr (has_avx512dq<ISA>) return as<V>(_mm_movm_epi64(mask));
-                else return as<V>(_mm512_maskz_mov_epi64(mask, all_bits_<ISA, __m512i, T>()));
+                else return as<V>(_mm_maskz_mov_epi64(mask, all_bits_<ISA, __m128i, T>()));
             }
             else {
                 const auto broadcasted = _mm_set1_epi8(static_cast<i8>(mask));
@@ -29,7 +29,7 @@ raze_always_inline auto to_vector_(M mask) noexcept {
         else if constexpr (sizeof(T) == 4) {
             if constexpr (has_avx512vl<ISA>) {
                 if constexpr (has_avx512dq<ISA>) return as<V>(_mm_movm_epi32(mask));
-                else return as<V>(_mm512_maskz_mov_epi32(mask, all_bits_<ISA, __m512i, T>()));
+                else return as<V>(_mm_maskz_mov_epi32(mask, all_bits_<ISA, __m128i, T>()));
             }
             else return as<V>(_mm_cmpgt_epi32(_mm_and_si128(_mm_set1_epi8(
                 static_cast<i8>(mask)), _mm_setr_epi32(1, 2, 4, 8)), _mm_setzero_si128()));
@@ -92,7 +92,7 @@ raze_always_inline auto to_vector_(M mask) noexcept {
         else if constexpr (sizeof(T) == 4) {
             if constexpr (has_avx512vl<ISA>) {
                 if constexpr (has_avx512dq<ISA>) return as<V>(_mm256_movm_epi32(mask));
-                else return as<V>(_mm256_maskz_mov_epi64(mask, all_bits_<ISA, __m256i, T>()));
+                else return as<V>(_mm256_maskz_mov_epi32(mask, all_bits_<ISA, __m256i, T>()));
             }
             else if constexpr(has_avx2<ISA>) {
                 const auto vector_mask = _mm256_set1_epi32(static_cast<i32>(mask));

@@ -425,3 +425,36 @@ private:
 };
 
 __RAZE_VX_NAMESPACE_END
+
+/**
+ * @page mask_semantics Mask semantics in `raze::vx`
+ *
+ * Most configurable primitives in `raze::vx` — `broadcast`, `all_bits`,
+ * `zero`, `add`, `sub`, `mul`, `div`, `select`, `load`, `store`, and their
+ * friends — accept mask modifiers through `operator[]`. This page describes
+ * those modifiers once; individual primitive pages only list which forms
+ * they support and link here.
+ *
+ * ### Call forms
+ *
+ * For a primitive `op` (a `options::functor`):
+ *
+ * ```cpp
+ * op(...);              // (1) unmasked
+ * op[m](...);           // (2) maskz
+ * op[m, src](...);      // (3) merge
+ * op[src, m](...);      // (3') merge, arguments in any order
+ * ```
+ *
+ * - **Unmasked (1)** — every lane receives the primitive's natural result.
+ * - **Maskz (2)** — lane `i` receives the result if `m` selects it, else the
+ *   lane is zeroed. 
+ * - **Merge (3)/(3')** — lane `i` receives the result if `m` selects it, else
+ *   `src[i]`. `m` and `src` may be given in either order; both overloads
+ *   normalize to the same `or_(m, src)` expression.
+ * ### Low-level equivalence
+ *
+ * This is mostly useful inside generic code that builds conditions
+ * dynamically; ordinary call sites should use the `[m]` / `[m, src]`
+ * shorthands.
+*/
