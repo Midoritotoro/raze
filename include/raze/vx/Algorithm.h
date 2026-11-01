@@ -48,10 +48,6 @@ __RAZE_VX_NAMESPACE_BEGIN
 */
 template <trivially_chunk_swappable V>
 class counter {
-    using storage_type = std::conditional_t<(has_avx512f<abi_t<V>::isa> && sizeof(value_type) >= 4)
-        || (has_avx512bw<abi_t<V>::isa>), sizetype, simd<index_type, abi_t<V>>>;
-
-    storage_type _storage;
 public:
     using mask_type = typename V::mask_type;
     using value_type = typename V::value_type;
@@ -77,6 +73,11 @@ public:
         if constexpr (std::integral<storage_type>) return _storage;
         else return horizontal_sum(_storage);
     }
+private:
+    using storage_type = std::conditional_t<(has_avx512f<abi_t<V>::isa> && sizeof(value_type) >= 4)
+        || (has_avx512bw<abi_t<V>::isa>), sizetype, simd<index_type, abi_t<V>>>;
+
+    storage_type _storage;
 };
 
 __RAZE_VX_NAMESPACE_END

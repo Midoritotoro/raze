@@ -112,6 +112,66 @@
           "type": "FILEPATH"
         }
       ]
+    },
+    {
+      "name": "ICPX-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "CMAKE_C_COMPILER",
+          "value": "D:/icpx/compiler/2026.2/bin/icx.exe",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_CXX_COMPILER",
+          "value": "D:/icpx/compiler/2026.2/bin/icx.exe",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_EXE_LINKER_FLAGS",
+          "value": "-Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib\" -Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib/intel64\"",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_SHARED_LINKER_FLAGS",
+          "value": "-Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib\" -Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib/intel64\"",
+          "type": "STRING"
+        }
+      ]
+    },
+    {
+      "name": "ICPX-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "variables": [
+        {
+          "name": "CMAKE_C_COMPILER",
+          "value": "D:/icpx/compiler/2026.2/bin/icx.exe",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_CXX_COMPILER",
+          "value": "D:/icpx/compiler/2026.2/bin/icx.exe",
+          "type": "FILEPATH"
+        },
+        {
+          "name": "CMAKE_EXE_LINKER_FLAGS",
+          "value": "-Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib\" -Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib/intel64\"",
+          "type": "STRING"
+        },
+        {
+          "name": "CMAKE_SHARED_LINKER_FLAGS",
+          "value": "-Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib\" -Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib/intel64\"",
+          "type": "STRING"
+        }
+      ]
     }
   ]
 }

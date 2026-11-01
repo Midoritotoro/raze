@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/x86/arithmetic/Sub.h>
 #include <src/raze/vx/hw/x86/construct/Zero.h>
+#include <src/raze/vx/hw/x86/bitwise/BitXor.h>
 #include <src/raze/math/SignBit.h>
 
 
