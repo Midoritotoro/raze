@@ -23,6 +23,33 @@ struct configurable_reverse_t: options::conditional_callable<configurable_revers
     }
 };
 
+/**
+ * @ingroup raze_vx_shuffle
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Reverses the order of elements in a SIMD vector.
+ *
+ * Returns a vector of type `V` where the lanes are ordered in reverse (i.e., lane `0` receives
+ * the value of lane `V::size() - 1`, lane `1` receives `V::size() - 2`, and so on).
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type V>
+ * V operator()(const V& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input vector to reverse.
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A vector of type `V` with the elements in reverse order.
+*/
 constexpr inline auto reverse = options::functor<configurable_reverse_t>;
 
 __RAZE_VX_NAMESPACE_END

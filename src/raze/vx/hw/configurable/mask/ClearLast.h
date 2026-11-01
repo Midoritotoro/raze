@@ -50,6 +50,44 @@ struct configurable_clear_last_t : options::conditional_callable<configurable_cl
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Clears the last set lane (highest index) in a SIMD mask.
+ *
+ * Scans the input mask `x` from the highest lane downwards, finds the first lane that is `true`, and
+ * sets it to `false`. All lower-indexed lanes remain unchanged. If no lane is `true`,
+ * the mask is returned unmodified. Also accepts `algorithm::tail_mask_type` by delegating
+ * to its underlying mask.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Standard mask
+ * template <simd_mask_type M>
+ * M operator()(const M& x) const noexcept;
+ *
+ * // (2) Tail mask
+ * auto operator()(algorithm::tail_mask_type auto const& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `M` — The source SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input mask to modify.
+ *
+ * ### Options
+ * - `raze::vx::not_null` — Assumes the input mask contains at least one `true` lane.
+ *   This skips the internal emptiness check and uses a faster, unsafe implementation.
+ *   If applied to an empty mask, behavior is undefined.
+ *
+ * ### Mask semantics
+ * **Not supported.** 
+ *
+ * ### Return value
+ * A mask of type `M` with the last `true` lane set to `false`.
+*/
 constexpr inline auto clear_last = options::functor<configurable_clear_last_t>;
 
 __RAZE_VX_NAMESPACE_END

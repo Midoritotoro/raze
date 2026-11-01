@@ -1,0 +1,19 @@
+/**
+ * @page supported_arch Supported Architectures
+ *
+ * RAZE is optimized for the x86 (and x86-64) architecture. The library automatically 
+ * detects and adapts to the host CPU's capabilities, utilizing the most advanced instruction 
+ * sets available at compile time or runtime (see @ref dynamic_dispatch).
+ *
+ * The minimum supported architecture is **SSE2** (the x86-64 baseline).
+ *
+ * ### Supported Instruction Sets
+ *
+ * The following ISA extensions are fully supported and utilized by the backend:
+ *
+ * | Family | Supported Extensions |
+ * | :--- | :--- |
+ * | **SSE** | SSE2, SSE3, SSSE3, SSE4.1, SSE4.2 |
+ * | **AVX** | AVX, AVX2, FMA3 |
+ * | **AVX-512** | AVX512F, AVX512VL, AVX512BW, AVX512DQ, AVX512VBMI, AVX512VBMI2 |
+ */

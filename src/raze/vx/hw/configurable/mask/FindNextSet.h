@@ -55,6 +55,40 @@ struct configurable_find_next_set_t : raze::options::conditional_callable<config
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Finds the index of the first set lane strictly after a given position.
+ *
+ * Scans the input mask `x` starting from `from + 1` upwards and returns the index of the first lane
+ * that is `true`. If `from < 0`, the search starts from lane `0`. If no `true` lane is found,
+ * returns `M::size()`. Also accepts `algorithm::tail_mask_type` by delegating to its underlying mask.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_mask_type M>
+ * i32 operator()(const M& x, i32 from) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `M` — The source SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input mask to inspect.
+ * - `from` — The position *after* which to start the search.
+ *
+ * ### Options
+ * - `raze::vx::not_null` — Assumes there is a set lane after `from`.
+ *   This skips the internal checks and uses a faster, unsafe implementation.
+ *   If no such lane exists, behavior is undefined.
+ *
+ * ### Mask semantics
+ * **Not supported.** 
+ *
+ * ### Return value
+ * The 0-based index of the first `true` lane after `from`, or `M::size()` if no such lane exists.
+*/
 constexpr inline auto find_next_set = options::functor<configurable_find_next_set_t>;
 
 __RAZE_VX_NAMESPACE_END

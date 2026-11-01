@@ -74,6 +74,38 @@ struct configurable_is_contiguous_t: options::conditional_callable<configurable_
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Checks if a range of lanes in a SIMD mask is entirely contiguous and `true`.
+ *
+ * Returns `true` if all lanes in the half-open range `[n, k)` are `true`.
+ * Also accepts `algorithm::tail_mask_type` by delegating to its underlying mask.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_mask_type M>
+ * bool operator()(const M& x, i32 n, i32 k) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `M` — The source SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input mask to inspect.
+ * - `n` — The start index of the range (inclusive).
+ * - `k` — The end index of the range (exclusive).
+ *
+ * ### Constraints
+ * In debug builds, asserts that `n < M::size()`, `k <= M::size()`, and `n <= k`.
+ *
+ * ### Mask semantics
+ * **Not supported.** 
+ * 
+ * ### Return value
+ * `true` if all lanes in `[n, k)` are `true`, `false` otherwise.
+*/
 constexpr inline auto is_contiguous = options::functor<configurable_is_contiguous_t>;
 
 __RAZE_VX_NAMESPACE_END

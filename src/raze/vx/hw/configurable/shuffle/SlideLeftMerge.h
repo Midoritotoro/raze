@@ -37,6 +37,43 @@ struct configurable_slide_left_merge_t : options::conditional_callable<configura
     }
 };
 
+/**
+ * @ingroup raze_vx_shuffle
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Shifts the elements of two concatenated SIMD vectors to the left.
+ *
+ * Conceptually concatenates `x` and `y`, then shifts the combined sequence to the left by `i` positions.
+ * The leftmost `i` elements of `x` are discarded, and the rightmost `i` lanes of the result are
+ * filled with the first `i` elements of `y`.
+ * The shift amount can be passed either as a runtime integer or a compile-time `std::integral_constant`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Compile-time shift
+ * template <simd_type V, sizetype Elements>
+ * V operator()(const V& x, const V& y, std::integral_constant<sizetype, Elements> i) const noexcept;
+ *
+ * // (2) Runtime shift
+ * template <simd_type V>
+ * V operator()(const V& x, const V& y, i32 i) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ * - `Elements` — The compile-time shift amount.
+ *
+ * ### Parameters
+ * - `x` — The first input vector (provides the lower/left elements).
+ * - `y` — The second input vector (provides the upper/right elements).
+ * - `i` — The number of positions to shift left.
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A vector of type `V` with `r[j] == x[j + i]` if `j + i < V::size()`, and `r[j] == y[j + i - V::size()]` otherwise.
+*/
 constexpr inline auto slide_left_merge = options::functor<configurable_slide_left_merge_t>;
 
 __RAZE_VX_NAMESPACE_END

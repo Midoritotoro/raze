@@ -41,6 +41,33 @@ struct configurable_select_t: options::conditional_callable<configurable_select_
     }
 };
 
+/**
+ * @ingroup raze_vx_merge
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Selects elements from a SIMD vector based on a mask.
+ *
+ * Returns a vector of type `V` where each lane is preserved from `x` if the mask is `true`,
+ * and replaced with zero or an alternative source `src[i]` if `false`.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type V>
+ * V operator()(const V& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The source vector.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics  
+ *
+ * ### Return value
+ * A vector of type `V` containing the selected elements.
+*/
 constexpr inline auto select = options::functor<configurable_select_t>;
 
 __RAZE_VX_NAMESPACE_END

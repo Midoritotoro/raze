@@ -79,7 +79,7 @@ public:
     /**
      * @brief Constructs a SIMD vector by broadcasting a scalar value.
      *
-     * @param value  The scalar value to broadcast into all lanes.
+     * @param v  The scalar value to broadcast into all lanes.
     */
     raze_no_stack_protector raze_always_inline explicit(false) simd(value_type v) noexcept {
         *this = broadcast<simd>(v);
@@ -91,20 +91,8 @@ public:
 
     /**
      * @brief Element-wise left shift.
-     *
-     * Shifts every lane left by `shift` bits: `out[i] = x[i] << shift`.
-     *
-     * Semantics:
-     * - Logical shift for all element types.
-     * - If `shift >= bit_width(value_type)`, every lane becomes zero.
-     *
-     * @param x      The vector to shift.
-     * @param shift  Per-lane shift amount (uniform across all lanes).
-     * @return A vector with every lane shifted left by `shift`.
-     *
-     * @code
-     * V h = v << 4;
-     * @endcode
+     * @see raze::vx::bit_shl
+     * @return The result of `bit_shl(x, shift)`.
     */
     raze_always_inline friend simd operator<<(const simd& x, u32 shift) noexcept {
         return bit_shl(x, shift);
@@ -112,22 +100,8 @@ public:
 
     /**
      * @brief Element-wise right shift.
-     *
-     * Shifts every lane right by `shift` bits: `out[i] = x[i] >> shift`.
-     *
-     * Semantics:
-     * - Unsigned `value_type`: logical shift.
-     * - Signed `value_type`: arithmetic shift.
-     * - If `shift >= bit_width(value_type)`, the result is zero (unsigned) or
-     *   sign-extended (signed).
-     *
-     * @param x      The vector to shift.
-     * @param shift  Per-lane shift amount (uniform across all lanes).
-     * @return A vector with every lane shifted right by `shift`.
-     *
-     * @code
-     * V h = v >> 4;
-     * @endcode
+     * @see raze::vx::bit_shr
+     * @return The result of `bit_shr(x, shift)`.
     */
     raze_always_inline friend simd operator>>(const simd& x, u32 shift) noexcept {
         return bit_shr(x, shift);
@@ -135,18 +109,8 @@ public:
 
     /**
      * @brief Element-wise subtraction.
-     *
-     * Equivalent to `raze::vx::sub(x, y)`. Operand constraints identical to
-     * `operator+`.
-     *
-     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
-     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
-     * @return `r` with `r[i] = x[i] - y[i]` for every lane `i`.
-     *
-     * @code
-     * V r = a - b;
-     * V t = 2 - b;
-     * @endcode
+     * @see raze::vx::sub
+     * @return The result of `sub(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend simd operator-(const L& x, const R& y) noexcept
@@ -157,19 +121,8 @@ public:
 
     /**
      * @brief Element-wise addition.
-     *
-     * Equivalent to `raze::vx::add(x, y)`. Accepts either another `simd` of the
-     * same type, or a scalar convertible to `value_type` on one side (broadcast
-     * to all lanes).
-     *
-     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
-     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
-     * @return `r` with `r[i] = x[i] + y[i]` for every lane `i`.
-     *
-     * @code
-     * V r = a + b;
-     * V s = a + 1;
-     * @endcode
+     * @see raze::vx::add
+     * @return The result of `add(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend simd operator+(const L& x, const R& y) noexcept
@@ -180,17 +133,8 @@ public:
 
     /**
      * @brief Element-wise multiplication.
-     *
-     * Equivalent to `raze::vx::mul(x, y)`. Operand constraints identical to
-     * `operator+`.
-     *
-     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
-     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
-     * @return `r` with `r[i] = x[i] * y[i]` for every lane `i`.
-     *
-     * @code
-     * V r = a * b;
-     * @endcode
+     * @see raze::vx::mul
+     * @return The result of `mul(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend simd operator*(const L& x, const R& y) noexcept
@@ -201,20 +145,8 @@ public:
 
     /**
      * @brief Element-wise division.
-     *
-     * Equivalent to `raze::vx::div(x, y)`. Operand constraints identical to
-     * `operator+`.
-     *
-     * Division-by-zero, NaN, and rounding follow the `value_type` semantics;
-     * the operator does not define a special behavior.
-     *
-     * @param x  Left operand: `simd` or scalar convertible to `value_type`.
-     * @param y  Right operand: `simd` or scalar convertible to `value_type`.
-     * @return `r` with `r[i] = x[i] / y[i]` for every lane `i`.
-     *
-     * @code
-     * V r = a / b;
-     * @endcode
+     * @see raze::vx::div
+     * @return The result of `div(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend simd operator/(const L& x, const R& y) noexcept
@@ -225,12 +157,8 @@ public:
 
     /**
      * @brief Element-wise bitwise AND.
-     * Equivalent to `raze::vx::bit_and(x, y)`.
-     * Operand constraints identical to `operator+`.
-     * @return `r` with `r[i] = x[i] & y[i]`.
-     * @code
-     * V m = a & 0xFF;
-     * @endcode
+     * @see raze::vx::bit_and
+     * @return The result of `bit_and(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend simd operator&(const L& x, const R& y) noexcept
@@ -241,9 +169,8 @@ public:
 
     /**
      * @brief Element-wise bitwise OR.
-     * Equivalent to `raze::vx::bit_or(x, y)`.
-     * Operand constraints identical to `operator+`.
-     * @return `r` with `r[i] = x[i] | y[i]`.
+     * @see raze::vx::bit_or
+     * @return The result of `bit_or(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend simd operator|(const L& x, const R& y) noexcept
@@ -254,9 +181,8 @@ public:
 
     /**
      * @brief Element-wise bitwise XOR.
-     * Equivalent to `raze::vx::bit_xor(x, y)`.
-     * Operand constraints identical to `operator+`.
-     * @return `r` with `r[i] = x[i] ^ y[i]`.
+     * @see raze::vx::bit_xor
+     * @return The result of `bit_xor(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend simd operator^(const L& x, const R& y) noexcept
@@ -267,11 +193,8 @@ public:
 
     /**
      * @brief Element-wise bitwise NOT.
-     * Equivalent to `raze::vx::bit_not(*this)`.
-     * @return `r` with `r[i] = ~(*this)[i]`.
-     * @code
-     * V f = ~a;
-     * @endcode
+     * @see raze::vx::bit_not
+     * @return The result of `bit_not(*this)`.
     */
     raze_always_inline simd operator~() const noexcept {
         return bit_not(*this);
@@ -279,11 +202,8 @@ public:
 
     /**
      * @brief Element-wise equality comparison.
-     * Equivalent to `raze::vx::is_equal(x, y)`.
-     * @return `mask_type` with lane `i` true if `x[i] == y[i]`.
-     * @code
-     * auto m = a == b;
-     * @endcode
+     * @see raze::vx::is_equal
+     * @return The result of `is_equal(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator==(const L& x, const R& y) noexcept
@@ -294,8 +214,8 @@ public:
 
     /**
      * @brief Element-wise inequality comparison.
-     * Equivalent to `raze::vx::is_not_equal(x, y)`.
-     * @return `mask_type` with lane `i` true if `x[i] != y[i]`.
+     * @see raze::vx::is_not_equal
+     * @return The result of `is_not_equal(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator!=(const L& x, const R& y) noexcept
@@ -306,8 +226,8 @@ public:
 
     /**
      * @brief Element-wise less-than comparison.
-     * Equivalent to `raze::vx::is_less(x, y)`.
-     * @return `mask_type` with lane `i` true if `x[i] < y[i]`.
+     * @see raze::vx::is_less
+     * @return The result of `is_less(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator<(const L& x, const R& y) noexcept
@@ -318,8 +238,8 @@ public:
 
     /**
      * @brief Element-wise less-or-equal comparison.
-     * Equivalent to `raze::vx::is_less_equal(x, y)`.
-     * @return `mask_type` with lane `i` true if `x[i] <= y[i]`.
+     * @see raze::vx::is_less_equal
+     * @return The result of `is_less_equal(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator<=(const L& x, const R& y) noexcept
@@ -330,8 +250,8 @@ public:
 
     /**
      * @brief Element-wise greater-than comparison.
-     * Equivalent to `raze::vx::is_greater(x, y)`.
-     * @return `mask_type` with lane `i` true if `x[i] > y[i]`.
+     * @see raze::vx::is_greater
+     * @return The result of `is_greater(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator>(const L& x, const R& y) noexcept
@@ -342,8 +262,8 @@ public:
 
     /**
      * @brief Element-wise greater-or-equal comparison.
-     * Equivalent to `raze::vx::is_greater_equal(x, y)`.
-     * @return `mask_type` with lane `i` true if `x[i] >= y[i]`.
+     * @see raze::vx::is_greater_equal
+     * @return The result of `is_greater_equal(x, y)`.
     */
     template <class L, class R>
     raze_always_inline friend mask_type operator>=(const L& x, const R& y) noexcept
@@ -354,8 +274,6 @@ public:
 
     /**
      * @brief In-place element-wise right shift.
-     * Equivalent to `*this = *this >> shift`.
-     * @param shift  Per-lane shift amount.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator>>=(u32 shift) noexcept {
@@ -364,8 +282,6 @@ public:
 
     /**
      * @brief In-place element-wise left shift.
-     * Equivalent to `*this = *this << shift`.
-     * @param shift  Per-lane shift amount.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator<<=(u32 shift) noexcept {
@@ -374,8 +290,6 @@ public:
 
     /**
      * @brief In-place element-wise bitwise AND.
-     * Equivalent to `*this = *this & other`.
-     * @param other  `simd` of the same type.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator&=(const simd& other) noexcept {
@@ -384,8 +298,6 @@ public:
 
     /**
      * @brief In-place element-wise bitwise OR.
-     * Equivalent to `*this = *this | other`.
-     * @param other  `simd` of the same type.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator|=(const simd& other) noexcept {
@@ -394,8 +306,6 @@ public:
 
     /**
      * @brief In-place element-wise bitwise XOR.
-     * Equivalent to `*this = *this ^ other`.
-     * @param other  `simd` of the same type.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator^=(const simd& other) noexcept {
@@ -404,8 +314,6 @@ public:
 
     /**
      * @brief In-place element-wise addition.
-     * Equivalent to `*this = *this + other`.
-     * @param other  `simd` of the same type.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator+=(const simd& other) noexcept {
@@ -414,8 +322,6 @@ public:
 
     /**
      * @brief In-place element-wise subtraction.
-     * Equivalent to `*this = *this - other`.
-     * @param other  `simd` of the same type.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator-=(const simd& other) noexcept {
@@ -424,8 +330,6 @@ public:
 
     /**
      * @brief In-place element-wise multiplication.
-     * Equivalent to `*this = *this * other`.
-     * @param other  `simd` of the same type.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator*=(const simd& other) noexcept {
@@ -434,8 +338,6 @@ public:
 
     /**
      * @brief In-place element-wise division.
-     * Equivalent to `*this = *this / other`.
-     * @param other  `simd` of the same type.
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator/=(const simd& other) noexcept {
@@ -444,10 +346,6 @@ public:
 
     /**
      * @brief Unary plus: returns a copy of `*this`.
-     *
-     * Provided for symmetry with unary `operator-`, so that generic code
-     * writing `+v` compiles. No computation is performed.
-     *
      * @return A copy of `*this`.
     */
     raze_always_inline simd operator+() const noexcept {
@@ -456,13 +354,8 @@ public:
 
     /**
      * @brief Element-wise negation.
-     *
-     * Equivalent to `raze::vx::neg(*this)`.
-     * @return `r` with `r[i] = -(*this)[i]` for every lane `i`.
-     *
-     * @code
-     * V n = -v;
-     * @endcode
+     * @see raze::vx::neg
+     * @return The result of `neg(*this)`.
     */
     raze_always_inline simd operator-() const noexcept {
         return neg(*this);
@@ -470,14 +363,6 @@ public:
 
     /**
      * @brief Postfix increment: returns a copy, then adds 1 to every lane.
-     *
-     * Equivalent to:
-     * ```cpp
-     * simd tmp = *this;
-     * *this += simd(1);
-     * return tmp;
-     * ```
-     *
      * @return A copy of `*this` before the increment.
     */
     raze_nodiscard raze_always_inline simd operator++(int) noexcept {
@@ -488,9 +373,6 @@ public:
     
     /**
      * @brief Prefix increment: adds 1 to every lane, returns `*this`.
-     *
-     * Equivalent to `*this += simd(1); return *this;`.
-     *
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator++() noexcept {
@@ -499,14 +381,6 @@ public:
 
     /**
      * @brief Postfix decrement: returns a copy, then subtracts 1 from every lane.
-     *
-     * Equivalent to:
-     * ```cpp
-     * simd tmp = *this;
-     * *this -= simd(1);
-     * return tmp;
-     * ```
-     *
      * @return A copy of `*this` before the decrement.
     */
     raze_always_inline simd operator--(int) noexcept {
@@ -517,9 +391,6 @@ public:
 
     /**
      * @brief Prefix decrement: subtracts 1 from every lane, returns `*this`.
-     *
-     * Equivalent to `*this -= simd(1); return *this;`.
-     *
      * @return Reference to `*this`.
     */
     raze_always_inline simd& operator--() noexcept {
@@ -538,10 +409,6 @@ public:
 
     /**
      * @brief Returns a mutable proxy referring to lane `i` (runtime index).
-     *
-     * The proxy supports assignment (`v[i] = 42;`) and read-through. It is a
-     * `simd_element_reference<simd>`, not a `T&`, but behaves like one for
-     * scalar assignment/read.
      *
      * @param i  Lane index; must satisfy `0 <= i < size()`.
      * @return A proxy referring to lane `i` of `*this`.

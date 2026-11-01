@@ -73,6 +73,40 @@ struct configurable_load_t {
     };
 };
 
-template <simd_type V> constexpr inline auto load = options::functor<configurable_load_t<V>::template load>;
+/**
+ * @ingroup raze_vx_memory
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Loads a SIMD vector from memory.
+ *
+ * Reads `V::size()` elements starting from the provided iterator or pointer and packs them into
+ * a vector of type `V`.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type V>
+ * constexpr inline *unspecified* load;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `it` — The source iterator or pointer to the first element to load.
+ *
+ * ### Options
+ * - `raze::vx::aligned` — Uses aligned memory load instructions. The pointer must satisfy the alignment
+ *   requirements of `V`.
+ * - `raze::vx::safe` — Enables safe memory loading, preventing out-of-bounds reads at the end of mapped pages.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics :
+ *
+ * ### Return value
+ * A vector of type `V` containing the loaded elements. In masked forms, unselected lanes are zero-filled
+ * or copied from `src`.
+*/
+template <simd_type V> 
+constexpr inline auto load = options::functor<configurable_load_t<V>::template load>;
 
 __RAZE_VX_NAMESPACE_END

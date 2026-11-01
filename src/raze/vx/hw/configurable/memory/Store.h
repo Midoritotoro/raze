@@ -66,6 +66,43 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
     }
 };
 
+/**
+ * @ingroup raze_vx_memory
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Stores a SIMD vector to memory.
+ *
+ * Writes the elements of `x` to the memory location starting at `it`.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <any_iterator_or_pointer Mem, simd_type V>
+ * void operator()(Mem it, const V& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `Mem` — The output iterator or pointer type.
+ * - `V` — The source SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `it` — The destination iterator or pointer.
+ * - `x` — The source SIMD vector.
+ *
+ * ### Options
+ * - `raze::vx::aligned` — Uses aligned memory store instructions. The pointer must satisfy the alignment
+ *   requirements of `V`.
+ * - `raze::vx::safe` — Guarantees that unselected memory lanes are entirely untouched (no reads or writes).
+ *   Without this option, unselected lanes remain value-unchanged, but the memory may still be accessed
+ *   (touched), which can cause faults if the memory is unmapped.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics :
+ * - **Maskz (`[m]`)**: Writes `x[i]` to memory only if `m[i]` is `true`. Unselected elements in memory remain value-unchanged.
+ * - **Merge (`[m, src]`)**: Writes `x[i]` to memory if `m[i]` is `true`, otherwise writes `src[i]`.
+ *
+ * ### Return value
+ * (none)
+*/
 constexpr inline auto store = options::functor<configurable_store_t>;
 
 __RAZE_VX_NAMESPACE_END

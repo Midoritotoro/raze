@@ -50,7 +50,42 @@ struct configurable_hmax_t: options::conditional_callable<configurable_hmax_t, O
     }
 };
 
+/**
+ * @ingroup raze_vx_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Computes the horizontal maximum of a SIMD vector.
+ *
+ * Returns the maximum value among all lanes of the input vector `x`.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type V>
+ * typename V::value_type operator()(const V& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The source SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input vector to reduce.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics :
+ * - **Maskz (`[m]`)**: Unselected lanes are evaluated as `0` during the reduction.
+ * - **Merge (`[m, src]`)**: Unselected lanes are evaluated as `src[i]` during the reduction.
+ *
+ * ### Return value
+ * The maximum element of type `V::value_type` across all (selected) lanes.
+*/
 constexpr inline auto horizontal_max = options::functor<configurable_hmax_t>;
+
+/**
+ * @ingroup raze_vx_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Alias for @ref horizontal_max.
+*/
 constexpr inline auto hmax = horizontal_max;
 
 __RAZE_VX_NAMESPACE_END

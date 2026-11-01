@@ -26,6 +26,37 @@ using split_part_t = typename split_part_impl<Pattern,
         ((ChunkIndex + 1) * ChunkSize <= Pattern::size())
             ? ChunkSize : (Pattern::size() - ChunkIndex * ChunkSize)>>::type;
 
+/**
+ * @class shuffle_pattern
+ * @ingroup raze_vx_shuffle_patterns
+ * @brief A compile-time descriptor for SIMD element permutations.
+ *
+ * `shuffle_pattern<V, Idxs...>` describes how to rearrange the elements of a SIMD vector of type `V`.
+ * It acts as a strongly-typed, compile-time array of source indices.
+ *
+ * The pattern holds a sequence of indices `Idxs...`. When applied via `raze::vx::shuffle`, lane `i`
+ * of the result receives the value from lane `Idxs[i]` of the input. If an index equals
+ * `raze::vx::shuffle_zero` (or `-1`), the resulting lane is filled with zeros.
+ *
+ * ### Key Characteristics
+ * - **Compile-time**: All index checking and pattern analysis happens during compilation.
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type.
+ * - `Idxs...` — The sequence of source indices. The number of indices must equal `V::size()`.
+ *
+ * ### Pattern Generators
+ * The library provides several helper aliases to generate common patterns:
+ * - `make_identity_pattern<V>`
+ * - `make_reversed_pattern<V>`
+ * - `make_rotate_left_pattern<V, Shift>`
+ * - `make_rotate_right_pattern<V, Shift>`
+ * - `make_slide_left_pattern<V, Shift>`
+ * - `make_slide_right_pattern<V, Shift>`
+ * - `make_splat_pattern<V, Idx>`
+ * - `make_zip_pattern<V>` / `make_unzip_pattern<V>`
+ * - `make_swap_adjacent_pattern<V, GroupSize>`
+*/
 template <simd_type V, sizetype ... Idxs>
 struct shuffle_pattern {
 	static_assert(sizeof...(Idxs) > 0);

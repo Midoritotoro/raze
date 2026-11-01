@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/bitwise/BitNot.h>
+#include <src/raze/vx/hw/x86/mask/operations/MaskAnd.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -169,6 +170,60 @@ raze_always_inline auto avx_less_fallback_(V x, V y) noexcept {
         as<Low>(_mm256_extractf128_si256(as<__m256i>(y), 1)));
 
     return as<V>(_mm256_insertf128_si256(as<__m256i>(low), high, 1));
+}
+
+template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type Mask>
+raze_always_inline auto less_(V x, V y, Mask mask) noexcept {
+    if constexpr (sizeof(V) == 16 && has_avx512vl<ISA>) {
+        if constexpr (epi64<T>) return _mm_mask_cmplt_epi64_mask(mask, x, y);
+        else if constexpr (epu64<T>) return _mm_mask_cmplt_epu64_mask(mask, x, y);
+        else if constexpr (epi32<T>) return _mm_mask_cmplt_epi32_mask(mask, x, y);
+        else if constexpr (epu32<T>) return _mm_mask_cmplt_epu32_mask(mask, x, y);
+        else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA>) {
+            if constexpr (epi16<T>) return _mm_mask_cmplt_epi16_mask(mask, x, y);
+            else return _mm_mask_cmplt_epu16_mask(mask, x, y);
+        }
+        else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA>) {
+            if constexpr (epi8<T>) return _mm_mask_cmplt_epi8_mask(mask, x, y);
+            else return _mm_mask_cmplt_epu8_mask(mask, x, y);
+        }
+        else if constexpr (pd<T>) return _mm_mask_cmp_pd_mask(mask, x, y, _CMP_LT_OQ);
+        else if constexpr (ps<T>) return _mm_mask_cmp_ps_mask(mask, x, y, _CMP_LT_OQ);
+    }
+    else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA>) {
+        if constexpr (epi64<T>) return _mm256_mask_cmplt_epi64_mask(mask, x, y);
+        else if constexpr (epu64<T>) return _mm256_mask_cmplt_epu64_mask(mask, x, y);
+        else if constexpr (epi32<T>) return _mm256_mask_cmplt_epi32_mask(mask, x, y);
+        else if constexpr (epu32<T>) return _mm256_mask_cmplt_epu32_mask(mask, x, y);
+        else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA>) {
+            if constexpr (epi16<T>) return _mm256_mask_cmplt_epi16_mask(mask, x, y);
+            else return _mm256_mask_cmplt_epu16_mask(mask, x, y);
+        }
+        else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA>) {
+            if constexpr (epi8<T>) return _mm256_mask_cmplt_epi8_mask(mask, x, y);
+            else return _mm256_mask_cmplt_epu8_mask(mask, x, y);
+        }
+        else if constexpr (pd<T>) return _mm256_mask_cmp_pd_mask(mask, x, y, _CMP_LT_OQ);
+        else if constexpr (ps<T>) return _mm256_mask_cmp_ps_mask(mask, x, y, _CMP_LT_OQ);
+    }
+    else if constexpr (sizeof(V) == 64 && has_avx512f<ISA>) {
+        if constexpr (epi64<T>) return _mm512_mask_cmplt_epi64_mask(mask, x, y);
+        else if constexpr (epu64<T>) return _mm512_mask_cmplt_epu64_mask(mask, x, y);
+        else if constexpr (epi32<T>) return _mm512_mask_cmplt_epi32_mask(mask, x, y);
+        else if constexpr (epu32<T>) return _mm512_mask_cmplt_epu32_mask(mask, x, y);
+        else if constexpr ((epi16<T> || epu16<T>) && has_avx512bw<ISA>) {
+            if constexpr (epi16<T>) return _mm512_mask_cmplt_epi16_mask(mask, x, y);
+            else return _mm512_mask_cmplt_epu16_mask(mask, x, y);
+        }
+        else if constexpr ((epi8<T> || epu8<T>) && has_avx512bw<ISA>) {
+            if constexpr (epi8<T>) return _mm512_mask_cmplt_epi8_mask(mask, x, y);
+            else return _mm512_mask_cmplt_epu8_mask(mask, x, y);
+        }
+        else if constexpr (pd<T>) return _mm512_mask_cmp_pd_mask(mask, x, y, _CMP_LT_OQ);
+        else if constexpr (ps<T>) return _mm512_mask_cmp_ps_mask(mask, x, y, _CMP_LT_OQ);
+    }
+
+    return mask_and_<ISA, T>(less_<ISA, T>(x, y), mask);
 }
 
 __RAZE_VX_NAMESPACE_END

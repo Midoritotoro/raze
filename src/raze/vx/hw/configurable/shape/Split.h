@@ -32,6 +32,37 @@ struct configurable_split_t : options::conditional_callable<configurable_split_t
     }
 };
 
+/**
+ * @ingroup raze_vx_shape
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Splits a SIMD vector into two smaller SIMD vectors.
+ *
+ * Divides the input vector `x` into two halves and returns them as a `std::pair`.
+ * If `V::size()` is odd, the first vector contains exactly `V::size() / 2` elements,
+ * and the second vector contains the remaining `V::size() - (V::size() / 2)` elements.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type V>
+ * pair_type<V> operator()(const V& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The source SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input vector to split.
+ *
+ * ### Constraints
+ * - `V::size() > 1` — The input vector must contain at least two elements.
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A `std::pair` containing two SIMD vectors. The sum of their lane counts equals the lane count of `V`.
+*/
 constexpr inline auto split = options::functor<configurable_split_t>;
 
 __RAZE_VX_NAMESPACE_END

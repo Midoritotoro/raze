@@ -50,6 +50,41 @@ struct configurable_concat_t: options::conditional_callable<configurable_concat_
     }
 };
 
+/**
+ * @ingroup raze_vx_shape
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Concatenates multiple SIMD vectors into a single larger SIMD vector.
+ *
+ * Combines the elements of two or more SIMD vectors end-to-end. All input vectors
+ * must share the same ABI ISA. The resulting vector
+ * has a width equal to the sum of the input widths.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_type T, class ... Ts>
+ * concatenated_simd<T, Ts...> operator()(const T& x, const Ts& ... xs) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `T` — The first SIMD type.
+ * - `Ts...` — The remaining SIMD types.
+ *
+ * ### Parameters
+ * - `x` — The first SIMD vector.
+ * - `xs...` — The remaining SIMD vectors to concatenate.
+ *
+ * ### Constraints
+ * - `sizeof...(Ts) > 0` — At least two vectors must be provided.
+ * - All input types must share the same ABI ISA (`same_abi_isa<T, Ts...>`).
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A SIMD vector of type `concatenated_simd<T, Ts...>` containing the elements of the inputs
+ * in the order they were passed.
+*/
 constexpr inline auto concat = options::functor<configurable_concat_t>;
 
 __RAZE_VX_NAMESPACE_END

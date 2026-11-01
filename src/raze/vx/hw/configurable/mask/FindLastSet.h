@@ -52,6 +52,43 @@ struct configurable_find_last_set_t: options::conditional_callable<configurable_
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Finds the reverse index of the highest set lane in a SIMD mask.
+ *
+ * Scans the input mask `x` from the highest lane downwards and returns the reverse index
+ * (where `0` corresponds to the highest lane, `1` to the next, and so on) of the first lane
+ * that is `true`. If all lanes are `false`, returns `M::size()`.
+ * Also accepts `algorithm::tail_mask_type` by delegating to its underlying mask.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_mask_type M>
+ * i32 operator()(const M& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `M` — The source SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input mask to inspect.
+ *
+ * ### Options
+ * - `raze::vx::not_null` — Assumes there is at least one set lane.
+ *   This skips the internal emptiness check and uses a faster, unsafe implementation.
+ *   If applied to a mask where all lanes are `false`, behavior is undefined.
+ *
+ * ### Mask semantics
+ * Supports **only** the maskz form (`[m]`). If a control mask is provided, only lanes where `m[i]` is `true`
+ * are considered during the search.
+ *
+ * **Merge semantics (`[m, src]`) are not supported** 
+ *
+ * ### Return value
+ * The reverse 0-based index of the highest active `true` lane, or `M::size()` if no such lane exists.
+*/
 constexpr inline auto find_last_set = options::functor<configurable_find_last_set_t>;
 
 __RAZE_VX_NAMESPACE_END

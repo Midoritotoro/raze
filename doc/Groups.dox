@@ -29,3 +29,42 @@
  /**
  * @defgroup raze_vx_bitwise Vector Bitwise
  */
+
+  /**
+ * @defgroup raze_vx_compare Vector Comparison
+ */
+
+   /**
+ * @defgroup raze_vx_memory Vector Memory Operations
+ */
+
+    /**
+ * @defgroup raze_vx_merge Vector Merge Operations
+ */
+
+ 
+    /**
+ * @defgroup raze_vx_reduce Vector Reductions
+ */
+
+     /**
+ * @defgroup raze_vx_shape Vector Shapes
+ */
+
+      /**
+ * @defgroup raze_vx_mask_reduce Mask Reductions
+ */
+
+      /**
+ * @defgroup raze_vx_shuffle Vector Shuffles
+ */
+
+
+ /**
+ * @defgroup raze_vx_shuffle_patterns Shuffle Patterns
+ * @ingroup raze_vx_shuffle
+ * @brief Compile-time descriptors and helpers for SIMD element permutations.
+ *
+ * Provides type-safe pattern generators (`make_*`), introspection helpers (`is_*`, `get_*`),
+ * and validation checks used by `raze::vx::shuffle`.
+ */

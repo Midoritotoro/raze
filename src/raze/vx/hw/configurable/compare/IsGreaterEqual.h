@@ -56,6 +56,47 @@ struct configurable_is_greater_equal_t: options::conditional_callable<configurab
     }
 };
 
+/**
+ * @ingroup raze_vx_compare
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Computes the element-wise greater-or-equal comparison of two SIMD vectors.
+ *
+ * Returns a `simd_mask` where each lane is `true` if the corresponding lanes in `x` are greater than or equal to `y`,
+ * and `false` otherwise.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Vector-Vector
+ * template <simd_type V>
+ * simd_mask<typename V::value_type, typename V::abi_type> operator()(const V& x, const V& y) const noexcept;
+ *
+ * // (2) Vector-Scalar
+ * template <simd_type V>
+ * simd_mask<typename V::value_type, typename V::abi_type> operator()(const V& x, typename V::value_type y) const noexcept;
+ *
+ * // (3) Scalar-Vector
+ * template <simd_type V>
+ * simd_mask<typename V::value_type, typename V::abi_type> operator()(typename V::value_type x, const V& y) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The left operand (vector or scalar).
+ * - `y` — The right operand (vector or scalar).
+ *
+ * ### Mask semantics
+ * Supports **only** the maskz form (`[m]`). If the mask `m[i]` is `false`, the corresponding lane
+ * in the resulting `simd_mask` is `false`.
+ *
+ * **Merge semantics (`[m, src]`) are not supported** because the result type is a mask, not a vector.
+ *
+ * ### Return value
+ * A `simd_mask` of type `simd_mask<typename V::value_type, typename V::abi_type>` where
+ * `r[i] == (x[i] >= y[i])` for every selected lane.
+*/
 constexpr inline auto is_greater_equal = options::functor<configurable_is_greater_equal_t>;
 
 __RAZE_VX_NAMESPACE_END

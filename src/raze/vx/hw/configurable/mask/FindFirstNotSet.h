@@ -53,6 +53,46 @@ struct configurable_find_first_not_set_t: options::conditional_callable<configur
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Finds the index of the first unset lane in a SIMD mask.
+ *
+ * Scans the input mask `x` from lane `0` upwards and returns the index of the first lane that is `false`.
+ * If all lanes are `true`, returns `M::size()`. Also accepts `algorithm::tail_mask_type` by delegating
+ * to its underlying mask.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Standard mask
+ * template <simd_mask_type M>
+ * i32 operator()(const M& x) const noexcept;
+ *
+ * // (2) Tail mask
+ * auto operator()(algorithm::tail_mask_type auto const& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `M` — The source SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input mask to inspect.
+ *
+ * ### Options
+ * - `raze::vx::not_null` — Assumes there is at least one unset lane.
+ *   This skips the internal emptiness check and uses a faster, unsafe implementation.
+ *   If applied to a mask where all active lanes are `true`, behavior is undefined.
+ *
+ * ### Mask semantics
+ * Supports **only** the maskz form (`[m]`). If a control mask is provided, only lanes where `m[i]` is `true`
+ * are considered during the search.
+ *
+ * **Merge semantics (`[m, src]`) are not supported**  
+ *
+ * ### Return value
+ * The 0-based index of the first active unset lane, or `M::size()` if no such lane exists.
+*/
 constexpr inline auto find_first_not_set = options::functor<configurable_find_first_not_set_t>;
 
 __RAZE_VX_NAMESPACE_END

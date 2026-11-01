@@ -35,6 +35,41 @@ struct configurable_slide_right_t : options::conditional_callable<configurable_s
     }
 };
 
+/**
+ * @ingroup raze_vx_shuffle
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Shifts the elements of a SIMD vector to the right, filling the leftmost lanes with zeros.
+ *
+ * Shifts the elements of `x` to the right by `i` positions. The rightmost elements are discarded,
+ * and the leftmost `i` lanes are filled with `0`.
+ * The shift amount can be passed either as a runtime integer or a compile-time `std::integral_constant`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Compile-time shift
+ * template <simd_type V, sizetype Elements>
+ * V operator()(const V& x, std::integral_constant<sizetype, Elements> i) const noexcept;
+ *
+ * // (2) Runtime shift
+ * template <simd_type V>
+ * V operator()(const V& x, i32 i) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The target SIMD type. Defines the lane count, element type, and ABI.
+ * - `Elements` — The compile-time shift amount.
+ *
+ * ### Parameters
+ * - `x` — The input vector to shift.
+ * - `i` — The number of positions to shift right.
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A vector of type `V` with `r[j] == x[j - i]` if `j >= i`, and `0` otherwise.
+*/
 constexpr inline auto slide_right = options::functor<configurable_slide_right_t>;
 
 __RAZE_VX_NAMESPACE_END

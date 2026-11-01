@@ -72,6 +72,46 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
     }
 };
 
+/**
+ * @ingroup raze_vx_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Reduces the elements of a SIMD vector to a single scalar or a uniform vector.
+ *
+ * Applies a binary operation `f` to all lanes of `x` in a tree-like reduction pattern.
+ * By default, returns a scalar. If the `uniform` option is provided, returns a vector
+ * with the reduced result broadcast to all lanes.  
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Uniform vector return
+ * template <simd_type V, class F>
+ * V operator()(const V& x, F f) const noexcept;
+ *
+ * // (2) Scalar return
+ * template <simd_type V, class F>
+ * typename V::value_type operator()(const V& x, F f) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The source SIMD type. Defines the lane count, element type, and ABI.
+ * - `F` — A binary callable object (e.g., `raze::vx::add`, `std::plus`).
+ *
+ * ### Parameters
+ * - `x` — The input vector to reduce.
+ * - `f` — The binary reduction function.
+ *
+ * ### Options
+ * - `raze::vx::uniform` — Returns the result as a SIMD vector with the scalar broadcast to all lanes,
+ *   instead of a single scalar value.
+ *
+ * ### Mask semantics
+ * Supports the standard forms described in @ref mask_semantics
+ * Masking is applied to the input vector *before* the reduction.  
+ *
+ * ### Return value
+ * A scalar of type `V::value_type` (default), or a vector of type `V` if the `uniform` option is used.
+*/
 constexpr inline auto fold = options::functor<configurable_fold_t>;
 
 __RAZE_VX_NAMESPACE_END

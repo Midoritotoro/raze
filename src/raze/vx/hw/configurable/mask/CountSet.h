@@ -47,6 +47,40 @@ struct configurable_count_set_t: options::conditional_callable<configurable_coun
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Counts the number of set lanes in a SIMD mask.
+ *
+ * Returns the number of `true` values in the input mask `x`.
+ * Also accepts `algorithm::tail_mask_type` by delegating to its underlying mask.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Standard mask
+ * template <simd_mask_type M>
+ * i32 operator()(const M& x) const noexcept;
+ *
+ * // (2) Tail mask
+ * auto operator()(algorithm::tail_mask_type auto const& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `M` — The source SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input mask to inspect.
+ *
+ * ### Mask semantics
+ * Supports **only** the maskz form (`[m]`). If a mask is provided, only the lanes where `m[i]` is `true`
+ * are considered.
+ *
+ * **Merge semantics (`[m, src]`) are not supported**  
+ *
+ * ### Return value
+ * An `i32` representing the number of active lanes that are `true`.
+*/
 constexpr inline auto count_set = options::functor<configurable_count_set_t>;
 
 __RAZE_VX_NAMESPACE_END

@@ -44,6 +44,41 @@ struct configurable_any_of_t: options::conditional_callable<configurable_any_of_
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Checks if any active lanes of a SIMD mask are `true`.
+ *
+ * Returns `true` if at least one active lane in the input mask `x` evaluates to `true`.
+ * If the mask is entirely `false`, the result is `false`.
+ * Also accepts `algorithm::tail_mask_type` by delegating to its underlying mask.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Standard mask
+ * template <simd_mask_type V>
+ * bool operator()(const V& x) const noexcept;
+ *
+ * // (2) Tail mask
+ * auto operator()(algorithm::tail_mask_type auto const& x) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `V` — The source SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `x` — The input mask to inspect.
+ *
+ * ### Mask semantics
+ * Supports **only** the maskz form (`[m]`). If a mask is provided, only the lanes where `m[i]` is `true`
+ * are checked against the input mask.
+ *
+ * **Merge semantics (`[m, src]`) are not supported** (a `static_assert` will trigger).
+ *
+ * ### Return value
+ * `true` if at least one active lane is `true`, `false` otherwise.
+*/
 constexpr inline auto any_of = options::functor<configurable_any_of_t>;
 
 __RAZE_VX_NAMESPACE_END

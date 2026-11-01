@@ -82,6 +82,38 @@ struct configurable_split_by_t {
     };
 };
 
-template <sizetype Chunks> constexpr inline auto split_by = options::functor<configurable_split_by_t<Chunks>::template impl>;
+/**
+ * @ingroup raze_vx_shape
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Splits a SIMD vector into a tuple of smaller SIMD vectors.
+ *
+ * Divides the input vector `x` into `Chunks` contiguous sub-vectors. The sizes of the
+ * resulting vectors are as balanced as possible.  
+ *
+ * ### Declarations
+ * ```cpp
+ * template <sizetype Chunks>
+ * constexpr inline *unspecified* split_by;
+ * ```
+ *
+ * ### Template Parameters
+ * - `Chunks` — The number of parts to split the vector into. Must be greater than `0`.
+ *
+ * ### Parameters
+ * - `x` — The input vector to split. The type `V` is deduced.
+ *
+ * ### Constraints
+ * - `Chunks > 0`
+ *
+ * ### Mask semantics
+ * **Not supported.** Mask modifiers (`[m]`, `[m, src]`) cannot be applied to `split_by`.
+ *
+ * ### Return value
+ * A `std::tuple` of SIMD vectors (of type `split_by_return_type<Chunks, V>`).
+ * The sum of their lane counts equals the lane count of `V`.
+*/
+template <sizetype Chunks> 
+constexpr inline auto split_by = options::functor<configurable_split_by_t<Chunks>::template impl>;
 
 __RAZE_VX_NAMESPACE_END

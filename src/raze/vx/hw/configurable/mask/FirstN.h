@@ -58,6 +58,34 @@ struct configurable_first_n_t : options::conditional_callable<configurable_first
     }
 };
 
+/**
+ * @ingroup raze_vx_mask_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Creates a mask with the first `n` lanes set to `true`.
+ *
+ * Generates a SIMD mask where lanes `[0, n)` are `true`, and lanes `[n, M::size())` are `false`.
+ * If `n <= 0`, the mask is entirely `false`. If `n >= M::size()`, the mask is entirely `true`.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <simd_mask_type M>
+ * M operator()(i32 n, const options::as<M>& type) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `M` — The target SIMD mask type. Defines the lane count, element type, and ABI.
+ *
+ * ### Parameters
+ * - `n` — The number of leading lanes to set to `true`.
+ * - `type` — A type tag (`raze::options::as<M>{}`) specifying the return mask type.
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A mask of type `M` with `m[i] == (i < n)`.
+*/
 constexpr inline auto first_n = options::functor<configurable_first_n_t>;
 
 __RAZE_VX_NAMESPACE_END

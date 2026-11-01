@@ -1,0 +1,26 @@
+/**
+ * @page supported_compilers Supported Compilers
+ *
+ * RAZE requires a C++23-compliant compiler. The library is continuously tested against 
+ * the following compilers. Using older versions may result in compilation failures due 
+ * to missing standard library features (e.g., `std::ranges` or concepts).
+ *
+ * ### Compiler Support Matrix
+ *
+ * | Compiler | Minimum Version |
+ * | :--- | :--- |
+ * | **GCC** | 13.0 |
+ * | **Clang** | 17.0 |
+ * | **clang-cl** | 17.0 |
+ * | **MSVC** | 19.35 (VS 2022 17.5) |
+ * | **icpx** | 2024.0 (oneAPI) |
+ *
+ * ### Compiler-Specific Behaviors
+ *
+ * - **Dynamic Dispatch**: MSVC relies on a hand-written runtime dispatcher (CPUID at program startup). 
+ *   GCC, Clang, and icpx use `__attribute__((target_clones))` for auto-vectorizable loops. 
+ *   See @ref dynamic_dispatch for details.
+ * - **Floating-Point Math**: `icpx` enables `-ffast-math` by default. If strict IEEE-754 compliance 
+ *   is required, compile with `-fno-fast-math`.
+ * - **clang-cl & MSVC**: Both use the MSVC STL and require `/std:c++latest` to access C++23 features.
+ */

@@ -26,6 +26,34 @@ struct configurable_splat_t {
     };
 };
 
-template <sizetype Index> constexpr inline auto splat = options::functor<configurable_splat_t<Index>::template impl>;
+/**
+ * @ingroup raze_vx_shuffle
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Broadcasts a single element from a SIMD vector to all lanes.
+ *
+ * Takes the element at the compile-time index `Index` from the input vector `x` and copies it
+ * to every lane of the result.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <sizetype Index>
+ * constexpr inline *unspecified* splat;
+ * ```
+ *
+ * ### Template Parameters
+ * - `Index` — The compile-time index of the source element to broadcast.
+ *
+ * ### Parameters
+ * - `x` — The input vector. The type `V` is deduced.
+ *
+ * ### Mask semantics
+ * **Not supported.**
+ *
+ * ### Return value
+ * A vector of type `V` with `r[i] == x[Index]` for every lane `i`.
+*/
+template <sizetype Index> 
+constexpr inline auto splat = options::functor<configurable_splat_t<Index>::template impl>;
 
 __RAZE_VX_NAMESPACE_END
