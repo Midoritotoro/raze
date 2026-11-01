@@ -88,7 +88,7 @@ struct configurable_xor_t: options::conditional_callable<configurable_xor_t, Opt
  * - `y` — The right operand (vector/mask or scalar).
  *
  * ### Mask semantics
- * Supports the standard forms described in @ref mask_semantics :
+ * Supports the standard forms described in @ref mask_semantics
  *
  * ### Return value
  * A value of type `T` with `r[i] == x[i] ^ y[i]` for every selected lane.

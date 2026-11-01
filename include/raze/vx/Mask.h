@@ -98,7 +98,7 @@ public:
 	 * @param policy   Access policy forwarded to `copy_from`.
 	*/
 	template <std::forward_iterator FwdIt, class Policy = unaligned_policy>
-	raze_no_stack_protector raze_always_inline simd_mask(FwdIt it, Policy&& policy = {}) noexcept {
+	raze_no_stack_protector raze_always_inline simd_mask(FwdIt it, Policy policy = {}) noexcept {
 		copy_from(it, policy);
 	}
 
@@ -115,7 +115,7 @@ public:
 	 * @param policy   Access policy.
 	*/
 	template <std::forward_iterator FwdIt, class Policy = unaligned_policy>
-	raze_no_stack_protector raze_always_inline void copy_from(FwdIt it, Policy&& policy = {}) noexcept
+	raze_no_stack_protector raze_always_inline void copy_from(FwdIt it, Policy policy = {}) noexcept
 		requires(std::convertible_to<std::iter_value_t<FwdIt>, bool>)
 	{
 		using Unwrapped = traits::unwrapped_iterator_type<FwdIt>;
@@ -146,7 +146,7 @@ public:
 	 * @param policy   Access policy.
 	*/
 	template <class OutIt, class Policy = unaligned_policy>
-	raze_always_inline void copy_to(OutIt out, Policy&& policy = {}) noexcept {
+	raze_always_inline void copy_to(OutIt out, Policy policy = {}) noexcept {
 		using Unwrapped = traits::unwrapped_iterator_type<OutIt>;
 		using Value = std::iter_value_t<Unwrapped>;
 

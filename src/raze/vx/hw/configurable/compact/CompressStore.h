@@ -47,6 +47,44 @@ struct configurable_compress_store_t : options::conditional_callable<configurabl
     }
 };
 
+/**
+ * @ingroup raze_vx_memory
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Compresses elements from a SIMD vector into contiguous memory according to a mask.
+ *
+ * Writes elements of `x` to the memory location starting at `it` for every lane where `mask[i]` 
+ * evaluates to `false`. The target memory must be large enough to hold the compressed elements.
+ *
+ * ### Options
+ * - `raze::vx::unsafe` — Enables a faster store operation. When provided, the trailing memory 
+ *   region `[it + count_set(!mask), it + V::size())` is filled with garbage. 
+ *   By default, these trailing elements are left unchanged.
+ * - `raze::vx::aligned` — Uses aligned memory stores.
+ *
+ * ### Declarations
+ * ```cpp
+ * template <any_iterator_or_pointer Mem, simd_type T, simd_mask_type M>
+ * Mem operator()(Mem it, const T& x, const M& mask) const noexcept;
+ * ```
+ *
+ * ### Template Parameters
+ * - `Mem` — The output iterator or pointer type.
+ * - `T` — The source SIMD type. Defines the lane count, element type, and ABI.
+ * - `M` — The mask type corresponding to `T`.
+ *
+ * ### Parameters
+ * - `it` — The output iterator/pointer to the start of the destination buffer.
+ * - `x` — The source SIMD vector.
+ * - `mask` — The mask determining which elements to write. Elements where `mask[i]` is `false` are written.
+ *
+ * ### Mask semantics
+ * **Not supported.** The mask is passed as a regular function argument. Modifiers 
+ * (`[m]`, `[m, src]`) cannot be applied to `compress_store` via `operator[]`.
+ *
+ * ### Return value
+ * An iterator/pointer pointing past the last written element (`it + count_set(!mask)`).
+*/
 constexpr inline auto compress_store = options::functor<configurable_compress_store_t>;
 
 __RAZE_VX_NAMESPACE_END

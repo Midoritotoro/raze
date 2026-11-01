@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/mask/operations/MaskAnd.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -96,6 +97,19 @@ raze_always_inline auto equal_(V x, V y) noexcept {
     else {
         return x == y;
     }
+}
+
+template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type Mask>
+raze_always_inline auto equal_(V x, V y, Mask mask) noexcept {
+    if constexpr (sizeof(V) == 16 && has_avx512vl<ISA>) {
+        if constexpr (epi64<T> || epu64<T>) return _mm_mask_cmpeq_epi64_mask(mask, x, y);
+        else if constexpr (epi32<T> || epu32<T>) return _mm_mask_cmpeq_epi32_mask(mask, x, y);
+        else if constexpr ((epu16<T> || epu16<T>) && has_avx512bw<ISA>) return _mm_mask_cmpeq_epi16_mask(mask, x, y);
+        else if constexpr ((epu8<T> || epu8<T>) && has_avx512bw<ISA>) return _mm_mask_cmpeq_epi8_mask(mask, x, y);
+        else if constexpr (pd<T>) return _mm_mask_
+    }
+
+    return mask_and_<ISA, T>(equal_<ISA, T>(x, y), mask);
 }
 
 __RAZE_VX_NAMESPACE_END
