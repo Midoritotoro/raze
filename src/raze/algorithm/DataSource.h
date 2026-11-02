@@ -282,8 +282,7 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
 
     template <class Iter, class Ptr>
     static raze_always_inline constexpr void from_ptr(Iter& it, Ptr* ptr)
-        requires std::contiguous_iterator<
-            std::remove_cvref_t<decltype(it.base())>>
+        requires std::contiguous_iterator<std::remove_cvref_t<decltype(it.base())>>
     {
         auto base = it.base();
         const auto offset = ptr - std::to_address(base);

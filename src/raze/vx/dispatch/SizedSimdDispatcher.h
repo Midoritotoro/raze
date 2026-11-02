@@ -2,6 +2,7 @@
 
 #include <raze/vx/Simd.h>
 #include <raze/options/Options.h>
+#include <raze/arch/ProcessorFeatures.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

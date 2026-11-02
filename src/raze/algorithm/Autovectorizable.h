@@ -14,7 +14,21 @@ struct autovectorizable {};
 template <class Work>
 concept autovectorizable_kernel = requires(Work& w) { w(autovectorizable{}); };
 
-#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || defined(raze_cpp_gnu)
+#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500 && RAZE_HAS_CLANG_RT_BUILTINS) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
+
+template <std::contiguous_iterator It, std::sentinel_for<It> Sent, class Func>
+raze_always_inline constexpr void for_noalias(It first, Sent last, Func func)  {
+    auto sz = last - first;
+    for (auto i = 0; i < sz; ++i)
+        func(i);
+}
+
+template <std::contiguous_iterator It, std::sentinel_for<It> Sent, class Func>
+raze_always_inline constexpr void for_novec(It first, Sent last, Func func) {
+    auto sz = last - first;
+    for (auto i = 0; i < sz; ++i)
+        func(i);
+}
 
 #if defined(raze_cpp_clang)
 #  define RAZE_CLONES_NARROW "avx512bw"

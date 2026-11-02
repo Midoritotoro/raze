@@ -6,6 +6,7 @@
 #include <src/raze/algorithm/DataSource.h>
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

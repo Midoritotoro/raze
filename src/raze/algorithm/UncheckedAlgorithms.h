@@ -160,7 +160,7 @@ public:
         constexpr bool is_gcc_or_clang = false;
 #endif
 
-#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
+#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500 && RAZE_HAS_CLANG_RT_BUILTINS) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
         constexpr auto can_auto_vectorize = !options::is_fscalar<Traits>() && autovectorizable_kernel<Kernel>
             && options::get_strategy<Traits>().is_autovec();
 #else

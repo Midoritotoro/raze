@@ -19,6 +19,9 @@ struct fill_n_t : Traits {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Assigns the given value to the first n elements of a sequence.
  *
  * Assigns `value` to every element in the range `[first, first + n)`.

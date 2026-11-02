@@ -6,6 +6,7 @@
 #include <src/raze/algorithm/EqualTo.h>
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -41,8 +42,11 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			for (auto [first, last] = source_type::to_raw_range(_iterator, _sentinel); first != last; ++first)
+			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
+			for (; first != last; ++first)
 				_f(_proj(*first));
+
+			source_type::from_ptr(_iterator, first);
 		}
 
 		raze_always_inline constexpr void operator()() {

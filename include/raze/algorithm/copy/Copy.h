@@ -12,7 +12,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class _Traits_>
-struct _Copy : _Traits_ {
+struct copy_ : _Traits_ {
 	template <class _InIterator_, class _Sentinel_, class _OutIterator_>
 	struct __impl {
 		_InIterator_ _in_iterator;

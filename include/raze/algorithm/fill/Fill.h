@@ -2,6 +2,7 @@
 
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -111,6 +112,9 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Assigns the given value to elements in a range.
  *
  * 1) Assigns `value` to every element in the range `[first, last)`.

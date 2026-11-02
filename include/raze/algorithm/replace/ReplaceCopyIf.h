@@ -5,6 +5,7 @@
 #include <src/raze/algorithm/EqualTo.h>
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <raze/vx/Algorithm.h>
 #include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -42,8 +43,8 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		unchecked_iterator_type _in_iterator;
 		unchecked_sentinel_type _in_sentinel;
 		unchecked_destination_type _out_iterator;
-		Predicate _predicate;
-		Projection _proj;
+		raze_no_unique_address Predicate _predicate;
+		raze_no_unique_address Projection _proj;
 		T _new_value;
 
 		constexpr explicit kernel(Source&& source, Destination&& dest,
@@ -52,13 +53,15 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 				_in_iterator(_source.ubegin()), _in_sentinel(_source.uend()), _out_iterator(_destination.ubegin()),
 				_predicate(pred), _proj(proj), _new_value(new_val)
 		{}
-
+ 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto dest = std::to_address(_out_iterator);
 
-			for (; first != last; ++first, ++dest)
-				*dest = _predicate(_proj(*first)) ? _new_value : *first;
+			for_noalias(first, last, [pred = _predicate, proj = _proj, newv = _new_value,
+				dst = dest, in = first] (auto i) raze_always_inline_lambda {
+					dst[i] = pred(proj(in[i])) ? newv : in[i];
+				});
 
 			source_type::from_ptr(_in_iterator, first);
 			destination_type::from_ptr(_out_iterator, dest);
