@@ -14,21 +14,53 @@ struct autovectorizable {};
 template <class Work>
 concept autovectorizable_kernel = requires(Work& w) { w(autovectorizable{}); };
 
+template <std::contiguous_iterator It, std::sentinel_for<It> Sent, class Func>
+raze_always_inline constexpr void for_noalias(It& first, Sent last, Func func) {
+    auto sz = last - first;
+    for (auto i = 0; i < sz; ++i)
+        func(i);
+    first += sz;
+}
+
+template <std::input_iterator It, std::sentinel_for<It> Sent,
+    std::weakly_incrementable Out, class Func>
+raze_always_inline constexpr void for_novec(It& first, Sent last, Out& out, Func func)
+{
+#if defined(raze_cpp_msvc_only)
+    if consteval {
+        for (; first != last; ++first, ++out)
+            *out = func(*first);
+        return;
+    }
+#endif
+    raze_disable_unrolling
+        for (; first != last; ++first, ++out)
+            *out = func(*first);
+}
+
+template <std::input_iterator It, std::sentinel_for<It> Sent, class Func>
+raze_always_inline constexpr void for_novec(It& first, Sent last, Func func)
+{
+#if defined(raze_cpp_msvc_only)
+    if consteval {
+        for (; first != last; ++first)
+            func(*first);
+        return;
+    }
+#endif
+    raze_disable_unrolling
+        for (; first != last; ++first)
+            func(*first);
+}
+template <class It, class Sent, class Func>
+raze_always_inline constexpr void for_vec_do(It& first, Sent last, Func func) {
+    raze_disable_unrolling
+    do {
+        func();
+    } while (first != last);
+}
+
 #if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500 && RAZE_HAS_CLANG_RT_BUILTINS) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
-
-template <std::contiguous_iterator It, std::sentinel_for<It> Sent, class Func>
-raze_always_inline constexpr void for_noalias(It first, Sent last, Func func)  {
-    auto sz = last - first;
-    for (auto i = 0; i < sz; ++i)
-        func(i);
-}
-
-template <std::contiguous_iterator It, std::sentinel_for<It> Sent, class Func>
-raze_always_inline constexpr void for_novec(It first, Sent last, Func func) {
-    auto sz = last - first;
-    for (auto i = 0; i < sz; ++i)
-        func(i);
-}
 
 #if defined(raze_cpp_clang)
 #  define RAZE_CLONES_NARROW "avx512bw"

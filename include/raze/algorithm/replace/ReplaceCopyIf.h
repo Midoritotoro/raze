@@ -64,15 +64,14 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 				});
 
 			source_type::from_ptr(_in_iterator, first);
-			destination_type::from_ptr(_out_iterator, dest);
+			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(dest, size()));
 		}
 
 		raze_always_inline constexpr void operator()() {
-			raze_disable_unrolling
-			for (; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator) {
-				if (std::invoke(_predicate, std::invoke(_proj, *_in_iterator))) *_out_iterator = _new_value;
-				else *_out_iterator = *_in_iterator;
-			}
+			for_novec(_in_iterator, _in_sentinel, _out_iterator, [pred = _predicate, 
+				proj = _proj, newv = _new_value] (auto& val) raze_always_inline_lambda {
+					return std::invoke(pred, std::invoke(proj, val)) ? newv : val;
+				});
 		}
 
 		template <vectorizable_tag Tag>
@@ -82,8 +81,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
 
-			raze_disable_unrolling
-			do {
+			raze_disable_unrolling do {
 				const auto data = vx::load<Tag>(in_ptr);
 				vx::store(out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](Tag(_new_value))));
 				advance_bytes(in_ptr, out_ptr, sizeof(Tag));
@@ -98,7 +96,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
-			const auto data = vx::load<Tag>(in_ptr);
+			const auto data = vx::load<Tag>[ignore](in_ptr);
 			vx::store[ignore](out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](Tag(_new_value))));
 
 			advance_bytes(in_ptr, out_ptr, ignore.tail_bytes());

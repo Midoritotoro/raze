@@ -104,6 +104,24 @@ struct unroller_t {
 		}
 
 		template <class F>
+		constexpr raze_always_inline auto operator()(sizetype tail_size, F& f) const noexcept
+			requires(!std::same_as<Tag, vx::scalar_tag>)
+		{
+			constexpr auto shift = std::countr_zero(sizeof(typename Tag::value_type));
+			constexpr auto can_process_tail = requires { f(Tag{}, algorithm::tail_mask(tail_size,
+				make_mask_generator(tail_size >> shift))); };
+
+			if constexpr (vx::native_conditional_memory_access<vx::abi_t<Tag>::isa, typename Tag::value_type> && can_process_tail) {
+				f(Tag{}, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
+			}
+			else {
+				f();
+			}
+
+			if constexpr (requires { f.result(); }) return f.result();
+		}
+
+		template <class F>
 		constexpr raze_always_inline auto operator()(F f) const noexcept 
 			requires(std::same_as<Tag, vx::scalar_tag>)
 		{

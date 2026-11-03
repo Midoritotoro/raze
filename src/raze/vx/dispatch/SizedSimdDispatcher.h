@@ -3,6 +3,7 @@
 #include <raze/vx/Simd.h>
 #include <raze/options/Options.h>
 #include <raze/arch/ProcessorFeatures.h>
+#include <src/raze/vx/hw/x86/memory/ConditionalMemAccessNative.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -28,6 +29,10 @@ struct configurable_isa_dispatcher_t {
 
         static constexpr bool compile_has_avx512() noexcept {
             return sizeof(T) >= 4 ? has_avx512f<target_isa()> : has_avx512bw<target_isa()>;
+        }
+
+        static constexpr bool compile_has_avx512vl() noexcept {
+            return has_avx512vl<target_isa()>;
         }
 
         static raze_always_inline bool runtime_has_avx512(i32 all) noexcept {
@@ -81,6 +86,12 @@ struct configurable_isa_dispatcher_t {
             constexpr auto aligned_sz = Size & ~sizetype(VecBytes - 1);
             return F<V>()(std::integral_constant<sizetype, aligned_sz>{},
                           std::integral_constant<sizetype, Size - aligned_sz>{}, work);
+        }
+
+        template <arch::ISA ISA, sizetype VecBytes, class Work>
+        static raze_always_inline decltype(auto) call_tail(sizetype size, Work& work) {
+            using V = simd<T, runtime_abi<ISA, VecBytes / sizeof(T)>>;
+            return F<V>()(size, work);
         }
 
         template <sizetype Size, class Work>
@@ -142,23 +153,23 @@ struct configurable_isa_dispatcher_t {
         {
             if constexpr (Forced != arch::ISA::None) {
                 constexpr auto vector_size = vx::default_width<Forced> / 8;
-                if (size < vector_size) return F<vx::scalar_tag>()(work);
-                return call_dyn<Forced, vector_size>(size, work);
+                if (size >= vector_size) return call_dyn<Forced, vector_size>(size, work);
+                if constexpr (native_conditional_memory_access<Forced, T>)
+                    return call_tail<Forced, vector_size>(size, work);
+                return F<vx::scalar_tag>()(work);
             }
             else 
 #if defined(raze_cpp_msvc_only)
             if constexpr (compile_has_avx512()) {
-                if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
-                if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
-                if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
+                if (size >= 64) return call_dyn<target_isa(), 64>(size, work);
+                if constexpr (native_conditional_memory_access<target_isa(), T>)
+                    return call_tail<target_isa(), 64>(size, work);
             }
             else if constexpr (has_avx2<target_isa()>) {
                 const i32 all = arch::ProcessorFeatures::all();
 
                 if (runtime_has_avx512(all)) {
                     if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
-                    if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
-                    if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
                     return F<vx::scalar_tag>()(work);
                 }
 
@@ -188,13 +199,14 @@ struct configurable_isa_dispatcher_t {
             }
 #else
             if constexpr (compile_has_avx512()) {
-                if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
-                if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
-                if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
+                if (size >= 64) return call_dyn<target_isa(), 64>(size, work);
+                if constexpr (native_conditional_memory_access<target_isa(), T>)
+                    return call_tail<target_isa(), 64>(size, work);
             }
             else if constexpr (has_avx2<target_isa()>) {
-                if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
-                if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
+                if (size >= 32) return call_dyn<target_isa(), 32>(size, work);
+                if constexpr (native_conditional_memory_access<target_isa(), T>)
+                    return call_tail<target_isa(), 32>(size, work);
             }
             else {
                 if (size >= 16) return call_dyn<target_isa(), 16>(size, work);
