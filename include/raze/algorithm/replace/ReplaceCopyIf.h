@@ -80,10 +80,11 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 			auto* out_ptr = std::to_address(_out_iterator);
 
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
+			const auto broadcasted = Tag(_new_value);
 
 			raze_disable_unrolling do {
 				const auto data = vx::load<Tag>(in_ptr);
-				vx::store(out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](Tag(_new_value))));
+				vx::store(out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](broadcasted)));
 				advance_bytes(in_ptr, out_ptr, sizeof(Tag));
 			} while (in_ptr != aligned_end);
 

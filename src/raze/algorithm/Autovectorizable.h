@@ -2,6 +2,7 @@
 
 #include <raze/options/Options.h>
 #include <raze/vx/Config.h>
+#include <raze/math/Math.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -20,6 +21,18 @@ raze_always_inline constexpr void for_noalias(It& first, Sent last, Func func) {
     for (auto i = 0; i < sz; ++i)
         func(i);
     first += sz;
+}
+
+template <std::contiguous_iterator It1, std::sentinel_for<It1> Sent1,
+    std::contiguous_iterator It2, std::sentinel_for<It2> Sent2, class Func>
+raze_always_inline constexpr void for_noalias2(It1& first1, Sent1 last1,
+    It2& first2, Sent2 last2, Func func)
+{
+    auto sz = math::min(last1 - first1, last2 - first2);
+    for (auto i = 0; i < sz; ++i)
+        func(i);
+    first1 += sz;
+    first2 += sz;
 }
 
 template <std::input_iterator It, std::sentinel_for<It> Sent,
@@ -52,12 +65,22 @@ raze_always_inline constexpr void for_novec(It& first, Sent last, Func func)
         for (; first != last; ++first)
             func(*first);
 }
-template <class It, class Sent, class Func>
-raze_always_inline constexpr void for_vec_do(It& first, Sent last, Func func) {
+
+template <std::input_iterator It1, std::sentinel_for<It1> Sent1,
+    std::input_iterator It2, std::sentinel_for<It2> Sent2, class Func>
+raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
+    It2& first2, Sent2 last2, Func func)
+{
+#if defined(raze_cpp_msvc_only)
+    if consteval {
+        for (; first1 != last1 && first2 != last2; ++first1, ++first2)
+            func(first1, first2);
+        return;
+    }
+#endif
     raze_disable_unrolling
-    do {
-        func();
-    } while (first != last);
+    for (; first1 != last1 && first2 != last2; ++first1, ++first2)
+        func(first1, first2);
 }
 
 #if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500 && RAZE_HAS_CLANG_RT_BUILTINS) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))

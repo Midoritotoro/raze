@@ -4,12 +4,14 @@
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <raze/math/Math.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 constexpr auto swap_ranges_strategy = options::strategy<strategy<>()
-	.for_gcc<strategy_mode::autovec>()
-	.for_clang<strategy_mode::autovec>()>;
+	.for_gcc<strategy_mode::manual>()
+	.for_clang<strategy_mode::manual>()
+	.for_icpx<strategy_mode::autovec>()>;
 
 template <class Traits>
 struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
@@ -26,12 +28,14 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 		using unchecked_iterator2_type = typename source2_type::unchecked_iterator_type;
 		using unchecked_sentinel2_type = typename source2_type::unchecked_sentinel_type;
 
+		using InT1 = std::iter_value_t<unchecked_iterator1_type>;
+		using InT2 = std::iter_value_t<unchecked_iterator2_type>;
+
 		using vector_value_type = std::iter_value_t<unchecked_iterator1_type>;
 
 		static consteval bool vectorizable() noexcept {
-			return contiguous_source<Source1> && contiguous_source<Source2> &&
-				std::is_trivially_copyable_v<vector_value_type> &&
-				std::same_as<vector_value_type, std::iter_value_t<iterator2_type>>;
+			return contiguous_source<Source1> && contiguous_source<Source2> && 
+				vx::arithmetic_type<InT1> && vx::arithmetic_type<InT2> && has_common_type<InT1, InT2>;
 		}
 
 		source1_type _source1;
@@ -52,20 +56,18 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 			auto [in1_ptr, in1_last] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
 			auto [in2_ptr, in2_last] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
 
-			for (; in1_ptr != in1_last && in2_ptr != in2_last; ++in1_ptr, ++in2_ptr) {
-				auto tmp = *in1_ptr;
-				*in1_ptr = *in2_ptr;
-				*in2_ptr = tmp;
-			}
+			for_noalias2(in1_ptr, in1_last, in2_ptr, in2_last, [in1 = in1_ptr, in2 = in2_ptr](auto i) raze_always_inline_lambda{
+				auto temp = std::move(in1[i]);
+				in1[i] = std::move(in2[i]);
+				in2[i] = std::move(temp);
+			});
 
 			source1_type::from_ptr(_in1_iterator, in1_ptr);
 			source2_type::from_ptr(_in2_iterator, in2_ptr);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			raze_disable_unrolling
-			for (; _in1_iterator != _in1_sentinel && _in2_iterator != _in2_sentinel; ++_in1_iterator, ++_in2_iterator)
-				std::ranges::iter_swap(_in1_iterator, _in2_iterator);
+			for_novec2(_in1_iterator, _in1_sentinel, _in2_iterator, _in2_sentinel, std::ranges::iter_swap);
 		}
 
 		template <vectorizable_tag Tag>
@@ -75,9 +77,9 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 
 			const auto aligned_end = bytes_pointer_offset(in1_ptr, aligned_size);
 
-			do {
-				const auto v1 = vx::load<Tag>(in1_ptr);
-				const auto v2 = vx::load<Tag>(in2_ptr);
+			raze_disable_unrolling do {
+				const auto v1 = vx::convert<InT2>(vx::load<Tag>(in1_ptr));
+				const auto v2 = vx::convert<InT1>(vx::load<Tag>(in2_ptr));
 				vx::store(in1_ptr, v2);
 				vx::store(in2_ptr, v1);
 				advance_bytes(in1_ptr, in2_ptr, sizeof(Tag));
@@ -92,8 +94,8 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 			auto* in1_ptr = std::to_address(_in1_iterator);
 			auto* in2_ptr = std::to_address(_in2_iterator);
 
-			const auto v1 = vx::load<Tag>(in1_ptr);
-			const auto v2 = vx::load<Tag>(in2_ptr);
+			const auto v1 = vx::convert<InT2>(vx::load<Tag>[ignore](in1_ptr));
+			const auto v2 = vx::convert<InT1>(vx::load<Tag>[ignore](in2_ptr));
 			vx::store[ignore](in1_ptr, v2);
 			vx::store[ignore](in2_ptr, v1);
 

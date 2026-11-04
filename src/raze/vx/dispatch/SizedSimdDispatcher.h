@@ -170,11 +170,13 @@ struct configurable_isa_dispatcher_t {
 
                 if (runtime_has_avx512(all)) {
                     if (size >= 64) return call_dyn<avx512_isa(), 64>(size, work);
-                    return F<vx::scalar_tag>()(work);
+                    if constexpr (native_conditional_memory_access<avx512_isa(), T>)
+                        return call_tail<avx512_isa(), 64>(size, work);
                 }
 
                 if (size >= 32) return call_dyn<arch::ISA::AVX2, 32>(size, work);
-                if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
+                if constexpr (native_conditional_memory_access<arch::ISA::AVX2, T>)
+                    return call_tail<arch::ISA::AVX2, 32>(size, work);
             }
             else {
                 const i32 all = arch::ProcessorFeatures::all();

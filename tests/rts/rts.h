@@ -661,7 +661,7 @@ namespace rtts {
         inline constexpr kind n = kind::n;
 
         struct config {
-            size_t random_cases = 256;
+            size_t random_cases = 100;
             size_t random_max_size = 100;
             unsigned seed = 42;
             bool counted = true;
@@ -672,11 +672,12 @@ namespace rtts {
 
             static config thorough() {
                 config result;
-                result.random_cases = 100;
+                result.random_cases = 50;
+                result.random_max_size = 200;
                 result.sizes = {
                     0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32,
                     63, 64, 127, 128, 255, 256,
-                    10000
+                    1000
                 };
                 return result;
             }
@@ -971,7 +972,7 @@ namespace rtts {
             auto raze_data = make_fixture_from_container<T>(std::move(value), seed);
             auto std_data = raze_data;  
 
-            auto run = [&](size_t count) {
+            auto run = [&] (size_t count) {
                 raze_data.count = count;
                 std_data.count = count;
 

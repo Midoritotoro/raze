@@ -46,19 +46,22 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 			_sentinel = _source.uend();
 		}
 	
-		void operator()(autovectorizable) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
-			for (; first != last; ++first)
-				*first = _predicate(_proj(*first)) ? _new_value : *first;
+			for_noalias(first, last, [pred = _predicate, proj = _proj, newv = _new_value,
+				in = first](auto i) raze_always_inline_lambda{
+					in[i] = pred(proj(in[i])) ? newv : in[i];
+				});
 
 			source_type::from_ptr(_iterator, first);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			raze_disable_unrolling
-			for (; _iterator != _sentinel; ++_iterator) 
-				*_iterator = (_predicate(_proj(*_iterator))) ? _new_value : *_iterator;
+			for_novec(_iterator, _sentinel, [pred = _predicate,
+				proj = _proj, newv = _new_value](auto& val) raze_always_inline_lambda{
+					val = std::invoke(pred, std::invoke(proj, val)) ? newv : val;
+				});
 		}
 
 		template <vectorizable_tag Tag>
@@ -66,11 +69,10 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 			auto* ptr = std::to_address(_iterator);
 
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
-			const auto new_value = Tag(_new_value);
+			const auto broadcasted = Tag(_new_value);
 
-			raze_disable_unrolling
-			do {
-				vx::store[_predicate(_proj(vx::load<Tag>(ptr)))](ptr, new_value);
+			raze_disable_unrolling do {
+				vx::store[_predicate(_proj(vx::load<Tag>(ptr)))](ptr, broadcasted);
 				advance_bytes(ptr, sizeof(Tag));
 			} while (ptr != aligned_end);
 

@@ -194,7 +194,7 @@ function(generate_benchmark_native filename)
 
     if(RAZE_BENCHMARKS_NATIVE_MARCH_NATIVE AND RAZE_CXX_SUPPORTS_MARCH_NATIVE)
         target_compile_options(${target} PRIVATE
-            -march=native
+           -O2 -march=native
         )
     endif()
 

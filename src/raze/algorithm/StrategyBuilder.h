@@ -12,14 +12,18 @@ enum class strategy_mode : u8 {
 
 template <strategy_mode GCC = strategy_mode::manual,
     strategy_mode Clang = strategy_mode::manual,
-    strategy_mode MSVC = strategy_mode::manual>
+    strategy_mode MSVC = strategy_mode::manual,
+    strategy_mode ICPX = strategy_mode::manual>
 struct strategy {
     static constexpr strategy_mode gcc = GCC;
     static constexpr strategy_mode clang = Clang;
     static constexpr strategy_mode msvc = MSVC;
+    static constexpr strategy_mode icpx = ICPX;
 
     static constexpr strategy_mode effective() noexcept {
-#if defined(raze_cpp_gnu)
+#if defined(raze_cpp_icpx)
+        return ICPX;
+#elif defined(raze_cpp_gnu)
         return GCC;
 #elif defined(raze_cpp_clang)
         return Clang;
@@ -44,22 +48,27 @@ struct strategy {
 
     template <strategy_mode M>
     constexpr auto for_gcc() const noexcept {
-        return strategy<M, Clang, MSVC>{};
+        return strategy<M, Clang, MSVC, ICPX>{};
     }
 
     template <strategy_mode M>
     constexpr auto for_clang() const noexcept {
-        return strategy<GCC, M, MSVC>{};
+        return strategy<GCC, M, MSVC, ICPX>{};
     }
 
     template <strategy_mode M>
     constexpr auto for_msvc() const noexcept {
-        return strategy<GCC, Clang, M>{};
+        return strategy<GCC, Clang, M, ICPX>{};
+    }
+
+    template <strategy_mode M>
+    constexpr auto for_icpx() const noexcept {
+        return strategy<GCC, Clang, MSVC, M>{};
     }
 
     template <strategy_mode M>
     constexpr auto for_all() const noexcept {
-        return strategy<M, M, M>{};
+        return strategy<M, M, M, M>{};
     }
 };
 
