@@ -450,7 +450,17 @@ namespace rtts {
             explicit generator(uint64_t seed = 42) : rng(seed) {}
 
             T operator()() {
-                return sample(domain<T>::standard());
+                if constexpr (std::is_trivially_copyable_v<T> && !std::is_arithmetic_v<T>) {
+                    T res{};
+                    auto* ptr = reinterpret_cast<int8_t*>(&res);
+                    for (size_t i = 0; i < sizeof(T); ++i) {
+                        ptr[i] = static_cast<int8_t>(rng() & 0x7F);
+                    }
+                    return res;
+                }
+                else {
+                    return sample(domain<T>::standard());
+                }
             }
 
             T operator()(const domain<T>& dom) {
@@ -653,6 +663,30 @@ namespace rtts {
         using all_types = typename filter<is_valid_simd_info, all_simd_infos>::type;
         using all_fp_types = typename filter<is_valid_simd_info, all_fp_infos>::type;
     }
+    
+
+    struct same {
+        template <class A, class B, class RA, class RB>
+        constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
+            return state_equal(a, b) && result_equal(ra, rb, a, b);
+        }
+    };
+
+    struct prefix {
+        template <class A, class B, class RA, class RB>
+        constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
+            const auto ae = logical_end(ra);
+            const auto be = logical_end(rb);
+
+            return std::ranges::equal(
+                std::ranges::subrange(a.value.begin(), ae),
+                std::ranges::subrange(b.value.begin(), be)) &&
+                result_equal(ra, rb, a, b);
+        }
+    };
+
+    inline constexpr same same_result{};
+    inline constexpr prefix prefix_result{};
 
     namespace algorithm {
         enum class kind { range, n };
@@ -698,6 +732,137 @@ namespace rtts {
                 return *this;
             }
         };
+
+        template <class T1, class T2, class Container1, class Container2>
+        struct fixture_mixed {
+            Container1 value;
+            Container2 second;
+            std::vector<T1> output;
+            std::vector<T2> output2;
+            size_t count = 0;
+            size_t size() const { return static_cast<size_t>(std::ranges::distance(value)); }
+        };
+
+        template <class T1, class T2, class Container1, class Container2>
+        auto make_fixture_mixed(Container1 c1, Container2 c2) {
+            fixture_mixed<T1, T2, Container1, Container2> f;
+            f.value = std::move(c1);
+            f.second = std::move(c2);
+            const size_t sz = f.size();
+            f.output.resize(sz);
+            f.output2.resize(sz);
+            std::ranges::fill(f.output, T1{});
+            std::ranges::fill(f.output2, T2{});
+            return f;
+        }
+
+        template <kind Kind, class T1, class T2, class Container1, class Container2, class Raze, class Std, class Verify>
+        void case_mixed(Container1 value, Container2 second, unsigned seed, std::mt19937& rng, bool boundary,
+            Raze& raze_op, Std& std_op, Verify& verify) {
+
+            auto raze_data = make_fixture_mixed<T1, T2>(std::move(value), std::move(second));
+            auto std_data = raze_data;
+
+            auto run = [&](size_t count) {
+                raze_data.count = count;
+                std_data.count = count;
+
+                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                };
+
+            if constexpr (Kind == kind::range) {
+                run(0);
+            }
+            else {
+                each_count(raze_data.size(), rng, boundary, run);
+            }
+        }
+
+        template <class T1, class T2, class F>
+        void each_container_pair(size_t size, unsigned seed, F f) {
+            f(rtts::random::vector<T1>(size, seed), rtts::random::vector<T2>(size, seed + 1));
+            f(rtts::random::deque<T1>(size, seed), rtts::random::deque<T2>(size, seed + 1));
+            f(rtts::random::list<T1>(size, seed), rtts::random::list<T2>(size, seed + 1));
+            f(rtts::random::forward_list<T1>(size, seed), rtts::random::forward_list<T2>(size, seed + 1));
+        }
+
+        template <kind Mode, class T1, class T2, class Raze, class Std, class Verify = same>
+        void run(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            std::mt19937 rng(cfg.seed);
+            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
+
+            for (size_t i = 0; i < cfg.random_cases; ++i) {
+                const size_t size = size_dist(rng);
+                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
+                each_container_pair<T1, T2>(size, seed, [&](auto v1, auto v2) {
+                    case_mixed<Mode, T1, T2>(std::move(v1), std::move(v2), seed, rng, false, raze_op, std_op, verify);
+                    });
+            }
+
+            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
+                const size_t size = cfg.sizes[i];
+                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
+                each_container_pair<T1, T2>(size, seed, [&](auto v1, auto v2) {
+                    case_mixed<Mode, T1, T2>(std::move(v1), std::move(v2), seed, rng, true, raze_op, std_op, verify);
+                    });
+            }
+        }
+
+        template <class T1, class T2, size_t N>
+        struct constexpr_fixture_mixed {
+            std::array<T1, N> value{};
+            std::array<T2, N> second{};
+            std::array<T1, N> output{};
+            std::array<T2, N> output2{};
+            std::array<T1, N> pattern{};
+            size_t pattern_size = N < 3 ? N : 3;
+            size_t count = 0;
+            T1 value_arg{};
+            T1 other_arg = T1{};
+            T1 replacement = T1{};
+            constexpr size_t size() const { return N; }
+        };
+
+        template <class T1, class T2, size_t N>
+        constexpr auto make_constexpr_fixture_mixed() {
+            constexpr_fixture_mixed<T1, T2, N> result{};
+            for (size_t i = 0; i < N; ++i) {
+                if constexpr (std::is_aggregate_v<T1>) {
+                    result.value[i] = T1{ static_cast<int>(i + 1) };
+                    result.output[i] = T1{ static_cast<int>(200 + i) };
+                }
+                else {
+                    result.value[i] = T1(i + 1);
+                    result.output[i] = T1(200 + i);
+                }
+                if constexpr (std::is_aggregate_v<T2>) {
+                    result.second[i] = T2{ static_cast<int>(100 + i) };
+                    result.output2[i] = T2{ static_cast<int>(300 + i) };
+                }
+                else {
+                    result.second[i] = T2(100 + i);
+                    result.output2[i] = T2(300 + i);
+                }
+                result.pattern[i] = result.value[i];
+            }
+            if constexpr (N != 0) result.value_arg = result.value[0];
+            return result;
+        }
+
+        template <class T1, class T2, kind Kind, size_t Size, size_t Count = 0, class Raze, class Std, class Verify = same>
+        consteval bool constexpr_run_mixed(Raze raze_op, Std std_op, Verify verify = {}) {
+            if constexpr (Kind == kind::n) static_assert(Size != 0 && Count < Size);
+            auto raze_data = make_constexpr_fixture_mixed<T1, T2, Size>();
+            auto std_data = raze_data;
+            raze_data.count = Count;
+            std_data.count = Count;
+            if (!variant<false>(raze_data, std_data, raze_op, std_op, verify)) return false;
+            if constexpr (Size != 0) {
+                if (!variant<true>(raze_data, std_data, raze_op, std_op, verify)) return false;
+            }
+            return true;
+        }
 
         template <class T, class Container>
         struct fixture {
@@ -884,29 +1049,6 @@ namespace rtts {
                 return base(result);
         }
 
-        struct same {
-            template <class A, class B, class RA, class RB>
-            constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
-                return state_equal(a, b) && result_equal(ra, rb, a, b);
-            }
-        };
-
-        struct prefix {
-            template <class A, class B, class RA, class RB>
-            constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
-                const auto ae = logical_end(ra);
-                const auto be = logical_end(rb);
-
-                return std::ranges::equal(
-                    std::ranges::subrange(a.value.begin(), ae),
-                    std::ranges::subrange(b.value.begin(), be)) &&
-                    result_equal(ra, rb, a, b);
-            }
-        };
-
-        inline constexpr same same_result{};
-        inline constexpr prefix prefix_result{};
-
         template <class T, class F>
         void each_container(size_t size, unsigned seed, F f) {
             f(rtts::random::vector<T>(size, seed));
@@ -959,8 +1101,8 @@ namespace rtts {
             f.output.resize(sz);
             f.output2.resize(sz);
 
-            std::ranges::fill(f.output, 0);
-            std::ranges::fill(f.output2, 0);
+            std::ranges::fill(f.output, T{});
+            std::ranges::fill(f.output2, T{});
 
             return f;
         }

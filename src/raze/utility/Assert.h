@@ -97,4 +97,10 @@ inline const char* extract_basename(const char* path, size_t size) noexcept {
 
 #define raze_assert_unreachable() raze_debug_assert(false)
 
+#if defined(NDEBUG)
+  constexpr inline bool is_debug = true;
+#else
+  constexpr inline bool is_debug = false;
+#endif // defined(NDEBUG)
+
 __RAZE_NAMESPACE_END

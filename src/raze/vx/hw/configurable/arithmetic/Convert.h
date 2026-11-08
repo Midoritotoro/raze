@@ -16,6 +16,10 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
+struct ignore_unsupported_mode {};
+inline constexpr auto ignore_unsupported = raze::options::flag(ignore_unsupported_mode{});
+struct ignore_unsupported_option : raze::options::exact_option<ignore_unsupported> {};
+
 struct saturated_mode {};
 inline constexpr auto saturated = raze::options::flag(saturated_mode{});
 struct saturated_option : raze::options::exact_option<saturated> {};
@@ -109,13 +113,14 @@ raze_always_inline void convert_chunk_into(Dst& dst, const V& x) noexcept {
     assign_regs<get_chunk_dst_offset<I, V, T>()>(dst, convert_<Abi::isa, Saturated, Value, T>(get_src_chunk<I>(x)));
 }
 
-template <arithmetic_type T>
+template <traits::trivially_copyable T>
 struct configurable_convert_t {
     template <class Options>
-    struct convert : options::conditional_callable<convert, Options, saturated_option> {
+    struct convert : options::conditional_callable<convert, Options, saturated_option, ignore_unsupported_option> {
         template <simd_type V>
         raze_nodiscard raze_always_inline auto operator()(const V& x) const noexcept {
-            return options::dispatch_call(*this, x);
+            if constexpr (Options::contains(ignore_unsupported) && !arithmetic_type<T>) return x;
+            else return options::dispatch_call(*this, x);
         }
 
         template <simd_type V>
@@ -150,7 +155,7 @@ struct configurable_convert_t {
  * @ingroup raze_vx_arith
  * @memberof raze::vx
  * @hideinitializer
- * @brief Converts every lane of a SIMD vector to a different arithmetic type.
+ * @brief Converts every lane of a SIMD vector to a different arithmetic type, with conditional pass-through for unsupported types.
  *
  * Returns a SIMD vector of type `simd<T, V::abi_type>` where each lane is converted from the
  * source element type to the destination type `T`.
@@ -159,8 +164,15 @@ struct configurable_convert_t {
  * `raze::vx::saturated` option is attached, conversions are clamped to the destination
  * type's limits.
  *
+ * If the `raze::vx::ignore_unsupported` option is attached and the types are **not** arithmetic
+ * (i.e., unsupported by standard conversion), the function acts as an identity function,
+ * returning the input vector `x` unchanged (bit-wise).
+ * However, if `[raze::vx::ignore_unsupported]` is provided but the types *are* arithmetic, the normal
+ * conversion (or saturated conversion) is still performed. This allows generic algorithms
+ * to use a unified code path for both arithmetic types and raw `trivially_copyable` types.
+ *
  * ### Saturation semantics
- * When `[raze::vx::saturated]` is used, the conversion follows these rules:
+ * When `[raze::vx::saturated]` is used (and types are arithmetic), the conversion follows these rules:
  * - **Float to Integer**: `NaN` becomes `0`. Values out of bounds are clamped to `min`/`max`.
  * - **Float to Float (narrowing)**: `NaN` remains `NaN`. Out-of-bounds values are clamped.
  * - **Integer to Integer (narrowing)**: Out-of-bounds values are clamped to `min`/`max`.
@@ -169,12 +181,12 @@ struct configurable_convert_t {
  *
  * ### Declarations
  * ```cpp
- * template <arithmetic_type T>
+ * template <typename T>
  * constexpr inline *unspecified* convert;
  * ```
  *
  * ### Template Parameters
- * - `T` — The destination arithmetic type (e.g., `int8_t`, `float`).
+ * - `T` — The destination type (e.g., `int8_t`, `float`, or a `trivially_copyable` struct when `[raze::vx::ignore_unsupported]` is used).
  *
  * ### Parameters
  * - `x` — The source SIMD vector.
@@ -183,7 +195,8 @@ struct configurable_convert_t {
  * **Not supported.**
  *
  * ### Return value
- * A vector of type `simd<T, V::abi_type>` containing the converted lanes.
+ * - For arithmetic types: A vector of type `simd<T, V::abi_type>` containing the converted lanes.
+ * - For unsupported types with `[raze::vx::ignore_unsupported]`: The original source vector `x` returned unchanged.
 */
 template <arithmetic_type T>
 constexpr inline auto convert = options::functor<configurable_convert_t<T>::template convert>;

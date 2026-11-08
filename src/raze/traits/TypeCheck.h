@@ -13,4 +13,7 @@ __RAZE_TRAITS_NAMESPACE_BEGIN
 template <class	T, class ... Ts>
 constexpr inline bool is_any_of_v = (std::same_as<T, Ts> || ...);
 
+template <class T>
+concept trivially_copyable = std::is_trivially_copyable_v<T>;
+
 __RAZE_TRAITS_NAMESPACE_END

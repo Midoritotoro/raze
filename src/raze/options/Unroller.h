@@ -23,23 +23,21 @@ struct unroller_t {
 		constexpr raze_always_inline auto operator()(sizetype aligned_size, sizetype tail_size, F& f) const noexcept
 			requires(!std::same_as<Tag, vx::scalar_tag>)
 		{
-			Tag tag;
-
-			if constexpr (requires{ f(tag, aligned_size); }) {
-				constexpr auto has_early_exit = std::same_as<decltype(f(tag, aligned_size)), bool > ;
+			if constexpr (requires{ f(Tag{ uninitialized }, aligned_size); }) {
+				constexpr auto has_early_exit = std::same_as<decltype(f(Tag{ uninitialized }, aligned_size)), bool > ;
 				constexpr auto unrolling = get_unrolling<Traits>();
 				/*const auto guard = vx::make_guard<Tag>();*/
 
 #if defined(raze_cpp_msvc_only) || (raze_cpp_gnu && !defined(RAZE_GCC_SRA_LARGE_LIMIT))
 				// Ignore unrolling
 				if constexpr (has_early_exit) {
-					if (!f(tag, aligned_size)) {
+					if (!f(Tag{ uninitialized }, aligned_size)) {
 						if constexpr (requires { f.result(); }) return f.result();
 						else return;
 					}
 				}
 				else {
-					f(tag, aligned_size);
+					f(Tag{uninitialized}, aligned_size);
 				}
 #else
 				if constexpr (unrolling > 1) {
@@ -64,35 +62,35 @@ struct unroller_t {
 
 					if (aligned_size >= sizeof(Tag)) {
 						if constexpr (has_early_exit) {
-							if (!f(tag, aligned_size)) {
+							if (!f(Tag{ uninitialized }, aligned_size)) {
 								if constexpr (requires { f.result(); }) return f.result();
 								else return;
 							}
 						}
 						else {
-							f(tag, aligned_size);
+							f(Tag{ uninitialized }, aligned_size);
 						}
 					}
 				}
 				else {
 					if constexpr (has_early_exit) {
-						if (!f(tag, aligned_size)) {
+						if (!f(Tag{ uninitialized }, aligned_size)) {
 							if constexpr (requires { f.result(); }) return f.result();
 							else return;
 						}
 					}
 					else {
-						f(tag, aligned_size);
+						f(Tag{ uninitialized }, aligned_size);
 					}
 				}
 #endif // defined(raze_cpp_msvc)
 
 				constexpr auto shift = std::countr_zero(sizeof(typename Tag::value_type));
-				constexpr auto can_process_tail = requires { f(tag, algorithm::tail_mask(tail_size,
+				constexpr auto can_process_tail = requires { f(Tag{ uninitialized }, algorithm::tail_mask(tail_size,
 					make_mask_generator(tail_size >> shift))); };
 
 				if constexpr (vx::native_conditional_memory_access<vx::abi_t<Tag>::isa, typename Tag::value_type> && can_process_tail) {
-					f(tag, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
+					f(Tag{ uninitialized }, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
 				}
 				else {
 					f();
@@ -109,14 +107,12 @@ struct unroller_t {
 		constexpr raze_always_inline auto operator()(sizetype tail_size, F& f) const noexcept
 			requires(!std::same_as<Tag, vx::scalar_tag>)
 		{
-			Tag tag;
-
 			constexpr auto shift = std::countr_zero(sizeof(typename Tag::value_type));
-			constexpr auto can_process_tail = requires { f(tag, algorithm::tail_mask(tail_size,
+			constexpr auto can_process_tail = requires { f(Tag{ uninitialized }, algorithm::tail_mask(tail_size,
 				make_mask_generator(tail_size >> shift))); };
 			
 			if constexpr (vx::native_conditional_memory_access<vx::abi_t<Tag>::isa, typename Tag::value_type> && can_process_tail) {
-				f(tag, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
+				f(Tag{ uninitialized }, algorithm::tail_mask(tail_size, make_mask_generator(tail_size >> shift)));
 			}
 			else {
 				f();

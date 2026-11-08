@@ -508,4 +508,10 @@ private:
     raze_no_unique_address storage_type _storage;
 };
 
+template <arithmetic_type T, simd_type V>
+using rebind_simd_width_t = simd<T, resize_abi_t<abi_t<V>, sizeof(V) / sizeof(T)>>;
+
+template <arithmetic_type T, simd_type V>
+using rebind_simd_lanes_t = simd<T, abi_t<V>>;
+
 __RAZE_VX_NAMESPACE_END

@@ -151,6 +151,8 @@ public:
             if (work.exit()) return work.default_result();
         }
 
+        if constexpr (requires { work.expects(); } && raze::is_debug) work.expects();
+
         constexpr auto target_policy = get_targets<Kernel>();
         constexpr bool has_best = target_policy.template have_best_isa<Value, Kernel>();
 

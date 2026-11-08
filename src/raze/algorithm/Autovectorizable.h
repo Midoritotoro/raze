@@ -83,6 +83,24 @@ raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
         func(first1, first2);
 }
 
+template <std::input_iterator It1, std::sentinel_for<It1> Sent1,
+    std::input_iterator It2, std::sentinel_for<It2> Sent2,
+    std::weakly_incrementable Out, class Func>
+raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
+    It2& first2, Sent2 last2, Out& out, Func func)
+{
+#if defined(raze_cpp_msvc_only)
+    if consteval {
+        for (; first1 != last1 && first2 != last2; ++first1, ++first2, ++out)
+            *out = func(*first1, *first2);
+        return;
+    }
+#endif
+    raze_disable_unrolling
+        for (; first1 != last1 && first2 != last2; ++first1, ++first2, ++out)
+            *out = func(*first1, *first2);
+}
+
 #if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500 && RAZE_HAS_CLANG_RT_BUILTINS) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
 
 #if defined(raze_cpp_clang)

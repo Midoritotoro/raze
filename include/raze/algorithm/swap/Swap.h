@@ -8,11 +8,6 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-constexpr auto swap_ranges_strategy = options::strategy<strategy<>()
-	.for_gcc<strategy_mode::manual>()
-	.for_clang<strategy_mode::manual>()
-	.for_icpx<strategy_mode::autovec>()>;
-
 template <class Traits>
 struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 	template <source Source1, source Source2>
@@ -31,11 +26,15 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 		using InT1 = std::iter_value_t<unchecked_iterator1_type>;
 		using InT2 = std::iter_value_t<unchecked_iterator2_type>;
 
-		using vector_value_type = std::iter_value_t<unchecked_iterator1_type>;
+		using vtype1 = std::conditional_t<vx::arithmetic_type<InT1>, InT1, typename IntegerForSizeof<InT1>::Unsigned>;
+		using vtype2 = std::conditional_t<vx::arithmetic_type<InT2>, InT2, typename IntegerForSizeof<InT2>::Unsigned>;
+
+		using vector_value_type = vtype1;
 
 		static consteval bool vectorizable() noexcept {
-			return contiguous_source<Source1> && contiguous_source<Source2> && 
-				vx::arithmetic_type<InT1> && vx::arithmetic_type<InT2> && has_common_type<InT1, InT2>;
+			return contiguous_source<Source1> && contiguous_source<Source2> &&
+				((vx::arithmetic_type<InT1> && vx::arithmetic_type<InT2> && has_common_type<InT1, InT2>)
+					|| (std::is_trivially_copyable_v<InT1> && std::same_as<InT1, InT2>));
 		}
 
 		source1_type _source1;
@@ -52,54 +51,28 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 			  _in2_iterator(_source2.ubegin()), _in2_sentinel(_source2.uend())
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			auto [in1_ptr, in1_last] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
-			auto [in2_ptr, in2_last] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
-
-			for_noalias2(in1_ptr, in1_last, in2_ptr, in2_last, [in1 = in1_ptr, in2 = in2_ptr](auto i) raze_always_inline_lambda{
-				auto temp = std::move(in1[i]);
-				in1[i] = std::move(in2[i]);
-				in2[i] = std::move(temp);
-			});
-
-			source1_type::from_ptr(_in1_iterator, in1_ptr);
-			source2_type::from_ptr(_in2_iterator, in2_ptr);
-		}
-
 		raze_always_inline constexpr void operator()() {
 			for_novec2(_in1_iterator, _in1_sentinel, _in2_iterator, _in2_sentinel, std::ranges::iter_swap);
 		}
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			using FirstTag = Tag;
+			using SecondTag = vx::rebind_simd_lanes_t<vtype2, Tag>;
+
 			auto* in1_ptr = std::to_address(_in1_iterator);
 			auto* in2_ptr = std::to_address(_in2_iterator);
 
 			const auto aligned_end = bytes_pointer_offset(in1_ptr, aligned_size);
 
 			raze_disable_unrolling do {
-				const auto v1 = vx::convert<InT2>(vx::load<Tag>(in1_ptr));
-				const auto v2 = vx::convert<InT1>(vx::load<Tag>(in2_ptr));
-				vx::store(in1_ptr, v2);
-				vx::store(in2_ptr, v1);
-				advance_bytes(in1_ptr, in2_ptr, sizeof(Tag));
+				const auto v1 = vx::load<FirstTag>(in1_ptr);
+				const auto v2 = vx::load<SecondTag>(in2_ptr);
+				vx::store(in1_ptr, vx::convert<vtype1>[raze::vx::ignore_unsupported](v2));
+				vx::store(in2_ptr, vx::convert<vtype2>[raze::vx::ignore_unsupported](v1));
+				advance_bytes(in1_ptr, sizeof(vtype1) * Tag::size());
+				advance_bytes(in2_ptr, sizeof(vtype2) * Tag::size());
 			} while (in1_ptr != aligned_end);
-
-			source1_type::from_ptr(_in1_iterator, in1_ptr);
-			source2_type::from_ptr(_in2_iterator, in2_ptr);
-		}
-
-		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
-			auto* in1_ptr = std::to_address(_in1_iterator);
-			auto* in2_ptr = std::to_address(_in2_iterator);
-
-			const auto v1 = vx::convert<InT2>(vx::load<Tag>[ignore](in1_ptr));
-			const auto v2 = vx::convert<InT1>(vx::load<Tag>[ignore](in2_ptr));
-			vx::store[ignore](in1_ptr, v2);
-			vx::store[ignore](in2_ptr, v1);
-
-			advance_bytes(in1_ptr, in2_ptr, ignore.tail_bytes());
 
 			source1_type::from_ptr(_in1_iterator, in1_ptr);
 			source2_type::from_ptr(_in2_iterator, in2_ptr);
@@ -109,20 +82,21 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 			return { _source1.wrap(_in1_iterator), _source2.wrap(_in2_iterator) };
 		}
 
-		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source1> && constexpr_sized_source<Source2>) {
-			constexpr auto sz1 = Source1::static_size();
-			constexpr auto sz2 = Source2::static_size();
-			if constexpr (sizetype(sz1) < sizetype(sz2)) return sz1;
-			else return sz2;
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() 
+			requires(constexpr_sized_source<Source1> || constexpr_sized_source<Source2>) 
+		{
+			if constexpr (constexpr_sized_source<Source1>) return Source1::static_size();
+			else return Source2::static_size();
 		}
 
 		raze_nodiscard constexpr raze_always_inline auto size() const {
-			return math::min(_source1.size(), _source2.size());
+			return _source1.size();
+		}
+
+		constexpr void expects() {
+			raze_debug_assert((_source1.size() / sizeof(InT1)) == (_source2.size() / sizeof(InT2)));
 		}
 	};
-
-	template <class Source1, class Source2>
-	kernel(Source1&&, Source2&&) -> kernel<std::remove_cvref_t<Source1>, std::remove_cvref_t<Source2>>;
 
 	template <std::input_iterator InIt1, std::sentinel_for<InIt1> Sent1,
 		std::input_iterator InIt2, std::sentinel_for<InIt2> Sent2>
@@ -144,6 +118,9 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Exchanges elements between two ranges.
  *
  * 1) Exchanges elements from the range `[first1, last1)` with elements from the range
@@ -230,6 +207,6 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
  * v2: 1 2 3 4 5 60 70
  * ```
  */
-constexpr inline auto swap_ranges = options::function_with_traits<swap_ranges_t>[options::unroll<4>][swap_ranges_strategy];
+constexpr inline auto swap_ranges = options::function_with_traits<swap_ranges_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

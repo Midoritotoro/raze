@@ -5,17 +5,28 @@
 #include <src/raze/algorithm/Destination.h>
 #include <raze/math/Math.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 constexpr auto transform_strategy = options::strategy<strategy<>()
 	.for_gcc<strategy_mode::autovec>()
-	.for_clang<strategy_mode::autovec>()>;
+	.for_clang<strategy_mode::autovec>()
+	.for_icpx<strategy_mode::autovec>()>;
 
 template <class Traits>
 struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 	template <class... Ts>
 	struct kernel;
+
+	template <source Source, destination Destination, class Function, class Projection>
+	kernel(Source&&, Destination&&, Function, Projection)
+		-> kernel<Source, Destination, Function, Projection>;
+
+	template <source Source1, source Source2, destination Destination,
+		class Function, class Projection1, class Projection2>
+	kernel(Source1&&, Source2&&, Destination&&, Function, Projection1, Projection2)
+		-> kernel<Source1, Source2, Destination, Function, Projection1, Projection2>;
 
 	template <source Source, destination Destination, class Function, class Projection>
 	struct kernel<Source, Destination, Function, Projection> {
@@ -29,12 +40,16 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
 
-		using vector_value_type = std::iter_value_t<unchecked_iterator_type>;
+		using vt_in = std::iter_value_t<unchecked_iterator_type>;
+		using vt_out = std::iter_value_t<unchecked_destination_type>;
+
+		using vector_value_type = vt_in;
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> &&
 				vectorizable_unary_function<Function, iterator_type> &&
-				vectorizable_projection<Projection, iterator_type>;
+				vectorizable_projection<Projection, iterator_type> &&
+				has_common_type<vector_value_type, vt_out>;
 		}
 
 		destination_type _destination;
@@ -54,21 +69,23 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			auto* raze_restrict in_ptr = std::to_address(_in_iterator);
-			auto* raze_restrict in_last = std::to_address(_in_sentinel);
-			auto* raze_restrict out_ptr = std::to_address(_out_iterator);
+			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
+			auto dest = std::to_address(_out_iterator);
 
-			for (; in_ptr != in_last; ++in_ptr, ++out_ptr)
-				*out_ptr = _function(_proj(*in_ptr));
+			for_noalias(first, last, [func = _function, proj = _proj,
+				dst = dest, in = first](auto i) raze_always_inline_lambda{
+					dst[i] = func(proj(in[i]));
+				});
 
-			source_type::from_ptr(_in_iterator, in_ptr);
-			destination_type::from_ptr(_out_iterator, out_ptr);
+			source_type::from_ptr(_in_iterator, first);
+			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(dest, size()));
 		}
 
 		raze_always_inline constexpr void operator()() {
-			raze_disable_unrolling
-			for (; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator)
-				*_out_iterator = _function(_proj(*_in_iterator));
+			for_novec(_in_iterator, _in_sentinel, _out_iterator, [func = _function,
+				proj = _proj] (auto& val) raze_always_inline_lambda {
+					return std::invoke(func, std::invoke(proj, val));
+				});
 		}
 
 		template <vectorizable_tag Tag>
@@ -78,7 +95,7 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
 
 			do {
-				vx::store(out_ptr, _function(_proj(vx::load<Tag>(in_ptr))));
+				vx::store(out_ptr, vx::convert<vt_out>(_function(_proj(vx::load<Tag>(in_ptr)))));
 				advance_bytes(in_ptr, out_ptr, sizeof(Tag));
 			} while (in_ptr != aligned_end);
 
@@ -87,11 +104,11 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_out, vt_in>) {
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
-
-			const auto data = vx::load<Tag>(in_ptr);
+				
+			const auto data = vx::load<Tag>[ignore](in_ptr);
 			vx::store[ignore](out_ptr, _function(_proj(data)));
 
 			advance_bytes(in_ptr, out_ptr, ignore.tail_bytes());
@@ -129,10 +146,16 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		using unchecked_sentinel2_type = typename source2_type::unchecked_sentinel_type;
 		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
 
-		using vector_value_type = std::iter_value_t<unchecked_iterator1_type>;
+		using vt_in1 = std::iter_value_t<unchecked_iterator1_type>;
+		using vt_in2 = std::iter_value_t<unchecked_iterator2_type>;
+		using vt_out = std::iter_value_t<unchecked_destination_type>;
+
+		using common_in_t = common_type_or_void_t<vt_in1, vt_in2>;
+		using vector_value_type = vt_in1;
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source1> && contiguous_source<Source2> && contiguous_destination<Destination> &&
+				has_common_type<vt_in1, vt_out>&& has_common_type<vt_in2, vt_out> &&
 				vectorizable_binary_function<Function, iterator1_type, iterator2_type> &&
 				vectorizable_projection<Projection1, iterator1_type> &&
 				vectorizable_projection<Projection2, iterator2_type>;
@@ -162,36 +185,44 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
-			auto [in1_ptr, in1_last] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
-			auto [in2_ptr, in2_last] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
+			auto [first1, last1] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
+			auto [first2, last2] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
+			auto dest = std::to_address(_out_iterator);
 
-			auto* raze_restrict out_ptr = std::to_address(_out_iterator);
+			for_noalias2(first1, last1, first2, last2, [func = _function, proj1 = _proj1, proj2 = _proj2,
+				dst = dest, in1 = first1, in2 = first2](auto i) raze_always_inline_lambda {
+					dst[i] = func(proj1(in1[i]), proj(in2[i]));
+				});
 
-			for (; in1_ptr != in1_last && in2_ptr != in2_last; ++in1_ptr, ++in2_ptr, ++out_ptr)
-				*out_ptr = _function(_proj1(*in1_ptr), _proj2(*in2_ptr));
-
-			source1_type::from_ptr(_in1_iterator, in1_ptr);
-			source2_type::from_ptr(_in2_iterator, in2_ptr);
-			destination_type::from_ptr(_out_iterator, out_ptr);
+			source1_type::from_ptr(_in1_iterator, first1);
+			source2_type::from_ptr(_in2_iterator, first2);
+			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(dest, size()));
 		}
 
 		raze_always_inline constexpr void operator()() {
-			raze_disable_unrolling
-			for (; _in1_iterator != _in1_sentinel && _in2_iterator != _in2_sentinel; ++_in1_iterator, ++_in2_iterator, ++_out_iterator)
-				*_out_iterator = _function(_proj1(*_in1_iterator), _proj2(*_in2_iterator));
+			for_novec2(_in1_iterator, _in1_sentinel, _in2_iterator, _in2_sentinel, _out_iterator, [func = _function,
+				proj1 = _proj1, proj2 = _proj2] (auto& val1, auto& val2) raze_always_inline_lambda {
+					return std::invoke(func, std::invoke(proj1, val1), std::invoke(proj2, val2));
+				});
 		}
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			using V1 = Tag;
+			using V2 = vx::rebind_simd_lanes_t<vt_in2, Tag>;
+
 			auto* in1_ptr = std::to_address(_in1_iterator);
 			auto* in2_ptr = std::to_address(_in2_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 			const auto aligned_end = bytes_pointer_offset(in1_ptr, aligned_size);
 
 			do {
-				vx::store(out_ptr, _function(_proj1(vx::load<Tag>(in1_ptr)), _proj2(vx::load<Tag>(in2_ptr))));
-				advance_bytes(in1_ptr, in2_ptr, sizeof(Tag));
-				advance_bytes(out_ptr, sizeof(Tag));
+				const auto v1 = vx::convert<common_in_t>(_proj1(vx::load<V1>(in1_ptr)));
+				const auto v2 = vx::convert<common_in_t>(_proj2(vx::load<V2>(in2_ptr)));
+				vx::store(out_ptr, vx::convert<vt_out>(_function(v1, v2)));
+				advance_bytes(in1_ptr, sizeof(V1));
+				advance_bytes(in2_ptr, sizeof(V2));
+				advance_bytes(out_ptr, sizeof(vt_out) * Tag::size());
 			} while (in1_ptr != aligned_end);
 
 			source1_type::from_ptr(_in1_iterator, in1_ptr);
@@ -200,13 +231,13 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_out, vt_in1> && std::same_as<vt_out, vt_in2>) {
 			auto* in1_ptr = std::to_address(_in1_iterator);
 			auto* in2_ptr = std::to_address(_in2_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
-			const auto data1 = vx::load<Tag>(in1_ptr);
-			const auto data2 = vx::load<Tag>(in2_ptr);
+			const auto data1 = vx::load<Tag>[ignore](in1_ptr);
+			const auto data2 = vx::load<Tag>[ignore](in2_ptr);
 			vx::store[ignore](out_ptr, _function(_proj1(data1), _proj2(data2)));
 
 			advance_bytes(in1_ptr, in2_ptr, ignore.tail_bytes());
@@ -232,14 +263,6 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			return math::min(_source1.size(), _source2.size());
 		}
 	};
-
-	template <class Source, class Destination, class Function, class Projection>
-	kernel(Source&&, Destination&&, Function, Projection)
-		-> kernel<std::remove_cvref_t<Source>, std::remove_cvref_t<Destination>, std::remove_cvref_t<Function>, std::remove_cvref_t<Projection>>;
-
-	template <class Source1, class Source2, class Destination, class Function, class Projection1, class Projection2>
-	kernel(Source1&&, Source2&&, Destination&&, Function, Projection1, Projection2)
-		-> kernel<std::remove_cvref_t<Source1>, std::remove_cvref_t<Source2>, std::remove_cvref_t<Destination>, std::remove_cvref_t<Function>, std::remove_cvref_t<Projection1>, std::remove_cvref_t<Projection2>>;
 
 	template <std::input_iterator InIt, std::sentinel_for<InIt> Sent,
 	    std::weakly_incrementable OutIt, class Function, class Proj = std::identity>
@@ -291,6 +314,9 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 };
 
 /**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
  * @brief Applies a given function to a range (or a pair of ranges) and stores the result in another range.
  *
  * 1) **Unary transform (iterator-sentinel)**: Applies the unary function `f` to each element in `[first, last)`
