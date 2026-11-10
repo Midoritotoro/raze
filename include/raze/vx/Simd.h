@@ -201,6 +201,15 @@ public:
     }
 
     /**
+     * @brief Element-wise bitwise NOT.
+     * @see raze::vx::bit_not
+     * @return The result of `bit_not(*this)`.
+    */
+    raze_always_inline simd operator!() const noexcept {
+        return bit_not(*this);
+    }
+
+    /**
      * @brief Element-wise equality comparison.
      * @see raze::vx::is_equal
      * @return The result of `is_equal(x, y)`.

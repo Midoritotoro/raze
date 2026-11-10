@@ -130,6 +130,54 @@ constexpr bool is_fstatic() {
     return Traits::contains(fstatic);
 }
 
+struct strict_types_mode {};
+
+/**
+ * @ingroup raze_options
+ * @brief Option flag that enforces strict input type matching for SIMD vectorization.
+ *
+ * By default, mixed-type binary algorithms (e.g., `transform`) allow SIMD 
+ * vectorization of heterogeneous inputs (such as `int32_t` and `float`) by 
+ * promoting both operands to their `std::common_type_t` before invoking the 
+ * user-provided function. This mirrors standard scalar usual arithmetic conversions.
+ *
+ * However, if the user-provided functor inspects the exact static type of its 
+ * arguments (e.g., via `decltype`, `sizeof`, or type-specific overloads), this 
+ * implicit common-type promotion may alter the intended semantics.
+ *
+ * Attaching `strict_types` disables this promotion. The algorithm will only 
+ * utilize the vectorized SIMD path if both input types are strictly identical. 
+ * If the types differ, it safely falls back to the scalar execution path, 
+ * guaranteeing 100% scalar-equivalent semantics.
+ *
+ * ### Declarations
+ * ```cpp
+ * constexpr inline *unspecified* strict_types;
+ * ```
+ *
+ * ### Example
+ * ```cpp
+ * // Default: int32_t and float are promoted to float, and then vectorized.
+ * raze::algorithm::transform(a_int, b_float, out, [](auto x, auto y) { 
+ *     return x + y; 
+ * });
+ *
+ * // Strict: int32_t and float differ, so it falls back to scalar iteration.
+ * // Ideal for lambdas that behave differently for int32_t and float.
+ * raze::algorithm::transform[raze::options::strict_types](
+ *     a_int, b_float, out, [](auto x, auto y) { 
+ *         if constexpr (std::is_same_v<decltype(x), int32_t>) return x; 
+ *         else return 0.0f; 
+ *     });
+ * ```
+ */
+constexpr inline auto strict_types = raze::options::flag(strict_types_mode{});
+
+template <class Traits>
+constexpr bool is_strict_types() {
+    return Traits::contains(strict_types);
+}
+
 constexpr inline auto no_traits = traits();
 
 template <template <class> class F, class Traits>

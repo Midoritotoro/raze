@@ -68,3 +68,7 @@
  * Provides type-safe pattern generators (`make_*`), introspection helpers (`is_*`, `get_*`),
  * and validation checks used by `raze::vx::shuffle`.
  */
+
+       /**
+ * @defgroup raze_vx_concepts Vector Shuffles
+ */

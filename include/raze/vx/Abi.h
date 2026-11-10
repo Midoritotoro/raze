@@ -36,7 +36,7 @@ __RAZE_VX_NAMESPACE_BEGIN
  *
  *  In summary:
  *    - Use `runtime_abi` on **MSVC** together with a runtime dispatcher.
- *    - Use `x86_abi` on **GCC/Clang** for compile‑time ISA selection.
+ *    - Use `fixed_abi` on **GCC/Clang** for compile‑time ISA selection.
  *
  *  This ABI descriptor exposes basic architectural properties such as register
  *  width and register count, enabling the dispatcher to construct and manage
@@ -50,25 +50,25 @@ struct runtime_abi {
 };
 
 template <sizetype Elements>
-struct x86_abi {
+struct fixed_abi {
 	static constexpr auto dynamic = false;
 	static constexpr auto size = Elements;
 	static constexpr auto isa = target_isa();
 };
 
 #if defined(raze_processor_x86_64)
-  using default_abi = x86_abi<4>;
+  using default_abi = fixed_abi<4>;
 #endif // defined(raze_processor_x86_64)
 
 template <class Abi, sizetype Elements>
 struct resize_abi {
-	using type = std::conditional_t<Abi::dynamic, runtime_abi<Abi::isa, Elements>, x86_abi<Elements>>;
+	using type = std::conditional_t<Abi::dynamic, runtime_abi<Abi::isa, Elements>, fixed_abi<Elements>>;
 };
 
 template <class	Abi, sizetype Elements>
 using resize_abi_t = typename resize_abi<Abi, Elements>::type;
 
 template <class Type>
-using native_abi = x86_abi<native_size<Type>>;
+using native_abi = fixed_abi<native_size<Type>>;
 
 __RAZE_VX_NAMESPACE_END

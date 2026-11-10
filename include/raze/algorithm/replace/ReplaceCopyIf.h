@@ -54,7 +54,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 				_predicate(pred), _proj(proj), _new_value(new_val)
 		{}
  
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto dest = std::to_address(_out_iterator);
 

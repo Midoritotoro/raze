@@ -42,7 +42,7 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 
 		constexpr explicit kernel(Source&& source, Destination&& dest, Predicate pred, Projection proj)
 			: _source(std::forward<Source>(source)), _dest(std::forward<Destination>(dest)), 
-				_predicate(pred), _proj(proj), _out_it(_source.ubegin()), _in_it(_source.ubegin()),
+				_predicate(pred), _proj(proj), _out_it(_dest.ubegin()), _in_it(_source.ubegin()),
 			  _in_sent(_source.uend())
 		{}
 
@@ -71,7 +71,7 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 			} while (in_ptr != aligned_end);
 
 			source_type::from_ptr(_in_it, in_ptr);
-			source_type::from_ptr(_out_it, out_ptr);
+			destination_type::from_ptr(_out_it, out_ptr);
 		}
 
 		constexpr raze_always_inline std::ranges::in_out_result<iterator_type, out_iterator_type> result() const {
@@ -91,10 +91,6 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 			else return algorithm::targets<arch::ISA::AVX512VBMI2, arch::ISA::AVX2, arch::ISA::SSSE3>{};
 		}
 	};
-
-	template <class Source, class Destination, class Predicate, class Projection>
-	kernel(Source&&, Destination&&, Predicate, Projection)
-		-> kernel<std::remove_cvref_t<Source>, std::remove_cvref_t<Destination>, std::remove_cvref_t<Predicate>, std::remove_cvref_t<Projection>>;
 
 	template <std::permutable It, std::sentinel_for<It> Sent, class OutIt, class Pred, class Proj = std::identity>
 	constexpr raze_always_inline decltype(auto) operator()(

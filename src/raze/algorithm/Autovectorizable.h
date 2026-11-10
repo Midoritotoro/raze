@@ -10,10 +10,14 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 #pragma strict_gs_check(off)
 #endif
 
-struct autovectorizable {};
+struct autovectorizable_tag {};
+struct native_tag {};
 
 template <class Work>
-concept autovectorizable_kernel = requires(Work& w) { w(autovectorizable{}); };
+concept autovectorizable_kernel = requires(Work& w) { w(autovectorizable_tag{}); };
+
+template <class Work>
+concept native_kernel = requires(Work & w) { w(native_tag{}); };
 
 template <std::contiguous_iterator It, std::sentinel_for<It> Sent, class Func>
 raze_always_inline constexpr void for_noalias(It& first, Sent last, Func func) {
@@ -41,6 +45,7 @@ raze_always_inline constexpr void for_novec(It& first, Sent last, Out& out, Func
 {
 #if defined(raze_cpp_msvc_only)
     if consteval {
+        raze_do_pragma(loop(no_vector))
         for (; first != last; ++first, ++out)
             *out = func(*first);
         return;
@@ -56,14 +61,15 @@ raze_always_inline constexpr void for_novec(It& first, Sent last, Func func)
 {
 #if defined(raze_cpp_msvc_only)
     if consteval {
+        raze_do_pragma(loop(no_vector))
         for (; first != last; ++first)
             func(*first);
         return;
     }
 #endif
     raze_disable_unrolling
-        for (; first != last; ++first)
-            func(*first);
+    for (; first != last; ++first)
+        func(*first);
 }
 
 template <std::input_iterator It1, std::sentinel_for<It1> Sent1,
@@ -73,6 +79,7 @@ raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
 {
 #if defined(raze_cpp_msvc_only)
     if consteval {
+        raze_do_pragma(loop(no_vector))
         for (; first1 != last1 && first2 != last2; ++first1, ++first2)
             func(first1, first2);
         return;
@@ -91,14 +98,15 @@ raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
 {
 #if defined(raze_cpp_msvc_only)
     if consteval {
+        raze_do_pragma(loop(no_vector))
         for (; first1 != last1 && first2 != last2; ++first1, ++first2, ++out)
             *out = func(*first1, *first2);
         return;
     }
 #endif
     raze_disable_unrolling
-        for (; first1 != last1 && first2 != last2; ++first1, ++first2, ++out)
-            *out = func(*first1, *first2);
+    for (; first1 != last1 && first2 != last2; ++first1, ++first2, ++out)
+        *out = func(*first1, *first2);
 }
 
 #if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500 && RAZE_HAS_CLANG_RT_BUILTINS) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
@@ -122,7 +130,7 @@ struct invoke_autovec_helper_t {
             : vx::has_avx512bw<vx::target_isa()>;
 
         if constexpr (top)
-            _work(autovectorizable{});
+            _work(autovectorizable_tag{});
         else if constexpr (vx::has_avx2<vx::target_isa()>)
             from_avx2();
         else if constexpr (vx::has_sse42<vx::target_isa()>)
@@ -132,22 +140,22 @@ struct invoke_autovec_helper_t {
     }
 
     raze_targets("avx512f", "avx2", "default")
-    void from_avx2() requires(sizeof(value_type) >= 4) { _work(autovectorizable{}); }
+    void from_avx2() requires(sizeof(value_type) >= 4) { _work(autovectorizable_tag{}); }
 
     raze_targets(RAZE_CLONES_NARROW, "avx2", "default")
-    void from_avx2() requires(sizeof(value_type) < 4) { _work(autovectorizable{}); }
+    void from_avx2() requires(sizeof(value_type) < 4) { _work(autovectorizable_tag{}); }
 
     raze_targets("avx512f", "avx2", "sse4.2", "default")
-    void from_sse42() requires(sizeof(value_type) >= 4) { _work(autovectorizable{}); }
+    void from_sse42() requires(sizeof(value_type) >= 4) { _work(autovectorizable_tag{}); }
 
     raze_targets(RAZE_CLONES_NARROW, "avx2", "sse4.2", "default")
-    void from_sse42() requires(sizeof(value_type) < 4) { _work(autovectorizable{}); }
+    void from_sse42() requires(sizeof(value_type) < 4) { _work(autovectorizable_tag{}); }
 
     raze_targets("avx512f", "avx2", "sse4.2", "default")
-    void from_base() requires(sizeof(value_type) >= 4) { _work(autovectorizable{}); }
+    void from_base() requires(sizeof(value_type) >= 4) { _work(autovectorizable_tag{}); }
 
     raze_targets(RAZE_CLONES_NARROW, "avx2", "sse4.2", "default")
-    void from_base() requires(sizeof(value_type) < 4) { _work(autovectorizable{}); }
+    void from_base() requires(sizeof(value_type) < 4) { _work(autovectorizable_tag{}); }
 };
 
 #undef RAZE_CLONES_NARROW

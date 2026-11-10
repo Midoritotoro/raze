@@ -201,4 +201,65 @@ struct configurable_convert_t {
 template <arithmetic_type T>
 constexpr inline auto convert = options::functor<configurable_convert_t<T>::template convert>;
 
+/**
+ * @ingroup raze_vx_concepts
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Heuristic hint: will `convert<To>` on this SIMD type emit native SIMD?
+ *
+ * Detects whether converting every lane of a SIMD value of type `V` to element
+ * type `To` is **likely** to be lowered to native SIMD instructions by the
+ * current compiler and ABI, or will degrade into per-lane scalar code.
+ *
+ * ### What it actually checks
+ *
+ * The check is deliberately conservative and platform-aware:
+ *
+ * - **MSVC**: returns `true` only when `V` is guaranteed to occupy at least ones
+ *   full hardware register (`sizeof(V) >= 16`) **and** the destination type is
+ *   at least register-wide (`V::size() * sizeof(To) >= 16`). This is the
+ *   minimum bar for MSVC to avoid `simd` being represented as a *tuple of
+ *   scalars*, which forces the codegen into per-lane loops with mask-blends
+ *   and register spills — the worst-case pathological output.
+ * - **GCC / Clang / ICPX**: returns `true` unconditionally. These compilers
+ *   have mature SIMD backends and a general-purpose vectorizer, so native
+ *   SIMD lowering is the overwhelmingly common case — even when the check
+ *   cannot prove it in advance.
+ *
+ * ### Caveats
+ *
+ * - **"Fast" is subjective.** This concept does **not** measure performance.
+ *   It is a *codegen heuristic*, not a benchmark. A return value of `true`
+ *   only means "the compiler is likely to emit SIMD instructions", not
+ *   "this code path will be faster than scalar". 
+ * - **`true` ≠ SIMD.** Even on GCC/Clang/ICPX, some conversions on exotic
+ *   types or unusual register widths may still fall back to scalar
+ *   per-element loops. The concept is a *hint to gate a manual fast-path*,
+ *   not a guarantee that the fast-path is engaged.
+ * - **`false` ≠ correctness issue.** Returning `false` never means the
+ *   conversion is wrong. It means "the compiler is known to take a
+ *   slow path", and the caller should let the algorithm use its own
+ *   scalar fallback instead of forcing a half-vectorized middle ground.
+ *
+ * ### Why bother
+ *
+ * On MSVC, gating a SIMD fast-path with this concept avoids the worst
+ * codegen (nested per-lane loops and spills
+ * inside the inner vector loop). On GCC/Clang/ICPX, the concept is almost
+ * always `true`, so it costs nothing in practice and keeps the code
+ * portable across compilers.
+ *
+ * ### Example
+ * ```cpp
+ * // Or, in user code, decide whether to engage vectorization:
+ * if constexpr (vx::supports_fast_conversion<simd<float, fixed_abi<4>>, char>) {
+ *     // On GCC/Clang/ICPX:      true  → SIMD path
+ *     // On MSVC (simd<char,8>): false → scalar fallback avoids spills
+ * }
+ * ```
+*/
+template <class V, class To>
+concept supports_fast_conversion = simd_type<V> && arithmetic_type<To> &&
+    (!compatibility::is_msvc_only || (((V::size() * sizeof(typename V::value_type)) >= 16) && ((V::size() * sizeof(To)) >= 16)));
+
 __RAZE_VX_NAMESPACE_END

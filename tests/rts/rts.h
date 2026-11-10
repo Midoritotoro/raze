@@ -597,7 +597,7 @@ namespace rtts {
         struct simd_info {
             using base_type = T;
             static constexpr raze::u32 width = Width;
-            using type = raze::vx::simd<base_type, raze::vx::x86_abi<width / (sizeof(T) * 8)>>;
+            using type = raze::vx::simd<base_type, raze::vx::fixed_abi<width / (sizeof(T) * 8)>>;
         };
 
         template <class T>
@@ -672,21 +672,7 @@ namespace rtts {
         }
     };
 
-    struct prefix {
-        template <class A, class B, class RA, class RB>
-        constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
-            const auto ae = logical_end(ra);
-            const auto be = logical_end(rb);
-
-            return std::ranges::equal(
-                std::ranges::subrange(a.value.begin(), ae),
-                std::ranges::subrange(b.value.begin(), be)) &&
-                result_equal(ra, rb, a, b);
-        }
-    };
-
     inline constexpr same same_result{};
-    inline constexpr prefix prefix_result{};
 
     namespace algorithm {
         enum class kind { range, n };
@@ -779,34 +765,19 @@ namespace rtts {
             }
         }
 
-        template <class T1, class T2, class F>
+        template <class T1, class T2, template <class> class Trait, class F>
         void each_container_pair(size_t size, unsigned seed, F f) {
-            f(rtts::random::vector<T1>(size, seed), rtts::random::vector<T2>(size, seed + 1));
-            f(rtts::random::deque<T1>(size, seed), rtts::random::deque<T2>(size, seed + 1));
-            f(rtts::random::list<T1>(size, seed), rtts::random::list<T2>(size, seed + 1));
-            f(rtts::random::forward_list<T1>(size, seed), rtts::random::forward_list<T2>(size, seed + 1));
-        }
-
-        template <kind Mode, class T1, class T2, class Raze, class Std, class Verify = same>
-        void run(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
-            std::mt19937 rng(cfg.seed);
-            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
-
-            for (size_t i = 0; i < cfg.random_cases; ++i) {
-                const size_t size = size_dist(rng);
-                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
-                each_container_pair<T1, T2>(size, seed, [&](auto v1, auto v2) {
-                    case_mixed<Mode, T1, T2>(std::move(v1), std::move(v2), seed, rng, false, raze_op, std_op, verify);
-                    });
-            }
-
-            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
-                const size_t size = cfg.sizes[i];
-                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
-                each_container_pair<T1, T2>(size, seed, [&](auto v1, auto v2) {
-                    case_mixed<Mode, T1, T2>(std::move(v1), std::move(v2), seed, rng, true, raze_op, std_op, verify);
-                    });
-            }
+            auto try_one = [&]<template <class...> class C>() {
+                using It1 = decltype(std::declval<C<T1>&>().begin());
+                using It2 = decltype(std::declval<C<T2>&>().begin());
+                if constexpr (Trait<It1>::value && Trait<It2>::value)
+                    f(rtts::random::sequence<C, T1>(size, seed),
+                        rtts::random::sequence<C, T2>(size, seed + 1));
+            };
+            try_one.template operator() < std::vector > ();
+            try_one.template operator() < std::deque > ();
+            try_one.template operator() < std::list > ();
+            try_one.template operator() < std::forward_list > ();
         }
 
         template <class T1, class T2, size_t N>
@@ -965,7 +936,15 @@ namespace rtts {
 
         template <class A, class B>
         constexpr bool output_equal(A const& a, B const& b, auto const& ca, auto const& cb) {
-            return position(ca.output, a) == position(cb.output, b);
+            using OutT = std::remove_cvref_t<std::iter_value_t<A>>;
+            using Out1T = std::remove_cvref_t<std::iter_value_t<decltype(ca.output.begin())>>;
+
+            if constexpr (std::same_as<OutT, Out1T>) {
+                return position(ca.output, a) == position(cb.output, b);
+            }
+            else {
+                return position(ca.output2, a) == position(cb.output2, b);
+            }
         }
 
         template <class A, class B>
@@ -1049,12 +1028,46 @@ namespace rtts {
                 return base(result);
         }
 
-        template <class T, class F>
+
+        struct prefix {
+            template <class A, class B, class RA, class RB>
+            constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
+                const auto ae = logical_end(ra);
+                const auto be = logical_end(rb);
+
+                return std::ranges::equal(
+                    std::ranges::subrange(a.value.begin(), ae),
+                    std::ranges::subrange(b.value.begin(), be)) &&
+                    result_equal(ra, rb, a, b);
+            }
+        };
+
+        inline constexpr prefix prefix_result{};
+
+        template <class It>
+        struct any_iterator : std::true_type {};
+
+        template <class It>
+        struct bidirectional_iterator
+            : std::bool_constant<std::bidirectional_iterator<It>> {};
+
+        template <class It>
+        struct random_access_iterator
+            : std::bool_constant<std::random_access_iterator<It>> {};
+
+        template <class T, template <class> class Trait, class F>
         void each_container(size_t size, unsigned seed, F f) {
-            f(rtts::random::vector<T>(size, seed));
-            f(rtts::random::deque<T>(size, seed));
-            f(rtts::random::list<T>(size, seed));
-            f(rtts::random::forward_list<T>(size, seed));
+            if constexpr (Trait<decltype(std::declval<std::vector<T>&>().begin())>::value)
+                f(rtts::random::vector<T>(size, seed));
+
+            if constexpr (Trait<decltype(std::declval<std::deque<T>&>().begin())>::value)
+                f(rtts::random::deque<T>(size, seed));
+
+            if constexpr (Trait<decltype(std::declval<std::list<T>&>().begin())>::value)
+                f(rtts::random::list<T>(size, seed));
+
+            if constexpr (Trait<decltype(std::declval<std::forward_list<T>&>().begin())>::value)
+                f(rtts::random::forward_list<T>(size, seed));
         }
 
         template <class F>
@@ -1130,23 +1143,7 @@ namespace rtts {
             }
         }
 
-        template <kind Mode, class T, class Raze, class Std, class Verify = same>
-        void run(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
-            std::mt19937 rng(cfg.seed);
-            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
-
-            for (size_t i = 0; i < cfg.random_cases; ++i) {
-                const size_t size = size_dist(rng);
-                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
-                each_container<T>(size, seed, [&](auto value) { case_<Mode, T>(std::move(value), seed, rng, false, raze_op, std_op, verify); });
-            }
-
-            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
-                const size_t size = cfg.sizes[i];
-                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
-                each_container<T>(size, seed, [&](auto value) { case_<Mode, T>(std::move(value), seed, rng, true, raze_op, std_op, verify); });
-            }
-        }
+       
 
         template <class T, size_t N>
         struct constexpr_fixture {
@@ -1201,6 +1198,54 @@ namespace rtts {
             }
 
             return true;
+        }
+
+        template <kind Mode, class T, template <class> class Trait = any_iterator,
+            class Raze, class Std, class Verify = same>
+        void run(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            std::mt19937 rng(cfg.seed);
+            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
+
+            for (size_t i = 0; i < cfg.random_cases; ++i) {
+                const size_t size = size_dist(rng);
+                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
+                each_container<T, Trait>(size, seed, [&](auto value) {
+                    case_<Mode, T>(std::move(value), seed, rng, false, raze_op, std_op, verify);
+                    });
+            }
+
+            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
+                const size_t size = cfg.sizes[i];
+                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
+                each_container<T, Trait>(size, seed, [&](auto value) {
+                    case_<Mode, T>(std::move(value), seed, rng, true, raze_op, std_op, verify);
+                    });
+            }
+        }
+
+        template <kind Mode, class T1, class T2, template <class> class Trait = any_iterator,
+            class Raze, class Std, class Verify = same>
+        void run(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            std::mt19937 rng(cfg.seed);
+            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
+
+            for (size_t i = 0; i < cfg.random_cases; ++i) {
+                const size_t size = size_dist(rng);
+                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
+                each_container_pair<T1, T2, Trait>(size, seed, [&](auto v1, auto v2) {
+                    case_mixed<Mode, T1, T2>(std::move(v1), std::move(v2),
+                        seed, rng, false, raze_op, std_op, verify);
+                    });
+            }
+
+            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
+                const size_t size = cfg.sizes[i];
+                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
+                each_container_pair<T1, T2, Trait>(size, seed, [&](auto v1, auto v2) {
+                    case_mixed<Mode, T1, T2>(std::move(v1), std::move(v2),
+                        seed, rng, true, raze_op, std_op, verify);
+                    });
+            }
         }
     }
 

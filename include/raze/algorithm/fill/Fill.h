@@ -43,7 +43,7 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 			_sentinel(_source.uend()), _value(math::bit_cast<vector_value_type>(value))
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
 			for (; first != last; ++first)

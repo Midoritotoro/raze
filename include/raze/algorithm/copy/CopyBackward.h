@@ -1,217 +1,132 @@
-#pragma once 
-
+#pragma once
 
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
-#include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
+#include <src/raze/algorithm/DataSource.h>
+#include <src/raze/algorithm/Destination.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/algorithm/memory/Memmove.h>
 #include <raze/options/Options.h>
-
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Copy_backward : _Traits_ {
-	template <class _InputIterator_, class _OutIterator_>
-	struct __impl {
-		_InputIterator_ _in_first;
-		_InputIterator_ _in_last;
-		_InputIterator_ _in_last_cached;
-		_OutIterator_ _out_iterator;
+template <class Traits>
+struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
+	template <source Source, destination Destination>
+	struct kernel {
+		using source_type = std::remove_cvref_t<Source>;
+		using destination_type = std::remove_cvref_t<Destination>;
 
-		constexpr explicit __impl(_InputIterator_ __first, _InputIterator_ __last, _OutIterator_ __out_it) noexcept :
-			_in_first(__first), _in_last_cached(__last), _in_last(__last), _out_iterator(__out_it)
+		using iterator_type = typename source_type::iterator_type;
+		using out_iterator_type = typename destination_type::iterator_type;
+
+		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+		using unchecked_out_iterator_type = typename destination_type::unchecked_iterator_type;
+
+		using vt_in = std::iter_value_t<unchecked_iterator_type>;
+		using vt_out = std::iter_value_t<unchecked_out_iterator_type>;
+
+		using vector_value_type = vt_in;
+
+		static consteval bool vectorizable() noexcept { 
+			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
+				vx::arithmetic_type<vt_in> && vx::arithmetic_type<vt_out>;
+		}
+
+		static consteval bool native() noexcept {
+			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
+				std::is_trivially_copyable_v<vt_in> && std::same_as<vt_in, vt_out>;
+		}
+
+		source_type _source;
+		destination_type _dest;
+		unchecked_iterator_type _in_iterator;
+		unchecked_iterator_type _in_end;
+		unchecked_iterator_type _in_start_ret;
+		unchecked_out_iterator_type _out_iterator;
+
+		constexpr explicit kernel(Source&& source, Destination&& dest)
+			: _source(std::forward<Source>(source)),
+			  _dest(std::forward<Destination>(dest)),
+			  _in_iterator(_source.ubegin()),
+			  _out_iterator(_dest.ubegin()),
+			  _in_end(std::ranges::next(_in_iterator, _source.uend())),
+			  _in_start_ret(_in_end)
 		{}
 
-		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
-			if (_in_last == _in_first) return true;
-			*--_out_iterator = *--_in_last;
-			return false;
+		raze_always_inline constexpr void operator()() {
+			raze_disable_unrolling
+			for ( ; _in_iterator != _in_end; )
+				*--_out_iterator = *--_in_end;
 		}
 
-		constexpr raze_always_inline std::ranges::in_out_result<_InputIterator_, _OutIterator_> result() const noexcept {
-			return { _in_last_cached, _out_iterator };
+		raze_always_inline void operator()(native_tag) {
+			auto* in_ptr = std::to_address(_in_iterator);
+			auto* out_ptr = std::to_address(_out_iterator);
+			rewind_bytes(out_ptr, size());
+			__raze_memmove(out_ptr, in_ptr, size());
+			destination_type::from_ptr(_out_iterator, out_ptr);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, sizetype aligned_size) requires(vx::supports_fast_conversion<Tag, vt_out>) {
+			auto* in_end_ptr = std::to_address(_in_end);
+			auto* out_ptr = std::to_address(_out_iterator);
+
+			auto aligned_begin = std::to_address(in_end_ptr);
+			rewind_bytes(aligned_begin, aligned_size);
+
+			raze_disable_unrolling do {
+				rewind_bytes(in_end_ptr, sizeof(Tag));
+				rewind_bytes(out_ptr, Tag::size() * sizeof(vt_out));
+				vx::store(out_ptr, vx::convert<vt_out>(vx::load<Tag>(in_end_ptr)));
+			} while (in_end_ptr != aligned_begin);
+
+			source_type::from_ptr(_in_end, in_end_ptr);
+			destination_type::from_ptr(_out_iterator, out_ptr);
+		}
+
+		template <vectorizable_tag Tag>
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_in, vt_out>) {
+			auto* in_ptr = std::to_address(_in_end);
+			auto* out_ptr = std::to_address(_out_iterator); 
+			rewind_bytes(out_ptr, ignore.tail_bytes()); 
+			vx::store[ignore](out_ptr, vx::load<Tag>[ignore](in_ptr));
+			destination_type::from_ptr(_out_iterator, out_ptr);
+		}
+
+		constexpr raze_always_inline std::ranges::in_out_result<iterator_type, out_iterator_type> result() const {
+			return { _source.wrap(_in_start_ret), _dest.wrap(_out_iterator) };
+		}
+
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
+			requires(constexpr_sized_source<source_type>)
+		{
+			return source_type::static_size();
+		}
+
+		raze_nodiscard constexpr raze_always_inline auto size() const {
+			return _source.size();
 		}
 	};
 
-	template <class _Tag_>
-	struct __vectorized_copy_backward {
-		template <class _InputIterator_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InputIterator_, _OutIterator_>
-			operator()(_InputIterator_ __first, _InputIterator_ __last, _OutIterator_ __result) const noexcept
-		{
-			auto __cached_last = __last;
-			while (__first != __last) *--__result = *--__last;
-			return { __cached_last, __result };
-		}
-
-		template <class _InputIterator_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InputIterator_, _OutIterator_>
-			operator()(sizetype __aligned_size, sizetype __tail_size,
-				_InputIterator_ __first, _InputIterator_ __last, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			using _Value_ = std::iter_value_t<_InputIterator_>;
-			constexpr auto __elem_size = sizeof(_Value_);
-
-			auto* __in_ptr = std::to_address(__last);
-			auto* __out_ptr = std::to_address(__result);
-
-			const auto __tail_elems = __tail_size / __elem_size;
-			for (sizetype __i = 0; __i < __tail_elems; ++__i)
-				*--__out_ptr = *--__in_ptr;
-
-			auto* __aligned_start = std::to_address(__first);
-			
-			do {
-				__rewind_bytes(__in_ptr, sizeof(_Tag_));
-				__rewind_bytes(__out_ptr, sizeof(_Tag_));
-				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
-			} while (__in_ptr != __aligned_start);
-
-			__seek_iter(__result, __out_ptr);
-			return { __last, __result };
-		}
-
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _InputIterator_, class _OutIterator_>
-		raze_always_inline std::ranges::in_out_result<_InputIterator_, _OutIterator_>
-			operator()(std::integral_constant<sizetype, _AlignedSize_>,
-				std::integral_constant<sizetype, _TailSize_>,
-				_InputIterator_ __first, _InputIterator_ __last, _OutIterator_ __result) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			using _Value_ = std::iter_value_t<_InputIterator_>;
-			constexpr auto __elem_size = sizeof(_Value_);
-			constexpr auto __tail_elems = _TailSize_ / __elem_size;
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
-
-			auto* __in_ptr = std::to_address(__last);
-			auto* __out_ptr = std::to_address(__result);
-
-			if constexpr (__tail_elems > 0) {
-				auto __left_tail = __tail_elems;
-				do {
-					*--__out_ptr = *--__in_ptr;
-				} while (--__left_tail);
-			}
-
-			auto __left = __iterations_aligned;
-
-			do {
-				__rewind_bytes(__in_ptr, sizeof(_Tag_));
-				__rewind_bytes(__out_ptr, sizeof(_Tag_));
-				vx::store(__out_ptr, vx::load<_Tag_>(__in_ptr));
-			} while (--__left);
-
-			__seek_iter(__result, __out_ptr);
-			return { __last, __result };
-		}
-	};
-
-	template <std::bidirectional_iterator _InputIterator_, std::sentinel_for<_InputIterator_> _Sentinel_,
-		std::bidirectional_iterator _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<_InputIterator_, _OutIterator_>
-		operator()(_InputIterator_ __first, _Sentinel_ __sent, _OutIterator_ __result) const noexcept
-		requires(std::indirectly_copyable<_InputIterator_, _OutIterator_>)
+	template <std::bidirectional_iterator InIt, std::sentinel_for<InIt> Sent, std::weakly_incrementable OutIt>
+	constexpr raze_always_inline std::ranges::in_out_result<InIt, OutIt> operator()(InIt first, 
+		Sent last, OutIt result) const requires(std::indirectly_copyable<InIt, OutIt>)
 	{
-		auto __r = __copy_backward_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_InputIterator_>(std::move(__sent)),
-			algorithm::__uiter(std::move(__result)));
-
-		__seek_iter(__first, std::move(__r.in));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__first), std::move(__result) };
+		return this->dispatch(get_source(std::move(first), std::move(last)), get_destination(std::move(result)));
 	}
 
-	template <std::ranges::bidirectional_range Range, std::bidirectional_iterator _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<Range>, _OutIterator_>
-		operator()(Range&& __range, _OutIterator_ __result) const noexcept
-		requires(!constexpr_sized_range<Range>&& std::indirectly_copyable<std::ranges::iterator_t<Range>, _OutIterator_>)
+	template <std::ranges::bidirectional_range R, std::weakly_incrementable OutIt>
+	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+		operator()(R&& r, OutIt result) const requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt>)
 	{
-		auto __begin = std::ranges::begin(__range);
-		auto __r = __copy_backward_unchecked(traits::__r_uiter<Range>(std::move(__begin)),
-			traits::__uend(__range), algorithm::__uiter(std::move(__result)));
-
-		__seek_iter(__begin, std::move(__r.in));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__begin), std::move(__result) };
-	}
-
-	template <std::ranges::bidirectional_range Range, std::bidirectional_iterator _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<Range>, _OutIterator_>
-		operator()(Range&& __range, _OutIterator_ __result) const noexcept
-		requires(constexpr_sized_range<Range>&& std::indirectly_copyable<std::ranges::iterator_t<Range>, _OutIterator_>)
-	{
-		auto __begin = std::ranges::begin(__range);
-
-		auto __r = __copy_backward_unchecked(traits::__r_uiter<Range>(std::move(__begin)),
-			traits::__uend(__range), algorithm::__uiter(std::move(__result)),
-			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
-
-		__seek_iter(__begin, std::move(__r.in));
-		__seek_iter(__result, std::move(__r.out));
-
-		return { std::move(__begin), std::move(__result) };
-	}
-
-private:
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_>
-	raze_nodiscard constexpr raze_always_inline std::ranges::in_out_result<_InputIterator_, _OutIterator_>
-		__copy_backward_unchecked(_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result) const noexcept
-	{
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_InputIterator_>;
-		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
-
-		auto __last_it = std::ranges::next(__first, __last);
-
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_>
-			&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 &&
-			(sizeof(_Value_) != 0) && ((sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0))
-		{
-			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_copy_backward, _IntegerValue_,
-					std::ranges::in_out_result<_InputIterator_, _OutIterator_>>(
-						algorithm::distance(__first, __last_it) * sizeof(_Value_),
-						__first, __last_it, __result);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last_it, __result));
-	}
-
-	template <class _InputIterator_, class _Sentinel_, class _OutIterator_, sizetype _Size_>
-	raze_nodiscard constexpr raze_always_inline std::ranges::in_out_result<_InputIterator_, _OutIterator_>
-		__copy_backward_unchecked(_InputIterator_ __first, _Sentinel_ __last, _OutIterator_ __result,
-			std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_InputIterator_>;
-		using _IntegerValue_ = typename IntegerForSizeof<_Value_>::Unsigned;
-
-		auto __last_it = std::ranges::next(__first, __last);
-
-		if constexpr (!options::always_scalar<_TraitsType>() && 
-			std::contiguous_iterator<_InputIterator_> && std::contiguous_iterator<_OutIterator_>
-			&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8 &&
-			(sizeof(_Value_) != 0) && ((sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0))
-		{
-			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_IntegerValue_)>{};
-				return vx::__dispatch_sized_impl<__vectorized_copy_backward, _IntegerValue_,
-					std::ranges::in_out_result<_InputIterator_, _OutIterator_>, options::__get_forced_isa<_TraitsType>()>(
-						__bytes, __first, __last_it, __result);
-			}
-		}
-
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last_it, __result));
+		return this->dispatch(get_source(std::forward<R>(r)), get_destination(std::move(result)));
 	}
 };
 
-constexpr inline auto copy_backward = raze::options::function_with_traits<_Copy_backward>;
+constexpr inline auto copy_backward = options::function_with_traits<copy_backward_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

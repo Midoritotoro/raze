@@ -46,7 +46,7 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 			_sentinel = _source.uend();
 		}
 	
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
 			for_noalias(first, last, [pred = _predicate, proj = _proj, newv = _new_value,

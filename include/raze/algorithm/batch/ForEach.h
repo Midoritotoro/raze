@@ -41,7 +41,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			_sentinel(_source.uend()), _f(f), _proj(proj)
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 			for (; first != last; ++first)
 				_f(_proj(*first));

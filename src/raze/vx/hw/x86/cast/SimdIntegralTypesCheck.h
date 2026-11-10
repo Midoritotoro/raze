@@ -9,7 +9,7 @@
 
 __RAZE_VX_NAMESPACE_BEGIN
 
-template <class T, class Abi = x86_abi<native_size<T>>>
+template <class T, class Abi = fixed_abi<native_size<T>>>
 class simd;
 
 template <class T>

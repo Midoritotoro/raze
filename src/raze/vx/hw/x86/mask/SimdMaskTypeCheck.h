@@ -8,7 +8,7 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype N>
-struct x86_abi;
+struct fixed_abi;
 
 template <u64 N>
 using mmask_for_elements_helper = std::conditional_t<N <= 8, __mmask8,
@@ -28,7 +28,7 @@ constexpr auto native_size = (default_width<target_isa()> / 8) / sizeof(T);
 template <arch::ISA ISA>
 constexpr auto vector_default_size = default_width<ISA>;
 
-template <class T, class Abi = x86_abi<native_size<T>>>
+template <class T, class Abi = fixed_abi<native_size<T>>>
 class simd_mask;
 
 template <class M, class = void>

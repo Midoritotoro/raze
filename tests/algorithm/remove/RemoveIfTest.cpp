@@ -2,7 +2,7 @@
 #include <raze/algorithm/remove/RemoveIf.h>
 
 RTTS_CASE_TPL("raze::algorithm::remove_if", rtts::algorithm::all_types)
-<class T> (rtts::type<T>) {
+< class T > (rtts::type<T>) {
     auto cfg = rtts::algorithm::config::thorough();
 
     const T threshold = rtts::random::generator<T>(1000)();
@@ -85,7 +85,7 @@ RTTS_CASE_TPL("raze::algorithm::remove_if", rtts::algorithm::all_types)
 };
 
 RTTS_CASE_TPL("raze::algorithm::remove_if.projection", rtts::algorithm::all_types)
-<class T> (rtts::type<T>) {
+< class T > (rtts::type<T>) {
     auto cfg = rtts::algorithm::config::thorough();
 
     const T threshold = rtts::random::generator<T>(12345)();

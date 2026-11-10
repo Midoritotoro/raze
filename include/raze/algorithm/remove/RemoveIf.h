@@ -86,10 +86,6 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 		}
 	};
 
-	template <class Source, class Predicate, class Projection>
-	kernel(Source&&, Predicate, Projection)
-		-> kernel<std::remove_cvref_t<Source>, std::remove_cvref_t<Predicate>, std::remove_cvref_t<Projection>>;
-
 	template <std::permutable It, std::sentinel_for<It> Sent, class Pred, class Proj = std::identity>
 	constexpr raze_always_inline std::ranges::subrange<It> operator()(
 		It first, Sent last, Pred pred, Proj proj = {}) const

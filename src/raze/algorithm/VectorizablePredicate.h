@@ -51,7 +51,7 @@ concept vectorizable_unary_function = vectorizable_value_type<std::iter_value_t<
 
 template <class F, class It1, class It2 = It1>
 concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t<It1>> && 
-    vectorizable_value_type<std::iter_value_t<It2>> && requires {
+    vectorizable_value_type<std::iter_value_t<It2>> && std::same_as<std::iter_value_t<It1>, std::iter_value_t<It2>> && requires {
         { std::invoke(std::declval<traits::function_unwrapped<std::remove_cvref_t<F>>>(),
             std::declval<simd_value_t<It1>&>(), std::declval<simd_value_t<It2>&>()) };
 };
@@ -68,7 +68,7 @@ concept is_greater_comparator = std::is_same_v<std::remove_cvref_t<traits::funct
 template <class T, class U>
 concept has_common_type = requires { typename std::common_type<T, U>::type; };
 
-template <class T, class U, bool HasCommon = false>
+template <class T, class U, bool HasCommon = has_common_type<T, U>>
 struct common_type_or_void;
 
 template <class T, class U>
@@ -83,5 +83,42 @@ struct common_type_or_void<T, U, true> {
 
 template <class T, class U>
 using common_type_or_void_t = typename common_type_or_void<T, U>::type;
+
+template <class It1, class It2>
+concept has_common_iter_value = has_common_type<
+    std::iter_value_t<It1>, std::iter_value_t<It2>>;
+
+template <class It1, class It2>
+using simd_common_value_t = vx::simd<
+    common_type_or_void_t<std::iter_value_t<It1>, std::iter_value_t<It2>>,
+    vx::default_abi>;
+
+template <class It1, class It2>
+using simd_common_mask_t = vx::simd_mask<
+    common_type_or_void_t<std::iter_value_t<It1>, std::iter_value_t<It2>>,
+    vx::default_abi>;
+
+template <class Pred, class It1, class It2 = It1>
+concept vectorizable_binary_common_predicate = 
+    has_common_iter_value<It1, It2> &&
+    vectorizable_value_type<std::iter_value_t<It1>> && 
+    vectorizable_value_type<std::iter_value_t<It2>> && requires {
+        { std::invoke(
+            std::declval<traits::function_unwrapped<std::remove_cvref_t<Pred>>>(),
+            std::declval<simd_common_value_t<It1, It2>&>(),
+            std::declval<simd_common_value_t<It1, It2>&>()) }
+            -> std::convertible_to<simd_common_mask_t<It1, It2>>;
+    };
+
+template <class F, class It1, class It2 = It1>
+concept vectorizable_binary_common_function = 
+    has_common_iter_value<It1, It2> &&
+    vectorizable_value_type<std::iter_value_t<It1>> && 
+    vectorizable_value_type<std::iter_value_t<It2>> && requires {
+        { std::invoke(
+            std::declval<traits::function_unwrapped<std::remove_cvref_t<F>>>(),
+            std::declval<simd_common_value_t<It1, It2>&>(),
+            std::declval<simd_common_value_t<It1, It2>&>()) };
+    };
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -68,7 +68,7 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			  _in_iterator(_source.ubegin()), _in_sentinel(_source.uend())
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto dest = std::to_address(_out_iterator);
 
@@ -94,7 +94,7 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			auto* out_ptr = std::to_address(_out_iterator);
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
 
-			do {
+			raze_disable_unrolling do {
 				vx::store(out_ptr, vx::convert<vt_out>(_function(_proj(vx::load<Tag>(in_ptr)))));
 				advance_bytes(in_ptr, out_ptr, sizeof(Tag));
 			} while (in_ptr != aligned_end);
@@ -155,9 +155,9 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source1> && contiguous_source<Source2> && contiguous_destination<Destination> &&
-				has_common_type<vt_in1, vt_out>&& has_common_type<vt_in2, vt_out> &&
-				vectorizable_binary_function<Function, iterator1_type, iterator2_type> &&
-				vectorizable_projection<Projection1, iterator1_type> &&
+				(options::is_strict_types<decltype(std::declval<Traits>().traits())>() ? (vectorizable_binary_function<Function, iterator1_type, iterator2_type>)
+					: (vectorizable_binary_common_function<Function, iterator1_type, iterator2_type>)) 
+				&& has_common_type<vt_in1, vt_out> && has_common_type<vt_in2, vt_out> && vectorizable_projection<Projection1, iterator1_type> &&
 				vectorizable_projection<Projection2, iterator2_type>;
 		}
 
@@ -184,14 +184,14 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			  _in2_iterator(_source2.ubegin()), _in2_sentinel(_source2.uend())
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
 			auto [first1, last1] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
 			auto [first2, last2] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
 			auto dest = std::to_address(_out_iterator);
 
 			for_noalias2(first1, last1, first2, last2, [func = _function, proj1 = _proj1, proj2 = _proj2,
 				dst = dest, in1 = first1, in2 = first2](auto i) raze_always_inline_lambda {
-					dst[i] = func(proj1(in1[i]), proj(in2[i]));
+					dst[i] = func(proj1(in1[i]), proj2(in2[i]));
 				});
 
 			source1_type::from_ptr(_in1_iterator, first1);
@@ -207,7 +207,10 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+		raze_always_inline void operator()(Tag, sizetype aligned_size) requires(vx::supports_fast_conversion<Tag, common_in_t>
+			&& vx::supports_fast_conversion<vx::rebind_simd_lanes_t<vt_in2, Tag>, common_in_t> && 
+			vx::supports_fast_conversion<vx::rebind_simd_lanes_t<common_in_t, Tag>, vt_out>)
+		{
 			using V1 = Tag;
 			using V2 = vx::rebind_simd_lanes_t<vt_in2, Tag>;
 
@@ -216,7 +219,7 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			auto* out_ptr = std::to_address(_out_iterator);
 			const auto aligned_end = bytes_pointer_offset(in1_ptr, aligned_size);
 
-			do {
+			raze_disable_unrolling do {
 				const auto v1 = vx::convert<common_in_t>(_proj1(vx::load<V1>(in1_ptr)));
 				const auto v2 = vx::convert<common_in_t>(_proj2(vx::load<V2>(in2_ptr)));
 				vx::store(out_ptr, vx::convert<vt_out>(_function(v1, v2)));
@@ -231,7 +234,9 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_out, vt_in1> && std::same_as<vt_out, vt_in2>) {
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) 
+			requires(std::same_as<vt_out, vt_in1> && std::same_as<vt_out, vt_in2>)
+		{
 			auto* in1_ptr = std::to_address(_in1_iterator);
 			auto* in2_ptr = std::to_address(_in2_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);

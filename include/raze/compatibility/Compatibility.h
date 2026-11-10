@@ -195,31 +195,25 @@ constexpr inline bool is_cxx23 = (raze_has_cxx23 == 1);
 #if defined(raze_cpp_icpx)
     constexpr inline bool is_icpx = true;
     constexpr inline int  icpx_version = raze_cpp_icpx;
-    constexpr inline bool is_icpx_only = true;
 #else
     constexpr inline bool is_icpx = false;
     constexpr inline int  icpx_version = 0;
-    constexpr inline bool is_icpx_only = false;
 #endif
 
 #if defined(raze_cpp_icc)
     constexpr inline bool is_icc = true;
     constexpr inline int  icc_version = raze_cpp_icc;
-    constexpr inline bool is_icc_only = true;
 #else
     constexpr inline bool is_icc = false;
     constexpr inline int  icc_version = 0;
-    constexpr inline bool is_icc_only = false;
 #endif
 
 #if defined(raze_cpp_msvc)
     constexpr inline bool is_msvc = true;
     constexpr inline int  msvc_version = raze_cpp_msvc;
-    constexpr inline bool is_msvc_only = true;
 #else
     constexpr inline bool is_msvc = false;
     constexpr inline int  msvc_version = 0;
-    constexpr inline bool is_msvc_only = false;
 #endif
 
 #if defined(raze_cpp_clang)
@@ -230,26 +224,12 @@ constexpr inline bool is_cxx23 = (raze_has_cxx23 == 1);
     constexpr inline int  clang_version = 0;
 #endif
 
-#if defined(raze_cpp_clang_only)
-    constexpr inline bool is_clang_only = true;
-#else
-    constexpr inline bool is_clang_only = false;
-#endif
-
-#if defined(raze_cpp_clang_pure)
-    constexpr inline bool is_clang_pure = true;
-#else
-    constexpr inline bool is_clang_pure = false;
-#endif
-
 #if defined(raze_cpp_gnu)
     constexpr inline bool is_gnu = true;
     constexpr inline int  gnu_version = raze_cpp_gnu;
-    constexpr inline bool is_gnu_only = true;
 #else
     constexpr inline bool is_gnu = false;
     constexpr inline int  gnu_version = 0;
-    constexpr inline bool is_gnu_only = false;
 #endif
 
 #if defined(raze_cpp_mingw)
@@ -262,6 +242,31 @@ constexpr inline bool is_cxx23 = (raze_has_cxx23 == 1);
     constexpr inline bool is_llvm_only = true;
 #else
     constexpr inline bool is_llvm_only = false;
+#endif
+
+#if defined(raze_cpp_msvc_only)
+    constexpr inline bool is_msvc_only = true;
+#else
+    constexpr inline bool is_msvc_only = false;
+#endif
+
+
+#if defined(raze_cpp_clang_only)
+    constexpr inline bool is_clang_only = true;
+#else
+    constexpr inline bool is_clang_only = false;
+#endif
+
+#if defined(raze_cpp_gnu_only)
+    constexpr inline bool is_gnu_only = true;
+#else
+    constexpr inline bool is_gnu_only = false;
+#endif
+
+#if defined(raze_cpp_icpx_only)
+    constexpr inline bool is_icpx_only = true;
+#else
+    constexpr inline bool is_icpx_only = false;
 #endif
 
 __RAZE_COMPATIBILITY_NAMESPACE_END

@@ -4,7 +4,7 @@
 
 #if !defined(raze_disable_unrolling)
 #  if defined(raze_cpp_msvc_only)
-#    define raze_disable_unrolling raze_do_pragma(loop(no_vector))
+#    define raze_disable_unrolling // raze_do_pragma(loop(no_vector))
 #  elif defined(raze_cpp_clang) 
 #    define raze_disable_unrolling \
        raze_do_pragma(clang loop unroll(disable)) \

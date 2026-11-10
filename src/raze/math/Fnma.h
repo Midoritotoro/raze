@@ -14,9 +14,7 @@ template <class Options>
 struct configurable_fnma_t: options::conditional_callable<configurable_fnma_t, Options> {
     template <class A, class B, class C>
         requires (vx::simd_type<A> || vx::simd_type<B> || vx::simd_type<C>)
-    raze_nodiscard raze_always_inline std::conditional_t<vx::simd_type<A>, std::remove_cvref_t<A>,
-        std::conditional_t<vx::simd_type<B>, std::remove_cvref_t<B>,
-        std::remove_cvref_t<C>>> operator()(const A& x, const B& y, const C& z) const noexcept {
+    raze_nodiscard raze_always_inline auto operator()(const A& x, const B& y, const C& z) const noexcept {
         using V = std::conditional_t<vx::simd_type<A>, std::remove_cvref_t<A>,
             std::conditional_t<vx::simd_type<B>, std::remove_cvref_t<B>,
             std::remove_cvref_t<C>>>;
@@ -24,9 +22,10 @@ struct configurable_fnma_t: options::conditional_callable<configurable_fnma_t, O
         return options::dispatch_call(*this, V(x), V(y), V(z));
     }
 
-    template <vx::arithmetic_type T>
-    raze_nodiscard raze_always_inline T operator()(const T& x, const T& y, const T& z) const noexcept {
-        return options::dispatch_call(*this, x, y, z);
+    template <vx::arithmetic_type T1, vx::arithmetic_type T2, vx::arithmetic_type T3>
+    raze_nodiscard raze_always_inline auto operator()(const T1& x, const T2& y, const T3& z) const noexcept {
+        using T = std::common_type_t<T1, T2, T3>;
+        return options::dispatch_call(*this, T(x), T(y), T(z));
     }
 
     template <vx::arithmetic_type T>
