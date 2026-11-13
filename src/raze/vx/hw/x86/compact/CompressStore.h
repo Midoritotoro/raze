@@ -55,7 +55,7 @@ raze_always_inline void* compress_avx2_lut_(void* ptr, V x, CompressMask mask) n
 	const auto bytes = tables_avx<sizeof(T)>.size[mask];
 
 	if constexpr (Unsafe) store_(ptr, packed);
-	else store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
+	else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
 
 	return algorithm::bytes_pointer_offset(ptr, bytes);
 }
@@ -75,9 +75,8 @@ raze_always_inline void* compress_avx2_bmi2_(void* ptr, V x, CompressMask mask) 
 		const auto bytes_vector = _mm_cvtsi64_si128(_pext_u64(identity_vpermps, expand(not_mask)));
 		const auto packed = _mm256_permutevar8x32_epi32(as<__m256i>(x), _mm256_cvtepu8_epi32(bytes_vector));
 		const auto bytes = math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T);
-
 		if constexpr (Unsafe) store_(ptr, packed);
-		else store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
+		else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
 
 		return algorithm::bytes_pointer_offset(ptr, bytes);
 	}
@@ -118,7 +117,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto mask_low = int_mask & 0xFF;
 				const auto mask_high = (int_mask >> 8) & 0xFF;
 
-				T* dst_ptr = reinterpret_cast<T*>(ptr);
+				T temp[size];
 
 				const auto count_lo = tables_sse<sizeof(T)>.size[mask_low];
 				const auto count_hi = tables_sse<sizeof(T)>.size[mask_high];
@@ -131,16 +130,19 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto packed_hi = _mm_shuffle_epi8(x_in_low, shuffle_mask_hi);
 
 				if constexpr (Unsafe) {
+					T* dst_ptr = reinterpret_cast<T*>(ptr);
 					_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), packed_lo);
 					algorithm::advance_bytes(dst_ptr, count_lo);
 					_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), packed_hi);
 				}
 				else {
-					const auto loaded = load_<ISA, V>(ptr);
-					_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), packed_lo);
-					algorithm::advance_bytes(dst_ptr, count_lo);
-					_mm_storel_epi64(reinterpret_cast<__m128i*>(dst_ptr), packed_hi);
-					store_<ISA, T, false>(ptr, mask_not_<ISA, size, T>(first_n_<ISA, size, V, T>(count_lo + count_hi)), loaded);
+					T* tmp_ptr = temp;
+					_mm_storel_epi64(reinterpret_cast<__m128i*>(tmp_ptr), packed_lo);
+					algorithm::advance_bytes(tmp_ptr, count_lo);
+					_mm_storel_epi64(reinterpret_cast<__m128i*>(tmp_ptr), packed_hi);
+
+					const auto touched_mask = first_n_<ISA, size, V, T>(count_lo + count_hi);
+					store_<ISA, T, true>(ptr, touched_mask, load_<ISA, V>(temp));
 				}
 
 				return algorithm::bytes_pointer_offset(ptr, count_lo + count_hi);
@@ -151,7 +153,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto bytes = tables_sse<sizeof(T)>.size[int_mask];
 
 				if constexpr (Unsafe) store_(ptr, packed);
-				else store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
+				else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
 
 				return algorithm::bytes_pointer_offset(ptr, bytes);
 			}
@@ -169,7 +171,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				};
 
 				const auto& [processed_bytes, packed] = calculate(int_mask, x);
-				store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
+				store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 			else if constexpr (sizeof(T) == 4) {
@@ -196,7 +198,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				};
 
 				const auto& [processed_bytes, packed] = calculate(int_mask, x);
-				store_<ISA, T, false>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
+				store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 		}

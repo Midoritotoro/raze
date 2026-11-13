@@ -28,8 +28,7 @@ struct function_reference {
     constexpr raze_always_inline decltype(auto) operator()(Args&& ... args) const
         noexcept(std::is_nothrow_invocable_v<F, Args...>) requires(std::invocable<F, Args...>)
     {
-        if constexpr (std::is_member_pointer_v<F>) return std::invoke(_f, std::forward<Args>(args)...);
-        else return _f(std::forward<Args>(args)...);
+        return std::invoke(_f, std::forward<Args>(args)...);
     }
 
     F& _f;
@@ -61,7 +60,7 @@ raze_always_inline constexpr function_unwrapped<F> unwrap_function(F&& f) noexce
 template <class F>
 raze_nodiscard raze_always_inline constexpr decltype(auto) fwd_fn(F& f) noexcept {
     if constexpr (has_function_unwrapped_type<F>) return f;
-    else if constexpr (is_lightweight_callable_v<F>) return f;
+    /*else if constexpr (is_lightweight_callable_v<F>) return f;*/
     else return function_reference<F>(f);
 }
 

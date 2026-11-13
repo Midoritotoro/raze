@@ -16,10 +16,10 @@ struct not_fn {
 
     template <class ... Args>
     raze_always_inline constexpr decltype(auto) operator()(Args&& ... args) const 
-        noexcept(noexcept(!_fn(std::forward<Args>(args)...)))
+        noexcept(noexcept(!std::invoke(_fn, std::forward<Args>(args)...)))
             requires (std::invocable<Fn, Args...>)
     {
-        return !_fn(std::forward<Args>(args)...); 
+        return !std::invoke(_fn, std::forward<Args>(args)...); 
     }
 };
 

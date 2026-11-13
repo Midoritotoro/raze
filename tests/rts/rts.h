@@ -755,7 +755,7 @@ namespace rtts {
 
                 RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
                 if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
-                };
+            };
 
             if constexpr (Kind == kind::range) {
                 run(0);

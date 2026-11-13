@@ -28,8 +28,9 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> &&
-				vectorizable_unary_predicate<Predicate, iterator_type> &&
-				vectorizable_projection<Projection, iterator_type>;
+				vectorizable_unary_predicate<Predicate, iterator_type>&&
+				vectorizable_projection<Projection, iterator_type>
+				&& std::same_as<vector_value_type, std::iter_value_t<out_iterator_type>>;
 		}
 
 		source_type _source;
