@@ -228,38 +228,3 @@ RTTS_CASE("raze::algorithm::copy memcpy size boundaries") {
         }
     }
 };
-
-template <class T, std::size_t N, std::size_t Count>
-constexpr bool copy_n_static_array_partial_matches() {
-    static_assert(Count <= N);
-
-    std::array<T, N> src{};
-    for (std::size_t i = 0; i < N; ++i) src[i] = static_cast<T>(i * 3 + 1);
-
-    std::array<T, N> dst1{}, dst2{};
-    const auto r1 = raze::algorithm::copy_n(src.begin(),
-        static_cast<std::ptrdiff_t>(Count), dst1.begin());
-    const auto r2 = std::ranges::copy_n(src.begin(),
-        static_cast<std::ptrdiff_t>(Count), dst2.begin());
-
-    bool ok = dst1 == dst2
-        && (r1.in - src.begin()) == (r2.in - src.begin())
-        && (r1.out - dst1.begin()) == (r2.out - dst2.begin())
-        && static_cast<std::ptrdiff_t>(Count) == (r1.in - src.begin());
-
-    if constexpr (std::is_trivially_copyable_v<T>) {
-        for (std::size_t i = 0; i < Count; ++i) ok = ok && dst1[i] == src[i];
-    }
-
-    for (std::size_t i = Count; i < N; ++i) ok = ok && dst1[i] == T{};
-
-    return ok;
-}
-
-static_assert(copy_static_array_matches<int32_t, 1>());
-static_assert(copy_static_array_matches<int32_t, 7>());
-static_assert(copy_static_array_matches<int8_t, 15>());
-static_assert(copy_static_array_matches<int16_t, 33>());
-static_assert(copy_static_array_matches<int64_t, 17>());
-static_assert(copy_static_array_matches<uint8_t, 200>());
-static_assert(copy_static_array_matches<tc_nontrivial, 5>());

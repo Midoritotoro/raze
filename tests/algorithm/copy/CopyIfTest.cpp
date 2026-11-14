@@ -38,7 +38,7 @@ namespace {
     inline constexpr size_t fuzz_cases = 200;      
     inline constexpr size_t fuzz_max_size = 512;
 
-    inline constexpr bool run_mixed_fuzz = false;
+    inline constexpr bool run_mixed_fuzz = true;
 
     template <class T>
     rtts::algorithm::config fuzz_config() {
@@ -80,7 +80,7 @@ namespace {
         }
     }
 }
-
+ 
 RTTS_CASE("copy_if char distinct") {
     std::vector<char> in(128);
     for (int i = 0; i < 128; ++i)
@@ -94,47 +94,13 @@ RTTS_CASE("copy_if char distinct") {
     auto ra = raze::algorithm::copy_if(in, a.begin(), pred);
     auto rb = std::ranges::copy_if(in, b.begin(), pred);
 
-    std::cout << "kept: " << ra.out - a.begin()
-        << " / " << rb.out - b.begin() << '\n';
     for (size_t i = 0; i < a.size(); ++i) {
         if (a[i] != b[i]) {
-            std::cout << "diff[" << i << "]: "
-                << int(a[i]) << " / " << int(b[i]) << '\n';
             break;
         }
     }
     RTTS_EQUAL(ra.out - a.begin(), rb.out - b.begin());
     RTTS_ALL_EQUAL(a, b);
-};
-
-struct verbose_same {
-    template <class A, class B, class RA, class RB>
-    bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
-        const bool se = rtts::algorithm::state_equal(a, b);
-        const bool re = rtts::algorithm::result_equal(ra, rb, a, b);
-        if (!se || !re) {
-            std::cout << "  state_equal=" << se << " result_equal=" << re << "\n";
-            if (!se) {
-                std::cout << "    value_eq=" << std::ranges::equal(a.value, b.value)
-                    << " second_eq=" << std::ranges::equal(a.second, b.second)
-                    << " output_eq=" << std::ranges::equal(a.output, b.output)
-                    << " output2_eq=" << std::ranges::equal(a.output2, b.output2) << "\n";
-                for (size_t i = 0; i < a.output.size(); ++i)
-                    if (a.output[i] != b.output[i]) {
-                        std::cout << "    out_diff[" << i << "] raze=" << int(a.output[i])
-                            << " std=" << int(b.output[i]) << "\n";
-                        break;
-                    }
-            }
-            if (!re) {
-                std::cout << "    in_pos  raze=" << rtts::algorithm::position(a.value, ra.in)
-                    << " std=" << rtts::algorithm::position(b.value, rb.in) << "\n";
-                std::cout << "    out_pos raze=" << rtts::algorithm::position(a.output, ra.out)
-                    << " std=" << rtts::algorithm::position(b.output, rb.out) << "\n";
-            }
-        }
-        return se && re;
-    }
 };
 
 RTTS_CASE("compress tables sanity") {
@@ -150,8 +116,8 @@ RTTS_CASE("compress tables sanity") {
             RTTS_EQUAL(int(tbl.size[mask]), kept * mult);
         }
         };
-    check(raze::vx::tables_sse<1>, 8, 1, 1);   // u8 half
-    check(raze::vx::tables_sse<2>, 8, 2, 2);   // short
+    check(raze::vx::tables_sse<1>, 8, 1, 1);  
+    check(raze::vx::tables_sse<2>, 8, 2, 2);  
     check(raze::vx::tables_avx<4>, 8, 1, 4);
     check(raze::vx::tables_avx<8>, 4, 2, 8);
 };
@@ -162,8 +128,6 @@ RTTS_CASE("copy_if mod7 char repro big") {
     std::vector<char> a(in.size(), 0), b(in.size(), 0);
     auto ra = raze::algorithm::copy_if(in, a.begin(), mod7);
     auto rb = std::ranges::copy_if(in, b.begin(), mod7);
-    std::cout << "raze kept=" << (ra.out - a.begin())
-        << " std kept=" << (rb.out - b.begin()) << "\n";
     RTTS_EQUAL(ra.out - a.begin(), rb.out - b.begin());
 };
  

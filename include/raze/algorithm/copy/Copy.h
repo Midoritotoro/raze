@@ -58,14 +58,14 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 				[] (auto&& value) -> decltype(auto) { return std::forward<decltype(value)>(value); });
 		}
 
-		raze_always_inline void operator()(native_tag) {
+		raze_always_inline void operator()(native_tag) requires(native()) {
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
-			auto out_end = __raze_memcpy(out_ptr, in_ptr, size());
+			__raze_memcpy(out_ptr, in_ptr, size());
 
 			source_type::from_ptr(_in_iterator, bytes_pointer_offset(in_ptr, size()));
-			destination_type::from_ptr(_out_iterator, static_cast<decltype(out_ptr)>(out_end));
+			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(out_ptr, size()));
 		}
 
 		template <vectorizable_tag Tag>

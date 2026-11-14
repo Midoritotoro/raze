@@ -38,24 +38,16 @@ raze_always_inline bool none_of_(M x, ControlMask mask) noexcept
         return !mask || !x;
     }
     else if constexpr (intrin_type<M> && intrin_type<ControlMask>) {
-        if constexpr (sizeof(M) == 16 && has_sse41<ISA>)
-            return _mm_testz_si128(as<__m128i>(x), as<__m128i>(mask));
-        else if constexpr (sizeof(M) == 32 && has_avx2<ISA>)
-            return _mm256_testz_si256(as<__m256i>(x), as<__m256i>(mask));
-        else
-            return none_of_<ISA, T>(mask_and_<ISA, T>(x, mask));
+        if constexpr (sizeof(M) == 16 && has_sse41<ISA>) return _mm_testz_si128(as<__m128i>(x), as<__m128i>(mask));
+        else if constexpr (sizeof(M) == 32 && has_avx2<ISA>) return _mm256_testz_si256(as<__m256i>(x), as<__m256i>(mask));
+        else return none_of_<ISA, T>(mask_and_<ISA, T>(x, mask));
     }
     else if constexpr (std::is_integral_v<M> && !std::is_same_v<M, bool>) {
-        if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>)
-            return _ktestz_mask8_u8(x, mask);
-        else if constexpr (sizeof(M) == 2 && has_avx512dq<ISA>)
-            return _ktestz_mask16_u8(x, mask);
-        else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>)
-            return _ktestz_mask32_u8(x, mask);
-        else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>)
-            return _ktestz_mask64_u8(x, mask);
-        else
-            return (x & mask) == 0;
+        if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) return _ktestz_mask8_u8(x, mask);
+        else if constexpr (sizeof(M) == 2 && has_avx512dq<ISA>) return _ktestz_mask16_u8(x, mask);
+        else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _ktestz_mask32_u8(x, mask);
+        else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _ktestz_mask64_u8(x, mask);
+        else return (x & mask) == 0;
     }
 }
 

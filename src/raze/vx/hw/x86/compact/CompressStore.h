@@ -46,22 +46,22 @@ raze_always_inline void* compress_store_fallback_(void* ptr, V x, CompressMask c
 	return algorithm::bytes_pointer_offset(ptr, (result_pointer - start) * sizeof(T));
 }
 
-template <arch::ISA ISA, arithmetic_type T, bool Unsafe, intrin_type V, std::unsigned_integral CompressMask>
-raze_always_inline void* compress_avx2_lut_(void* ptr, V x, CompressMask mask) noexcept {
+template <arch::ISA ISA, arithmetic_type T, bool Unsafe, intrin_type V, std::unsigned_integral CompressMask, class Policy>
+raze_always_inline void* compress_avx2_lut_(void* ptr, V x, CompressMask mask, Policy p) noexcept {
 	constexpr auto size = sizeof(V) / sizeof(T);
 
 	const auto shuffle = _mm_loadl_epi64(reinterpret_cast<const __m128i*>(tables_avx<sizeof(T)>.shuffle[mask]));
 	const auto packed = _mm256_permutevar8x32_epi32(as<__m256i>(x), _mm256_cvtepu8_epi32(shuffle));
 	const auto bytes = tables_avx<sizeof(T)>.size[mask];
 
-	if constexpr (Unsafe) store_(ptr, packed);
-	else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
+	if constexpr (Unsafe) store_(ptr, packed, p);
+	else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed, p);
 
 	return algorithm::bytes_pointer_offset(ptr, bytes);
 }
 
-template <arch::ISA ISA, arithmetic_type T, bool Unsafe, intrin_type V, std::unsigned_integral CompressMask>
-raze_always_inline void* compress_avx2_bmi2_(void* ptr, V x, CompressMask mask) noexcept {
+template <arch::ISA ISA, arithmetic_type T, bool Unsafe, intrin_type V, std::unsigned_integral CompressMask, class Policy>
+raze_always_inline void* compress_avx2_bmi2_(void* ptr, V x, CompressMask mask, Policy p) noexcept {
 	constexpr auto size = sizeof(V) / sizeof(T);
 
 	if constexpr (sizeof(T) >= 4 && has_bmi2<ISA>) {
@@ -75,15 +75,16 @@ raze_always_inline void* compress_avx2_bmi2_(void* ptr, V x, CompressMask mask) 
 		const auto bytes_vector = _mm_cvtsi64_si128(_pext_u64(identity_vpermps, expand(not_mask)));
 		const auto packed = _mm256_permutevar8x32_epi32(as<__m256i>(x), _mm256_cvtepu8_epi32(bytes_vector));
 		const auto bytes = math::popcnt_n_bits<ISA, size>(not_mask) * sizeof(T);
-		if constexpr (Unsafe) store_(ptr, packed);
-		else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
+
+		if constexpr (Unsafe) store_(ptr, packed, p);
+		else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed, p);
 
 		return algorithm::bytes_pointer_offset(ptr, bytes);
 	}
 }
 
-template <arch::ISA ISA, arithmetic_type T, bool Unsafe, intrin_or_arithmetic_type V, raw_mask_type CompressMask>
-raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_mask) noexcept {
+template <arch::ISA ISA, arithmetic_type T, bool Unsafe, intrin_or_arithmetic_type V, raw_mask_type CompressMask, class Policy = unaligned_policy>
+raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_mask, Policy p = {}) noexcept {
 	constexpr auto size = sizeof(V) / sizeof(T);
 	auto int_mask = to_mask_<ISA, T>(compress_mask);		
 
@@ -142,7 +143,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 					_mm_storel_epi64(reinterpret_cast<__m128i*>(tmp_ptr), packed_hi);
 
 					const auto touched_mask = first_n_<ISA, size, V, T>(count_lo + count_hi);
-					store_<ISA, T, true>(ptr, touched_mask, load_<ISA, V>(temp));
+					store_<ISA, T, true>(ptr, touched_mask, load_<ISA, V>(temp), p);
 				}
 
 				return algorithm::bytes_pointer_offset(ptr, count_lo + count_hi);
@@ -152,8 +153,8 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				const auto packed = _mm_shuffle_epi8(as<__m128i>(x), shuffle_mask);
 				const auto bytes = tables_sse<sizeof(T)>.size[int_mask];
 
-				if constexpr (Unsafe) store_(ptr, packed);
-				else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed);
+				if constexpr (Unsafe) store_(ptr, packed, p);
+				else store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(bytes / sizeof(T)), packed, p);
 
 				return algorithm::bytes_pointer_offset(ptr, bytes);
 			}
@@ -171,7 +172,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				};
 
 				const auto& [processed_bytes, packed] = calculate(int_mask, x);
-				store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
+				store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed, p);
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 			else if constexpr (sizeof(T) == 4) {
@@ -198,7 +199,7 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 				};
 
 				const auto& [processed_bytes, packed] = calculate(int_mask, x);
-				store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed);
+				store_<ISA, T, true>(ptr, first_n_<ISA, size, V, T>(processed_bytes / sizeof(T)), packed, p);
 				return algorithm::bytes_pointer_offset(ptr, processed_bytes);
 			}
 		}
@@ -229,8 +230,8 @@ raze_always_inline void* compress_store_(void* ptr, V x, CompressMask compress_m
 			}
 		}
 		if constexpr (sizeof(T) >= 4 && has_avx2<ISA> && !has_avx512vl<ISA>) {
-			if constexpr (!__slow_bmi2 && has_bmi2<ISA>) return compress_avx2_bmi2_<ISA, T, Unsafe>(ptr, x, int_mask);
-			else return compress_avx2_lut_<ISA, T, Unsafe>(ptr, x, int_mask);
+			if constexpr (!__slow_bmi2 && has_bmi2<ISA>) return compress_avx2_bmi2_<ISA, T, Unsafe>(ptr, x, int_mask, p);
+			else return compress_avx2_lut_<ISA, T, Unsafe>(ptr, x, int_mask, p);
 		}
 	}
 	else if constexpr (sizeof(V) == 64) {

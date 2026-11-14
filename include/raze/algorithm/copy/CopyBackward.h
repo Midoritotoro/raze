@@ -62,7 +62,7 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 				*--_out_iterator = *--_in_end;
 		}
 
-		raze_always_inline void operator()(native_tag) {
+		raze_always_inline void operator()(native_tag) requires(native()) {
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 			rewind_bytes(out_ptr, size());

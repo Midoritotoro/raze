@@ -10,6 +10,7 @@ template <arch::ISA ISA, sizetype N, arithmetic_type T, raw_mask_type M>
 raze_always_inline M mask_not_(M x) noexcept {
 	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) return !x;
 	else if constexpr (intrin_type<M>) return bit_not_<ISA, T>(x);
+#if defined(raze_cpp_msvc_only)
 	else if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) {
 		if constexpr (N < 8) {
 			constexpr auto mask = M((M(1) << N) - 1);
@@ -20,6 +21,7 @@ raze_always_inline M mask_not_(M x) noexcept {
 	else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>) return _knot_mask16(x);
 	else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _knot_mask32(x);
 	else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _knot_mask64(x);
+#endif
 	else {
 		if constexpr (N < 8) {
 			constexpr auto mask = M((M(1) << N) - 1);

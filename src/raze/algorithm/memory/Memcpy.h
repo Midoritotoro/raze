@@ -29,12 +29,6 @@ raze_always_inline void* memcpy_scalar_impl(volatile u8* raze_restrict dst_ch,
 	return const_cast<u8*>(dst_ch);
 }
 
-raze_unmangled raze_no_stack_protector raze_declare_const_function void* raze_stdcall raze_memcpy_scalar(void* raze_restrict dst,
-	const void* raze_restrict src, sizetype bytes) noexcept
-{
-	return memcpy_scalar_impl(static_cast<u8*>(dst), static_cast<const u8*>(src), bytes);
-}
-
 raze_always_inline void memcpy_16(void* raze_restrict dst, const void* raze_restrict src) noexcept {
 	_mm_storeu_si128(reinterpret_cast<__m128i*>(dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(src)));
 }
@@ -278,7 +272,7 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 
 				if (arch::ProcessorFeatures::has<arch::features::ERMS>(all_features)) {
 					__movsb(ch_dst, ch_src, bytes);
-					return bytes_pointer_offset(ch_dst, bytes);
+					return dst;
 				}
 				else {
 					if (arch::ProcessorFeatures::has<arch::features::AVX512F>(all_features)) {
@@ -322,7 +316,7 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 					}
 
 					memcpy_scalar_impl(ch_dst, ch_src, bytes);
-					return bytes_pointer_offset(ch_dst, bytes);
+					return dst;
 				}
 			}
 			else {
@@ -370,11 +364,11 @@ raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall 
 			}
 
 			if (arch::ProcessorFeatures::AVX()) memcpy_small_avx(dst, src, bytes);
-			return bytes_pointer_offset(ch_dst, bytes);
+			return dst;
 		}
 
 		memcpy_small_sse2(dst, src, bytes);
-		return bytes_pointer_offset(ch_dst, bytes);
+		return dst;
 	}
 	else {
 		memcpy_small(dst, src, bytes);
@@ -397,8 +391,7 @@ avx512_process_tail_from_0_to_256:
 	}
 
 	memcpy_small_avx512f(ch_dst, ch_src, bytes);
-	return bytes_pointer_offset(ch_dst, bytes);
-
+	return dst;
 avx_process_tail_from_0_to_128:
 	if (bytes >= 64) {
 		_mm256_storeu_si256(reinterpret_cast<__m256i*>(ch_dst), _mm256_loadu_si256(reinterpret_cast<const __m256i*>(ch_src)));
@@ -410,8 +403,7 @@ avx_process_tail_from_0_to_128:
 
 
 	memcpy_small_avx(ch_dst, ch_src, bytes);
-	return bytes_pointer_offset(ch_dst, bytes);
-
+	return dst;
 sse2_process_tail_from_0_to_64:
 	if (bytes >= 32) {
 		_mm_storeu_si128(reinterpret_cast<__m128i*>(ch_dst), _mm_loadu_si128(reinterpret_cast<const __m128i*>(ch_src)));
@@ -422,17 +414,15 @@ sse2_process_tail_from_0_to_64:
 	}
 
 	memcpy_small_sse2(ch_dst, ch_src, bytes);
-	return bytes_pointer_offset(ch_dst, bytes);
-
+	return dst;
 }
 
 #else
 
-raze_unmangled raze_never_inline void* raze_stdcall __raze_memcpy(void* raze_restrict dst,
+raze_always_inline void* raze_stdcall __raze_memcpy(void* raze_restrict dst,
 	const void* raze_restrict src, sizetype bytes) noexcept
 {
-	memcpy(dst, src, bytes);
-	return (u8*)dst + bytes;
+	return memcpy(dst, src, bytes);
 }
 
 #endif

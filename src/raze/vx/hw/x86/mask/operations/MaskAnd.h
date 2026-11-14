@@ -11,10 +11,12 @@ template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
 raze_always_inline M mask_and_(M x, M y) noexcept {
 	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) return x && y;
 	else if constexpr (intrin_type<M>) return bit_and_<ISA, T>(x, y);
+#if defined(raze_cpp_msvc_only)
 	else if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) return _kand_mask8(x, y);
 	else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>) return _kand_mask16(x, y);
 	else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _kand_mask32(x, y);
 	else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _kand_mask64(x, y);
+#endif
 	else return x & y;
 }
 

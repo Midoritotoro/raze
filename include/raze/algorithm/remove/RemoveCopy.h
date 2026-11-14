@@ -1,6 +1,7 @@
 #pragma once
 
 #include <raze/algorithm/remove/RemoveCopyIf.h>
+#include <src/raze/algorithm/EqualTo.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

@@ -2,13 +2,15 @@
 
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/algorithm/memory/Memset.h>
 #include <raze/vx/Algorithm.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 constexpr auto fill_strategy = options::strategy<strategy<>()
 	.for_gcc<strategy_mode::autovec>()
-	.for_clang<strategy_mode::autovec>()>;
+	.for_clang<strategy_mode::autovec>()
+	.for_icpx<strategy_mode::autovec>()>;
 
 template <class Traits>
 struct fill_t : Traits, dispatchable<fill_t<Traits>> {
@@ -27,6 +29,11 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 
 		using vector_value_type = decltype(deduce_value_type());
 
+		static consteval bool native() noexcept {
+			return vectorizable() && vx::arithmetic_type<T> &&
+				std::same_as<T, value_type> && sizeof(T) == 1;
+		}
+
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && std::is_trivially_copyable_v<value_type> &&
 				(sizeof(value_type) <= 8) && (sizeof(value_type) != 0) &&
@@ -36,18 +43,19 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		source_type _source;
 		unchecked_iterator_type _iterator;
 		unchecked_sentinel_type _sentinel;
-		vector_value_type _value;
+		T _value;
 
 		constexpr explicit kernel(Source&& source, const T& value)
 			: _source(std::forward<Source>(source)), _iterator(_source.ubegin()), 
-			_sentinel(_source.uend()), _value(math::bit_cast<vector_value_type>(value))
+			_sentinel(_source.uend()), _value(value)
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
+			auto v = math::bit_cast<vector_value_type>(_value);
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
 			for (; first != last; ++first)
-				*first = _value;
+				*first = v;
 
 			source_type::from_ptr(_iterator, first);
 		}
@@ -58,6 +66,12 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 				*_iterator = _value;
 		}
 
+		raze_always_inline void operator()(native_tag) requires(native()) {
+			auto* ptr = std::to_address(_iterator);
+			__raze_memset(ptr, static_cast<u8>(_value), size());
+			source_type::from_ptr(_iterator, bytes_pointer_offset(ptr, size()));
+		}
+
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
 			auto* ptr = std::to_address(_iterator);
@@ -65,7 +79,7 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 
 			const Tag broadcasted = _value;
 
-			do {
+			raze_disable_unrolling do {
 				vx::store(ptr, broadcasted);
 				advance_bytes(ptr, sizeof(Tag));
 			} while (ptr != aligned_end);

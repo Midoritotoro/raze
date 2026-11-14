@@ -38,8 +38,8 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 		unchecked_out_iterator_type _out_it;
 		unchecked_iterator_type _in_it;
 		unchecked_sentinel_type _in_sent;
-		Predicate _predicate;
-		Projection _proj;
+		raze_no_unique_address Predicate _predicate;
+		raze_no_unique_address Projection _proj;
 
 		constexpr explicit kernel(Source&& source, Destination&& dest, Predicate pred, Projection proj)
 			: _source(std::forward<Source>(source)), _dest(std::forward<Destination>(dest)), 

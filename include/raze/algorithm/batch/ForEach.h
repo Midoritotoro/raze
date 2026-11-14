@@ -12,7 +12,8 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 constexpr auto for_each_strategy = options::strategy<strategy<>()
 	.for_gcc<strategy_mode::autovec>()
-	.for_clang<strategy_mode::autovec>()>;
+	.for_clang<strategy_mode::autovec>()
+	.for_icpx<strategy_mode::autovec>()>;
 
 template <class Traits>
 struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
@@ -43,8 +44,9 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
-			for (; first != last; ++first)
-				_f(_proj(*first));
+
+			for_noalias(first, last, [func = _f, proj = _proj, in = first] (auto i)
+				raze_always_inline_lambda { func(proj(in[i])); });
 
 			source_type::from_ptr(_iterator, first);
 		}
