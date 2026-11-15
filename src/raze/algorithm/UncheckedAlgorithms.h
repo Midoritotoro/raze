@@ -97,8 +97,8 @@ public:
             constexpr bool can_use_native = requires { work(native_tag{}); } && []() constexpr {
                 if constexpr (requires { Kernel::native(); }) return Kernel::native();
                 else return false;
-            };
-            if constexpr (can_use_native) {
+            }();
+            if constexpr (can_use_native && !options::is_fscalar<Traits>()) {
                 work(native_tag{});
                 return work.result();
             }

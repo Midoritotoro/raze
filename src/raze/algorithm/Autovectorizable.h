@@ -44,7 +44,7 @@ template <std::input_iterator It, std::sentinel_for<It> Sent,
 raze_always_inline constexpr void for_novec(It& first, Sent last, Out& out, Func func)
 {
 #if defined(raze_cpp_msvc_only)
-    if consteval {
+    if !consteval {
         raze_do_pragma(loop(no_vector))
         for (; first != last; ++first, ++out)
             *out = func(*first);
@@ -60,7 +60,7 @@ template <std::input_iterator It, std::sentinel_for<It> Sent, class Func>
 raze_always_inline constexpr void for_novec(It& first, Sent last, Func func)
 {
 #if defined(raze_cpp_msvc_only)
-    if consteval {
+    if !consteval {
         raze_do_pragma(loop(no_vector))
         for (; first != last; ++first)
             func(*first);
@@ -78,7 +78,7 @@ raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
     It2& first2, Sent2 last2, Func func)
 {
 #if defined(raze_cpp_msvc_only)
-    if consteval {
+    if !consteval {
         raze_do_pragma(loop(no_vector))
         for (; first1 != last1 && first2 != last2; ++first1, ++first2)
             func(first1, first2);
@@ -97,7 +97,7 @@ raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
     It2& first2, Sent2 last2, Out& out, Func func)
 {
 #if defined(raze_cpp_msvc_only)
-    if consteval {
+    if !consteval {
         raze_do_pragma(loop(no_vector))
         for (; first1 != last1 && first2 != last2; ++first1, ++first2, ++out)
             *out = func(*first1, *first2);

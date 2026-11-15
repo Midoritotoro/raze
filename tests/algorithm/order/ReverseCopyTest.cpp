@@ -101,19 +101,21 @@ namespace {
 
 RTTS_CASE_TPL("raze::algorithm::reverse_copy", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
+    RTTS_EXPECT(true);
+
     static_assert([]() constexpr {
         std::array<T, 0> input{};
         std::array<T, 0> out{};
         auto result = raze::algorithm::reverse_copy(input, out.begin());
         return result.in == input.end() && result.out == out.end();
-        }());
+    }());
 
     static_assert([]() constexpr {
         std::array<T, 1> input{ T(1) };
         std::array<T, 1> out{};
         auto result = raze::algorithm::reverse_copy(input, out.begin());
         return result.in == input.end() && result.out == out.end() && out == std::array<T, 1>{ T(1) };
-        }());
+    }());
 
     static_assert([]() constexpr {
         std::array<T, 4> input{ T(1), T(2), T(3), T(4) };
@@ -121,7 +123,7 @@ RTTS_CASE_TPL("raze::algorithm::reverse_copy", rtts::algorithm::all_types)
         auto result = raze::algorithm::reverse_copy(input.begin(), input.end(), out.begin());
         return result.in == input.end() && result.out == out.end() &&
                out == std::array<T, 4>{ T(4), T(3), T(2), T(1) };
-        }());
+    }());
 
     static_assert([]() constexpr {
         std::array<T, 5> input{ T(1), T(2), T(3), T(4), T(5) };
@@ -129,7 +131,7 @@ RTTS_CASE_TPL("raze::algorithm::reverse_copy", rtts::algorithm::all_types)
         auto result = raze::algorithm::reverse_copy[raze::options::fscalar](input, out.begin());
         return result.in == input.end() && result.out == out.end() &&
                out == std::array<T, 5>{ T(5), T(4), T(3), T(2), T(1) };
-        }());
+    }());
 
     static_assert([]() constexpr {
         std::array<T, 4> input{ T(1), T(2), T(3), T(4) };
@@ -137,7 +139,7 @@ RTTS_CASE_TPL("raze::algorithm::reverse_copy", rtts::algorithm::all_types)
         auto result = raze::algorithm::reverse_copy(input.begin() + 1, input.begin() + 3, out.begin() + 1);
         return result.in == input.begin() + 3 && result.out == out.begin() + 3 &&
                out == std::array<T, 4>{ T(0), T(3), T(2), T(0) };
-        }());
+    }());
 };
 
 RTTS_CASE_TPL("raze::algorithm::reverse_copy boundaries", rtts::algorithm::all_types)

@@ -31,6 +31,7 @@ raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "replace/*.c
 raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "batch/*.cpp" unit.algorithm)
 raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "fill/*.cpp" unit.algorithm)
 raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "transform/*.cpp" unit.algorithm)
+raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "find/*.cpp" unit.algorithm)
 raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "swap/*.cpp" unit.algorithm)
 raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "remove/*.cpp" unit.algorithm)
 raze_glob_default_arch_unit("algorithm" ${CMAKE_CURRENT_SOURCE_DIR} "order/*.cpp" unit.algorithm)

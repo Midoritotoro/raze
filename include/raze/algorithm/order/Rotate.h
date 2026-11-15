@@ -1,232 +1,213 @@
-#pragma once 
+#pragma once
 
-#include <raze/algorithm/order/Reverse.h>
-#include <raze/algorithm/swap/Swap.h>
-#include <raze/algorithm/copy/Copy.h>
-#include <raze/algorithm/copy/CopyN.h>
-#include <src/raze/algorithm/memory/Swap3Ranges.h>
-#include <src/raze/algorithm/memory/SwapRanges.h>
+#include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/algorithm/DataSource.h>
+#include <src/raze/algorithm/memory/Memcpy.h>
 #include <src/raze/algorithm/memory/Memmove.h>
+#include <src/raze/algorithm/memory/Swap3Ranges.h>
+#include <raze/algorithm/order/Reverse.h>
+#include <raze/options/Options.h>
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Rotate : _Traits_ {
-	template <class _Tag_>
-	struct __vectorized_rotate {
-		template <class _Iterator_, class _Sentinel_>
-		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
-			_Iterator_ __middle, _Sentinel_ __sentinel) const noexcept
-		{
-			if constexpr (std::bidirectional_iterator<_Iterator_>) {
-				algorithm::reverse[options::scalar](__first, __middle);
-				auto __last = std::ranges::next(__first, __sentinel);
-				algorithm::reverse[options::scalar](__middle, __last);
+template <class Traits>
+struct rotate_t : Traits, dispatchable<rotate_t<Traits>> {
+    template <source Source>
+    struct kernel {
+        using source_type = std::remove_cvref_t<Source>;
 
-				if constexpr (std::random_access_iterator<_Iterator_>) {
-					algorithm::reverse[options::scalar](__first, __last);
-					return { __first + (__last - __middle), std::move(__last) };
-				}
-				else {
-					auto __mid_last = __last;
+        using iterator_type = typename source_type::iterator_type;
+        using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+        using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
-					do {
-						std::ranges::iter_swap(__first, --__mid_last);
-					} while (++__first != __middle && __mid_last != __middle);
+        using value_type = std::iter_value_t<unchecked_iterator_type>;
+        using vector_value_type = void;
 
-					algorithm::reverse[options::scalar](__first, __mid_last);
+        static consteval bool vectorizable() noexcept {
+            return false;
+        }
 
-					if (__first == __middle) return { std::move(__mid_last), std::move(__last) };
-					else return { std::move(__first), std::move(__last) };
-				}
-			}
-			else { 
-				auto __next = __middle;
+        static consteval bool native() noexcept {
+            return contiguous_source<source_type>
+                && !traits::is_iterator_volatile_v<iterator_type>
+                && std::is_trivially_copyable_v<value_type>;
+        }
 
-				do {
-					std::ranges::iter_swap(__first, __next++);
-					if (++__first == __middle) __middle = __next;
-				} while (__next != __sentinel);
+        source_type _source;
+        unchecked_iterator_type _first;
+        unchecked_iterator_type _middle;
+        unchecked_sentinel_type _sent;
+        unchecked_iterator_type _last;
 
-				auto __new_first = __first;
+        constexpr explicit kernel(Source&& source, iterator_type middle)
+            : _source(std::forward<Source>(source)),
+              _first(_source.ubegin()),
+              _middle(source_type::unwrap(std::move(middle))),
+              _sent(_source.uend()),
+              _last(_first)
+        {}
 
-				while (__middle != __sentinel) {
-					__next = __middle;
-					do {
-						std::ranges::iter_swap(__first, __next++);
-						if (++__first == __middle) __middle = __next;
-					} while (__next != __sentinel);
-				}
+        raze_nodiscard constexpr raze_always_inline bool exit() const {
+            return _first == _middle || _middle == _sent;
+        }
 
-				return { std::move(__new_first), std::move(__middle) };
-			}
-		}
+        constexpr raze_always_inline std::ranges::subrange<iterator_type> default_result() const {
+            if (_first == _middle) {
+                auto last = _source.wrap(std::ranges::next(_first, _sent));
+                return { last, last };
+            }
+            return { _source.wrap(_first), _source.wrap(_middle) };
+        }
 
-		template <class _Iterator_, class _Sentinel_>
-		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_> operator()(sizetype __aligned_size,
-			sizetype __tail_size, _Iterator_ __first, _Iterator_ __middle, _Sentinel_ __sentinel) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			using _Value_ = typename std::iter_value_t<_Iterator_>;
-			u8 __buf[512];
+        raze_always_inline constexpr void operator()() {
+            if constexpr (std::bidirectional_iterator<unchecked_iterator_type>) {
+                reverse[options::fscalar](_first, _middle);
+                _last = std::ranges::next(_middle, _sent);
+                reverse[options::fscalar](_middle, _last);
 
-			auto* __first_ptr = std::to_address(__first);
-			auto* __middle_ptr = std::to_address(__middle);
-			auto* __last_ptr = std::to_address(__sentinel);
+                if constexpr (std::random_access_iterator<unchecked_iterator_type>) {
+                    reverse[options::fscalar](_first, _last);
+                    _first += _last - _middle;
+                }
+                else {
+                    auto mid_last = _last;
 
-			for (;;) {
-				const auto __left_size = __byte_length(__first_ptr, __middle_ptr);
-				const auto __right_size = __byte_length(__middle_ptr, __last_ptr);
+                    raze_disable_unrolling
+                    do {
+                        std::ranges::iter_swap(_first, --mid_last);
+                    } while (++_first != _middle && mid_last != _middle);
 
-				if (__left_size <= __right_size) {
-					if (__left_size == 0) break;
+                    reverse[options::fscalar](_first, mid_last);
 
-					if (__left_size <= 512 && (__left_size <= 128 || __right_size >= __left_size * 2)) {
-						__raze_memcpy(__buf, __first_ptr, __left_size);
-						__raze_memmove(__first_ptr, __middle_ptr, __right_size);
-						__advance_bytes(__first_ptr, __right_size);
-						__raze_memcpy(__first_ptr, __buf, __left_size);
-						break;
-					}
+                    if (_first == _middle)
+                        _first = std::move(mid_last);
+                }
+            }
+            else {
+                auto next = _middle;
 
-					auto* __mid2 = __last_ptr;
-					__rewind_bytes(__mid2, __left_size);
-					if (__left_size * 2 > __right_size) {
-						__swap_ranges(__first_ptr, __mid2, __mid2, __last_ptr);
-						__last_ptr = __mid2;
-					}
-					else {
-						auto* __mid3 = __mid2;
-						__rewind_bytes(__mid3, __left_size);
-						__swap_3_ranges(__mid2, __last_ptr, __first_ptr, __mid3);
-						__last_ptr = __mid3;
-					}
-				}
-				else {
-					if (__right_size == 0) break;
+                raze_disable_unrolling
+                do {
+                    std::ranges::iter_swap(_first, next++);
+                    if (++_first == _middle) _middle = next;
+                } while (next != _sent);
 
-					if (__right_size <= 512 && (__right_size <= 128 || __left_size >= __right_size * 2)) {
-						__rewind_bytes(__last_ptr, __right_size);
-						__raze_memcpy(__buf, __last_ptr, __right_size);
-						auto* __mid2 = __first_ptr;
-						__advance_bytes(__mid2, __right_size);
-						__raze_memmove(__mid2, __first_ptr, __left_size);
-						__raze_memcpy(__first_ptr, __buf, __right_size);
-						break;
-					}
+                auto new_first = _first;
 
-					if (__right_size * 2 > __left_size) {
-						__swap_ranges(__first_ptr, __middle_ptr, __middle_ptr, __last_ptr);
-						__advance_bytes(__first_ptr, __right_size);
-					}
-					else {
-						auto* __mid2 = __first_ptr;
-						__advance_bytes(__mid2, __right_size);
-						__swap_3_ranges(__middle_ptr, __last_ptr, __mid2, __first_ptr);
-						__advance_bytes(__first_ptr, __right_size * 2);
-					}
-				}
-			}
+                while (_middle != _sent) {
+                    next = _middle;
 
-			return std::ranges::subrange(__first + (__sentinel - __middle), __sentinel);
-		}
-	};
+                    raze_disable_unrolling
+                    do {
+                        std::ranges::iter_swap(_first, next++);
+                        if (++_first == _middle) _middle = next;
+                    } while (next != _sent);
+                }
 
-	template <std::permutable _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_>
-	constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(
-		_Iterator_ __first, _Iterator_ __middle, _Sentinel_ __sent) const noexcept
-	{
-		auto __r = __rotate_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__uiter<_Sentinel_>(std::move(__middle)),
-			traits::__usent<_Iterator_>(__sent));
+                _first = std::move(new_first);
+                _last = std::move(_middle);
+            }
+        }
 
-		__seek_iter(__first, __r.begin());
-		__seek_iter(__sent, __r.end());
+        raze_always_inline void operator()(native_tag) requires(native()) {
+            const auto [orig_first, orig_last] = source_type::to_raw_range(_first, _sent);
+            auto* middle_ptr = std::to_address(_middle);
 
-		return { std::move(__first), std::move(__sent) };
-	}
+            auto* first_ptr = orig_first;
+            auto* last_ptr = orig_last;
+            const auto right_total = bytes_distance(middle_ptr, last_ptr);
 
-	template <std::ranges::forward_range Range>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(Range&& __range, 
-		std::ranges::iterator_t<Range> __middle) const noexcept
-		requires(!constexpr_sized_range<Range> && std::permutable<std::ranges::iterator_t<Range>>)
-	{
-		return (*this)(std::ranges::begin(__range), __middle, std::ranges::end(__range));
-	}
+            alignas(64) u8 buf[512];
 
-	template <std::ranges::forward_range Range>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(Range&& __range,
-		std::ranges::iterator_t<Range> __middle) const noexcept
-		requires(constexpr_sized_range<Range> && std::permutable<std::ranges::iterator_t<Range>>)
-	{
-		auto __begin = std::ranges::begin(__range);
-		auto __end = std::ranges::end(__range);
+            auto swap_blocks = [&buf] (void* a, void* b, sizetype size) raze_always_inline_lambda {
+                auto* pa = static_cast<u8*>(a);
+                auto* pb = static_cast<u8*>(b);
 
-		auto __r = __rotate_unchecked(traits::__r_uiter<Range>(std::move(__begin)),
-			traits::__r_uiter<Range>(std::move(__middle)),
-			traits::__r_usent<Range>(__end),
-			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
+                while (size != 0) {
+                    const auto chunk = (size < sizeof(buf)) ? size : sizeof(buf);
+                    __raze_memcpy(buf, pa, chunk);
+                    __raze_memcpy(pa, pb, chunk);
+                    __raze_memcpy(pb, buf, chunk);
+                    pa += chunk;
+                    pb += chunk;
+                    size -= chunk;
+                }
+            };
 
-		__seek_iter(__begin, __r.begin());
-		__seek_iter(__end, __r.end());
+            for (;;) {
+                const auto left_size = bytes_distance(first_ptr, middle_ptr);
+                const auto right_size = bytes_distance(middle_ptr, last_ptr);
 
-		return { std::move(__begin), std::move(__end) };
-	}
-private:
-	template <class _Iterator_, class _Sentinel_>
-	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> __rotate_unchecked(_Iterator_ __first,
-		_Iterator_ __middle, _Sentinel_ __last) const noexcept 
-	{
-		__verify_range(__first, __last);
+                if (left_size <= right_size) {
+                    if (left_size == 0) break;
 
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
+                    if (left_size <= sizeof(buf) && (left_size <= 128 || right_size >= left_size * 2)) {
+                        __raze_memcpy(buf, first_ptr, left_size);
+                        __raze_memmove(first_ptr, middle_ptr, right_size);
+                        __raze_memcpy(bytes_pointer_offset(first_ptr, right_size), buf, left_size);
+                        break;
+                    }
 
-		if (__first == __middle) { auto __last_it = std::ranges::next(__first, __last); return { __last_it, __last_it }; }
-		if (__middle == __last) return { std::move(__first), std::move(__middle) };
+                    auto* mid2 = last_ptr;
+                    rewind_bytes(mid2, left_size);
 
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
-			&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
-			&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0) 
-		{
-			if not consteval {
-				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>,
-					options::__get_forced_isa<_TraitsType>()>(
-					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __middle, __last);
-			}
-		}
+                    if (left_size * 2 > right_size) {
+                        swap_blocks(first_ptr, mid2, left_size);
+                        last_ptr = mid2;
+                    }
+                    else {
+                        auto* mid3 = mid2;
+                        rewind_bytes(mid3, left_size);
+                        __swap_3_ranges(mid2, last_ptr, first_ptr, mid3);
+                        last_ptr = mid3;
+                    }
+                }
+                else {
+                    if (right_size == 0) break;
 
-		return __vectorized_rotate<vx::scalar_tag>()(__first, __middle, __last);
-	}
+                    if (right_size <= sizeof(buf) && (right_size <= 128 || left_size >= right_size * 2)) {
+                        __raze_memcpy(buf, middle_ptr, right_size);
+                        __raze_memmove(bytes_pointer_offset(first_ptr, right_size), first_ptr, left_size);
+                        __raze_memcpy(first_ptr, buf, right_size);
+                        break;
+                    }
 
-	template <class _Iterator_, class _Sentinel_, sizetype _Size_>
-	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> __rotate_unchecked(_Iterator_ __first,
-		_Iterator_ __middle, _Sentinel_ __last, std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first, __last);
+                    if (right_size * 2 > left_size) {
+                        swap_blocks(first_ptr, middle_ptr, right_size);
+                        advance_bytes(first_ptr, right_size);
+                    }
+                    else {
+                        __swap_3_ranges(middle_ptr, last_ptr, bytes_pointer_offset(first_ptr, right_size), first_ptr);
+                        advance_bytes(first_ptr, right_size * 2);
+                    }
+                }
+            }
 
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
+            source_type::from_ptr(_first, bytes_pointer_offset(orig_first, right_total));
+            source_type::from_ptr(_last, orig_last);
+        }
 
-		if (__first == __middle) { auto __last_it = std::ranges::next(__first, __last); return { __last_it, __last_it }; }
-		if (__middle == __last) return { std::move(__first), std::move(__middle) };
+        constexpr raze_always_inline std::ranges::subrange<iterator_type> result() const {
+            return { _source.wrap(_first), _source.wrap(_last) };
+        }
+    };
 
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
-			&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0)
-		{
-			if not consteval {
-				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				return vx::__dispatch_sized_impl<__vectorized_rotate, _IntegerValue_, std::ranges::subrange<_Iterator_>,
-				options::__get_forced_isa<_TraitsType>()>(
-					std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{}, __first, __middle, __last);
-			}
-		}
+    template <std::permutable It, std::sentinel_for<It> Sent>
+    constexpr raze_always_inline std::ranges::subrange<It> operator()(It first, It middle, Sent last) const {
+        return this->dispatch(get_source(std::move(first), std::move(last)), std::move(middle));
+    }
 
-		return __vectorized_rotate<vx::scalar_tag>()(__first, __middle, __last);
-	}
+    template <std::ranges::forward_range R>
+    constexpr raze_always_inline std::ranges::borrowed_subrange_t<R>
+    operator()(R&& r, std::ranges::iterator_t<R> middle) const
+        requires(std::permutable<std::ranges::iterator_t<R>>)
+    {
+        return this->dispatch(get_source(std::forward<R>(r)), std::move(middle));
+    }
 };
 
-constexpr inline auto rotate = raze::options::function_with_traits<_Rotate>;
+constexpr inline auto rotate = options::function_with_traits<rotate_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

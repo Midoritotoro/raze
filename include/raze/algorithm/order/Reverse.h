@@ -17,12 +17,23 @@ struct reverse_t : Traits, dispatchable<reverse_t<Traits>> {
         using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
         using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
-        using vector_value_type = std::iter_value_t<unchecked_iterator_type>;
+
+        template <class T>
+        static consteval auto deduce_vector_value_type() noexcept {
+            if constexpr (sizeof(T) <= 8 && ((sizeof(T) & (sizeof(T) - 1)) == 0)) {
+                if constexpr (vx::arithmetic_type<T>) return T{};
+                else return typename IntegerForSizeof<T>::Unsigned{};
+            }
+        }
+
+        using in_t = std::iter_value_t<unchecked_iterator_type>;
+        using vector_value_type = decltype(deduce_vector_value_type<in_t>());
 
         static consteval bool vectorizable() noexcept {
-            return contiguous_source<Source> &&
-                std::is_arithmetic_v<vector_value_type> &&
-                (sizeof(vector_value_type) & (sizeof(vector_value_type) - 1)) == 0;
+            return contiguous_source<Source> && traits::trivially_swappable<in_t>
+                && !traits::is_iterator_volatile_v<iterator_type>
+                && !std::same_as<vector_value_type, void>
+                && sizeof(in_t) <= 8 && ((sizeof(in_t) & (sizeof(in_t) - 1)) == 0);
         }
 
         source_type _source;

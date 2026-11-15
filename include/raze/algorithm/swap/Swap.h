@@ -33,8 +33,10 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source1> && contiguous_source<Source2> &&
+				!traits::is_iterator_volatile_v<iterator1_type> &&
+				!traits::is_iterator_volatile_v<iterator2_type> &&
 				((vx::arithmetic_type<InT1> && vx::arithmetic_type<InT2> && has_common_type<InT1, InT2>)
-					|| (std::is_trivially_copyable_v<InT1> && std::same_as<InT1, InT2>));
+					|| (traits::trivially_swappable<InT1> && std::same_as<InT1, InT2>));
 		}
 
 		source1_type _source1;

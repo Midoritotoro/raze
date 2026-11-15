@@ -1,144 +1,124 @@
-#pragma once 
+#pragma once
 
-#include <raze/algorithm/order/Reverse.h>
-#include <raze/algorithm/swap/Swap.h>
-#include <raze/algorithm/copy/Copy.h>
-#include <raze/algorithm/copy/CopyN.h>
+#include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/algorithm/DataSource.h>
+#include <src/raze/algorithm/Destination.h>
+#include <src/raze/algorithm/memory/Memcpy.h>
+#include <raze/options/Options.h>
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Rotate_copy : _Traits_ {
-	template <class _Tag_>
-	struct __vectorized_rotate_copy {
-		template <class _InIterator_, class _Sentinel_, class _OutIterator_>
-		raze_nodiscard raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_>
-			operator()(_InIterator_ __first, _InIterator_ __middle, _Sentinel_ __last, _OutIterator_ __result) const noexcept
-		{
-			auto __c1 = algorithm::copy[options::scalar](__middle, std::move(__last), std::move(__result));
-			auto __c2 = algorithm::copy[options::scalar](std::move(__first), std::move(__middle), std::move(__c1.out));
-			return { std::move(__c1.in), std::move(__c2.out) };
-		}
+template <class Traits>
+struct rotate_copy_t : Traits, dispatchable<rotate_copy_t<Traits>> {
+    template <source Source, destination Destination>
+    struct kernel {
+        using source_type = std::remove_cvref_t<Source>;
+        using destination_type = std::remove_cvref_t<Destination>;
 
-		template <class _InIterator_, class _Sentinel_, class _OutIterator_>
-		raze_nodiscard raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_> operator()(
-			sizetype, sizetype, _InIterator_ __first, _InIterator_ __middle, _Sentinel_ __last, _OutIterator_ __result) const noexcept
-		{
-			auto __c1 = algorithm::copy(__middle, std::move(__last), std::move(__result));
-			auto __c2 = algorithm::copy(std::move(__first), std::move(__middle), std::move(__c1.out));
-			return { std::move(__c1.in), std::move(__c2.out) };
-		}
-	};
+        using iterator_type = typename source_type::iterator_type;
+        using out_iterator_type = typename destination_type::iterator_type;
 
-	template <std::input_iterator _InIterator_, std::sentinel_for<_InIterator_> _Sentinel_, std::weakly_incrementable _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_> operator()(
-		_InIterator_ __first, _InIterator_ __middle, _Sentinel_ __last, _OutIterator_ __result) const noexcept
-		requires(std::indirectly_copyable<_InIterator_, _OutIterator_>)
-	{
-		auto __r = __rotate_copy_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__uiter<_Sentinel_>(std::move(__middle)),
-			traits::__usent<_InIterator_>(std::move(__last)),
-			algorithm::__uiter(std::move(__result)));
+        using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+        using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+        using unchecked_out_iterator_type = typename destination_type::unchecked_iterator_type;
 
-		__seek_iter(__first, __r.in);
-		__seek_iter(__result, __r.out);
+        template <class It>
+        static consteval auto deduce_value_type() noexcept {
+            if constexpr (std::indirectly_readable<It>)
+                return std::type_identity<std::iter_value_t<It>>{};
+            else
+                return std::type_identity<void>{};
+        }
 
-		return { std::move(__first), std::move(__result) };
-	}
+        using in_t = std::iter_value_t<unchecked_iterator_type>;
+        using out_t = typename decltype(deduce_value_type<unchecked_out_iterator_type>())::type;
+        using vector_value_type = void;
 
-	template <std::ranges::input_range Range, std::weakly_incrementable _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::borrowed_iterator_t<Range>, _OutIterator_> operator()(
-		Range&& __range, std::ranges::iterator_t<Range> __middle, _OutIterator_ __result) const noexcept
-		requires(!constexpr_sized_range<Range> && std::indirectly_copyable<std::ranges::iterator_t<Range>, _OutIterator_>)
-	{
-		auto __begin = std::ranges::begin(__range);
-		auto __end = std::ranges::end(__range);
+        static consteval bool vectorizable() noexcept {
+            return false;
+        }
 
-		auto __r = __rotate_copy_unchecked(traits::__r_uiter<Range>(std::move(__begin)),
-			traits::__r_uiter<Range>(std::move(__middle)),
-			traits::__r_usent<Range>(std::move(__end)),
-			algorithm::__uiter(std::move(__result)));
+        static consteval bool native() noexcept {
+            return contiguous_source<source_type>
+                && contiguous_destination<destination_type>
+                && !traits::is_iterator_volatile_v<iterator_type>
+                && !traits::is_iterator_volatile_v<out_iterator_type>
+                && std::is_trivially_copyable_v<in_t>
+                && std::same_as<in_t, out_t>;
+        }
 
-		__seek_iter(__begin, __r.in);
-		__seek_iter(__result, __r.out);
+        source_type _source;
+        destination_type _dest;
+        unchecked_iterator_type _first;
+        unchecked_iterator_type _middle;
+        unchecked_sentinel_type _sent;
+        unchecked_iterator_type _last;
+        unchecked_out_iterator_type _out;
 
-		return { std::move(__begin), std::move(__result) };
-	}
+        constexpr explicit kernel(Source&& source, iterator_type middle, Destination&& dest)
+            : _source(std::forward<Source>(source)),
+              _dest(std::forward<Destination>(dest)),
+              _first(_source.ubegin()),
+              _middle(source_type::unwrap(std::move(middle))),
+              _sent(_source.uend()),
+              _last(_first),
+              _out(_dest.ubegin())
+        {}
 
-	template <std::ranges::input_range Range, std::weakly_incrementable _OutIterator_>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::borrowed_iterator_t<Range>, _OutIterator_> operator()(
-		Range&& __range, std::ranges::iterator_t<Range> __middle, _OutIterator_ __result) const noexcept
-		requires(constexpr_sized_range<Range> && std::indirectly_copyable<std::ranges::iterator_t<Range>, _OutIterator_>)
-	{
-		auto __begin = std::ranges::begin(__range);
-		auto __end = std::ranges::end(__range);
+        raze_nodiscard constexpr raze_always_inline bool exit() const {
+            return _first == _sent;
+        }
 
-		auto __r = __rotate_copy_unchecked(
-			traits::__r_uiter<Range>(std::move(__begin)),
-			traits::__r_uiter<Range>(std::move(__middle)),
-			traits::__r_usent<Range>(std::move(__end)),
-			algorithm::__uiter(std::move(__result)),
-			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
+        constexpr raze_always_inline std::ranges::in_out_result<iterator_type, out_iterator_type> default_result() const {
+            return { _source.wrap(_first), _dest.wrap(_out) };
+        }
 
-		__seek_iter(__begin, __r.in);
-		__seek_iter(__result, __r.out);
+        raze_always_inline constexpr void operator()() {
+            _last = _middle;
+            for_novec(_last, _sent, _out, [](auto&& value) -> decltype(auto) { return std::forward<decltype(value)>(value); });
+            for_novec(_first, _middle, _out, [](auto&& value) -> decltype(auto) { return std::forward<decltype(value)>(value); });
+        }
 
-		return { std::move(__begin), std::move(__result) };
-	}
+        raze_always_inline void operator()(native_tag) requires(native()) {
+            const auto [first_ptr, last_ptr] = source_type::to_raw_range(_first, _sent);
+            auto* middle_ptr = std::to_address(_middle);
+            auto* out_ptr = std::to_address(_out);
 
-private:
-	template <class _InIterator_, class _Sentinel_, class _OutIterator_>
-	raze_nodiscard constexpr raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_> 
-	__rotate_copy_unchecked(_InIterator_ __first, _InIterator_ __middle, _Sentinel_ __last, _OutIterator_ __result) const noexcept
-	{
-		__verify_range(__first, __last);
+            const auto right_size = bytes_distance(middle_ptr, last_ptr);
+            const auto left_size = bytes_distance(first_ptr, middle_ptr);
 
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_InIterator_>;
+            __raze_memcpy(out_ptr, middle_ptr, right_size);
+            advance_bytes(out_ptr, right_size);
+            __raze_memcpy(out_ptr, first_ptr, left_size);
+            advance_bytes(out_ptr, left_size);
 
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_>
-			&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
-			&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0) 
-		{
-			if not consteval {
-				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				return vx::__dispatch_sized_impl<__vectorized_rotate_copy, _IntegerValue_, std::ranges::in_out_result<_InIterator_, _OutIterator_>>(
-					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __middle, __last, __result);
-			}
-		}
+            source_type::from_ptr(_last, last_ptr);
+            destination_type::from_ptr(_out, out_ptr);
+        }
 
-		auto __c1 = algorithm::copy[options::scalar](__middle, std::move(__last), std::move(__result));
-		auto __c2 = algorithm::copy[options::scalar](std::move(__first), std::move(__middle), std::move(__c1.out));
-		return { std::move(__c1.in), std::move(__c2.out) };
-	}
+        constexpr raze_always_inline std::ranges::in_out_result<iterator_type, out_iterator_type> result() const {
+            return { _source.wrap(_last), _dest.wrap(_out) };
+        }
+    };
 
-	template <class _InIterator_, class _Sentinel_, class _OutIterator_, sizetype _Size_>
-	raze_nodiscard constexpr raze_always_inline std::ranges::in_out_result<_InIterator_, _OutIterator_> 
-	__rotate_copy_unchecked(_InIterator_ __first, _InIterator_ __middle, _Sentinel_ __last, _OutIterator_ __result, 
-	                        std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first, __last);
+    template <std::forward_iterator It, std::sentinel_for<It> Sent, std::weakly_incrementable Out>
+    constexpr raze_always_inline std::ranges::in_out_result<It, Out>
+        operator()(It first, It middle, Sent last, Out result) const requires(std::indirectly_copyable<It, Out>)
+    {
+        return this->dispatch(get_source(std::move(first), std::move(last)), std::move(middle), get_destination(std::move(result)));
+    }
 
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_InIterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_InIterator_> && std::contiguous_iterator<_OutIterator_>
-			&& std::is_trivially_copyable_v<_Value_> && sizeof(_Value_) <= 8
-			&& (sizeof(_Value_) != 0) && (sizeof(_Value_) & (sizeof(_Value_) - 1)) == 0)
-		{
-			if not consteval {
-				using _IntegerValue_ = std::conditional_t<std::is_arithmetic_v<_Value_>, _Value_, typename IntegerForSizeof<_Value_>::Unsigned>;
-				return vx::__dispatch_sized_impl<__vectorized_rotate_copy, _IntegerValue_, std::ranges::in_out_result<_InIterator_, _OutIterator_>>(
-					std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{}, __first, __middle, __last, __result);
-			}
-		}
-
-		auto __c1 = algorithm::copy[options::scalar](__middle, std::move(__last), std::move(__result));
-		auto __c2 = algorithm::copy[options::scalar](std::move(__first), std::move(__middle), std::move(__c1.out));
-		return { std::move(__c1.in), std::move(__c2.out) };
-	}
+    template <std::ranges::forward_range R, std::weakly_incrementable Out>
+    constexpr raze_always_inline std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, Out>
+        operator()(R&& r, std::ranges::iterator_t<R> middle, Out result) const
+            requires(std::indirectly_copyable<std::ranges::iterator_t<R>, Out>)
+    {
+        return this->dispatch(get_source(std::forward<R>(r)), std::move(middle), get_destination(std::move(result)));
+    }
 };
 
-constexpr inline auto rotate_copy = raze::options::function_with_traits<_Rotate_copy>;
+constexpr inline auto rotate_copy = options::function_with_traits<rotate_copy_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

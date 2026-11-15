@@ -1,0 +1,486 @@
+#include <tests/rts/rts.h>
+#include <raze/algorithm/order/RotateCopy.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <forward_list>
+#include <iterator>
+#include <list>
+#include <random>
+#include <ranges>
+#include <string>
+#include <vector>
+
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    struct rotate_copy_item {
+        int32_t key;
+        int32_t value;
+        bool operator==(const rotate_copy_item&) const = default;
+    };
+
+    struct rotate_copy_odd_item {
+        uint8_t bytes[7];
+        bool operator==(const rotate_copy_odd_item&) const = default;
+    };
+
+    struct rotate_copy_large_item {
+        int32_t data[160];
+        bool operator==(const rotate_copy_large_item&) const = default;
+    };
+
+    template <class T>
+    void check_rotate_copy_variants(const std::vector<T>& input, size_t mid) {
+        const size_t n = input.size();
+
+        std::vector<T> exp(n);
+        auto exp_res = std::ranges::rotate_copy(input, input.begin() + mid, exp.begin());
+        RTTS_EXPECT(exp_res.in == input.end());
+        RTTS_EXPECT(exp_res.out == exp.end());
+
+        std::vector<T> out(n);
+        auto res = raze::algorithm::rotate_copy(input, input.begin() + mid, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+
+        out.assign(n, T{});
+        res = raze::algorithm::rotate_copy(input.begin(), input.begin() + mid, input.end(), out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+
+        out.assign(n, T{});
+        res = raze::algorithm::rotate_copy[raze::options::fscalar](input, input.begin() + mid, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+
+        out.assign(n, T{});
+        res = raze::algorithm::rotate_copy[raze::options::unroll<2>](input, input.begin() + mid, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+
+        out.assign(n, T{});
+        res = raze::algorithm::rotate_copy[raze::options::fstatic](input, input.begin() + mid, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+    }
+
+    template <class T>
+    void rotate_copy_boundary_sweep() {
+        std::vector<size_t> sizes;
+        for (size_t n = 0; n <= 140; ++n)
+            sizes.push_back(n);
+
+        for (size_t n : {
+            size_t(256), size_t(384), size_t(511), size_t(512), size_t(513),
+            size_t(600), size_t(768), size_t(1023), size_t(1024), size_t(1025),
+            size_t(1535), size_t(1536), size_t(1600), size_t(2048) })
+        {
+            sizes.push_back(n);
+        }
+
+        for (size_t n : sizes) {
+            std::vector<T> input(n);
+            for (size_t i = 0; i < n; ++i)
+                input[i] = static_cast<T>(i);
+
+            std::vector<size_t> mids;
+            if (n <= 32) {
+                for (size_t m = 0; m <= n; ++m)
+                    mids.push_back(m);
+            }
+            else {
+                for (size_t m : {
+                    size_t(0), size_t(1), size_t(2),
+                    size_t(127), size_t(128), size_t(129),
+                    size_t(511), size_t(512), size_t(513),
+                    n / 4, n / 3, n / 2, (2 * n) / 3, (3 * n) / 4,
+                    n - 2, n - 1, n })
+                {
+                    if (m <= n)
+                        mids.push_back(m);
+                }
+                if (n > 513) {
+                    mids.push_back(n - 513);
+                    mids.push_back(n - 512);
+                    mids.push_back(n - 511);
+                }
+                std::ranges::sort(mids);
+                mids.erase(std::ranges::unique(mids).begin(), mids.end());
+            }
+
+            for (size_t mid : mids)
+                check_rotate_copy_variants(input, mid);
+        }
+    }
+
+    template <class T>
+    void rotate_copy_fuzz(unsigned seed, size_t iters) {
+        std::mt19937 rng(seed);
+        std::uniform_int_distribution<size_t> sz(0, 2500);
+
+        for (size_t i = 0; i < iters; ++i) {
+            const size_t n = sz(rng);
+            auto input = rtts::random::vector<T>(n, seed + static_cast<unsigned>(i));
+            const auto original = input;
+
+            const size_t mid = n == 0 ? 0 : rng() % (n + 1);
+            std::vector<T> exp(n + 2, T{});
+            std::vector<T> out(n + 2, T{});
+
+            auto exp_res = std::ranges::rotate_copy(input, input.begin() + mid, exp.begin() + 1);
+            auto res = raze::algorithm::rotate_copy(input, input.begin() + mid, out.begin() + 1);
+            RTTS_EXPECT(res.in == exp_res.in);
+            RTTS_EXPECT(res.out - out.begin() == exp_res.out - exp.begin());
+            RTTS_EXPECT(out == exp);
+            RTTS_EXPECT(input == original);
+
+            out.assign(n + 2, T{});
+            res = raze::algorithm::rotate_copy[raze::options::fscalar](
+                input.begin(), input.begin() + mid, input.end(), out.begin() + 1);
+            RTTS_EXPECT(res.in == input.end());
+            RTTS_EXPECT(res.out == out.begin() + 1 + n);
+            RTTS_EXPECT(out == exp);
+            RTTS_EXPECT(input == original);
+
+            out.assign(n + 2, T{});
+            res = raze::algorithm::rotate_copy[raze::options::fstatic](
+                input, input.begin() + mid, out.begin() + 1);
+            RTTS_EXPECT(res.in == input.end());
+            RTTS_EXPECT(res.out == out.begin() + 1 + n);
+            RTTS_EXPECT(out == exp);
+            RTTS_EXPECT(input == original);
+
+            const size_t first = n == 0 ? 0 : rng() % (n + 1);
+            const size_t last = first + (n == first ? 0 : rng() % (n - first + 1));
+            const size_t sub_mid = first + (last == first ? 0 : rng() % (last - first + 1));
+            const size_t count = last - first;
+
+            exp.assign(count + 2, T{});
+            out.assign(count + 2, T{});
+
+            exp_res = std::ranges::rotate_copy(
+                input.begin() + first, input.begin() + sub_mid, input.begin() + last, exp.begin() + 1);
+            res = raze::algorithm::rotate_copy(
+                input.begin() + first, input.begin() + sub_mid, input.begin() + last, out.begin() + 1);
+
+            RTTS_EXPECT(res.in == exp_res.in);
+            RTTS_EXPECT(res.out - out.begin() == exp_res.out - exp.begin());
+            RTTS_EXPECT(out == exp);
+            RTTS_EXPECT(input == original);
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::rotate_copy", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    using namespace rtts::algorithm;
+    auto cfg = config::thorough();
+
+    auto std_rotate_copy_n = [](auto c) {
+        auto mid = std::ranges::next(c.data.value.begin(), static_cast<std::ptrdiff_t>(c.count()));
+        return std::ranges::rotate_copy(c.data.value.begin(), mid, c.data.value.end(), c.out());
+    };
+
+    run<n, T>(cfg,
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+            return raze::algorithm::rotate_copy(c.first(), mid, c.last(), c.out());
+        },
+        std_rotate_copy_n);
+
+    run<n, T>(cfg,
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+            return raze::algorithm::rotate_copy(c.range(), mid, c.out());
+        },
+        std_rotate_copy_n);
+
+    run<n, T>(cfg,
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+            return raze::algorithm::rotate_copy[raze::options::fscalar](c.first(), mid, c.last(), c.out());
+        },
+        std_rotate_copy_n);
+
+    run<n, T>(cfg,
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+            return raze::algorithm::rotate_copy[raze::options::unroll<2>](c.range(), mid, c.out());
+        },
+        std_rotate_copy_n);
+
+    run<n, T>(cfg,
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+            return raze::algorithm::rotate_copy[raze::options::fstatic](c.range(), mid, c.out());
+        },
+        std_rotate_copy_n);
+
+    run<range, T>(cfg,
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), c.last());
+            return raze::algorithm::rotate_copy(c.first(), mid, c.last(), c.out());
+        },
+        [](auto c) {
+            return std::ranges::rotate_copy(
+                c.data.value.begin(), c.data.value.end(), c.data.value.end(), c.out());
+        });
+
+    static_assert(constexpr_run<T, range, 0>(
+        [](auto c) { return raze::algorithm::rotate_copy(c.first(), c.first(), c.last(), c.out()); },
+        [](auto c) { return std::ranges::rotate_copy(c.data.value.begin(), c.data.value.begin(), c.data.value.end(), c.out()); }));
+
+    static_assert(constexpr_run<T, n, 5, 0>(
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+            return raze::algorithm::rotate_copy(c.first(), mid, c.last(), c.out());
+        },
+        std_rotate_copy_n));
+
+    static_assert(constexpr_run<T, n, 5, 2>(
+        [](auto c) {
+            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+            return raze::algorithm::rotate_copy(c.range(), mid, c.out());
+        },
+        std_rotate_copy_n));
+
+    static_assert([]() constexpr {
+        std::array<T, 0> input{};
+        std::array<T, 0> out{};
+        auto res = raze::algorithm::rotate_copy(input, input.begin(), out.begin());
+        return res.in == input.end() && res.out == out.end();
+        }());
+
+    static_assert([]() constexpr {
+        std::array<T, 1> input{ T(1) };
+        std::array<T, 1> out{};
+        auto res = raze::algorithm::rotate_copy(input, input.begin(), out.begin());
+        return res.in == input.end() && res.out == out.end() && out == std::array<T, 1>{ T(1) };
+        }());
+
+    static_assert([]() constexpr {
+        std::array<T, 4> input{ T(1), T(2), T(3), T(4) };
+        std::array<T, 4> out{};
+        auto res = raze::algorithm::rotate_copy(input, input.begin() + 1, out.begin());
+        return res.in == input.end() && res.out == out.end() &&
+               out == std::array<T, 4>{ T(2), T(3), T(4), T(1) };
+        }());
+
+    static_assert([]() constexpr {
+        std::array<T, 5> input{ T(1), T(2), T(3), T(4), T(5) };
+        std::array<T, 5> out{};
+        auto res = raze::algorithm::rotate_copy[raze::options::fscalar](input, input.begin() + 3, out.begin());
+        return res.in == input.end() && res.out == out.end() &&
+               out == std::array<T, 5>{ T(4), T(5), T(1), T(2), T(3) };
+        }());
+
+    static_assert([]() constexpr {
+        std::array<T, 4> input{ T(1), T(2), T(3), T(4) };
+        std::array<T, 4> out{};
+        auto res = raze::algorithm::rotate_copy(input, input.end(), out.begin());
+        return res.in == input.end() && res.out == out.end() &&
+               out == std::array<T, 4>{ T(1), T(2), T(3), T(4) };
+        }());
+
+    static_assert([]() constexpr {
+        std::array<T, 5> input{ T(1), T(2), T(3), T(4), T(5) };
+        std::array<T, 5> out{};
+        auto res = raze::algorithm::rotate_copy(
+            input.begin() + 1, input.begin() + 3, input.begin() + 4, out.begin() + 1);
+        return res.in == input.begin() + 4 && res.out == out.begin() + 4 &&
+               out == std::array<T, 5>{ T(0), T(4), T(2), T(3), T(0) };
+        }());
+};
+
+RTTS_CASE_TPL("raze::algorithm::rotate_copy boundaries", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    rotate_copy_boundary_sweep<T>();
+};
+
+RTTS_CASE_TPL("raze::algorithm::rotate_copy fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        rotate_copy_fuzz<T>(seed, 200);
+};
+
+RTTS_CASE("raze::algorithm::rotate_copy structs") {
+    {
+        std::vector<rotate_copy_item> input{
+            { 1, 10 }, { 2, 20 }, { 3, 30 }, { 4, 40 }, { 5, 50 }
+        };
+        const auto original = input;
+
+        std::vector<rotate_copy_item> exp(input.size());
+        std::ranges::rotate_copy(input, input.begin() + 2, exp.begin());
+
+        std::vector<rotate_copy_item> out(input.size());
+        auto res = raze::algorithm::rotate_copy(input, input.begin() + 2, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+        RTTS_EXPECT(input == original);
+
+        out.assign(input.size(), {});
+        res = raze::algorithm::rotate_copy[raze::options::fscalar](input, input.begin() + 2, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+    }
+
+    {
+        std::vector<rotate_copy_odd_item> input(250);
+        for (size_t i = 0; i < input.size(); ++i)
+            for (size_t j = 0; j < 7; ++j)
+                input[i].bytes[j] = static_cast<uint8_t>((i * 7 + j) & 0xFF);
+
+        for (size_t mid : { size_t(0), size_t(50), size_t(75), size_t(100), size_t(250) }) {
+            std::vector<rotate_copy_odd_item> exp(input.size());
+            std::ranges::rotate_copy(input, input.begin() + mid, exp.begin());
+
+            std::vector<rotate_copy_odd_item> out(input.size());
+            auto res = raze::algorithm::rotate_copy(input, input.begin() + mid, out.begin());
+            RTTS_EXPECT(res.in == input.end());
+            RTTS_EXPECT(res.out == out.end());
+            RTTS_EXPECT(out == exp);
+        }
+    }
+
+    {
+        std::vector<rotate_copy_large_item> input(7);
+        for (size_t i = 0; i < input.size(); ++i)
+            input[i].data[0] = static_cast<int32_t>(i + 1);
+
+        for (size_t mid : { size_t(0), size_t(2), size_t(3), size_t(7) }) {
+            std::vector<rotate_copy_large_item> exp(input.size());
+            std::ranges::rotate_copy(input, input.begin() + mid, exp.begin());
+
+            std::vector<rotate_copy_large_item> out(input.size());
+            auto res = raze::algorithm::rotate_copy(input, input.begin() + mid, out.begin());
+            RTTS_EXPECT(res.in == input.end());
+            RTTS_EXPECT(res.out == out.end());
+            RTTS_EXPECT(out == exp);
+        }
+    }
+
+    {
+        std::vector<std::string> input{
+            "alpha", "beta", "gamma", "delta", "epsilon"
+        };
+        const auto original = input;
+
+        std::vector<std::string> exp(input.size());
+        std::ranges::rotate_copy(input, input.begin() + 2, exp.begin());
+
+        std::vector<std::string> out(input.size());
+        auto res = raze::algorithm::rotate_copy(input, input.begin() + 2, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+        RTTS_EXPECT(input == original);
+    }
+
+    {
+        std::vector<int> input{ 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+        std::vector<double> exp(input.size());
+        std::ranges::rotate_copy(input, input.begin() + 4, exp.begin());
+
+        std::vector<double> out(input.size());
+        auto res = raze::algorithm::rotate_copy(input, input.begin() + 4, out.begin());
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+    }
+};
+
+RTTS_CASE("raze::algorithm::rotate_copy bidirectional") {
+    std::list<int> input{ 1, 2, 3, 4, 5 };
+
+    for (size_t mid : { size_t(0), size_t(2), size_t(3), size_t(5) }) {
+        std::vector<int> exp;
+        std::ranges::rotate_copy(
+            input, std::ranges::next(input.begin(), static_cast<std::ptrdiff_t>(mid)), std::back_inserter(exp));
+
+        std::vector<int> out;
+        auto res = raze::algorithm::rotate_copy(
+            input, std::ranges::next(input.begin(), static_cast<std::ptrdiff_t>(mid)), std::back_inserter(out));
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(out == exp);
+
+        out.clear();
+        auto scalar_res = raze::algorithm::rotate_copy[raze::options::fscalar](
+            input.begin(),
+            std::ranges::next(input.begin(), static_cast<std::ptrdiff_t>(mid)),
+            input.end(),
+            std::back_inserter(out));
+        RTTS_EXPECT(scalar_res.in == input.end());
+        RTTS_EXPECT(out == exp);
+    }
+};
+
+RTTS_CASE("raze::algorithm::rotate_copy forward") {
+    std::forward_list<int> input{ 1, 2, 3, 4, 5 };
+
+    for (size_t mid : { size_t(0), size_t(1), size_t(2), size_t(4), size_t(5) }) {
+        std::vector<int> exp;
+        std::ranges::rotate_copy(
+            input, std::ranges::next(input.begin(), static_cast<std::ptrdiff_t>(mid)), std::back_inserter(exp));
+
+        std::vector<int> out;
+        auto res = raze::algorithm::rotate_copy(
+            input, std::ranges::next(input.begin(), static_cast<std::ptrdiff_t>(mid)), std::back_inserter(out));
+        RTTS_EXPECT(res.in == input.end());
+        RTTS_EXPECT(out == exp);
+
+        std::vector<int> out_vec(5);
+        auto scalar_res = raze::algorithm::rotate_copy[raze::options::fscalar](
+            input.begin(),
+            std::ranges::next(input.begin(), static_cast<std::ptrdiff_t>(mid)),
+            input.end(),
+            out_vec.begin());
+        RTTS_EXPECT(scalar_res.in == input.end());
+        RTTS_EXPECT(scalar_res.out == out_vec.end());
+        RTTS_EXPECT(out_vec == exp);
+    }
+};
+
+RTTS_CASE("raze::algorithm::rotate_copy sentinel") {
+    {
+        std::array<int, 5> input{ 1, 2, 3, 4, 5 };
+        std::array<int, 3> out{};
+
+        auto first = std::counted_iterator(input.begin() + 1, 3);
+        auto mid = std::counted_iterator(input.begin() + 2, 2);
+        auto res = raze::algorithm::rotate_copy(first, mid, std::default_sentinel, out.begin());
+
+        RTTS_EXPECT(res.in == std::default_sentinel);
+        RTTS_EXPECT(res.in.base() == input.begin() + 4);
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT((out == std::array<int, 3>{ 3, 4, 2 }));
+    }
+
+    {
+        std::vector<uint8_t> input(1600);
+        for (size_t i = 0; i < input.size(); ++i)
+            input[i] = static_cast<uint8_t>(i & 0xFF);
+
+        std::vector<uint8_t> exp(input.size());
+        std::ranges::rotate_copy(input, input.begin() + 525, exp.begin());
+
+        std::vector<uint8_t> out(input.size());
+        auto first = std::counted_iterator(input.begin(), static_cast<std::ptrdiff_t>(input.size()));
+        auto mid = std::counted_iterator(input.begin() + 525, static_cast<std::ptrdiff_t>(input.size() - 525));
+        auto res = raze::algorithm::rotate_copy(first, mid, std::default_sentinel, out.begin());
+
+        RTTS_EXPECT(res.in == std::default_sentinel);
+        RTTS_EXPECT(res.in.base() == input.end());
+        RTTS_EXPECT(res.out == out.end());
+        RTTS_EXPECT(out == exp);
+    }
+};
