@@ -1,111 +1,107 @@
-#pragma once 
+#pragma once
 
 #include <raze/vx/Algorithm.h>
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/algorithm/DataSource.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _All_of : _Traits_, dispatchable<_All_of<_Traits_>> {
-	template <source _Source_, class Predicate, class Projection>
-	struct __kernel {
-		using source_type = std::remove_cvref_t<_Source_>;
-		using iterator_type = typename source_type::iterator_type;
+template <class Traits>
+struct all_of_t : Traits, dispatchable<all_of_t<Traits>> {
+    template <source Source, class Predicate, class Projection>
+    struct kernel {
+        using source_type = std::remove_cvref_t<Source>;
+        using iterator_type = typename source_type::iterator_type;
 
-		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
-		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
+        using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+        using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
-		using vector_value_type = std::iter_value_t<iterator_type>;
+        using vector_value_type = std::iter_value_t<unchecked_iterator_type>;
 
-		_Source_ _source;
+        source_type _source;
+        unchecked_iterator_type _iterator;
+        unchecked_sentinel_type _sentinel;
+        raze_no_unique_address Predicate _predicate;
+        raze_no_unique_address Projection _proj;
+        bool _result = true;
 
-		unchecked_iterator_type _iterator;
-		unchecked_sentinel_type _sentinel;
+        static consteval bool vectorizable() noexcept {
+            return contiguous_source<source_type> && !traits::is_iterator_volatile_v<iterator_type>
+                && vectorizable_unary_predicate<Predicate, unchecked_iterator_type>
+                && vectorizable_projection<Projection, unchecked_iterator_type>;
+        }
 
-		Predicate _predicate;
-		Projection _proj;
+        constexpr explicit kernel(Source&& source, Predicate pred, Projection proj)
+            : _source(std::forward<Source>(source)),
+              _iterator(_source.ubegin()), _sentinel(_source.uend()),
+              _predicate(std::move(pred)), _proj(std::move(proj))
+        {}
 
-		bool _result = true;
+        raze_always_inline constexpr void operator()() {
+            raze_disable_unrolling
+            for (; _iterator != _sentinel; ++_iterator) {
+                if (!_predicate(_proj(*_iterator))) {
+                    _result = false;
+                    return;
+                }
+            }
+        }
 
-		constexpr explicit __kernel(_Source_&& __src, Predicate __pred, Projection __proj) noexcept :
-			_source(std::forward<_Source_>(__src)), _predicate(__pred), _proj(__proj)
-		{
-			_iterator = _source.ubegin();
-			_sentinel = _source.uend();
-		}
+        template <vectorizable_tag Tag>
+        raze_always_inline bool operator()(Tag, sizetype aligned_size) {
+            auto* ptr = std::to_address(_iterator);
+            const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
-		raze_always_inline constexpr void operator()() noexcept {
-			raze_disable_unrolling
-			for (; _iterator != _sentinel; ++_iterator) {
-				if (!_predicate(_proj(*_iterator))) {
-					_result = false;
-					return;
-				}
-			}
-		}
+            raze_disable_unrolling do {
+                if (!vx::all_of(_predicate(_proj(vx::load<Tag>(ptr))))) {
+                    _result = false;
+                    return false;
+                }
 
-		template <vectorizable_tag _Tag_>
-		raze_always_inline bool operator()(_Tag_, sizetype __aligned_size) noexcept {
-			auto* __ptr = std::to_address(_iterator);
-			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
+                advance_bytes(ptr, sizeof(Tag));
+            } while (ptr != aligned_end);
 
-			raze_disable_unrolling
-			do {
-				if (!vx::all_of(_predicate(_proj(vx::load<_Tag_>(__ptr)))))
-					return _result = false;
+            source_type::from_ptr(_iterator, ptr);
+            return true;
+        }
 
-				__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (__ptr != __aligned_end);
+        template <vectorizable_tag Tag>
+        raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+            const auto mask = _predicate(_proj(vx::load<Tag>[ignore](std::to_address(_iterator))));
+            _result = vx::all_of[ignore](mask);
+        }
 
-			source_type::from_ptr(_iterator, __ptr);
-			return true;
-		}
+        raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
+            requires(constexpr_sized_source<source_type>)
+        {
+            return source_type::static_size();
+        }
 
-		template <vectorizable_tag _Tag_>
-		raze_always_inline void operator()(_Tag_, tail_mask_type auto const& __ignore) noexcept {
-			const auto __mask = _predicate(_proj(raze::vx::load<_Tag_>[__ignore](std::to_address(_iterator))));
-			_result = vx::all_of[__ignore](__mask);
-		}
+        raze_nodiscard constexpr raze_always_inline auto size() const {
+            return _source.size();
+        }
 
-		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() noexcept requires(constexpr_sized_source<_Source_>) {
-			return _Source_::static_size();
-		}
+        raze_nodiscard constexpr raze_always_inline bool result() const {
+            return _result;
+        }
+    };
 
-		raze_nodiscard constexpr raze_always_inline auto size() const noexcept {
-			return _source.size();
-		}
+    template <std::input_iterator It, std::sentinel_for<It> Sent, class Predicate, class Projection = std::identity>
+    raze_nodiscard constexpr raze_always_inline bool operator()(It first, Sent last, Predicate pred, Projection proj = {}) const
+        requires(std::indirect_unary_predicate<Predicate, std::projected<It, Projection>>)
+    {
+        return this->dispatch(get_source(std::move(first), std::move(last)), traits::fwd_fn(pred), traits::fwd_fn(proj));
+    }
 
-		raze_nodiscard constexpr raze_always_inline bool result() const noexcept {
-			return _result;
-		}
-
-		static consteval bool vectorizable() noexcept {
-			return std::contiguous_iterator<unchecked_iterator_type> &&
-				vectorizable_unary_predicate<Predicate, unchecked_iterator_type> &&
-				vectorizable_projection<Projection, unchecked_iterator_type>;
-		}
-	};
-
-	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class Predicate, class Projection = std::identity>
-	raze_nodiscard constexpr raze_always_inline bool operator()(_Iterator_ __first,
-		_Sentinel_ __last, Predicate __pred, Projection __proj = {}) const noexcept
-			requires(std::indirect_unary_predicate<Predicate, std::projected<_Iterator_, Projection>>)
-	{
-		return this->dispatch(get_source(std::move(__first), std::move(__last)),
-			traits::fwd_fn(__pred), traits::fwd_fn(__proj));
-	}
-
-	template <std::ranges::input_range Range, class Predicate, class Projection = std::identity>
-	constexpr raze_always_inline bool operator()(Range&& __r, Predicate __pred, Projection __proj = {}) const noexcept
-		requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>)
-	{
-		return this->dispatch(get_source(std::forward<Range>(__r)), 
-			traits::fwd_fn(__pred), traits::fwd_fn(__proj));
-	}
+    template <std::ranges::input_range R, class Predicate, class Projection = std::identity>
+    raze_nodiscard constexpr raze_always_inline bool operator()(R&& r, Predicate pred, Projection proj = {}) const
+        requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<R>, Projection>>)
+    {
+        return this->dispatch(get_source(std::forward<R>(r)), traits::fwd_fn(pred), traits::fwd_fn(proj));
+    }
 };
 
-constexpr inline auto all_of = raze::options::function_with_traits<_All_of>[options::unroll<4>];
+constexpr inline auto all_of = options::function_with_traits<all_of_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

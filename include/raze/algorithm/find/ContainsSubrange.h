@@ -12,7 +12,7 @@ struct _Contains_subrange : _Traits_ {
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Iterator1_ __first1,
 		_Sentinel1_ __last1, _Iterator2_ __first2, _Sentinel2_ __last2,
-		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const
 			requires(std::indirectly_comparable<_Iterator1_, _Sentinel1_, Predicate, _Projection1_, _Projection2_>)
 	{
 		auto __end = __last1;
@@ -25,7 +25,7 @@ struct _Contains_subrange : _Traits_ {
 		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
 		class _Projection2_ = std::identity>
 	constexpr raze_always_inline bool operator()(_Range1_&& __r1, _Range2_&& __r2,
-		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
+		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const
 			requires(std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,
 				std::ranges::iterator_t<_Range2_>, Predicate, _Projection1_, _Projection2_>)
 	{
