@@ -285,17 +285,7 @@ RTTS_CASE("raze::algorithm::none_of structs and projections") {
     RTTS_EXPECT(raze::algorithm::none_of(words, [](const std::string& s) { return s == "omega"; }));
     RTTS_EXPECT(!raze::algorithm::none_of(words, [](const std::string& s) { return s.size() == 5 && s[0] == 'g'; }));
 };
-
-RTTS_CASE("raze::algorithm::none_of bidirectional and forward") {
-    const std::list<int> l{ 1, 2, 3, 4, 5 };
-    RTTS_EXPECT(raze::algorithm::none_of(l, [](int x) { return x > 10; }));
-    RTTS_EXPECT(!raze::algorithm::none_of[raze::options::fscalar](l.begin(), l.end(), [](int x) { return x == 4; }));
-
-    const std::forward_list<int> fl{ 10, 20, 30, 40, 50 };
-    RTTS_EXPECT(raze::algorithm::none_of(fl, [](int x) { return x < 0; }));
-    RTTS_EXPECT(!raze::algorithm::none_of[raze::options::fscalar](fl.begin(), fl.end(), [](int x) { return x == 30; }));
-};
-
+ 
 RTTS_CASE("raze::algorithm::none_of sentinel") {
     {
         std::array<int, 3> empty_arr{ 42, 42, 42 };

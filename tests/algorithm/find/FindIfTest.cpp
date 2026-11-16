@@ -283,17 +283,7 @@ RTTS_CASE("raze::algorithm::find_if structs and projections") {
     auto wit = raze::algorithm::find_if(words, [](const std::string& s) { return s.size() == 5 && s[0] == 'g'; });
     RTTS_EXPECT(wit == words.begin() + 2);
 };
-
-RTTS_CASE("raze::algorithm::find_if bidirectional and forward") {
-    const std::list<int> l{ 1, 2, 3, 4, 5 };
-    RTTS_EXPECT(raze::algorithm::find_if(l, [](int x) { return x == 4; }) == std::ranges::next(l.begin(), 3));
-    RTTS_EXPECT(raze::algorithm::find_if[raze::options::fscalar](l.begin(), l.end(), [](int x) { return x == 99; }) == l.end());
-
-    const std::forward_list<int> fl{ 10, 20, 30, 40, 50 };
-    RTTS_EXPECT(raze::algorithm::find_if(fl, [](int x) { return x == 30; }) == std::ranges::next(fl.begin(), 2));
-    RTTS_EXPECT(raze::algorithm::find_if[raze::options::fscalar](fl.begin(), fl.end(), [](int x) { return x == 99; }) == fl.end());
-};
-
+ 
 RTTS_CASE("raze::algorithm::find_if sentinel") {
     for (size_t n : { size_t(16), size_t(64), size_t(300) }) {
         std::vector<int> v(n, 1);

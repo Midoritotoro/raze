@@ -15,10 +15,9 @@ struct contains_t : Traits {
     }
 
     template <std::ranges::input_range R, class T, class Projection = std::identity>
-    raze_nodiscard constexpr raze_always_inline bool
-    operator()(R&& r, const T& value, Projection proj = {}) const
-        requires(std::indirect_binary_predicate<
-            std::ranges::equal_to, std::projected<std::ranges::iterator_t<R>, Projection>, const T*>)
+    raze_nodiscard constexpr raze_always_inline bool operator()(R&& r, const T& value, 
+        Projection proj = {}) const requires(std::indirect_binary_predicate<std::ranges::equal_to,
+            std::projected<std::ranges::iterator_t<R>, Projection>, const T*>)
     {
         return any_of[Traits::traits()](std::forward<R>(r), equal_to(value), traits::fwd_fn(proj));
     }

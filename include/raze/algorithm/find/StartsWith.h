@@ -1,44 +1,49 @@
-#pragma once 
+#pragma once
 
 #include <raze/algorithm/find/Mismatch.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Starts_with : _Traits_ {
-	template <std::input_iterator _Iterator1_, std::sentinel_for<_Iterator1_> _Sentinel1_,
-		std::input_iterator _Iterator2_, std::sentinel_for<_Iterator2_> _Sentinel2_,
-		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
-		class _Projection2_ = std::identity>
-	constexpr raze_always_inline bool operator()(_Iterator1_ __first1,
-		_Sentinel1_ __sent1, _Iterator2_ __first2, _Sentinel2_ __sent2,
-		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires (std::forward_iterator<_Iterator1_> || std::sized_sentinel_for<_Sentinel1_, _Iterator1_>) &&
-                 (std::forward_iterator<_Iterator2_> || std::sized_sentinel_for<_Sentinel2_, _Iterator2_>) &&
-                 std::indirectly_comparable<_Iterator1_, _Iterator2_, Predicate, _Projection1_, _Projection2_>
-	{
-		return algorithm::mismatch[_Traits_::traits()](std::move(__first1), std::move(__sent1), 
-			std::move(__first2), __sent2, traits::fwd_fn(__pred), traits::fwd_fn(__proj1), 
-			traits::fwd_fn(__proj2)).in2 == __sent2;
-	}
+template <class Traits>
+struct starts_with_t : Traits {
+    template <std::input_iterator It1, std::sentinel_for<It1> Sent1,
+        std::input_iterator It2, std::sentinel_for<It2> Sent2,
+        class Predicate = std::equal_to<>, class Proj1 = std::identity, class Proj2 = std::identity>
+    raze_nodiscard constexpr raze_always_inline bool operator()(
+        It1 first1, Sent1 sent1, It2 first2, Sent2 sent2,
+        Predicate pred = {}, Proj1 proj1 = {}, Proj2 proj2 = {}) const
+            requires (std::forward_iterator<It1> || std::sized_sentinel_for<Sent1, It1>) &&
+                (std::forward_iterator<It2> || std::sized_sentinel_for<Sent2, It2>) &&
+                std::indirectly_comparable<It1, It2, Predicate, Proj1, Proj2>
+    {
+        if constexpr (std::sized_sentinel_for<Sent1, It1> && std::sized_sentinel_for<Sent2, It2>) {
+            if (std::ranges::distance(first1, sent1) < std::ranges::distance(first2, sent2)) return false;
+        }
 
-	template <std::ranges::input_range _Range1_, std::ranges::input_range _Range2_, 
-		class Predicate = std::equal_to<>, class _Projection1_ = std::identity,
-		class _Projection2_ = std::identity>
-	constexpr raze_always_inline bool operator()(_Range1_&& __r1, _Range2_&& __r2, 
-		Predicate __pred = {}, _Projection1_ __proj1 = {}, _Projection2_ __proj2 = {}) const noexcept
-			requires (std::ranges::forward_range<_Range1_> || std::ranges::sized_range<_Range1_>) &&
-				(std::ranges::forward_range<_Range2_> || std::ranges::sized_range<_Range2_>) &&
-				std::indirectly_comparable<std::ranges::iterator_t<_Range1_>,  
-				std::ranges::iterator_t<_Range2_>, Predicate, _Projection1_, _Projection2_>
-	{
-		auto __end = std::ranges::end(__r2);
-		return algorithm::mismatch[_Traits_::traits()](std::forward<_Range1_>(__r1),
-			std::forward<_Range2_>(__r2), traits::fwd_fn(__pred), traits::fwd_fn(__proj1),
-			traits::fwd_fn(__proj2)).in2 == __r2;
-	}
+        return algorithm::mismatch[Traits::traits()](std::move(first1), std::move(sent1),
+            std::move(first2), sent2, traits::fwd_fn(pred), traits::fwd_fn(proj1), 
+            traits::fwd_fn(proj2)).in2 == sent2;
+    }
+
+    template <std::ranges::input_range R1, std::ranges::input_range R2,
+        class Predicate = std::equal_to<>, class Proj1 = std::identity, class Proj2 = std::identity>
+    raze_nodiscard constexpr raze_always_inline bool operator()(R1&& r1, R2&& r2, Predicate pred = {},
+        Proj1 proj1 = {}, Proj2 proj2 = {}) const requires (std::ranges::forward_range<R1> || std::ranges::sized_range<R1>) 
+            && (std::ranges::forward_range<R2> || std::ranges::sized_range<R2>) &&
+                std::indirectly_comparable<std::ranges::iterator_t<R1>,
+                    std::ranges::iterator_t<R2>, Predicate, Proj1, Proj2>
+    {
+        if constexpr (std::ranges::sized_range<R1> && std::ranges::sized_range<R2>) {
+            if (std::ranges::size(r1) < std::ranges::size(r2)) return false;
+        }
+
+        auto sent2 = std::ranges::end(r2);
+
+        return algorithm::mismatch[Traits::traits()](r1, r2,
+            traits::fwd_fn(pred), traits::fwd_fn(proj1), traits::fwd_fn(proj2)).in2 == sent2;
+    }
 };
 
-constexpr inline auto starts_with = raze::options::function_with_traits<_Starts_with>;
+constexpr inline auto starts_with = options::function_with_traits<starts_with_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raze/algorithm/count/CountIf.h>
+#include <raze/algorithm/find/CountIf.h>
 #include <src/raze/algorithm/EqualTo.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

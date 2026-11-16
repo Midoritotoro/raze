@@ -1,281 +1,223 @@
-#pragma once 
+#pragma once
 
-#include <raze/algorithm/find/Find.h>
+#include <raze/vx/Algorithm.h>
+#include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/algorithm/DataSource.h>
+#include <raze/math/Math.h>
+
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Search_n : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class _Size_,
-		class _ValueType_, class Predicate, class Projection>
-	struct __impl {
-		_Iterator_ _iterator;
-		_Sentinel_ _sentinel;
-		_Size_ _count;
-		_Size_ _current_count;
-		_ValueType_ _value;
-		Predicate _predicate;
-		Projection _proj;
-		_Iterator_ _candidate;
+template <class Traits>
+struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
+    template <source Source, class SizeType, class Value, class Predicate, class Projection>
+    struct kernel {
+        using source_type = std::remove_cvref_t<Source>;
+        using iterator_type = typename source_type::iterator_type;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, _Size_ __count,
-			const _ValueType_& __value, Predicate __pred, Projection __proj) noexcept: 
-			_iterator(__it), _sentinel(__sent), _count(__count), _current_count(0),
-			_value(__value), _predicate(__pred), _proj(__proj), _candidate(__it)
-		{}
+        using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+        using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
-		template <class _Tag_>
-		raze_always_inline constexpr bool operator()(_Tag_) noexcept {
-			if (_count <= 0) return true;
-			if (_iterator == _sentinel) return true;
+        using vector_value_type = std::iter_value_t<unchecked_iterator_type>;
 
-			if (_predicate(_proj(*_iterator), _value)) {
-				if (_current_count == 0) _candidate = _iterator;
+        static consteval bool vectorizable() noexcept {
+            return std::same_as<std::remove_cvref_t<Value>, vector_value_type> &&
+                contiguous_source<source_type> &&
+                !traits::is_iterator_volatile_v<iterator_type> &&
+                vectorizable_binary_predicate<Predicate, unchecked_iterator_type> &&
+                vectorizable_projection<Projection, unchecked_iterator_type>;
+        }
 
-				++_current_count;
-				++_iterator;
+        source_type _source;
+        unchecked_iterator_type _iterator;
+        unchecked_sentinel_type _sentinel;
+        SizeType _count;
+        SizeType _current_count = 0;
+        const Value& _value;
+        raze_no_unique_address Predicate _predicate;
+        raze_no_unique_address Projection _proj;
+        unchecked_iterator_type _candidate;
+        unchecked_iterator_type _result_end;
 
-				return _current_count == _count;
-			}
+        constexpr explicit kernel(Source&& source, SizeType count, const Value& value,
+            Predicate pred, Projection proj)
+            : _source(std::forward<Source>(source)),
+              _iterator(_source.ubegin()),
+              _sentinel(_source.uend()),
+              _count(count),
+              _value(value),
+              _predicate(std::move(pred)),
+              _proj(std::move(proj)),
+              _candidate(_iterator),
+              _result_end(_iterator)
+        {}
 
-			_current_count = 0;
-			++_iterator;
-			return false;
-		}
+        constexpr bool exit() const noexcept {
+            if (_count <= 0)
+                return true;
 
-		raze_always_inline constexpr std::ranges::subrange<_Iterator_> result() const noexcept {
-			if (_count <= 0) return std::ranges::subrange(_candidate, _candidate);
-			if (_current_count >= _count) return std::ranges::subrange(_candidate, _iterator);
+            if constexpr (contiguous_source<source_type>)
+                return (_source.size() / sizeof(vector_value_type)) < static_cast<sizetype>(_count);
 
-			return std::ranges::subrange(_iterator, _iterator);
-		}
-	};
+            return false;
+        }
 
-	template <class _Tag_>
-	struct __vectorized_search_n {
-		template <class _Iterator_, class _Sentinel_, class _Value_, 
-			class _SizeType_, class Predicate, class Projection>
-		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first, 
-			_Sentinel_ __sentinel, _SizeType_ __count, const _Value_& __v, Predicate __predicate, 
-			Projection __proj) const noexcept
-		{
-			if (__count <= 0)
-				return { __first, __first };
+        constexpr std::ranges::subrange<iterator_type> default_result() const {
+            if (_count <= 0)
+                return { _source.wrap(_iterator), _source.wrap(_iterator) };
 
-			for (; __first != __sentinel; ++__first) {
-				if (__predicate(__proj(*__first), __v)) {
-					auto __start = __first;
-					auto __n = _SizeType_(1);
+            auto end = std::ranges::next(_iterator, _sentinel);
+            return { _source.wrap(end), _source.wrap(end) };
+        }
 
-					for (;;) {
-						if (__n++ == __count) return { __start, std::ranges::next(__first) };
-						if (++__first == __sentinel) return { __first, __first };
-						if (!__predicate(__proj(*__first), __v)) break;
-					}
-				}
-			}
+        raze_always_inline constexpr void operator()() {
+            auto it = _iterator;
+            auto cand = _candidate;
+            auto cur = _current_count;
 
-			return { __first, __first };
-		}
+            raze_disable_unrolling
+            for (; it != _sentinel; ++it) {
+                if (_predicate(_proj(*it), _value)) {
+                    if (cur == 0) cand = it;
 
-		template <class _Iterator_, class _Sentinel_, class _SizeType_,
-			class _ValueType_, class Predicate, class Projection>
-		raze_nodiscard raze_always_inline std::ranges::subrange<_Iterator_>
-			operator()(sizetype __aligned_size, sizetype __tail_size, _Iterator_ __first,
-				_Sentinel_ __sentinel, _SizeType_ __count, const _ValueType_& __v,
-				Predicate __predicate, Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr = std::to_address(__first);
-			auto* __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
+                    if (++cur == _count) {
+                        _candidate = cand;
+                        _result_end = std::ranges::next(it);
+                        return;
+                    }
+                }
+                else {
+                    cur = 0;
+                }
+            }
 
-			auto __current_count = _SizeType_(0);
+            _candidate = it;
+            _result_end = it;
+        }
 
-			do {
-				auto __mask = __predicate(__proj(vx::load<_Tag_>(__ptr)), __v);
+        template <vectorizable_tag Tag>
+        raze_always_inline bool operator()(Tag, sizetype aligned_size) {
+            auto* ptr = std::to_address(_iterator);
+            const auto* const aligned_end = bytes_pointer_offset(ptr, aligned_size);
+            auto cur = _current_count; // Trailing match streak immediately preceding `ptr` (0 <= cur < _count)
 
-				if (vx::none_of(__mask)) {
-					__current_count = 0;
-					__advance_bytes(__ptr, sizeof(_Tag_));
-					continue;
-				}
+            raze_disable_unrolling do {
+                const auto mask = _predicate(_proj(vx::load<Tag>(ptr)), _value);
 
-				i32 __from = -1;
+                if (vx::none_of(mask)) {
+                    cur = 0;
+                    advance_bytes(ptr, sizeof(Tag));
+                    continue;
+                }
 
-				while (true) {
-					auto __begin = vx::find_next_set[vx::not_null](__mask, __from);
+                const auto not_mask = !mask;
 
-					if (__begin == _Tag_::size()) break;
-					if (__current_count != 0 && __begin != 0) __current_count = 0;
+                if (vx::none_of(not_mask)) {
+                    // Combined streak starts at `ptr - cur`
+                    if (Tag::size() >= _count - cur) {
+                        source_type::from_ptr(_candidate, ptr - cur);
+                        source_type::from_ptr(_result_end, ptr - cur + _count);
+                        return false;
+                    }
 
-					const auto __end = std::min<i32>(__begin + (__count - __current_count), _Tag_::size());
+                    cur += Tag::size();
+                    advance_bytes(ptr, sizeof(Tag));
+                    continue;
+                }
 
-					if (vx::is_contiguous(__mask, __begin, __end)) {
-						__current_count += (__end - __begin);
+                i32 pos = -1;
 
-						if (__current_count >= __count) {
-							auto* __result = (__current_count == (__end - __begin)) ? (__ptr + __begin) : (__ptr + __end - __count);
+                if (cur > 0) {
+                    // `vx::none_of(not_mask)` above was false, so `not_mask` has >= 1 set bit -> `[vx::not_null]` is safe.
+                    // `first_zero` is both the index of the first 0 and the count of leading 1s: [0, first_zero).
+                    const auto first_zero = vx::find_first_set[vx::not_null](not_mask);
 
-							__seek_iter(__first, __result);
-							__seek_iter(__sentinel, __result + __count);
+                    if (static_cast<SizeType>(first_zero) >= _count - cur) {
+                        source_type::from_ptr(_candidate, ptr - cur);
+                        source_type::from_ptr(_result_end, ptr - cur + _count);
+                        return false;
+                    }
 
-							return { __first, __sentinel };
-						}
+                    cur = 0;
+                    pos = first_zero;
+                }
 
-						goto __next;
-					}
+                for (;;) {
+                    const auto begin = vx::find_next_set(mask, pos);
+                    if (begin <= pos || begin >= Tag::size())
+                        break;
 
-					__current_count = 0;
-					__from = __begin;
-				}
+                    auto end = vx::find_next_set(not_mask, begin);
+                    if (end <= begin || end > Tag::size())
+                        end = Tag::size();
 
-				__next:
-					__advance_bytes(__ptr, sizeof(_Tag_));
-			} while (__ptr != __aligned_end);
+                    const auto run = static_cast<SizeType>(end - begin);
 
-			__seek_iter(__first, __ptr - __current_count);
-			return (*this)(__first, __sentinel, __count, __v, __predicate, __proj);
-		}
-	};
+                    if (run >= _count) {
+                        source_type::from_ptr(_candidate, ptr + begin);
+                        source_type::from_ptr(_result_end, ptr + begin + _count);
+                        return false;
+                    }
 
-	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_,
-		class _Value_, class Predicate = std::equal_to<>, class Projection = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> operator()(_Iterator_ __first,
-		_Sentinel_ __last, std::iter_difference_t<_Iterator_> __count, const _Value_& __v,
-		Predicate __pred = {}, Projection __proj = {}) const noexcept
-            requires (std::indirectly_comparable<_Iterator_, const _Value_*, Predicate, Projection>)
-	{
-		if (raze_unlikely(__count <= 0)) return { __first, __first };
-		else if (__count == 1) {
-			auto __r = algorithm::find_if(std::move(__first), __last, [&__v](auto __x) raze_always_inline_lambda{
-				return __x == __v; }, traits::fwd_fn(__proj));
+                    if (end == Tag::size()) {
+                        cur = run;
+                        break;
+                    }
 
-			return { __r, __r != __last ? std::ranges::next(__r) : __r };
-		}
-		else {
-			auto __r = __search_n_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
-				traits::__usent<_Iterator_>(std::move(__last)), __count, __v,
-				traits::fwd_fn(__pred), traits::fwd_fn(__proj));
+                    pos = end;
+                }
 
-			__seek_iter(__first, __r.begin());
-			__seek_iter(__last, __r.end());
+                advance_bytes(ptr, sizeof(Tag));
+            } while (ptr != aligned_end);
 
-			return { __first, __last };
-		}
-	}
+            _current_count = cur;
+            source_type::from_ptr(_iterator, ptr);
 
-	template <std::ranges::input_range Range, class _Value_,
-		class Predicate = std::equal_to<>, class Projection = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(
-		Range&& __range, std::ranges::range_difference_t<Range> __count, 
-		const _Value_& __v, Predicate __pred = {}, Projection __proj = {}) const noexcept
-			requires(!constexpr_sized_range<Range> && std::indirectly_comparable<
-				std::ranges::iterator_t<Range>, const _Value_*, Predicate, Projection>)
-	{
-		auto __first = std::ranges::begin(__range);
-		auto __last = std::ranges::end(__range);
+            if (cur > 0) source_type::from_ptr(_candidate, ptr - cur);
 
-		if (raze_unlikely(__count <= 0)) return { __first, __first };
-		else if (__count == 1) {
-			auto __r = algorithm::find_if(std::move(__first), __last, [&__v] (auto __x) raze_always_inline_lambda {
-				return __x == __v; }, traits::fwd_fn(__proj));
+            return true;
+        }
 
-			return { __r, __r != __last ? std::ranges::next(__r) : __r };
-		}
-		else {
-			auto __r = __search_n_unchecked(traits::__r_uiter<Range>(std::move(__first)),
-				traits::__r_usent<Range>(std::move(__last)),
-				__count, __v, traits::fwd_fn(__pred),
-				traits::fwd_fn(__proj));
+        constexpr raze_always_inline std::ranges::subrange<iterator_type> result() const {
+            return { _source.wrap(_candidate), _source.wrap(_result_end) };
+        }
 
-			__seek_iter(__first, __r.begin());
-			__seek_iter(__last, __r.end());
+        raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
+            requires(constexpr_sized_source<source_type>)
+        {
+            return source_type::static_size();
+        }
 
-			return { __first, __last };
-		}
-	}
+        raze_nodiscard constexpr raze_always_inline auto size() const {
+            return _source.size();
+        }
+    };
 
-	template <std::ranges::input_range Range, class _Value_,
-		class Predicate = std::equal_to<>, class Projection = std::identity>
-	constexpr raze_always_inline std::ranges::borrowed_subrange_t<Range> operator()(
-		Range&& __range, std::ranges::range_difference_t<Range> __count,
-		const _Value_& __v, Predicate __pred = {}, Projection __proj = {}) const noexcept
-			requires(constexpr_sized_range<Range> && std::indirectly_comparable<
-				std::ranges::iterator_t<Range>, const _Value_*, Predicate, Projection>)
-	{
-		auto __first = std::ranges::begin(__range);
-		auto __last = std::ranges::end(__range);
+    template <std::forward_iterator It, std::sentinel_for<It> Sent,
+        class T = std::iter_value_t<It>, class Predicate = std::equal_to<>, class Projection = std::identity>
+    raze_nodiscard constexpr raze_always_inline std::ranges::subrange<It>
+        operator()(It first, Sent sent, std::iter_difference_t<It> count, const T& value,
+            Predicate pred = {}, Projection proj = {}) const requires (std::indirectly_comparable<
+                It, const T*, Predicate, Projection>)
+    {
+        return this->dispatch(get_source(std::move(first), std::move(sent)),
+            count, value, traits::fwd_fn(pred), traits::fwd_fn(proj));
+    }
 
-		if (raze_unlikely(__count <= 0)) return { __first, __first };
-		else if (__count == 1) {
-			auto __r = algorithm::find_if(std::forward<Range>(__range), [&__v](auto __x) raze_always_inline_lambda{
-				return __x == __v; }, traits::fwd_fn(__proj));
-
-			return { __r, __r != __last ? std::ranges::next(__r) : __r };
-		}
-		else {
-			auto __r = __search_n_unchecked(traits::__r_uiter<Range>(std::move(__first)),
-				traits::__r_usent<Range>(std::move(__last)),
-				__count, __v, traits::fwd_fn(__pred), traits::fwd_fn(__proj),
-				std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
-
-			__seek_iter(__first, __r.begin());
-			__seek_iter(__last, __r.end());
-
-			return { __first, __last };
-		}
-	}
-private:
-	template <class _Iterator_, class _Sentinel_, class _ValueType_, 
-		class _SizeType_, class Predicate, class Projection>
-	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> __search_n_unchecked(_Iterator_ __first, 
-		_Sentinel_ __last, _SizeType_ __count, const _ValueType_& __v, Predicate __pred,
-		Projection __proj) const noexcept
-	{
-		__verify_range(__first, __last);
-		
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_> 
-			&& vectorizable_binary_predicate<Predicate, _Iterator_> &&
-			vectorizable_projection<Projection, _Iterator_>)
-		{
-			if not consteval {
-				const auto __size = algorithm::distance(__first, __last);
-				if (raze_unlikely(__size < __count)) return { __last, __last };
-				return vx::__dispatch_sized_impl<__vectorized_search_n, _Value_, std::ranges::subrange<_Iterator_>>(
-					__size * sizeof(_Value_), __first, __last, __count, __v, __pred, __proj);
-			}
-		}
-		
-		return options::_unroller_t<decltype(this->traits()), vx::scalar_tag>(__impl(__first, __last, __count, __v, __pred, __proj));
-	}
-
-	template <class _Iterator_, class _Sentinel_, class _ValueType_,
-		class _SizeType_, class Predicate, class Projection, sizetype _Size_>
-	raze_nodiscard constexpr raze_always_inline std::ranges::subrange<_Iterator_> __search_n_unchecked(_Iterator_ __first,
-		_Sentinel_ __last, _SizeType_ __count, const _ValueType_& __v, Predicate __pred,
-		Projection __proj, std::integral_constant<sizetype, _Size_>) const noexcept
-	{
-		__verify_range(__first, __last);
-
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
-
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_binary_predicate<Predicate, _Iterator_>
-			&& vectorizable_projection<Projection, _Iterator_>)
-		{
-			if not consteval {
-				return vx::__dispatch_sized_impl<__vectorized_search_n, _Value_, std::ranges::subrange<_Iterator_>>(
-					std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{}, __first, __last, __count, __v, __pred, __proj);
-			}
-		}
-		
-		return options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __count, __v, __pred, __proj));
-	}
+    template <std::ranges::forward_range R, class T = std::ranges::range_value_t<R>, 
+        class Predicate = std::equal_to<>, class Projection = std::identity>
+    raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_subrange_t<R>
+        operator()(R&& r, std::ranges::range_difference_t<R> count, const T& value,
+            Predicate pred = {}, Projection proj = {}) const requires (std::indirectly_comparable<
+                std::ranges::iterator_t<R>, const T*, Predicate, Projection>)
+    {
+        return this->dispatch(get_source(std::forward<R>(r)),
+            count, value, traits::fwd_fn(pred), traits::fwd_fn(proj));
+    }
 };
 
-constexpr inline auto search_n = raze::options::function_with_traits<_Search_n>;
+constexpr inline auto search_n = options::function_with_traits<search_n_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

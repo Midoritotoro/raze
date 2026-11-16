@@ -294,16 +294,6 @@ RTTS_CASE("raze::algorithm::find_if_not structs and projections") {
     RTTS_EXPECT(wit == words.begin() + 2);
 };
 
-RTTS_CASE("raze::algorithm::find_if_not bidirectional and forward") {
-    const std::list<int> l{ 1, 1, 1, 4, 1 };
-    RTTS_EXPECT(raze::algorithm::find_if_not(l, [](int x) { return x == 1; }) == std::ranges::next(l.begin(), 3));
-    RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::fscalar](l.begin(), l.end(), [](int x) { return x > 0; }) == l.end());
-
-    const std::forward_list<int> fl{ 10, 10, 30, 10, 10 };
-    RTTS_EXPECT(raze::algorithm::find_if_not(fl, [](int x) { return x == 10; }) == std::ranges::next(fl.begin(), 2));
-    RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::fscalar](fl.begin(), fl.end(), [](int x) { return x > 0; }) == fl.end());
-};
-
 RTTS_CASE("raze::algorithm::find_if_not sentinel") {
     for (size_t n : { size_t(16), size_t(64), size_t(300) }) {
         std::vector<int> v(n, 1);

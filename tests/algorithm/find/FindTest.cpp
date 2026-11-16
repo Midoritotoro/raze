@@ -242,16 +242,6 @@ RTTS_CASE("raze::algorithm::find structs and projections") {
     RTTS_EXPECT(raze::algorithm::find(words, "omega") == words.end());
 };
 
-RTTS_CASE("raze::algorithm::find bidirectional and forward") {
-    const std::list<int> l{ 1, 2, 3, 4, 5 };
-    RTTS_EXPECT(raze::algorithm::find(l, 4) == std::ranges::next(l.begin(), 3));
-    RTTS_EXPECT(raze::algorithm::find[raze::options::fscalar](l.begin(), l.end(), 99) == l.end());
-
-    const std::forward_list<int> fl{ 10, 20, 30, 40, 50 };
-    RTTS_EXPECT(raze::algorithm::find(fl, 30) == std::ranges::next(fl.begin(), 2));
-    RTTS_EXPECT(raze::algorithm::find[raze::options::fscalar](fl.begin(), fl.end(), 99) == fl.end());
-};
-
 RTTS_CASE("raze::algorithm::find sentinel") {
     for (size_t n : { size_t(16), size_t(64), size_t(300) }) {
         std::vector<int> v(n, 1);

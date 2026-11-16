@@ -1,0 +1,279 @@
+#include <tests/rts/rts.h>
+#include <raze/algorithm/find/Equal.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <forward_list>
+#include <functional>
+#include <iterator>
+#include <list>
+#include <random>
+#include <ranges>
+#include <string>
+#include <vector>
+
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    struct equal_item {
+        int32_t key;
+        int32_t value;
+        bool operator==(const equal_item&) const = default;
+    };
+
+    template <class T>
+    void check_equal_variants(const std::vector<T>& a, const std::vector<T>& b) {
+        const bool exp = std::ranges::equal(a, b);
+
+        RTTS_EXPECT(raze::algorithm::equal(a, b) == exp);
+        RTTS_EXPECT(raze::algorithm::equal(a.begin(), a.end(), b.begin(), b.end()) == exp);
+        RTTS_EXPECT(raze::algorithm::equal[raze::options::fscalar](a, b) == exp);
+        RTTS_EXPECT(raze::algorithm::equal[raze::options::unroll<2>](a, b) == exp);
+        RTTS_EXPECT(raze::algorithm::equal[raze::options::fstatic](a, b) == exp);
+
+        auto lambda_pred = [](T x, T y) { return x == y; };
+        RTTS_EXPECT(raze::algorithm::equal(a, b, lambda_pred) == exp);
+        RTTS_EXPECT(raze::algorithm::equal[raze::options::fscalar](a, b, lambda_pred) == exp);
+    }
+
+    template <class T>
+    void equal_boundary_sweep() {
+        std::vector<size_t> sizes;
+        for (size_t n = 0; n <= 140; ++n)
+            sizes.push_back(n);
+        for (size_t n : { size_t(255), size_t(256), size_t(257), size_t(511), size_t(512), size_t(513), size_t(1024) })
+            sizes.push_back(n);
+
+        for (size_t n : sizes) {
+            std::vector<T> a(n);
+            for (size_t i = 0; i < n; ++i)
+                a[i] = static_cast<T>((i % 100) + 1);
+
+            auto b = a;
+            check_equal_variants(a, b);
+
+            if (n > 0) {
+                std::vector<T> shorter(a.begin(), a.end() - 1);
+                check_equal_variants(a, shorter);
+                check_equal_variants(shorter, a);
+
+                std::vector<size_t> positions;
+                if (n <= 64) {
+                    for (size_t p = 0; p < n; ++p)
+                        positions.push_back(p);
+                }
+                else {
+                    positions = { 0, 1, 15, 16, 31, 32, 63, 64, n / 2, n - 2, n - 1 };
+                }
+
+                for (size_t pos : positions) {
+                    auto diff = a;
+                    diff[pos] = T(0);
+                    check_equal_variants(a, diff);
+                }
+            }
+        }
+    }
+
+    template <class T>
+    void equal_fuzz(unsigned seed, size_t iters) {
+        std::mt19937 rng(seed);
+        std::uniform_int_distribution<size_t> sz(0, 512);
+
+        for (size_t i = 0; i < iters; ++i) {
+            const size_t n = sz(rng);
+            auto a = rtts::random::vector<T>(n, seed + static_cast<unsigned>(i));
+            auto b = a;
+
+            RTTS_EXPECT(raze::algorithm::equal(a, b));
+            RTTS_EXPECT(raze::algorithm::equal[raze::options::fscalar](a.begin(), a.end(), b.begin(), b.end()));
+            RTTS_EXPECT(raze::algorithm::equal[raze::options::fstatic](a, b));
+
+            if (n > 0) {
+                const size_t pos = rng() % n;
+                b[pos] = static_cast<T>(b[pos] + T(1));
+                const bool exp = std::ranges::equal(a, b);
+
+                RTTS_EXPECT(raze::algorithm::equal(a, b) == exp);
+                RTTS_EXPECT(raze::algorithm::equal[raze::options::fscalar](a, b) == exp);
+                RTTS_EXPECT(raze::algorithm::equal[raze::options::fstatic](a, b) == exp);
+            }
+
+            const size_t first = n == 0 ? 0 : rng() % (n + 1);
+            const size_t last = first + (n == first ? 0 : rng() % (n - first + 1));
+            RTTS_EXPECT(raze::algorithm::equal(a.begin() + first, a.begin() + last, a.begin() + first, a.begin() + last));
+        }
+    }
+
+    template <class T>
+    void equal_suite() {
+        using namespace rtts::algorithm;
+        auto cfg = config::thorough();
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal(c.first(), c.last(), c.first(), c.last()); },
+            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first(), c.last()); });
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal(c.range(), c.range()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range()); });
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal(c.first(), c.last(), c.first2(), c.last2()); },
+            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first2(), c.last2()); });
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal(c.range(), c.range2()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range2()); });
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal[raze::options::fscalar](c.first(), c.last(), c.first(), c.last()); },
+            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first(), c.last()); });
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal[raze::options::unroll<2>](c.range(), c.range()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range()); });
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal[raze::options::fstatic](c.range(), c.range()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range()); });
+
+        static_assert(constexpr_run<T, range, 0>(
+            [](auto c) { return raze::algorithm::equal(c.first(), c.last(), c.first2(), c.last2()); },
+            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first2(), c.last2()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::equal(c.range(), c.range()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::equal(c.range(), c.range2()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range2()); }));
+
+        static_assert([]() constexpr {
+            std::array<T, 0> a{};
+            std::array<T, 0> b{};
+            std::array<T, 2> c{ T(1), T(2) };
+            return raze::algorithm::equal(a, b) &&
+                  !raze::algorithm::equal(a, c) &&
+                  !raze::algorithm::equal(c, a);
+            }());
+
+        static_assert([]() constexpr {
+            std::array<T, 4> a{ T(1), T(2), T(3), T(4) };
+            std::array<T, 4> b{ T(1), T(2), T(3), T(4) };
+            std::array<T, 4> c{ T(1), T(2), T(9), T(4) };
+            return raze::algorithm::equal(a, b) &&
+                  !raze::algorithm::equal(a, c);
+            }());
+
+        static_assert([]() constexpr {
+            std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
+            std::array<T, 5> b{ T(1), T(2), T(3), T(4), T(5) };
+            std::array<T, 4> c{ T(1), T(2), T(3), T(4) };
+            return raze::algorithm::equal[raze::options::fscalar](a, b) &&
+                  !raze::algorithm::equal[raze::options::fscalar](a, c) &&
+                   raze::algorithm::equal(a.begin(), a.begin() + 4, c.begin(), c.end());
+            }());
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::equal", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    equal_suite<T>();
+};
+
+RTTS_CASE_TPL("raze::algorithm::equal boundaries", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    equal_boundary_sweep<T>();
+};
+
+RTTS_CASE_TPL("raze::algorithm::equal fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        equal_fuzz<T>(seed, 200);
+};
+
+RTTS_CASE("raze::algorithm::equal structs, projections and mixed") {
+    {
+        const std::vector<equal_item> a{ { 1, 10 }, { 2, 20 }, { 3, 30 } };
+        const std::vector<equal_item> b{ { 1, 10 }, { 2, 20 }, { 3, 30 } };
+        const std::vector<equal_item> c{ { 1, 99 }, { 2, 20 }, { 3, 30 } };
+
+        RTTS_EXPECT(raze::algorithm::equal(a, b));
+        RTTS_EXPECT(!raze::algorithm::equal(a, c));
+
+        auto key_proj = [](const auto& item) { return item.key; };
+        auto val_proj = [](const auto& item) { return item.value; };
+        RTTS_EXPECT(raze::algorithm::equal(a, c, std::equal_to<>{}, key_proj, key_proj));
+        RTTS_EXPECT(!raze::algorithm::equal[raze::options::fscalar](a, c, std::equal_to<>{}, val_proj, val_proj));
+    }
+
+    {
+        const std::vector<std::string> w1{ "alpha", "beta", "gamma" };
+        const std::vector<std::string> w2{ "alpha", "beta", "gamma" };
+        const std::vector<std::string> w3{ "alpha", "beta" };
+        RTTS_EXPECT(raze::algorithm::equal(w1, w2));
+        RTTS_EXPECT(!raze::algorithm::equal(w1, w3));
+    }
+
+    {
+        const std::vector<int32_t> ints3{ 1, 2, 3 };
+        const std::vector<double> dbls3{ 1.0, 2.0, 3.0 };
+        const std::vector<int64_t> i64_3{ 1, 2, 3 };
+        RTTS_EXPECT(raze::algorithm::equal(ints3, dbls3));
+        RTTS_EXPECT(raze::algorithm::equal(ints3, i64_3));
+
+        const std::vector<int32_t> ints2{ 1, 2 };  
+        const std::vector<int64_t> i64_1{ 1 }; 
+        RTTS_EXPECT(!raze::algorithm::equal(ints2, i64_1));
+        RTTS_EXPECT(!raze::algorithm::equal(i64_1, ints2));
+    }
+
+    {
+        const std::list<int> l2{ 1, 2 };
+        const std::forward_list<int> fl2{ 1, 2 };
+        const std::forward_list<int> fl3{ 1, 2, 3 };
+        const std::vector<int> v3{ 1, 2, 3 };
+
+        RTTS_EXPECT(raze::algorithm::equal(l2, fl2));
+        RTTS_EXPECT(!raze::algorithm::equal(l2, fl3));
+        RTTS_EXPECT(!raze::algorithm::equal(fl3, l2));
+        RTTS_EXPECT(raze::algorithm::equal(v3, fl3));
+        RTTS_EXPECT(!raze::algorithm::equal(v3, fl2));
+        RTTS_EXPECT(!raze::algorithm::equal(fl2, v3));
+    }
+};
+
+RTTS_CASE("raze::algorithm::equal sentinel") {
+    {
+        std::array<int, 3> buf{ 1, 2, 3 };
+        auto e1 = std::counted_iterator(buf.begin(), 0);
+        auto e2 = std::counted_iterator(buf.begin(), 0);
+        auto n1 = std::counted_iterator(buf.begin(), 1);
+
+        RTTS_EXPECT(raze::algorithm::equal(e1, std::default_sentinel, e2, std::default_sentinel));
+        RTTS_EXPECT(!raze::algorithm::equal(e1, std::default_sentinel, n1, std::default_sentinel));
+        RTTS_EXPECT(!raze::algorithm::equal(n1, std::default_sentinel, e1, std::default_sentinel));
+    }
+
+    for (size_t n : { size_t(16), size_t(64), size_t(300) }) {
+        std::vector<int> a(n, 7);
+        std::vector<int> b(n, 7);
+
+        auto fa = std::counted_iterator(a.begin(), static_cast<std::ptrdiff_t>(a.size()));
+        auto fb = std::counted_iterator(b.begin(), static_cast<std::ptrdiff_t>(b.size()));
+        auto fb_short = std::counted_iterator(b.begin(), static_cast<std::ptrdiff_t>(b.size() - 1));
+
+        RTTS_EXPECT(raze::algorithm::equal(fa, std::default_sentinel, fb, std::default_sentinel));
+        RTTS_EXPECT(!raze::algorithm::equal(fa, std::default_sentinel, fb_short, std::default_sentinel));
+
+        b[0] = 99;
+        RTTS_EXPECT(!raze::algorithm::equal(fa, std::default_sentinel, fb, std::default_sentinel));
+
+        b[0] = 7;
+        b[n - 1] = 99;
+        RTTS_EXPECT(!raze::algorithm::equal(fa, std::default_sentinel, fb, std::default_sentinel));
+    }
+};
