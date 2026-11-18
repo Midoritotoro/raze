@@ -3,6 +3,7 @@
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <raze/algorithm/find/FindIf.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -91,8 +92,8 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 		It first, Sent last, Pred pred, Proj proj = {}) const
 			requires(std::indirect_unary_predicate<Pred, std::projected<It, Proj>>)
 	{
-		return this->dispatch(get_source(std::move(first), std::move(last)),
-			traits::fwd_fn(pred), traits::fwd_fn(proj));
+		return this->dispatch(get_source(find_if(first, last, pred, proj),
+			std::move(last)), traits::fwd_fn(pred), traits::fwd_fn(proj));
 	}
 
 	template <std::ranges::input_range R, class Pred, class Proj = std::identity>
@@ -101,8 +102,7 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 			requires(std::permutable<std::ranges::iterator_t<R>> &&
 				std::indirect_unary_predicate<Pred, std::projected<std::ranges::iterator_t<R>, Proj>>)
 	{
-		return this->dispatch(get_source(std::forward<R>(r)),
-			traits::fwd_fn(pred), traits::fwd_fn(proj));
+		return (*this)(std::ranges::begin(r), std::ranges::end(r), traits::fwd_fn(pred), traits::fwd_fn(proj));
 	}
 };
 

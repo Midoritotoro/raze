@@ -4,6 +4,7 @@
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/Destination.h>
+#include <raze/algorithm/find/FindIf.h>
 #include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -28,7 +29,7 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> &&
-				vectorizable_unary_predicate<Predicate, iterator_type>&&
+				vectorizable_unary_predicate<Predicate, iterator_type> &&
 				vectorizable_projection<Projection, iterator_type>
 				&& std::same_as<vector_value_type, std::iter_value_t<out_iterator_type>>;
 		}
@@ -93,19 +94,22 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 		}
 	};
 
-	template <std::permutable It, std::sentinel_for<It> Sent, class OutIt, class Pred, class Proj = std::identity>
+	template <std::input_iterator It, std::sentinel_for<It> Sent, std::weakly_incrementable OutIt, 
+		class Pred, class Proj = std::identity>
 	constexpr raze_always_inline decltype(auto) operator()(
 		It first, Sent last, OutIt out, Pred pred, Proj proj = {}) const
+			requires(std::indirectly_copyable<It, OutIt> && std::indirect_unary_predicate<
+				Pred, std::projected<It, Proj>>)
 	{
-		return this->dispatch(get_source(std::move(first), std::move(last)), get_destination(std::move(out)),
-			traits::fwd_fn(pred), traits::fwd_fn(proj));
+		return this->dispatch(get_source(find_if(first, last, pred, proj), std::move(last)), 
+			get_destination(std::move(out)), traits::fwd_fn(pred), traits::fwd_fn(proj));
 	}
 
-	template <std::ranges::input_range R, class OutIt, class Pred, class Proj = std::identity>
+	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class Pred, class Proj = std::identity>
 	constexpr raze_always_inline decltype(auto) operator()(
 		R&& r, OutIt out, Pred pred, Proj proj = {}) const
 	{
-		return this->dispatch(get_source(std::forward<R>(r)), get_destination(std::move(out)),
+		return (*this)(std::ranges::begin(r), std::ranges::end(r), std::move(out),
 			traits::fwd_fn(pred), traits::fwd_fn(proj));
 	}
 };

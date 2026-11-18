@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 project(razeTestsMath LANGUAGES CXX)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

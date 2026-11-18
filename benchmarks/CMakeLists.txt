@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.21 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 project(razeBenchmarks LANGUAGES CXX)
 
@@ -13,10 +13,7 @@ endif()
 
 enable_testing()
 
-# ------------------------------------------------------------------------------
-# Google Benchmark lives in raze/benchmarks/benchmark
-# ------------------------------------------------------------------------------
-
+add_compile_definitions(NDEBUG)
 set(BENCHMARK_ENABLE_DOXYGEN OFF)
 set(BENCHMARK_ENABLE_INSTALL OFF)
 set(BENCHMARK_ENABLE_TESTING OFF)
@@ -24,6 +21,17 @@ set(BENCHMARK_ENABLE_GTEST_TESTS OFF)
 set(BENCHMARK_DOWNLOAD_DEPENDENCIES OFF)
 
 add_subdirectory(benchmark EXCLUDE_FROM_ALL)
+
+foreach(_bm_target IN ITEMS benchmark benchmark_main)
+    if(TARGET ${_bm_target})
+        get_target_property(_bm_alias ${_bm_target} ALIASED_TARGET)
+        get_target_property(_bm_type ${_bm_target} TYPE)
+
+        if(NOT _bm_alias AND NOT _bm_type STREQUAL "INTERFACE_LIBRARY")
+            target_compile_definitions(${_bm_target} PRIVATE NDEBUG)
+        endif()
+    endif()
+endforeach()
 
 option(RAZE_BENCHMARKS_COMMON_OPTIMIZATION
     "Add non-ISA optimization flags such as /O2 or -O2 to benchmark targets"
@@ -143,6 +151,20 @@ function(_raze_bench_prepare_target target source)
         benchmark::benchmark_main
     )
 
+    target_compile_definitions(${target} PRIVATE
+        NDEBUG
+    )
+
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        target_compile_options(${target} PRIVATE
+            /wd4996
+        )
+    else()
+        target_compile_options(${target} PRIVATE
+            -Wno-error=deprecated-declarations
+        )
+    endif()
+
     if(RAZE_BENCHMARKS_COMMON_OPTIMIZATION)
         _raze_bench_is_msvc_like(msvc_like)
 
@@ -160,14 +182,9 @@ function(_raze_bench_prepare_target target source)
                     /permissive-
                 )
             endif()
-
-            target_compile_definitions(${target} PRIVATE
-                NDEBUG
-            )
         else()
             target_compile_options(${target} PRIVATE
-                -O2
-                -DNDEBUG
+                -O3
             )
         endif()
     endif()
@@ -194,7 +211,8 @@ function(generate_benchmark_native filename)
 
     if(RAZE_BENCHMARKS_NATIVE_MARCH_NATIVE AND RAZE_CXX_SUPPORTS_MARCH_NATIVE)
         target_compile_options(${target} PRIVATE
-           -O2 -march=native
+            -O3
+            -march=native
         )
     endif()
 

@@ -150,8 +150,8 @@ static void register_type_benchmarks(const char* type_name) {
         auto* bm = ::benchmark::RegisterBenchmark(full.c_str(), fn);
         for (const auto& c : cases)
             bm->Args({ c[0], c[1] });
-        bm->MinTime(1)->Repetitions(5)->ReportAggregatesOnly(true);
-        };
+        bm->MinTime(0.5)->Repetitions(10)->ReportAggregatesOnly(true);
+    };
 
     reg("BM_RazeFind", &BM_RazeFind<T>);
     reg("BM_StdFind", &BM_StdFind<T>);

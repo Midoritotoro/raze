@@ -1,136 +1,98 @@
-#include <raze/algorithm/swap/Swap.h>
+#include <raze/algorithm/swap/SwapRanges.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
-#include <array>
-#include <ranges>
+
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <vector>
 
-template <class T, std::size_t Size>
-struct SwapBenchData {
-    std::array<T, Size> data1;
-    std::array<T, Size> data2;
-
-    SwapBenchData() {
-        for (std::size_t i = 0; i < Size; ++i) {
-            data1[i] = static_cast<T>(i);
-            data2[i] = static_cast<T>(i + 1);
-        }
+namespace {
+    template <class T>
+    std::vector<T> make_swap_data(std::size_t size, T offset) {
+        std::vector<T> data(size);
+        for (std::size_t i = 0; i < size; ++i)
+            data[i] = static_cast<T>((i % 100) + offset);
+        return data;
     }
-};
+}
 
-template <class T, std::size_t Size>
+template <class T>
 static void BM_StdSwapRanges(benchmark::State& state) {
-    SwapBenchData<T, Size> test;
+    const auto size = static_cast<std::size_t>(state.range(0));
+    auto a = make_swap_data<T>(size, T(1));
+    auto b = make_swap_data<T>(size, T(2));
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(test.data1);
-        benchmark::DoNotOptimize(test.data2);
-
-        std::ranges::swap_ranges(test.data1, test.data2);
-
+        benchmark::DoNotOptimize(a);
+        benchmark::DoNotOptimize(b);
+        auto res = std::ranges::swap_ranges(a, b);
+        benchmark::DoNotOptimize(res);
         benchmark::ClobberMemory();
     }
 
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T) * 2));
 }
 
-template <class T, std::size_t Size>
+template <class T>
 static void BM_RazeSwapRanges(benchmark::State& state) {
-    SwapBenchData<T, Size> test;
+    const auto size = static_cast<std::size_t>(state.range(0));
+    auto a = make_swap_data<T>(size, T(1));
+    auto b = make_swap_data<T>(size, T(2));
 
     for (auto _ : state) {
-        benchmark::DoNotOptimize(test.data1);
-        benchmark::DoNotOptimize(test.data2);
-
-        raze::algorithm::swap_ranges(test.data1, test.data2);
-
+        benchmark::DoNotOptimize(a);
+        benchmark::DoNotOptimize(b);
+        auto res = raze::algorithm::swap_ranges(a, b);
+        benchmark::DoNotOptimize(res);
         benchmark::ClobberMemory();
     }
 
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T) * 2));
 }
 
-#define RAZE_BENCHMARK_SWAP_RANGES(name1, name2) \
-    BENCHMARK(name1<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i8, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i16, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f32, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f64, 16>)->Repetitions(10)->ReportAggregatesOnly(true);\
-        \
-    BENCHMARK(name1<raze::i8, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i8, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i16, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i16, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f32, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f64, 20>)->Repetitions(10)->ReportAggregatesOnly(true);\
-        \
-    BENCHMARK(name1<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i8, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i16, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i16, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f32, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f64, 1024>)->Repetitions(10)->ReportAggregatesOnly(true);\
-        \
-    BENCHMARK(name1<raze::i8, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i8, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i16, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i16, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f32, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f64, 1030>)->Repetitions(10)->ReportAggregatesOnly(true);\
-        \
-    BENCHMARK(name1<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i8, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i16, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i16, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f32, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f64, 4096>)->Repetitions(10)->ReportAggregatesOnly(true);\
-        \
-    BENCHMARK(name1<raze::i8, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i8, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i16, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i16, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::i64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::i64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f32, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name1<raze::f64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true);\
-    BENCHMARK(name2<raze::f64, 16384>)->Repetitions(10)->ReportAggregatesOnly(true)
+template <class T>
+static void BM_RazeSwapRangesScalar(benchmark::State& state) {
+    const auto size = static_cast<std::size_t>(state.range(0));
+    auto a = make_swap_data<T>(size, T(1));
+    auto b = make_swap_data<T>(size, T(2));
 
-void RegisterAll()
-{
-    RAZE_BENCHMARK_SWAP_RANGES(BM_RazeSwapRanges, BM_StdSwapRanges);
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(a);
+        benchmark::DoNotOptimize(b);
+        auto res = raze::algorithm::swap_ranges[raze::options::fscalar](a, b);
+        benchmark::DoNotOptimize(res);
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T) * 2));
+}
+
+template <class T>
+static void register_type_benchmarks(const char* type_name) {
+    static constexpr std::array<int64_t, 6> sizes{ 16, 64, 256, 1024, 4096, 16384 };
+
+    auto reg = [&](const char* fn_name, void(*fn)(benchmark::State&)) {
+        const std::string full = std::string(fn_name) + "<" + type_name + ">";
+        auto* bm = ::benchmark::RegisterBenchmark(full.c_str(), fn);
+        for (int64_t s : sizes)
+            bm->Args({ s });
+        bm->MinTime(0.5)->Repetitions(10)->ReportAggregatesOnly(true);
+    };
+
+    reg("BM_RazeSwapRanges",       &BM_RazeSwapRanges<T>);
+    reg("BM_StdSwapRanges",        &BM_StdSwapRanges<T>);
+    reg("BM_RazeSwapRangesScalar", &BM_RazeSwapRangesScalar<T>);
+}
+
+void RegisterAll() {
+    register_type_benchmarks<raze::i8>("raze::i8");
+    register_type_benchmarks<raze::i16>("raze::i16");
+    register_type_benchmarks<raze::i32>("raze::i32");
+    register_type_benchmarks<raze::i64>("raze::i64");
+    register_type_benchmarks<raze::f32>("raze::f32");
+    register_type_benchmarks<raze::f64>("raze::f64");
 }
 
 RAZE_BENCHMARK_MAIN();

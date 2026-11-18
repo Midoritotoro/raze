@@ -58,7 +58,7 @@ using uintptr       = IntegerForSizeof<void*>::Unsigned;
 using ptrdiff       = IntegerForSizeof<void*>::Signed;
 
 using intptr        = ptrdiff;
-using sizetype      = IntegerForSizeof<std::size_t>::Unsigned;
+using sizetype      = size_t;
 
 using byte_t        = u8;
 using sbyte_t       = i8;

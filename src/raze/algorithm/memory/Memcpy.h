@@ -257,7 +257,7 @@ raze_always_inline void memcpy_small(void* raze_restrict dst, const void* raze_r
 	}
 }
 
-raze_unmangled raze_never_inline raze_declare_const_function void* raze_stdcall __raze_memcpy(void* raze_restrict dst,
+raze_unmangled raze_never_inline raze_declare_const_function void* __raze_memcpy(void* raze_restrict dst,
 	const void* raze_restrict src, sizetype bytes) noexcept
 {
 	constexpr auto erms_threshold = 0x1000;
@@ -419,7 +419,7 @@ sse2_process_tail_from_0_to_64:
 
 #else
 
-raze_always_inline void* raze_stdcall __raze_memcpy(void* raze_restrict dst,
+raze_always_inline void* __raze_memcpy(void* raze_restrict dst,
 	const void* raze_restrict src, sizetype bytes) noexcept
 {
 	return memcpy(dst, src, bytes);

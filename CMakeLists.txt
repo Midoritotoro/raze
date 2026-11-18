@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.28 FATAL_ERROR)
 
 project(raze
     VERSION 1.0.0
@@ -86,7 +86,7 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         /Zc:__cplusplus
         /nologo
     )
-elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Gnu")
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
      target_compile_options(raze INTERFACE -Werror    -fdiagnostics-color=always   -Wno-reserved-macro-identifier
         -Wno-ignored-attributes -Wno-psabi -Wno-ignored-attributes $<$<COMPILE_LANGUAGE:CXX>:--param=sra-max-scalarization-size-Ospeed=4096>)
      target_compile_definitions(raze INTERFACE RAZE_GCC_SRA_LARGE_LIMIT=1)
@@ -98,20 +98,6 @@ raze_link_clang_rt_builtins(raze)
 
 message(STATUS "RAZE compiler: ${CMAKE_CXX_COMPILER_ID}")
 message(STATUS "RAZE system processor: ${CMAKE_SYSTEM_PROCESSOR}")
-
-if(CMAKE_GENERATOR MATCHES "Visual Studio"
-    AND (
-        CMAKE_VS_PLATFORM_NAME STREQUAL "x64"
-        OR CMAKE_VS_PLATFORM_NAME STREQUAL "x86"
-    )
-)
-    include(cmake/x86_Simd.cmake)
-elseif(
-    CMAKE_SYSTEM_PROCESSOR MATCHES
-    "^(i[3-6]86|x86_64|AMD64|amd64)$"
-)
-    include(cmake/x86_Simd.cmake)
-endif()
 
 if(PROJECT_IS_TOP_LEVEL)
     enable_testing()

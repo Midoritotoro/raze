@@ -1,148 +1,163 @@
 #include <raze/algorithm/remove/RemoveCopy.h>
 #include <benchmarks/tools/BenchmarkHelper.h>
-#include <numeric>
+
 #include <algorithm>
-#include <chrono>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <limits>
+#include <string>
+#include <vector>
 
-template <class T, std::size_t Size, std::size_t RemovePercent>
-static void FillTestData(std::vector<T>& data) {
-    static_assert(RemovePercent <= 100, "RemovePercent must be in [0, 100]");
-
-    if constexpr (RemovePercent == 0) {
-        for (std::size_t i = 0; i < Size; ++i) {
-            data[i] = static_cast<T>(i * 2 + 1);
-        }
-    }
-    else if constexpr (RemovePercent == 100) {
-        for (std::size_t i = 0; i < Size; ++i) {
-            data[i] = static_cast<T>(0);
-        }
-    }
-    else {
-        constexpr std::size_t stride = 100 / RemovePercent;
-        for (std::size_t i = 0; i < Size; ++i) {
-            data[i] = (i % stride == 0) ? static_cast<T>(0) : static_cast<T>((i % stride) * 2 + 1);
-        }
+namespace {
+    template <class T>
+    std::vector<T> make_remove_copy_data(std::size_t size, T needle) {
+        std::vector<T> data(size);
+        for (std::size_t i = 0; i < size; ++i)
+            data[i] = (i & 1) ? needle : static_cast<T>((i % 100) + 1); // 50% совпадений
+        return data;
     }
 }
 
-template <class T, std::size_t Size, std::size_t RemovePercent>
-static void BM_StdRemoveCopyIf(benchmark::State& state) {
-    TestData<T, Size> src;
-    FillTestData<T, Size, RemovePercent>(src.data);
-    std::vector<T> dest(Size);
+template <class T>
+static void BM_StdRemoveCopy(benchmark::State& state) {
+    const auto size = static_cast<std::size_t>(state.range(0));
+    constexpr T needle = std::numeric_limits<T>::max();
+    const auto in = make_remove_copy_data<T>(size, needle);
+    std::vector<T> out(size);
 
     for (auto _ : state) {
-        auto start = std::chrono::high_resolution_clock::now();
-
-        benchmark::DoNotOptimize(src.data);
-        benchmark::DoNotOptimize(dest);
-
-        auto result = std::ranges::remove_copy(src.data, dest.begin(), T(0));
-        benchmark::DoNotOptimize(result);
-        benchmark::DoNotOptimize(dest);
-
+        benchmark::DoNotOptimize(in);
+        auto res = std::ranges::remove_copy(in, out.begin(), needle);
+        benchmark::DoNotOptimize(res);
+        benchmark::DoNotOptimize(out);
         benchmark::ClobberMemory();
-
-        auto end = std::chrono::high_resolution_clock::now();
-        auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-
-        state.SetIterationTime(elapsed_seconds.count());
     }
 
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
-    state.SetLabel("remove_copy_" + std::to_string(RemovePercent) + "%");
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T)));
 }
 
-template <class T, std::size_t Size, std::size_t RemovePercent>
-static void BM_RazeRemoveCopyIf(benchmark::State& state) {
-    TestData<T, Size> src;
-    FillTestData<T, Size, RemovePercent>(src.data);
-
-    std::vector<T> dest(Size);
+template <class T>
+static void BM_RazeRemoveCopy(benchmark::State& state) {
+    const auto size = static_cast<std::size_t>(state.range(0));
+    constexpr T needle = std::numeric_limits<T>::max();
+    const auto in = make_remove_copy_data<T>(size, needle);
+    std::vector<T> out(size);
 
     for (auto _ : state) {
-        auto start = std::chrono::high_resolution_clock::now();
-
-        benchmark::DoNotOptimize(src.data);
-        benchmark::DoNotOptimize(dest);
-
-        auto result = raze::algorithm::remove_copy(src.data, dest.begin(), T(0));
-        benchmark::DoNotOptimize(result);
-        benchmark::DoNotOptimize(dest);
-
+        benchmark::DoNotOptimize(in);
+        auto res = raze::algorithm::remove_copy(in, out.begin(), needle);
+        benchmark::DoNotOptimize(res);
+        benchmark::DoNotOptimize(out);
         benchmark::ClobberMemory();
-
-        auto end = std::chrono::high_resolution_clock::now();
-        auto elapsed_seconds = std::chrono::duration_cast<std::chrono::duration<double>>(end - start);
-
-        state.SetIterationTime(elapsed_seconds.count());
     }
 
-    state.SetBytesProcessed(state.iterations() * Size * sizeof(T) * 2);
-    state.SetLabel("remove_copy_" + std::to_string(RemovePercent) + "%");
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T)));
 }
 
-#define RAZE_BENCHMARK_REMOVE_COPY_PERCENT(name1, name2, pct) \
-    BENCHMARK(name1<raze::i8, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i8, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i16, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i16, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i32, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i32, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i64, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i64, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f32, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f32, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f64, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f64, 16, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    \
-    BENCHMARK(name1<raze::i8, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i8, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i16, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i16, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i32, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i32, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i64, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i64, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f32, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f32, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f64, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f64, 1024, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    \
-    BENCHMARK(name1<raze::i8, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i8, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i16, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i16, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i32, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i32, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i64, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i64, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f32, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f32, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f64, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f64, 4096, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    \
-    BENCHMARK(name1<raze::i8, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i8, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i16, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i16, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i32, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i32, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::i64, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::i64, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f32, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f32, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name1<raze::f64, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true); \
-    BENCHMARK(name2<raze::f64, 16384, pct>)->UseManualTime()->Repetitions(3)->ReportAggregatesOnly(true)
+template <class T>
+static void BM_RazeRemoveCopyScalar(benchmark::State& state) {
+    const auto size = static_cast<std::size_t>(state.range(0));
+    constexpr T needle = std::numeric_limits<T>::max();
+    const auto in = make_remove_copy_data<T>(size, needle);
+    std::vector<T> out(size);
 
-void RegisterAll()
-{
-    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 0);
-    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 25);
-    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 50);
-    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 75);
-    RAZE_BENCHMARK_REMOVE_COPY_PERCENT(BM_RazeRemoveCopyIf, BM_StdRemoveCopyIf, 100);
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(in);
+        auto res = raze::algorithm::remove_copy[raze::options::fscalar](in, out.begin(), needle);
+        benchmark::DoNotOptimize(res);
+        benchmark::DoNotOptimize(out);
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T)));
+}
+
+template <class T>
+static void BM_StdRemoveCopyPred(benchmark::State& state) {
+    const auto size = static_cast<std::size_t>(state.range(0));
+    constexpr T needle = std::numeric_limits<T>::max();
+    const auto in = make_remove_copy_data<T>(size, needle);
+    std::vector<T> out(size);
+    auto pred = [](auto x) { return x > T(100); };
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(in);
+        auto res = std::ranges::remove_copy_if(in, out.begin(), pred);
+        benchmark::DoNotOptimize(res);
+        benchmark::DoNotOptimize(out);
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T)));
+}
+
+template <class T>
+static void BM_RazeRemoveCopyPred(benchmark::State& state) {
+    const auto size = static_cast<std::size_t>(state.range(0));
+    constexpr T needle = std::numeric_limits<T>::max();
+    const auto in = make_remove_copy_data<T>(size, needle);
+    std::vector<T> out(size);
+    auto pred = [](auto x) { return x > T(100); };
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(in);
+        auto res = raze::algorithm::remove_copy_if(in, out.begin(), pred);
+        benchmark::DoNotOptimize(res);
+        benchmark::DoNotOptimize(out);
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T)));
+}
+
+template <class T>
+static void BM_RazeRemoveCopyPredScalar(benchmark::State& state) {
+    const auto size = static_cast<std::size_t>(state.range(0));
+    constexpr T needle = std::numeric_limits<T>::max();
+    const auto in = make_remove_copy_data<T>(size, needle);
+    std::vector<T> out(size);
+    auto pred = [](auto x) { return x > T(100); };
+
+    for (auto _ : state) {
+        benchmark::DoNotOptimize(in);
+        auto res = raze::algorithm::remove_copy_if[raze::options::fscalar](in, out.begin(), pred);
+        benchmark::DoNotOptimize(res);
+        benchmark::DoNotOptimize(out);
+        benchmark::ClobberMemory();
+    }
+
+    state.SetBytesProcessed(state.iterations() * static_cast<int64_t>(size * sizeof(T)));
+}
+
+template <class T>
+static void register_type_benchmarks(const char* type_name) {
+    static constexpr std::array<int64_t, 6> sizes{ 16, 64, 256, 1024, 4096, 16384 };
+
+    auto reg = [&](const char* fn_name, void(*fn)(benchmark::State&)) {
+        const std::string full = std::string(fn_name) + "<" + type_name + ">";
+        auto* bm = ::benchmark::RegisterBenchmark(full.c_str(), fn);
+        for (int64_t s : sizes)
+            bm->Args({ s });
+        bm->MinTime(0.5)->Repetitions(10)->ReportAggregatesOnly(true);
+    };
+
+    reg("BM_RazeRemoveCopy",           &BM_RazeRemoveCopy<T>);
+    reg("BM_StdRemoveCopy",            &BM_StdRemoveCopy<T>);
+    reg("BM_RazeRemoveCopyScalar",     &BM_RazeRemoveCopyScalar<T>);
+
+    reg("BM_RazeRemoveCopyPred",       &BM_RazeRemoveCopyPred<T>);
+    reg("BM_StdRemoveCopyPred",        &BM_StdRemoveCopyPred<T>);
+    reg("BM_RazeRemoveCopyPredScalar", &BM_RazeRemoveCopyPredScalar<T>);
+}
+
+void RegisterAll() {
+    register_type_benchmarks<raze::i8>("raze::i8");
+    register_type_benchmarks<raze::i16>("raze::i16");
+    register_type_benchmarks<raze::i32>("raze::i32");
+    register_type_benchmarks<raze::i64>("raze::i64");
+    register_type_benchmarks<raze::f32>("raze::f32");
+    register_type_benchmarks<raze::f64>("raze::f64");
 }
 
 RAZE_BENCHMARK_MAIN();

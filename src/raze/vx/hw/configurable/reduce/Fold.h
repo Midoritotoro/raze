@@ -8,6 +8,7 @@
 #include <src/raze/vx/hw/configurable/shuffle/SwapAdjacent.h>
 #include <src/raze/vx/hw/configurable/merge/Select.h>
 #include <src/raze/traits/FunctionPass.h>
+#include <bit>
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/reduce/Fold.h>

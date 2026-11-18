@@ -14,7 +14,7 @@ namespace {
     std::vector<T> make_search_n_data(std::size_t size, std::size_t pos, std::size_t count, T needle) {
         std::vector<T> data(size);
         for (std::size_t i = 0; i < size; ++i)
-            data[i] = static_cast<T>(i % 100); // < 127, чтобы needle не встречался случайно в i8 до pos
+            data[i] = static_cast<T>(i % 100);  
 
         for (std::size_t i = 0; i < count && pos + i < size; ++i)
             data[pos + i] = needle;
@@ -101,7 +101,7 @@ static void register_type_benchmarks(const char* type_name) {
         auto* bm = ::benchmark::RegisterBenchmark(full.c_str(), fn);
         for (const auto& c : cases)
             bm->Args({ c[0], c[1], c[2] });
-        bm->MinTime(0.03)->Repetitions(5)->ReportAggregatesOnly(true);
+        bm->MinTime(0.5)->Repetitions(10)->ReportAggregatesOnly(true);
     };
 
     reg("BM_RazeSearchN",       &BM_RazeSearchN<T>,       main_cases);

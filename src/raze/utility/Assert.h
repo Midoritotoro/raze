@@ -9,6 +9,7 @@
 #include <cassert>
 
 #include <iostream>
+#include <exception>
 
 
 __RAZE_NAMESPACE_BEGIN
