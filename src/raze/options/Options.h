@@ -50,12 +50,17 @@ struct options:
 };
 
 template <concepts::option ... Options>
-options(Options&& ... opts) -> 
-    options<decltype(settings(std::forward<Options>(opts)...))>;
+options(const Options& ... opts) ->
+    options<settings<Options...>>;
 
 template <class ... Options>
 options(const settings<Options...>&) ->
     options<settings<Options...>>;
+
+template <concepts::option ... Options>
+constexpr raze_always_inline auto make_options(Options&& ... opts) noexcept {
+    return options<settings<std::remove_cvref_t<Options>...>>(std::forward<Options>(opts)...);
+}
 
 template <concepts::settings S0, concepts::settings S1>
 constexpr static raze_always_inline auto merge_prefer_first(
@@ -76,12 +81,12 @@ struct exact_option {
     constexpr raze_always_inline auto process(auto const& base, 
         concepts::exactly<Decorator> auto const& opts) const noexcept
     {
-        return merge_prefer_first(base, options{ opts });
+        return merge_prefer_first(base, make_options(opts));
     }
 
      constexpr raze_always_inline auto default_to(auto const& base) const {
          return base;
      }
 };
-
+ 
 __RAZE_OPTIONS_NAMESPACE_END

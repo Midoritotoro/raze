@@ -1,30 +1,48 @@
 set(RAZE_TEST_ARCH_CONFIGS
-    "SSE2|-msse2| |RAZE_HAS_SSE2_SUPPORT=1"
-    "SSE3|-msse3| |RAZE_HAS_SSE3_SUPPORT=1"
-    "SSSE3|-mssse3| |RAZE_HAS_SSSE3_SUPPORT=1"
-    "SSE41|-msse4.1| |RAZE_HAS_SSE41_SUPPORT=1"
-    "SSE42|-msse4.2| |RAZE_HAS_SSE42_SUPPORT=1"
-    "AVX|-mavx|/arch:AVX|RAZE_HAS_AVX_SUPPORT=1"
-    "FMA3|-mfma -mavx|/arch:AVX|RAZE_HAS_FMA3_SUPPORT=1"
-    "AVX2|-mavx2|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
-    "AVX2BMI2|-mavx2 -mbmi2 -mbmi|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1"
-    "AVX512F|-mavx512f|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512BW|-mavx512f -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512DQ|-mavx512f -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1"
-    "AVX512BWDQ|-mavx512f -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
-    "AVX512VLBWDQ|-mavx512f -mavx512vl -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VLDQ|-mavx512f -mavx512vl -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VLBW|-mavx512f -mavx512vl -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VLF|-mavx512f -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1"
-    "AVX512VBMI|-mavx512f -mavx512vbmi -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1"
-    "AVX512VBMI2|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512VBMI2_SUPPORT=1"
-    "AVX512VBMIVL|-mavx512f -mavx512vbmi -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1"
-    "AVX512VBMI2VL|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1"
-    "AVX512VBMIDQ|-mavx512f -mavx512vbmi -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1"
-    "AVX512VBMI2DQ|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1"
-    "AVX512VBMIVLDQ|-mavx512f -mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1"
-    "AVX512VBMI2VLDQ|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512VBMI2_SUPPORT=1"
+    "SSE2|-msse2| |RAZE_HAS_SSE2_SUPPORT=1|-tp=px"
+    "SSE3|-msse3| |RAZE_HAS_SSE3_SUPPORT=1|-tp=px"
+    "SSSE3|-mssse3| |RAZE_HAS_SSSE3_SUPPORT=1|-tp=px"
+    "SSE41|-msse4.1| |RAZE_HAS_SSE41_SUPPORT=1|-tp=px"
+    "SSE42|-msse4.2| |RAZE_HAS_SSE42_SUPPORT=1|-tp=px"
+    "AVX|-mavx|/arch:AVX|RAZE_HAS_AVX_SUPPORT=1|-tp=sandybridge"
+    "FMA3|-mfma -mavx|/arch:AVX|RAZE_HAS_FMA3_SUPPORT=1|-tp=haswell"
+    "AVX2|-mavx2|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1|-tp=haswell"
+    "AVX2BMI2|-mavx2 -mbmi2 -mbmi|/arch:AVX2|RAZE_HAS_AVX2_SUPPORT=1|-tp=haswell"
+    "AVX512F|-mavx512f|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1|-tp=skylake"
+    "AVX512BW|-mavx512f -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1|-tp=skylake"
+    "AVX512DQ|-mavx512f -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1|-tp=skylake"
+    "AVX512BWDQ|-mavx512f -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1|-tp=skylake"
+    "AVX512VLBWDQ|-mavx512f -mavx512vl -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1|-tp=skylake"
+    "AVX512VLDQ|-mavx512f -mavx512vl -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1|-tp=skylake"
+    "AVX512VLBW|-mavx512f -mavx512vl -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1|-tp=skylake"
+    "AVX512VLF|-mavx512f -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1|-tp=skylake"
+    "AVX512VBMI|-mavx512f -mavx512vbmi -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1|-tp=icelake"
+    "AVX512VBMI2|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512bw|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512VBMI2_SUPPORT=1|-tp=icelake"
+    "AVX512VBMIVL|-mavx512f -mavx512vbmi -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1|-tp=icelake"
+    "AVX512VBMI2VL|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1|-tp=icelake"
+    "AVX512VBMIDQ|-mavx512f -mavx512vbmi -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1|-tp=icelake"
+    "AVX512VBMI2DQ|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512bw -mavx512dq|/arch:AVX2|RAZE_HAS_AVX512VBMI2_SUPPORT=1,RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1|-tp=icelake"
+    "AVX512VBMIVLDQ|-mavx512f -mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1|-tp=icelake"
+    "AVX512VBMI2VLDQ|-mavx512f -mavx512vbmi2 -mavx512vbmi -mavx512bw -mavx512dq -mavx512vl|/arch:AVX2|RAZE_HAS_AVX512F_SUPPORT=1,RAZE_HAS_AVX512BW_SUPPORT=1,RAZE_HAS_AVX512DQ_SUPPORT=1,RAZE_HAS_AVX512VL_SUPPORT=1,RAZE_HAS_AVX512VBMI_SUPPORT=1,RAZE_HAS_AVX512VBMI2_SUPPORT=1|-tp=icelake"
 )
+
+function(raze_set_cxx23 target)
+    if("cxx_std_23" IN_LIST CMAKE_CXX_COMPILE_FEATURES)
+        set_target_properties(${target} PROPERTIES
+            CXX_STANDARD 23
+            CXX_STANDARD_REQUIRED ON
+            CXX_EXTENSIONS OFF
+            CXX_SCAN_FOR_MODULES OFF
+        )
+        target_compile_features(${target} PRIVATE cxx_std_23)
+    else()
+        set_target_properties(${target} PROPERTIES
+            CXX_EXTENSIONS OFF
+            CXX_SCAN_FOR_MODULES OFF
+        )
+        target_compile_options(${target} PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-std=c++23>)
+    endif()
+endfunction()
 
 function(raze_add_parent_target target)
     string(REGEX REPLACE "[^.]+\\.([^.]+)$" "\\1" parent_target ${target})
@@ -701,16 +719,11 @@ function(raze_generate_test root main_source rootpath file)
     add_library(${main_target} OBJECT "${main_source}")
 
     set_target_properties(${main_target} PROPERTIES
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-        CXX_SCAN_FOR_MODULES OFF
-
         EXCLUDE_FROM_DEFAULT_BUILD TRUE
         EXCLUDE_FROM_ALL TRUE
     )
 
-    target_compile_features(${main_target} PRIVATE cxx_std_23)
+    raze_set_cxx23(${main_target})
 
     target_include_directories(${main_target} PRIVATE
         ${CMAKE_SOURCE_DIR}
@@ -727,13 +740,16 @@ function(raze_generate_test root main_source rootpath file)
         target_compile_options(
             ${main_target}
             PRIVATE
-                ${flags_list}
-                 -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always  -Wno-ignored-attributes  -Wno-reserved-macro-identifier
+                -Werror -Wshadow -Wall -Wpedantic -Wextra -fdiagnostics-color=always -Wno-reserved-macro-identifier
                 -Wno-ignored-attributes
-        )   
+        )
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
+        target_compile_options(${main_target} PRIVATE
+            -noswitcherror
+        )
     else()
         target_compile_options(${main_target} PRIVATE
-           -Wno-reserved-macro-identifier 
+           -Wno-reserved-macro-identifier
         )
     endif()
 
@@ -748,6 +764,7 @@ function(raze_generate_test root main_source rootpath file)
         list(GET config_list 1 gcc_and_llvm_flags)
         list(GET config_list 2 msvc_arch_flag)
         list(GET config_list 3 msvc_defs)
+        list(GET config_list 4 nvhpc_tp_flag)
 
         set(isa_target "${test}.${arch_name}")
 
@@ -767,19 +784,10 @@ function(raze_generate_test root main_source rootpath file)
             EXCLUDE_FROM_DEFAULT_BUILD TRUE
             EXCLUDE_FROM_ALL TRUE
 
-            CXX_STANDARD 23
-            CXX_STANDARD_REQUIRED ON
-            CXX_EXTENSIONS OFF
-            CXX_SCAN_FOR_MODULES OFF
-
             OUTPUT_NAME "${test}.${arch_name}"
         )
 
-        target_compile_features(
-            ${isa_target}
-            PRIVATE
-                cxx_std_23
-        )
+        raze_set_cxx23(${isa_target})
 
         target_include_directories(
             ${isa_target}
@@ -812,6 +820,23 @@ function(raze_generate_test root main_source rootpath file)
                     /Od
                     /MP
                     ${msvc_arch_flag}
+            )
+
+        elseif(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
+
+            separate_arguments(
+                flags_list
+                UNIX_COMMAND
+                "${gcc_and_llvm_flags}"
+            )
+
+            target_compile_options(
+                ${isa_target}
+                PRIVATE
+                    ${nvhpc_tp_flag}
+                    ${flags_list}
+                    -noswitcherror
+                    -g
             )
 
         else()
@@ -858,21 +883,12 @@ function(raze_generate_test root main_source rootpath file)
     set_target_properties(${test} PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/unit"
 
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-        CXX_SCAN_FOR_MODULES OFF
-
         OUTPUT_NAME "${test}"
 
         FOLDER "Tests"
     )
 
-    target_compile_features(
-        ${test}
-        PRIVATE
-            cxx_std_23
-    )
+    raze_set_cxx23(${test})
 
     add_dependencies(${test} ${isa_targets})
 
@@ -944,14 +960,7 @@ function(raze_make_unit root)
 endfunction()
 
 function(raze_configure_test_target target)
-    set_target_properties(${target} PROPERTIES
-        CXX_STANDARD 23
-        CXX_STANDARD_REQUIRED ON
-        CXX_EXTENSIONS OFF
-        CXX_SCAN_FOR_MODULES OFF
-    )
-
-    target_compile_features(${target} PRIVATE cxx_std_23)
+    raze_set_cxx23(${target})
 
     target_include_directories(${target} PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/include)
     target_link_libraries(${target} PRIVATE raze::raze)
@@ -959,7 +968,9 @@ function(raze_configure_test_target target)
     if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         target_compile_options(${target} PRIVATE /bigobj /permissive- /Od /MP)
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier)    
+        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
+        target_compile_options(${target} PRIVATE -noswitcherror)
     else()
         target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier)
     endif()
@@ -974,14 +985,6 @@ function(raze_configure_default_arch_test_target target)
         PRIVATE
             RAZE_TEST_ARCH_NAMESPACE=raze_test_default_arch
     )
-
-    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
-        target_compile_options(${target} PRIVATE /bigobj /permissive- /Od /MP)
-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier)    
-    else()
-        target_compile_options(${target} PRIVATE -Wno-reserved-macro-identifier )
-    endif()
 endfunction()
 
 

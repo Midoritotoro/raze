@@ -6,8 +6,16 @@ project(raze
     LANGUAGES C CXX
 )
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(RAZE_HAS_CXX23_FEATURE TRUE)
+if(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC" AND NOT ("cxx_std_23" IN_LIST CMAKE_CXX_COMPILE_FEATURES))
+    set(RAZE_HAS_CXX23_FEATURE FALSE)
+    set(CMAKE_CXX_STANDARD_REQUIRED OFF)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-std=c++23>)
+else()
+    set(CMAKE_CXX_STANDARD 23)
+    set(CMAKE_CXX_STANDARD_REQUIRED ON)
+endif()
+
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CLANG_DEFAULT_RTLIB compiler-rt)
@@ -26,7 +34,6 @@ endif()
 if(NOT DEFINED CMAKE_INSTALL_INCLUDEDIR)
     set(CMAKE_INSTALL_INCLUDEDIR "include")
 endif()
-
 
 set(CMAKE_VERBOSE_MAKEFILE OFF)
 include(cmake/tools/ClangRtBuiltins.cmake)
@@ -57,11 +64,19 @@ file(
 add_library(raze INTERFACE)
 add_library(raze::raze ALIAS raze)
 
-target_compile_features(
-    raze
-    INTERFACE
-    cxx_std_23
-)
+if(RAZE_HAS_CXX23_FEATURE)
+    target_compile_features(
+        raze
+        INTERFACE
+        cxx_std_23
+    )
+else()
+    target_compile_options(
+        raze
+        INTERFACE
+        $<$<COMPILE_LANGUAGE:CXX>:-std=c++23>
+    )
+endif()
 
 target_include_directories(
     raze
@@ -87,13 +102,36 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
         /nologo
     )
 elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-     target_compile_options(raze INTERFACE -Werror    -fdiagnostics-color=always   -Wno-reserved-macro-identifier
-        -Wno-ignored-attributes -Wno-psabi -Wno-ignored-attributes $<$<COMPILE_LANGUAGE:CXX>:--param=sra-max-scalarization-size-Ospeed=4096>)
-     target_compile_definitions(raze INTERFACE RAZE_GCC_SRA_LARGE_LIMIT=1)
-else() 
-        target_compile_options(raze INTERFACE -Werror   -Wno-reserved-macro-identifier -fdiagnostics-color=always   
-        -Wno-ignored-attributes -Wno-psabi -Wno-ignored-attributes)
+    target_compile_options(
+        raze
+        INTERFACE
+        -Werror
+        -fdiagnostics-color=always
+        -Wno-reserved-macro-identifier
+        -Wno-ignored-attributes
+        -Wno-psabi
+        $<$<COMPILE_LANGUAGE:CXX>:--param=sra-max-scalarization-size-Ospeed=4096>
+    )
+    target_compile_definitions(raze INTERFACE RAZE_GCC_SRA_LARGE_LIMIT=1)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
+    target_compile_options(
+        raze
+        INTERFACE
+        -noswitcherror
+        --diag_suppress=unnamed_require_expr_param
+    )
+else()
+    target_compile_options(
+        raze
+        INTERFACE
+        -Werror
+        -Wno-reserved-macro-identifier
+        -fdiagnostics-color=always
+        -Wno-ignored-attributes
+        -Wno-psabi
+    )
 endif()
+
 raze_link_clang_rt_builtins(raze)
 
 message(STATUS "RAZE compiler: ${CMAKE_CXX_COMPILER_ID}")

@@ -19,7 +19,7 @@ struct traits : Settings {
 };
 
 template <concepts::option ... Options>
-traits(Options&& ... opts) -> traits<decltype(settings(std::forward<Options>(opts) ...))>;
+traits(Options&& ... opts) -> traits<raze::options::settings<std::decay_t<Options>...>>;
 
 struct unroll_key_t: as_keyword<unroll_key_t> {
     template <class Value> 
@@ -178,7 +178,7 @@ constexpr bool is_strict_types() {
     return Traits::contains(strict_types);
 }
 
-constexpr inline auto no_traits = traits();
+constexpr inline auto no_traits = traits<settings<>>();
 
 template <template <class> class F, class Traits>
 struct supports_traits {
@@ -204,7 +204,7 @@ struct supports_traits {
 
     template <concepts::option Trait>
     raze_always_inline constexpr auto operator[](Trait tr) const noexcept {
-        return operator[](raze::options::traits(tr));
+        return operator[](raze::options::traits<raze::options::settings<Trait>>(tr));
     }
 private:
     raze_no_unique_address Traits _traits;

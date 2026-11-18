@@ -1,11 +1,11 @@
-#pragma once 
+#pragma once
 
 #include <raze/compatibility/Warnings.h>
 
 #if !defined(raze_disable_unrolling)
 #  if defined(raze_cpp_msvc_only)
 #    define raze_disable_unrolling // raze_do_pragma(loop(no_vector))
-#  elif defined(raze_cpp_clang) 
+#  elif defined(raze_cpp_clang)
 #    define raze_disable_unrolling \
        raze_do_pragma(clang loop unroll(disable)) \
        raze_do_pragma(clang loop vectorize(disable)) \
@@ -18,5 +18,11 @@
 #    else
 #      define raze_disable_unrolling
 #    endif // defined(__OPTIMIZE__)
+#  elif defined(raze_cpp_nvhpc)
+#    define raze_disable_unrolling \
+       raze_do_pragma(loop nounroll) \
+       raze_do_pragma(loop novector)
+#  else
+#    define raze_disable_unrolling
 #  endif // defined(raze_cpp_msvc_only)
 #endif // !defined(raze_disable_unrolling)

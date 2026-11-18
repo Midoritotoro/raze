@@ -4,7 +4,11 @@
 #  define RAZE_ECHO(...) __VA_ARGS__
 #endif
 
-#if defined(__INTEL_LLVM_COMPILER)
+#if defined(__NVCOMPILER)
+#  define raze_cpp_nvhpc \
+      ((__NVCOMPILER_MAJOR__ * 100) + __NVCOMPILER_MINOR__)
+#  define raze_cpp_nvhpc_only raze_cpp_nvhpc
+#elif defined(__INTEL_LLVM_COMPILER)
 #  define raze_cpp_icpx \
       ((((__INTEL_LLVM_COMPILER) / 10000) - 2000) * 100 \
        + (((__INTEL_LLVM_COMPILER) % 10000) / 1000))
@@ -14,15 +18,16 @@
 #  define raze_cpp_icc_only raze_cpp_icc
 #endif
 
-#if defined(_MSC_VER)
+#if defined(raze_cpp_nvhpc)
+#elif defined(_MSC_VER)
 #  define raze_cpp_msvc          (_MSC_VER)
 
 #  if defined(__clang__)
 #    undef  raze_cpp_msvc_only
 #    define raze_cpp_clang       ((__clang_major__ * 100) + __clang_minor__)
 
-#    if defined(raze_cpp_icpx)  
-#      undef  raze_cpp_clang_only 
+#    if defined(raze_cpp_icpx)
+#      undef  raze_cpp_clang_only
 #    else
 #      define raze_cpp_clang_only raze_cpp_clang
 #    endif
@@ -63,7 +68,7 @@
 #    endif // __apple_build_version__
 
 #    if defined(raze_cpp_icpx)
-#      undef  raze_cpp_clang_only 
+#      undef  raze_cpp_clang_only
 #    else
 #      define raze_cpp_clang_only raze_cpp_clang
 #      define raze_cpp_clang_pure raze_cpp_clang
@@ -74,7 +79,7 @@
 #    endif
 #  else
 #    if defined(raze_cpp_icc)
-#      define raze_cpp_gnu_only   raze_cpp_gnu   
+#      define raze_cpp_gnu_only   raze_cpp_gnu
 #    else
 #      define raze_cpp_gnu_only   raze_cpp_gnu
 #    endif

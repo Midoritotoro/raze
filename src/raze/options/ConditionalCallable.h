@@ -53,13 +53,13 @@ struct condition_key_t : as_keyword<condition_key_t> {
 constexpr inline condition_key_t condition_key = {};
 
 template <class T>
-concept conditional_expression = requires(T)  {
+concept conditional_expression = requires {
     { T::has_alternative } -> std::convertible_to<bool>;
 };
 
 struct conditional_option {
     raze_always_inline constexpr auto process(const auto& base, concepts::exactly<condition_key> auto const& opts) const noexcept {
-        return merge_prefer_first(base, options{ opts });
+        return merge_prefer_first(base, make_options(opts));
     }
 
     raze_always_inline constexpr auto process(const auto& base, vx::simd_mask_type auto const& o) const noexcept {
@@ -75,7 +75,7 @@ struct conditional_option {
     }
 
     raze_always_inline constexpr auto default_to(const auto& base) const noexcept {
-        return merge_prefer_first(options{condition_key = ignore_none}, base);
+        return merge_prefer_first(make_options(condition_key = ignore_none), base);
     }
 };
 

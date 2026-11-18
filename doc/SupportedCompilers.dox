@@ -1,16 +1,15 @@
 /**
  * @page supported_compilers Supported Compilers
  *
- * RAZE requires a C++23-compliant compiler. The library is continuously tested against 
- * the following compilers. Using older versions may result in compilation failures due 
+ * RAZE requires a C++23-compliant compiler. Using older versions may result in compilation failures due 
  * to missing C++23 language or standard library features.
  *
- * ### Compiler Support Matrix
+ * ### Compiler Support
  *
  * | Compiler | Minimum Version |
  * | :--- | :--- |
  * | **GCC** | 14.1 |
- * | **Clang** | 18.1 |
+ * | **clang** | 18.1 |
  * | **clang-cl** | 18.1 |
  * | **MSVC** | 19.35 (VS 2022 17.5) |
  * | **icpx** | 2025.0 (oneAPI) |
@@ -20,6 +19,6 @@
  * ### Compiler-Specific Behaviors
  *
  * - **Dynamic Dispatch**: MSVC relies on a hand-written runtime dispatcher (CPUID at program startup). 
- *   GCC, Clang, AOCC, and `icpx` use `__attribute__((target_clones))` for auto-vectorizable loops on Linux ELF. 
+ *   GCC, Clang, AOCC, and `icpx` use `__attribute__((target_clones))` for auto-vectorizable loops. 
  *   See @ref dynamic_dispatch for details.
  */
