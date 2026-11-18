@@ -7,11 +7,9 @@
 
 #include <raze/compatibility/Compatibility.h>
 
-
 #if (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
 #  include <cpuid.h>
 #endif // (defined(raze_cpp_clang) || defined(raze_cpp_gnu)) && !defined(raze_cpp_msvc)
-
 
 __RAZE_ARCH_NAMESPACE_BEGIN
 

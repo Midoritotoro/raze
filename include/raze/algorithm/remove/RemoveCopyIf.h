@@ -5,11 +5,10 @@
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/Destination.h>
 #include <raze/algorithm/find/FindIf.h>
+#include <raze/algorithm/copy/Copy.h>
 #include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
-
-constexpr auto remove_copy_strategy = options::strategy<strategy<>{}>;
 
 template <class Traits>
 struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
@@ -101,8 +100,10 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 			requires(std::indirectly_copyable<It, OutIt> && std::indirect_unary_predicate<
 				Pred, std::projected<It, Proj>>)
 	{
-		return this->dispatch(get_source(find_if(first, last, pred, proj), std::move(last)), 
-			get_destination(std::move(out)), traits::fwd_fn(pred), traits::fwd_fn(proj));
+		auto found = find_if(first, last, pred, proj);
+		auto prefix = copy(std::move(first), found, std::move(out));
+		return this->dispatch(get_source(std::move(found), std::move(last)),
+			get_destination(std::move(prefix.out)), traits::fwd_fn(pred), traits::fwd_fn(proj));
 	}
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class Pred, class Proj = std::identity>
@@ -114,6 +115,6 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 	}
 };
 
-constexpr inline auto remove_copy_if = options::function_with_traits<remove_copy_if_t>[remove_copy_strategy];
+constexpr inline auto remove_copy_if = options::function_with_traits<remove_copy_if_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END
