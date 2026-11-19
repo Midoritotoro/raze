@@ -2,7 +2,6 @@
 
 #include <raze/arch/CpuFeature.h>
 #include <raze/compatibility/SimdCompatibility.h>
-#include <raze/vx/Config.h>
 
 #include <src/raze/traits/IntegralProperties.h>
 #include <src/raze/traits/TypeCheck.h>
@@ -34,46 +33,25 @@ private:
     static constexpr bool is_fp64 = is_any_of_v<Type, f64, long double>;
     static constexpr bool is_fp32 = std::is_same_v<Type, f32>;
     static constexpr bool use_i = is_nonbool_integral_v<Type> || is_pointer_decay_v<T> || std::is_same_v<Type, std::nullptr_t>;
-
-#if !defined(raze_cpp_nvhpc) || RAZE_HAS_AVX512F_SUPPORT
-    using m512d_t = __m512d;
-    using m512_t  = __m512;
-    using m512i_t = __m512i;
-#else
-    using m512d_t = void;
-    using m512_t  = void;
-    using m512i_t = void;
-#endif
-
-#if !defined(raze_cpp_nvhpc) || RAZE_HAS_AVX_SUPPORT
-    using m256d_t = __m256d;
-    using m256_t  = __m256;
-    using m256i_t = __m256i;
-#else
-    using m256d_t = void;
-    using m256_t  = void;
-    using m256i_t = void;
-#endif
-
 public:
     using type =
         std::conditional_t<
             Width == 512,
                 std::conditional_t<
-                    is_fp64, m512d_t,
+                    is_fp64, __m512d,
                     std::conditional_t<
-                        is_fp32, m512_t,
+                        is_fp32, __m512,
                         std::conditional_t<
-                            use_i,   m512i_t,
+                            use_i,   __m512i,
                                      void>>>,
         std::conditional_t<
             Width == 256,
                 std::conditional_t<
-                    is_fp64, m256d_t,
+                    is_fp64, __m256d,
                     std::conditional_t<
-                        is_fp32, m256_t,
+                        is_fp32, __m256,
                         std::conditional_t<
-                            use_i,   m256i_t,
+                            use_i,   __m256i,
                                      void>>>,
         std::conditional_t<
             Width == 128,

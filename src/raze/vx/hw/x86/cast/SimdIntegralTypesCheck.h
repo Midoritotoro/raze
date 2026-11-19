@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <raze/arch/CpuFeature.h>
-#include <raze/vx/Config.h>
 
 #include <src/raze/traits/TypeCheck.h>
 #include <src/raze/traits/IsVirtualBaseOf.h>
@@ -15,14 +14,7 @@ class simd;
 
 template <class T>
 constexpr bool is_intrin_type_v = traits::is_any_of_v<std::remove_cvref_t<T>,
-	__m128, __m128i, __m128d
-#if !defined(raze_cpp_nvhpc) || RAZE_HAS_AVX_SUPPORT
-	, __m256, __m256i, __m256d
-#endif
-#if !defined(raze_cpp_nvhpc) || RAZE_HAS_AVX512F_SUPPORT
-	, __m512, __m512i, __m512d
-#endif
->;
+	__m128, __m128i, __m128d, __m256, __m256i, __m256d, __m512, __m512i, __m512d>;
 
 template <class T>
 concept intrin_type = is_intrin_type_v<T>;

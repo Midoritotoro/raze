@@ -15,7 +15,7 @@ __RAZE_MATH_NAMESPACE_BEGIN
 
 #if (defined(raze_processor_x86_32) || defined(raze_processor_x86_64))
 
-#  if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
+#  if defined(raze_cpp_gnu) || defined(raze_cpp_clang) || defined(raze_cpp_nvhpc)
 
 #    if !defined(raze_popcnt_u32)
 #      define raze_popcnt_u32 __builtin_popcount

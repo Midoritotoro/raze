@@ -38,12 +38,12 @@ RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
     constexpr size_t G = 8;                  
     const T SENT = make_sentinel<T>();
 
-    alignas(std::hardware_constructive_interference_size) T src[N];
+    alignas(64) T src[N];
     for (size_t i = 0; i < N; ++i) src[i] = make_value<T>(i);
     const V v = raze::vx::load<V>(src);
 
     auto run_case = [&](const Mask& m, int mode, size_t offset) {
-        alignas(std::hardware_constructive_interference_size) T buf[N + 2 * G];
+        alignas(64) T buf[N + 2 * G];
         std::ranges::fill(buf, SENT);
         T* dst = buf + G + offset;
 
@@ -109,7 +109,7 @@ RTTS_CASE_TPL("raze::vx::compress_store", rtts::simd::all_simd_infos)
 
     {
         constexpr int R = 4;
-        alignas(std::hardware_constructive_interference_size) T buf[N * R + 2 * G];
+        alignas(64) T buf[N * R + 2 * G];
         std::ranges::fill(buf, SENT);
         T* cur = buf + G;
         T* exp_cur = buf + G;

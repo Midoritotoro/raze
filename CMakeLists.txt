@@ -118,7 +118,7 @@ elseif(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
         raze
         INTERFACE
         -noswitcherror
-        --diag_suppress=unnamed_require_expr_param
+        --diag_suppress=unnamed_require_expr_param,not_used_in_template_function_params,integer_sign_change
     )
 else()
     target_compile_options(
