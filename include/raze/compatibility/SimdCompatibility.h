@@ -41,7 +41,7 @@
 #    define __MOVBE__                       1
 #    define __LZCNT__                       1
 #  endif // __AVX2__
-# endif // defined(raze_processor_x86) && defined(raze_cpp_msvc)
+#endif // defined(raze_processor_x86) && defined(raze_cpp_msvc_only)
 
 #if defined(raze_cpp_msvc) && !defined(_M_ARM64EC)
 #  include <intrin.h>
@@ -50,3 +50,28 @@
 #if defined(raze_processor_x86) && defined(__SSE2__)
 #  include <emmintrin.h>
 #endif // defined(raze_processor_x86) && defined(__SSE2__)
+
+#if defined(raze_processor_x86) && defined(raze_cpp_nvhpc)
+#  include <immintrin.h>
+#  include <smmintrin.h>
+#  include <avxintrin.h>
+#  include <avx2intrin.h>
+#  include <f16cintrin.h>
+#  include <fmaintrin.h>
+#  include <bmiintrin.h>
+#  include <bmi2intrin.h>
+#  include <lzcntintrin.h>
+#  include <popcntintrin.h>
+#  include <avx512fintrin.h>
+#  include <avx512vlintrin.h>
+#  include <avx512bwintrin.h>
+#  include <avx512vlbwintrin.h>
+#  include <avx512dqintrin.h>
+#  include <avx512vldqintrin.h>
+#  include <avx512cdintrin.h>
+#  include <avx512vlcdintrin.h>
+#  include <avx512vbmiintrin.h>
+#  include <avx512vbmivlintrin.h>
+#  include <avx512vbmi2intrin.h>
+#  include <avx512vlvbmi2intrin.h>
+#endif // defined(raze_processor_x86) && defined(raze_cpp_nvhpc)

@@ -1,0 +1,453 @@
+{
+  "version": 4,
+  "configurePresets": [
+    {
+      "name": "win-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Windows"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ]
+        }
+      }
+    },
+    {
+      "name": "win-msvc-env",
+      "hidden": true,
+      "inherits": "win-base",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      }
+    },
+    {
+      "name": "x64-msvc-base",
+      "hidden": true,
+      "inherits": "win-msvc-env",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "cl.exe",
+        "CMAKE_CXX_COMPILER": "cl.exe"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ],
+          "intelliSenseMode": "windows-msvc-x64",
+          "enableMicrosoftCodeAnalysis": true,
+          "enableClangTidyCodeAnalysis": true,
+          "clangTidyChecks": "*"
+        }
+      }
+    },
+    {
+      "name": "x64-Debug",
+      "inherits": "x64-msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "RAZE_INSTALL": {
+          "type": "BOOL",
+          "value": "ON"
+        }
+      }
+    },
+    {
+      "name": "x64-Release",
+      "inherits": "x64-msvc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-clang-cl-base",
+      "hidden": true,
+      "inherits": "win-msvc-env",
+      "toolset": {
+        "value": "ClangCL",
+        "strategy": "external"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang-cl.exe",
+        "CMAKE_CXX_COMPILER": "clang-cl.exe"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ],
+          "intelliSenseMode": "windows-clangcl-x64"
+        }
+      }
+    },
+    {
+      "name": "x64-Debug-clang",
+      "inherits": "x64-clang-cl-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "x64-Release-clang",
+      "inherits": "x64-clang-cl-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-gcc-base",
+      "hidden": true,
+      "inherits": "win-base",
+      "environment": {
+        "PATH": "D:/Libraries/win64/msys64/ucrt64/bin;$env{SystemRoot}/system32;$env{SystemRoot}"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "gcc.exe",
+        "CMAKE_CXX_COMPILER": "g++.exe"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ],
+          "intelliSenseMode": "linux-gcc-x64"
+        }
+      }
+    },
+    {
+      "name": "GCC-Debug",
+      "inherits": "x64-gcc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "GCC-Release",
+      "inherits": "x64-gcc-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-clang-base",
+      "hidden": true,
+      "inherits": "win-base",
+      "environment": {
+        "PATH": "D:/Libraries/win64/msys64/clang64/bin;$env{SystemRoot}/system32;$env{SystemRoot}"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "clang.exe",
+        "CMAKE_CXX_COMPILER": "clang++.exe"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ],
+          "intelliSenseMode": "linux-gcc-x64"
+        }
+      }
+    },
+    {
+      "name": "Clang-Debug",
+      "inherits": "x64-clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "Clang-Release",
+      "inherits": "x64-clang-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "x64-icpx-base",
+      "hidden": true,
+      "inherits": "win-msvc-env",
+      "environment": {
+        "PATH": "D:/icpx/compiler/2026.2/bin;$penv{PATH}",
+        "INCLUDE": "D:/icpx/compiler/2026.2/include;D:/icpx/compiler/2026.2/opt/compiler/include;$penv{INCLUDE}",
+        "LIB": "D:/icpx/compiler/2026.2/lib;D:/icpx/compiler/2026.2/lib/intel64;$penv{LIB}"
+      },
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "D:/icpx/compiler/2026.2/bin/icx.exe",
+        "CMAKE_CXX_COMPILER": "D:/icpx/compiler/2026.2/bin/icx.exe",
+        "CMAKE_EXE_LINKER_FLAGS": "-Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib\" -Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib/intel64\"",
+        "CMAKE_SHARED_LINKER_FLAGS": "-Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib\" -Xlinker /LIBPATH:\"D:/icpx/compiler/2026.2/lib/intel64\""
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Windows" ],
+          "intelliSenseMode": "windows-clangcl-x64"
+        }
+      }
+    },
+    {
+      "name": "ICPX-Debug",
+      "inherits": "x64-icpx-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "ICPX-Release",
+      "inherits": "x64-icpx-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "bench-msvc",
+      "inherits": "x64-msvc-base",
+      "binaryDir": "${sourceDir}/out/bench/msvc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "bench-clang",
+      "inherits": "x64-clang-base",
+      "binaryDir": "${sourceDir}/out/bench/clang",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "bench-clang-cl",
+      "inherits": "x64-clang-cl-base",
+      "binaryDir": "${sourceDir}/out/bench/clang-cl",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "bench-gcc",
+      "inherits": "x64-gcc-base",
+      "binaryDir": "${sourceDir}/out/bench/gcc",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "bench-icpx",
+      "inherits": "x64-icpx-base",
+      "binaryDir": "${sourceDir}/out/bench/icpx",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "linux-base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/out/build/${presetName}",
+      "installDir": "${sourceDir}/out/install/${presetName}",
+      "condition": {
+        "type": "equals",
+        "lhs": "${hostSystemName}",
+        "rhs": "Linux"
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "hostOS": [ "Linux" ],
+          "intelliSenseMode": "linux-gcc-x64"
+        },
+        "microsoft.com/VisualStudioRemoteSettings/CMake/1.0": {
+          "sourceDir": "$env{HOME}/.vs/$ms{projectDirName}"
+        }
+      }
+    },
+    {
+      "name": "Linux-GCC-Debug",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "Linux-GCC-Release",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "gcc",
+        "CMAKE_CXX_COMPILER": "g++"
+      }
+    },
+    {
+      "name": "Linux-Clang-Debug",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "Linux-Clang-Release",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "clang",
+        "CMAKE_CXX_COMPILER": "clang++"
+      }
+    },
+    {
+      "name": "Linux-ICPX-Debug",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "icx",
+        "CMAKE_CXX_COMPILER": "icpx"
+      }
+    },
+    {
+      "name": "Linux-ICPX-Release",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "icx",
+        "CMAKE_CXX_COMPILER": "icpx"
+      }
+    },
+    {
+      "name": "Linux-NVCPP-Debug",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "nvc",
+        "CMAKE_CXX_COMPILER": "nvc++"
+      }
+    },
+    {
+      "name": "Linux-NVCPP-Release",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "nvc",
+        "CMAKE_CXX_COMPILER": "nvc++"
+      }
+    },
+    {
+      "name": "Linux-AOCC-Debug",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "aoc",
+        "CMAKE_CXX_COMPILER": "aoc++",
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "Linux-AOCC-Release",
+      "inherits": "linux-base",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_C_COMPILER": "aoc",
+        "CMAKE_CXX_COMPILER": "aoc++"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "x64-Debug",
+      "configurePreset": "x64-Debug"
+    },
+    {
+      "name": "x64-Release",
+      "configurePreset": "x64-Release"
+    },
+    {
+      "name": "x64-Debug-clang",
+      "configurePreset": "x64-Debug-clang"
+    },
+    {
+      "name": "x64-Release-clang",
+      "configurePreset": "x64-Release-clang"
+    },
+    {
+      "name": "GCC-Debug",
+      "configurePreset": "GCC-Debug"
+    },
+    {
+      "name": "GCC-Release",
+      "configurePreset": "GCC-Release"
+    },
+    {
+      "name": "Clang-Debug",
+      "configurePreset": "Clang-Debug"
+    },
+    {
+      "name": "Clang-Release",
+      "configurePreset": "Clang-Release"
+    },
+    {
+      "name": "ICPX-Debug",
+      "configurePreset": "ICPX-Debug"
+    },
+    {
+      "name": "ICPX-Release",
+      "configurePreset": "ICPX-Release"
+    },
+    {
+      "name": "bench-msvc",
+      "configurePreset": "bench-msvc"
+    },
+    {
+      "name": "bench-clang",
+      "configurePreset": "bench-clang"
+    },
+    {
+      "name": "bench-clang-cl",
+      "configurePreset": "bench-clang-cl"
+    },
+    {
+      "name": "bench-gcc",
+      "configurePreset": "bench-gcc"
+    },
+    {
+      "name": "bench-icpx",
+      "configurePreset": "bench-icpx"
+    },
+    {
+      "name": "Linux-GCC-Debug",
+      "configurePreset": "Linux-GCC-Debug"
+    },
+    {
+      "name": "Linux-GCC-Release",
+      "configurePreset": "Linux-GCC-Release"
+    },
+    {
+      "name": "Linux-Clang-Debug",
+      "configurePreset": "Linux-Clang-Debug"
+    },
+    {
+      "name": "Linux-Clang-Release",
+      "configurePreset": "Linux-Clang-Release"
+    },
+    {
+      "name": "Linux-ICPX-Debug",
+      "configurePreset": "Linux-ICPX-Debug"
+    },
+    {
+      "name": "Linux-ICPX-Release",
+      "configurePreset": "Linux-ICPX-Release"
+    },
+    {
+      "name": "Linux-NVCPP-Debug",
+      "configurePreset": "Linux-NVCPP-Debug"
+    },
+    {
+      "name": "Linux-NVCPP-Release",
+      "configurePreset": "Linux-NVCPP-Release"
+    },
+    {
+      "name": "Linux-AOCC-Debug",
+      "configurePreset": "Linux-AOCC-Debug"
+    },
+    {
+      "name": "Linux-AOCC-Release",
+      "configurePreset": "Linux-AOCC-Release"
+    }
+  ]
+}

@@ -14,16 +14,20 @@ raze_always_inline bool none_of_(M x) noexcept {
 		if constexpr (sizeof(M) == 16 && has_sse41<ISA>) return _mm_testz_si128(as<__m128i>(x), as<__m128i>(x));
 		else if constexpr (sizeof(M) == 32) return _mm256_testz_si256(as<__m256i>(x), as<__m256i>(x));
 		else return to_bitmask_<ISA, T>(x) == 0;
-#elif defined(raze_cpp_msvc)
-        return to_bitmask_<ISA, T>(x) == 0;
+#else
+		return to_bitmask_<ISA, T>(x) == 0;
 #endif
 	}
 	else if constexpr (std::is_integral_v<M> && !std::is_same_v<M, bool>) {
+#if !defined(raze_cpp_nvhpc)
 		if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) return _kortestz_mask8_u8(x, x);
 		else if constexpr (sizeof(M) == 2 && has_avx512f<ISA>) return _kortestz_mask16_u8(x, x);
 		else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _kortestz_mask32_u8(x, x);
 		else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _kortestz_mask64_u8(x, x);
 		else return (x == 0);
+#else
+		return (x == 0);
+#endif
 	}
 	else {
 		return !x;
@@ -43,11 +47,15 @@ raze_always_inline bool none_of_(M x, ControlMask mask) noexcept
         else return none_of_<ISA, T>(mask_and_<ISA, T>(x, mask));
     }
     else if constexpr (std::is_integral_v<M> && !std::is_same_v<M, bool>) {
+#if !defined(raze_cpp_nvhpc)
         if constexpr (sizeof(M) == 1 && has_avx512dq<ISA>) return _ktestz_mask8_u8(x, mask);
         else if constexpr (sizeof(M) == 2 && has_avx512dq<ISA>) return _ktestz_mask16_u8(x, mask);
         else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _ktestz_mask32_u8(x, mask);
         else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _ktestz_mask64_u8(x, mask);
         else return (x & mask) == 0;
+#else
+        return (x & mask) == 0;
+#endif
     }
 }
 

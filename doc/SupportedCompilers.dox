@@ -19,6 +19,6 @@
  * ### Compiler-Specific Behaviors
  *
  * - **Dynamic Dispatch**: MSVC relies on a hand-written runtime dispatcher (CPUID at program startup). 
- *   GCC, Clang, AOCC, and `icpx` use `__attribute__((target_clones))` for auto-vectorizable loops. 
+ *   GCC, Clang, AOCC, nvc++, and `icpx` use `__attribute__((target_clones))` for auto-vectorizable loops. 
  *   See @ref dynamic_dispatch for details.
  */
