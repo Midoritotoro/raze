@@ -127,6 +127,104 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 	}
 };
 
+/**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Copies a range of elements in backward order.
+ *
+ * 1) Copies all elements from the range `[first, last)` to another range ending at `result`.
+ *    Elements are copied in reverse order (from the last element to the first), preserving their
+ *    relative order in the destination range.
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `copy_backward(std::ranges::begin(r), std::ranges::end(r), std::move(result))`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::bidirectional_iterator InIt, std::sentinel_for<InIt> Sent,
+ *           std::weakly_incrementable OutIt >
+ *   requires(std::indirectly_copyable<InIt, OutIt>)
+ * constexpr std::ranges::in_out_result<InIt, OutIt>
+ * copy_backward( InIt first, Sent last, OutIt result );
+ *
+ * // (2) Range overload
+ * template< std::ranges::bidirectional_range R, std::weakly_incrementable OutIt >
+ *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt>)
+ * constexpr std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+ * copy_backward( R&& r, OutIt result );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the source range of elements to copy
+ * - `r`             - the source range of elements to copy
+ * - `result`        - past-the-end iterator of the destination range (must have at least
+ *                     `std::ranges::distance(first, last)` writable elements preceding it)
+ *
+ * ### Return value
+ * A `std::ranges::in_out_result` containing:
+ * - `in`: an iterator comparing equal to `last` (or `std::ranges::end(r)`).
+ * - `out`: an iterator pointing to the first written element in the destination range (`result - N`).
+ *
+ * ### Complexity
+ * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) assignments.
+ *
+ * ### Decorators and Options
+ * The algorithm object is configured with `raze::options::unroll<4>` by default and supports
+ * compile-time modifiers via `operator[]`:
+ * ```cpp
+ * copy_backward[raze::options::fscalar](...);
+ * copy_backward[raze::options::unroll<2>](...);
+ * copy_backward[raze::options::fstatic][raze::options::unroll<2>](...);
+ * ```
+ * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
+ * and valid combinations, see the **options documentation**.
+ *
+ * ### Notes
+ * - Suitable for overlapping ranges when shifting elements toward higher addresses.
+ *   The behavior is undefined if `result` lies within `(first, last]`; in that case, use
+ *   `raze::algorithm::copy` (for non-overlapping or scalar-safe forward copies) or `std::memmove`.
+ * - Execution path selection:
+ *   - **Constant evaluation (`if consteval`) or `fscalar`**: always executes via the scalar backward loop.
+ *   - **Native fast path**: for contiguous ranges of identical trivially copyable types, delegates to an
+ *     optimized `memmove` implementation.
+ *   - **SIMD conversion path**: for contiguous ranges of distinct arithmetic types satisfying
+ *     `raze::vx::supports_fast_conversion` for the active ISA, uses reverse-order explicit SIMD loads,
+ *     `raze::vx::convert`, and stores (with any remaining leading elements handled by the scalar fallback).
+ *   - **Scalar fallback**: used for non-contiguous iterators, non-arithmetic element types, or
+ *     type pairs without fast SIMD conversion support.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/copy/CopyBackward.h>
+ *
+ * void println(const auto& seq) {
+ *     for (const auto& elem : seq) std::cout << elem << ' ';
+ *     std::cout << '\n';
+ * }
+ *
+ * int main() {
+ *     // Overlapping shift to the right (native memmove path)
+ *     std::vector<int> v{1, 2, 3, 4, 0, 0};
+ *     auto [in, out] = raze::algorithm::copy_backward(v.begin(), v.begin() + 4, v.end());
+ *     println(v);
+ *
+ *     // Cross-type arithmetic copy in reverse order (SIMD conversion path via vx::convert)
+ *     const std::vector<int> src{1, 2, 3, 4, 5};
+ *     std::vector<double> dst(src.size());
+ *     raze::algorithm::copy_backward(src, dst.end());
+ *     println(dst);
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 1 2 1 2 3 4
+ * 1 2 3 4 5
+ * ```
+*/
 constexpr inline auto copy_backward = options::function_with_traits<copy_backward_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -101,6 +101,10 @@ raze_nodiscard raze_always_inline constexpr auto get_destination(It it) {
 	return data_destination<It>(std::move(it));
 }
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Concept for an output iterator wrapper (`data_destination`) supporting iterator unwrapping/wrapping.
+*/
 template <class Destination>
 concept destination = requires(
 	Destination dest,
@@ -116,6 +120,11 @@ concept destination = requires(
 		typename Destination::unchecked_iterator_type>;
 };
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Concept for a @ref destination backed by contiguous storage, allowing direct SIMD stores
+ *        and pointer-based re-seeking (`from_ptr`).
+*/
 template <class Destination>
 concept contiguous_destination =
 	destination<Destination> &&

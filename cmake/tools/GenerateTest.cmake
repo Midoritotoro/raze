@@ -745,7 +745,7 @@ function(raze_generate_test root main_source rootpath file)
         )
     elseif(CMAKE_CXX_COMPILER_ID STREQUAL "NVHPC")
         target_compile_options(${main_target} PRIVATE
-            -noswitcherror
+            -noswitcherror  
         )
     else()
         target_compile_options(${main_target} PRIVATE

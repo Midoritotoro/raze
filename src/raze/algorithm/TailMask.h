@@ -5,6 +5,14 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Lazy generator wrapper representing a SIMD tail mask for partial final vector iterations.
+ *
+ * Stores the exact remaining byte count (`tail_bytes()`) and a callable generator `Gen` that
+ * materializes the underlying `simd_mask` on demand.
+*/
 template <class Gen>
 struct tail_mask {
 	using mask_type = decltype(std::declval<Gen>()());
@@ -34,6 +42,11 @@ private:
 	sizetype _tail_bytes;
 };
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Concept satisfied by lazy tail-mask descriptors passed to masked tail kernel overloads
+ *        and mask inspection functions (e.g., `vx::all_of`, `vx::any_of`, `vx::find_first_set`).
+*/
 template <class T>
 concept tail_mask_type = requires(T const& ignore, sizetype bytes) {
 	typename T::mask_type;

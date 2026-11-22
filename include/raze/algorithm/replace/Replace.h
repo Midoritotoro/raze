@@ -66,7 +66,7 @@ struct replace_t : Traits {
  * (none)
  *
  * ### Complexity
- * Exactly `last - first` (or `std::ranges::distance(r)`) comparisons and applications of `proj`.
+ * Exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) comparisons and applications of `proj`.
  *
  * ### Decorators and Options
  * The algorithm object supports compile-time modifiers via `operator[]`:

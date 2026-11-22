@@ -376,6 +376,11 @@ raze_nodiscard raze_always_inline constexpr auto get_source(It it, Sent sent) {
     return iter_data_source<It, Sent>(std::move(it), std::move(sent));
 }
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Concept for an algorithm input wrapper abstracting either a range (`range_data_source`)
+ *        or an iterator-sentinel pair (`iter_data_source`) with unwrapped/unchecked iteration.
+*/
 template <class Source>
 concept source = requires(
     Source src,
@@ -408,6 +413,11 @@ template <class It>
 inline constexpr bool has_contiguous_storage_v<std::counted_iterator<It>> =
     has_contiguous_storage_v<It>;
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Concept for a @ref source backed by contiguous memory, enabling raw pointer conversion
+ *        (`to_raw_range`), pointer re-seeking (`from_ptr`), and SIMD / `autovec` execution paths.
+*/
 template <class Source>
 concept contiguous_source = source<Source> &&
     has_contiguous_storage_v<typename Source::unchecked_iterator_type> &&
@@ -429,11 +439,19 @@ concept contiguous_source = source<Source> &&
         const std::iter_value_t<typename Source::unchecked_iterator_type>*>>;
 };
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Concept for a @ref source whose byte size is known as a compile-time constant (`static_size()`).
+*/
 template <class Source>
 concept constexpr_sized_source = source<Source> && requires(Source src) {
     { Source::static_size() } -> std::convertible_to<sizetype>;
 };
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Concept for a @ref source whose elements can be modified in place (`std::permutable`).
+*/
 template <class Source>
 concept modifiable_source = source<Source> &&
     std::permutable<typename Source::unchecked_iterator_type>;

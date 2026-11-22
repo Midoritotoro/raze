@@ -10,7 +10,16 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 #pragma strict_gs_check(off)
 #endif
 
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Tag type passed to `kernel::operator()` to select the compiler auto-vectorizable (`for_noalias`) path.
+*/
 struct autovectorizable_tag {};
+
+/**
+ * @ingroup raze_algo_dispatch
+ * @brief Tag type passed to `kernel::operator()` to select a custom native/library fast path (e.g., `memcpy`).
+*/
 struct native_tag {};
 
 template <class Work>

@@ -22,10 +22,11 @@ struct for_each_n_t : Traits {
  * @ingroup raze_algo
  * @memberof raze::algorithm
  * @hideinitializer
- * @brief Applies a function object to the first n elements of a sequence, in order.
+ * @brief Applies a function object to the first `n` elements of a sequence.
  *
  * Applies the unary function `f` to the result of dereferencing every iterator in the range
- * `[first, first + n)`, projected by `proj`. If `n <= 0`, the algorithm has no effect.
+ * `[first, first + n)`, projected by `proj`, if `n > 0`. Does nothing if `n == 0`
+ * (the behavior is undefined if `n < 0`).
  *
  * ### Declarations
  * ```cpp
@@ -37,20 +38,24 @@ struct for_each_n_t : Traits {
  *
  * ### Parameters
  * - `first` - the beginning of the range of elements to iterate over
- * - `n`     - the number of elements to process
- * - `f`     - unary function object to apply to projected elements
- * - `proj`  - projection to apply to elements (defaults to `std::identity`)
+ * - `n`     - the number of elements to process (must satisfy `n >= 0`)
+ * - `f`     - unary function object to apply to each projected element
+ * - `proj`  - projection to apply to the elements (defaults to `std::identity`)
  *
  * ### Return value
  * A `std::ranges::in_fun_result` containing:
- * - `in`: an iterator pointing past the last processed element (`first + n` if `n > 0`, otherwise `first`).
- * - `fun`: the function object `f` passed as an argument.
+ * - `in`: an iterator pointing past the last processed element (`std::ranges::next(first, n)` if `n > 0`, otherwise `first`).
+ * - `fun`: the function object `f`.
  *
  * ### Complexity
- * Linear: exactly `max(0, n)` invocations of `f` and applications of `proj`.
+ * Linear in `n` (`0` if `n == 0`): performs `n` applications of `f` and `proj` in the scalar
+ * and auto-vectorized paths, or one vector application per SIMD chunk (including the masked tail)
+ * in the explicit SIMD path.
  *
  * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
+ * The algorithm object is configured with `raze::options::unroll<4>` by default (and
+ * `strategy_mode::autovec` on GCC, Clang, and ICPX) and supports compile-time modifiers via
+ * `operator[]` (forwarded to `raze::algorithm::for_each`):
  * ```cpp
  * for_each_n[raze::options::fscalar](...);
  * for_each_n[raze::options::unroll<2>](...);
@@ -58,6 +63,21 @@ struct for_each_n_t : Traits {
  * ```
  * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
  * and valid combinations, see the **options documentation**.
+ *
+ * ### Notes
+ * - Implemented by delegating to `raze::algorithm::for_each` using `std::counted_iterator` and
+ *   `std::default_sentinel`, inheriting its execution paths (`autovec` on GCC/Clang/ICPX,
+ *   explicit SIMD with masked tail handling on MSVC, and scalar fallback otherwise).
+ * - **Execution order & vectorization**:
+ *   - When `f` is vectorizable (e.g., accepts `auto&`), elements may be processed in an unsequenced
+ *     (`unseq`) / vectorized manner without strict element-by-element ordering; `f` must not rely on
+ *     loop-carried dependencies or cross-iteration mutable state.
+ *   - Strict sequential in-order execution is guaranteed when `f` takes an explicit scalar parameter
+ *     type (e.g., `[](int x)` or `[](int& x)`), when `raze::options::fscalar` is specified, for
+ *     non-contiguous iterators or non-`std::identity` projections, or in constant-evaluated contexts
+ *     (`if consteval`).
+ *   - See @ref vectorization_semantics for full details and caveats with generic (`auto`) lambdas.
+ * - The input range must be modifiable (`modifiable_source`).
  *
  * ### Example
  * ```cpp
@@ -73,11 +93,11 @@ struct for_each_n_t : Traits {
  * int main() {
  *     std::vector<int> v{1, 2, 3, 4, 5, 6, 7};
  *
- *     // In-place modification of the first 4 elements
- *     raze::algorithm::for_each_n(v.begin(), 4, [](int& x) { x *= 10; });
+ *     // Vectorized in-place modification of the first 4 elements (`auto&` enables SIMD / autovec)
+ *     raze::algorithm::for_each_n(v.begin(), 4, [](auto& x) { x *= 10; });
  *     println(v);
  *
- *     // Non-modifying traversal of the first 3 elements with side effects
+ *     // Guaranteed sequential in-order traversal of the first 3 elements (explicit scalar parameter)
  *     int sum = 0;
  *     raze::algorithm::for_each_n(v.begin(), 3, [&sum](int x) { sum += x; });
  *     std::cout << "Sum of first 3: " << sum << '\n';
@@ -86,10 +106,10 @@ struct for_each_n_t : Traits {
  *
  * Possible output:
  * ```text
- * 10 20 30 40 5 6 7 
+ * 10 20 30 40 5 6 7
  * Sum of first 3: 60
  * ```
- */
+*/
 constexpr inline auto for_each_n = options::function_with_traits<for_each_n_t>[options::unroll<4>][for_each_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -18,12 +18,19 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 struct uniform_mode {};
+
+/**
+ * @ingroup raze_vx_reduce
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Option for `fold` returning a uniform SIMD vector instead of a scalar.
+ *
+ * When `[raze::vx::uniform]` is applied, `fold` returns a vector of type `V` with the reduced
+ * result broadcast to every lane rather than a single `V::value_type` scalar.
+ * @see fold
+*/
 constexpr inline auto uniform = raze::options::flag(uniform_mode{});
 struct uniform_option : raze::options::exact_option<uniform> {};
-
-//struct mirror_mode {};
-//constexpr inline auto mirror = raze::options::flag(mirror_mode{});
-//struct mirror_option : raze::options::exact_option<mirror> {};
 
 template <class Options>
 struct configurable_fold_t : options::conditional_callable<configurable_fold_t, Options, uniform_option> {

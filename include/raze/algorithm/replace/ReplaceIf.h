@@ -154,7 +154,7 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
  * (none)
  *
  * ### Complexity
- * Exactly `last - first` (or `std::ranges::distance(r)`) applications of `pred` and `proj`.
+ * Exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) applications of `pred` and `proj`.
  *
  * ### Decorators and Options
  * The algorithm object supports compile-time modifiers via `operator[]`:

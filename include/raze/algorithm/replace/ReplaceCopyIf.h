@@ -188,7 +188,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
  * - `out`: an iterator pointing past the last written element in the destination range.
  *
  * ### Complexity
- * Exactly `sent - first` (or `std::ranges::distance(r)`) comparisons and applications of `proj`.
+ * Exactly `std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`) comparisons and applications of `proj`.
  *
  * ### Decorators and Options
  * The algorithm object supports compile-time modifiers via `operator[]`:

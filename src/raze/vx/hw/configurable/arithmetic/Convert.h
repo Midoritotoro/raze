@@ -17,10 +17,32 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 struct ignore_unsupported_mode {};
+
+/**
+ * @ingroup raze_vx_arith
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Option for `convert` enabling pass-through behavior for non-arithmetic `trivially_copyable` types.
+ *
+ * When `[raze::vx::ignore_unsupported]` is specified and destination type `T` is not arithmetic,
+ * `convert<T>` acts as an identity operation and returns the input vector `x` unchanged.
+ * @see convert
+*/
 inline constexpr auto ignore_unsupported = raze::options::flag(ignore_unsupported_mode{});
 struct ignore_unsupported_option : raze::options::exact_option<ignore_unsupported> {};
 
 struct saturated_mode {};
+
+/**
+ * @ingroup raze_vx_arith
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Option for `convert` enabling saturating numeric conversions.
+ *
+ * Clamps out-of-range values to the representable bounds of destination type `T` (and converts `NaN`
+ * to `0` when converting floating-point to integer) instead of using wrapping/truncating `static_cast` semantics.
+ * @see convert
+*/
 inline constexpr auto saturated = raze::options::flag(saturated_mode{});
 struct saturated_option : raze::options::exact_option<saturated> {};
 

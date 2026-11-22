@@ -17,7 +17,7 @@ constexpr auto for_each_strategy = options::strategy<strategy<>()
 
 template <class Traits>
 struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
-	template <modifiable_source Source, class F, class Proj>
+	template <source Source, class F, class Proj>
 	struct kernel {
 		using source_type = std::remove_cvref_t<Source>;
 		using iterator_type = typename source_type::iterator_type;
@@ -26,7 +26,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		using vector_value_type = std::iter_value_t<iterator_type>;
 
 		static consteval bool vectorizable() noexcept {
-			return contiguous_source<Source> &&
+			return contiguous_source<Source> && modifiable_source<Source> &&
 				vectorizable_unary_function<F, iterator_type> &&
 				vectorizable_projection<Proj, iterator_type>;
 		}
@@ -59,14 +59,15 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>();
+
 			auto* ptr = std::to_address(_iterator);
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
-			raze_disable_unrolling
-			do {
-				auto projected = _proj(vx::load<Tag>(ptr));
+			raze_disable_unrolling do {
+				auto projected = _proj(vx::load<Tag>[alignment](ptr));
 				_f(projected);
-				vx::store(ptr, projected);
+				vx::store[alignment](ptr, projected);
 				advance_bytes(ptr, sizeof(Tag));
 			} while (ptr != aligned_end);
 
@@ -75,11 +76,12 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>();
 			auto* ptr = std::to_address(_iterator);
 
-			auto projected = _proj(vx::load<Tag>[ignore](ptr));
+			auto projected = _proj(vx::load<Tag>[ignore][alignment](ptr));
 			_f(projected);
-			vx::store[ignore](ptr, projected);
+			vx::store[ignore][alignment](ptr, projected);
 
 			advance_bytes(ptr, ignore.tail_bytes());
 			source_type::from_ptr(_iterator, ptr);
@@ -121,7 +123,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  * @ingroup raze_algo
  * @memberof raze::algorithm
  * @hideinitializer
- * @brief Applies a function object to each element of a range, in order.
+ * @brief Applies a function object to each element of a range.
  *
  * 1) Applies `f` to the result of dereferencing every iterator in the range `[first, sent)`,
  *    projected by `proj`.
@@ -129,49 +131,40 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  *    `for_each(std::ranges::begin(r), std::ranges::end(r), std::move(f), proj)`.
  *
  * ### Declarations
- *
- * @par Iterator-sentinel overload
- * @code{.cpp}
+ * ```cpp
+ * // (1) Iterator-sentinel overload
  * template< std::input_iterator InIt, std::sentinel_for<InIt> Sent,
  *           class F, class Proj = std::identity >
+ *   requires(std::indirectly_unary_invocable<F, std::projected<InIt, Proj>>)
  * constexpr std::ranges::for_each_result<InIt, F>
  * for_each( InIt first, Sent sent, F f, Proj proj = {} );
- * @endcode
  *
- * @par Range overload
- * @code{.cpp}
+ * // (2) Range overload
  * template< std::ranges::input_range R, class F, class Proj = std::identity >
+ *   requires(std::indirectly_unary_invocable<F, std::projected<std::ranges::iterator_t<R>, Proj>>)
  * constexpr std::ranges::for_each_result<std::ranges::iterator_t<R>, F>
  * for_each( R&& r, F f, Proj proj = {} );
- * @endcode
- *
- * @par Constraints
- * - `std::indirectly_unary_invocable<F, std::projected<InIt, Proj>>` (1)
- * - `std::indirectly_unary_invocable<F, std::projected<std::ranges::iterator_t<R>, Proj>>` (2)
+ * ```
  *
  * ### Parameters
- *
- * | Name | Description |
- * |------|-------------|
- * | `first`, `sent` | The range of elements to iterate over. |
- * | `r` | The range of elements to iterate over. |
- * | `f` | Unary function object to apply to projected elements. |
- * | `proj` | Projection to apply to elements (defaults to `std::identity`). |
+ * - `first`, `sent` - the range of elements to iterate over
+ * - `r`             - the range of elements to iterate over
+ * - `f`             - unary function object to apply to each projected element
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
  *
  * ### Return value
- *
  * A `std::ranges::for_each_result` containing:
- * - `in`: an iterator pointing to the end of the input range (`sent`).
- * - `fun`: the function object `f` passed as an argument.
+ * - `in`: an iterator comparing equal to `sent` (or `std::ranges::end(r)`).
+ * - `fun`: the function object `f`.
  *
  * ### Complexity
- *
- * Linear: exactly `sent - first` (or `std::ranges::distance(r)`) invocations of `f`
- * and applications of `proj`.
+ * Linear in `N = std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`):
+ * performs `N` applications of `f` and `proj` in the scalar and auto-vectorized paths, or
+ * one vector application per SIMD chunk (including the masked tail) in the explicit SIMD path.
  *
  * ### Decorators and Options
- *
- * Compile-time modifiers via `operator[]`:
+ * The algorithm object is configured with `raze::options::unroll<4>` by default (and
+ * `strategy_mode::autovec` on GCC, Clang, and ICPX) and supports compile-time modifiers via `operator[]`:
  * ```cpp
  * for_each[raze::options::fscalar](...);
  * for_each[raze::options::unroll<2>](...);
@@ -180,8 +173,30 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
  * and valid combinations, see the **options documentation**.
  *
- * ### Example
+ * ### Notes
+ * - **Execution order & vectorization**:
+ *   - When `f` is vectorizable (e.g., accepts `auto&` and operates via SIMD-compatible expressions),
+ *     elements may be processed in an unsequenced (`unseq`) / vectorized manner without strict
+ *     element-by-element ordering. In this mode, `f` must not rely on loop-carried dependencies
+ *     or cross-iteration mutable state.
+ *   - Strict sequential in-order execution (safe for stateful functors or scalar-only control flow)
+ *     is guaranteed when `f` takes an explicit scalar parameter type (e.g., `[](int& x)`), when
+ *     `raze::options::fscalar` is specified, for non-contiguous ranges or non-`std::identity`
+ *     projections, or in constant-evaluated contexts (`if consteval`).
+ *   - See @ref vectorization_semantics for full details and caveats with generic (`auto`) lambdas.
+ * - **Execution path selection**:
+ *   - **Constant evaluation (`if consteval`) or `fscalar`**: always executes via the scalar in-order loop.
+ *   - **Auto-vectorized path** (GCC, Clang, ICPX): for contiguous modifiable ranges with vectorizable
+ *     `f` and `proj`, uses a `noalias` loop eligible for compiler auto-vectorization and `target_clones`
+ *     dynamic dispatch (unless restricted by `fstatic`).
+ *   - **Explicit SIMD path** (MSVC, or when explicit SIMD is selected): loads elements via
+ *     `raze::vx::load`, invokes `f` on the vector register, and stores results back via `raze::vx::store`
+ *     (including masked tail handling).
+ *   - **Scalar fallback**: used for non-contiguous iterators, scalar-typed callables, or
+ *     non-`std::identity` projections.
+ * - The input range must be modifiable (`modifiable_source`).
  *
+ * ### Example
  * ```cpp
  * #include <iostream>
  * #include <vector>
@@ -194,9 +209,22 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  *
  * int main() {
  *     std::vector<int> v{1, 2, 3, 4, 5};
- *     raze::algorithm::for_each(v, [](int& x) { x *= 2; });
- *     println(v); // 2 4 6 8 10
+ *
+ *     // Vectorized in-place transformation (generic `auto&` enables SIMD / autovec)
+ *     raze::algorithm::for_each(v, [](auto& x) { x *= 2; });
+ *     println(v);
+ *
+ *     // Guaranteed sequential in-order execution (explicit scalar parameter)
+ *     int sum = 0;
+ *     raze::algorithm::for_each(v, [&sum](int& x) { sum += x; });
+ *     std::cout << "Sum: " << sum << '\n';
  * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 2 4 6 8 10
+ * Sum: 30
  * ```
 */
 constexpr inline auto for_each = options::function_with_traits<for_each_t>[options::unroll<4>][for_each_strategy];

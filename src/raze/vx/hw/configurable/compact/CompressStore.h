@@ -12,6 +12,18 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 struct unsafe_mode {};
+
+/**
+ * @ingroup raze_vx_memory
+ * @memberof raze::vx
+ * @hideinitializer
+ * @brief Option for `compress_store` allowing full-width SIMD stores past the compressed tail.
+ *
+ * When `[raze::vx::unsafe]` is applied, `compress_store` writes a full SIMD vector at `it`
+ * without masking out trailing lanes, leaving `[it + count_set(!mask), it + V::size())`
+ * with unspecified values. The destination buffer must have at least `V::size()` writable elements.
+ * @see compress_store
+*/
 constexpr inline auto unsafe = raze::options::flag(unsafe_mode{});
 struct unsafe_option : raze::options::exact_option<unsafe> {};
 

@@ -115,6 +115,97 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 	}
 };
 
+
+/**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Copies elements from a range to another range, omitting elements satisfying a predicate.
+ *
+ * 1) Copies all elements from `[first, last)` to the destination range beginning at `out`,
+ *    omitting those for which `bool(std::invoke(pred, std::invoke(proj, *i)))` evaluates to `true`.
+ *    Relative order of the copied elements is preserved.
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `remove_copy_if(std::ranges::begin(r), std::ranges::end(r), std::move(out), pred, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It, std::sentinel_for<It> Sent,
+ *           std::weakly_incrementable OutIt, class Pred, class Proj = std::identity >
+ *   requires(std::indirectly_copyable<It, OutIt> &&
+ *            std::indirect_unary_predicate<Pred, std::projected<It, Proj>>)
+ * constexpr std::ranges::in_out_result<It, OutIt>
+ * remove_copy_if( It first, Sent last, OutIt out, Pred pred, Proj proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R, std::weakly_incrementable OutIt,
+ *           class Pred, class Proj = std::identity >
+ * constexpr std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+ * remove_copy_if( R&& r, OutIt out, Pred pred, Proj proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to copy from
+ * - `r`             - the range of elements to copy from
+ * - `out`           - the beginning of the destination range
+ * - `pred`          - unary predicate returning `true` for elements to omit
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * A `std::ranges::in_out_result` containing:
+ * - `in`: an iterator comparing equal to `last` (or `std::ranges::end(r)`).
+ * - `out`: an iterator pointing past the last written element in the destination range.
+ *
+ * ### Complexity
+ * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`)
+ * applications of `pred` and `proj`.
+ *
+ * ### Decorators and Options
+ * The algorithm object supports compile-time modifiers via `operator[]`:
+ * ```cpp
+ * remove_copy_if[raze::options::fscalar](...);
+ * remove_copy_if[raze::options::fstatic](...);
+ * ```
+ * For details on available options (`fscalar`, `fstatic`), their semantics,
+ * and valid combinations, see the **options documentation**.
+ *
+ * ### Notes
+ * - Optimizes the leading non-matching prefix by locating the first match via `raze::algorithm::find_if`
+ *   and bulk-copying the prefix with `raze::algorithm::copy` before entering the compaction loop.
+ * - For contiguous buffers of matching element types and vectorizable predicates/projections,
+ *   uses explicit SIMD `raze::vx::compress_store` (`AVX512F`/`AVX512VBMI2`, `AVX2`, `SSSE3`).
+ * - See @ref vectorization_semantics for rules regarding generic (`auto`) vs. scalar-typed predicates.
+ * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/remove/RemoveCopyIf.h>
+ *
+ * void println(const auto& seq) {
+ *     for (const auto& elem : seq) std::cout << elem << ' ';
+ *     std::cout << '\n';
+ * }
+ *
+ * int main() {
+ *     const std::vector<int> src{1, 2, 3, 4, 5, 6};
+ *     std::vector<int> odds(src.size());
+ *
+ *     auto [in, out] = raze::algorithm::remove_copy_if(
+ *         src, odds.begin(), [](auto x) { return (x & 1) == 0; });
+ *     odds.erase(out, odds.end());
+ *
+ *     println(odds);
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 1 3 5
+ * ```
+*/
 constexpr inline auto remove_copy_if = options::function_with_traits<remove_copy_if_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

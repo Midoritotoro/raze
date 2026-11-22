@@ -121,8 +121,8 @@ public:
         constexpr auto can_auto_vectorize = false;
 #endif
 
-        constexpr bool can_manual_vectorize = !options::is_fscalar<Traits>() && Kernel::vectorizable() &&
-            (has_best || !can_auto_vectorize);
+        constexpr bool can_manual_vectorize = !options::is_fscalar<Traits>() && !options::is_fautovec<Traits>() &&
+            Kernel::vectorizable() && (has_best || !can_auto_vectorize);
 
         if constexpr (can_manual_vectorize) {
             if !consteval {

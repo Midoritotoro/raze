@@ -13,14 +13,26 @@ using simd_value_t = vx::simd<std::iter_value_t<It>, vx::default_abi>;
 template <class It>
 using simd_mask_value_t = vx::simd_mask<std::iter_value_t<It>, vx::default_abi>;
 
+ /**
+  * @brief Checks if decayed type `T` is supported as a SIMD element type (arithmetic except `bool`,
+  *        pointers, or `std::nullptr_t`).
+*/
 template <class T>
 concept vectorizable_value_type = traits::is_vector_type_supported_v<std::decay_t<T>>;
 
+/**
+ * @brief Checks if unary predicate `Pred` cannot be vectorized (either not invocable with `simd_value_t<It>`
+ *        or returns a scalar `bool`-convertible result instead of a `simd_mask`).
+*/
 template <class Pred, class It>
 concept always_scalar_unary = vectorizable_value_type<std::iter_value_t<It>> && (
     !std::invocable<std::remove_cvref_t<Pred>, simd_value_t<It>> ||
     requires { { std::invoke(std::declval<std::remove_cvref_t<Pred>>(), std::declval<simd_value_t<It>>()) } -> std::convertible_to<bool>; });
 
+/**
+ * @brief Checks if binary predicate `Pred` cannot be vectorized.
+ * @see always_scalar_unary
+*/
 template <class Pred, class It1, class It2 = It1>
 concept always_scalar_binary = vectorizable_value_type<std::iter_value_t<It1>> && 
     vectorizable_value_type<std::iter_value_t<It2>> && (
@@ -28,6 +40,11 @@ concept always_scalar_binary = vectorizable_value_type<std::iter_value_t<It1>> &
         requires { { std::invoke(std::declval<std::remove_cvref_t<Pred>>(), 
             std::declval<simd_value_t<It1>>(), std::declval<simd_value_t<It2>>()) } -> std::convertible_to<bool>; });
 
+
+/**
+ * @brief Checks if unary predicate `Pred` is invocable with `simd_value_t<It>` and yields a
+ *        `simd_mask_value_t<It>` (not implicitly convertible to `bool`).
+*/
 template <class Pred, class It>
 concept vectorizable_unary_predicate = !always_scalar_unary<Pred, It> && 
     vectorizable_value_type<std::iter_value_t<It>> && requires {
@@ -35,6 +52,11 @@ concept vectorizable_unary_predicate = !always_scalar_unary<Pred, It> &&
             -> std::convertible_to<simd_mask_value_t<It>>;
 };
 
+
+/**
+ * @brief Checks if binary predicate `Pred` is invocable with two `simd_value_t` arguments and
+ *        yields a `simd_mask_value_t<It1>`.
+*/
 template <class Pred, class It1, class It2 = It1>
 concept vectorizable_binary_predicate = !always_scalar_binary<Pred, It1, It2> && 
     vectorizable_value_type<std::iter_value_t<It1>> && 
@@ -44,11 +66,18 @@ concept vectorizable_binary_predicate = !always_scalar_binary<Pred, It1, It2> &&
             std::declval<simd_value_t<It2>>()) } -> std::convertible_to<simd_mask_value_t<It1>>;
 };
 
+
+/**
+ * @brief Checks if unary callable `F` can be invoked with `simd_value_t<It>&`.
+*/
 template <class F, class It>
 concept vectorizable_unary_function = vectorizable_value_type<std::iter_value_t<It>> && requires {
     { std::invoke(std::declval<traits::function_unwrapped<std::remove_cvref_t<F>>>(), std::declval<simd_value_t<It>&>()) };
 };
 
+/**
+ * @brief Checks if binary callable `F` can be invoked with two `simd_value_t` references of matching element type.
+*/
 template <class F, class It1, class It2 = It1>
 concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t<It1>> && 
     vectorizable_value_type<std::iter_value_t<It2>> && std::same_as<std::iter_value_t<It1>, std::iter_value_t<It2>> && requires {
@@ -56,6 +85,9 @@ concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t
             std::declval<simd_value_t<It1>&>(), std::declval<simd_value_t<It2>&>()) };
 };
 
+/**
+ * @brief Checks if projection `Proj` can be lowered in vectorized loops (currently requires `std::identity`).
+*/
 template <class Proj, class It>
 concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Proj>>, std::identity>;
 
@@ -98,6 +130,12 @@ using simd_common_mask_t = vx::simd_mask<
     common_type_or_void_t<std::iter_value_t<It1>, std::iter_value_t<It2>>,
     vx::default_abi>;
 
+
+/**
+ * @brief Variants of @ref vectorizable_binary_predicate and @ref vectorizable_binary_function
+ *        operating on the `std::common_type_t` of two iterator value types.
+ */
+ ///@{
 template <class Pred, class It1, class It2 = It1>
 concept vectorizable_binary_common_predicate = 
     has_common_iter_value<It1, It2> &&
@@ -120,5 +158,6 @@ concept vectorizable_binary_common_function =
             std::declval<simd_common_value_t<It1, It2>&>(),
             std::declval<simd_common_value_t<It1, It2>&>()) };
     };
+///@}
 
 __RAZE_ALGORITHM_NAMESPACE_END

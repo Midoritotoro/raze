@@ -127,6 +127,102 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 	}
 };
 
+/**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Copies the elements in a range to another range.
+ *
+ * 1) Copies all elements in the range `[first, last)` to another range beginning at `result`.
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `copy(std::ranges::begin(r), std::ranges::end(r), std::move(result))`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator InIt, std::sentinel_for<InIt> Sent,
+ *           std::weakly_incrementable OutIt >
+ *   requires(std::indirectly_copyable<InIt, OutIt>)
+ * constexpr std::ranges::in_out_result<InIt, OutIt>
+ * copy( InIt first, Sent last, OutIt result );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R, std::weakly_incrementable OutIt >
+ *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt>)
+ * constexpr std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+ * copy( R&& r, OutIt result );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the source range of elements to copy
+ * - `r`             - the source range of elements to copy
+ * - `result`        - the beginning of the destination range (must be large enough to hold all copied elements)
+ *
+ * ### Return value
+ * A `std::ranges::in_out_result` containing:
+ * - `in`: an iterator comparing equal to `last` (or `std::ranges::end(r)`).
+ * - `out`: an iterator pointing past the last written element in the destination range.
+ *
+ * ### Complexity
+ * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) assignments.
+ *
+ * ### Decorators and Options
+ * The algorithm object is configured with `raze::options::unroll<4>` by default and supports
+ * compile-time modifiers via `operator[]`:
+ * ```cpp
+ * copy[raze::options::fscalar](...);
+ * copy[raze::options::unroll<2>](...);
+ * copy[raze::options::fstatic][raze::options::unroll<2>](...);
+ * ```
+ * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
+ * and valid combinations, see the **options documentation**.
+ *
+ * ### Notes
+ * - The behavior is undefined if the source and destination ranges overlap (due to `memcpy` and
+ *   vectorized conversion fast paths). For overlapping ranges, use `raze::algorithm::copy_backward`
+ *   (or `raze::algorithm::move` / `std::memmove` as appropriate).
+ * - Execution path selection:
+ *   - **Constant evaluation (`if consteval`) or `fscalar`**: always executes via the scalar fallback loop.
+ *   - **Native fast path**: for contiguous ranges of identical trivially copyable types, delegates to an
+ *     optimized `memcpy` implementation.
+ *   - **SIMD conversion path**: for contiguous ranges of distinct arithmetic types satisfying
+ *     `raze::vx::supports_fast_conversion` for the active ISA, uses explicit SIMD loads,
+ *     `raze::vx::convert`, and stores (with any remaining tail elements handled by the scalar fallback).
+ *   - **Scalar fallback**: used for non-contiguous iterators, non-arithmetic element types, or
+ *     type pairs without fast SIMD conversion support.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/copy/Copy.h>
+ *
+ * void println(const auto& seq) {
+ *     for (const auto& elem : seq) std::cout << elem << ' ';
+ *     std::cout << '\n';
+ * }
+ *
+ * int main() {
+ *     const std::vector<int> src{1, 2, 3, 4, 5};
+ *
+ *     // Identical trivially copyable types (native memcpy path)
+ *     std::vector<int> dst_i(src.size());
+ *     raze::algorithm::copy(src, dst_i.begin());
+ *     println(dst_i);
+ *
+ *     // Cross-type arithmetic copy (explicit SIMD conversion path via vx::convert)
+ *     std::vector<float> dst_f(src.size());
+ *     auto [in, out] = raze::algorithm::copy(src, dst_f.begin());
+ *     println(dst_f);
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 1 2 3 4 5
+ * 1 2 3 4 5
+ * ```
+*/
 constexpr inline auto copy = options::function_with_traits<copy_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END
