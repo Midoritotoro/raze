@@ -456,13 +456,10 @@ private:
 template <template <class> class F>
 static inline constexpr auto function_with_traits = F<supports_traits<F, decltype(no_traits)>>();
 
-struct dummy_mode {};
-constexpr inline auto dummy = raze::options::flag(dummy_mode{});
-
 template <vx::simd_type V, sizetype N>
 constexpr inline auto aligned_for = []() consteval {
     if constexpr (N >= alignof(V) && (N % alignof(V) == 0)) return vx::aligned;
-    else return dummy;
+    else return ignore_none;
 }();
 
 __RAZE_OPTIONS_NAMESPACE_END

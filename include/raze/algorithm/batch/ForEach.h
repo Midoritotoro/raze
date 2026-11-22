@@ -24,6 +24,10 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 		using vector_value_type = std::iter_value_t<iterator_type>;
+		
+		static consteval bool autovectorizable() noexcept {
+			return contiguous_source<Source>;
+		}
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && modifiable_source<Source> &&
@@ -42,7 +46,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			_sentinel(_source.uend()), _f(f), _proj(proj)
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(autovectorizable()) {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
 			for_noalias(first, last, [func = _f, proj = _proj, in = first] (auto i)
@@ -59,7 +63,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
-			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>();
+			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>;
 
 			auto* ptr = std::to_address(_iterator);
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
@@ -76,7 +80,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
-			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>();
+			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>;
 			auto* ptr = std::to_address(_iterator);
 
 			auto projected = _proj(vx::load<Tag>[ignore][alignment](ptr));

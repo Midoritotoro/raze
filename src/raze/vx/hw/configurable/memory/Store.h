@@ -30,7 +30,7 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
         constexpr auto is_safe = Options::contains(safe);
 		auto mem = std::to_address(it);
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 

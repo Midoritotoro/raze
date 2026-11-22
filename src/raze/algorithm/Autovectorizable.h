@@ -3,6 +3,7 @@
 #include <raze/options/Options.h>
 #include <raze/vx/Config.h>
 #include <raze/math/Math.h>
+#include <raze/arch/ProcessorFeatures.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -118,56 +119,93 @@ raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
         *out = func(*first1, *first2);
 }
 
-#if (defined(raze_cpp_clang) && raze_cpp_clang >= 1500 && RAZE_HAS_CLANG_RT_BUILTINS) || (defined(raze_cpp_gnu) && !defined(raze_os_windows))
+#if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 
-#if defined(raze_cpp_clang)
-#  define RAZE_CLONES_NARROW "avx512bw"
-#else
-#  define RAZE_CLONES_NARROW "arch=x86-64-v4"
-#endif
+#define RAZE_AUTOVEC_TARGET(isa_str) __attribute__((target(isa_str), noinline))
 
 template <class Work>
 struct invoke_autovec_helper_t {
     using value_type = typename Work::vector_value_type;
 
+    static constexpr bool is_wide = []() consteval {
+        if constexpr (std::same_as<value_type, void>) return false;
+        else return sizeof(value_type) >= 4;
+    }();
+
     Work& _work;
-    invoke_autovec_helper_t(Work& w) : _work(w) {}
+    constexpr explicit invoke_autovec_helper_t(Work& w) noexcept : _work(w) {}
 
-    raze_always_inline void operator()() {
-        constexpr bool top = sizeof(value_type) >= 4
-            ? vx::has_avx512f<vx::target_isa()>
+    static consteval bool compile_has_avx512() noexcept {
+        return is_wide ? vx::has_avx512f<vx::target_isa()>
             : vx::has_avx512bw<vx::target_isa()>;
-
-        if constexpr (top)
-            _work(autovectorizable_tag{});
-        else if constexpr (vx::has_avx2<vx::target_isa()>)
-            from_avx2();
-        else if constexpr (vx::has_sse42<vx::target_isa()>)
-            from_sse42();
-        else
-            from_base();
     }
 
-    raze_targets("avx512f", "avx2", "default")
-    void from_avx2() requires(sizeof(value_type) >= 4) { _work(autovectorizable_tag{}); }
+    static raze_always_inline bool runtime_has_avx512(i32 all) noexcept {
+        if constexpr (is_wide)
+            return arch::ProcessorFeatures::has<arch::features::AVX512F>(all);
+        else
+            return arch::ProcessorFeatures::has<arch::features::AVX512F>(all) &&
+                arch::ProcessorFeatures::has<arch::features::AVX512BW>(all);
+    }
 
-    raze_targets(RAZE_CLONES_NARROW, "avx2", "default")
-    void from_avx2() requires(sizeof(value_type) < 4) { _work(autovectorizable_tag{}); }
+    RAZE_AUTOVEC_TARGET("avx512f")
+    void run_avx512() requires(is_wide) {
+        _work(autovectorizable_tag{});
+    }
 
-    raze_targets("avx512f", "avx2", "sse4.2", "default")
-    void from_sse42() requires(sizeof(value_type) >= 4) { _work(autovectorizable_tag{}); }
+    RAZE_AUTOVEC_TARGET("avx512f,avx512bw")
+    void run_avx512() requires(!is_wide) {
+        _work(autovectorizable_tag{});
+    }
 
-    raze_targets(RAZE_CLONES_NARROW, "avx2", "sse4.2", "default")
-    void from_sse42() requires(sizeof(value_type) < 4) { _work(autovectorizable_tag{}); }
+    RAZE_AUTOVEC_TARGET("avx2")
+    void run_avx2() {
+        _work(autovectorizable_tag{});
+    }
 
-    raze_targets("avx512f", "avx2", "sse4.2", "default")
-    void from_base() requires(sizeof(value_type) >= 4) { _work(autovectorizable_tag{}); }
+    RAZE_AUTOVEC_TARGET("sse4.2")
+    void run_sse42() {
+        _work(autovectorizable_tag{});
+    }
 
-    raze_targets(RAZE_CLONES_NARROW, "avx2", "sse4.2", "default")
-    void from_base() requires(sizeof(value_type) < 4) { _work(autovectorizable_tag{}); }
+    raze_always_inline void operator()() {
+        if constexpr (compile_has_avx512()) {
+            _work(autovectorizable_tag{});
+        }
+        else {
+            const i32 all = arch::ProcessorFeatures::all();
+
+            if (runtime_has_avx512(all)) {
+                run_avx512();
+                return;
+            }
+
+            if constexpr (vx::has_avx2<vx::target_isa()>) {
+                _work(autovectorizable_tag{});
+            }
+            else {
+                if (arch::ProcessorFeatures::has<arch::features::AVX2>(all)) {
+                    run_avx2();
+                    return;
+                }
+
+                if constexpr (vx::has_sse42<vx::target_isa()>) {
+                    _work(autovectorizable_tag{});
+                }
+                else {
+                    if (arch::ProcessorFeatures::has<arch::features::SSE42>(all)) {
+                        run_sse42();
+                        return;
+                    }
+
+                    _work(autovectorizable_tag{});
+                }
+            }
+        }
+    }
 };
 
-#undef RAZE_CLONES_NARROW
+#undef RAZE_AUTOVEC_TARGET
 
 template <class Work>
 raze_always_inline auto invoke_scalar_autovec_impl(Work& w) {
