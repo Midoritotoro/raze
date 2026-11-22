@@ -13,8 +13,10 @@
 __RAZE_TRAITS_NAMESPACE_BEGIN
 
 template <class F> 
-constexpr inline bool is_lightweight_callable_v = std::conjunction_v<std::bool_constant<sizeof(F) <= sizeof(void*)>,
-    std::is_trivially_copy_constructible<F>, std::is_trivially_destructible<F>>;
+concept lightweight_callable = std::is_object_v<F> &&
+    (sizeof(F) <= (sizeof(void*) * 2)) &&
+    std::is_trivially_copy_constructible_v<F> &&
+    std::is_trivially_destructible_v<F>;;
 
 template <class F>
 struct function_reference {
@@ -58,9 +60,9 @@ raze_always_inline constexpr function_unwrapped<F> unwrap_function(F&& f) noexce
 }
 
 template <class F>
-raze_nodiscard raze_always_inline constexpr decltype(auto) fwd_fn(F& f) noexcept {
+raze_nodiscard raze_always_inline constexpr auto fwd_fn(F& f) noexcept {
     if constexpr (has_function_unwrapped_type<F>) return f;
-    /*else if constexpr (is_lightweight_callable_v<F>) return f;*/
+    else if constexpr (lightweight_callable<F>) return f;
     else return function_reference<F>(f);
 }
 

@@ -456,6 +456,12 @@ private:
 template <template <class> class F>
 static inline constexpr auto function_with_traits = F<supports_traits<F, decltype(no_traits)>>();
 
+template <class Traits>
+consteval sizetype alignment_of() {
+    if constexpr (requires { typename Traits::traits_type; }) return get_alignment<typename Traits::traits_type>();
+    else return get_alignment<Traits>();
+}
+
 template <vx::simd_type V, sizetype N>
 constexpr inline auto aligned_for = []() consteval {
     if constexpr (N >= alignof(V) && (N % alignof(V) == 0)) return vx::aligned;

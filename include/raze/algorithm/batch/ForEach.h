@@ -7,6 +7,7 @@
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <raze/vx/Algorithm.h>
+#include <memory>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -46,11 +47,14 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			_sentinel(_source.uend()), _f(f), _proj(proj)
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(autovectorizable()) {
-			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(contiguous_source<Source>) {
+			constexpr auto alignment = options::alignment_of<Traits>();
 
-			for_noalias(first, last, [func = _f, proj = _proj, in = first] (auto i)
-				raze_always_inline_lambda { func(proj(in[i])); });
+			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
+			first = std::assume_aligned<alignment>(first);
+
+			for_noalias(first, last, [func = _f, proj = _proj, in = first](auto i)
+				raze_always_inline_lambda{ func(proj(in[i])); });
 
 			source_type::from_ptr(_iterator, first);
 		}
@@ -63,7 +67,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
-			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>;
+			constexpr auto alignment = options::aligned_for<Tag, options::alignment_of<Traits>()>;
 
 			auto* ptr = std::to_address(_iterator);
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
@@ -80,7 +84,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
-			constexpr auto alignment = options::aligned_for<Tag, options::get_alignment<decltype(std::declval<Traits>().traits())>()>;
+			constexpr auto alignment = options::aligned_for<Tag, options::alignment_of<Traits>()>;
 			auto* ptr = std::to_address(_iterator);
 
 			auto projected = _proj(vx::load<Tag>[ignore][alignment](ptr));

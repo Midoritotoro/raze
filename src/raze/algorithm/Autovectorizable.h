@@ -149,14 +149,10 @@ struct invoke_autovec_helper_t {
     }
 
     RAZE_AUTOVEC_TARGET("avx512f")
-    void run_avx512() requires(is_wide) {
-        _work(autovectorizable_tag{});
-    }
+    void run_avx512f() { _work(autovectorizable_tag{}); }
 
     RAZE_AUTOVEC_TARGET("avx512f,avx512bw")
-    void run_avx512() requires(!is_wide) {
-        _work(autovectorizable_tag{});
-    }
+    void run_avx512bw() { _work(autovectorizable_tag{}); }
 
     RAZE_AUTOVEC_TARGET("avx2")
     void run_avx2() {
@@ -176,7 +172,8 @@ struct invoke_autovec_helper_t {
             const i32 all = arch::ProcessorFeatures::all();
 
             if (runtime_has_avx512(all)) {
-                run_avx512();
+                if constexpr (is_wide) run_avx512f();
+                else run_avx512bw();
                 return;
             }
 
