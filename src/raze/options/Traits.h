@@ -3,6 +3,8 @@
 #include <src/raze/options/Callable.h>
 #include <src/raze/algorithm/StrategyBuilder.h>
 #include <src/raze/vx/hw/configurable/memory/AlignedOption.h>
+#include <memory>
+#include <cstdint>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
@@ -66,10 +68,41 @@ constexpr sizetype get_unrolling() noexcept {
     return raze::options::fetch_t<(unroll_key | index<1>), Traits>{};
 }
 
+template <sizetype N>
+concept valid_alignment = (N != 0) && ((N & (N - 1)) == 0);
+
+template <sizetype... Ns>
+struct alignment_pack {
+    static constexpr sizetype count = sizeof...(Ns);
+    static constexpr sizetype values[count] = { Ns... };
+
+    template <sizetype Index>
+        requires (count == 1 || Index < count)
+    static consteval sizetype at() noexcept {
+        if constexpr (count == 1) return values[0];
+        else return values[Index];
+    }
+
+    static consteval bool is_unaligned() noexcept {
+        return ((Ns == 1) && ...);
+    }
+};
+
+template <class T>
+struct is_alignment_pack : std::false_type {};
+
+template <sizetype... Ns>
+struct is_alignment_pack<alignment_pack<Ns...>> : std::true_type {};
+
+template <class T>
+constexpr inline bool is_alignment_pack_v = is_alignment_pack<std::remove_cvref_t<T>>::value;
+
 struct aligned_key_t : as_keyword<aligned_key_t> {
-    template <class Value>
-    constexpr auto operator=(const Value&) const noexcept {
-        return option<aligned_key_t, Value>{};
+    using as_keyword<aligned_key_t>::operator=;
+
+    template <class T>
+    static raze_always_inline constexpr bool check() noexcept {
+        return is_alignment_pack_v<T>;
     }
 };
 
@@ -77,43 +110,108 @@ constexpr inline aligned_key_t aligned_key;
 
 /**
  * @ingroup raze_options
- * @brief Option decorator declaring that contiguous range pointers are aligned to at least @p N bytes.
+ * @brief Alignment sentinel indicating no alignment guarantee beyond the element type's natural alignment.
  *
- * Allows SIMD kernels to use aligned loads/stores and skip alignment peeling whenever the
- * guaranteed alignment @p N satisfies the active ISA register alignment (`N >= alignof(Tag)`).
+ * Evaluates to `1` and is intended for use as a readable placeholder in multi-range
+ * `raze::options::aligned<Ns...>` specifications when only a subset of the algorithm's
+ * ranges are over-aligned.
  *
  * ### Declarations
  * ```cpp
- * template< sizetype N >
- *   requires(N != 0 && (N & (N - 1)) == 0)
+ * constexpr inline sizetype unaligned = 1;
+ * ```
+ *
+ * ### Notes
+ * - Equivalent to passing `1` directly in `raze::options::aligned<...>`.
+ * - Instructs the algorithm to keep unaligned SIMD memory accesses and omit
+ *   `std::assume_aligned` for the corresponding range.
+ *
+ * ### Example
+ * ```cpp
+ * alignas(64) std::array<float, 256> a{};
+ * std::vector<float> b(256); // standard allocation, alignment not guaranteed
+ * alignas(32) std::array<float, 256> out{};
+ *
+ * raze::algorithm::transform[
+ *     raze::options::aligned<64, raze::options::unaligned, 32>
+ * ](a, b, out.begin(), [](auto x, auto y) { return x + y; });
+ * ```
+*/
+constexpr inline sizetype unaligned = 1;
+
+/**
+ * @ingroup raze_options
+ * @brief Option decorator declaring minimum byte alignment(s) for contiguous range pointers.
+ *
+ * Allows SIMD kernels to emit aligned loads/stores and enables compiler alignment assumptions
+ * (`std::assume_aligned`) whenever a range's guaranteed alignment satisfies the active ISA
+ * register alignment (`N >= alignof(V)`).
+ *
+ * Supports two forms:
+ * - **Broadcast form (`aligned<N>`)**: declares that *every* contiguous range/iterator
+ *   passed to the algorithm is aligned to at least @p N bytes.
+ * - **Positional form (`aligned<N1, N2, ...>`)**: declares an independent alignment for each
+ *   range/iterator argument in exact parameter order (e.g., `<In, Out>` for binary copy/transform
+ *   algorithms, `<In1, In2>` for two-input comparisons, `<In1, In2, Out>` for binary `transform`).
+ *   Use `1` or `raze::options::unaligned` for arguments without extra alignment guarantees.
+ *
+ * ### Declarations
+ * ```cpp
+ * template< sizetype... Ns >
+ *   requires (sizeof...(Ns) > 0 && ((Ns != 0 && (Ns & (Ns - 1)) == 0) && ...))
  * constexpr inline *unspecified* aligned;
  * ```
  *
  * ### Notes
- * - @p N must be a non-zero power of two (e.g., `16`, `32`, `64`).
- * - **Safe with dynamic dispatch**: if runtime CPU dispatch selects a wider ISA than @p N
- *   (for example, `AVX-512` requiring 64-byte alignment when `aligned<32>` was specified),
- *   the kernel automatically uses unaligned accesses for that ISA instead of faulting.
- * - In compiler auto-vectorized (`autovec`) paths, enables alignment assumptions
- *   (e.g., via `std::assume_aligned<N>`).
- * - **Precondition**: the underlying data pointer(s) of the contiguous range(s) must actually be
- *   aligned to at least @p N bytes; otherwise, the behavior is undefined.
+ * - Every value in @p Ns must be a non-zero power of two (e.g., `1`, `16`, `32`, `64`).
+ * - **Compile-time arity check**: `sizeof...(Ns)` must be either `1` or equal to the number of
+ *   range/iterator arguments accepted by the algorithm; otherwise compilation fails with a
+ *   `static_assert` (regardless of `fscalar`, `fautovec`, or iterator category).
+ * - **Safe with dynamic dispatch & mixed types**: each buffer's alignment is checked independently
+ *   against its own SIMD register type. If runtime CPU dispatch selects a wider ISA than @p N
+ *   (e.g., AVX-512 requiring 64-byte alignment when `aligned<32>` was specified), or if a narrowing
+ *   conversion breaks per-iteration alignment, that buffer automatically falls back to unaligned
+ *   accesses instead of faulting.
+ * - **Autovectorization**: in `autovec` paths, applies `std::assume_aligned<N>` per buffer
+ *   whenever `N > alignof(T)`, helping the compiler eliminate alignment-peeling prologues.
+ * - **Non-alignable access patterns**: operations whose memory accesses cannot preserve
+ *   start-of-range alignment (such as variable-stride output writes in `remove_copy_if`/`copy_if`,
+ *   offset loads in `search`/`adjacent_find`/`is_sorted`, or reverse scans starting from `end()`
+ *   in `copy_backward`/`find_last`) safely ignore alignment for those specific accesses.
+ * - **Overriding**: chaining multiple `aligned<...>` decorators replaces the previous one
+ *   (`alg[aligned<32>][aligned<64, unaligned>]` resolves to `<64, 1>`).
+ * - **Precondition**: for every contiguous range with `N > 1`, its initial data pointer must
+ *   actually be aligned to at least `N` bytes; otherwise, the behavior is undefined.
  *
  * ### Example
  * ```cpp
+ * // 1) Broadcast form: all contiguous buffers are aligned to at least 32 bytes
  * alignas(32) std::array<int, 256> src{};
  * alignas(32) std::array<int, 256> dst{};
- *
- * // Safe even if runtime dispatch selects AVX-512 (64-byte vectors)
  * raze::algorithm::copy[raze::options::aligned<32>](src, dst.begin());
+ *
+ * // 2) Binary positional form: aligned input, unaligned output
+ * std::vector<int> unaligned_dst(256);
+ * raze::algorithm::replace_copy_if[
+ *     raze::options::aligned<32, raze::options::unaligned>
+ * ](src, unaligned_dst.begin(), [](auto x) { return x < 0; }, 0);
+ *
+ * // 3) Ternary positional form: independent alignments for (in1, in2, out)
+ * alignas(64) std::array<float, 256> lhs{};
+ * std::vector<float> rhs(256);
+ * alignas(32) std::array<float, 256> out{};
+ * raze::algorithm::transform[
+ *     raze::options::aligned<64, raze::options::unaligned, 32>
+ * ](lhs, rhs, out.begin(), [](auto x, auto y) { return x * y; });
  * ```
- */
-template <sizetype N> requires (N != 0 && (N & (N - 1)) == 0)
-constexpr inline auto aligned = (aligned_key = index<N>);
+*/
+template <sizetype... Ns>
+    requires (sizeof...(Ns) > 0 && (valid_alignment<Ns> && ...))
+constexpr inline auto aligned = (aligned_key = alignment_pack<Ns...>{});
 
 template <class Traits>
 constexpr sizetype get_alignment() noexcept {
-    return raze::options::fetch_t<(aligned_key | index<1>), Traits>{};
+    return raze::options::fetch_t<(aligned_key | alignment_pack<1>{}), Traits>::template at<0>();
 }
 
 struct strategy_key_t : as_keyword<strategy_key_t> {
@@ -456,16 +554,143 @@ template <template <class> class F>
 static inline constexpr auto function_with_traits = F<supports_traits<F, decltype(no_traits)>>();
 
 template <class Traits>
-consteval sizetype alignment_of() {
-    if constexpr (requires { typename Traits::traits_type; }) return get_alignment<typename Traits::traits_type>();
-    else return get_alignment<Traits>();
+struct unwrap_traits {
+    using type = Traits;
+};
+
+template <class Traits>
+    requires requires { typename Traits::traits_type; }
+struct unwrap_traits<Traits> {
+    using type = typename Traits::traits_type;
+};
+
+template <class Traits>
+using unwrap_traits_t = typename unwrap_traits<std::remove_cvref_t<Traits>>::type;
+
+template <class Traits>
+using alignment_pack_of = fetch_t < (aligned_key | alignment_pack<1>{}), unwrap_traits_t<Traits>>;
+
+template <class Traits, sizetype Index = 0, sizetype Arity = 1>
+consteval sizetype alignment_of() noexcept {
+    using pack = alignment_pack_of<Traits>;
+    static_assert(pack::count == 1 || pack::count == Arity, "raze::options::aligned<Ns...>: argument count must be 1 or match the number of ranges.");
+    static_assert(Index < Arity, "Alignment index out of range.");
+    return pack::template at<Index>();
 }
 
 template <vx::simd_type V, sizetype N>
 constexpr inline auto aligned_for = []() consteval {
-    if constexpr (N >= alignof(V) && (N % alignof(V) == 0)) return vx::aligned;
+    if constexpr (N >= alignof(V) && (sizeof(V) % alignof(V) == 0)) return vx::aligned;
     else return options<>{};
 }();
+
+template <class Traits, sizetype Arity>
+struct alignments {
+    using pack_type = alignment_pack_of<Traits>;
+
+    static constexpr sizetype arity = Arity;
+
+    static_assert(pack_type::count == 1 || pack_type::count == Arity,
+        "raze::options::aligned<Ns...>: argument count must be 1 or match the number of ranges.");
+
+    template <sizetype Index> requires (Index < Arity)
+    static constexpr sizetype get = pack_type::template at<Index>();
+
+    template <sizetype Index, vx::simd_type V> requires (Index < Arity)
+    static constexpr auto policy_for = aligned_for<V, get<Index>>;
+
+    template <sizetype Index, class T>
+    raze_nodiscard static raze_always_inline constexpr T* assume(T* ptr) noexcept
+        requires (Index < Arity)
+    {
+        if constexpr (get<Index> > alignof(T)) return std::assume_aligned<get<Index>>(ptr);
+        else return ptr;
+    }
+
+    template <sizetype Index, class Arg>
+    static raze_always_inline constexpr void verify(const Arg& arg) noexcept
+        requires (Index < Arity)
+    {
+        if !consteval {
+            if constexpr (get<Index> > 1) {
+                if (!is_empty_arg(arg))
+                    verify_one<Index>(arg);
+            }
+        }
+    }
+
+    template <class... Args>
+    static raze_always_inline constexpr void verify(const Args&... args) noexcept
+        requires (sizeof...(Args) == Arity)
+    {
+        if !consteval {
+            if constexpr (!pack_type::is_unaligned()) {
+                if ((is_empty_arg(args) || ...))
+                    return;
+
+                [&]<sizetype... Is>(std::index_sequence<Is...>) {
+                    (verify_one<Is>(args), ...);
+                }(std::make_index_sequence<Arity>{});
+            }
+        }
+    }
+
+private:
+    template <class Arg>
+    static raze_always_inline constexpr bool is_empty_arg(const Arg& arg) noexcept {
+        if constexpr (requires { { arg.empty() } -> std::convertible_to<bool>; })
+            return arg.empty();
+        else
+            return false;
+    }
+
+    template <sizetype Index, class T>
+    static raze_always_inline void verify_ptr(const T* ptr) noexcept {
+        if constexpr (get<Index> > 1)
+            raze_debug_assert(reinterpret_cast<std::uintptr_t>(ptr) % get<Index> == 0);
+    }
+
+    template <sizetype Index, class Arg>
+    static raze_always_inline void verify_one(const Arg& arg) noexcept {
+        if constexpr (get<Index> > 1) {
+            if constexpr (std::is_pointer_v<Arg>) {
+                verify_ptr<Index>(arg);
+            }
+            else if constexpr (std::contiguous_iterator<Arg>) {
+                verify_ptr<Index>(std::to_address(arg));
+            }
+            else if constexpr (requires { std::remove_cvref_t<Arg>::to_raw_range(arg.ubegin(), arg.uend()); }) {
+                verify_ptr<Index>(std::remove_cvref_t<Arg>::to_raw_range(arg.ubegin(), arg.uend()).first);
+            }
+            else if constexpr (requires { arg.ubegin(); }) {
+                if constexpr (std::contiguous_iterator<std::remove_cvref_t<decltype(arg.ubegin())>>)
+                    verify_ptr<Index>(std::to_address(arg.ubegin()));
+            }
+        }
+    }
+};
+
+template <class Settings>
+raze_nodiscard constexpr raze_always_inline auto drop_alignment(const traits<Settings>& tr) noexcept {
+    if constexpr (traits<Settings>::contains(aligned_key)) return traits(drop(aligned_key, tr));
+    else return tr;
+}
+
+template <sizetype... Ns, class Settings>
+raze_nodiscard constexpr raze_always_inline auto rebind_alignment(const traits<Settings>& tr) noexcept 
+    requires (sizeof...(Ns) > 0 && (valid_alignment<Ns> && ...))
+{
+    if constexpr (!traits<Settings>::contains(aligned_key)) return tr;  
+    else if constexpr (((Ns == 1) && ...)) return traits(drop(aligned_key, tr));
+    else return traits(merge(settings(aligned<Ns...>), tr));
+}
+
+template <sizetype Arity, sizetype... Indices, class Settings>
+raze_nodiscard constexpr raze_always_inline auto select_alignment(const traits<Settings>& tr) noexcept
+    requires (sizeof...(Indices) > 0 && ((Indices < Arity) && ...))
+{
+    return rebind_alignment<alignment_of<traits<Settings>, Indices, Arity>()...>(tr);
+}
 
 __RAZE_OPTIONS_NAMESPACE_END
 

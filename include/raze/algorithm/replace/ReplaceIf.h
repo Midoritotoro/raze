@@ -12,7 +12,8 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 constexpr auto replace_strategy = options::strategy<strategy<>()
 	.for_gcc<strategy_mode::autovec>()
-	.for_clang<strategy_mode::autovec>()>;
+	.for_clang<strategy_mode::autovec>()
+	.for_icpx<strategy_mode::autovec>()>;
 
 template <class Traits>
 struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
@@ -25,54 +26,68 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
 		using vector_value_type = std::iter_value_t<iterator_type>;
+		using align = options::alignments<Traits, 1>;
+		static_assert(sizeof(align) > 0);
 
 		static consteval bool vectorizable() noexcept {
-			return contiguous_source<Source> &&
+			return contiguous_source<Source> && modifiable_source<Source> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				std::convertible_to<const Value&, vector_value_type> &&
 				vectorizable_unary_predicate<Predicate, iterator_type> &&
 				vectorizable_projection<Projection, iterator_type>;
 		}
 
-		Source _source;
+		raze_no_unique_address source_type _source;
 		unchecked_iterator_type _iterator;
-		unchecked_sentinel_type _sentinel;
+		raze_no_unique_address unchecked_sentinel_type _sentinel;
 		raze_no_unique_address Predicate _predicate;
 		raze_no_unique_address Projection _proj;
-		Value _new_value;
+		const Value& _new_value;
 
-		constexpr kernel(Source&& src, Predicate pred, Projection proj, Value new_val):
-			_source(std::forward<Source>(src)), _predicate(pred), _proj(proj), _new_value(new_val)
-		{
-			_iterator = _source.ubegin();
-			_sentinel = _source.uend();
+		constexpr kernel(Source&& src, Predicate pred, Projection proj, const Value& new_val):
+			_source(std::forward<Source>(src)), _iterator(_source.ubegin()), _sentinel(_source.uend()),
+			_predicate(std::move(pred)), _proj(std::move(proj)), _new_value(new_val)
+		{}
+
+		constexpr void expects() const {
+			align::verify(_source);
 		}
-	
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
-			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
-			for_noalias(first, last, [pred = _predicate, proj = _proj, newv = _new_value,
-				in = first](auto i) raze_always_inline_lambda{
-					in[i] = pred(proj(in[i])) ? newv : in[i];
+		raze_always_inline constexpr void operator()(autovectorizable_tag)
+			requires(contiguous_source<Source> && modifiable_source<Source> &&
+				!traits::is_iterator_volatile_v<iterator_type>)
+		{
+			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
+			first = align::template assume<0>(first);
+
+			for_noalias(first, last, [&pred = _predicate, &proj = _proj, &newv = _new_value,
+				in = first](auto i) raze_always_inline_lambda {
+					if (std::invoke(pred, std::invoke(proj, in[i])))
+						in[i] = newv;
 				});
 
 			source_type::from_ptr(_iterator, first);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_iterator, _sentinel, [pred = _predicate,
-				proj = _proj, newv = _new_value](auto& val) raze_always_inline_lambda{
-					val = std::invoke(pred, std::invoke(proj, val)) ? newv : val;
+			for_novec(_iterator, _sentinel, [&pred = _predicate,
+				&proj = _proj, &newv = _new_value](auto& val) raze_always_inline_lambda {
+					if (std::invoke(pred, std::invoke(proj, val)))
+						val = newv;
 				});
 		}
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			constexpr auto alignment = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
-			const auto broadcasted = Tag(_new_value);
+			const auto broadcasted = Tag(static_cast<vector_value_type>(_new_value));
 
 			raze_disable_unrolling do {
-				vx::store[_predicate(_proj(vx::load<Tag>(ptr)))](ptr, broadcasted);
+				const auto data = vx::load<Tag>[alignment](ptr);
+				vx::store[alignment](ptr, vx::select[_predicate(_proj(data)), data](broadcasted));
 				advance_bytes(ptr, sizeof(Tag));
 			} while (ptr != aligned_end);
 
@@ -81,8 +96,16 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			if (ignore.tail_bytes() == 0)
+				return;
+
+			constexpr auto alignment = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
-			vx::store[_predicate(_proj(vx::load<Tag>[ignore](ptr))) & ignore()](ptr, Tag(_new_value));
+			const auto mask = _predicate(_proj(vx::load<Tag>[ignore][alignment](ptr))) & ignore();
+			vx::store[mask][alignment](ptr, Tag(static_cast<vector_value_type>(_new_value)));
+
+			advance_bytes(ptr, ignore.tail_bytes());
+			source_type::from_ptr(_iterator, ptr);
 		}
 
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source>) {
@@ -94,10 +117,12 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		}
 	};
 
-	template <std::permutable Iterator, std::sentinel_for<Iterator> Sentinel,
+	template <std::input_iterator Iterator, std::sentinel_for<Iterator> Sentinel,
 		class Predicate, class Value, class Projection = std::identity>
 	constexpr raze_always_inline void operator()(Iterator first, Sentinel sent,
-		Predicate pred, Value new_value, Projection proj = {}) const
+		Predicate pred, const Value& new_value, Projection proj = {}) const
+			requires(std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>> &&
+				std::indirectly_writable<Iterator, const Value&>)
 	{
 		this->dispatch(get_source(std::move(first), std::move(sent)),
 			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
@@ -106,9 +131,11 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 	template <std::ranges::input_range Range, class Predicate, class Value,
 		class Projection = std::identity>
 	constexpr raze_always_inline void operator()(Range&& r, Predicate pred,
-		Value new_value, Projection proj = {}) const
+		const Value& new_value, Projection proj = {}) const
+			requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>> &&
+				std::indirectly_writable<std::ranges::iterator_t<Range>, const Value&>)
 	{
-		this->dispatch(get_source(std::forward<Range>(r)),
+		this->dispatch(get_source(r),
 			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
 	}
 };

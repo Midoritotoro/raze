@@ -1,206 +1,250 @@
-#pragma once 
+#pragma once
 
-
+#include <raze/vx/Algorithm.h>
+#include <raze/math/BitCast.h>
+#include <raze/math/Math.h>
 #include <src/raze/algorithm/RangesSize.h>
+#include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/algorithm/DataSource.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
-#include <src/raze/algorithm/EqualTo.h>
-#include <src/raze/algorithm/NotFn.h>
-#include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/options/Options.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 #include <optional>
-
+#include <functional>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-template <class _Traits_>
-struct _Min_value : _Traits_ {
-	template <class _Iterator_, class _Sentinel_, class Projection>
-	struct __impl {
-		_Iterator_ _iterator;
-		_Sentinel_ _sentinel;
-		Projection _proj;
-		std::iter_value_t<_Iterator_> _lowest_value;
+template <class Traits>
+struct min_t : Traits, dispatchable<min_t<Traits>> {
+    template <source Source, class Comp, class Projection>
+    struct kernel {
+        using source_type = std::remove_cvref_t<Source>;
+        using iterator_type = typename source_type::iterator_type;
 
-		constexpr explicit __impl(_Iterator_ __it, _Sentinel_ __sent, Projection __proj) noexcept :
-			_iterator(__it), _sentinel(__sent), _proj(__proj), _lowest_value(*__it)
-		{
-			++_iterator;
-		}
+        using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
+        using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 
-		template <class _Tag_>
-		raze_always_inline raze_nodiscard constexpr bool operator()(_Tag_) noexcept {
-			if (_iterator == _sentinel) return true;
-			else {
-				if (_proj(_lowest_value) > std::invoke(_proj, *_iterator)) _lowest_value = *_iterator;
-				++_iterator;
-				return false;
-			}
-		}
+        using value_type = std::iter_value_t<unchecked_iterator_type>;
+        using vector_value_type = value_type;
 
-		raze_nodiscard constexpr raze_always_inline std::iter_value_t<_Iterator_> result() const noexcept {
-			return _lowest_value;
-		}
-	};
+        static consteval bool vectorizable() noexcept {
+            return contiguous_source<source_type>
+                && !traits::is_iterator_volatile_v<iterator_type>
+                && vectorizable_binary_predicate<Comp, unchecked_iterator_type>
+                && vectorizable_projection<Projection, unchecked_iterator_type>;
+        }
 
-	template <class _Tag_>
-	struct __vectorized_min_value {
-		template <class _Iterator_, class _Sentinel_, class Projection>
-		raze_nodiscard raze_always_inline std::iter_value_t<_Iterator_> operator()(_Iterator_ __first, 
-			_Sentinel_ __sentinel, Projection __proj) const noexcept requires(!vx::simd_type<_Tag_>)
-		{
-			std::iter_value_t<_Iterator_> __lowest_value = *__first;
+        source_type _source;
+        unchecked_iterator_type _iterator;
+        unchecked_sentinel_type _sentinel;
+        raze_no_unique_address Comp _comp;
+        raze_no_unique_address Projection _proj;
+        std::optional<value_type> _value;
 
-			for (; ++__first != __sentinel;)
-				if (__proj(__lowest_value) > __proj(*__first))
-					__lowest_value = *__first;
+        constexpr explicit kernel(Source&& source, Comp comp, Projection proj)
+            : _source(std::forward<Source>(source)),
+              _iterator(_source.ubegin()),
+              _sentinel(_source.uend()),
+              _comp(std::move(comp)),
+              _proj(std::move(proj))
+        {}
 
-			return __lowest_value;
-		}
+        raze_nodiscard constexpr raze_always_inline bool exit() const {
+            return _iterator == _sentinel;
+        }
 
-		template <class _Iterator_, class _Sentinel_, class Projection>
-		raze_nodiscard raze_always_inline auto operator()(sizetype __aligned_size,
-			sizetype __tail_size, _Iterator_ __first, _Sentinel_ __sentinel,
-			Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
+        raze_nodiscard constexpr raze_always_inline std::optional<value_type> default_result() const noexcept {
+            return std::nullopt;
+        }
 
-			const auto __aligned_end = __bytes_pointer_offset(__ptr, __aligned_size);
-			auto __vmin = vx::load<_Tag_>(__ptr);
-			__advance_bytes(__ptr, sizeof(_Tag_));
+        raze_always_inline constexpr void operator()() {
+            if (_iterator == _sentinel)
+                return;
 
-			if (__ptr != __aligned_end) {
-				do {
-					__vmin = vx::vertical_min(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmin));
-					__advance_bytes(__ptr, sizeof(_Tag_));
-				} while (__ptr != __aligned_end);
-			}
-			else __vmin = __proj(__vmin);
+            if (!_value.has_value()) {
+                _value.emplace(*_iterator);
+                ++_iterator;
+            }
 
-			__seek_iter(__first, __ptr);
-			auto __lowest_value = vx::horizontal_min(__vmin);
+            raze_disable_unrolling
+            for (; _iterator != _sentinel; ++_iterator) {
+                if (std::invoke(_comp, std::invoke(_proj, *_iterator), std::invoke(_proj, *_value)))
+                    *_value = *_iterator;
+            }
+        }
 
-			for (; __first != __sentinel; ++__first)
-				if (std::invoke(__proj, __lowest_value) > std::invoke(__proj, *__first))
-					__lowest_value = *__first;
+        template <vectorizable_tag Tag>
+        raze_always_inline void merge_vector(const Tag& vmin) {
+            value_type candidate;
 
-			return __lowest_value;
-		}
+            if constexpr (is_less_comparator<Comp>)
+                candidate = vx::horizontal_min(vmin);
+            else
+                candidate = vx::horizontal_max(vmin);
 
-		template <sizetype _AlignedSize_, sizetype _TailSize_,
-			class _Iterator_, class _Sentinel_, class Projection>
-		raze_nodiscard raze_always_inline auto operator()(std::integral_constant<sizetype, _AlignedSize_>,
-			std::integral_constant<sizetype, _TailSize_>, _Iterator_ __first, _Sentinel_ __sentinel,
-			Projection __proj) const noexcept requires(vx::simd_type<_Tag_>)
-		{
-			constexpr auto __iterations_aligned = _AlignedSize_ / sizeof(_Tag_);
+            if (!_value.has_value()) {
+                _value.emplace(candidate);
+            }
+            else if (std::invoke(_comp, std::invoke(_proj, candidate), std::invoke(_proj, *_value))) {
+                *_value = candidate;
+            }
+        }
 
-			auto* __ptr = std::to_address(__first);
-			raze_assume(__ptr != nullptr);
+        template <vectorizable_tag Tag>
+        raze_always_inline void operator()(Tag, sizetype aligned_size) {
+            auto* ptr = std::to_address(_iterator);
 
-			auto __vmin = vx::load<_Tag_>(__ptr);
-			auto __left = __iterations_aligned;
+            if constexpr (is_less_comparator<Comp> || is_greater_comparator<Comp>) {
+                const auto* const aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
-			__advance_bytes(__ptr, sizeof(_Tag_));
+                auto vmin = _proj(vx::load<Tag>(ptr));
+                advance_bytes(ptr, sizeof(Tag));
 
-			if (--__left) {
-				do {
-					__vmin = vx::vertical_max(__proj(vx::load<_Tag_>(__ptr)), __proj(__vmin));
-					__advance_bytes(__ptr, sizeof(_Tag_));
-				} while (--__left);
-			}
-			else {
-				__vmin = __proj(__vmin);
-			}
+                raze_disable_unrolling
+                while (ptr != aligned_end) {
+                    const auto loaded = _proj(vx::load<Tag>(ptr));
 
-			__seek_iter(__first, __ptr);
-			auto __lowest_value = vx::horizontal_min(__vmin);
+                    if constexpr (is_less_comparator<Comp>)
+                        vmin = vx::vertical_min(loaded, vmin);
+                    else
+                        vmin = vx::vertical_max(loaded, vmin);
 
-			if constexpr (_TailSize_ > 0) {
-				for (; __first != __sentinel; ++__first)
-					if (std::invoke(__proj, __lowest_value) > std::invoke(__proj, *__first))
-						__lowest_value = *__first;
-			}
+                    advance_bytes(ptr, sizeof(Tag));
+                }
 
-			return __lowest_value;
-		}
-	};
+                source_type::from_ptr(_iterator, ptr);
+                merge_vector(vmin);
+            }
+            else {
+                using unsigned_t = typename IntegerForSizeof<value_type>::Unsigned;
+                using index_simd_t = vx::simd<unsigned_t, vx::abi_t<Tag>>;
+                using index_mask_t = typename index_simd_t::mask_type;
+                using mask_t = typename Tag::mask_type;
 
-	template <std::input_iterator _Iterator_, std::sentinel_for<_Iterator_> _Sentinel_, class Projection = std::identity>
-	raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<_Iterator_>> operator()(_Iterator_ __first,
-		_Sentinel_ __last, Projection __proj = {}) const noexcept
-	{
-		return __min_unchecked(traits::__uiter<_Sentinel_>(std::move(__first)),
-			traits::__usent<_Iterator_>(std::move(__last)),
-			traits::fwd_fn(__proj));
-	}
+                constexpr bool needs_chunking = sizeof(unsigned_t) < sizeof(sizetype);
+                constexpr sizetype max_portion_bytes = needs_chunking
+                    ? static_cast<sizetype>(math::max_limit<unsigned_t>()) * sizeof(Tag)
+                    : math::max_limit<sizetype>();
 
-	template <std::ranges::input_range Range, class Projection = std::identity>
-	constexpr raze_always_inline std::optional<std::ranges::range_value_t<Range>> operator()(
-		Range&& __range, Projection __proj = {}) const noexcept
-			requires(!constexpr_sized_range<Range>)
-	{
-		return __min_unchecked(traits::__ubegin(__range),
-			traits::__uend(__range), traits::fwd_fn(__proj));
-	}
+                while (aligned_size > 0) {
+                    const auto portion_bytes = needs_chunking
+                        ? math::min(max_portion_bytes, aligned_size)
+                        : aligned_size;
+                    aligned_size -= portion_bytes;
 
-	template <std::ranges::input_range Range, class Projection = std::identity>
-	constexpr raze_always_inline std::optional<std::ranges::range_value_t<Range>> operator()(Range&& __range,
-		Projection __proj = {}) const noexcept requires(constexpr_sized_range<Range>)
-	{
-		return __min_unchecked(traits::__ubegin(__range),
-			traits::__uend(__range), traits::fwd_fn(__proj),
-			std::integral_constant<sizetype, __range_constexpr_size<Range>()>{});
-	}
-private:
-	template <class _Iterator_, class _Sentinel_, class Projection>
-	raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<_Iterator_>> __min_unchecked(
-		_Iterator_ __first, _Sentinel_ __last, Projection __proj) const noexcept
-	{
-		__verify_range(__first, __last);
+                    auto* const portion_begin = ptr;
+                    const auto* const stop_at = bytes_pointer_offset(ptr, portion_bytes);
 
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
+                    auto best_vals = _proj(vx::load<Tag>(ptr));
+                    auto best_idxs = vx::zero<index_simd_t>();
+                    auto curr_idxs = vx::zero<index_simd_t>();
 
-		if (__first == __last) return std::nullopt;
+                    advance_bytes(ptr, sizeof(Tag));
 
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_projection<Projection, _Iterator_>)
-		{
-			if not consteval {
-				return std::optional<_Value_> { vx::__dispatch_sized_impl<__vectorized_min_value, _Value_, _Value_>(
-					algorithm::distance(__first, __last) * sizeof(_Value_), __first, __last, __proj) };
-			}
-		}
+                    raze_disable_unrolling
+                    while (ptr != stop_at) {
+                        ++curr_idxs;
+                        const auto curr_vals = _proj(vx::load<Tag>(ptr));
+                        const auto better = _comp(curr_vals, best_vals);
 
-		return std::optional<_Value_> { options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj)) };
-	}
+                        best_idxs = vx::select[math::bit_cast<index_mask_t>(better), best_idxs](curr_idxs);
+                        best_vals = vx::select[better, best_vals](curr_vals);
 
-	template <class _Iterator_, class _Sentinel_, class Projection, sizetype _Size_>
-	raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<_Iterator_>> __min_unchecked(_Iterator_ __first,
-		_Sentinel_ __last, Projection __proj, std::integral_constant<sizetype, _Size_> __size) const noexcept
-	{
-		__verify_range(__first, __last);
+                        advance_bytes(ptr, sizeof(Tag));
+                    }
 
-		using _TraitsType = decltype(this->traits());
-		using _Value_ = std::iter_value_t<_Iterator_>;
+                    const value_type portion_min = vx::fold(best_vals,
+                        [&](const auto& x, const auto& y) raze_always_inline_lambda {
+                            return vx::select[_comp(y, x), x](y);
+                        });
 
-		if (__first == __last) return std::nullopt;
+                    if (!_value.has_value() ||
+                        std::invoke(_comp, std::invoke(_proj, portion_min), std::invoke(_proj, *_value)))
+                    {
+                        const mask_t eq_mask = (!_comp(best_vals, portion_min)) & (!_comp(portion_min, best_vals));
 
-		if constexpr (!options::always_scalar<_TraitsType>() && std::contiguous_iterator<_Iterator_>
-			&& vectorizable_projection<Projection, _Iterator_>)
-		{
-			if not consteval {
-				constexpr auto __bytes = std::integral_constant<sizetype, _Size_ * sizeof(_Value_)>{};
-				return std::optional<_Value_> { vx::__dispatch_sized_impl<__vectorized_min_value,
-					_Value_, _Value_>(__bytes, __first, __last, __proj) };
-			}
-		}
+                        if (vx::any_of(eq_mask)) {
+                            const auto idx_eq_mask = math::bit_cast<index_mask_t>(eq_mask);
+                            const auto masked_idxs = vx::select[idx_eq_mask, vx::all_bits<index_simd_t>()](best_idxs);
+                            const auto min_idx = vx::horizontal_min(masked_idxs);
+                            const auto match_mask = math::bit_cast<mask_t>(masked_idxs == min_idx) & eq_mask;
 
-		return std::optional<_Value_> { options::_unroller_t<_TraitsType, vx::scalar_tag>(__impl(__first, __last, __proj)) };
-	}
+                            const auto h_pos = vx::find_first_set[vx::not_null](match_mask);
+                            const auto v_pos = static_cast<sizetype>(best_idxs[h_pos]);
+
+                            const auto candidate = *bytes_pointer_offset(portion_begin,
+                                v_pos * sizeof(Tag) + static_cast<sizetype>(h_pos) * sizeof(value_type));
+
+                            if (!_value.has_value())
+                                _value.emplace(candidate);
+                            else if (std::invoke(_comp, std::invoke(_proj, candidate), std::invoke(_proj, *_value)))
+                                *_value = candidate;
+                        }
+                        else if (!_value.has_value()) {
+                            _value.emplace(*portion_begin);
+                        }
+                    }
+                }
+
+                source_type::from_ptr(_iterator, ptr);
+            }
+        }
+
+        template <vectorizable_tag Tag>
+        raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+            if (ignore.tail_bytes() == 0)
+                return;
+
+            if constexpr (is_less_comparator<Comp> || is_greater_comparator<Comp>) {
+                auto* ptr = std::to_address(_iterator);
+                const auto mask = ignore.mask();
+                const Tag fallback(*ptr);
+                const auto loaded = _proj(vx::select[mask, fallback](vx::load<Tag>[mask](ptr)));
+
+                advance_bytes(ptr, ignore.tail_bytes());
+                source_type::from_ptr(_iterator, ptr);
+                merge_vector(loaded);
+            }
+            else {
+                (*this)();
+            }
+        }
+
+        raze_nodiscard constexpr raze_always_inline std::optional<value_type> result() const {
+            return _value;
+        }
+
+        raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
+            requires(constexpr_sized_source<source_type>)
+        {
+            return source_type::static_size();
+        }
+
+        raze_nodiscard constexpr raze_always_inline auto size() const {
+            return _source.size();
+        }
+    };
+
+    template <std::input_iterator It, std::sentinel_for<It> Sent,
+        class Comp = std::less<>, class Projection = std::identity>
+    raze_nodiscard constexpr raze_always_inline std::optional<std::iter_value_t<It>>
+    operator()(It first, Sent last, Comp comp = {}, Projection proj = {}) const
+        requires(std::indirect_strict_weak_order<Comp, std::projected<It, Projection>>)
+    {
+        return this->dispatch(get_source(std::move(first), std::move(last)),
+            traits::fwd_fn(comp), traits::fwd_fn(proj));
+    }
+
+    template <std::ranges::input_range R,
+        class Comp = std::less<>, class Projection = std::identity>
+    raze_nodiscard constexpr raze_always_inline std::optional<std::ranges::range_value_t<R>>
+    operator()(R&& r, Comp comp = {}, Projection proj = {}) const
+        requires(std::indirect_strict_weak_order<Comp, std::projected<std::ranges::iterator_t<R>, Projection>>)
+    {
+        return this->dispatch(get_source(std::forward<R>(r)),
+            traits::fwd_fn(comp), traits::fwd_fn(proj));
+    }
 };
 
-constexpr inline auto min = raze::options::function_with_traits<_Min_value>;
+constexpr inline auto min = options::function_with_traits<min_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -5,7 +5,7 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-raze_unmangled raze_never_inline void* __raze_memset(void* dst, int ch, sizetype count) noexcept {
+void* __raze_memset(void* dst, int ch, sizetype count) noexcept {
 	return memset(dst, ch, count);
 }
 

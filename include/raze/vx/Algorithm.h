@@ -54,8 +54,7 @@ public:
     using index_type = typename IntegerForSizeof<value_type>::Signed;
     
     counter() noexcept {
-        if constexpr (simd_type<storage_type>) _storage = zero<storage_type>();
-        else _storage = 0;
+        reset();
     }
 
     raze_always_inline static constexpr auto portion_size() noexcept {
@@ -73,6 +72,11 @@ public:
         if constexpr (std::integral<storage_type>) return _storage;
         else return horizontal_sum(_storage);
     }
+
+	void reset() noexcept {
+		if constexpr (simd_type<storage_type>) _storage = zero<storage_type>();
+		else _storage = 0;
+	}
 private:
     using storage_type = std::conditional_t<(has_avx512f<abi_t<V>::isa> && sizeof(value_type) >= 4)
         || (has_avx512bw<abi_t<V>::isa>), sizetype, simd<index_type, abi_t<V>>>;

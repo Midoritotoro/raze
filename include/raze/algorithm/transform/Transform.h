@@ -41,62 +41,96 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
 
 		using vt_in = std::iter_value_t<unchecked_iterator_type>;
-		using vt_out = std::iter_value_t<unchecked_destination_type>;
+		using vt_out = typename decltype([] {
+			if constexpr (contiguous_destination<destination_type>)
+				return std::type_identity<typename destination_type::value_type>{};
+			else
+				return std::type_identity<void>{};
+		}())::type;
 
 		using vector_value_type = vt_in;
+		using align = options::alignments<Traits, 2>;
+		static_assert(sizeof(align) > 0);
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<destination_iterator_type> &&
+				vectorizable_value_type<vt_out> &&
 				vectorizable_unary_function<Function, iterator_type> &&
 				vectorizable_projection<Projection, iterator_type> &&
 				has_common_type<vector_value_type, vt_out>;
 		}
 
-		destination_type _destination;
-		source_type _source;
+		raze_no_unique_address destination_type _destination;
+		raze_no_unique_address source_type _source;
 		unchecked_iterator_type _in_iterator;
-		unchecked_sentinel_type _in_sentinel;
-		unchecked_destination_type _out_iterator;
-		Function _function;
-		Projection _proj;
+		raze_no_unique_address unchecked_sentinel_type _in_sentinel;
+		raze_no_unique_address unchecked_destination_type _out_iterator;
+		raze_no_unique_address Function _function;
+		raze_no_unique_address Projection _proj;
 
 		constexpr explicit kernel(Source&& source, Destination&& dest, Function f, Projection proj)
-			: _source(std::forward<Source>(source)),
-			  _destination(std::forward<Destination>(dest)),
-			  _function(f), _proj(proj),
+			: _destination(std::forward<Destination>(dest)),
+			  _source(std::forward<Source>(source)),
+			  _in_iterator(_source.ubegin()),
+			  _in_sentinel(_source.uend()),
 			  _out_iterator(_destination.ubegin()),
-			  _in_iterator(_source.ubegin()), _in_sentinel(_source.uend())
+			  _function(std::move(f)),
+			  _proj(std::move(proj))
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
+		constexpr void expects() const {
+			align::verify(_source, _destination);
+		}
+
+		raze_always_inline constexpr void operator()(autovectorizable_tag)
+			requires(contiguous_source<Source> && contiguous_destination<Destination> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<destination_iterator_type>)
+		{
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto dest = std::to_address(_out_iterator);
+			const auto count = last - first;
 
-			for_noalias(first, last, [func = _function, proj = _proj,
-				dst = dest, in = first](auto i) raze_always_inline_lambda{
-					dst[i] = func(proj(in[i]));
+			first = align::template assume<0>(first);
+			dest  = align::template assume<1>(dest);
+
+			for_noalias(first, last, [&func = _function, &proj = _proj,
+				dst = dest, in = first](auto i) raze_always_inline_lambda {
+					dst[i] = std::invoke(func, std::invoke(proj, in[i]));
 				});
 
 			source_type::from_ptr(_in_iterator, first);
-			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(dest, size()));
+			destination_type::from_ptr(_out_iterator, dest + count);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_in_iterator, _in_sentinel, _out_iterator, [func = _function,
-				proj = _proj] (auto& val) raze_always_inline_lambda {
+			for_novec(_in_iterator, _in_sentinel, _out_iterator, [&func = _function,
+				&proj = _proj](auto& val) raze_always_inline_lambda {
 					return std::invoke(func, std::invoke(proj, val));
 				});
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+		raze_always_inline void operator()(Tag, sizetype aligned_size)
+			requires(vx::supports_fast_conversion<
+				std::remove_cvref_t<decltype(_function(_proj(std::declval<Tag>())))>, vt_out>)
+		{
+			using ResTag = std::remove_cvref_t<decltype(_function(_proj(std::declval<Tag>())))>;
+			using OutTag = decltype(vx::convert<vt_out>(std::declval<ResTag>()));
+			constexpr auto in_policy  = align::template policy_for<0, Tag>;
+			constexpr auto out_policy = align::template policy_for<1, OutTag>;
+
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
+
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
 
 			raze_disable_unrolling do {
-				vx::store(out_ptr, vx::convert<vt_out>(_function(_proj(vx::load<Tag>(in_ptr)))));
-				advance_bytes(in_ptr, out_ptr, sizeof(Tag));
+				vx::store[out_policy](out_ptr, vx::convert<vt_out>(_function(_proj(vx::load<Tag>[in_policy](in_ptr)))));
+				in_ptr += Tag::size();
+				out_ptr += Tag::size();
 			} while (in_ptr != aligned_end);
 
 			source_type::from_ptr(_in_iterator, in_ptr);
@@ -104,17 +138,25 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_out, vt_in>) {
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore)
+			requires(std::same_as<vt_out, vt_in> &&
+				vx::supports_fast_conversion<
+					std::remove_cvref_t<decltype(_function(_proj(std::declval<Tag>())))>, vt_out>)
+		{
+			if (ignore.tail_bytes() == 0)
+				return;
+
+			constexpr auto in_policy  = align::template policy_for<0, Tag>;
+			constexpr auto out_policy = align::template policy_for<1, Tag>;
+
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
-				
-			const auto data = vx::load<Tag>[ignore](in_ptr);
-			vx::store[ignore](out_ptr, _function(_proj(data)));
 
-			advance_bytes(in_ptr, out_ptr, ignore.tail_bytes());
+			const auto data = vx::load<Tag>[ignore][in_policy](in_ptr);
+			vx::store[ignore][out_policy](out_ptr, vx::convert<vt_out>(_function(_proj(data))));
 
-			source_type::from_ptr(_in_iterator, in_ptr);
-			destination_type::from_ptr(_out_iterator, out_ptr);
+			source_type::from_ptr(_in_iterator, in_ptr + ignore.tail_elements());
+			destination_type::from_ptr(_out_iterator, out_ptr + ignore.tail_elements());
 		}
 
 		constexpr raze_always_inline std::ranges::unary_transform_result<iterator_type, destination_iterator_type> result() const {
@@ -148,71 +190,114 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 		using vt_in1 = std::iter_value_t<unchecked_iterator1_type>;
 		using vt_in2 = std::iter_value_t<unchecked_iterator2_type>;
-		using vt_out = std::iter_value_t<unchecked_destination_type>;
+		using vt_out = typename decltype([] {
+			if constexpr (contiguous_destination<destination_type>)
+				return std::type_identity<typename destination_type::value_type>{};
+			else
+				return std::type_identity<void>{};
+		}())::type;
 
 		using common_in_t = common_type_or_void_t<vt_in1, vt_in2>;
 		using vector_value_type = vt_in1;
+		using align = options::alignments<Traits, 3>;
+		static_assert(sizeof(align) > 0);
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source1> && contiguous_source<Source2> && contiguous_destination<Destination> &&
-				(options::is_strict_types<decltype(std::declval<Traits>().traits())>() ? (vectorizable_binary_function<Function, iterator1_type, iterator2_type>)
-					: (vectorizable_binary_common_function<Function, iterator1_type, iterator2_type>)) 
-				&& has_common_type<vt_in1, vt_out> && has_common_type<vt_in2, vt_out> && vectorizable_projection<Projection1, iterator1_type> &&
+				!traits::is_iterator_volatile_v<iterator1_type> && !traits::is_iterator_volatile_v<iterator2_type> &&
+				!traits::is_iterator_volatile_v<destination_iterator_type> &&
+				vectorizable_value_type<vt_out> &&
+				(options::is_strict_types<options::unwrap_traits_t<Traits>>()
+					? vectorizable_binary_function<Function, iterator1_type, iterator2_type>
+					: vectorizable_binary_common_function<Function, iterator1_type, iterator2_type>) &&
+				has_common_type<vt_in1, vt_out> && has_common_type<vt_in2, vt_out> &&
+				vectorizable_projection<Projection1, iterator1_type> &&
 				vectorizable_projection<Projection2, iterator2_type>;
 		}
 
-		destination_type _destination;
-		source1_type _source1;
-		source2_type _source2;
+		raze_no_unique_address destination_type _destination;
+		raze_no_unique_address source1_type _source1;
+		raze_no_unique_address source2_type _source2;
 		unchecked_iterator1_type _in1_iterator;
-		unchecked_sentinel1_type _in1_sentinel;
+		raze_no_unique_address unchecked_sentinel1_type _in1_sentinel;
 		unchecked_iterator2_type _in2_iterator;
-		unchecked_sentinel2_type _in2_sentinel;
-		unchecked_destination_type _out_iterator;
-		Function _function;
-		Projection1 _proj1;
-		Projection2 _proj2;
+		raze_no_unique_address unchecked_sentinel2_type _in2_sentinel;
+		raze_no_unique_address unchecked_destination_type _out_iterator;
+		raze_no_unique_address Function _function;
+		raze_no_unique_address Projection1 _proj1;
+		raze_no_unique_address Projection2 _proj2;
 
 		constexpr explicit kernel(Source1&& source1, Source2&& source2, Destination&& dest,
 		         Function f, Projection1 proj1, Projection2 proj2)
-			: _source1(std::forward<Source1>(source1)),
+			: _destination(std::forward<Destination>(dest)),
+			  _source1(std::forward<Source1>(source1)),
 			  _source2(std::forward<Source2>(source2)),
-			  _destination(std::forward<Destination>(dest)),
-			  _function(f), _proj1(proj1), _proj2(proj2),
+			  _in1_iterator(_source1.ubegin()),
+			  _in1_sentinel(_source1.uend()),
+			  _in2_iterator(_source2.ubegin()),
+			  _in2_sentinel(_source2.uend()),
 			  _out_iterator(_destination.ubegin()),
-			  _in1_iterator(_source1.ubegin()), _in1_sentinel(_source1.uend()),
-			  _in2_iterator(_source2.ubegin()), _in2_sentinel(_source2.uend())
+			  _function(std::move(f)),
+			  _proj1(std::move(proj1)),
+			  _proj2(std::move(proj2))
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
+		constexpr void expects() const {
+			align::verify(_source1, _source2, _destination);
+		}
+
+		raze_always_inline constexpr void operator()(autovectorizable_tag)
+			requires(contiguous_source<Source1> && contiguous_source<Source2> &&
+				contiguous_destination<Destination> &&
+				!traits::is_iterator_volatile_v<iterator1_type> &&
+				!traits::is_iterator_volatile_v<iterator2_type> &&
+				!traits::is_iterator_volatile_v<destination_iterator_type>)
+		{
 			auto [first1, last1] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
 			auto [first2, last2] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
 			auto dest = std::to_address(_out_iterator);
+			const auto count = math::min(last1 - first1, last2 - first2);
 
-			for_noalias2(first1, last1, first2, last2, [func = _function, proj1 = _proj1, proj2 = _proj2,
+			first1 = align::template assume<0>(first1);
+			first2 = align::template assume<1>(first2);
+			dest   = align::template assume<2>(dest);
+
+			for_noalias2(first1, last1, first2, last2, [&func = _function, &proj1 = _proj1, &proj2 = _proj2,
 				dst = dest, in1 = first1, in2 = first2](auto i) raze_always_inline_lambda {
-					dst[i] = func(proj1(in1[i]), proj2(in2[i]));
+					dst[i] = std::invoke(func, std::invoke(proj1, in1[i]), std::invoke(proj2, in2[i]));
 				});
 
 			source1_type::from_ptr(_in1_iterator, first1);
 			source2_type::from_ptr(_in2_iterator, first2);
-			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(dest, size()));
+			destination_type::from_ptr(_out_iterator, dest + count);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec2(_in1_iterator, _in1_sentinel, _in2_iterator, _in2_sentinel, _out_iterator, [func = _function,
-				proj1 = _proj1, proj2 = _proj2] (auto& val1, auto& val2) raze_always_inline_lambda {
+			for_novec2(_in1_iterator, _in1_sentinel, _in2_iterator, _in2_sentinel, _out_iterator, [&func = _function,
+				&proj1 = _proj1, &proj2 = _proj2](auto& val1, auto& val2) raze_always_inline_lambda {
 					return std::invoke(func, std::invoke(proj1, val1), std::invoke(proj2, val2));
 				});
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, sizetype aligned_size) requires(vx::supports_fast_conversion<Tag, common_in_t>
-			&& vx::supports_fast_conversion<vx::rebind_simd_lanes_t<vt_in2, Tag>, common_in_t> && 
-			vx::supports_fast_conversion<vx::rebind_simd_lanes_t<common_in_t, Tag>, vt_out>)
+		raze_always_inline void operator()(Tag, sizetype aligned_size)
+			requires(vx::supports_fast_conversion<Tag, common_in_t> &&
+				vx::supports_fast_conversion<vx::rebind_simd_lanes_t<vt_in2, Tag>, common_in_t> &&
+				vx::supports_fast_conversion<
+					std::remove_cvref_t<decltype(_function(
+						std::declval<vx::rebind_simd_lanes_t<common_in_t, Tag>>(),
+						std::declval<vx::rebind_simd_lanes_t<common_in_t, Tag>>()))>,
+					vt_out>)
 		{
 			using V1 = Tag;
 			using V2 = vx::rebind_simd_lanes_t<vt_in2, Tag>;
+			using CommonV = vx::rebind_simd_lanes_t<common_in_t, Tag>;
+			using ResV = std::remove_cvref_t<decltype(_function(std::declval<CommonV>(), std::declval<CommonV>()))>;
+			using OutV = decltype(vx::convert<vt_out>(std::declval<ResV>()));
+
+			constexpr auto in1_policy = align::template policy_for<0, V1>;
+			constexpr auto in2_policy = align::template policy_for<1, V2>;
+			constexpr auto out_policy = align::template policy_for<2, OutV>;
 
 			auto* in1_ptr = std::to_address(_in1_iterator);
 			auto* in2_ptr = std::to_address(_in2_iterator);
@@ -220,12 +305,12 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			const auto aligned_end = bytes_pointer_offset(in1_ptr, aligned_size);
 
 			raze_disable_unrolling do {
-				const auto v1 = vx::convert<common_in_t>(_proj1(vx::load<V1>(in1_ptr)));
-				const auto v2 = vx::convert<common_in_t>(_proj2(vx::load<V2>(in2_ptr)));
-				vx::store(out_ptr, vx::convert<vt_out>(_function(v1, v2)));
-				advance_bytes(in1_ptr, sizeof(V1));
-				advance_bytes(in2_ptr, sizeof(V2));
-				advance_bytes(out_ptr, sizeof(vt_out) * Tag::size());
+				const auto v1 = vx::convert<common_in_t>(_proj1(vx::load<V1>[in1_policy](in1_ptr)));
+				const auto v2 = vx::convert<common_in_t>(_proj2(vx::load<V2>[in2_policy](in2_ptr)));
+				vx::store[out_policy](out_ptr, vx::convert<vt_out>(_function(v1, v2)));
+				in1_ptr += Tag::size();
+				in2_ptr += Tag::size();
+				out_ptr += Tag::size();
 			} while (in1_ptr != aligned_end);
 
 			source1_type::from_ptr(_in1_iterator, in1_ptr);
@@ -234,38 +319,49 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) 
-			requires(std::same_as<vt_out, vt_in1> && std::same_as<vt_out, vt_in2>)
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore)
+			requires(std::same_as<vt_out, vt_in1> && std::same_as<vt_out, vt_in2> &&
+				vx::supports_fast_conversion<
+					std::remove_cvref_t<decltype(_function(std::declval<Tag>(), std::declval<Tag>()))>, vt_out>)
 		{
+			if (ignore.tail_bytes() == 0)
+				return;
+
+			constexpr auto in1_policy = align::template policy_for<0, Tag>;
+			constexpr auto in2_policy = align::template policy_for<1, Tag>;
+			constexpr auto out_policy = align::template policy_for<2, Tag>;
+
 			auto* in1_ptr = std::to_address(_in1_iterator);
 			auto* in2_ptr = std::to_address(_in2_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
-			const auto data1 = vx::load<Tag>[ignore](in1_ptr);
-			const auto data2 = vx::load<Tag>[ignore](in2_ptr);
-			vx::store[ignore](out_ptr, _function(_proj1(data1), _proj2(data2)));
+			const auto data1 = vx::load<Tag>[ignore][in1_policy](in1_ptr);
+			const auto data2 = vx::load<Tag>[ignore][in2_policy](in2_ptr);
+			vx::store[ignore][out_policy](out_ptr, vx::convert<vt_out>(_function(_proj1(data1), _proj2(data2))));
 
-			advance_bytes(in1_ptr, in2_ptr, ignore.tail_bytes());
-			advance_bytes(out_ptr, ignore.tail_bytes());
-
-			source1_type::from_ptr(_in1_iterator, in1_ptr);
-			source2_type::from_ptr(_in2_iterator, in2_ptr);
-			destination_type::from_ptr(_out_iterator, out_ptr);
+			const auto count = ignore.tail_elements();
+			source1_type::from_ptr(_in1_iterator, in1_ptr + count);
+			source2_type::from_ptr(_in2_iterator, in2_ptr + count);
+			destination_type::from_ptr(_out_iterator, out_ptr + count);
 		}
 
 		constexpr raze_always_inline std::ranges::binary_transform_result<iterator1_type, iterator2_type, destination_iterator_type> result() const {
 			return { _source1.wrap(_in1_iterator), _source2.wrap(_in2_iterator), _destination.wrap(_out_iterator) };
 		}
 
-		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() requires(constexpr_sized_source<Source1> && constexpr_sized_source<Source2>) {
-			constexpr auto sz1 = Source1::static_size();
-			constexpr auto sz2 = Source2::static_size();
-			if constexpr (sizetype(sz1) < sizetype(sz2)) return sz1;
-			else return sz2;
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
+			requires(constexpr_sized_source<Source1> && constexpr_sized_source<Source2>)
+		{
+			constexpr sizetype n1 = sizetype(Source1::static_size()) / sizeof(vt_in1);
+			constexpr sizetype n2 = sizetype(Source2::static_size()) / sizeof(vt_in2);
+			constexpr sizetype n = n1 < n2 ? n1 : n2;
+			return std::integral_constant<sizetype, n * sizeof(vt_in1)>{};
 		}
 
-		raze_nodiscard constexpr raze_always_inline auto size() const {
-			return math::min(_source1.size(), _source2.size());
+		raze_nodiscard constexpr raze_always_inline sizetype size() const {
+			const auto n1 = _source1.size() / sizeof(vt_in1);
+			const auto n2 = _source2.size() / sizeof(vt_in2);
+			return math::min(n1, n2) * sizeof(vt_in1);
 		}
 	};
 
@@ -281,17 +377,17 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt,
 	    class Function, class Proj = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<R>, OutIt>
+	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::borrowed_iterator_t<R>, OutIt>
 		operator()(R&& r, OutIt out, Function f, Proj proj = {}) const
-			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function, 
+			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function,
 				std::projected<std::ranges::iterator_t<R>, Proj>>>)
 	{
-		return this->dispatch(get_source(std::forward<R>(r)),
+		return this->dispatch(get_source(r),
 			get_destination(std::move(out)), traits::fwd_fn(f), traits::fwd_fn(proj));
 	}
 
 	template <std::input_iterator InIt1, std::sentinel_for<InIt1> Sent1,
-		std::input_iterator InIt2, std::sentinel_for<InIt2> Sent2, std::weakly_incrementable OutIt, 
+		std::input_iterator InIt2, std::sentinel_for<InIt2> Sent2, std::weakly_incrementable OutIt,
 		class Function, class Proj1 = std::identity, class Proj2 = std::identity>
 	constexpr raze_always_inline std::ranges::binary_transform_result<InIt1, InIt2, OutIt> operator()(
 		InIt1 first1, Sent1 last1, InIt2 first2, Sent2 last2, OutIt out,
@@ -308,12 +404,12 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		std::weakly_incrementable OutIt, class Function, class Proj1 = std::identity,
 		class Proj2 = std::identity>
 	constexpr raze_always_inline std::ranges::binary_transform_result<
-		std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>, OutIt> operator()(
+		std::ranges::borrowed_iterator_t<R1>, std::ranges::borrowed_iterator_t<R2>, OutIt> operator()(
 		R1&& r1, R2&& r2, OutIt out, Function f, Proj1 proj1 = {}, Proj2 proj2 = {}) const
-			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function, 
+			requires(std::indirectly_writable<OutIt, std::indirect_result_t<Function,
 				std::projected<std::ranges::iterator_t<R1>, Proj1>, std::projected<std::ranges::iterator_t<R2>, Proj2>>>)
 	{
-		return this->dispatch(get_source(std::forward<R1>(r1)), get_source(std::forward<R2>(r2)),
+		return this->dispatch(get_source(r1), get_source(r2),
 			get_destination(std::move(out)), traits::fwd_fn(f), traits::fwd_fn(proj1), traits::fwd_fn(proj2));
 	}
 };

@@ -12,7 +12,8 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 constexpr auto replace_copy_strategy = options::strategy<strategy<>()
 	.for_gcc<strategy_mode::autovec>()
-	.for_clang<strategy_mode::autovec>()>;
+	.for_clang<strategy_mode::autovec>()
+	.for_icpx<strategy_mode::autovec>()>;
 
 template <class Traits>
 struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
@@ -29,63 +30,112 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
 
 		using vector_value_type = std::iter_value_t<iterator_type>;
-		using OutT = std::iter_value_t<destination_iterator_type>;
+		using OutT = typename decltype([] {
+			if constexpr (contiguous_destination<destination_type>)
+				return std::type_identity<typename destination_type::value_type>{};
+			else
+				return std::type_identity<void>{};
+		}())::type;
+		using align = options::alignments<Traits, 2>;
+		static_assert(sizeof(align) > 0);
 
 		static consteval bool vectorizable() noexcept {
-			return contiguous_source<Source> && contiguous_destination<Destination> && 
+			return contiguous_source<Source> && contiguous_destination<Destination> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<destination_iterator_type> &&
+				vectorizable_value_type<OutT> &&
+				std::convertible_to<const T&, vector_value_type> &&
+				(std::same_as<vector_value_type, OutT> ||
+					std::same_as<common_type_or_void_t<vector_value_type, T>, vector_value_type>) &&
 				vectorizable_unary_predicate<Predicate, iterator_type> &&
-				has_common_type<std::iter_value_t<iterator_type>, T> &&
 				vectorizable_projection<Projection, iterator_type>;
 		}
 
-		destination_type _destination;
-		source_type _source;
+		raze_no_unique_address destination_type _destination;
+		raze_no_unique_address source_type _source;
 		unchecked_iterator_type _in_iterator;
-		unchecked_sentinel_type _in_sentinel;
-		unchecked_destination_type _out_iterator;
+		raze_no_unique_address unchecked_sentinel_type _in_sentinel;
+		raze_no_unique_address unchecked_destination_type _out_iterator;
 		raze_no_unique_address Predicate _predicate;
 		raze_no_unique_address Projection _proj;
-		T _new_value;
+		const T& _new_value;
 
 		constexpr explicit kernel(Source&& source, Destination&& dest,
 			Predicate pred, Projection proj, const T& new_val):
 				_destination(std::forward<Destination>(dest)), _source(std::forward<Source>(source)),
 				_in_iterator(_source.ubegin()), _in_sentinel(_source.uend()), _out_iterator(_destination.ubegin()),
-				_predicate(pred), _proj(proj), _new_value(new_val)
+				_predicate(std::move(pred)), _proj(std::move(proj)), _new_value(new_val)
 		{}
- 
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
+
+		constexpr void expects() const {
+			align::verify(_source, _destination);
+		}
+
+		raze_always_inline constexpr void operator()(autovectorizable_tag)
+			requires(contiguous_source<Source> && contiguous_destination<Destination> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<destination_iterator_type>)
+		{
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto dest = std::to_address(_out_iterator);
+			const auto count = last - first;
 
-			for_noalias(first, last, [pred = _predicate, proj = _proj, newv = _new_value,
-				dst = dest, in = first] (auto i) raze_always_inline_lambda {
-					dst[i] = pred(proj(in[i])) ? newv : in[i];
+			first = align::template assume<0>(first);
+			dest  = align::template assume<1>(dest);
+
+			for_noalias(first, last, [&pred = _predicate, &proj = _proj, &newv = _new_value,
+				dst = dest, in = first](auto i) raze_always_inline_lambda {
+					if (std::invoke(pred, std::invoke(proj, in[i])))
+						dst[i] = newv;
+					else
+						dst[i] = in[i];
 				});
 
 			source_type::from_ptr(_in_iterator, first);
-			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(dest, size()));
+			destination_type::from_ptr(_out_iterator, dest + count);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_in_iterator, _in_sentinel, _out_iterator, [pred = _predicate, 
-				proj = _proj, newv = _new_value] (auto& val) raze_always_inline_lambda {
-					return std::invoke(pred, std::invoke(proj, val)) ? newv : val;
-				});
+#if defined(raze_cpp_msvc_only)
+			if !consteval {
+				raze_do_pragma(loop(no_vector))
+				for (; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator) {
+					if (std::invoke(_predicate, std::invoke(_proj, *_in_iterator)))
+						*_out_iterator = _new_value;
+					else
+						*_out_iterator = *_in_iterator;
+				}
+				return;
+			}
+#endif
+			raze_disable_unrolling
+			for (; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator) {
+				if (std::invoke(_predicate, std::invoke(_proj, *_in_iterator)))
+					*_out_iterator = _new_value;
+				else
+					*_out_iterator = *_in_iterator;
+			}
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+		raze_always_inline void operator()(Tag, sizetype aligned_size)
+			requires(vx::supports_fast_conversion<Tag, OutT>)
+		{
+			using OutTag = decltype(vx::convert<OutT>(std::declval<Tag>()));
+			constexpr auto in_policy  = align::template policy_for<0, Tag>;
+			constexpr auto out_policy = align::template policy_for<1, OutTag>;
+
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
-			const auto broadcasted = Tag(_new_value);
+			const auto broadcasted = Tag(static_cast<vector_value_type>(_new_value));
 
 			raze_disable_unrolling do {
-				const auto data = vx::load<Tag>(in_ptr);
-				vx::store(out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](broadcasted)));
-				advance_bytes(in_ptr, out_ptr, sizeof(Tag));
+				const auto data = vx::load<Tag>[in_policy](in_ptr);
+				vx::store[out_policy](out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](broadcasted)));
+				in_ptr += Tag::size();
+				out_ptr += Tag::size();
 			} while (in_ptr != aligned_end);
 
 			source_type::from_ptr(_in_iterator, in_ptr);
@@ -93,17 +143,23 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore)
+			requires(std::same_as<OutT, vector_value_type>)
+		{
+			if (ignore.tail_bytes() == 0)
+				return;
+
+			constexpr auto in_policy  = align::template policy_for<0, Tag>;
+			constexpr auto out_policy = align::template policy_for<1, Tag>;
+
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
-			const auto data = vx::load<Tag>[ignore](in_ptr);
-			vx::store[ignore](out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](Tag(_new_value))));
+			const auto data = vx::load<Tag>[ignore][in_policy](in_ptr);
+			vx::store[ignore][out_policy](out_ptr, vx::select[_predicate(_proj(data)), data](Tag(static_cast<vector_value_type>(_new_value))));
 
-			advance_bytes(in_ptr, out_ptr, ignore.tail_bytes());
-
-			source_type::from_ptr(_in_iterator, in_ptr);
-			destination_type::from_ptr(_out_iterator, out_ptr);
+			source_type::from_ptr(_in_iterator, in_ptr + ignore.tail_elements());
+			destination_type::from_ptr(_out_iterator, out_ptr + ignore.tail_elements());
 		}
 
 		constexpr raze_always_inline std::ranges::unary_transform_result<iterator_type, destination_iterator_type> result() const {
@@ -132,13 +188,13 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 	}
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class Pred, class T, class Proj = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<R>, OutIt> operator()(
+	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::borrowed_iterator_t<R>, OutIt> operator()(
 		R&& r, OutIt out, Pred pred, const T& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> &&
 				std::indirect_unary_predicate<Pred, std::projected<std::ranges::iterator_t<R>, Proj>> &&
 				std::indirectly_writable<OutIt, const T&>)
 	{
-		return this->dispatch(get_source(std::forward<R>(r)), get_destination(std::move(out)),
+		return this->dispatch(get_source(r), get_destination(std::move(out)),
 			traits::fwd_fn(pred), traits::fwd_fn(proj), v);
 	}
 };

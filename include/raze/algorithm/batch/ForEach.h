@@ -7,6 +7,7 @@
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <raze/vx/Algorithm.h>
+#include <src/raze/utility/Assert.h>
 #include <memory>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
@@ -25,6 +26,8 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 		using vector_value_type = std::iter_value_t<iterator_type>;
+		using align = options::alignments<Traits, 1>;
+		static_assert(sizeof(align) > 0);
 		
 		static consteval bool autovectorizable() noexcept {
 			return contiguous_source<Source>;
@@ -32,6 +35,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && modifiable_source<Source> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
 				vectorizable_unary_function<F, iterator_type> &&
 				vectorizable_projection<Proj, iterator_type>;
 		}
@@ -44,28 +48,27 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		constexpr explicit kernel(Source&& src, F f, Proj proj):
 			_source(std::forward<Source>(src)), _iterator(_source.ubegin()),
-			_sentinel(_source.uend()), _f(f), _proj(proj)
+			_sentinel(_source.uend()), _f(std::move(f)), _proj(std::move(proj))
 		{}
 
 		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(contiguous_source<Source>) {
-			constexpr auto alignment = options::alignment_of<Traits>();
-
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
-			first = std::assume_aligned<alignment>(first);
+			first = align::template assume<0>(first);
 
-			for_noalias(first, last, [func = _f, proj = _proj, in = first](auto i)
-				raze_always_inline_lambda{ func(proj(in[i])); });
+			for_noalias(first, last, [&func = _f, &proj = _proj, in = first](auto i)
+				raze_always_inline_lambda { std::invoke(func, std::invoke(proj, in[i])); });
 
 			source_type::from_ptr(_iterator, first);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_iterator, _sentinel, [f = _f, proj = _proj] (auto& x) raze_always_inline_lambda { f(proj(x)); });
+			for_novec(_iterator, _sentinel, [&f = _f, &proj = _proj](auto& x)
+				raze_always_inline_lambda { std::invoke(f, std::invoke(proj, x)); });
 		}
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
-			constexpr auto alignment = options::aligned_for<Tag, options::alignment_of<Traits>()>;
+			constexpr auto alignment = align::template policy_for<0, Tag>;
 
 			auto* ptr = std::to_address(_iterator);
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
@@ -82,7 +85,10 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
-			constexpr auto alignment = options::aligned_for<Tag, options::alignment_of<Traits>()>;
+			if (ignore.tail_bytes() == 0)
+				return;
+
+			constexpr auto alignment = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 
 			auto projected = _proj(vx::load<Tag>[ignore][alignment](ptr));
@@ -91,7 +97,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 			advance_bytes(ptr, ignore.tail_bytes());
 			source_type::from_ptr(_iterator, ptr);
-		}		
+		}
 
 		constexpr raze_always_inline std::ranges::for_each_result<iterator_type, F> result() const {
 			return { _source.wrap(_iterator), _f };
@@ -106,6 +112,10 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		raze_nodiscard constexpr raze_always_inline auto size() const {
 			return _source.size();
 		}
+
+		constexpr void expects() const {
+			align::verify(_source);
+		}
 	};
 
 	template <std::input_iterator InIt, std::sentinel_for<InIt> Sent, class F, class Proj = std::identity>
@@ -118,10 +128,11 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 	}
 
 	template <std::ranges::input_range R, class F, class Proj = std::identity>
-	constexpr raze_always_inline std::ranges::for_each_result<std::ranges::iterator_t<R>, F> operator()(R&& r, F f, Proj proj = {}) const
-		requires(std::indirectly_unary_invocable<F, std::projected<std::ranges::iterator_t<R>, Proj>>)
+	constexpr raze_always_inline std::ranges::for_each_result<std::ranges::borrowed_iterator_t<R>, F> operator()(
+		R&& r, F f, Proj proj = {}) const
+			requires(std::indirectly_unary_invocable<F, std::projected<std::ranges::iterator_t<R>, Proj>>)
 	{
-		return this->dispatch(get_source(std::forward<R>(r)), traits::fwd_fn(f), traits::fwd_fn(proj));
+		return this->dispatch(get_source(r), traits::fwd_fn(f), traits::fwd_fn(proj));
 	}
 };
 
@@ -148,7 +159,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  * // (2) Range overload
  * template< std::ranges::input_range R, class F, class Proj = std::identity >
  *   requires(std::indirectly_unary_invocable<F, std::projected<std::ranges::iterator_t<R>, Proj>>)
- * constexpr std::ranges::for_each_result<std::ranges::iterator_t<R>, F>
+ * constexpr std::ranges::for_each_result<std::ranges::borrowed_iterator_t<R>, F>
  * for_each( R&& r, F f, Proj proj = {} );
  * ```
  *
