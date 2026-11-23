@@ -5,7 +5,7 @@
 // Warnings
 
 # if !defined(raze_do_pragma)
-#  if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+#  if defined(raze_cpp_clang) || defined(raze_cpp_gnu) || defined(raze_cpp_nvhpc)
 #    define raze_do_pragma(__text) _Pragma(#__text)
 #  elif defined(raze_cpp_msvc)
 #    define raze_do_pragma(__text) __pragma(__text)
@@ -31,7 +31,7 @@
 #if !defined(raze_warning_pop)
 #  if defined(raze_cpp_msvc) && !defined(raze_cpp_clang)
 #    define raze_warning_pop __pragma(warning(pop))
-#  elif defined(raze_cpp_clang)
+#  elif defined(raze_cpp_clang) 
 #    define raze_warning_pop raze_do_pragma(clang diagnostic pop)
 #  elif defined(raze_cpp_gnu) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 406)
 #    define raze_warning_pop raze_do_pragma(GCC diagnostic pop)
@@ -107,29 +107,6 @@
 #  endif // defined(raze_cpp_msvc)
 
 #endif // defined(raze_no_warnings)
-
-#if !defined(raze_nodiscard_return_raw_ptr)
-#  define raze_nodiscard_return_raw_ptr \
-        raze_nodiscard_with_warning("This function allocates memory and returns a raw pointer. " \
-            "Discarding the return value will cause a memory leak.")
-#endif // !defined(raze_nodiscard_return_raw_ptr)
-
-
-#if !defined(raze_nodiscard_thread_constructor)
-#  define raze_nodiscard_thread_constructor \
-    raze_nodiscard_constructor_with_warning("Creating a thread object without assigning it to a variable " \
-        "may lead to unexpected behavior and resource leaks. Ensure " \
-        "the thread is properly managed.")
-#endif // !defined(raze_nodiscard_thread_constructor)
-
-
-#if !defined(raze_nodiscard_remove_algorithm)
-#  define raze_nodiscard_remove_algorithm \
-        raze_nodiscard_with_warning("The 'remove' and 'remove_if' algorithms return the iterator past the last element " \
-            "that should be kept. You need to call container.erase(result, container.end()) afterwards. " \
-            "In C++20, 'std::erase' and 'std::erase_if' are simpler replacements for these two steps.")
-#endif // !defined(raze_nodiscard_remove_algorithm)
-
 
 #if !defined(raze_deprecated_warning)
 #  if defined(raze_cpp_msvc)

@@ -11,7 +11,7 @@
        raze_do_pragma(clang loop vectorize(disable)) \
        raze_do_pragma(clang loop interleave(disable))
 #  elif defined(raze_cpp_gnu)
-#    if defined(__OPTIMIZE__) && (raze_cpp_gnu >= 1410)
+#    if defined(__OPTIMIZE__) && (raze_cpp_gnu >= 1400)
 #      define raze_disable_unrolling \
           raze_do_pragma(GCC unroll 1) \
           raze_do_pragma(GCC novector)

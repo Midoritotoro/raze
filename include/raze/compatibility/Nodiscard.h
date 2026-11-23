@@ -21,7 +21,7 @@
 #  elif defined(raze_cpp_gnu)
 #    define raze_nodiscard  __attribute__((__warn_unused_result__))
 #  elif defined(raze_cpp_clang)
-#    define raze_nodiscard  __attribute__(warn_unused_result)
+#    define raze_nodiscard  __attribute__((warn_unused_result))
 #  elif defined(raze_cpp_msvc)
 #    define raze_nodiscard  _Check_return_
 #  else

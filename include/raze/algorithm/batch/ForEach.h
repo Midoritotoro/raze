@@ -36,9 +36,9 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 				vectorizable_projection<Proj, iterator_type>;
 		}
 
-		source_type _source;
-		unchecked_iterator_type _iterator;
-		unchecked_sentinel_type _sentinel;
+		raze_no_unique_address source_type _source;
+		raze_no_unique_address unchecked_iterator_type _iterator;
+		raze_no_unique_address unchecked_sentinel_type _sentinel;
 		raze_no_unique_address F _f;
 		raze_no_unique_address Proj _proj;
 
@@ -60,9 +60,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		}
 
 		raze_always_inline constexpr void operator()() {
-			raze_disable_unrolling
-			for (; _iterator != _sentinel; ++_iterator)
-				_f(_proj(*_iterator));
+			for_novec(_iterator, _sentinel, [f = _f, proj = _proj] (auto& x) raze_always_inline_lambda { f(proj(x)); });
 		}
 
 		template <vectorizable_tag Tag>
@@ -93,7 +91,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 			advance_bytes(ptr, ignore.tail_bytes());
 			source_type::from_ptr(_iterator, ptr);
-		}
+		}		
 
 		constexpr raze_always_inline std::ranges::for_each_result<iterator_type, F> result() const {
 			return { _source.wrap(_iterator), _f };
@@ -167,48 +165,40 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  *
  * ### Complexity
  * Linear in `N = std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`):
- * performs `N` applications of `f` and `proj` in the scalar and auto-vectorized paths, or
+ * `N` applications of `f` and `proj` in the scalar and auto-vectorized paths, or
  * one vector application per SIMD chunk (including the masked tail) in the explicit SIMD path.
  *
  * ### Decorators and Options
- * The algorithm object is configured with `raze::options::unroll<4>` by default (and
- * `strategy_mode::autovec` on GCC, Clang, and ICPX) and supports compile-time modifiers via `operator[]`:
+ * Configured with `raze::options::unroll<4>` by default (and `strategy_mode::autovec` on GCC, Clang, and ICPX).
+ * Supported modifiers via `operator[]`:
  * ```cpp
  * for_each[raze::options::fscalar](...);
- * for_each[raze::options::unroll<2>](...);
- * for_each[raze::options::fstatic][raze::options::unroll<2>](...);
+ * for_each[raze::options::fautovec](...);
+ * for_each[raze::options::fstatic](...);
+ * for_each[raze::options::aligned<N>](...);
+ * for_each[raze::options::unroll<N>](...);
+ * for_each[raze::options::fstatic][raze::options::aligned<N>](...);
  * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
  *
  * ### Notes
- * - **Execution order & vectorization**:
- *   - When `f` is vectorizable (e.g., accepts `auto&` and operates via SIMD-compatible expressions),
- *     elements may be processed in an unsequenced (`unseq`) / vectorized manner without strict
- *     element-by-element ordering. In this mode, `f` must not rely on loop-carried dependencies
- *     or cross-iteration mutable state.
- *   - Strict sequential in-order execution (safe for stateful functors or scalar-only control flow)
- *     is guaranteed when `f` takes an explicit scalar parameter type (e.g., `[](int& x)`), when
- *     `raze::options::fscalar` is specified, for non-contiguous ranges or non-`std::identity`
- *     projections, or in constant-evaluated contexts (`if consteval`).
- *   - See @ref vectorization_semantics for full details and caveats with generic (`auto`) lambdas.
- * - **Execution path selection**:
- *   - **Constant evaluation (`if consteval`) or `fscalar`**: always executes via the scalar in-order loop.
- *   - **Auto-vectorized path** (GCC, Clang, ICPX): for contiguous modifiable ranges with vectorizable
- *     `f` and `proj`, uses a `noalias` loop eligible for compiler auto-vectorization and `target_clones`
- *     dynamic dispatch (unless restricted by `fstatic`).
- *   - **Explicit SIMD path** (MSVC, or when explicit SIMD is selected): loads elements via
- *     `raze::vx::load`, invokes `f` on the vector register, and stores results back via `raze::vx::store`
- *     (including masked tail handling).
- *   - **Scalar fallback**: used for non-contiguous iterators, scalar-typed callables, or
- *     non-`std::identity` projections.
- * - The input range must be modifiable (`modifiable_source`).
+ * - On GCC, Clang, ICPX, AOCC, nvc++ contiguous ranges automatically use the compiler auto-vectorized `for_noalias`
+ *   path with runtime CPUID dispatch (`AVX-512`, `AVX2`, `SSE4.2`, baseline) whenever manual `raze::vx` SIMD
+ *   is not selected — including for scalar-typed callables (e.g., `[](int& x)`), `const` ranges, and custom
+ *   projections.
+ * - Explicit `raze::vx` SIMD (used on MSVC, or on GCC/Clang/ICPX when the compile-time target ISA already
+ *   satisfies the peak ISA) requires a contiguous modifiable range, a `vx::simd`-compatible callable, and
+ *   `std::identity` projection.
+ * - `raze::options::fautovec` is a migration aid for generic (`auto`) lambdas with scalar-only bodies
+ *   (e.g., `if` branches): it skips `raze::vx::simd` probing and uses compiler auto-vectorization +
+ *   dynamic dispatch on GCC, Clang, and ICPX (on MSVC it effectively falls back to scalar execution).
+ * - `raze::options::fscalar`, non-contiguous iterators, and constant evaluation (`if consteval`) disable
+ *   both SIMD and compiler auto-vectorization, guaranteeing strict sequential in-order scalar execution.
  *
  * ### Example
  * ```cpp
  * #include <iostream>
  * #include <vector>
- * #include <raze/algorithm/for_each/ForEach.h>
+ * #include <raze/algorithm/batch/ForEach.h>
  *
  * void println(const auto& seq) {
  *     for (const auto& elem : seq) std::cout << elem << ' ';
@@ -218,13 +208,25 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  * int main() {
  *     std::vector<int> v{1, 2, 3, 4, 5};
  *
- *     // Vectorized in-place transformation (generic `auto&` enables SIMD / autovec)
+ *     // Vectorized in-place transformation (`auto&` enables explicit SIMD / autovec)
  *     raze::algorithm::for_each(v, [](auto& x) { x *= 2; });
  *     println(v);
  *
- *     // Guaranteed sequential in-order execution (explicit scalar parameter)
+ *     // Scalar-typed lambda on a contiguous range: automatically uses compiler
+ *     // auto-vectorization on GCC/Clang/ICPX (scalar fallback on MSVC) without `fautovec`
+ *     raze::algorithm::for_each(v, [](int& x) { if (x > 4) x += 1; });
+ *     println(v);
+ *
+ *     // Drop-in migration of a generic (`auto&`) lambda with scalar-only branching:
+ *     // `fautovec` skips `vx::simd` probing and routes to autovec (or scalar on MSVC)
+ *     raze::algorithm::for_each[raze::options::fautovec](v, [](auto& x) {
+ *         if (x > 6) x -= 1;
+ *     });
+ *     println(v);
+ *
+ *     // Strict scalar in-order execution (disables both SIMD and compiler autovec)
  *     int sum = 0;
- *     raze::algorithm::for_each(v, [&sum](int& x) { sum += x; });
+ *     raze::algorithm::for_each[raze::options::fscalar](v, [&sum](const auto& x) { sum += x; });
  *     std::cout << "Sum: " << sum << '\n';
  * }
  * ```
@@ -232,8 +234,16 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  * Possible output:
  * ```text
  * 2 4 6 8 10
+ * 2 4 7 9 11
+ * 2 4 6 8 10
  * Sum: 30
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::for_each_n`
 */
 constexpr inline auto for_each = options::function_with_traits<for_each_t>[options::unroll<4>][for_each_strategy];
 

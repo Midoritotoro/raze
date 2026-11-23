@@ -1,33 +1,34 @@
-#pragma once 
+#pragma once
 
 #include <raze/compatibility/CompilerDetection.h>
+#include <raze/compatibility/LanguageFeatures.h>
 
-#if (defined(raze_cpp_clang) && raze_cpp_clang < 1600) || defined(raze_cpp_gnu)
+#if defined(__cpp_static_call_operator) && __cpp_static_call_operator >= 202207L
 
 #  if !defined(raze_static_operator)
-#    define raze_static_operator
-#  endif // !defined(raze_static_operator)
+#    define raze_static_operator static
+#  endif
 
 #  if !defined(raze_const_operator)
-#    define raze_const_operator const
-#  endif // !defined(raze_const_operator)
+#    define raze_const_operator
+#  endif
 
-#  if !defined(raze_static_labmda)
-#    define raze_static_labmda
-#  endif // !defined(raze_static_labmda)
+#  if !defined(raze_static_lambda)
+#    define raze_static_lambda static
+#  endif
 
 #else
 
 #  if !defined(raze_static_operator)
-#    define raze_static_operator static
-#  endif // !defined(raze_static_operator)
+#    define raze_static_operator
+#  endif
 
 #  if !defined(raze_const_operator)
-#    define raze_const_operator
-#  endif // !defined(raze_const_operator)
+#    define raze_const_operator const
+#  endif
 
-#  if !defined(raze_static_labmda)
-#    define raze_static_labmda static
-#  endif // !defined(raze_static_labmda)
+#  if !defined(raze_static_lambda)
+#    define raze_static_lambda
+#  endif
 
-#endif // (defined(raze_cpp_clang) && raze_cpp_clang < 1600) || defined(raze_cpp_gnu)
+#endif // defined(__cpp_static_call_operator) && __cpp_static_call_operator >= 202207L

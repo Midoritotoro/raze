@@ -141,28 +141,15 @@ struct invoke_autovec_helper_t {
     }
 
     static raze_always_inline bool runtime_has_avx512(i32 all) noexcept {
-        if constexpr (is_wide)
-            return arch::ProcessorFeatures::has<arch::features::AVX512F>(all);
-        else
-            return arch::ProcessorFeatures::has<arch::features::AVX512F>(all) &&
-                arch::ProcessorFeatures::has<arch::features::AVX512BW>(all);
+        if constexpr (is_wide) return arch::ProcessorFeatures::has<arch::features::AVX512F>(all);
+        else return arch::ProcessorFeatures::has<arch::features::AVX512F>(all) &&
+            arch::ProcessorFeatures::has<arch::features::AVX512BW>(all);
     }
 
-    RAZE_AUTOVEC_TARGET("avx512f")
-    void run_avx512f() { _work(autovectorizable_tag{}); }
-
-    RAZE_AUTOVEC_TARGET("avx512f,avx512bw")
-    void run_avx512bw() { _work(autovectorizable_tag{}); }
-
-    RAZE_AUTOVEC_TARGET("avx2")
-    void run_avx2() {
-        _work(autovectorizable_tag{});
-    }
-
-    RAZE_AUTOVEC_TARGET("sse4.2")
-    void run_sse42() {
-        _work(autovectorizable_tag{});
-    }
+    RAZE_AUTOVEC_TARGET("avx512f") void run_avx512f() { _work(autovectorizable_tag{}); }
+    RAZE_AUTOVEC_TARGET("avx512f,avx512bw") void run_avx512bw() { _work(autovectorizable_tag{}); }
+    RAZE_AUTOVEC_TARGET("avx2") void run_avx2() { _work(autovectorizable_tag{}); }
+    RAZE_AUTOVEC_TARGET("sse4.2") void run_sse42() { _work(autovectorizable_tag{}); }
 
     raze_always_inline void operator()() {
         if constexpr (compile_has_avx512()) {

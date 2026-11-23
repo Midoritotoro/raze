@@ -171,12 +171,12 @@ struct fautovec_mode {};
 
 /**
  * @ingroup raze_options
- * @brief Option flag that opts into compiler auto-vectorization (`autovec`) without `raze::vx::simd` probing.
+ * @brief Option flag that bypasses `raze::vx::simd` probing and selects compiler auto-vectorization (`autovec`) when available.
  *
- * Instructs the algorithm to execute via its compiler auto-vectorizable loop
- * whenever supported, bypassing `raze::vx::simd` callable probing. If the algorithm does not
- * provide an auto-vectorizable kernel, or the input is non-contiguous, execution falls back
- * to the scalar path.
+ * Primarily intended as a drop-in migration aid when moving existing code from `std::` / `std::ranges`
+ * algorithms: attaching `fautovec` lets existing generic (`auto`) lambdas with scalar-only logic
+ * (such as `if` branches or scalar-only operations) compile without rewriting them for `raze::vx::simd`,
+ * while still gaining compiler auto-vectorization and runtime CPUID dynamic dispatch on supported compilers.
  *
  * ### Declarations
  * ```cpp
@@ -184,26 +184,25 @@ struct fautovec_mode {};
  * ```
  *
  * ### Notes
- * - Useful for scalar-typed callables, branching logic (e.g., `if (x > 0)`), `const` references,
- *   or custom projections that cannot be instantiated with `raze::vx::simd` yet are safe for
- *   unsequenced compiler vectorization.
- * - **Execution contract**: by specifying `fautovec`, the caller guarantees unsequenced (`unseq`)
- *   semantics — no loop-carried dependencies and no reliance on mutating internal functor state
- *   across iterations. Exact vectorization and codegen may vary across compilers.
- * - When combined with `par` (`[par][fautovec]`), runs compiler auto-vectorization within each
- *   parallel chunk.
+ * - For callables where manual `raze::vx` vectorization is already inapplicable (e.g., explicit scalar
+ *   parameter types like `[](int& x)` on contiguous ranges), supported compilers (GCC, Clang, ICPX, AOCC)
+ *   may automatically select the `autovec` path even without `fautovec`.
+ * - On MSVC — and for algorithms without an `autovec` kernel or non-contiguous ranges — `fautovec`
+ *   effectively degrades to scalar execution (equivalent to `fscalar`, without `raze::vx::simd` probing).
+ * - When combined with `par` (`[par][fautovec]`), runs the `autovec` (or scalar fallback) path inside
+ *   each parallel chunk.
  * - In constant-evaluated contexts (`if consteval`), falls back to the scalar path.
  * - Should not be combined with `fscalar`.
  *
  * ### Example
  * ```cpp
- * // Uses compiler auto-vectorization
- * // even with an explicit scalar parameter and conditional branch
- * raze::algorithm::for_each[raze::options::fautovec](v, [](int& x) {
+ * // Drop-in migration of a generic `std::ranges` lambda with scalar branching:
+ * // avoids `vx::simd` probing errors while still getting autovec + dynamic dispatch on GCC/Clang/ICPX
+ * raze::algorithm::for_each[raze::options::fautovec](v, [](auto& x) {
  *     if (x > 0) x *= 2;
  * });
  * ```
- */
+*/
 constexpr inline auto fautovec = raze::options::flag(fautovec_mode{});
 
 template <class Traits>
@@ -465,7 +464,7 @@ consteval sizetype alignment_of() {
 template <vx::simd_type V, sizetype N>
 constexpr inline auto aligned_for = []() consteval {
     if constexpr (N >= alignof(V) && (N % alignof(V) == 0)) return vx::aligned;
-    else return ignore_none;
+    else return options<>{};
 }();
 
 __RAZE_OPTIONS_NAMESPACE_END

@@ -172,6 +172,6 @@ struct is_equivalent_settings: std::bool_constant<is_equivalent<keywords_impl_t<
 {};
 
 template <concepts::settings S1, concepts::settings S2>
-constexpr inline bool is_equivalent_settings_v = is_equivalent<S1, S2>::value;
+constexpr inline bool is_equivalent_settings_v = is_equivalent_settings<S1, S2>::value;
 
 __RAZE_OPTIONS_NAMESPACE_END

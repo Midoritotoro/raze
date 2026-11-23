@@ -2,31 +2,17 @@
 
 #include <raze/compatibility/CompilerDetection.h>
 
-
-#if defined(raze_cpp_msvc) || defined(raze_cpp_clang)
-#  include <stdnoreturn.h> 
-#endif // defined(raze_cpp_msvc) || defined(raze_cpp_clang)
-
-
-#if defined(__cpp_conditional_explicit)
-#  if !defined(raze_implicit)
+#if !defined(raze_implicit)
+#  if defined(__cpp_conditional_explicit)
 #    define raze_implicit explicit(false)
 #  else
 #    define raze_implicit
-#  endif // raze_implicit
-#endif // defined(__cpp_conditional_explicit)
-
+#  endif
+#endif
 
 #if !defined(raze_noreturn)
-#  if defined(raze_cpp_gnu)
-#    define raze_noreturn           __attribute__((__noreturn__))
-#  elif defined(raze_cpp_msvc) || defined(raze_cpp_clang)
-#    define raze_noreturn           __declspec(noreturn)
-#  else 
-#    define raze_noreturn       
-#  endif // defined(raze_cpp_gnu) || defined(raze_cpp_msvc) || defined(raze_cpp_clang)
+#  define raze_noreturn [[noreturn]]
 #endif // !defined(raze_noreturn)
-
 
 #if !defined(raze_declare_pure_function)
 #  if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
@@ -38,9 +24,9 @@
 
 
 #if !defined(raze_declare_const_function)
-#  if defined(raze_cpp_msvc)
+#  if defined(raze_cpp_msvc_only)
 #    define raze_declare_const_function __declspec(noalias)
-#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
+#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang) || defined(raze_cpp_nvhpc)
 #    define raze_declare_const_function __attribute__((const))
 #  else
 #    define raze_declare_const_function

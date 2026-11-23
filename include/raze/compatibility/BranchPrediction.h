@@ -12,8 +12,8 @@
        (                                                \
          ([](bool value){                               \
            switch (value) {                             \
-             [[unlikely]] case true: return true;       \
-             [[likely]] case false: return false;       \
+             [[likely]] case true: return true;       \
+             [[unlikely]] case false: return false;       \
          }                                              \
        })(expression))
 #  else
@@ -30,8 +30,8 @@
        (                                                \
          ([](bool value){                               \
            switch (value) {                             \
-             [[likely]] case true: return true;         \
-             [[unlikely]] case false: return false;     \
+             [[unlikely]] case true: return true;         \
+             [[likely]] case false: return false;     \
          }                                              \
        })(expression))
 #  else

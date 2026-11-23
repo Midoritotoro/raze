@@ -78,7 +78,7 @@ struct contain_all<keys<>, keys<>>:
 
 template <class Key1, class Key2>
 struct is_equivalent: 
-    std::bool_constant<contain_all<Key2, Key1>::value && contain_all<Key2, Key1>::value> 
+    std::bool_constant<contain_all<Key2, Key1>::value && contain_all<Key1, Key2>::value>
 {};
 
 __RAZE_OPTIONS_NAMESPACE_END

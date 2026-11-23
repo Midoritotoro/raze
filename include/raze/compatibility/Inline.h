@@ -5,7 +5,7 @@
 
 
 #if !defined(raze_never_inline)
-#  if defined(raze_cpp_msvc) || defined(raze_cpp_clang)
+#  if defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_nvhpc)
 #     define raze_never_inline __declspec(noinline)
 #  elif defined(raze_cpp_gnu) 
 #    define raze_never_inline __attribute__((noinline))
@@ -18,7 +18,7 @@
 #if !defined(raze_always_inline)
 #  if defined(raze_cpp_msvc) && defined(NDEBUG)
 #    define raze_always_inline inline __forceinline
-#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
+#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang) || defined(raze_cpp_nvhpc)
 #    define raze_always_inline inline __attribute__((__always_inline__))
 #  else 
 #    define raze_always_inline inline
@@ -29,34 +29,16 @@
 #if !defined(raze_always_inline_lambda)
 #  if defined(raze_cpp_msvc_only)
 #    define raze_always_inline_lambda [[msvc::forceinline]]
-#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang)
+#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang) || defined(raze_cpp_nvhpc)
 #    define raze_always_inline_lambda __attribute__((__always_inline__))
 #  else 
 #    define raze_always_inline_lambda
 #  endif // defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 #endif // !defined(raze_always_inline_lambda)
 
-
-#if !defined(raze_constexpr_cxx20)
-#  if raze_has_cxx20
-#    define raze_constexpr_cxx20 constexpr
-#  else
-#    define raze_constexpr_cxx20
-#  endif // raze_has_cxx20
-#endif // !defined(raze_constexpr_cxx20)
-
-
-#if !defined(raze_clang_constexpr_cxx20)
-#  if defined(raze_cpp_clang)
-#    define raze_clang_constexpr_cxx20 raze_constexpr_cxx20
-#  else
-#    define raze_clang_constexpr_cxx20 
-#  endif // defined(raze_cpp_clang)
-#endif // !defined(raze_clang_constexpr_cxx20)
-
 #if !defined(raze_no_unique_address)
 #  if defined(raze_cpp_msvc)
-#    define raze_no_unique_address [[msvc::no_unique_address]]
+#    define raze_no_unique_address [[msvc::no_unique_addresss]]
 #  else
 #    define raze_no_unique_address [[no_unique_address]]
 #  endif // defined(raze_cpp_msvc)
