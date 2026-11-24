@@ -25,12 +25,15 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 		using unchecked_out_iterator_type = typename destination_type::unchecked_iterator_type;
 
 		using vector_value_type = std::iter_value_t<unchecked_iterator_type>;
+		using out_value_type = destination_value_t<destination_type>;
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<out_iterator_type> &&
 				vectorizable_unary_predicate<Predicate, iterator_type> &&
 				vectorizable_projection<Projection, iterator_type>
-				&& std::same_as<vector_value_type, std::iter_value_t<out_iterator_type>>;
+				&& std::same_as<vector_value_type, out_value_type>;
 		}
 
 		source_type _source;
@@ -42,16 +45,16 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 		raze_no_unique_address Projection _proj;
 
 		constexpr explicit kernel(Source&& source, Destination&& dest, Predicate pred, Projection proj)
-			: _source(std::forward<Source>(source)), _dest(std::forward<Destination>(dest)), 
-				_predicate(pred), _proj(proj), _out_it(_dest.ubegin()), _in_it(_source.ubegin()),
-			  _in_sent(_source.uend())
+			: _source(std::forward<Source>(source)), _dest(std::forward<Destination>(dest)),
+			  _out_it(_dest.ubegin()), _in_it(_source.ubegin()),
+			  _in_sent(_source.uend()), _predicate(std::move(pred)), _proj(std::move(proj))
 		{}
 
 		raze_always_inline constexpr void operator()() {
 			raze_disable_unrolling
 			for (; _in_it != _in_sent; ++_in_it) {
-				if (!_predicate(_proj(*_in_it))) {
-					*_out_it = std::ranges::iter_move(_in_it);
+				if (!std::invoke(_predicate, std::invoke(_proj, *_in_it))) {
+					*_out_it = *_in_it;
 					++_out_it;
 				}
 			}
@@ -95,20 +98,28 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 
 	template <std::input_iterator It, std::sentinel_for<It> Sent, std::weakly_incrementable OutIt, 
 		class Pred, class Proj = std::identity>
-	constexpr raze_always_inline decltype(auto) operator()(
+	constexpr raze_always_inline std::ranges::in_out_result<It, OutIt> operator()(
 		It first, Sent last, OutIt out, Pred pred, Proj proj = {}) const
 			requires(std::indirectly_copyable<It, OutIt> && std::indirect_unary_predicate<
 				Pred, std::projected<It, Proj>>)
 	{
-		auto found = find_if(first, last, pred, proj);
-		auto prefix = copy(std::move(first), found, std::move(out));
-		return this->dispatch(get_source(std::move(found), std::move(last)),
-			get_destination(std::move(prefix.out)), traits::fwd_fn(pred), traits::fwd_fn(proj));
+		if constexpr (std::forward_iterator<It>) {
+			auto found = find_if[options::drop_alignment(Traits::traits())](first, last, pred, proj);
+			auto prefix = copy[Traits::traits()](std::move(first), found, std::move(out));
+			return this->dispatch(get_source(std::move(found), std::move(last)),
+				get_destination(std::move(prefix.out)), traits::fwd_fn(pred), traits::fwd_fn(proj));
+		}
+		else {
+			return this->dispatch(get_source(std::move(first), std::move(last)),
+				get_destination(std::move(out)), traits::fwd_fn(pred), traits::fwd_fn(proj));
+		}
 	}
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class Pred, class Proj = std::identity>
-	constexpr raze_always_inline decltype(auto) operator()(
+	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, OutIt> operator()(
 		R&& r, OutIt out, Pred pred, Proj proj = {}) const
+			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> && std::indirect_unary_predicate<
+				Pred, std::projected<std::ranges::iterator_t<R>, Proj>>)
 	{
 		return (*this)(std::ranges::begin(r), std::ranges::end(r), std::move(out),
 			traits::fwd_fn(pred), traits::fwd_fn(proj));

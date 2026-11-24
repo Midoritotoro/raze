@@ -30,12 +30,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
 
 		using vector_value_type = std::iter_value_t<iterator_type>;
-		using OutT = typename decltype([] {
-			if constexpr (contiguous_destination<destination_type>)
-				return std::type_identity<typename destination_type::value_type>{};
-			else
-				return std::type_identity<void>{};
-		}())::type;
+		using OutT = destination_value_t<destination_type>;
 		using align = options::alignments<Traits, 2>;
 		static_assert(sizeof(align) > 0);
 

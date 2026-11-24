@@ -10,7 +10,17 @@ struct fill_n_t : Traits {
 	template <std::input_or_output_iterator OutIt, class Size = std::iter_difference_t<OutIt>,
 		class T = std::iter_value_t<OutIt>>
 	constexpr raze_always_inline OutIt operator()(OutIt first, Size n,
-		const std::type_identity_t<T>& value) const requires(std::output_iterator<OutIt, const T&>)
+		const std::type_identity_t<T>& value) const
+			requires(std::indirectly_readable<OutIt> && std::output_iterator<OutIt, const T&>)
+	{
+		if (n <= 0) return first;
+		return fill[Traits::traits()](std::counted_iterator<OutIt>(
+			std::move(first), n), std::default_sentinel, value).base();
+	}
+
+	template <std::input_or_output_iterator OutIt, class Size = std::iter_difference_t<OutIt>, class T>
+	constexpr raze_always_inline OutIt operator()(OutIt first, Size n, const T& value) const
+		requires(!std::indirectly_readable<OutIt> && std::output_iterator<OutIt, const T&>)
 	{
 		if (n <= 0) return first;
 		return fill[Traits::traits()](std::counted_iterator<OutIt>(

@@ -22,6 +22,7 @@ struct is_sorted_until_t : Traits, dispatchable<is_sorted_until_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
 				vectorizable_binary_predicate<Comp, iterator_type> &&
 				vectorizable_projection<Projection, iterator_type>;
 		}
@@ -44,7 +45,7 @@ struct is_sorted_until_t : Traits, dispatchable<is_sorted_until_t<Traits>> {
 			auto prev = _in_it;
 			raze_disable_unrolling
 			for (++_in_it; _in_it != _in_sent; ++_in_it, ++prev) {
-				if (_comp(_proj(*_in_it), _proj(*prev))) {
+				if (std::invoke(_comp, std::invoke(_proj, *_in_it), std::invoke(_proj, *prev))) {
 					_sorted = false;
 					return;
 				}

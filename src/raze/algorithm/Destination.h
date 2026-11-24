@@ -36,12 +36,9 @@ struct data_destination<It, false> {
 	raze_nodiscard raze_always_inline constexpr iterator_type
 		wrap(unchecked_iterator_type uit) const
 	{
-		if constexpr (std::constructible_from<iterator_type, unchecked_iterator_type>) return iterator_type(std::move(uit));
-		else {
-			iterator_type it = _it;
-			traits::seek_iter(it, uit);
-			return it;
-		}
+		iterator_type it = _it;
+		traits::seek_iter(it, uit);
+		return it;
 	}
 
 	iterator_type _it;
@@ -144,5 +141,19 @@ concept contiguous_destination =
 
 		{ Destination::from_ptr(uit, ptr) } -> std::same_as<void>;
 	};
+
+template <class Dest>
+struct destination_value_type {
+	using type = void;
+};
+
+template <class Dest>
+	requires contiguous_destination<std::remove_cvref_t<Dest>>
+struct destination_value_type<Dest> {
+	using type = typename std::remove_cvref_t<Dest>::value_type;
+};
+
+template <class Dest>
+using destination_value_t = typename destination_value_type<Dest>::type;
 
 __RAZE_ALGORITHM_NAMESPACE_END

@@ -139,6 +139,55 @@ namespace {
             [](auto c) { return raze::algorithm::equal[raze::options::fstatic](c.range(), c.range()); },
             [](auto c) { return std::ranges::equal(c.range(), c.range()); });
 
+        auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::equal[raze::options::fautovec](c.first(), c.last(), c.first(), c.last()); },
+            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first(), c.last()); });
+
+        run<range, T>(cfg,
+            [eq_branching](auto c) { return raze::algorithm::equal[raze::options::fautovec][raze::options::fstatic](c.range(), c.range2(), eq_branching); },
+            [eq_branching](auto c) { return std::ranges::equal(c.range(), c.range2(), eq_branching); });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t A1, size_t A2>(auto algo) {
+                run_aligned<A1, A2, range, T>(acfg,
+                    [algo](auto c) { return algo(c.first(), c.last(), c.first2(), c.last2()); },
+                    [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first2(), c.last2()); });
+
+                run_aligned<A1, A2, range, T>(acfg,
+                    [algo](auto c) { return algo(c.range(), c.range2()); },
+                    [](auto c) { return std::ranges::equal(c.range(), c.range2()); });
+
+                for (size_t sz : { size_t(0), size_t(1), size_t(15), size_t(16), size_t(31), size_t(32), size_t(64), size_t(128) }) {
+                    rtts::aligned_buffer<T, A1> a(sz);
+                    rtts::aligned_buffer<T, A2> b(sz);
+                    for (size_t i = 0; i < sz; ++i) { a[i] = static_cast<T>(i + 1); b[i] = a[i]; }
+                    RTTS_EXPECT(algo(a, b));
+                    if (sz > 0) {
+                        b[sz - 1] = T(0);
+                        RTTS_EXPECT(!algo(a, b));
+                    }
+                }
+            };
+
+            check_aligned.template operator()<16, 16>(raze::algorithm::equal[opt::aligned<16>]);
+            check_aligned.template operator()<32, 32>(raze::algorithm::equal[opt::aligned<32>]);
+            check_aligned.template operator()<32, 32>(raze::algorithm::equal[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::equal[opt::aligned<64>]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::equal[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::equal[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1, 1>(raze::algorithm::equal[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1, 1>(raze::algorithm::equal[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<64, 1>(raze::algorithm::equal[opt::aligned<64, opt::unaligned>]);
+            check_aligned.template operator()<1, 64>(raze::algorithm::equal[opt::aligned<opt::unaligned, 64>]);
+            check_aligned.template operator()<32, 64>(raze::algorithm::equal[opt::aligned<32, 64>][opt::fstatic]);
+            check_aligned.template operator()<64, 16>(raze::algorithm::equal[opt::aligned<64, 16>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::equal(c.first(), c.last(), c.first2(), c.last2()); },
             [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first2(), c.last2()); }));
@@ -149,6 +198,14 @@ namespace {
 
         static_assert(constexpr_run<T, range, 5>(
             [](auto c) { return raze::algorithm::equal(c.range(), c.range2()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range2()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::equal[raze::options::fautovec](c.range(), c.range()); },
+            [](auto c) { return std::ranges::equal(c.range(), c.range()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::equal[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
             [](auto c) { return std::ranges::equal(c.range(), c.range2()); }));
 
         static_assert([]() constexpr {
@@ -277,3 +334,53 @@ RTTS_CASE("raze::algorithm::equal sentinel") {
         RTTS_EXPECT(!raze::algorithm::equal(fa, std::default_sentinel, fb, std::default_sentinel));
     }
 };
+
+
+RTTS_CASE("raze::algorithm::equal views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Pairs of views: iota, take, drop, reverse, filter, transform, non-common
+    {
+        const std::vector<int> a = { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 };
+        auto tv = views::iota(1, 11) | views::transform([](int x) { return x * 2; });
+        RTTS_EXPECT(raze::algorithm::equal(a, tv));
+        RTTS_EXPECT(raze::algorithm::equal[opt::fautovec][opt::fstatic](
+            a, tv, [](auto x, auto y) { if (x == y) return true; return false; }));
+
+        auto fv = views::iota(1, 21) | views::filter([](int x) { return (x & 1) == 0; });
+        RTTS_EXPECT((raze::algorithm::equal[opt::aligned<64, opt::unaligned>](a, fv)));
+        RTTS_EXPECT(!raze::algorithm::equal(a | views::reverse, fv));
+        RTTS_EXPECT(raze::algorithm::equal(a | views::reverse, fv | views::reverse));
+        RTTS_EXPECT(raze::algorithm::equal(rtts::make_non_common(a), fv));
+    }
+
+    // Mismatched lengths, empty, single-pass input ranges, volatile, member projections
+    {
+        const std::vector<int> s = { 1, 2, 3 };
+        const std::vector<int> l = { 1, 2, 3, 4 };
+        std::vector<int> empty_v;
+        RTTS_EXPECT(!raze::algorithm::equal(s, l));
+        RTTS_EXPECT(!raze::algorithm::equal(l, s));
+        RTTS_EXPECT(raze::algorithm::equal(empty_v, empty_v));
+        RTTS_EXPECT(!raze::algorithm::equal(empty_v, s));
+
+        rtts::single_pass_input_range<int> sp1(s), sp2(s);
+        RTTS_EXPECT(raze::algorithm::equal(sp1, sp2));
+        RTTS_EXPECT(sp1.reads() == s.size() && sp2.reads() == s.size());
+
+        rtts::single_pass_input_range<int> sp3(s), sp4(l);
+        RTTS_EXPECT(!raze::algorithm::equal(sp3, sp4));
+
+        volatile int va[16], vb[16];
+        for (int i = 0; i < 16; ++i) { va[i] = i; vb[i] = i; }
+        RTTS_EXPECT(raze::algorithm::equal(va, va + 16, vb, vb + 16));
+        vb[11] = 999;
+        RTTS_EXPECT(!raze::algorithm::equal(va, va + 16, vb, vb + 16));
+
+        const std::vector<rtts::test_item> i1 = { { 1, 10 }, { 2, 20 }, { 3, 30 } };
+        const std::vector<rtts::test_item> i2 = { { 1, 99 }, { 2, 88 }, { 3, 77 } };
+        RTTS_EXPECT(raze::algorithm::equal(i1, i2, std::equal_to<>{}, &rtts::test_item::key, &rtts::test_item::key));
+        RTTS_EXPECT(!raze::algorithm::equal(i1, i2, std::equal_to<>{}, &rtts::test_item::payload, &rtts::test_item::payload));
+    }
+};

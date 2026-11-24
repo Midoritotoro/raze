@@ -26,17 +26,21 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 		using unchecked_out_iterator_type = typename destination_type::unchecked_iterator_type;
 
 		using vt_in = std::iter_value_t<unchecked_iterator_type>;
-		using vt_out = std::iter_value_t<unchecked_out_iterator_type>;
+		using vt_out = destination_value_t<destination_type>;
 
 		using vector_value_type = vt_in;
 
 		static consteval bool vectorizable() noexcept { 
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<out_iterator_type> &&
 				vx::arithmetic_type<vt_in> && vx::arithmetic_type<vt_out>;
 		}
 
 		static consteval bool native() noexcept {
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<out_iterator_type> &&
 				std::is_trivially_copyable_v<vt_in> && std::same_as<vt_in, vt_out>;
 		}
 
@@ -77,8 +81,8 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 
 			raze_disable_unrolling do {
 				vx::store(out_ptr, vx::convert<vt_out>(vx::load<Tag>(in_ptr)));
-				advance_bytes(in_ptr, sizeof(Tag));
-				advance_bytes(out_ptr, Tag::size() * sizeof(vt_out));
+				in_ptr += Tag::size();
+				out_ptr += Tag::size();
 			} while (in_ptr != aligned_end);
 
 			source_type::from_ptr(_in_iterator, in_ptr);
@@ -91,10 +95,9 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 			auto* out_ptr = std::to_address(_out_iterator);
 
 			vx::store[ignore](out_ptr, vx::load<Tag>[ignore](in_ptr));
-			advance_bytes(in_ptr, out_ptr, ignore.tail_bytes());
 
-			source_type::from_ptr(_in_iterator, in_ptr);
-			destination_type::from_ptr(_out_iterator, out_ptr);
+			source_type::from_ptr(_in_iterator, in_ptr + ignore.tail_elements());
+			destination_type::from_ptr(_out_iterator, out_ptr + ignore.tail_elements());
 		}
 
 		constexpr raze_always_inline std::ranges::in_out_result<iterator_type, out_iterator_type> result() const {
@@ -120,7 +123,7 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 	}
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, OutIt>
 		operator()(R&& r, OutIt result) const requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt>)
 	{
 		return this->dispatch(get_source(std::forward<R>(r)), get_destination(std::move(result)));

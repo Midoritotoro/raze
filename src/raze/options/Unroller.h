@@ -44,7 +44,6 @@ struct unroller_t {
 		{
 			if constexpr (requires { f(Tag{ uninitialized }, aligned_size); }) {
 				constexpr auto has_early_exit = std::same_as<decltype(f(Tag{ uninitialized }, aligned_size)), bool>;
-				constexpr auto unrolling = get_unrolling<Traits>();
 
 #if defined(raze_cpp_msvc_only) || (defined(raze_cpp_gnu) && !defined(RAZE_GCC_SRA_LARGE_LIMIT))
 				// Ignore unrolling
@@ -58,6 +57,7 @@ struct unroller_t {
 					f(Tag{ uninitialized }, aligned_size);
 				}
 #else
+				constexpr auto unrolling = get_unrolling<Traits>();
 				if constexpr (unrolling > 1) {
 					auto unrolled_size = aligned_size - (aligned_size % (sizeof(Tag) * unrolling));
 

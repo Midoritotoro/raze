@@ -23,6 +23,7 @@
 #include <numeric>
 #include <functional>
 #include <memory>
+#include <new>
 #include <ranges>
 
 #define RAZE_TEST_NAMESPACE_BEGIN namespace RAZE_TEST_ARCH_NAMESPACE {
@@ -45,6 +46,92 @@ namespace rtts {
 
     template <class T > 
     struct type {};
+
+    template <class T, size_t Align>
+    struct aligned_allocator {
+        using value_type = T;
+        static constexpr size_t alignment = Align > alignof(T) ? Align : alignof(T);
+
+        constexpr aligned_allocator() noexcept = default;
+
+        template <class U>
+        constexpr aligned_allocator(const aligned_allocator<U, Align>&) noexcept {}
+
+        template <class U>
+        struct rebind {
+            using other = aligned_allocator<U, Align>;
+        };
+
+        [[nodiscard]] T* allocate(size_t n) {
+            if (n == 0)
+                return nullptr;
+            return static_cast<T*>(::operator new(n * sizeof(T), std::align_val_t{ alignment }));
+        }
+
+        void deallocate(T* p, size_t) noexcept {
+            if (p)
+                ::operator delete(p, std::align_val_t{ alignment });
+        }
+
+        template <class U>
+        constexpr bool operator==(const aligned_allocator<U, Align>&) const noexcept {
+            return true;
+        }
+
+        template <class U>
+        constexpr bool operator!=(const aligned_allocator<U, Align>&) const noexcept {
+            return false;
+        }
+    };
+
+    template <class T, size_t Align>
+    class aligned_buffer {
+        static constexpr size_t alloc_align =
+            (Align > 64 ? Align : 64) > alignof(T) ? (Align > 64 ? Align : 64) : alignof(T);
+        static constexpr size_t offset =
+            (Align == 1) ? 1 :
+            ((Align < 64 && Align >= sizeof(T) && (Align % sizeof(T) == 0)) ? (Align / sizeof(T)) : 0);
+
+        std::vector<T, aligned_allocator<T, alloc_align>> storage_;
+        size_t size_ = 0;
+
+    public:
+        using value_type = T;
+        using iterator = T*;
+        using const_iterator = const T*;
+        using size_type = size_t;
+        using difference_type = std::ptrdiff_t;
+
+        aligned_buffer() = default;
+
+        explicit aligned_buffer(size_t n)
+            : storage_(n == 0 ? 0 : n + offset)
+            , size_(n) {}
+
+        void resize(size_t n) {
+            storage_.resize(n == 0 ? 0 : n + offset);
+            size_ = n;
+        }
+
+        T* data() noexcept {
+            return size_ == 0 ? nullptr : storage_.data() + offset;
+        }
+
+        const T* data() const noexcept {
+            return size_ == 0 ? nullptr : storage_.data() + offset;
+        }
+
+        T* begin() noexcept { return data(); }
+        const T* begin() const noexcept { return data(); }
+        T* end() noexcept { return data() + size_; }
+        const T* end() const noexcept { return data() + size_; }
+
+        size_t size() const noexcept { return size_; }
+        bool empty() const noexcept { return size_ == 0; }
+
+        T& operator[](size_t i) noexcept { return data()[i]; }
+        const T& operator[](size_t i) const noexcept { return data()[i]; }
+    };
 
     namespace detail {
         template <class T>
@@ -83,6 +170,106 @@ namespace rtts {
 
     template <class T> 
     inline auto const typename_ = detail::typename_impl<T>::value();
+
+    struct test_item {
+        int key = 0;
+        int payload = 0;
+
+        constexpr bool operator==(const test_item&) const = default;
+        constexpr auto operator<=>(const test_item&) const = default;
+    };
+
+    struct single_pass_sentinel {};
+
+    template <class T>
+    class single_pass_input_iterator {
+        const T* _data = nullptr;
+        size_t _size = 0;
+        size_t* _pos = nullptr;
+    public:
+        using iterator_concept = std::input_iterator_tag;
+        using iterator_category = std::input_iterator_tag;
+        using value_type = T;
+        using difference_type = std::ptrdiff_t;
+
+        constexpr single_pass_input_iterator() noexcept = default;
+        constexpr single_pass_input_iterator(const T* data, size_t size, size_t* pos) noexcept
+            : _data(data), _size(size), _pos(pos)
+        {}
+
+        constexpr const T& operator*() const noexcept {
+            return _data[*_pos];
+        }
+
+        constexpr single_pass_input_iterator& operator++() noexcept {
+            ++(*_pos);
+            return *this;
+        }
+
+        constexpr void operator++(int) noexcept {
+            ++(*_pos);
+        }
+
+        constexpr bool operator==(single_pass_sentinel) const noexcept {
+            return !_pos || *_pos >= _size;
+        }
+
+        constexpr bool operator==(const single_pass_input_iterator& other) const noexcept {
+            const bool a_end = (!_pos || *_pos >= _size);
+            const bool b_end = (!other._pos || *other._pos >= other._size);
+            if (a_end && b_end) return true;
+            if (a_end != b_end) return false;
+            return _pos == other._pos && *_pos == *other._pos;
+        }
+    };
+
+    template <class T>
+    class single_pass_input_range {
+        const T* _data = nullptr;
+        size_t _size = 0;
+        mutable size_t _pos = 0;
+    public:
+        constexpr single_pass_input_range(const std::vector<T>& vec) noexcept
+            : _data(vec.data()), _size(vec.size()), _pos(0)
+        {}
+
+        constexpr single_pass_input_range(const T* data, size_t size) noexcept
+            : _data(data), _size(size), _pos(0)
+        {}
+
+        constexpr single_pass_input_iterator<T> begin() const noexcept {
+            return { _data, _size, &_pos };
+        }
+
+        constexpr single_pass_sentinel end() const noexcept {
+            return {};
+        }
+
+        constexpr size_t reads() const noexcept {
+            return _pos;
+        }
+    };
+
+    template <class It>
+    struct non_common_sentinel {
+        It end_it;
+
+        constexpr bool operator==(const It& other) const noexcept {
+            return other == end_it;
+        }
+    };
+
+    template <std::ranges::range R>
+    constexpr auto make_non_common(R& r) {
+        return std::ranges::subrange(std::ranges::begin(r), non_common_sentinel<std::ranges::iterator_t<R>>{ std::ranges::end(r) });
+    }
+
+    static_assert(std::input_iterator<single_pass_input_iterator<int>>);
+    static_assert(!std::forward_iterator<single_pass_input_iterator<int>>);
+    static_assert(std::ranges::input_range<single_pass_input_range<int>>);
+    static_assert(!std::ranges::forward_range<single_pass_input_range<int>>);
+    static_assert(!std::ranges::sized_range<single_pass_input_range<int>>);
+    static_assert(!std::ranges::common_range<single_pass_input_range<int>>);
 
     namespace detail {
         struct env {
@@ -702,6 +889,17 @@ namespace rtts {
                 return result;
             }
 
+            static config compact() {
+                config result;
+                result.random_cases = 15;
+                result.random_max_size = 200;
+                result.sizes = {
+                    0, 1, 2, 3, 4, 7, 8, 15, 16, 31, 32,
+                    63, 64, 127, 128, 255, 256
+                };
+                return result;
+            }
+
             config& random(size_t cases, size_t max_size) {
                 random_cases = cases;
                 random_max_size = max_size;
@@ -743,7 +941,7 @@ namespace rtts {
         }
 
         template <kind Kind, class T1, class T2, class Container1, class Container2, class Raze, class Std, class Verify>
-        void case_mixed(Container1 value, Container2 second, unsigned seed, std::mt19937& rng, bool boundary,
+        void case_mixed(Container1 value, Container2 second, [[maybe_unused]] unsigned seed, std::mt19937& rng, bool boundary,
             Raze& raze_op, Std& std_op, Verify& verify) {
 
             auto raze_data = make_fixture_mixed<T1, T2>(std::move(value), std::move(second));
@@ -782,11 +980,11 @@ namespace rtts {
 
         template <class T1, class T2, size_t N>
         struct constexpr_fixture_mixed {
-            std::array<T1, N> value{};
-            std::array<T2, N> second{};
-            std::array<T1, N> output{};
-            std::array<T2, N> output2{};
-            std::array<T1, N> pattern{};
+            alignas(64) std::array<T1, N> value{};
+            alignas(64) std::array<T2, N> second{};
+            alignas(64) std::array<T1, N> output{};
+            alignas(64) std::array<T2, N> output2{};
+            alignas(64) std::array<T1, N> pattern{};
             size_t pattern_size = N < 3 ? N : 3;
             size_t count = 0;
             T1 value_arg{};
@@ -1147,11 +1345,11 @@ namespace rtts {
 
         template <class T, size_t N>
         struct constexpr_fixture {
-            std::array<T, N> value{};
-            std::array<T, N> second{};
-            std::array<T, N> output{};
-            std::array<T, N> output2{};
-            std::array<T, N> pattern{};
+            alignas(64) std::array<T, N> value{};
+            alignas(64) std::array<T, N> second{};
+            alignas(64) std::array<T, N> output{};
+            alignas(64) std::array<T, N> output2{};
+            alignas(64) std::array<T, N> pattern{};
             size_t pattern_size = N < 3 ? N : 3;
             size_t count = 0;
             T value_arg{};
@@ -1246,6 +1444,148 @@ namespace rtts {
                         seed, rng, true, raze_op, std_op, verify);
                     });
             }
+        }
+
+        template <class T, size_t A1, size_t A2 = A1, size_t AOut = A1>
+        struct aligned_fixture {
+            rtts::aligned_buffer<T, A1> value;
+            rtts::aligned_buffer<T, A2> second;
+            rtts::aligned_buffer<T, AOut> output;
+            rtts::aligned_buffer<T, AOut> output2;
+            size_t count = 0;
+
+            size_t size() const { return value.size(); }
+        };
+
+        template <class T1, class T2, size_t A1, size_t A2 = A1, size_t AOut = A1>
+        struct aligned_fixture_mixed {
+            rtts::aligned_buffer<T1, A1> value;
+            rtts::aligned_buffer<T2, A2> second;
+            rtts::aligned_buffer<T1, AOut> output;
+            rtts::aligned_buffer<T2, AOut> output2;
+            size_t count = 0;
+
+            size_t size() const { return value.size(); }
+        };
+
+        template <kind Kind, class T, size_t A1, size_t A2, size_t AOut, class Raze, class Std, class Verify>
+        void case_aligned(size_t sz, unsigned seed, std::mt19937& rng, bool boundary,
+            Raze& raze_op, Std& std_op, Verify& verify) {
+            aligned_fixture<T, A1, A2, AOut> raze_data;
+            raze_data.value = rtts::random::sequence<rtts::aligned_buffer<T, A1>>(sz, seed);
+            raze_data.second = rtts::random::sequence<rtts::aligned_buffer<T, A2>>(sz, seed + 1);
+            raze_data.output.resize(sz);
+            raze_data.output2.resize(sz);
+            std::ranges::fill(raze_data.output, T{});
+            std::ranges::fill(raze_data.output2, T{});
+
+            auto std_data = raze_data;
+
+            auto exec = [&](size_t cnt) {
+                raze_data.count = cnt;
+                std_data.count = cnt;
+
+                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+            };
+
+            if constexpr (Kind == kind::range) {
+                exec(0);
+            }
+            else {
+                each_count(raze_data.size(), rng, boundary, exec);
+            }
+        }
+
+        template <kind Kind, class T1, class T2, size_t A1, size_t A2, size_t AOut, class Raze, class Std, class Verify>
+        void case_aligned_mixed(size_t sz, unsigned seed, std::mt19937& rng, bool boundary,
+            Raze& raze_op, Std& std_op, Verify& verify) {
+            aligned_fixture_mixed<T1, T2, A1, A2, AOut> raze_data;
+            raze_data.value = rtts::random::sequence<rtts::aligned_buffer<T1, A1>>(sz, seed);
+            raze_data.second = rtts::random::sequence<rtts::aligned_buffer<T2, A2>>(sz, seed + 1);
+            raze_data.output.resize(sz);
+            raze_data.output2.resize(sz);
+            std::ranges::fill(raze_data.output, T1{});
+            std::ranges::fill(raze_data.output2, T2{});
+
+            auto std_data = raze_data;
+
+            auto exec = [&](size_t cnt) {
+                raze_data.count = cnt;
+                std_data.count = cnt;
+
+                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+            };
+
+            if constexpr (Kind == kind::range) {
+                exec(0);
+            }
+            else {
+                each_count(raze_data.size(), rng, boundary, exec);
+            }
+        }
+
+        template <size_t A1, size_t A2, size_t AOut, kind Mode, class T,
+            class Raze, class Std, class Verify = same>
+        void run_aligned(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            std::mt19937 rng(cfg.seed);
+            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
+
+            for (size_t i = 0; i < cfg.random_cases; ++i) {
+                const size_t sz = size_dist(rng);
+                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
+                case_aligned<Mode, T, A1, A2, AOut>(sz, seed, rng, false, raze_op, std_op, verify);
+            }
+
+            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
+                const size_t sz = cfg.sizes[i];
+                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
+                case_aligned<Mode, T, A1, A2, AOut>(sz, seed, rng, true, raze_op, std_op, verify);
+            }
+        }
+
+        template <size_t A1, size_t A2, kind Mode, class T,
+            class Raze, class Std, class Verify = same>
+        void run_aligned(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            run_aligned<A1, A2, A2, Mode, T>(std::move(cfg), std::move(raze_op), std::move(std_op), std::move(verify));
+        }
+
+        template <size_t Align, kind Mode, class T,
+            class Raze, class Std, class Verify = same>
+        void run_aligned(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            run_aligned<Align, Align, Align, Mode, T>(std::move(cfg), std::move(raze_op), std::move(std_op), std::move(verify));
+        }
+
+        template <size_t A1, size_t A2, size_t AOut, kind Mode, class T1, class T2,
+            class Raze, class Std, class Verify = same>
+        void run_aligned_mixed(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            std::mt19937 rng(cfg.seed);
+            std::uniform_int_distribution<size_t> size_dist(0, cfg.random_max_size);
+
+            for (size_t i = 0; i < cfg.random_cases; ++i) {
+                const size_t sz = size_dist(rng);
+                const unsigned seed = cfg.seed + static_cast<unsigned>(i);
+                case_aligned_mixed<Mode, T1, T2, A1, A2, AOut>(sz, seed, rng, false, raze_op, std_op, verify);
+            }
+
+            for (size_t i = 0; i < cfg.sizes.size(); ++i) {
+                const size_t sz = cfg.sizes[i];
+                const unsigned seed = cfg.seed + 100000 + static_cast<unsigned>(i);
+                case_aligned_mixed<Mode, T1, T2, A1, A2, AOut>(sz, seed, rng, true, raze_op, std_op, verify);
+            }
+        }
+
+        template <size_t A1, size_t AOut, kind Mode, class T1, class T2,
+            class Raze, class Std, class Verify = same>
+        void run_aligned_mixed(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            run_aligned_mixed<A1, AOut, AOut, Mode, T1, T2>(std::move(cfg), std::move(raze_op), std::move(std_op), std::move(verify));
+        }
+
+        template <size_t Align, kind Mode, class T1, class T2,
+            class Raze, class Std, class Verify = same>
+        void run_aligned_mixed(config cfg, Raze raze_op, Std std_op, Verify verify = {}) {
+            run_aligned_mixed<Align, Align, Align, Mode, T1, T2>(std::move(cfg), std::move(raze_op), std::move(std_op), std::move(verify));
         }
     }
 

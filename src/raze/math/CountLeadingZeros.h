@@ -69,11 +69,11 @@ struct clz_n_bits_implementation {
             ulong index;
 
             if constexpr (Bits <= 32) {
-                raze_maybe_unused_attribute auto r = _BitScanReverse(&index, static_cast<u32>(v));
+                [[maybe_unused]] auto r = _BitScanReverse(&index, static_cast<u32>(v));
                 if constexpr (!Unsafe) { if (!r) return static_cast<i32>(Bits); }
             }
             else {
-                raze_maybe_unused_attribute auto r = _BitScanReverse64(&index, static_cast<u64>(v));
+                [[maybe_unused]] auto r = _BitScanReverse64(&index, static_cast<u64>(v));
                 if constexpr (!Unsafe) { if (!r) return static_cast<i32>(Bits); }
             }
 

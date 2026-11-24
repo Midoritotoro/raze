@@ -13,7 +13,7 @@ raze_always_inline M mask_lshift_(M x, i32 shift) noexcept {
 		return x;
 	}
 	else if constexpr (std::is_integral_v<M>) {
-		raze_maybe_unused_attribute constexpr auto all_mask = ((sizeof(M) * 8) == N)
+		[[maybe_unused]] constexpr auto all_mask = ((sizeof(M) * 8) == N)
 			? math::max_limit<M>() : M(((M(1) << N) - 1));
 
 		if constexpr (N < 8) return (x << shift) & all_mask;

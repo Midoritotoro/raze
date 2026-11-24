@@ -68,7 +68,7 @@ struct equal_t : Traits, dispatchable<equal_t<Traits>> {
             {
                 raze_disable_unrolling
                 for (; _iterator1 != _sentinel1; ++_iterator1, ++_iterator2) {
-                    if (!_predicate(_proj1(*_iterator1), _proj2(*_iterator2))) {
+                    if (!std::invoke(_predicate, std::invoke(_proj1, *_iterator1), std::invoke(_proj2, *_iterator2))) {
                         _result = false;
                         return;
                     }
@@ -77,7 +77,7 @@ struct equal_t : Traits, dispatchable<equal_t<Traits>> {
             else {
                 raze_disable_unrolling
                 for (; _iterator1 != _sentinel1 && _iterator2 != _sentinel2; ++_iterator1, ++_iterator2) {
-                    if (!_predicate(_proj1(*_iterator1), _proj2(*_iterator2))) {
+                    if (!std::invoke(_predicate, std::invoke(_proj1, *_iterator1), std::invoke(_proj2, *_iterator2))) {
                         _result = false;
                         return;
                     }

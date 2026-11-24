@@ -117,6 +117,47 @@ RTTS_CASE_TPL("raze::algorithm::reverse", rtts::algorithm::all_types)
         [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fstatic](c.range())); },
         [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
 
+    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
+        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fautovec](c.first(), c.last())); },
+        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.first(), c.last())); });
+
+    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
+        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fautovec][raze::options::fstatic](c.range())); },
+        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
+
+    {
+        namespace opt = raze::options;
+        auto acfg = config::compact();
+
+        auto check_aligned = [&]<size_t Align>(auto algo) {
+            run_aligned<Align, range, T>(acfg,
+                [algo](auto c) { return std::ranges::distance(c.first(), algo(c.first(), c.last())); },
+                [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.first(), c.last())); });
+
+            run_aligned<Align, range, T>(acfg,
+                [algo](auto c) { return std::ranges::distance(c.first(), algo(c.range())); },
+                [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
+        };
+
+        check_aligned.template operator()<16>(raze::algorithm::reverse[opt::aligned<16>]);
+        check_aligned.template operator()<32>(raze::algorithm::reverse[opt::aligned<32>]);
+        check_aligned.template operator()<32>(raze::algorithm::reverse[opt::aligned<32>][opt::unroll<2>]);
+        check_aligned.template operator()<32>(raze::algorithm::reverse[opt::aligned<32>][opt::fstatic]);
+        check_aligned.template operator()<64>(raze::algorithm::reverse[opt::aligned<64>]);
+        check_aligned.template operator()<64>(raze::algorithm::reverse[opt::aligned<64>][opt::fautovec]);
+        check_aligned.template operator()<64>(raze::algorithm::reverse[opt::aligned<64>][opt::fscalar]);
+        check_aligned.template operator()<1>(raze::algorithm::reverse[opt::aligned<opt::unaligned>]);
+        check_aligned.template operator()<1>(raze::algorithm::reverse[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+    }
+
+    static_assert(constexpr_run<T, range, 8>(
+        [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fautovec](c.range())); },
+        [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); }));
+
+    static_assert(constexpr_run<T, range, 8>(
+        [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::aligned<64>](c.range())); },
+        [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); }));
+
     static_assert([]() constexpr {
         std::array<T, 0> a{};
         return raze::algorithm::reverse(a) == a.end();
@@ -190,3 +231,54 @@ RTTS_CASE("raze::algorithm::reverse bidirectional") {
     RTTS_EXPECT(it == v.end());
     RTTS_EXPECT(v == exp);
 };
+
+
+RTTS_CASE("raze::algorithm::reverse views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Writable views: take, drop, reverse, filter, non-common
+    {
+        std::vector<int> v1(35);
+        std::iota(v1.begin(), v1.end(), 1);
+        auto v2 = v1;
+
+        raze::algorithm::reverse(v1 | views::drop(4) | views::take(21));
+        std::ranges::reverse(v2 | views::drop(4) | views::take(21));
+        RTTS_EXPECT(v1 == v2);
+
+        raze::algorithm::reverse[opt::fstatic](v1 | views::reverse | views::take(10));
+        std::ranges::reverse(v2 | views::reverse | views::take(10));
+        RTTS_EXPECT(v1 == v2);
+
+        auto is_even = [](int x) { return (x % 2) == 0; };
+        raze::algorithm::reverse[opt::aligned<64>](v1 | views::filter(is_even));
+        std::ranges::reverse(v2 | views::filter(is_even));
+        RTTS_EXPECT(v1 == v2);
+
+        raze::algorithm::reverse(rtts::make_non_common(v1));
+        std::ranges::reverse(rtts::make_non_common(v2));
+        RTTS_EXPECT(v1 == v2);
+    }
+
+    // Empty, 1-elem, 2-elem, volatile, rvalue dangling
+    {
+        std::vector<int> empty_v;
+        RTTS_EXPECT(raze::algorithm::reverse(empty_v) == empty_v.end());
+
+        std::vector<int> one_v = { 7 };
+        RTTS_EXPECT(raze::algorithm::reverse(one_v) == one_v.end() && one_v[0] == 7);
+
+        std::vector<int> two_v = { 1, 2 };
+        raze::algorithm::reverse(two_v);
+        RTTS_EXPECT((two_v == std::vector<int>{ 2, 1 }));
+
+        volatile int vbuf[17];
+        for (int i = 0; i < 17; ++i) vbuf[i] = i;
+        raze::algorithm::reverse(vbuf, vbuf + 17);
+        for (int i = 0; i < 17; ++i) RTTS_EXPECT(vbuf[i] == 16 - i);
+
+        auto rv = raze::algorithm::reverse(std::vector<int>{ 1, 2, 3 });
+        static_assert(std::same_as<decltype(rv), std::ranges::dangling>);
+    }
+};

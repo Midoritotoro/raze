@@ -9,7 +9,8 @@ struct copy_n_t : Traits {
 	template <std::input_iterator InIt,  std::weakly_incrementable OutIt>
 		constexpr raze_always_inline std::ranges::in_out_result<InIt, OutIt> operator()(InIt first,
 			std::iter_difference_t<InIt> n, OutIt out) const requires(std::indirectly_copyable<InIt, OutIt>)
-	{	
+	{
+		if (n <= 0) return { std::move(first), std::move(out) };
 		auto [in_last, out_last] = copy[Traits::traits()](std::counted_iterator<InIt>(
 			std::move(first), n), std::default_sentinel, std::move(out));
 		return { std::move(in_last).base(), std::move(out_last) };

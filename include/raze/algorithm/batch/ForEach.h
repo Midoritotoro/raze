@@ -27,10 +27,9 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 		using vector_value_type = std::iter_value_t<iterator_type>;
 		using align = options::alignments<Traits, 1>;
-		static_assert(sizeof(align) > 0);
 		
 		static consteval bool autovectorizable() noexcept {
-			return contiguous_source<Source>;
+			return contiguous_source<Source> && !traits::is_iterator_volatile_v<iterator_type>;
 		}
 
 		static consteval bool vectorizable() noexcept {
@@ -40,8 +39,8 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 				vectorizable_projection<Proj, iterator_type>;
 		}
 
-		raze_no_unique_address source_type _source;
-		raze_no_unique_address unchecked_iterator_type _iterator;
+		source_type _source;
+		unchecked_iterator_type _iterator;
 		raze_no_unique_address unchecked_sentinel_type _sentinel;
 		raze_no_unique_address F _f;
 		raze_no_unique_address Proj _proj;
@@ -51,7 +50,9 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			_sentinel(_source.uend()), _f(std::move(f)), _proj(std::move(proj))
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(contiguous_source<Source>) {
+		raze_always_inline constexpr void operator()(autovectorizable_tag)
+			requires(contiguous_source<Source> && !traits::is_iterator_volatile_v<iterator_type>)
+		{
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 			first = align::template assume<0>(first);
 
@@ -62,8 +63,8 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_iterator, _sentinel, [&f = _f, &proj = _proj](auto& x)
-				raze_always_inline_lambda { std::invoke(f, std::invoke(proj, x)); });
+			for_novec(_iterator, _sentinel, [&f = _f, &proj = _proj](auto&& x)
+				raze_always_inline_lambda { std::invoke(f, std::invoke(proj, std::forward<decltype(x)>(x))); });
 		}
 
 		template <vectorizable_tag Tag>
@@ -77,7 +78,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 				auto projected = _proj(vx::load<Tag>[alignment](ptr));
 				_f(projected);
 				vx::store[alignment](ptr, projected);
-				advance_bytes(ptr, sizeof(Tag));
+				ptr += Tag::size();
 			} while (ptr != aligned_end);
 
 			source_type::from_ptr(_iterator, ptr);
@@ -85,9 +86,6 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
-			if (ignore.tail_bytes() == 0)
-				return;
-
 			constexpr auto alignment = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 

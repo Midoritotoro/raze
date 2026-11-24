@@ -56,7 +56,7 @@ struct find_last_if_t : Traits, dispatchable<find_last_if_t<Traits>> {
             {
                 raze_disable_unrolling
                 for (auto it = _back; it != _iterator;) {
-                    if (_predicate(_proj(*--it))) {
+                    if (std::invoke(_predicate, std::invoke(_proj, *--it))) {
                         _back = it;
                         return;
                     }
@@ -71,7 +71,7 @@ struct find_last_if_t : Traits, dispatchable<find_last_if_t<Traits>> {
 
                 raze_disable_unrolling
                 for (; it != _sentinel; ++it) {
-                    if (_predicate(_proj(*it))) {
+                    if (std::invoke(_predicate, std::invoke(_proj, *it))) {
                         found = it;
                         has_match = true;
                     }

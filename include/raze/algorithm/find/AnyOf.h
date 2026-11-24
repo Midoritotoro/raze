@@ -43,7 +43,7 @@ struct any_of_t : Traits, dispatchable<any_of_t<Traits>> {
         raze_always_inline constexpr void operator()() {
             raze_disable_unrolling
             for (; _iterator != _sentinel; ++_iterator) {
-                if (_predicate(_proj(*_iterator))) {
+                if (std::invoke(_predicate, std::invoke(_proj, *_iterator))) {
                     _result = true;
                     return;
                 }

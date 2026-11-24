@@ -25,7 +25,7 @@ struct configurable_clear_last_t : options::conditional_callable<configurable_cl
     }
 
     template <simd_mask_type M>
-    static raze_always_inline auto deferred_call(auto opts, const M& x) noexcept {
+    static raze_always_inline auto deferred_call([[maybe_unused]] auto opts, const M& x) noexcept {
         using Value = typename M::value_type;
         using Abi = typename M::abi_type;
 

@@ -155,12 +155,71 @@ namespace {
             [](auto c) { return raze::algorithm::mismatch[raze::options::fstatic](c.range(), c.range2()); },
             [](auto c) { return std::ranges::mismatch(c.range(), c.range2()); });
 
+        auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::mismatch[raze::options::fautovec](c.first(), c.last(), c.first2(), c.last2()); },
+            [](auto c) { return std::ranges::mismatch(c.first(), c.last(), c.first2(), c.last2()); });
+
+        run<range, T>(cfg,
+            [eq_branching](auto c) { return raze::algorithm::mismatch[raze::options::fautovec][raze::options::fstatic](c.range(), c.range2(), eq_branching); },
+            [eq_branching](auto c) { return std::ranges::mismatch(c.range(), c.range2(), eq_branching); });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t A1, size_t A2>(auto algo) {
+                run_aligned<A1, A2, range, T>(acfg,
+                    [algo](auto c) { return algo(c.first(), c.last(), c.first2(), c.last2()); },
+                    [](auto c) { return std::ranges::mismatch(c.first(), c.last(), c.first2(), c.last2()); });
+
+                run_aligned<A1, A2, range, T>(acfg,
+                    [algo](auto c) { return algo(c.range(), c.range2()); },
+                    [](auto c) { return std::ranges::mismatch(c.range(), c.range2()); });
+
+                for (size_t sz : { size_t(0), size_t(1), size_t(15), size_t(16), size_t(31), size_t(32), size_t(64), size_t(128) }) {
+                    rtts::aligned_buffer<T, A1> a(sz);
+                    rtts::aligned_buffer<T, A2> b(sz);
+                    for (size_t i = 0; i < sz; ++i) { a[i] = static_cast<T>(i + 1); b[i] = a[i]; }
+                    auto r_eq = algo(a, b);
+                    RTTS_EXPECT(r_eq.in1 == a.end() && r_eq.in2 == b.end());
+                    if (sz > 0) {
+                        b[sz - 1] = T(0);
+                        auto r_diff = algo(a, b);
+                        RTTS_EXPECT(r_diff.in1 == a.begin() + (sz - 1) && r_diff.in2 == b.begin() + (sz - 1));
+                    }
+                }
+            };
+
+            check_aligned.template operator()<16, 16>(raze::algorithm::mismatch[opt::aligned<16>]);
+            check_aligned.template operator()<32, 32>(raze::algorithm::mismatch[opt::aligned<32>]);
+            check_aligned.template operator()<32, 32>(raze::algorithm::mismatch[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::mismatch[opt::aligned<64>]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::mismatch[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::mismatch[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1, 1>(raze::algorithm::mismatch[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1, 1>(raze::algorithm::mismatch[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<64, 1>(raze::algorithm::mismatch[opt::aligned<64, opt::unaligned>]);
+            check_aligned.template operator()<1, 64>(raze::algorithm::mismatch[opt::aligned<opt::unaligned, 64>]);
+            check_aligned.template operator()<32, 64>(raze::algorithm::mismatch[opt::aligned<32, 64>][opt::fstatic]);
+            check_aligned.template operator()<64, 16>(raze::algorithm::mismatch[opt::aligned<64, 16>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::mismatch(c.first(), c.last(), c.first2(), c.last2()); },
             [](auto c) { return std::ranges::mismatch(c.first(), c.last(), c.first2(), c.last2()); }));
 
         static_assert(constexpr_run<T, range, 5>(
             [](auto c) { return raze::algorithm::mismatch(c.range(), c.range2()); },
+            [](auto c) { return std::ranges::mismatch(c.range(), c.range2()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::mismatch[raze::options::fautovec](c.range(), c.range2()); },
+            [](auto c) { return std::ranges::mismatch(c.range(), c.range2()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::mismatch[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
             [](auto c) { return std::ranges::mismatch(c.range(), c.range2()); }));
 
         static_assert([]() constexpr {
@@ -310,3 +369,61 @@ RTTS_CASE("raze::algorithm::mismatch sentinel") {
         RTTS_EXPECT(r_tail.in1.base() == a.begin() + (n - 1) && r_tail.in2.base() == b.begin() + (n - 1));
     }
 };
+
+
+RTTS_CASE("raze::algorithm::mismatch views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Pairs of views: iota, take, drop, reverse, filter, transform, non-common
+    {
+        const std::vector<int> a = { 2, 4, 6, 8, 99, 12, 14 };
+        auto tv = views::iota(1, 10) | views::transform([](int x) { return x * 2; });
+        auto rm = raze::algorithm::mismatch(a, tv);
+        auto sm = std::ranges::mismatch(a, tv);
+        RTTS_EXPECT(rm.in1 == sm.in1 && rm.in2 == sm.in2);
+
+        auto fv = views::iota(1, 20) | views::filter([](int x) { return (x & 1) == 0; });
+        auto rf = raze::algorithm::mismatch[opt::aligned<64, opt::unaligned>](a, fv);
+        auto sf = std::ranges::mismatch(a, fv);
+        RTTS_EXPECT(rf.in1 == sf.in1 && rf.in2 == sf.in2);
+
+        auto nc = rtts::make_non_common(a);
+        auto rn = raze::algorithm::mismatch[opt::fautovec][opt::fstatic](
+            nc, tv, [](auto x, auto y) { if (x == y) return true; return false; });
+        auto sn = std::ranges::mismatch(nc, tv);
+        RTTS_EXPECT(rn.in1 == sn.in1 && rn.in2 == sn.in2);
+    }
+
+    // Mismatched lengths, empty, single-pass early exit, volatile, rvalue dangling, member projections
+    {
+        const std::vector<int> s = { 1, 2, 3 };
+        const std::vector<int> l = { 1, 2, 3, 4, 5 };
+        auto rl = raze::algorithm::mismatch(s, l);
+        RTTS_EXPECT(rl.in1 == s.end() && rl.in2 == l.begin() + 3);
+
+        std::vector<int> empty_v;
+        auto re = raze::algorithm::mismatch(empty_v, l);
+        RTTS_EXPECT(re.in1 == empty_v.end() && re.in2 == l.begin());
+
+        const std::vector<int> d1 = { 1, 2, 9, 4, 5 };
+        rtts::single_pass_input_range<int> sp1(d1), sp2(l);
+        auto rsp = raze::algorithm::mismatch(sp1, sp2);
+        RTTS_EXPECT(rsp.in1 != sp1.end() && *rsp.in1 == 9 && sp1.reads() == 2);
+
+        volatile int va[16], vb[16];
+        for (int i = 0; i < 16; ++i) { va[i] = i; vb[i] = i; }
+        vb[7] = 99;
+        auto vr = raze::algorithm::mismatch(va, va + 16, vb, vb + 16);
+        RTTS_EXPECT(vr.in1 == va + 7 && vr.in2 == vb + 7);
+
+        auto rval = raze::algorithm::mismatch(std::vector<int>{ 1, 2 }, std::vector<int>{ 1, 3 });
+        static_assert(std::same_as<decltype(rval.in1), std::ranges::dangling>);
+        static_assert(std::same_as<decltype(rval.in2), std::ranges::dangling>);
+
+        const std::vector<rtts::test_item> i1 = { { 1, 10 }, { 2, 20 }, { 9, 30 } };
+        const std::vector<rtts::test_item> i2 = { { 1, 99 }, { 2, 88 }, { 3, 77 } };
+        auto ip = raze::algorithm::mismatch(i1, i2, std::equal_to<>{}, &rtts::test_item::key, &rtts::test_item::key);
+        RTTS_EXPECT(ip.in1 == i1.begin() + 2 && ip.in2 == i2.begin() + 2);
+    }
+};

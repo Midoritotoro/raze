@@ -18,7 +18,7 @@ template <arch::ISA ISA, intrin_type V, arithmetic_type T, raw_mask_type M, i32 
 raze_always_inline M slide_left_(M x, std::integral_constant<i32, Shift> shift) noexcept {
 	static constexpr auto size = sizeof(V) / sizeof(T);
 	
-	raze_maybe_unused_attribute constexpr auto all_mask = ((sizeof(M) * 8) == size)
+	[[maybe_unused]] constexpr auto all_mask = ((sizeof(M) * 8) == size)
 		? math::max_limit<M>() : M(((M(1) << size) - 1));
 
 	if constexpr (shift >= size)

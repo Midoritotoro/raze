@@ -53,11 +53,75 @@ RTTS_CASE_TPL("raze::algorithm::copy_n", rtts::algorithm::all_types)
                 return std::ranges::copy_n(
                     c.first(), std::ranges::distance(c.first(), c.last()), c.out());
             });
+
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [](auto c) {
+                return raze::algorithm::copy_n[raze::options::fautovec](
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            },
+            [](auto c) {
+                return std::ranges::copy_n(
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            });
+
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [](auto c) {
+                return raze::algorithm::copy_n[raze::options::fautovec][raze::options::fstatic](
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            },
+            [](auto c) {
+                return std::ranges::copy_n(
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            });
+    }
+
+    {
+        namespace opt = raze::options;
+        auto acfg = rtts::algorithm::config::compact();
+
+        auto check_aligned = [&]<size_t A1, size_t AOut>(auto algo) {
+            rtts::algorithm::run_aligned<A1, AOut, rtts::algorithm::range, T>(acfg,
+                [algo](auto c) { return algo(c.first(), std::ranges::distance(c.first(), c.last()), c.out()); },
+                [](auto c) { return std::ranges::copy_n(c.first(), std::ranges::distance(c.first(), c.last()), c.out()); });
+        };
+
+        check_aligned.template operator()<16, 16>(raze::algorithm::copy_n[opt::aligned<16>]);
+        check_aligned.template operator()<32, 32>(raze::algorithm::copy_n[opt::aligned<32>]);
+        check_aligned.template operator()<32, 32>(raze::algorithm::copy_n[opt::aligned<32>][opt::unroll<2>]);
+        check_aligned.template operator()<64, 64>(raze::algorithm::copy_n[opt::aligned<64>]);
+        check_aligned.template operator()<64, 64>(raze::algorithm::copy_n[opt::aligned<64>][opt::fautovec]);
+        check_aligned.template operator()<64, 64>(raze::algorithm::copy_n[opt::aligned<64>][opt::fscalar]);
+        check_aligned.template operator()<1, 1>(raze::algorithm::copy_n[opt::aligned<opt::unaligned>]);
+        check_aligned.template operator()<1, 1>(raze::algorithm::copy_n[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+        check_aligned.template operator()<64, 1>(raze::algorithm::copy_n[opt::aligned<64, opt::unaligned>]);
+        check_aligned.template operator()<1, 64>(raze::algorithm::copy_n[opt::aligned<opt::unaligned, 64>]);
+        check_aligned.template operator()<32, 64>(raze::algorithm::copy_n[opt::aligned<32, 64>][opt::fstatic]);
+        check_aligned.template operator()<64, 16>(raze::algorithm::copy_n[opt::aligned<64, 16>]);
     }
 
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr {
             return raze::algorithm::copy_n(
+                c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+        },
+        [](auto c) constexpr {
+            return std::ranges::copy_n(
+                c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+        }));
+
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+        [](auto c) constexpr {
+            return raze::algorithm::copy_n[raze::options::fautovec](
+                c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+        },
+        [](auto c) constexpr {
+            return std::ranges::copy_n(
+                c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+        }));
+
+    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+        [](auto c) constexpr {
+            return raze::algorithm::copy_n[raze::options::aligned<64, raze::options::unaligned>](
                 c.first(), std::ranges::distance(c.first(), c.last()), c.out());
         },
         [](auto c) constexpr {
@@ -145,6 +209,27 @@ RTTS_CASE("raze::algorithm::copy_n mixed arithmetic types") {
                 return std::ranges::copy_n(
                     c.first(), std::ranges::distance(c.first(), c.last()), c.out2());
             });
+
+        rtts::algorithm::run<rtts::algorithm::range, int32_t, float>(cfg,
+            [](auto c) {
+                return raze::algorithm::copy_n[raze::options::fautovec](
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out2());
+            },
+            [](auto c) {
+                return std::ranges::copy_n(
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out2());
+            });
+
+        auto acfg = rtts::algorithm::config::compact();
+        rtts::algorithm::run_aligned_mixed<64, 1, rtts::algorithm::range, int32_t, float>(acfg,
+            [](auto c) {
+                return raze::algorithm::copy_n[raze::options::aligned<64, raze::options::unaligned>](
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out2());
+            },
+            [](auto c) {
+                return std::ranges::copy_n(
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out2());
+            });
     }
 
     static_assert(rtts::algorithm::constexpr_run_mixed<int32_t, float, rtts::algorithm::range, 8>(
@@ -187,7 +272,7 @@ struct tc_struct_8 {
     bool operator==(const tc_struct_8&) const = default;
 };
 struct tc_struct_12 {
-    int32_t a, b, c;
+    int32_t a = 0, b = 0, c = 0;
     bool operator==(const tc_struct_12&) const = default;
 };
 
@@ -255,6 +340,26 @@ RTTS_CASE("raze::algorithm::copy_n structs") {
         rtts::algorithm::run<rtts::algorithm::range, tc_struct_4>(cfg,
             [](auto c) {
                 return raze::algorithm::copy_n[raze::options::unroll<2>](
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            },
+            [](auto c) {
+                return std::ranges::copy_n(
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            });
+
+        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4>(cfg,
+            [](auto c) {
+                return raze::algorithm::copy_n[raze::options::fautovec](
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            },
+            [](auto c) {
+                return std::ranges::copy_n(
+                    c.first(), std::ranges::distance(c.first(), c.last()), c.out());
+            });
+
+        rtts::algorithm::run_aligned<64, 1, rtts::algorithm::range, tc_struct_4>(rtts::algorithm::config::compact(),
+            [](auto c) {
+                return raze::algorithm::copy_n[raze::options::aligned<64, raze::options::unaligned>](
                     c.first(), std::ranges::distance(c.first(), c.last()), c.out());
             },
             [](auto c) {
@@ -457,3 +562,68 @@ static_assert(copy_n_static_array_partial_matches<int32_t, 16, 16>());
 static_assert(copy_n_static_array_partial_matches<int64_t, 33, 17>());
 static_assert(copy_n_static_array_partial_matches<uint8_t, 200, 129>());
 static_assert(copy_n_static_array_partial_matches<tc_nontrivial, 8, 3>());
+
+
+RTTS_CASE("raze::algorithm::copy_n views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views iterators: iota, drop, reverse, filter, transform
+    {
+        const std::vector<int> src = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+
+        std::vector<int> d1(6), d2(6);
+        auto iv = views::iota(100, 200);
+        raze::algorithm::copy_n(iv.begin(), 6, d1.begin());
+        std::ranges::copy_n(iv.begin(), 6, d2.begin());
+        RTTS_EXPECT(d1 == d2);
+
+        auto rv = src | views::reverse;
+        raze::algorithm::copy_n(rv.begin(), 6, d1.begin());
+        std::ranges::copy_n(rv.begin(), 6, d2.begin());
+        RTTS_EXPECT(d1 == d2);
+
+        auto fv = src | views::filter([](int x) { return (x % 2) == 1; }) | views::transform([](int x) { return x * 5; });
+        std::vector<int> f1, f2;
+        raze::algorithm::copy_n(fv.begin(), 4, std::back_inserter(f1));
+        std::ranges::copy_n(fv.begin(), 4, std::back_inserter(f2));
+        RTTS_EXPECT(f1 == f2);
+    }
+
+    // back_inserter, front_inserter, inserter, n == 0, n == 1, single-pass, volatile
+    {
+        const std::vector<int> src = { 10, 20, 30, 40, 50 };
+        std::vector<int> b0, b1, b2, b3, b4;
+        raze::algorithm::copy_n(src.begin(), 0, std::back_inserter(b0));
+        RTTS_EXPECT(b0.empty());
+
+        raze::algorithm::copy_n(src.begin(), 1, std::back_inserter(b1));
+        RTTS_EXPECT((b1 == std::vector<int>{ 10 }));
+
+        raze::algorithm::copy_n[opt::fstatic](src.begin(), 5, std::back_inserter(b2));
+        raze::algorithm::copy_n[opt::fautovec](src.begin(), 5, std::back_inserter(b3));
+        raze::algorithm::copy_n[opt::aligned<64, opt::unaligned>](src.begin(), 5, std::back_inserter(b4));
+        RTTS_EXPECT(b2 == src && b3 == src && b4 == src);
+
+        std::deque<int> deq1, deq2;
+        raze::algorithm::copy_n(src.begin(), 4, std::front_inserter(deq1));
+        std::ranges::copy_n(src.begin(), 4, std::front_inserter(deq2));
+        RTTS_EXPECT(deq1 == deq2);
+
+        std::vector<int> ins1 = { 1, 9 }, ins2 = { 1, 9 };
+        raze::algorithm::copy_n(src.begin(), 3, std::inserter(ins1, ins1.begin() + 1));
+        std::ranges::copy_n(src.begin(), 3, std::inserter(ins2, ins2.begin() + 1));
+        RTTS_EXPECT(ins1 == ins2);
+
+        rtts::single_pass_input_range<int> spr(src);
+        std::vector<int> sp_out;
+        raze::algorithm::copy_n(spr.begin(), 3, std::back_inserter(sp_out));
+        RTTS_EXPECT((sp_out == std::vector<int>{ 10, 20, 30 }) && spr.reads() == 3);
+
+        volatile int vsrc[16];
+        volatile int vdst[16];
+        for (int i = 0; i < 16; ++i) vsrc[i] = i + 5;
+        raze::algorithm::copy_n(vsrc, 16, vdst);
+        for (int i = 0; i < 16; ++i) RTTS_EXPECT(vdst[i] == i + 5);
+    }
+};

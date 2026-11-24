@@ -20,7 +20,7 @@ struct configurable_splat_t {
         }
 
         template <simd_type V>
-        raze_nodiscard static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+        raze_nodiscard static raze_always_inline auto deferred_call([[maybe_unused]] auto opts, const V& x) noexcept {
             return splat_(x, make_splat_pattern<V, Index>{});
         }
     };

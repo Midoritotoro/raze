@@ -35,7 +35,7 @@ struct configurable_compress_store_t : options::conditional_callable<configurabl
     }
 
     template <any_iterator_or_pointer Mem, simd_type T, simd_mask_type M>
-    static raze_always_inline Mem deferred_call(auto opts, Mem it, const T& x, const M& mask) noexcept {
+    static raze_always_inline Mem deferred_call([[maybe_unused]] auto opts, Mem it, const T& x, const M& mask) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename T::value_type;
         using Abi = typename T::abi_type;

@@ -17,7 +17,7 @@ raze_always_inline bool all_of_(M x) noexcept {
 		return to_bitmask_<ISA, i8>(x) == size;
 	}
 	else if constexpr (std::is_integral_v<M> && !std::is_same_v<M, bool>) {
-		raze_maybe_unused_attribute constexpr auto max_for_bits = (raze_sizeof_in_bits(M) == N)
+		[[maybe_unused]] constexpr auto max_for_bits = (raze_sizeof_in_bits(M) == N)
 			? math::max_limit<M>() : M(((M(1) << N) - 1));
 
 		if constexpr (N >= 8 && sizeof(M) == 1 && has_avx512dq<ISA>) return _kortestc_mask8_u8(x, x);

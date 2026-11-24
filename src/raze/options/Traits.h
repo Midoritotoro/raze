@@ -2,6 +2,7 @@
 
 #include <src/raze/options/Callable.h>
 #include <src/raze/algorithm/StrategyBuilder.h>
+#include <src/raze/utility/Assert.h>
 #include <src/raze/vx/hw/configurable/memory/AlignedOption.h>
 #include <memory>
 #include <cstdint>
@@ -23,6 +24,9 @@ struct traits : Settings {
 
 template <concepts::option ... Options>
 traits(Options&& ... opts) -> traits<raze::options::settings<std::decay_t<Options>...>>;
+
+template <class ... Options>
+traits(const settings<Options...>& opts) -> traits<settings<Options...>>;
 
 struct unroll_key_t: as_keyword<unroll_key_t> {
     template <class Value> 

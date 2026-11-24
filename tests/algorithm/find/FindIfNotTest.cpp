@@ -202,6 +202,65 @@ namespace {
             [](auto c) { return raze::algorithm::find_if_not(c.first(), c.last(), true_pred{}); },
             [](auto c) { return std::ranges::find_if_not(c.first(), c.last(), true_pred{}); });
 
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::find_if_not[raze::options::fautovec](c.first(), c.last(), not_equal_pred<T>{ target });
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target });
+            });
+
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                auto pred = [target](auto x) { if (x != target) return true; return false; };
+                return raze::algorithm::find_if_not[raze::options::fautovec][raze::options::fstatic](c.range(), pred);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                auto pred = [target](auto x) { if (x != target) return true; return false; };
+                return std::ranges::find_if_not(c.range(), pred);
+            });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t Align>(auto algo) {
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.first(), c.last(), not_equal_pred<T>{ target });
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target });
+                    });
+
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.range(), not_equal_pred<T>{ target });
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
+                    });
+            };
+
+            check_aligned.template operator()<16>(raze::algorithm::find_if_not[opt::aligned<16>]);
+            check_aligned.template operator()<32>(raze::algorithm::find_if_not[opt::aligned<32>]);
+            check_aligned.template operator()<32>(raze::algorithm::find_if_not[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<32>(raze::algorithm::find_if_not[opt::aligned<32>][opt::fstatic]);
+            check_aligned.template operator()<64>(raze::algorithm::find_if_not[opt::aligned<64>]);
+            check_aligned.template operator()<64>(raze::algorithm::find_if_not[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64>(raze::algorithm::find_if_not[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1>(raze::algorithm::find_if_not[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1>(raze::algorithm::find_if_not[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::find_if_not(c.first(), c.last(), false_pred{}); },
             [](auto c) { return std::ranges::find_if_not(c.first(), c.last(), false_pred{}); }));
@@ -210,6 +269,28 @@ namespace {
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
                 return raze::algorithm::find_if_not(c.range(), not_equal_pred<T>{ target });
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                auto pred = [target](auto x) constexpr { if (x != target) return true; return false; };
+                return raze::algorithm::find_if_not[raze::options::fautovec](c.range(), pred);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                auto pred = [target](auto x) constexpr { if (x != target) return true; return false; };
+                return std::ranges::find_if_not(c.range(), pred);
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::find_if_not[raze::options::aligned<64>](c.range(), not_equal_pred<T>{ target });
             },
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
@@ -309,3 +390,49 @@ RTTS_CASE("raze::algorithm::find_if_not sentinel") {
         RTTS_EXPECT(miss == std::default_sentinel);
     }
 };
+
+
+RTTS_CASE("raze::algorithm::find_if_not views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
+    {
+        auto pred_branch = [](auto x) { if (x < 20) return true; return false; };
+        auto iv = views::iota(1, 40);
+        RTTS_EXPECT(raze::algorithm::find_if_not[opt::fautovec][opt::fstatic](iv, pred_branch) == std::ranges::find_if_not(iv, pred_branch));
+
+        const std::vector<int> src = { 2, 4, 6, 8, 9, 10, 12, 14 };
+        auto dv = src | views::drop(1) | views::take(6);
+        RTTS_EXPECT(raze::algorithm::find_if_not[opt::fautovec][opt::fstatic](dv, [](auto x) { if ((x & 1) == 0) return true; return false; }) ==
+                    std::ranges::find_if_not(dv, [](int x) { return (x & 1) == 0; }));
+
+        auto chain = src | views::reverse | views::filter([](int x) { return x > 4; }) | views::transform([](int x) { return x + 1; });
+        RTTS_EXPECT(raze::algorithm::find_if_not[opt::aligned<64>](chain, [](int x) { return (x & 1) == 1; }) ==
+                    std::ranges::find_if_not(chain, [](int x) { return (x & 1) == 1; }));
+
+        auto nc = rtts::make_non_common(src);
+        RTTS_EXPECT(raze::algorithm::find_if_not(nc, [](auto x) { return (x & 1) == 0; }) == std::ranges::find_if_not(nc, [](int x) { return (x & 1) == 0; }));
+    }
+
+    // Empty, 1-elem, single-pass input range, volatile, rvalue dangling, member projection
+    {
+        std::vector<int> empty_v;
+        RTTS_EXPECT(raze::algorithm::find_if_not(empty_v, [](auto x) { return x > 0; }) == empty_v.end());
+
+        const std::vector<int> data = { 2, 4, 6, 7, 8 };
+        rtts::single_pass_input_range<int> spr(data);
+        auto it = raze::algorithm::find_if_not(spr, [](int x) { return (x & 1) == 0; });
+        RTTS_EXPECT(it != spr.end() && *it == 7 && spr.reads() == 3);
+
+        volatile int vbuf[16];
+        for (int i = 0; i < 16; ++i) vbuf[i] = i;
+        RTTS_EXPECT(raze::algorithm::find_if_not(vbuf, vbuf + 16, [](int x) { return x < 10; }) == vbuf + 10);
+
+        auto rv = raze::algorithm::find_if_not(std::vector<int>{ 2, 4, 5 }, [](auto x) { return (x & 1) == 0; });
+        static_assert(std::same_as<decltype(rv), std::ranges::dangling>);
+
+        const std::vector<rtts::test_item> items = { { 2, 10 }, { 4, 20 }, { 5, 30 } };
+        RTTS_EXPECT(raze::algorithm::find_if_not(items, [](int k) { return (k & 1) == 0; }, &rtts::test_item::key) == items.begin() + 2);
+    }
+};

@@ -40,11 +40,13 @@ struct find_if_t : Traits, dispatchable<find_if_t<Traits>> {
               _proj(std::move(proj))
         {}
 
-        raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
+        raze_always_inline constexpr void operator()(autovectorizable_tag)
+            requires(contiguous_source<source_type> && !traits::is_iterator_volatile_v<iterator_type>)
+        {
             auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 
             for (; first != last; ++first)
-                if (_predicate(_proj(*first)))
+                if (std::invoke(_predicate, std::invoke(_proj, *first)))
                     break;
 
             source_type::from_ptr(_iterator, first);
@@ -53,7 +55,7 @@ struct find_if_t : Traits, dispatchable<find_if_t<Traits>> {
         raze_always_inline constexpr void operator()() {
             raze_disable_unrolling
             for (; _iterator != _sentinel; ++_iterator) {
-                if (_predicate(_proj(*_iterator)))
+                if (std::invoke(_predicate, std::invoke(_proj, *_iterator)))
                     break;
             }
         }
@@ -83,7 +85,7 @@ struct find_if_t : Traits, dispatchable<find_if_t<Traits>> {
             auto* ptr = std::to_address(_iterator);
             const auto mask = _predicate(_proj(vx::load<Tag>[ignore](ptr)));
 
-            const auto offset = math::min(vx::find_first_set[ignore](mask), ignore.tail_elements());
+            const auto offset = math::min(static_cast<sizetype>(vx::find_first_set[ignore](mask)), ignore.tail_elements());
             source_type::from_ptr(_iterator, ptr + offset);
         }
 

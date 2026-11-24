@@ -110,12 +110,59 @@ RTTS_CASE_TPL("raze::algorithm::is_sorted_until", rtts::algorithm::all_types)
         [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until(c.range(), std::greater<>{})); },
         [](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range(), std::greater<>{})); });
 
+    auto cmp_branching = [](auto a, auto b) { if (a < b) return true; return false; };
+
+    run<range, T>(cfg,
+        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::fautovec](c.first(), c.last())); },
+        [](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.first(), c.last())); });
+
+    run<range, T>(cfg,
+        [cmp_branching](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::fautovec](c.range(), cmp_branching)); },
+        [cmp_branching](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range(), cmp_branching)); });
+
+    run<range, T>(cfg,
+        [cmp_branching](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::fautovec][raze::options::fstatic](c.range(), cmp_branching)); },
+        [cmp_branching](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range(), cmp_branching)); });
+
+    {
+        namespace opt = raze::options;
+        auto acfg = config::compact();
+
+        auto check_aligned = [&]<size_t Align>(auto algo) {
+            run_aligned<Align, range, T>(acfg,
+                [algo](auto c) { return std::ranges::distance(c.first(), algo(c.first(), c.last())); },
+                [](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.first(), c.last())); });
+
+            run_aligned<Align, range, T>(acfg,
+                [algo](auto c) { return std::ranges::distance(c.first(), algo(c.range())); },
+                [](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range())); });
+        };
+
+        check_aligned.template operator()<16>(raze::algorithm::is_sorted_until[opt::aligned<16>]);
+        check_aligned.template operator()<32>(raze::algorithm::is_sorted_until[opt::aligned<32>]);
+        check_aligned.template operator()<32>(raze::algorithm::is_sorted_until[opt::aligned<32>][opt::unroll<2>]);
+        check_aligned.template operator()<32>(raze::algorithm::is_sorted_until[opt::aligned<32>][opt::fstatic]);
+        check_aligned.template operator()<64>(raze::algorithm::is_sorted_until[opt::aligned<64>]);
+        check_aligned.template operator()<64>(raze::algorithm::is_sorted_until[opt::aligned<64>][opt::fautovec]);
+        check_aligned.template operator()<64>(raze::algorithm::is_sorted_until[opt::aligned<64>][opt::fscalar]);
+        check_aligned.template operator()<1>(raze::algorithm::is_sorted_until[opt::aligned<opt::unaligned>]);
+        check_aligned.template operator()<1>(raze::algorithm::is_sorted_until[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+    }
+
     static_assert(constexpr_run<T, range, 8>(
         [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until(c.first(), c.last())); },
         [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.first(), c.last())); }));
 
     static_assert(constexpr_run<T, range, 8>(
         [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::fscalar](c.range())); },
+        [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range())); }));
+
+    static_assert(constexpr_run<T, range, 8>(
+        [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::fautovec](c.range())); },
+        [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range())); }));
+
+    static_assert(constexpr_run<T, range, 8>(
+        [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::aligned<64>](c.range())); },
         [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range())); }));
 
     static_assert([]() constexpr {
@@ -163,6 +210,18 @@ RTTS_CASE_TPL("raze::algorithm::is_sorted_until.projection", rtts::algorithm::al
         [proj](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::fscalar](c.first(), c.last(), std::less<>{}, proj)); },
         [proj](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.first(), c.last(), std::less<>{}, proj)); });
 
+    run<range, T>(cfg,
+        [proj](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::fautovec](c.range(), std::less<>{}, proj)); },
+        [proj](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range(), std::less<>{}, proj)); });
+
+    run_aligned<64, range, T>(config::compact(),
+        [proj](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::aligned<64>](c.range(), std::less<>{}, proj)); },
+        [proj](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range(), std::less<>{}, proj)); });
+
+    run_aligned<1, range, T>(config::compact(),
+        [proj](auto c) { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until[raze::options::aligned<raze::options::unaligned>](c.range(), std::less<>{}, proj)); },
+        [proj](auto c) { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range(), std::less<>{}, proj)); });
+
     static_assert(constexpr_run<T, range, 8>(
         [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::is_sorted_until(c.range(), std::less<>{}, [](auto x) constexpr { return x; })); },
         [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::is_sorted_until(c.range(), std::less<>{}, [](auto x) constexpr { return x; })); }));
@@ -200,3 +259,52 @@ RTTS_CASE("raze::algorithm::is_sorted_until structs fuzz") {
     for (unsigned seed : fuzz_seeds)
         is_sorted_until_struct_fuzz<is_sorted_until_item>(seed, 200);
 };
+
+
+RTTS_CASE("raze::algorithm::is_sorted_until views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views: iota, reverse, take, drop, filter, transform, non-common
+    {
+        auto iv = views::iota(1, 30);
+        RTTS_EXPECT(raze::algorithm::is_sorted_until(iv) == iv.end());
+
+        auto rv = views::iota(1, 30) | views::reverse;
+        RTTS_EXPECT(raze::algorithm::is_sorted_until(rv) == std::ranges::is_sorted_until(rv));
+
+        const std::vector<int> src = { 1, 2, 3, 10, 5, 6, 7 };
+        auto dv = src | views::drop(1) | views::take(5);
+        RTTS_EXPECT(raze::algorithm::is_sorted_until(dv) == std::ranges::is_sorted_until(dv));
+
+        auto fv = src | views::filter([](int x) { return x != 10; });
+        RTTS_EXPECT(raze::algorithm::is_sorted_until[opt::aligned<64>](fv) == std::ranges::is_sorted_until(fv));
+
+        auto tv = src | views::transform([](int x) { return x * 2; });
+        RTTS_EXPECT(raze::algorithm::is_sorted_until(tv) == std::ranges::is_sorted_until(tv));
+
+        auto nc = rtts::make_non_common(src);
+        RTTS_EXPECT(raze::algorithm::is_sorted_until[opt::fstatic](nc) == std::ranges::is_sorted_until(nc));
+    }
+
+    // Empty, 1-elem, volatile, rvalue dangling, member projection
+    {
+        std::vector<int> empty_v;
+        RTTS_EXPECT(raze::algorithm::is_sorted_until(empty_v) == empty_v.end());
+
+        std::vector<int> one_v = { 5 };
+        RTTS_EXPECT(raze::algorithm::is_sorted_until(one_v) == one_v.end());
+
+        volatile int vbuf[16];
+        for (int i = 0; i < 16; ++i) vbuf[i] = i;
+        vbuf[9] = 1;
+        RTTS_EXPECT(raze::algorithm::is_sorted_until(vbuf, vbuf + 16) == vbuf + 9);
+
+        auto rv = raze::algorithm::is_sorted_until(std::vector<int>{ 1, 2, 0 });
+        static_assert(std::same_as<decltype(rv), std::ranges::dangling>);
+
+        const std::vector<rtts::test_item> items = { { 1, 9 }, { 3, 8 }, { 2, 7 } };
+        auto it = raze::algorithm::is_sorted_until(items, std::less<>{}, &rtts::test_item::key);
+        RTTS_EXPECT(it == items.begin() + 2);
+    }
+};

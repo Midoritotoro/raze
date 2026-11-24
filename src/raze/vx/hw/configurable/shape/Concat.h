@@ -30,7 +30,7 @@ struct configurable_concat_t: options::conditional_callable<configurable_concat_
     }
 
     template <simd_type T, class ... Ts>
-    static raze_always_inline auto deferred_call(auto opts, const T& x, const Ts& ... xs) noexcept {
+    static raze_always_inline auto deferred_call([[maybe_unused]] auto opts, const T& x, const Ts& ... xs) noexcept {
         using Concatenated = concatenated_simd<T, Ts...>;
         using Value = typename Concatenated::value_type;
         using Abi = typename Concatenated::abi_type;

@@ -31,6 +31,7 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
 
         static consteval bool vectorizable() noexcept {
             return contiguous_source<source_type>
+                && !traits::is_iterator_volatile_v<iterator_type>
                 && vectorizable_unary_predicate<Predicate, unchecked_iterator_type>
                 && vectorizable_projection<Projection, unchecked_iterator_type>;
         }
@@ -46,7 +47,7 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
         raze_always_inline constexpr void operator()() noexcept {
             raze_disable_unrolling
             for (; _iterator != _sentinel; ++_iterator)
-                _count += _predicate(_proj(*_iterator));
+                _count += static_cast<difference_type>(static_cast<bool>(std::invoke(_predicate, std::invoke(_proj, *_iterator))));
         }
 
         template <vectorizable_tag Tag>

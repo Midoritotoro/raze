@@ -7,7 +7,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct remove_copy_t : Traits {
-	template <std::permutable It, std::sentinel_for<It> Sent, class OutIt, 
+	template <std::input_iterator It, std::sentinel_for<It> Sent, class OutIt, 
 		class T = std::iter_value_t<It>, class Proj = std::identity>
 	constexpr raze_always_inline decltype(auto) operator()(It first, Sent last, 
 		OutIt out, const std::type_identity_t<T>& v, Proj proj = {}) const
@@ -111,6 +111,6 @@ struct remove_copy_t : Traits {
  * 1 3 4 5
  * ```
 */
-constexpr inline auto remove_copy = options::function_with_traits<remove_copy_t>[remove_copy_strategy];
+constexpr inline auto remove_copy = options::function_with_traits<remove_copy_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

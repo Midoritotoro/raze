@@ -204,6 +204,69 @@ namespace {
                 return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
             });
 
+        auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
+
+        run<n, T>(cfg,
+            [](auto c) {
+                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::ends_with[raze::options::fautovec](c.first(), c.last(), s_begin, c.last());
+            },
+            [](auto c) {
+                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return ref_ends_with(c.first(), c.last(), s_begin, c.last());
+            });
+
+        run<n, T>(cfg,
+            [eq_branching](auto c) {
+                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::ends_with[raze::options::fautovec][raze::options::fstatic](c.range(), std::ranges::subrange(s_begin, c.last()), eq_branching);
+            },
+            [eq_branching](auto c) {
+                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()), eq_branching);
+            });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t A1, size_t A2>(auto algo) {
+                run_aligned<A1, A2, range, T>(acfg,
+                    [algo](auto c) { return algo(c.first(), c.last(), c.first2(), c.last2()); },
+                    [](auto c) { return ref_ends_with(c.first(), c.last(), c.first2(), c.last2()); });
+
+                run_aligned<A1, A2, range, T>(acfg,
+                    [algo](auto c) { return algo(c.range(), c.range2()); },
+                    [](auto c) { return ref_ends_with(c.range(), c.range2()); });
+
+                for (size_t sz : { size_t(0), size_t(1), size_t(15), size_t(16), size_t(31), size_t(32), size_t(64), size_t(128) }) {
+                    rtts::aligned_buffer<T, A1> hay(sz);
+                    for (size_t i = 0; i < sz; ++i) hay[i] = static_cast<T>((i % 100) + 1);
+                    const size_t suf_len = sz / 2;
+                    rtts::aligned_buffer<T, A2> suf(suf_len);
+                    for (size_t i = 0; i < suf_len; ++i) suf[i] = hay[sz - suf_len + i];
+                    RTTS_EXPECT(algo(hay, suf) == ref_ends_with(hay, suf));
+                    if (suf_len > 0) {
+                        suf[0] = T(0);
+                        RTTS_EXPECT(algo(hay, suf) == ref_ends_with(hay, suf));
+                    }
+                }
+            };
+
+            check_aligned.template operator()<16, 16>(raze::algorithm::ends_with[opt::aligned<16>]);
+            check_aligned.template operator()<32, 32>(raze::algorithm::ends_with[opt::aligned<32>]);
+            check_aligned.template operator()<32, 32>(raze::algorithm::ends_with[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::ends_with[opt::aligned<64>]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::ends_with[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64, 64>(raze::algorithm::ends_with[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1, 1>(raze::algorithm::ends_with[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1, 1>(raze::algorithm::ends_with[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<64, 1>(raze::algorithm::ends_with[opt::aligned<64, opt::unaligned>]);
+            check_aligned.template operator()<1, 64>(raze::algorithm::ends_with[opt::aligned<opt::unaligned, 64>]);
+            check_aligned.template operator()<32, 64>(raze::algorithm::ends_with[opt::aligned<32, 64>][opt::fstatic]);
+            check_aligned.template operator()<64, 16>(raze::algorithm::ends_with[opt::aligned<64, 16>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::ends_with(c.range(), c.range()); },
             [](auto c) { return ref_ends_with(c.range(), c.range()); }));
@@ -217,6 +280,14 @@ namespace {
                 auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
                 return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
             }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::ends_with[raze::options::fautovec](c.range(), c.range()); },
+            [](auto c) { return ref_ends_with(c.range(), c.range()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::ends_with[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
+            [](auto c) { return ref_ends_with(c.range(), c.range2()); }));
 
         static_assert([]() constexpr {
             std::array<T, 0> empty{};
@@ -285,4 +356,51 @@ RTTS_CASE("raze::algorithm::ends_with structs, projections, rvalues and predicat
     const std::string s = "hello world";
     RTTS_EXPECT(raze::algorithm::ends_with(s, std::string_view("world")));
     RTTS_EXPECT(!raze::algorithm::ends_with(s, std::string_view("hello")));
+};
+
+
+RTTS_CASE("raze::algorithm::ends_with views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views: iota, take, drop, reverse, filter, transform, non-common
+    {
+        auto iv = views::iota(1, 50);
+        auto suf = views::iota(40, 50);
+        RTTS_EXPECT(raze::algorithm::ends_with(iv, suf));
+        RTTS_EXPECT(!raze::algorithm::ends_with(suf, iv));
+
+        const std::vector<int> src = { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 };
+        auto fv = views::iota(1, 21) | views::filter([](int x) { return (x & 1) == 0; });
+        auto tv = views::iota(7, 11) | views::transform([](int x) { return x * 2; });
+        RTTS_EXPECT((raze::algorithm::ends_with[opt::aligned<64, opt::unaligned>](fv, tv)));
+        RTTS_EXPECT(raze::algorithm::ends_with[opt::fautovec][opt::fstatic](
+            src, tv, [](auto x, auto y) { if (x == y) return true; return false; }));
+        RTTS_EXPECT(raze::algorithm::ends_with(rtts::make_non_common(src), tv));
+    }
+
+    // Empty, suffix longer than haystack, counted single-pass input range, volatile, member projection
+    {
+        const std::vector<int> h = { 1, 2, 3, 4, 5 };
+        std::vector<int> empty_v;
+        RTTS_EXPECT(raze::algorithm::ends_with(h, empty_v));
+        RTTS_EXPECT(raze::algorithm::ends_with(empty_v, empty_v));
+        RTTS_EXPECT(!raze::algorithm::ends_with(empty_v, h));
+
+        rtts::single_pass_input_range<int> sp1(h);
+        const std::vector<int> s = { 3, 4, 5 };
+        rtts::single_pass_input_range<int> sp2(s);
+        RTTS_EXPECT(raze::algorithm::ends_with(views::counted(sp1.begin(), 5), views::counted(sp2.begin(), 3)));
+
+        volatile int vh[16], vs[4];
+        for (int i = 0; i < 16; ++i) vh[i] = i;
+        for (int i = 0; i < 4; ++i) vs[i] = 12 + i;
+        RTTS_EXPECT(raze::algorithm::ends_with(vh, vh + 16, vs, vs + 4));
+        vs[0] = 99;
+        RTTS_EXPECT(!raze::algorithm::ends_with(vh, vh + 16, vs, vs + 4));
+
+        const std::vector<rtts::test_item> i1 = { { 1, 10 }, { 2, 20 }, { 3, 30 } };
+        const std::vector<rtts::test_item> i2 = { { 2, 99 }, { 3, 88 } };
+        RTTS_EXPECT(raze::algorithm::ends_with(i1, i2, std::equal_to<>{}, &rtts::test_item::key, &rtts::test_item::key));
+    }
 };

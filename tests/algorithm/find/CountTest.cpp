@@ -138,6 +138,63 @@ namespace {
                 return std::ranges::count(c.range(), target);
             });
 
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::count[raze::options::fautovec](c.first(), c.last(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::count(c.first(), c.last(), target);
+            });
+
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::count[raze::options::fautovec][raze::options::fstatic](c.range(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::count(c.range(), target);
+            });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t Align>(auto algo) {
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.first(), c.last(), target);
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return std::ranges::count(c.first(), c.last(), target);
+                    });
+
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.range(), target);
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return std::ranges::count(c.range(), target);
+                    });
+            };
+
+            check_aligned.template operator()<16>(raze::algorithm::count[opt::aligned<16>]);
+            check_aligned.template operator()<32>(raze::algorithm::count[opt::aligned<32>]);
+            check_aligned.template operator()<32>(raze::algorithm::count[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<32>(raze::algorithm::count[opt::aligned<32>][opt::fstatic]);
+            check_aligned.template operator()<64>(raze::algorithm::count[opt::aligned<64>]);
+            check_aligned.template operator()<64>(raze::algorithm::count[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64>(raze::algorithm::count[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1>(raze::algorithm::count[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1>(raze::algorithm::count[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::count(c.first(), c.last(), T(1)); },
             [](auto c) { return std::ranges::count(c.first(), c.last(), T(1)); }));
@@ -146,6 +203,26 @@ namespace {
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
                 return raze::algorithm::count(c.range(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::count(c.range(), target);
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::count[raze::options::fautovec](c.range(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::count(c.range(), target);
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::count[raze::options::aligned<64>](c.range(), target);
             },
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
@@ -228,3 +305,44 @@ RTTS_CASE("raze::algorithm::count sentinel") {
         RTTS_EXPECT(raze::algorithm::count(first, std::default_sentinel, 42) == 3);
     }
 };
+
+
+RTTS_CASE("raze::algorithm::count views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
+    {
+        RTTS_EXPECT(raze::algorithm::count(views::iota(1, 50), 25) == 1);
+        RTTS_EXPECT(raze::algorithm::count(views::iota(1, 50), 99) == 0);
+
+        const std::vector<int> src = { 1, 2, 1, 3, 1, 4, 1, 5, 1, 6, 1, 7 };
+        auto dv = src | views::drop(1) | views::take(9);
+        RTTS_EXPECT(raze::algorithm::count[opt::fautovec][opt::fstatic](dv, 1) == std::ranges::count(dv, 1));
+
+        auto chain = src | views::reverse | views::transform([](int x) { return x % 2; });
+        RTTS_EXPECT(raze::algorithm::count[opt::aligned<64>](chain, 1) == std::ranges::count(chain, 1));
+
+        auto fv = src | views::filter([](int x) { return x <= 3; });
+        RTTS_EXPECT(raze::algorithm::count(fv, 1) == std::ranges::count(fv, 1));
+
+        RTTS_EXPECT(raze::algorithm::count(rtts::make_non_common(src), 1) == 6);
+    }
+
+    // Empty, 1-elem, single-pass full traversal, volatile, member projection
+    {
+        std::vector<int> empty_v;
+        RTTS_EXPECT(raze::algorithm::count(empty_v, 1) == 0);
+
+        const std::vector<int> data = { 2, 1, 2, 3, 2, 4, 2 };
+        rtts::single_pass_input_range<int> spr(data);
+        RTTS_EXPECT(raze::algorithm::count(spr, 2) == 4 && spr.reads() == data.size());
+
+        volatile int vbuf[16];
+        for (int i = 0; i < 16; ++i) vbuf[i] = i % 4;
+        RTTS_EXPECT(raze::algorithm::count(vbuf, vbuf + 16, 2) == 4);
+
+        const std::vector<rtts::test_item> items = { { 5, 1 }, { 2, 2 }, { 5, 3 }, { 5, 4 } };
+        RTTS_EXPECT(raze::algorithm::count(items, 5, &rtts::test_item::key) == 3);
+    }
+};

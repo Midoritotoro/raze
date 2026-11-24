@@ -18,7 +18,7 @@ struct configurable_swap_adjacent_t : options::conditional_callable<configurable
     }
 
     template <simd_type V, sizetype GroupSize>
-    static raze_always_inline auto deferred_call(auto opts,
+    static raze_always_inline auto deferred_call([[maybe_unused]] auto opts,
         const V& x, std::integral_constant<sizetype, GroupSize> i) noexcept
     {
         return shuffle_(x, make_swap_adjacent_pattern<V, GroupSize>{});

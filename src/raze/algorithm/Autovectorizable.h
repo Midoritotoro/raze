@@ -197,9 +197,16 @@ raze_always_inline auto invoke_scalar_autovec_impl(Work& w) {
     c();
 }
 
-template <class Work>
+template <bool IsFstatic = false, class Work>
 raze_always_inline constexpr auto invoke_scalar_autovec(Work&& w) {
-    if not consteval { invoke_scalar_autovec_impl(w); }
+    if not consteval {
+        if constexpr (IsFstatic) {
+            w(autovectorizable_tag{});
+        }
+        else {
+            invoke_scalar_autovec_impl(w);
+        }
+    }
     else { w(); }
 
     if constexpr (requires { w.result(); }) return w.result();

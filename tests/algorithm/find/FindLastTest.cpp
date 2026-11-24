@@ -200,6 +200,63 @@ namespace {
                 return ref_find_last(c.range(), target).begin();
             });
 
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::find_last[raze::options::fautovec](c.first(), c.last(), target).begin();
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return ref_find_last(c.first(), c.last(), target).begin();
+            });
+
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::find_last[raze::options::fautovec][raze::options::fstatic](c.range(), target).begin();
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return ref_find_last(c.range(), target).begin();
+            });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t Align>(auto algo) {
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.first(), c.last(), target).begin();
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return ref_find_last(c.first(), c.last(), target).begin();
+                    });
+
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.range(), target).begin();
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return ref_find_last(c.range(), target).begin();
+                    });
+            };
+
+            check_aligned.template operator()<16>(raze::algorithm::find_last[opt::aligned<16>]);
+            check_aligned.template operator()<32>(raze::algorithm::find_last[opt::aligned<32>]);
+            check_aligned.template operator()<32>(raze::algorithm::find_last[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<32>(raze::algorithm::find_last[opt::aligned<32>][opt::fstatic]);
+            check_aligned.template operator()<64>(raze::algorithm::find_last[opt::aligned<64>]);
+            check_aligned.template operator()<64>(raze::algorithm::find_last[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64>(raze::algorithm::find_last[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1>(raze::algorithm::find_last[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1>(raze::algorithm::find_last[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::find_last(c.first(), c.last(), T(1)).begin(); },
             [](auto c) { return ref_find_last(c.first(), c.last(), T(1)).begin(); }));
@@ -208,6 +265,26 @@ namespace {
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
                 return raze::algorithm::find_last(c.range(), target).begin();
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return ref_find_last(c.range(), target).begin();
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::find_last[raze::options::fautovec](c.range(), target).begin();
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return ref_find_last(c.range(), target).begin();
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::find_last[raze::options::aligned<64>](c.range(), target).begin();
             },
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
@@ -325,3 +402,57 @@ RTTS_CASE("raze::algorithm::find_last sentinel") {
         RTTS_EXPECT(miss.begin().base() == v.end() && miss.end().base() == v.end());
     }
 };
+
+
+RTTS_CASE("raze::algorithm::find_last views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
+    {
+        auto iv = views::iota(1, 30);
+        auto ri = raze::algorithm::find_last(iv, 17);
+        auto si = std::ranges::find_last(iv, 17);
+        RTTS_EXPECT(ri.begin() == si.begin() && ri.end() == si.end());
+
+        const std::vector<int> src = { 1, 2, 3, 2, 4, 2, 5, 6, 2, 7 };
+        auto dv = src | views::drop(1) | views::take(7);
+        auto rd = raze::algorithm::find_last[opt::fstatic](dv, 2);
+        auto sd = std::ranges::find_last(dv, 2);
+        RTTS_EXPECT(rd.begin() == sd.begin() && rd.end() == sd.end());
+
+        auto rv = src | views::reverse;
+        auto rr = raze::algorithm::find_last(rv, 2);
+        auto sr = std::ranges::find_last(rv, 2);
+        RTTS_EXPECT(rr.begin() == sr.begin() && rr.end() == sr.end());
+
+        auto chain = src | views::filter([](int x) { return x < 6; }) | views::transform([](int x) { return x * 2; });
+        auto rc = raze::algorithm::find_last[opt::aligned<64>](chain, 4);
+        auto sc = std::ranges::find_last(chain, 4);
+        RTTS_EXPECT(rc.begin() == sc.begin() && rc.end() == sc.end());
+
+        auto nc = rtts::make_non_common(src);
+        auto rn = raze::algorithm::find_last(nc, 2);
+        auto sn = std::ranges::find_last(nc, 2);
+        RTTS_EXPECT(rn.begin() == sn.begin() && rn.end() == sn.end());
+    }
+
+    // Empty, 1-elem, volatile, rvalue dangling, member projection
+    {
+        std::vector<int> empty_v;
+        auto er = raze::algorithm::find_last(empty_v, 1);
+        RTTS_EXPECT(er.begin() == empty_v.end() && er.end() == empty_v.end());
+
+        volatile int vbuf[16];
+        for (int i = 0; i < 16; ++i) vbuf[i] = i % 5;
+        auto vr = raze::algorithm::find_last(vbuf, vbuf + 16, 2);
+        RTTS_EXPECT(vr.begin() == vbuf + 12 && vr.end() == vbuf + 16);
+
+        auto rval = raze::algorithm::find_last(std::vector<int>{ 1, 2, 1 }, 1);
+        static_assert(std::same_as<decltype(rval), std::ranges::dangling>);
+
+        const std::vector<rtts::test_item> items = { { 5, 1 }, { 2, 2 }, { 5, 3 }, { 7, 4 } };
+        auto ir = raze::algorithm::find_last(items, 5, &rtts::test_item::key);
+        RTTS_EXPECT(ir.begin() == items.begin() + 2 && ir.begin()->payload == 3);
+    }
+};

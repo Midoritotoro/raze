@@ -41,16 +41,10 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		using unchecked_destination_type = typename destination_type::unchecked_iterator_type;
 
 		using vt_in = std::iter_value_t<unchecked_iterator_type>;
-		using vt_out = typename decltype([] {
-			if constexpr (contiguous_destination<destination_type>)
-				return std::type_identity<typename destination_type::value_type>{};
-			else
-				return std::type_identity<void>{};
-		}())::type;
+		using vt_out = destination_value_t<destination_type>;
 
 		using vector_value_type = vt_in;
 		using align = options::alignments<Traits, 2>;
-		static_assert(sizeof(align) > 0);
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> && contiguous_destination<Destination> &&
@@ -107,8 +101,8 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 		raze_always_inline constexpr void operator()() {
 			for_novec(_in_iterator, _in_sentinel, _out_iterator, [&func = _function,
-				&proj = _proj](auto& val) raze_always_inline_lambda {
-					return std::invoke(func, std::invoke(proj, val));
+				&proj = _proj](auto&& val) raze_always_inline_lambda {
+					return std::invoke(func, std::invoke(proj, std::forward<decltype(val)>(val)));
 				});
 		}
 
@@ -140,12 +134,8 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore)
 			requires(std::same_as<vt_out, vt_in> &&
-				vx::supports_fast_conversion<
-					std::remove_cvref_t<decltype(_function(_proj(std::declval<Tag>())))>, vt_out>)
+				vx::supports_fast_conversion<std::remove_cvref_t<decltype(_function(_proj(std::declval<Tag>())))>, vt_out>)
 		{
-			if (ignore.tail_bytes() == 0)
-				return;
-
 			constexpr auto in_policy  = align::template policy_for<0, Tag>;
 			constexpr auto out_policy = align::template policy_for<1, Tag>;
 
@@ -190,12 +180,7 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 		using vt_in1 = std::iter_value_t<unchecked_iterator1_type>;
 		using vt_in2 = std::iter_value_t<unchecked_iterator2_type>;
-		using vt_out = typename decltype([] {
-			if constexpr (contiguous_destination<destination_type>)
-				return std::type_identity<typename destination_type::value_type>{};
-			else
-				return std::type_identity<void>{};
-		}())::type;
+		using vt_out = destination_value_t<destination_type>;
 
 		using common_in_t = common_type_or_void_t<vt_in1, vt_in2>;
 		using vector_value_type = vt_in1;
@@ -274,8 +259,9 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 
 		raze_always_inline constexpr void operator()() {
 			for_novec2(_in1_iterator, _in1_sentinel, _in2_iterator, _in2_sentinel, _out_iterator, [&func = _function,
-				&proj1 = _proj1, &proj2 = _proj2](auto& val1, auto& val2) raze_always_inline_lambda {
-					return std::invoke(func, std::invoke(proj1, val1), std::invoke(proj2, val2));
+				&proj1 = _proj1, &proj2 = _proj2](auto&& val1, auto&& val2) raze_always_inline_lambda {
+					return std::invoke(func, std::invoke(proj1, std::forward<decltype(val1)>(val1)),
+						std::invoke(proj2, std::forward<decltype(val2)>(val2)));
 				});
 		}
 
@@ -284,8 +270,7 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			requires(vx::supports_fast_conversion<Tag, common_in_t> &&
 				vx::supports_fast_conversion<vx::rebind_simd_lanes_t<vt_in2, Tag>, common_in_t> &&
 				vx::supports_fast_conversion<
-					std::remove_cvref_t<decltype(_function(
-						std::declval<vx::rebind_simd_lanes_t<common_in_t, Tag>>(),
+					std::remove_cvref_t<decltype(_function(std::declval<vx::rebind_simd_lanes_t<common_in_t, Tag>>(),
 						std::declval<vx::rebind_simd_lanes_t<common_in_t, Tag>>()))>,
 					vt_out>)
 		{

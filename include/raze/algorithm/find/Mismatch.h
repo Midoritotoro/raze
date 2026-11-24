@@ -58,7 +58,7 @@ struct mismatch_t : Traits, dispatchable<mismatch_t<Traits>> {
         constexpr raze_always_inline void operator()() {
             raze_disable_unrolling
             for (; _iterator1 != _sentinel1 && _iterator2 != _sentinel2; ++_iterator1, (void)++_iterator2)
-                if (!_predicate(_proj1(*_iterator1), _proj2(*_iterator2)))
+                if (!std::invoke(_predicate, std::invoke(_proj1, *_iterator1), std::invoke(_proj2, *_iterator2)))
                     break;
         }
 

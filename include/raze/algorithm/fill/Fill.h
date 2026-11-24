@@ -20,11 +20,14 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		using iterator_type = typename source_type::iterator_type;
 		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
-		using value_type = std::iter_value_t<iterator_type>;
+		using value_type = iter_value_or_void_t<iterator_type>;
 
 		static consteval auto deduce_value_type() noexcept {
-			if constexpr (std::floating_point<T>) return T{};
-			else return typename IntegerForSizeof<T>::Signed{};
+			if constexpr (std::is_void_v<value_type>) return void();
+			else if constexpr (std::floating_point<T>) return T{};
+			else if constexpr (sizeof(T) <= 8 && sizeof(T) != 0 && ((sizeof(T) & (sizeof(T) - 1)) == 0))
+				return typename IntegerForSizeof<T>::Signed{};
+			else return void();
 		}
 
 		using vector_value_type = decltype(deduce_value_type());
@@ -35,15 +38,16 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		}
 
 		static consteval bool vectorizable() noexcept {
-			return contiguous_source<Source> && std::is_trivially_copyable_v<value_type> &&
+			return !std::is_void_v<value_type> && !std::is_void_v<vector_value_type> && contiguous_source<Source> &&
+				!traits::is_iterator_volatile_v<iterator_type> && std::is_trivially_copyable_v<value_type> &&
 				(sizeof(value_type) <= 8) && (sizeof(value_type) != 0) &&
 				((sizeof(value_type) & (sizeof(value_type) - 1)) == 0);
 		}
 
-		source_type _source;
-		unchecked_iterator_type _iterator;
-		unchecked_sentinel_type _sentinel;
-		T _value;
+		raze_no_unique_address source_type _source;
+		raze_no_unique_address unchecked_iterator_type _iterator;
+		raze_no_unique_address unchecked_sentinel_type _sentinel;
+		raze_no_unique_address T _value;
 
 		constexpr explicit kernel(Source&& source, const T& value)
 			: _source(std::forward<Source>(source)), _iterator(_source.ubegin()), 
@@ -77,7 +81,7 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 			auto* ptr = std::to_address(_iterator);
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
-			const Tag broadcasted = _value;
+			const Tag broadcasted = math::bit_cast<vector_value_type>(_value);
 
 			raze_disable_unrolling do {
 				vx::store(ptr, broadcasted);
@@ -90,7 +94,7 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
 			auto* ptr = std::to_address(_iterator);
-			vx::store[ignore](ptr, Tag(_value));
+			vx::store[ignore](ptr, Tag(math::bit_cast<vector_value_type>(_value)));
 
 			advance_bytes(ptr, ignore.tail_bytes());
 			source_type::from_ptr(_iterator, ptr);
@@ -111,7 +115,14 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 
 	template <std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T = std::iter_value_t<It>>
 	constexpr raze_always_inline It operator()(It first, Sent last, const std::type_identity_t<T>& value) const
-		requires(std::output_iterator<It, T>)
+		requires(std::indirectly_readable<It> && std::output_iterator<It, const T&>)
+	{
+		return this->dispatch(get_source(std::move(first), std::move(last)), value);
+	}
+
+	template <std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T>
+	constexpr raze_always_inline It operator()(It first, Sent last, const T& value) const
+		requires(!std::indirectly_readable<It> && std::output_iterator<It, const T&>)
 	{
 		return this->dispatch(get_source(std::move(first), std::move(last)), value);
 	}
@@ -119,7 +130,15 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 	template <class R, class T = std::ranges::range_value_t<R>>
 	constexpr raze_always_inline std::ranges::borrowed_iterator_t<R> operator()(
 		R&& r, const std::type_identity_t<T>& value) const 
-			requires(std::ranges::output_range<R, T>)
+			requires(std::indirectly_readable<std::ranges::iterator_t<R>> && std::ranges::output_range<R, const T&>)
+	{
+		return this->dispatch(get_source(std::forward<R>(r)), value);
+	}
+
+	template <std::ranges::range R, class T>
+	constexpr raze_always_inline std::ranges::borrowed_iterator_t<R> operator()(
+		R&& r, const T& value) const
+			requires(!std::indirectly_readable<std::ranges::iterator_t<R>> && std::ranges::output_range<R, const T&>)
 	{
 		return this->dispatch(get_source(std::forward<R>(r)), value);
 	}

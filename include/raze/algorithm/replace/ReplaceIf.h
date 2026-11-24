@@ -71,7 +71,7 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 
 		raze_always_inline constexpr void operator()() {
 			for_novec(_iterator, _sentinel, [&pred = _predicate,
-				&proj = _proj, &newv = _new_value](auto& val) raze_always_inline_lambda {
+				&proj = _proj, &newv = _new_value](auto&& val) raze_always_inline_lambda {
 					if (std::invoke(pred, std::invoke(proj, val)))
 						val = newv;
 				});

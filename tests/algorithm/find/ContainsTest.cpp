@@ -152,6 +152,63 @@ namespace {
                 return std::ranges::contains(c.range(), target);
             });
 
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::contains[raze::options::fautovec](c.first(), c.last(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::contains(c.first(), c.last(), target);
+            });
+
+        run<n, T>(cfg,
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::contains[raze::options::fautovec][raze::options::fstatic](c.range(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::contains(c.range(), target);
+            });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t Align>(auto algo) {
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.first(), c.last(), target);
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return std::ranges::contains(c.first(), c.last(), target);
+                    });
+
+                run_aligned<Align, n, T>(acfg,
+                    [algo](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return algo(c.range(), target);
+                    },
+                    [](auto c) {
+                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                        return std::ranges::contains(c.range(), target);
+                    });
+            };
+
+            check_aligned.template operator()<16>(raze::algorithm::contains[opt::aligned<16>]);
+            check_aligned.template operator()<32>(raze::algorithm::contains[opt::aligned<32>]);
+            check_aligned.template operator()<32>(raze::algorithm::contains[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<32>(raze::algorithm::contains[opt::aligned<32>][opt::fstatic]);
+            check_aligned.template operator()<64>(raze::algorithm::contains[opt::aligned<64>]);
+            check_aligned.template operator()<64>(raze::algorithm::contains[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64>(raze::algorithm::contains[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1>(raze::algorithm::contains[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1>(raze::algorithm::contains[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::contains(c.first(), c.last(), T(1)); },
             [](auto c) { return std::ranges::contains(c.first(), c.last(), T(1)); }));
@@ -160,6 +217,26 @@ namespace {
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
                 return raze::algorithm::contains(c.range(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::contains(c.range(), target);
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::contains[raze::options::fautovec](c.range(), target);
+            },
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::contains(c.range(), target);
+            }));
+
+        static_assert(constexpr_run<T, n, 5, 3>(
+            [](auto c) {
+                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return raze::algorithm::contains[raze::options::aligned<64>](c.range(), target);
             },
             [](auto c) {
                 T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
@@ -261,3 +338,42 @@ RTTS_CASE("raze::algorithm::contains sentinel") {
         RTTS_EXPECT(raze::algorithm::contains(first, std::default_sentinel, 42));
     }
 };
+
+
+RTTS_CASE("raze::algorithm::contains views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
+    {
+        RTTS_EXPECT(raze::algorithm::contains(views::iota(1, 50), 25));
+        RTTS_EXPECT(!raze::algorithm::contains(views::iota(1, 50), 75));
+
+        const std::vector<int> src = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+        auto chain = src | views::filter([](int x) { return (x & 1) == 0; }) | views::transform([](int x) { return x * 5; }) | views::reverse;
+        RTTS_EXPECT(raze::algorithm::contains[opt::aligned<64>](chain, 40));
+        RTTS_EXPECT(!raze::algorithm::contains[opt::fautovec][opt::fstatic](chain, 15));
+
+        RTTS_EXPECT(raze::algorithm::contains(rtts::make_non_common(src), 6));
+    }
+
+    // Empty, 1-elem, single-pass early exit, volatile, member projection
+    {
+        std::vector<int> empty_v;
+        RTTS_EXPECT(!raze::algorithm::contains(empty_v, 1));
+
+        const std::vector<int> data = { 10, 20, 30, 40, 50 };
+        rtts::single_pass_input_range<int> spr(data);
+        RTTS_EXPECT(raze::algorithm::contains(spr, 30));
+        RTTS_EXPECT(spr.reads() == 2);
+
+        volatile int vbuf[16];
+        for (int i = 0; i < 16; ++i) vbuf[i] = i * 3;
+        RTTS_EXPECT(raze::algorithm::contains(vbuf, vbuf + 16, 21));
+        RTTS_EXPECT(!raze::algorithm::contains(vbuf, vbuf + 16, 22));
+
+        const std::vector<rtts::test_item> items = { { 1, 10 }, { 7, 70 }, { 3, 30 } };
+        RTTS_EXPECT(raze::algorithm::contains(items, 7, &rtts::test_item::key));
+        RTTS_EXPECT(!raze::algorithm::contains(items, 9, &rtts::test_item::key));
+    }
+};

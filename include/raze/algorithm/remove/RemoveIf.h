@@ -24,6 +24,7 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 
 		static consteval bool vectorizable() noexcept {
 			return contiguous_source<Source> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
 				vectorizable_unary_predicate<Predicate, iterator_type> &&
 				vectorizable_projection<Projection, iterator_type>;
 		}
@@ -36,9 +37,9 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 		Projection _proj;
 
 		constexpr explicit kernel(Source&& source, Predicate pred, Projection proj)
-			: _source(std::forward<Source>(source)), _predicate(pred), _proj(proj),
+			: _source(std::forward<Source>(source)),
 			  _write_iterator(_source.ubegin()), _in_iterator(_source.ubegin()),
-			  _in_sentinel(_source.uend())
+			  _in_sentinel(_source.uend()), _predicate(std::move(pred)), _proj(std::move(proj))
 		{}
 
 		raze_always_inline constexpr void operator()() {
@@ -92,7 +93,7 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 		It first, Sent last, Pred pred, Proj proj = {}) const
 			requires(std::indirect_unary_predicate<Pred, std::projected<It, Proj>>)
 	{
-		return this->dispatch(get_source(find_if(first, last, pred, proj),
+		return this->dispatch(get_source(find_if[Traits::traits()](first, last, pred, proj),
 			std::move(last)), traits::fwd_fn(pred), traits::fwd_fn(proj));
 	}
 

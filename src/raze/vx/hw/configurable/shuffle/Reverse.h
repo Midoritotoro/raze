@@ -18,7 +18,7 @@ struct configurable_reverse_t: options::conditional_callable<configurable_revers
     }
 
     template <simd_type V>
-    raze_nodiscard static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+    raze_nodiscard static raze_always_inline auto deferred_call([[maybe_unused]] auto opts, const V& x) noexcept {
         return reverse_(x, make_reversed_pattern<V>{});
     }
 };

@@ -18,7 +18,7 @@ struct replace_copy_t : Traits {
 	}
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class T1, class T2, class Proj = std::identity>
-	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::iterator_t<R>, OutIt> operator()(
+	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::borrowed_iterator_t<R>, OutIt> operator()(
 		R&& r, OutIt out, const T1& old, const T2& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> && std::indirectly_writable<OutIt, const T2&>)
 	{

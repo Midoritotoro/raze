@@ -79,7 +79,7 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
 
             raze_disable_unrolling
             for (; it != _sentinel; ++it) {
-                if (_predicate(_proj(*it), _value)) {
+                if (std::invoke(_predicate, std::invoke(_proj, *it), _value)) {
                     if (cur == 0) cand = it;
 
                     if (++cur == _count) {

@@ -156,6 +156,45 @@ namespace {
             [](auto c) { return raze::algorithm::adjacent_find(c.first(), c.last(), std::greater<>{}); },
             [](auto c) { return std::ranges::adjacent_find(c.first(), c.last(), std::greater<>{}); });
 
+        auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
+
+        run<range, T>(cfg,
+            [](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec](c.first(), c.last()); },
+            [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); });
+
+        run<range, T>(cfg,
+            [eq_branching](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec](c.range(), eq_branching); },
+            [eq_branching](auto c) { return std::ranges::adjacent_find(c.range(), eq_branching); });
+
+        run<range, T>(cfg,
+            [eq_branching](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec][raze::options::fstatic](c.range(), eq_branching); },
+            [eq_branching](auto c) { return std::ranges::adjacent_find(c.range(), eq_branching); });
+
+        {
+            namespace opt = raze::options;
+            auto acfg = config::compact();
+
+            auto check_aligned = [&]<size_t Align>(auto algo) {
+                run_aligned<Align, range, T>(acfg,
+                    [algo](auto c) { return algo(c.first(), c.last()); },
+                    [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); });
+
+                run_aligned<Align, range, T>(acfg,
+                    [algo](auto c) { return algo(c.range()); },
+                    [](auto c) { return std::ranges::adjacent_find(c.range()); });
+            };
+
+            check_aligned.template operator()<16>(raze::algorithm::adjacent_find[opt::aligned<16>]);
+            check_aligned.template operator()<32>(raze::algorithm::adjacent_find[opt::aligned<32>]);
+            check_aligned.template operator()<32>(raze::algorithm::adjacent_find[opt::aligned<32>][opt::unroll<2>]);
+            check_aligned.template operator()<32>(raze::algorithm::adjacent_find[opt::aligned<32>][opt::fstatic]);
+            check_aligned.template operator()<64>(raze::algorithm::adjacent_find[opt::aligned<64>]);
+            check_aligned.template operator()<64>(raze::algorithm::adjacent_find[opt::aligned<64>][opt::fautovec]);
+            check_aligned.template operator()<64>(raze::algorithm::adjacent_find[opt::aligned<64>][opt::fscalar]);
+            check_aligned.template operator()<1>(raze::algorithm::adjacent_find[opt::aligned<opt::unaligned>]);
+            check_aligned.template operator()<1>(raze::algorithm::adjacent_find[opt::aligned<64>][opt::aligned<opt::unaligned>]);
+        }
+
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::adjacent_find(c.first(), c.last()); },
             [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); }));
@@ -166,6 +205,14 @@ namespace {
 
         static_assert(constexpr_run<T, range, 5>(
             [](auto c) { return raze::algorithm::adjacent_find(c.range()); },
+            [](auto c) { return std::ranges::adjacent_find(c.range()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec](c.range()); },
+            [](auto c) { return std::ranges::adjacent_find(c.range()); }));
+
+        static_assert(constexpr_run<T, range, 5>(
+            [](auto c) { return raze::algorithm::adjacent_find[raze::options::aligned<64>](c.range()); },
             [](auto c) { return std::ranges::adjacent_find(c.range()); }));
 
         static_assert([]() constexpr {
@@ -287,3 +334,52 @@ RTTS_CASE("raze::algorithm::adjacent_find sentinel") {
         RTTS_EXPECT(res.base() == v.begin() + (n - 2));
     }
 };
+
+
+RTTS_CASE("raze::algorithm::adjacent_find views and edge cases") {
+    namespace opt = raze::options;
+    namespace views = std::views;
+
+    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
+    {
+        auto iv = views::iota(1, 30);
+        RTTS_EXPECT(raze::algorithm::adjacent_find(iv) == iv.end());
+
+        const std::vector<int> src = { 1, 2, 3, 4, 4, 5, 6, 7, 7, 8 };
+        auto dv = src | views::drop(1) | views::take(6);
+        RTTS_EXPECT(raze::algorithm::adjacent_find[opt::fstatic](dv) == std::ranges::adjacent_find(dv));
+
+        auto rv = src | views::reverse;
+        RTTS_EXPECT(raze::algorithm::adjacent_find(rv) == std::ranges::adjacent_find(rv));
+
+        auto tv = views::iota(0, 20) | views::transform([](int x) { return x / 3; });
+        RTTS_EXPECT(raze::algorithm::adjacent_find[opt::aligned<64>](tv) == std::ranges::adjacent_find(tv));
+
+        auto fv = src | views::filter([](int x) { return x >= 4; });
+        RTTS_EXPECT(raze::algorithm::adjacent_find[opt::fautovec][opt::fstatic](
+            fv, [](auto a, auto b) { if (a == b) return true; return false; }) == std::ranges::adjacent_find(fv));
+
+        auto nc = rtts::make_non_common(src);
+        RTTS_EXPECT(raze::algorithm::adjacent_find(nc) == std::ranges::adjacent_find(nc));
+    }
+
+    // Empty, 1-elem, 2-elem, volatile, rvalue dangling, member projection
+    {
+        std::vector<int> empty_v;
+        RTTS_EXPECT(raze::algorithm::adjacent_find(empty_v) == empty_v.end());
+
+        std::vector<int> one_v = { 5 };
+        RTTS_EXPECT(raze::algorithm::adjacent_find(one_v) == one_v.end());
+
+        volatile int vbuf[16];
+        for (int i = 0; i < 16; ++i) vbuf[i] = i;
+        vbuf[10] = 9;
+        RTTS_EXPECT(raze::algorithm::adjacent_find(vbuf, vbuf + 16) == vbuf + 9);
+
+        auto rval = raze::algorithm::adjacent_find(std::vector<int>{ 1, 2, 2, 3 });
+        static_assert(std::same_as<decltype(rval), std::ranges::dangling>);
+
+        const std::vector<rtts::test_item> items = { { 1, 10 }, { 2, 20 }, { 2, 99 }, { 3, 30 } };
+        RTTS_EXPECT(raze::algorithm::adjacent_find(items, std::equal_to<>{}, &rtts::test_item::key) == items.begin() + 1);
+    }
+};

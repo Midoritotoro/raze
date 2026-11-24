@@ -26,17 +26,21 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 		using unchecked_out_iterator_type = typename destination_type::unchecked_iterator_type;
 
 		using vt_in = std::iter_value_t<unchecked_iterator_type>;
-		using vt_out = std::iter_value_t<unchecked_out_iterator_type>;
+		using vt_out = destination_value_t<destination_type>;
 
 		using vector_value_type = vt_in;
 
 		static consteval bool vectorizable() noexcept { 
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<out_iterator_type> &&
 				vx::arithmetic_type<vt_in> && vx::arithmetic_type<vt_out>;
 		}
 
 		static consteval bool native() noexcept {
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
+				!traits::is_iterator_volatile_v<iterator_type> &&
+				!traits::is_iterator_volatile_v<out_iterator_type> &&
 				std::is_trivially_copyable_v<vt_in> && std::same_as<vt_in, vt_out>;
 		}
 
@@ -51,9 +55,9 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 			: _source(std::forward<Source>(source)),
 			  _dest(std::forward<Destination>(dest)),
 			  _in_iterator(_source.ubegin()),
-			  _out_iterator(_dest.ubegin()),
 			  _in_end(std::ranges::next(_in_iterator, _source.uend())),
-			  _in_start_ret(_in_end)
+			  _in_start_ret(_in_end),
+			  _out_iterator(_dest.ubegin())
 		{}
 
 		raze_always_inline constexpr void operator()() {
@@ -79,8 +83,8 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 			rewind_bytes(aligned_begin, aligned_size);
 
 			raze_disable_unrolling do {
-				rewind_bytes(in_end_ptr, sizeof(Tag));
-				rewind_bytes(out_ptr, Tag::size() * sizeof(vt_out));
+				in_end_ptr -= Tag::size();
+				out_ptr -= Tag::size();
 				vx::store(out_ptr, vx::convert<vt_out>(vx::load<Tag>(in_end_ptr)));
 			} while (in_end_ptr != aligned_begin);
 
@@ -92,7 +96,7 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_in, vt_out>) {
 			auto* in_ptr = std::to_address(_in_end);
 			auto* out_ptr = std::to_address(_out_iterator); 
-			rewind_bytes(out_ptr, ignore.tail_bytes()); 
+			out_ptr -= ignore.tail_elements(); 
 			vx::store[ignore](out_ptr, vx::load<Tag>[ignore](in_ptr));
 			destination_type::from_ptr(_out_iterator, out_ptr);
 		}
@@ -120,7 +124,7 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 	}
 
 	template <std::ranges::bidirectional_range R, std::weakly_incrementable OutIt>
-	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, OutIt>
 		operator()(R&& r, OutIt result) const requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt>)
 	{
 		return this->dispatch(get_source(std::forward<R>(r)), get_destination(std::move(result)));

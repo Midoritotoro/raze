@@ -6,16 +6,31 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+template <class T>
+struct range_storage {
+    mutable T value;
+};
+
+template <class T>
+struct range_storage<const T> {
+    const T value;
+};
+
+template <class T>
+struct range_storage<T&> {
+    T& value;
+};
+
 template <class Range>
 struct range_data_source {
-    using iterator_type = decltype(std::ranges::begin(std::declval<Range>()));
-    using sentinel_type = decltype(std::ranges::end(std::declval<Range>()));
+    using iterator_type = std::ranges::iterator_t<Range>;
+    using sentinel_type = std::ranges::sentinel_t<Range>;
 
-    using unchecked_iterator_type = decltype(traits::ubegin(std::declval<Range>()));
-    using unchecked_sentinel_type = decltype(traits::uend(std::declval<Range>()));
+    using unchecked_iterator_type = decltype(traits::ubegin(std::declval<Range&>()));
+    using unchecked_sentinel_type = decltype(traits::uend(std::declval<Range&>()));
 
     raze_always_inline constexpr explicit range_data_source(Range&& r) :
-        _range(std::forward<Range>(r))
+        _storage{ std::forward<Range>(r) }
     {}
 
     raze_nodiscard raze_always_inline constexpr bool empty() const {
@@ -23,7 +38,8 @@ struct range_data_source {
     }
 
     raze_nodiscard raze_always_inline constexpr auto size() const {
-        return bytes_distance(_range);
+        if constexpr (std::ranges::input_range<Range>) return bytes_distance(_storage.value);
+        else return sizetype(0);
     }
 
     raze_nodiscard static raze_always_inline constexpr auto static_size()
@@ -33,19 +49,19 @@ struct range_data_source {
     }
 
     raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
-        return std::ranges::begin(_range);
+        return std::ranges::begin(_storage.value);
     }
 
     raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
-        return std::ranges::end(_range);
+        return std::ranges::end(_storage.value);
     }
 
     raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
-        return traits::ubegin(_range);
+        return traits::ubegin(_storage.value);
     }
 
     raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
-        return traits::uend(_range);
+        return traits::uend(_storage.value);
     }
 
     raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
@@ -76,8 +92,8 @@ struct range_data_source {
     raze_nodiscard raze_always_inline constexpr iterator_type
         wrap(unchecked_iterator_type uit) const
     {
-        iterator_type it = std::ranges::begin(_range);
-        traits::seek_iter(it, uit);
+        iterator_type it = std::ranges::begin(_storage.value);
+        traits::seek_iter(it, std::move(uit));
         return it;
     }
 
@@ -113,12 +129,15 @@ struct range_data_source {
 
     static raze_always_inline auto to_raw_range(
         unchecked_iterator_type it, unchecked_sentinel_type sent)
-            requires(std::contiguous_iterator<unchecked_iterator_type>)
+            requires(std::contiguous_iterator<unchecked_iterator_type> &&
+                (std::contiguous_iterator<unchecked_sentinel_type> ||
+                 std::sized_sentinel_for<unchecked_sentinel_type, unchecked_iterator_type>))
     {
-        return std::pair{ std::to_address(it), std::to_address(sent) };
+        if constexpr (std::contiguous_iterator<unchecked_sentinel_type>) return std::pair{ std::to_address(it), std::to_address(sent) };
+        else return std::pair{ std::to_address(it), std::to_address(it) + (sent - it) };
     }
 
-    Range _range;
+    range_storage<Range> _storage;
 };
 
 template <class It, class Sent>
@@ -138,7 +157,8 @@ struct iter_data_source {
     }
 
     raze_nodiscard raze_always_inline constexpr auto size() const {
-        return bytes_distance(ubegin(), uend());
+        if constexpr (std::input_iterator<unchecked_iterator_type>) return bytes_distance(ubegin(), uend());
+        else return sizetype(0);
     }
 
     raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
@@ -182,7 +202,7 @@ struct iter_data_source {
         wrap(unchecked_iterator_type uit) const
     {
         iterator_type it = _it;
-        traits::seek_iter(it, uit);
+        traits::seek_iter(it, std::move(uit));
         return it;
     }
 
@@ -218,9 +238,12 @@ struct iter_data_source {
 
     static raze_always_inline auto to_raw_range(
         unchecked_iterator_type it, unchecked_sentinel_type sent)
-            requires(std::contiguous_iterator<unchecked_iterator_type>)
+            requires(std::contiguous_iterator<unchecked_iterator_type> &&
+                (std::contiguous_iterator<unchecked_sentinel_type> ||
+                 std::sized_sentinel_for<unchecked_sentinel_type, unchecked_iterator_type>))
     {
-        return std::pair{ std::to_address(it), std::to_address(sent) };
+        if constexpr (std::contiguous_iterator<unchecked_sentinel_type>) return std::pair{ std::to_address(it), std::to_address(sent) };
+        else return std::pair{ std::to_address(it), std::to_address(it) + (sent - it) };
     }
 
     iterator_type _it;
@@ -246,8 +269,11 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
     }
 
     raze_nodiscard raze_always_inline constexpr auto size() const {
-        return static_cast<sizetype>(_it.count())
-            * sizeof(std::iter_value_t<unchecked_base_iterator_type>);
+        if constexpr (std::indirectly_readable<unchecked_base_iterator_type>)
+            return static_cast<sizetype>(_it.count())
+                * sizeof(std::iter_value_t<unchecked_base_iterator_type>);
+        else
+            return static_cast<sizetype>(_it.count());
     }
 
     raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
@@ -455,5 +481,18 @@ concept constexpr_sized_source = source<Source> && requires(Source src) {
 template <class Source>
 concept modifiable_source = source<Source> &&
     std::permutable<typename Source::unchecked_iterator_type>;
+
+template <class It>
+struct iter_value_or_void {
+    using type = void;
+};
+
+template <std::indirectly_readable It>
+struct iter_value_or_void<It> {
+    using type = std::iter_value_t<It>;
+};
+
+template <class It>
+using iter_value_or_void_t = typename iter_value_or_void<It>::type;
 
 __RAZE_ALGORITHM_NAMESPACE_END

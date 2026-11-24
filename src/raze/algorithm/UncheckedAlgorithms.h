@@ -129,13 +129,13 @@ public:
                 constexpr bool has_supported_isa = (static_isa != arch::ISA::None);
                 constexpr bool is_fstatic = (is_gcc_or_clang && has_supported_isa && (
                     !options::get_strategy<Traits>().is_autovec() || !autovectorizable_kernel<Kernel>))
-                    || (has_best || (options::is_fstatic<Traits>() && options::get_strategy<Traits>().is_manual()));
+                    || (has_best || options::is_fstatic<Traits>());
 
                 constexpr auto dispatcher = target_policy.template make_dispatcher<Value, Traits, Kernel, is_fstatic, static_isa>();
                 return dispatcher(work.size(), work);
             }
         }
-        else if constexpr (can_auto_vectorize) return invoke_scalar_autovec(work);
+        else if constexpr (can_auto_vectorize) return invoke_scalar_autovec<options::is_fstatic<Traits>()>(work);
 
         return options::unroller<Traits, vx::scalar_tag>(work);
     }

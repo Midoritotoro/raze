@@ -55,7 +55,7 @@ struct adjacent_find_t : Traits, dispatchable<adjacent_find_t<Traits>> {
 
             raze_disable_unrolling
             for (; ++next != _sentinel; _iterator = next) {
-                if (_predicate(_proj(*_iterator), _proj(*next)))
+                if (std::invoke(_predicate, std::invoke(_proj, *_iterator), std::invoke(_proj, *next)))
                     return;
             }
 
