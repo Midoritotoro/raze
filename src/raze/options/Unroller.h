@@ -136,7 +136,7 @@ struct unroller_t {
 		}
 
 		template <class F>
-		constexpr raze_always_inline auto operator()(F f) const noexcept
+		constexpr raze_always_inline auto operator()(F& f) const noexcept
 			requires(std::same_as<Tag, vx::scalar_tag>)
 		{
 			f();

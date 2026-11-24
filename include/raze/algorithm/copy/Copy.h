@@ -58,8 +58,9 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_in_iterator, _in_sentinel, _out_iterator,
-				[] (auto&& value) -> decltype(auto) { return std::forward<decltype(value)>(value); });
+			raze_novec_loop((; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator), {
+				*_out_iterator = *_in_iterator;
+			})
 		}
 
 		raze_always_inline void operator()(native_tag) requires(native()) {

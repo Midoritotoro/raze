@@ -68,6 +68,7 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
                 }
 
                 _count += counter.result();
+                counter.reset();
             }
 
             source_type::from_ptr(_iterator, ptr);

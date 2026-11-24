@@ -38,7 +38,7 @@
 
 #if !defined(raze_no_unique_address)
 #  if defined(raze_cpp_msvc)
-#    define raze_no_unique_address [[msvc::no_unique_addresss]]
+#    define raze_no_unique_address [[msvc::no_unique_address]]
 #  else
 #    define raze_no_unique_address [[no_unique_address]]
 #  endif // defined(raze_cpp_msvc)

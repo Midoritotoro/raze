@@ -79,12 +79,12 @@ raze_always_inline void mask_storeu_(void* mem, M mask, V x) noexcept {
 				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed mask_array[size];
 				store_(mask_array, mask, aligned_policy{});
 
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					if (mask_array[i] != 0)
 						static_cast<T*>(mem)[i] = array[i];
 			}
 			else {
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					if (math::bit_test(mask, i))
 						static_cast<T*>(mem)[i] = array[i];
 			}
@@ -130,12 +130,12 @@ raze_always_inline void mask_storea_(void* mem, M mask, V x) noexcept {
 				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed mask_array[size];
 				store_(mask_array, mask, aligned_policy{});
 
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					if (mask_array[i] != 0)
 						static_cast<T*>(mem)[i] = array[i];
 			}
 			else {
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					if (math::bit_test(mask, i))
 						static_cast<T*>(mem)[i] = array[i];
 			}

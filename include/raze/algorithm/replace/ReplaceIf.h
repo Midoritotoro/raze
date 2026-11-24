@@ -70,11 +70,10 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_iterator, _sentinel, [&pred = _predicate,
-				&proj = _proj, &newv = _new_value](auto&& val) raze_always_inline_lambda {
-					if (std::invoke(pred, std::invoke(proj, val)))
-						val = newv;
-				});
+			raze_novec_loop((; _iterator != _sentinel; ++_iterator), {
+				if (std::invoke(_predicate, std::invoke(_proj, *_iterator)))
+					*_iterator = _new_value;
+			})
 		}
 
 		template <vectorizable_tag Tag>
@@ -96,9 +95,6 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
-			if (ignore.tail_bytes() == 0)
-				return;
-
 			constexpr auto alignment = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 			const auto mask = _predicate(_proj(vx::load<Tag>[ignore][alignment](ptr))) & ignore();

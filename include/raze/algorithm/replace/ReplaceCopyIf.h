@@ -141,9 +141,6 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore)
 			requires(std::same_as<OutT, vector_value_type>)
 		{
-			if (ignore.tail_bytes() == 0)
-				return;
-
 			constexpr auto in_policy  = align::template policy_for<0, Tag>;
 			constexpr auto out_policy = align::template policy_for<1, Tag>;
 

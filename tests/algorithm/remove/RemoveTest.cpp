@@ -211,10 +211,12 @@ RTTS_CASE("raze::algorithm::remove views and edge cases") {
 
         std::vector<int> vf1 = { 1, 2, 3, 4, 2, 6, 7, 2, 8 }, vf2 = vf1;
         auto is_even = [](int x) { return (x % 2) == 0; };
-        auto rf1 = raze::algorithm::remove[opt::aligned<64>](vf1 | views::filter(is_even), 2);
-        auto sf1 = std::ranges::remove(vf2 | views::filter(is_even), 2);
-        RTTS_EXPECT(std::ranges::distance((vf1 | views::filter(is_even)).begin(), rf1.begin()) ==
-                    std::ranges::distance((vf2 | views::filter(is_even)).begin(), sf1.begin()));
+        auto fv1 = vf1 | views::filter(is_even);
+        auto fv2 = vf2 | views::filter(is_even);
+        auto rf1 = raze::algorithm::remove[opt::aligned<64>](fv1, 2);
+        auto sf1 = std::ranges::remove(fv2, 2);
+        RTTS_EXPECT(std::ranges::distance(fv1.begin(), rf1.begin()) ==
+                    std::ranges::distance(fv2.begin(), sf1.begin()));
 
         std::vector<int> vn1 = { 2, 1, 2, 3, 2 }, vn2 = vn1;
         auto rn1 = raze::algorithm::remove(rtts::make_non_common(vn1), 2);

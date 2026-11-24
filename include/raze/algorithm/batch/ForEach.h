@@ -63,8 +63,9 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec(_iterator, _sentinel, [&f = _f, &proj = _proj](auto&& x)
-				raze_always_inline_lambda { std::invoke(f, std::invoke(proj, std::forward<decltype(x)>(x))); });
+			raze_novec_loop((; _iterator != _sentinel; ++_iterator), {
+				std::invoke(_f, std::invoke(_proj, *_iterator));
+			})
 		}
 
 		template <vectorizable_tag Tag>

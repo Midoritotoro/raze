@@ -7,18 +7,24 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct remove_copy_t : Traits {
-	template <std::input_iterator It, std::sentinel_for<It> Sent, class OutIt, 
+	template <std::input_iterator It, std::sentinel_for<It> Sent, std::weakly_incrementable OutIt,
 		class T = std::iter_value_t<It>, class Proj = std::identity>
-	constexpr raze_always_inline decltype(auto) operator()(It first, Sent last, 
-		OutIt out, const std::type_identity_t<T>& v, Proj proj = {}) const
+	constexpr raze_always_inline decltype(auto) operator()(It first, Sent last,
+		OutIt out, const T& v, Proj proj = {}) const
+			requires(std::indirectly_copyable<It, OutIt> &&
+				std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Proj>, const T*>)
 	{
-		return remove_copy_if[Traits::traits()](std::move(first), std::move(last), 
+		return remove_copy_if[Traits::traits()](std::move(first), std::move(last),
 			std::move(out), algorithm::equal_to(v), traits::fwd_fn(proj));
 	}
 
-	template <std::ranges::input_range R, class OutIt, class T = std::ranges::range_value_t<R>, class Proj = std::identity>
+	template <std::ranges::input_range R, std::weakly_incrementable OutIt,
+		class T = std::ranges::range_value_t<R>, class Proj = std::identity>
 	constexpr raze_always_inline decltype(auto) operator()(R&& r, OutIt out,
-		const std::type_identity_t<T>& v, Proj proj = {}) const
+		const T& v, Proj proj = {}) const
+			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> &&
+				std::indirect_binary_predicate<std::ranges::equal_to,
+					std::projected<std::ranges::iterator_t<R>, Proj>, const T*>)
 	{
 		return remove_copy_if[Traits::traits()](std::forward<R>(r), std::move(out),
 			algorithm::equal_to(v), traits::fwd_fn(proj));

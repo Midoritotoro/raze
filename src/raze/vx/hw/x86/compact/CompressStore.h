@@ -39,7 +39,7 @@ raze_always_inline void* compress_store_fallback_(void* ptr, V x, CompressMask c
 	T* result_pointer = reinterpret_cast<T*>(ptr);
 	auto start = result_pointer;
 
-	for (auto index = 0; index < size; ++index)
+	for (sizetype index = 0; index < size; ++index)
 		if (!((compress_mask >> index) & 1))
 			*result_pointer++ = source[index];
 

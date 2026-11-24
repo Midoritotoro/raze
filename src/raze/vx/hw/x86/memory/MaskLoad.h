@@ -50,11 +50,11 @@ raze_always_inline V mask_loadu_(const void* mem, M mask, V src) noexcept {
 				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed mask_array[size];
 				store_(mask_array, mask, aligned_policy{});
 
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					array[i] = mask_array[i] == 0 ? array[i] : static_cast<const T*>(mem)[i];
 			}
 			else {
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					array[i] = math::bit_test(mask, i) ? static_cast<const T*>(mem)[i] : array[i];
 			}
 
@@ -101,11 +101,11 @@ raze_nodiscard static raze_always_inline V mask_loada_(const void* mem, M mask, 
 				alignas(sizeof(V)) typename IntegerForSizeof<T>::Signed mask_array[size];
 				store_(mask_array, mask, aligned_policy{});
 
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					array[i] = mask_array[i] == 0 ? array[i] : static_cast<const T*>(mem)[i];
 			}
 			else {
-				for (auto i = 0; i < size; ++i)
+				for (sizetype i = 0; i < size; ++i)
 					array[i] = math::bit_test(mask, i) ? static_cast<const T*>(mem)[i] : array[i];
 			}
 

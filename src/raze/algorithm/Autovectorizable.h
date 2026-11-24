@@ -49,6 +49,21 @@ raze_always_inline constexpr void for_noalias2(It1& first1, Sent1 last1,
     first2 += sz;
 }
 
+#if defined(raze_cpp_msvc_only)
+#define raze_novec_loop(header, body) \
+    if !consteval {                   \
+        raze_do_pragma(loop(no_vector)) \
+        for header body               \
+        return;                       \
+    }                                 \
+    raze_disable_unrolling            \
+    for header body
+#else
+#define raze_novec_loop(header, body) \
+    raze_disable_unrolling            \
+    for header body
+#endif
+
 template <std::input_iterator It, std::sentinel_for<It> Sent,
     std::weakly_incrementable Out, class Func>
 raze_always_inline constexpr void for_novec(It& first, Sent last, Out& out, Func func)

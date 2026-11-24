@@ -54,7 +54,9 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()() {
-			for_novec2(_in1_iterator, _in1_sentinel, _in2_iterator, _in2_sentinel, std::ranges::iter_swap);
+			raze_novec_loop((; _in1_iterator != _in1_sentinel && _in2_iterator != _in2_sentinel; ++_in1_iterator, ++_in2_iterator), {
+				std::ranges::iter_swap(_in1_iterator, _in2_iterator);
+			})
 		}
 
 		template <vectorizable_tag Tag>

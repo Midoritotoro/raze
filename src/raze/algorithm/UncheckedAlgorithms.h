@@ -114,14 +114,20 @@ public:
 #endif
 
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
-        constexpr auto can_auto_vectorize = !options::is_fscalar<Traits>() && autovectorizable_kernel<Kernel>
-            && options::get_strategy<Traits>().is_autovec();
+        constexpr bool can_auto_vectorize = []() consteval {
+            if constexpr (options::is_fscalar<Traits>()) return false;
+            else if constexpr (!options::get_strategy<Traits>().is_autovec() && !options::is_fautovec<Traits>()) return false;
+            else return autovectorizable_kernel<Kernel>;
+        }();
 #else
-        constexpr auto can_auto_vectorize = false;
+        constexpr bool can_auto_vectorize = false;
 #endif
 
-        constexpr bool can_manual_vectorize = !options::is_fscalar<Traits>() && !options::is_fautovec<Traits>() &&
-            Kernel::vectorizable() && (has_best || !can_auto_vectorize);
+        constexpr bool can_manual_vectorize = []() consteval {
+            if constexpr (options::is_fscalar<Traits>() || options::is_fautovec<Traits>()) return false;
+            else if constexpr (!has_best && can_auto_vectorize) return false;
+            else return Kernel::vectorizable();
+        }();
 
         if constexpr (can_manual_vectorize) {
             if !consteval {

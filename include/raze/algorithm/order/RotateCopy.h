@@ -75,11 +75,15 @@ struct rotate_copy_t : Traits, dispatchable<rotate_copy_t<Traits>> {
             return { _source.wrap(_first), _dest.wrap(_out) };
         }
 
-        raze_always_inline constexpr void operator()() {
-            _last = _middle;
-            for_novec(_last, _sent, _out, [](auto&& value) -> decltype(auto) { return std::forward<decltype(value)>(value); });
-            for_novec(_first, _middle, _out, [](auto&& value) -> decltype(auto) { return std::forward<decltype(value)>(value); });
-        }
+		raze_always_inline constexpr void operator()() {
+			_last = _middle;
+			raze_disable_unrolling
+			for (; _last != _sent; ++_last, ++_out)
+				*_out = *_last;
+			raze_disable_unrolling
+			for (; _first != _middle; ++_first, ++_out)
+				*_out = *_first;
+		}
 
         raze_always_inline void operator()(native_tag) requires(native()) {
             const auto [first_ptr, last_ptr] = source_type::to_raw_range(_first, _sent);

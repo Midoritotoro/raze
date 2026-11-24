@@ -358,7 +358,9 @@ struct iter_data_source<T*, T*> {
     raze_nodiscard raze_always_inline constexpr T* wrap(T* uit) const noexcept { return uit; }
 
     static raze_always_inline constexpr void from_ptr(T*& uit, T* ptr) noexcept { uit = ptr; }
-    static raze_always_inline constexpr void from_ptr(T*& uit, const T* ptr) noexcept {
+    static raze_always_inline constexpr void from_ptr(T*& uit, const T* ptr) noexcept
+        requires(!std::is_const_v<T>)
+    {
         uit = const_cast<T*>(ptr);
     }
 
