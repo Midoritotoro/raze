@@ -73,13 +73,20 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		{
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto dest = std::to_address(_out_iterator);
-			const auto count = last - first;
+			const auto len = last - first;
 
 			first = align::template assume<0>(first);
 			dest  = align::template assume<1>(dest);
 
-			for_noalias(first, last, [&pred = _predicate, &proj = _proj, &newv = _new_value,
-				dst = dest, in = first](auto i) raze_always_inline_lambda {
+			std::conditional_t<traits::lightweight_callable<Predicate>, Predicate, Predicate&> pred = _predicate;
+			std::conditional_t<traits::lightweight_callable<Projection>, Projection, Projection&> proj = _proj;
+			std::conditional_t<std::is_trivially_copyable_v<T> && sizeof(T) <= sizeof(void*) * 2, T, const T&> newv = _new_value;
+
+			auto* raze_restrict in_p = first;
+			auto* raze_restrict dst_p = dest;
+
+			for_noalias(first, last, [&pred, &proj, &newv,
+				dst = dst_p, in = in_p](auto i) raze_always_inline_lambda {
 					if (std::invoke(pred, std::invoke(proj, in[i])))
 						dst[i] = newv;
 					else
@@ -87,29 +94,16 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 				});
 
 			source_type::from_ptr(_in_iterator, first);
-			destination_type::from_ptr(_out_iterator, dest + count);
+			destination_type::from_ptr(_out_iterator, dest + len);
 		}
 
 		raze_always_inline constexpr void operator()() {
-#if defined(raze_cpp_msvc_only)
-			if !consteval {
-				raze_do_pragma(loop(no_vector))
-				for (; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator) {
-					if (std::invoke(_predicate, std::invoke(_proj, *_in_iterator)))
-						*_out_iterator = _new_value;
-					else
-						*_out_iterator = *_in_iterator;
-				}
-				return;
-			}
-#endif
-			raze_disable_unrolling
-			for (; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator) {
+			raze_novec_loop((; _in_iterator != _in_sentinel; ++_in_iterator, ++_out_iterator), {
 				if (std::invoke(_predicate, std::invoke(_proj, *_in_iterator)))
 					*_out_iterator = _new_value;
 				else
 					*_out_iterator = *_in_iterator;
-			}
+			})
 		}
 
 		template <vectorizable_tag Tag>

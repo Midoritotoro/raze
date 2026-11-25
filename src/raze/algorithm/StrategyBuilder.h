@@ -23,10 +23,10 @@ struct strategy {
     static constexpr strategy_mode effective() noexcept {
 #if defined(raze_cpp_icpx)
         return ICPX;
-#elif defined(raze_cpp_gnu)
-        return GCC;
 #elif defined(raze_cpp_clang)
         return Clang;
+#elif defined(raze_cpp_gnu)
+        return GCC;
 #elif defined(raze_cpp_msvc)
         return MSVC;
 #else

@@ -31,8 +31,8 @@ struct configurable_store_t : raze::options::conditional_callable<configurable_s
 		auto mem = std::to_address(it);
 
         if constexpr (options::complete_mask<Mask>) {
-            auto condition = opts[options::condition_key];
-            const auto mask = condition.mask();
+            const auto& condition = opts[options::condition_key];
+            const auto& mask = condition.mask();
 
             if constexpr (Mask::has_alternative)
                 return x.__for_each_chunk([] <class Chunk, class MaskChunk, class SourceChunk> (

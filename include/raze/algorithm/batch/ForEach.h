@@ -7,6 +7,7 @@
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <raze/vx/Algorithm.h>
+#include <cstring>
 #include <src/raze/utility/Assert.h>
 #include <memory>
 
@@ -56,9 +57,26 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 			first = align::template assume<0>(first);
 
-			for_noalias(first, last, [&func = _f, &proj = _proj, in = first](auto i)
+			constexpr bool copy_f = std::is_empty_v<F> ||
+				(traits::lightweight_callable<F> && (std::is_copy_assignable_v<F> || std::is_trivially_copyable_v<F>));
+
+			std::conditional_t<copy_f, F, F&> func = _f;
+			std::conditional_t<traits::lightweight_callable<Proj>, Proj, Proj&> proj = _proj;
+
+			for_noalias(first, last, [&func, &proj, in = first](auto i)
 				raze_always_inline_lambda { std::invoke(func, std::invoke(proj, in[i])); });
 
+			if constexpr (copy_f && !std::is_empty_v<F>) {
+				if constexpr (std::is_copy_assignable_v<F>) {
+					_f = func;
+				}
+				else if constexpr (std::is_trivially_copyable_v<F>) {
+					if !consteval {
+						std::memcpy(static_cast<void*>(std::addressof(_f)),
+							static_cast<const void*>(std::addressof(func)), sizeof(F));
+					}
+				}
+			}
 			source_type::from_ptr(_iterator, first);
 		}
 

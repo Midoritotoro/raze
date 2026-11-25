@@ -589,18 +589,18 @@ RTTS_CASE("raze::algorithm::transform.mixed_binary") {
     }
 
     {
-        auto op = [](auto a, auto b) { return (a + 42 * b); };
+        auto op = [](auto a, auto b) { return (a + b) * 4; };
         auto acfg = rtts::algorithm::config::compact();
 
-        rtts::algorithm::run<rtts::algorithm::range, float, char>(cfg,
+        rtts::algorithm::run<rtts::algorithm::range, char, float>(cfg,
             [op](auto c) { return raze::algorithm::transform(c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); },
             [op](auto c) { return std::ranges::transform(c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); });
 
-        rtts::algorithm::run<rtts::algorithm::range, float, char>(cfg,
+        rtts::algorithm::run<rtts::algorithm::range, char, float>(cfg,
             [op](auto c) { return raze::algorithm::transform[raze::options::fautovec](c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); },
             [op](auto c) { return std::ranges::transform(c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); });
 
-        rtts::algorithm::run_aligned_mixed<64, 64, 64, rtts::algorithm::range, float, char>(acfg,
+        rtts::algorithm::run_aligned_mixed<64, 64, 64, rtts::algorithm::range, char, float>(acfg,
             [op](auto c) { return raze::algorithm::transform[raze::options::aligned<64>](c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); },
             [op](auto c) { return std::ranges::transform(c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); });
 
@@ -679,9 +679,9 @@ RTTS_CASE("raze::algorithm::transform.strict_types_mixed") {
     }
 
     {
-        auto op = [](auto a, auto b) { return a + 42 * b; };
+        auto op = [](auto a, auto b) { return (a + b) * 4; };
 
-        rtts::algorithm::run<rtts::algorithm::range, float, char>(cfg,
+        rtts::algorithm::run<rtts::algorithm::range, char, float>(cfg,
             [op](auto c) { return raze::algorithm::transform[raze::options::strict_types](
                 c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); },
             [op](auto c) { return std::ranges::transform(
@@ -740,7 +740,7 @@ RTTS_CASE("raze::algorithm::transform.strict_types_type_inspecting") {
         [op](auto c) { return std::ranges::transform(
             c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); });
 
-    rtts::algorithm::run<rtts::algorithm::range, float, char>(cfg,
+    rtts::algorithm::run<rtts::algorithm::range, char, float>(cfg,
         [op](auto c) { return raze::algorithm::transform[raze::options::strict_types](
             c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); },
         [op](auto c) { return std::ranges::transform(
@@ -902,4 +902,4 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         raze::algorithm::transform(it1, it2, std::back_inserter(proj_out), std::plus<>{}, &rtts::test_item::key, &rtts::test_item::key);
         RTTS_EXPECT((proj_out == std::vector<int>{ 11, 22, 33 }));
     }
-};
+};

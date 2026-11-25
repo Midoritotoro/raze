@@ -1,7 +1,6 @@
 #pragma once
 
 #include <raze/vx/Algorithm.h>
-#include <raze/math/BitCast.h>
 #include <raze/math/Math.h>
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
@@ -24,6 +23,7 @@ struct min_element_t : Traits, dispatchable<min_element_t<Traits>> {
 
         using value_type = std::iter_value_t<unchecked_iterator_type>;
         using vector_value_type = value_type;
+        using align = options::alignments<Traits, 1>;
 
         static consteval bool vectorizable() noexcept {
             return contiguous_source<source_type>
@@ -32,9 +32,9 @@ struct min_element_t : Traits, dispatchable<min_element_t<Traits>> {
                 && vectorizable_projection<Projection, unchecked_iterator_type>;
         }
 
-        source_type _source;
+        raze_no_unique_address source_type _source;
         unchecked_iterator_type _iterator;
-        unchecked_sentinel_type _sentinel;
+        raze_no_unique_address unchecked_sentinel_type _sentinel;
         raze_no_unique_address Comp _comp;
         raze_no_unique_address Projection _proj;
         unchecked_iterator_type _best;
@@ -49,6 +49,10 @@ struct min_element_t : Traits, dispatchable<min_element_t<Traits>> {
               _best(_iterator)
         {}
 
+        constexpr void expects() const {
+            align::verify(_source);
+        }
+
         raze_nodiscard constexpr raze_always_inline bool exit() const {
             return _iterator == _sentinel;
         }
@@ -58,31 +62,35 @@ struct min_element_t : Traits, dispatchable<min_element_t<Traits>> {
         }
 
         raze_always_inline constexpr void operator()() {
-            if (_iterator == _sentinel)
+            auto it = _iterator;
+            if (it == _sentinel)
                 return;
 
+            auto best = _best;
             if (!_started) {
-                _best = _iterator;
-                ++_iterator;
+                best = it;
+                ++it;
                 _started = true;
             }
 
-            raze_disable_unrolling
-            for (; _iterator != _sentinel; ++_iterator) {
-                if (std::invoke(_comp, std::invoke(_proj, *_iterator), std::invoke(_proj, *_best)))
-                    _best = _iterator;
-            }
+            raze_novec_loop((; it != _sentinel; ++it), {
+                if (std::invoke(_comp, std::invoke(_proj, *it), std::invoke(_proj, *best)))
+                    best = it;
+            })
+
+            _best = std::move(best);
+            _iterator = std::move(it);
         }
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, sizetype aligned_size) {
             using unsigned_t = typename IntegerForSizeof<value_type>::Unsigned;
             using index_simd_t = vx::simd<unsigned_t, vx::abi_t<Tag>>;
-            using index_mask_t = typename index_simd_t::mask_type;
-            using mask_t = typename Tag::mask_type;
 
+            constexpr auto alignment = align::template policy_for<0, Tag>;
             auto* ptr = std::to_address(_iterator);
             auto* best_ptr = std::to_address(_best);
+            bool started = _started;
 
             constexpr bool needs_chunking = sizeof(unsigned_t) < sizeof(sizetype);
             constexpr sizetype max_portion_bytes = needs_chunking
@@ -98,7 +106,7 @@ struct min_element_t : Traits, dispatchable<min_element_t<Traits>> {
                 auto* const portion_begin = ptr;
                 const auto* const stop_at = bytes_pointer_offset(ptr, portion_bytes);
 
-                auto best_vals = _proj(vx::load<Tag>(ptr));
+                auto best_vals = vx::load<Tag>[alignment](ptr);
                 auto best_idxs = vx::zero<index_simd_t>();
                 auto curr_idxs = vx::zero<index_simd_t>();
 
@@ -107,54 +115,59 @@ struct min_element_t : Traits, dispatchable<min_element_t<Traits>> {
                 raze_disable_unrolling
                 while (ptr != stop_at) {
                     ++curr_idxs;
-                    const auto curr_vals = _proj(vx::load<Tag>(ptr));
+                    const auto curr_vals = vx::load<Tag>[alignment](ptr);
                     const auto better = _comp(curr_vals, best_vals);
 
-                    best_idxs = vx::select[math::bit_cast<index_mask_t>(better), best_idxs](curr_idxs);
-                    best_vals = vx::select[better, best_vals](curr_vals);
+                    best_idxs = vx::select(vx::convert<unsigned_t>(better), curr_idxs, best_idxs);
+
+                    if constexpr (is_less_comparator<Comp, value_type> && has_native_vertical_minmax<Tag>())
+                        best_vals = vx::vertical_min(curr_vals, best_vals);
+                    else if constexpr (is_greater_comparator<Comp, value_type> && has_native_vertical_minmax<Tag>())
+                        best_vals = vx::vertical_max(curr_vals, best_vals);
+                    else
+                        best_vals = vx::select(better, curr_vals, best_vals);
 
                     advance_bytes(ptr, sizeof(Tag));
                 }
 
                 value_type portion_min;
-                if constexpr (is_less_comparator<Comp>) {
+                if constexpr (is_less_comparator<Comp, value_type>) {
                     portion_min = vx::horizontal_min(best_vals);
                 }
-                else if constexpr (is_greater_comparator<Comp>) {
+                else if constexpr (is_greater_comparator<Comp, value_type>) {
                     portion_min = vx::horizontal_max(best_vals);
                 }
                 else {
                     portion_min = vx::fold(best_vals, [&](const auto& x, const auto& y) raze_always_inline_lambda {
-                        return vx::select[_comp(y, x), x](y);
+                        return vx::select(_comp(y, x), y, x);
                     });
                 }
 
-                if (!_started || std::invoke(_comp, std::invoke(_proj, portion_min), std::invoke(_proj, *best_ptr))) {
-                    mask_t eq_mask;
-                    if constexpr (is_less_comparator<Comp> || is_greater_comparator<Comp>)
+                if (!started || std::invoke(_comp, portion_min, *best_ptr)) {
+                    typename Tag::mask_type eq_mask;
+                    if constexpr (is_less_comparator<Comp, value_type> || is_greater_comparator<Comp, value_type>)
                         eq_mask = (best_vals == portion_min);
                     else
                         eq_mask = (!_comp(best_vals, portion_min)) & (!_comp(portion_min, best_vals));
 
                     if (vx::any_of(eq_mask)) {
-                        const auto idx_eq_mask = math::bit_cast<index_mask_t>(eq_mask);
-                        const auto masked_idxs = vx::select[idx_eq_mask, vx::all_bits<index_simd_t>()](best_idxs);
+                        const auto idx_eq_mask = vx::convert<unsigned_t>(eq_mask);
+                        const auto masked_idxs = vx::select(idx_eq_mask, best_idxs, vx::all_bits<index_simd_t>());
                         const auto min_idx = vx::horizontal_min(masked_idxs);
-                        const auto match_mask = math::bit_cast<mask_t>(masked_idxs == min_idx) & eq_mask;
-
-                        const auto h_pos = vx::find_first_set[vx::not_null](match_mask);
+                        const auto h_pos = vx::find_first_set[vx::not_null](masked_idxs == min_idx);
                         const auto v_pos = static_cast<sizetype>(best_idxs[h_pos]);
 
                         auto* const candidate = bytes_pointer_offset(portion_begin,
                             v_pos * sizeof(Tag) + static_cast<sizetype>(h_pos) * sizeof(value_type));
 
-                        if (!_started || std::invoke(_comp, std::invoke(_proj, *candidate), std::invoke(_proj, *best_ptr)))
+                        if (!started || std::invoke(_comp, *candidate, *best_ptr))
                             best_ptr = candidate;
                     }
-                    _started = true;
+                    started = true;
                 }
             }
 
+            _started = started;
             source_type::from_ptr(_iterator, ptr);
             source_type::from_ptr(_best, best_ptr);
         }
@@ -195,6 +208,19 @@ struct min_element_t : Traits, dispatchable<min_element_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Finds an iterator to the smallest element in a range.
+ *
+ * 1) Finds the first iterator `i` in `[first, last)` such that no element is smaller than `*i`
+ *    under `comp` after applying `proj` (returns `last` if the range is empty).
+ * 2) Same as (1), operating on range `r`.
+ *
+ * ### Decorators and Options
+ * Supports `aligned<N>`, `fscalar`, `fstatic`, `fautovec`, and `unroll<N>` via `operator[]`.
+ */
 constexpr inline auto min_element = options::function_with_traits<min_element_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

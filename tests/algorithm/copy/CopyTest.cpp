@@ -340,7 +340,9 @@ RTTS_CASE("raze::algorithm::copy views and edge cases") {
         raze::algorithm::copy[opt::fscalar](src, std::back_inserter(b2));
         raze::algorithm::copy[opt::fstatic](src, std::back_inserter(b3));
         raze::algorithm::copy[opt::fautovec](src, std::back_inserter(b4));
-        raze::algorithm::copy[opt::aligned<64, opt::unaligned>](src, std::back_inserter(b5));
+        alignas(64) std::array<int, 45> src_aligned;
+        src_aligned.fill(7);
+        raze::algorithm::copy[opt::aligned<64, opt::unaligned>](src_aligned, std::back_inserter(b5));
         RTTS_EXPECT(b1 == src && b2 == src && b3 == src && b4 == src && b5 == src);
 
         const std::vector<int> seq = { 1, 2, 3, 4, 5 };

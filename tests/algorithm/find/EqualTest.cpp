@@ -348,8 +348,9 @@ RTTS_CASE("raze::algorithm::equal views and edge cases") {
         RTTS_EXPECT(raze::algorithm::equal[opt::fautovec][opt::fstatic](
             a, tv, [](auto x, auto y) { if (x == y) return true; return false; }));
 
+        alignas(64) const std::array<int, 10> a_aligned = { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 };
         auto fv = views::iota(1, 21) | views::filter([](int x) { return (x & 1) == 0; });
-        RTTS_EXPECT((raze::algorithm::equal[opt::aligned<64, opt::unaligned>](a, fv)));
+        RTTS_EXPECT((raze::algorithm::equal[opt::aligned<64, opt::unaligned>](a_aligned, fv)));
         RTTS_EXPECT(!raze::algorithm::equal(a | views::reverse, fv));
         RTTS_EXPECT(raze::algorithm::equal(a | views::reverse, fv | views::reverse));
         RTTS_EXPECT(raze::algorithm::equal(rtts::make_non_common(a), fv));
@@ -383,4 +384,4 @@ RTTS_CASE("raze::algorithm::equal views and edge cases") {
         RTTS_EXPECT(raze::algorithm::equal(i1, i2, std::equal_to<>{}, &rtts::test_item::key, &rtts::test_item::key));
         RTTS_EXPECT(!raze::algorithm::equal(i1, i2, std::equal_to<>{}, &rtts::test_item::payload, &rtts::test_item::payload));
     }
-};
+};

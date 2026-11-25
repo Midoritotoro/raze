@@ -25,33 +25,41 @@ struct configurable_find_next_set_t : raze::options::conditional_callable<config
     }
 
     template <simd_mask_type M>
-    static raze_always_inline auto deferred_call([[maybe_unused]] auto opts, const M& x, i32 from) noexcept {
+    static raze_always_inline auto deferred_call([[maybe_unused]] const auto& opts, const M& x, i32 from) noexcept {
         using Value = typename M::value_type;
         using Abi = typename M::abi_type;
 
-        i32 index = 0;
         constexpr auto is_unsafe = Options::contains(not_null) && M::__chunks_count() == 1;
-
         i32 shift = from < 0 ? 0u : u32(from + 1);
 
-        auto chunk_op = [&] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
-            if (shift >= i32(Chunk::size)) {
-                index += Chunk::size;
-                shift -= Chunk::size;
+        if constexpr (M::__chunks_count() == 1) {
+            const auto& chunk = x.__storage().storage();
+            if (shift >= i32(M::size()))
+                return i32(M::size());
+            return find_next_set_<Abi::isa, M::size(), Value, is_unsafe>(ustorage(chunk), shift);
+        }
+        else {
+            i32 index = 0;
+
+            auto chunk_op = [&] <class Chunk> (const Chunk& chunk) raze_always_inline_lambda {
+                if (shift >= i32(Chunk::size)) {
+                    index += Chunk::size;
+                    shift -= Chunk::size;
+                    return true;
+                }
+
+                auto r = find_next_set_<Abi::isa, Chunk::size, Value, is_unsafe>(ustorage(chunk), shift);
+                index += r;
+
+                if (r != Chunk::size) return false;
+
+                shift = 0;
                 return true;
-            }
+            };
 
-            auto r = find_next_set_<Abi::isa, Chunk::size, Value, is_unsafe>(ustorage(chunk), shift);
-            index += r;
-
-            if (r != Chunk::size) return false;
-
-            shift = 0;
-            return true;
-        };
-
-        x.__for_each_chunk_all_of(chunk_op);
-        return index;
+            x.__for_each_chunk_all_of(chunk_op);
+            return index;
+        }
     }
 };
 

@@ -13,7 +13,7 @@ public:
 	simd_element_reference(V& v, sizetype i) noexcept:
 		_reference(v), _index(i)
 	{
-		raze_debug_assert_log(i < V::size(), "Index out of range. ");
+		raze_debug_assert_log(i < static_cast<sizetype>(V::size()), "Index out of range. ");
 	}
 
 	raze_always_inline operator value_type() const noexcept {

@@ -10,7 +10,8 @@ struct replace_copy_t : Traits {
 		std::weakly_incrementable OutIt, class T1, class T2, class Proj = std::identity>
 	constexpr raze_always_inline std::ranges::unary_transform_result<InIt, OutIt> operator()(
 		InIt first, Sent sent, OutIt out, const T1& old, const T2& v, Proj proj = {}) const
-			requires(std::indirectly_copyable<InIt, OutIt> && std::indirectly_writable<OutIt, const T2&>)
+			requires(std::indirectly_copyable<InIt, OutIt> && std::indirectly_writable<OutIt, const T2&> &&
+				std::indirect_binary_predicate<std::ranges::equal_to, std::projected<InIt, Proj>, const T1*>)
 	{
 		return replace_copy_if[Traits::traits()](std::move(first), std::move(sent), std::move(out),
 			algorithm::equal_to(function_return_type<Proj, std::iter_value_t<InIt>>(old)),
@@ -20,7 +21,8 @@ struct replace_copy_t : Traits {
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class T1, class T2, class Proj = std::identity>
 	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::borrowed_iterator_t<R>, OutIt> operator()(
 		R&& r, OutIt out, const T1& old, const T2& v, Proj proj = {}) const
-			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> && std::indirectly_writable<OutIt, const T2&>)
+			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> && std::indirectly_writable<OutIt, const T2&> &&
+				std::indirect_binary_predicate<std::ranges::equal_to, std::projected<std::ranges::iterator_t<R>, Proj>, const T1*>)
 	{
 		return replace_copy_if[Traits::traits()](std::forward<R>(r), std::move(out),
 			algorithm::equal_to(function_return_type<Proj, std::ranges::range_value_t<R>>(old)),

@@ -239,7 +239,8 @@ RTTS_CASE("raze::algorithm::replace_copy views and edge cases") {
         raze::algorithm::replace_copy(src, std::back_inserter(b1), 2, 9);
         raze::algorithm::replace_copy[opt::fscalar](src, std::back_inserter(b2), 2, 9);
         raze::algorithm::replace_copy[opt::fautovec][opt::fstatic](src, std::back_inserter(b3), 2, 9);
-        raze::algorithm::replace_copy[opt::aligned<64, opt::unaligned>](src, std::back_inserter(b4), 2, 9);
+        alignas(64) const std::array<int, 7> src_aligned = { 1, 2, 3, 2, 4, 2, 5 };
+        raze::algorithm::replace_copy[opt::aligned<64, opt::unaligned>](src_aligned, std::back_inserter(b4), 2, 9);
         RTTS_EXPECT(b1 == expected && b2 == expected && b3 == expected && b4 == expected);
 
         std::deque<int> f1, f2;
@@ -269,8 +270,8 @@ RTTS_CASE("raze::algorithm::replace_copy views and edge cases") {
 
         volatile int vsrc[16];
         volatile int vdst[16];
-        for (int i = 0; i < 16; ++i) vsrc[i] = (i % 4 == 0) ? 3 : i;
-        raze::algorithm::replace_copy(vsrc, vsrc + 16, vdst, 3, 77);
+        for (int i = 0; i < 16; ++i) vsrc[i] = (i % 4 == 0) ? 99 : i;
+        raze::algorithm::replace_copy(vsrc, vsrc + 16, vdst, 99, 77);
         for (int i = 0; i < 16; ++i) RTTS_EXPECT(vdst[i] == ((i % 4 == 0) ? 77 : i));
 
         std::vector<int> rdst;

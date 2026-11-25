@@ -73,7 +73,7 @@ struct mismatch_t : Traits, dispatchable<mismatch_t<Traits>> {
                 const auto mask = _predicate(_proj1(vx::load<Tag>(ptr1)), _proj2(vx::load<Tag>(ptr2)));
 
                 if (!vx::all_of(mask)) {
-                    const auto offset = vx::find_first_not_set(mask);
+                    const auto offset = vx::find_first_not_set[vx::not_null](mask);
                     source1_type::from_ptr(_iterator1, ptr1 + offset);
                     source2_type::from_ptr(_iterator2, ptr2 + offset);
                     return false;

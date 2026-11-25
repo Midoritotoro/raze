@@ -85,18 +85,21 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 		{
 			auto [first, last] = source_type::to_raw_range(_in_iterator, _in_sentinel);
 			auto dest = std::to_address(_out_iterator);
-			const auto count = last - first;
+			const auto len = last - first;
 
 			first = align::template assume<0>(first);
 			dest  = align::template assume<1>(dest);
 
-			for_noalias(first, last, [&func = _function, &proj = _proj,
+			std::conditional_t<traits::lightweight_callable<Function>, Function, Function&> func = _function;
+			std::conditional_t<traits::lightweight_callable<Projection>, Projection, Projection&> proj = _proj;
+
+			for_noalias(first, last, [&func, &proj,
 				dst = dest, in = first](auto i) raze_always_inline_lambda {
 					dst[i] = std::invoke(func, std::invoke(proj, in[i]));
 				});
 
 			source_type::from_ptr(_in_iterator, first);
-			destination_type::from_ptr(_out_iterator, dest + count);
+			destination_type::from_ptr(_out_iterator, dest + len);
 		}
 
 		raze_always_inline constexpr void operator()() {
@@ -240,20 +243,24 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			auto [first1, last1] = source1_type::to_raw_range(_in1_iterator, _in1_sentinel);
 			auto [first2, last2] = source2_type::to_raw_range(_in2_iterator, _in2_sentinel);
 			auto dest = std::to_address(_out_iterator);
-			const auto count = math::min(last1 - first1, last2 - first2);
+			const auto len = math::min(last1 - first1, last2 - first2);
 
 			first1 = align::template assume<0>(first1);
 			first2 = align::template assume<1>(first2);
 			dest   = align::template assume<2>(dest);
 
-			for_noalias2(first1, last1, first2, last2, [&func = _function, &proj1 = _proj1, &proj2 = _proj2,
+			std::conditional_t<traits::lightweight_callable<Function>, Function, Function&> func = _function;
+			std::conditional_t<traits::lightweight_callable<Projection1>, Projection1, Projection1&> proj1 = _proj1;
+			std::conditional_t<traits::lightweight_callable<Projection2>, Projection2, Projection2&> proj2 = _proj2;
+
+			for_noalias2(first1, last1, first2, last2, [&func, &proj1, &proj2,
 				dst = dest, in1 = first1, in2 = first2](auto i) raze_always_inline_lambda {
 					dst[i] = std::invoke(func, std::invoke(proj1, in1[i]), std::invoke(proj2, in2[i]));
 				});
 
 			source1_type::from_ptr(_in1_iterator, first1);
 			source2_type::from_ptr(_in2_iterator, first2);
-			destination_type::from_ptr(_out_iterator, dest + count);
+			destination_type::from_ptr(_out_iterator, dest + len);
 		}
 
 		raze_always_inline constexpr void operator()() {
@@ -318,10 +325,10 @@ struct transform_t : Traits, dispatchable<transform_t<Traits>> {
 			const auto data2 = vx::load<Tag>[ignore][in2_policy](in2_ptr);
 			vx::store[ignore][out_policy](out_ptr, vx::convert<vt_out>(_function(_proj1(data1), _proj2(data2))));
 
-			const auto count = ignore.tail_elements();
-			source1_type::from_ptr(_in1_iterator, in1_ptr + count);
-			source2_type::from_ptr(_in2_iterator, in2_ptr + count);
-			destination_type::from_ptr(_out_iterator, out_ptr + count);
+			const auto tail_len = ignore.tail_elements();
+			source1_type::from_ptr(_in1_iterator, in1_ptr + tail_len);
+			source2_type::from_ptr(_in2_iterator, in2_ptr + tail_len);
+			destination_type::from_ptr(_out_iterator, out_ptr + tail_len);
 		}
 
 		constexpr raze_always_inline std::ranges::binary_transform_result<iterator1_type, iterator2_type, destination_iterator_type> result() const {

@@ -9,11 +9,11 @@ struct if_ {
     static constexpr bool has_alternative = false;
     using condition_type = Condition;
 
-    if_(const Condition& condition) noexcept:
+    constexpr explicit if_(const Condition& condition) noexcept:
         _condition(condition)
     {}
 
-    raze_always_inline Condition mask() const noexcept {
+    constexpr raze_always_inline const Condition& mask() const noexcept {
         return _condition;
     }
 

@@ -16,8 +16,40 @@ struct configurable_select_t: options::conditional_callable<configurable_select_
         return options::dispatch_call(*this, x);
     }
 
+    template <simd_mask_type M, simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const M& mask, const V& if_true, const V& if_false) const noexcept
+        requires(Options::size() == 0 && std::same_as<M, typename V::mask_type>)
+    {
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
+
+        V r = if_true;
+        r.__for_each_chunk([] <class Chunk, class AltChunk, class MaskChunk> (
+            Chunk& chunk, const AltChunk& alt_chunk, const MaskChunk& mask_chunk) raze_always_inline_lambda
+        {
+            chunk = select_<Abi::isa, Value>(ustorage(chunk), ustorage(alt_chunk), ustorage(mask_chunk));
+        }, if_false.__storage().storage(), mask.__storage().storage());
+        return r;
+    }
+
+    template <simd_mask_type M, simd_type V>
+    raze_nodiscard raze_always_inline V operator()(const M& mask, const V& if_true) const noexcept
+        requires(Options::size() == 0 && std::same_as<M, typename V::mask_type>)
+    {
+        using Value = typename V::value_type;
+        using Abi = typename V::abi_type;
+
+        V r = if_true;
+        r.__for_each_chunk([] <class Chunk, class MaskChunk> (
+            Chunk& chunk, const MaskChunk& mask_chunk) raze_always_inline_lambda
+        {
+            chunk = select_<Abi::isa, Value>(ustorage(chunk), ustorage(mask_chunk));
+        }, mask.__storage().storage());
+        return r;
+    }
+
     template <simd_type V>
-    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+    static raze_always_inline auto deferred_call(const auto& opts, const V& x) noexcept {
         using Mask = options::fetch_t<raze::options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
@@ -29,7 +61,7 @@ struct configurable_select_t: options::conditional_callable<configurable_select_
         };
 
         if constexpr (options::complete_mask<Mask>) {
-            auto condition = opts[options::condition_key];
+            const auto& condition = opts[options::condition_key];
 
             if constexpr (Mask::has_alternative)
                 r.__for_each_chunk(chunk_op, condition.alternative().__storage().storage(), condition.mask().__storage().storage());

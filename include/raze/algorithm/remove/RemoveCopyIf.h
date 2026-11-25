@@ -106,7 +106,8 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 		if constexpr (std::forward_iterator<It>) {
 			auto found = find_if[options::drop_alignment(Traits::traits())](first, last, pred, proj);
 			auto prefix = copy[Traits::traits()](std::move(first), found, std::move(out));
-			return this->dispatch(get_source(std::move(found), std::move(last)),
+			if (found == last) return { std::move(found), std::move(prefix.out) };
+			return this->dispatch(get_source(std::ranges::next(std::move(found)), std::move(last)),
 				get_destination(std::move(prefix.out)), traits::fwd_fn(pred), traits::fwd_fn(proj));
 		}
 		else {

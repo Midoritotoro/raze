@@ -23,7 +23,7 @@ struct configurable_load_t {
         }
 
         template <any_iterator_or_pointer Mem>
-        static raze_always_inline auto deferred_call(auto opts, Mem it) noexcept {
+        static raze_always_inline auto deferred_call(const auto& opts, Mem it) noexcept {
             using Mask = options::fetch_t<options::condition_key, Options>;
             using Value = typename V::value_type;
             using Abi = typename V::abi_type;
@@ -34,7 +34,7 @@ struct configurable_load_t {
             auto mem = std::to_address(it);
 
             if constexpr (options::complete_mask<Mask>) {
-                auto condition = opts[options::condition_key];
+                const auto& condition = opts[options::condition_key];
 
                 if constexpr (Mask::has_alternative)
                     x.__for_each_chunk([] <class Chunk, class MaskChunk, class SourceChunk> (

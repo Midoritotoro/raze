@@ -240,8 +240,8 @@ RTTS_CASE("raze::algorithm::remove views and edge cases") {
         RTTS_EXPECT(raze::algorithm::remove(all_rm, 3).begin() == all_rm.begin());
 
         volatile int vbuf[16];
-        for (int i = 0; i < 16; ++i) vbuf[i] = (i % 2 == 0) ? 7 : i;
-        auto vres = raze::algorithm::remove(vbuf, vbuf + 16, 7);
+        for (int i = 0; i < 16; ++i) vbuf[i] = (i % 2 == 0) ? 99 : i;
+        auto vres = raze::algorithm::remove(vbuf, vbuf + 16, 99);
         RTTS_EXPECT(vres.begin() == vbuf + 8);
         for (int i = 0; i < 8; ++i) RTTS_EXPECT(vbuf[i] == i * 2 + 1);
 

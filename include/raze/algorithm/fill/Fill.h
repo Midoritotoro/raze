@@ -8,7 +8,7 @@
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 constexpr auto fill_strategy = options::strategy<strategy<>()
-	.for_gcc<strategy_mode::autovec>()
+	.for_gcc<strategy_mode::manual>()
 	.for_clang<strategy_mode::autovec>()
 	.for_icpx<strategy_mode::autovec>()>;
 
@@ -21,12 +21,13 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		using unchecked_iterator_type = typename source_type::unchecked_iterator_type;
 		using unchecked_sentinel_type = typename source_type::unchecked_sentinel_type;
 		using value_type = iter_value_or_void_t<iterator_type>;
+		using align = options::alignments<Traits, 1>;
 
 		static consteval auto deduce_value_type() noexcept {
 			if constexpr (std::is_void_v<value_type>) return void();
-			else if constexpr (std::floating_point<T>) return T{};
-			else if constexpr (sizeof(T) <= 8 && sizeof(T) != 0 && ((sizeof(T) & (sizeof(T) - 1)) == 0))
-				return typename IntegerForSizeof<T>::Signed{};
+			else if constexpr (std::floating_point<value_type> && sizeof(value_type) <= 8) return value_type{};
+			else if constexpr (sizeof(value_type) <= 8 && sizeof(value_type) != 0 && ((sizeof(value_type) & (sizeof(value_type) - 1)) == 0))
+				return typename IntegerForSizeof<value_type>::Signed{};
 			else return void();
 		}
 
@@ -38,10 +39,16 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		}
 
 		static consteval bool vectorizable() noexcept {
-			return !std::is_void_v<value_type> && !std::is_void_v<vector_value_type> && contiguous_source<Source> &&
-				!traits::is_iterator_volatile_v<iterator_type> && std::is_trivially_copyable_v<value_type> &&
-				(sizeof(value_type) <= 8) && (sizeof(value_type) != 0) &&
-				((sizeof(value_type) & (sizeof(value_type) - 1)) == 0);
+			if constexpr (std::is_void_v<value_type> || std::is_void_v<vector_value_type>) {
+				return false;
+			}
+			else {
+				return contiguous_source<Source> &&
+					!traits::is_iterator_volatile_v<iterator_type> && std::is_trivially_copyable_v<value_type> &&
+					std::convertible_to<const T&, value_type> &&
+					(sizeof(value_type) <= 8) && (sizeof(value_type) != 0) &&
+					((sizeof(value_type) & (sizeof(value_type) - 1)) == 0);
+			}
 		}
 
 		raze_no_unique_address source_type _source;
@@ -54,20 +61,26 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 			_sentinel(_source.uend()), _value(value)
 		{}
 
-		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
-			auto v = math::bit_cast<vector_value_type>(_value);
-			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
+		constexpr void expects() const {
+			align::verify(_source);
+		}
 
-			for (; first != last; ++first)
-				*first = v;
+		raze_always_inline constexpr void operator()(autovectorizable_tag) requires(vectorizable()) {
+			const value_type v = static_cast<value_type>(_value);
+			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
+			first = align::template assume<0>(first);
+
+			for_noalias(first, last, [v, out = first](auto i) raze_always_inline_lambda {
+				out[i] = v;
+			});
 
 			source_type::from_ptr(_iterator, first);
 		}
 
 		raze_always_inline constexpr void operator()() {
-			raze_disable_unrolling
-			for (; _iterator != _sentinel; ++_iterator)
+			raze_novec_loop((; _iterator != _sentinel; ++_iterator), {
 				*_iterator = _value;
+			})
 		}
 
 		raze_always_inline void operator()(native_tag) requires(native()) {
@@ -78,13 +91,14 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+			constexpr auto policy = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
-			const Tag broadcasted = math::bit_cast<vector_value_type>(_value);
+			const Tag broadcasted = math::bit_cast<vector_value_type>(static_cast<value_type>(_value));
 
 			raze_disable_unrolling do {
-				vx::store(ptr, broadcasted);
+				vx::store[policy](ptr, broadcasted);
 				advance_bytes(ptr, sizeof(Tag));
 			} while (ptr != aligned_end);
 
@@ -93,8 +107,9 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			constexpr auto policy = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
-			vx::store[ignore](ptr, Tag(math::bit_cast<vector_value_type>(_value)));
+			vx::store[ignore][policy](ptr, Tag(math::bit_cast<vector_value_type>(static_cast<value_type>(_value))));
 
 			advance_bytes(ptr, ignore.tail_bytes());
 			source_type::from_ptr(_iterator, ptr);

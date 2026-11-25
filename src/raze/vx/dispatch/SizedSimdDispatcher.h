@@ -172,7 +172,7 @@ struct configurable_isa_dispatcher_t {
         }
 
         template <sizetype Size, class Work>
-        static raze_always_inline decltype(auto) deferred_call(auto,
+        static raze_always_inline decltype(auto) deferred_call(const auto&,
             std::integral_constant<sizetype, Size> size, Work& work)
             requires(sizeof...(Candidates) == 0)
         {
@@ -234,7 +234,7 @@ struct configurable_isa_dispatcher_t {
         }
 
         template <class Work>
-        static raze_always_inline decltype(auto) deferred_call(auto, sizetype size, Work& work)
+        static raze_always_inline decltype(auto) deferred_call(const auto&, sizetype size, Work& work)
             requires(sizeof...(Candidates) == 0)
         {
             if constexpr (Forced != arch::ISA::None) {
@@ -331,7 +331,7 @@ struct configurable_isa_dispatcher_t {
         }
 
         template <class Work>
-        static raze_always_inline decltype(auto) deferred_call(auto, sizetype size, Work& work)
+        static raze_always_inline decltype(auto) deferred_call(const auto&, sizetype size, Work& work)
             requires(sizeof...(Candidates) != 0)
         {
             if constexpr (Forced != arch::ISA::None) {

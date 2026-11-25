@@ -287,7 +287,8 @@ RTTS_CASE("raze::algorithm::reverse_copy views and edge cases") {
         raze::algorithm::reverse_copy(src, std::back_inserter(b1));
         raze::algorithm::reverse_copy[opt::fscalar](src, std::back_inserter(b2));
         raze::algorithm::reverse_copy[opt::fautovec][opt::fstatic](src, std::back_inserter(b3));
-        raze::algorithm::reverse_copy[opt::aligned<64, opt::unaligned>](src, std::back_inserter(b4));
+        alignas(64) const std::array<int, 5> src_aligned = { 1, 2, 3, 4, 5 };
+        raze::algorithm::reverse_copy[opt::aligned<64, opt::unaligned>](src_aligned, std::back_inserter(b4));
         RTTS_EXPECT(b1 == expected && b2 == expected && b3 == expected && b4 == expected);
 
         std::deque<int> f1, f2;

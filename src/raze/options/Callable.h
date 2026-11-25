@@ -35,12 +35,16 @@ struct callable: decorated_with<OptionsValues, Options...> {
             && !requires(const base_t& base) { base[t()]; }) = delete;
 
     template <class ... Args>
-    raze_always_inline constexpr auto behavior(Args&& ... args) const noexcept {
+    raze_always_inline constexpr auto behavior(Args&& ... args) const
+        noexcept(noexcept(F<OptionsValues>::deferred_call(std::forward<Args>(args)...)))
+    {
         return F<OptionsValues>::deferred_call(std::forward<Args>(args)...);
     }
 
     template <class ... Args>
-    raze_always_inline constexpr auto retarget(Args&& ... args) const noexcept {
+    raze_always_inline constexpr auto retarget(Args&& ... args) const
+        noexcept(noexcept(F<OptionsValues>::deferred_call(this->options(), std::forward<Args>(args)...)))
+    {
         return F<OptionsValues>::deferred_call(this->options(), std::forward<Args>(args)...);
     }
 

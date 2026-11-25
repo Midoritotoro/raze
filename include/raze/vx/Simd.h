@@ -28,12 +28,12 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <class V, class L, class R>
 concept correct_simd_binary_op = simd_type<V> &&
-    (std::same_as<std::remove_cvref_t<L>, V> && (
+    ((std::same_as<std::remove_cvref_t<L>, V> && (
         std::convertible_to<std::remove_cvref_t<R>, typename V::value_type> ||
         std::same_as<std::remove_cvref_t<R>, V>)) ||
     (std::same_as<std::remove_cvref_t<R>, V> && (
         std::convertible_to<std::remove_cvref_t<L>, typename V::value_type> ||
-        std::same_as<std::remove_cvref_t<L>, V>));
+        std::same_as<std::remove_cvref_t<L>, V>)));
 
 /**
  * @class simd

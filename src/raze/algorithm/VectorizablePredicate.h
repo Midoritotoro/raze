@@ -91,11 +91,58 @@ concept vectorizable_binary_function = vectorizable_value_type<std::iter_value_t
 template <class Proj, class It>
 concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Proj>>, std::identity>;
 
-template <class Comp>
-concept is_less_comparator = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Comp>>, std::less<>>;
+template <class Comp, class T = void>
+struct is_std_less : std::false_type {};
 
-template <class Comp>
-concept is_greater_comparator = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Comp>>, std::greater<>>;
+template <>
+struct is_std_less<std::less<void>, void> : std::true_type {};
+
+template <class T>
+struct is_std_less<std::less<void>, T> : std::true_type {};
+
+template <class T>
+struct is_std_less<std::less<T>, T> : std::true_type {};
+
+template <class T>
+struct is_std_less<std::ranges::less, T> : std::true_type {};
+
+template <class Comp, class T = void>
+struct is_std_greater : std::false_type {};
+
+template <>
+struct is_std_greater<std::greater<void>, void> : std::true_type {};
+
+template <class T>
+struct is_std_greater<std::greater<void>, T> : std::true_type {};
+
+template <class T>
+struct is_std_greater<std::greater<T>, T> : std::true_type {};
+
+template <class T>
+struct is_std_greater<std::ranges::greater, T> : std::true_type {};
+
+template <class Comp, class T = void>
+concept is_less_comparator = is_std_less<std::remove_cvref_t<traits::function_unwrapped<Comp>>, T>::value;
+
+template <class Comp, class T = void>
+concept is_greater_comparator = is_std_greater<std::remove_cvref_t<traits::function_unwrapped<Comp>>, T>::value;
+
+template <vx::simd_type Tag>
+consteval bool has_native_vertical_minmax() noexcept {
+    using T = typename Tag::value_type;
+    constexpr auto ISA = vx::abi_t<Tag>::isa;
+    constexpr auto reg_bytes = sizeof(Tag) / Tag::__chunks_count();
+
+    if constexpr (std::floating_point<T>) return true;
+    else if constexpr (reg_bytes == 64) return sizeof(T) >= 4 || vx::has_avx512bw<ISA>;
+    else if constexpr (reg_bytes == 32) return sizeof(T) <= 4 ? vx::has_avx2<ISA> : vx::has_avx512vl<ISA>;
+    else if constexpr (reg_bytes == 16) {
+        if constexpr (std::same_as<T, i16> || std::same_as<T, u8>) return true;
+        else if constexpr (sizeof(T) <= 4) return vx::has_sse41<ISA>;
+        else return vx::has_avx512vl<ISA>;
+    }
+    else return false;
+}
 
 template <class T, class U>
 concept has_common_type = requires { typename std::common_type<T, U>::type; };

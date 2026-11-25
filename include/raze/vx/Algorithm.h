@@ -57,6 +57,10 @@ public:
         reset();
     }
 
+    raze_always_inline static constexpr bool needs_chunking() noexcept {
+        return simd_type<storage_type>;
+    }
+
     raze_always_inline static constexpr auto portion_size() noexcept {
         return math::max_limit<index_type>();
     }

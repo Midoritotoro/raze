@@ -86,19 +86,19 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 			return { _source1.wrap(_in1_iterator), _source2.wrap(_in2_iterator) };
 		}
 
-		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size() 
-			requires(constexpr_sized_source<Source1> || constexpr_sized_source<Source2>) 
+		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
+			requires(constexpr_sized_source<Source1> && constexpr_sized_source<Source2>)
 		{
-			if constexpr (constexpr_sized_source<Source1>) return Source1::static_size();
-			else return Source2::static_size();
+			constexpr sizetype n1 = sizetype(Source1::static_size()) / sizeof(InT1);
+			constexpr sizetype n2 = sizetype(Source2::static_size()) / sizeof(InT2);
+			constexpr sizetype n = n1 < n2 ? n1 : n2;
+			return std::integral_constant<sizetype, n * sizeof(InT1)>{};
 		}
 
 		raze_nodiscard constexpr raze_always_inline auto size() const {
-			return _source1.size();
-		}
-
-		constexpr void expects() {
-			raze_debug_assert((_source1.size() / sizeof(InT1)) == (_source2.size() / sizeof(InT2)));
+			const auto n1 = _source1.size() / sizeof(InT1);
+			const auto n2 = _source2.size() / sizeof(InT2);
+			return math::min(n1, n2) * sizeof(InT1);
 		}
 	};
 
@@ -114,7 +114,7 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 
 	template <std::ranges::input_range R1, std::ranges::input_range R2>
 	constexpr raze_always_inline std::ranges::swap_ranges_result<
-		std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>> operator()(R1&& r1, R2&& r2) const
+		std::ranges::borrowed_iterator_t<R1>, std::ranges::borrowed_iterator_t<R2>> operator()(R1&& r1, R2&& r2) const
 			requires(std::indirectly_swappable<std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>>)
 	{
 		return this->dispatch(get_source(std::forward<R1>(r1)), get_source(std::forward<R2>(r2)));

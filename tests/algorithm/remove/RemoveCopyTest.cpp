@@ -252,7 +252,8 @@ RTTS_CASE("raze::algorithm::remove_copy views and edge cases") {
         raze::algorithm::remove_copy(src, std::back_inserter(b1), 2);
         raze::algorithm::remove_copy[opt::fscalar](src, std::back_inserter(b2), 2);
         raze::algorithm::remove_copy[opt::fautovec][opt::fstatic](src, std::back_inserter(b3), 2);
-        raze::algorithm::remove_copy[opt::aligned<64, opt::unaligned>](src, std::back_inserter(b4), 2);
+        alignas(64) const std::array<int, 7> src_aligned = { 1, 2, 3, 2, 4, 2, 5 };
+        raze::algorithm::remove_copy[opt::aligned<64, opt::unaligned>](src_aligned, std::back_inserter(b4), 2);
         RTTS_EXPECT(b1 == expected && b2 == expected && b3 == expected && b4 == expected);
 
         std::deque<int> f1, f2;
@@ -278,8 +279,8 @@ RTTS_CASE("raze::algorithm::remove_copy views and edge cases") {
 
         volatile int vsrc[16];
         volatile int vdst[16];
-        for (int i = 0; i < 16; ++i) vsrc[i] = (i % 2 == 0) ? 9 : i;
-        auto vr = raze::algorithm::remove_copy(vsrc, vsrc + 16, vdst, 9);
+        for (int i = 0; i < 16; ++i) vsrc[i] = (i % 2 == 0) ? 99 : i;
+        auto vr = raze::algorithm::remove_copy(vsrc, vsrc + 16, vdst, 99);
         RTTS_EXPECT(vr.out == vdst + 8);
         for (int i = 0; i < 8; ++i) RTTS_EXPECT(vdst[i] == i * 2 + 1);
 

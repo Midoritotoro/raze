@@ -25,7 +25,7 @@ template <class Pattern>
 consteval raze_always_inline  bool is_halfs_equal(Pattern p) noexcept {
 	constexpr auto h = Pattern::size() / 2;
 
-	for (auto i = 0; i < h; ++i)
+	for (sizetype i = 0; i < h; ++i)
 		if (p[i] != (p[i + h] - h))
 			return false;
 
@@ -40,7 +40,7 @@ consteval raze_always_inline  bool is_halfs_equal(Pattern p) noexcept {
 */
 template <class Pattern>
 consteval raze_always_inline bool is_reverse(Pattern p) noexcept {
-	for (auto i = 0; i < Pattern::size(); ++i)
+	for (sizetype i = 0; i < Pattern::size(); ++i)
 		if (p[i] != (Pattern::size() - i - 1))
 			return false;
 
@@ -55,7 +55,7 @@ consteval raze_always_inline bool is_reverse(Pattern p) noexcept {
 */
 template <class Pattern>
 consteval raze_always_inline bool is_identity(Pattern p) noexcept {
-	for (auto i = 0; i < Pattern::size(); ++i)
+	for (sizetype i = 0; i < Pattern::size(); ++i)
 		if (p[i] != i)
 			return false;
 
@@ -72,7 +72,7 @@ template <class Pattern>
 consteval raze_always_inline bool is_splat(Pattern p) noexcept {
 	const auto v = p[0];
 
-	for (auto i = 1; i < Pattern::size(); ++i)
+	for (sizetype i = 1; i < Pattern::size(); ++i)
 		if (p[i] != v)
 			return false;
 
@@ -91,7 +91,7 @@ consteval raze_always_inline bool is_rotate_left(Pattern p) noexcept {
 
 	const auto shift = p[0];
 
-	for (auto i = 0; i < n; ++i)
+	for (sizetype i = 0; i < n; ++i)
 		if (p[i] != ((i + shift) % n))
 			return false;
 
@@ -109,7 +109,7 @@ consteval raze_always_inline bool is_rotate_right(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
 	const auto shift = (n - p[0]) % n;
 
-	for (auto i = 0; i < n; ++i)
+	for (sizetype i = 0; i < n; ++i)
 		if (p[i] != ((i + n - shift) % n))
 			return false;
 
@@ -203,7 +203,7 @@ consteval raze_always_inline bool is_interleave_low(Pattern p) noexcept {
 
 	constexpr auto h = n / 2;
 
-	for (auto i = 0; i < h; ++i) {
+	for (sizetype i = 0; i < h; ++i) {
 		if (p[2 * i] != i)
 			return false;
 
@@ -229,7 +229,7 @@ consteval raze_always_inline bool is_interleave_high(Pattern p) noexcept {
 
 	constexpr auto h = n / 2;
 
-	for (auto i = 0; i < h; ++i) {
+	for (sizetype i = 0; i < h; ++i) {
 		if (p[2 * i] != (h + i))
 			return false;
 
@@ -244,9 +244,7 @@ template <class Pattern>
 consteval raze_always_inline auto across_halfs(Pattern p) noexcept
 	requires (pattern_vector_t<Pattern>::is_native())
 {
-	constexpr auto size = sizeof(typename Pattern::vector_type);
-
-	for (auto i = 0; i < Pattern::size() / 2; ++i)
+	for (sizetype i = 0; i < Pattern::size() / 2; ++i)
 		if (p[i] >= (Pattern::size() / 2))
 			return true;
 
@@ -263,7 +261,7 @@ consteval raze_always_inline auto across_quads(Pattern p) noexcept
 {
 	constexpr auto q = Pattern::size() / 4;
 
-	for (auto i = 0; i < q; ++i)
+	for (sizetype i = 0; i < q; ++i)
 		if (p[i] >= q)
 			return true;
 
@@ -286,7 +284,7 @@ template <class Pattern>
 consteval raze_always_inline bool can_widen_shuffle(Pattern p) noexcept
 	requires((Pattern::size() & 1) == 0)
 {
-	for (auto i = 0; i < Pattern::size(); i += 2) {
+	for (sizetype i = 0; i < Pattern::size(); i += 2) {
 		const auto a = p[i];
 		const auto b = p[i + 1];
 
@@ -308,7 +306,7 @@ consteval raze_always_inline bool can_widen_shuffle(Pattern p) noexcept
 */
 template <class Pattern>
 consteval raze_always_inline bool is_low_half(Pattern p) noexcept {
-	for (auto i = 0; i < p.size(); ++i)
+	for (sizetype i = 0; i < p.size(); ++i)
 		if (p[i] >= (p.size() / 2))
 			return false;
 
@@ -323,7 +321,7 @@ consteval raze_always_inline bool is_low_half(Pattern p) noexcept {
 */
 template <class Pattern>
 consteval raze_always_inline bool is_high_half(Pattern p) noexcept {
-	for (auto i = 0; i < p.size(); ++i)
+	for (sizetype i = 0; i < p.size(); ++i)
 		if (p[i] < (p.size() / 2))
 			return false;
 
@@ -345,7 +343,7 @@ consteval raze_always_inline bool is_dup_low(Pattern p) noexcept {
 
 	constexpr auto h = n / 2;
 
-	for (auto i = 0; i < h; ++i) {
+	for (sizetype i = 0; i < h; ++i) {
 		if (p[i] >= h)
 			return false;
 
@@ -371,7 +369,7 @@ consteval raze_always_inline bool is_dup_high(Pattern p) noexcept {
 
 	constexpr auto h = n / 2;
 
-	for (auto i = 0; i < h; ++i) {
+	for (sizetype i = 0; i < h; ++i) {
 		if (p[i] < h || p[i] >= n)
 			return false;
 
@@ -397,7 +395,7 @@ consteval raze_always_inline bool is_dup_low_identity(Pattern p) noexcept {
 
 	constexpr auto h = n / 2;
 
-	for (auto i = 0; i < h; ++i) {
+	for (sizetype i = 0; i < h; ++i) {
 		if (p[i] >= h || p[i] != i) return false;
 		if (p[i + h] != p[i]) return false;
 	}
@@ -420,7 +418,7 @@ consteval raze_always_inline bool is_dup_high_identity(Pattern p) noexcept {
 
 	constexpr auto h = n / 2;
 
-	for (auto i = 0; i < h; ++i) {
+	for (sizetype i = 0; i < h; ++i) {
 		if (p[i] < h || p[i] >= n || p[i] != i) return false;
 		if (p[i + h] != p[i]) return false;
 	}

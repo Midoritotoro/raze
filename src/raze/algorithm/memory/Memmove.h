@@ -5,9 +5,10 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
-void* __raze_memmove(void* raze_restrict dst,
-	const void* raze_restrict src, sizetype bytes) noexcept
+raze_always_inline void* __raze_memmove(void* dst,
+	const void* src, sizetype bytes) noexcept
 {
+	if (bytes == 0) return dst;
 	return memmove(dst, src, bytes);
 }
 

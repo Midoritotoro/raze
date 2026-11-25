@@ -29,23 +29,23 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 				vectorizable_projection<Projection, iterator_type>;
 		}
 
-		source_type _source;
+		raze_no_unique_address source_type _source;
 		unchecked_iterator_type _write_iterator;
 		unchecked_iterator_type _in_iterator;
-		unchecked_sentinel_type _in_sentinel;
-		Predicate _predicate;
-		Projection _proj;
+		raze_no_unique_address unchecked_sentinel_type _in_sentinel;
+		raze_no_unique_address Predicate _predicate;
+		raze_no_unique_address Projection _proj;
 
-		constexpr explicit kernel(Source&& source, Predicate pred, Projection proj)
+		constexpr explicit kernel(Source&& source, unchecked_iterator_type write_it, Predicate pred, Projection proj)
 			: _source(std::forward<Source>(source)),
-			  _write_iterator(_source.ubegin()), _in_iterator(_source.ubegin()),
+			  _write_iterator(std::move(write_it)), _in_iterator(_source.ubegin()),
 			  _in_sentinel(_source.uend()), _predicate(std::move(pred)), _proj(std::move(proj))
 		{}
 
 		raze_always_inline constexpr void operator()() {
 			raze_disable_unrolling
 			for (; _in_iterator != _in_sentinel; ++_in_iterator) {
-				if (!_predicate(_proj(*_in_iterator))) {
+				if (!std::invoke(_predicate, std::invoke(_proj, *_in_iterator))) {
 					*_write_iterator = std::ranges::iter_move(_in_iterator);
 					++_write_iterator;
 				}
@@ -93,8 +93,12 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 		It first, Sent last, Pred pred, Proj proj = {}) const
 			requires(std::indirect_unary_predicate<Pred, std::projected<It, Proj>>)
 	{
-		return this->dispatch(get_source(find_if[Traits::traits()](first, last, pred, proj),
-			std::move(last)), traits::fwd_fn(pred), traits::fwd_fn(proj));
+		auto found = find_if[options::drop_alignment(Traits::traits())](std::move(first), last, pred, proj);
+		if (found == last) return { found, found };
+		auto next = std::ranges::next(found);
+		auto src = get_source(std::move(next), std::move(last));
+		auto write_it = decltype(src)::unwrap(std::move(found));
+		return this->dispatch(std::move(src), std::move(write_it), traits::fwd_fn(pred), traits::fwd_fn(proj));
 	}
 
 	template <std::ranges::input_range R, class Pred, class Proj = std::identity>

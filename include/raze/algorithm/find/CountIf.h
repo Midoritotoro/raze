@@ -22,11 +22,11 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
 
         using vector_value_type = std::iter_value_t<unchecked_iterator_type>;
 
-        source_type _source;
+        raze_no_unique_address source_type _source;
         unchecked_iterator_type _iterator;
-        unchecked_sentinel_type _sentinel;
-        Predicate _predicate;
-        Projection _proj;
+        raze_no_unique_address unchecked_sentinel_type _sentinel;
+        raze_no_unique_address Predicate _predicate;
+        raze_no_unique_address Projection _proj;
         difference_type _count = 0;
 
         static consteval bool vectorizable() noexcept {
@@ -57,18 +57,34 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
             auto* ptr = std::to_address(_iterator);
             const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
-            raze_disable_unrolling while (ptr != aligned_end) {
-                auto current_portion_size = counter.portion_size();
-
-                raze_disable_unrolling
-                while (ptr != aligned_end && current_portion_size > 0) {
+            if constexpr (!vx::counter<Tag>::needs_chunking()) {
+                raze_disable_unrolling do {
                     counter.count(_predicate(_proj(vx::load<Tag>(ptr))));
                     advance_bytes(ptr, sizeof(Tag));
-                    --current_portion_size;
-                }
+                } while (ptr != aligned_end);
 
                 _count += counter.result();
-                counter.reset();
+            }
+            else {
+                constexpr sizetype max_portion_bytes = sizeof(typename vx::counter<Tag>::index_type) < sizeof(sizetype)
+                    ? static_cast<sizetype>(vx::counter<Tag>::portion_size()) * sizeof(Tag)
+                    : math::max_limit<sizetype>();
+
+                auto remaining = aligned_size;
+
+                raze_disable_unrolling while (remaining > 0) {
+                    const auto portion_bytes = math::min(remaining, max_portion_bytes);
+                    remaining -= portion_bytes;
+                    const auto chunk_end = bytes_pointer_offset(ptr, portion_bytes);
+
+                    raze_disable_unrolling do {
+                        counter.count(_predicate(_proj(vx::load<Tag>(ptr))));
+                        advance_bytes(ptr, sizeof(Tag));
+                    } while (ptr != chunk_end);
+
+                    _count += counter.result();
+                    counter.reset();
+                }
             }
 
             source_type::from_ptr(_iterator, ptr);

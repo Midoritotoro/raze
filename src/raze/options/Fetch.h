@@ -32,12 +32,12 @@ struct fetch_t_impl;
 
 template <auto Keyword, concepts::option ... Options>
 struct fetch_t_impl<Keyword, Options...>  {
-    using type = decltype(fetch(Keyword, std::declval<Options>()...));
+    using type = std::remove_cvref_t<decltype(fetch(Keyword, std::declval<Options>()...))>;
 };
 
 template <auto Keyword, concepts::settings Settings>
 struct fetch_t_impl<Keyword, Settings>  {
-    using type = decltype(fetch(Keyword, std::declval<Settings>()));
+    using type = std::remove_cvref_t<decltype(fetch(Keyword, std::declval<Settings>()))>;
 };
 
 template <auto Keyword, class ... Sources>

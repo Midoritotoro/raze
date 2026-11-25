@@ -13,8 +13,8 @@ namespace {
     inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
 
     struct is_sorted_item {
-        int32_t key;
-        int32_t value;
+        int32_t key = 0;
+        int32_t value = 0;
         bool operator==(const is_sorted_item&) const = default;
     };
 

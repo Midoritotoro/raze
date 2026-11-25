@@ -602,7 +602,8 @@ RTTS_CASE("raze::algorithm::copy_n views and edge cases") {
 
         raze::algorithm::copy_n[opt::fstatic](src.begin(), 5, std::back_inserter(b2));
         raze::algorithm::copy_n[opt::fautovec](src.begin(), 5, std::back_inserter(b3));
-        raze::algorithm::copy_n[opt::aligned<64, opt::unaligned>](src.begin(), 5, std::back_inserter(b4));
+        alignas(64) const std::array<int, 5> src_aligned = { 10, 20, 30, 40, 50 };
+        raze::algorithm::copy_n[opt::aligned<64, opt::unaligned>](src_aligned.begin(), 5, std::back_inserter(b4));
         RTTS_EXPECT(b2 == src && b3 == src && b4 == src);
 
         std::deque<int> deq1, deq2;

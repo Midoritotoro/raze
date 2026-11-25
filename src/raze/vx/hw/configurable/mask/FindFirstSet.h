@@ -25,30 +25,46 @@ struct configurable_find_first_set_t: options::conditional_callable<configurable
     }
 
     template <simd_mask_type M>
-    static raze_always_inline auto deferred_call(auto opts, const M& x) noexcept {
+    static raze_always_inline auto deferred_call(const auto& opts, const M& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename M::value_type;
         using Abi = typename M::abi_type;
 
-        auto index = 0;
         constexpr auto is_unsafe = Options::contains(not_null) && M::__chunks_count() == 1;
 
-        auto chunk_op = [&] <class Chunk, class ... Args> (const Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
-            auto r = find_first_set_<Abi::isa, Chunk::size, Value, is_unsafe>(ustorage(chunk), ustorage<Args>(args)...);
-            index += r;
-            return r == Chunk::size;
-        };
-
-        if constexpr (options::complete_mask<Mask>) {
-            static_assert(!Mask::has_alternative, "Not supported. ");
-            auto condition = opts[options::condition_key];
-            x.__for_each_chunk_all_of(chunk_op, condition.mask().__storage().storage());
+        if constexpr (M::__chunks_count() == 1) {
+            if constexpr (options::complete_mask<Mask>) {
+                static_assert(!Mask::has_alternative, "Not supported. ");
+                const auto& condition = opts[options::condition_key];
+                return find_first_set_<Abi::isa, M::size(), Value, is_unsafe>(
+                    ustorage(x.__storage().storage()),
+                    ustorage(condition.mask().__storage().storage()));
+            }
+            else {
+                return find_first_set_<Abi::isa, M::size(), Value, is_unsafe>(
+                    ustorage(x.__storage().storage()));
+            }
         }
         else {
-            x.__for_each_chunk_all_of(chunk_op);
-        }
+            auto index = 0;
 
-        return index;
+            auto chunk_op = [&] <class Chunk, class ... Args> (const Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
+                auto r = find_first_set_<Abi::isa, Chunk::size, Value, is_unsafe>(ustorage(chunk), ustorage<Args>(args)...);
+                index += r;
+                return r == Chunk::size;
+            };
+
+            if constexpr (options::complete_mask<Mask>) {
+                static_assert(!Mask::has_alternative, "Not supported. ");
+                const auto& condition = opts[options::condition_key];
+                x.__for_each_chunk_all_of(chunk_op, condition.mask().__storage().storage());
+            }
+            else {
+                x.__for_each_chunk_all_of(chunk_op);
+            }
+
+            return index;
+        }
     }
 };
 

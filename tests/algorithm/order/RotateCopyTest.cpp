@@ -590,7 +590,8 @@ RTTS_CASE("raze::algorithm::rotate_copy views and edge cases") {
         raze::algorithm::rotate_copy(src, src.begin() + 2, std::back_inserter(b1));
         raze::algorithm::rotate_copy[opt::fscalar](src, src.begin() + 2, std::back_inserter(b2));
         raze::algorithm::rotate_copy[opt::fautovec][opt::fstatic](src, src.begin() + 2, std::back_inserter(b3));
-        raze::algorithm::rotate_copy[opt::aligned<64, opt::unaligned>](src, src.begin() + 2, std::back_inserter(b4));
+        alignas(64) const std::array<int, 5> src_aligned = { 1, 2, 3, 4, 5 };
+        raze::algorithm::rotate_copy[opt::aligned<64, opt::unaligned>](src_aligned, src_aligned.begin() + 2, std::back_inserter(b4));
         RTTS_EXPECT(b1 == expected && b2 == expected && b3 == expected && b4 == expected);
 
         std::deque<int> f1, f2;

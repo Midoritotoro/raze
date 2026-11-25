@@ -10,7 +10,7 @@ struct option {
     using stored_value_type = std::decay_t<Value>;
     using keyword_type = Keyword;
 
-    constexpr raze_always_inline stored_value_type operator()(const keyword_type&) const noexcept {
+    constexpr raze_always_inline const stored_value_type& operator()(const keyword_type&) const noexcept {
         return _contents;
     }
 

@@ -31,7 +31,7 @@ struct settings {
     }
 
     template <concepts::keyword ... Keywords>
-    static raze_always_inline constexpr auto contains_only(const Keywords& ... kws) noexcept {
+    static raze_always_inline constexpr auto contains_only(const Keywords& ...) noexcept {
         using current_keys = keys<typename Options::keyword_type...>;
         using acceptable_keys = keys<Keywords...>;
         using unique_set = typename uniques<current_keys, acceptable_keys>::type;
@@ -45,7 +45,7 @@ struct settings {
     }
 
     template <concepts::keyword Keyword> 
-    constexpr raze_always_inline auto operator[](const Keyword& kw) const noexcept {
+    constexpr raze_always_inline decltype(auto) operator[](const Keyword& kw) const noexcept {
         return _content(kw);
     }
 

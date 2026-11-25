@@ -191,7 +191,6 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Writable contiguous views: take, drop, counted, span
     {
         std::vector<int> v1(40);
         std::iota(v1.begin(), v1.end(), 1);
@@ -216,7 +215,6 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
         RTTS_EXPECT(v1 == v2);
     }
 
-    // Writable non-contiguous views: reverse, filter, non-common sentinel (including with aligned<64>)
     {
         std::vector<int> v1(35);
         std::iota(v1.begin(), v1.end(), 0);
@@ -240,7 +238,6 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
         RTTS_EXPECT(v1 == v2);
     }
 
-    // Read-only / prvalue views: iota, transform, chained filter|transform|take
     {
         struct light_acc {
             int sum = 0;
@@ -274,7 +271,6 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
         RTTS_EXPECT(r_const.fun.sum == s_const.fun.sum);
     }
 
-    // Single-pass input range
     {
         const std::vector<int> data = { 3, 1, 4, 1, 5, 9, 2, 6 };
         rtts::single_pass_input_range<int> spr(data);
@@ -284,7 +280,6 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
         RTTS_EXPECT(spr.reads() == data.size());
     }
 
-    // Volatile buffer
     {
         volatile int vbuf[16];
         for (int i = 0; i < 16; ++i) vbuf[i] = i + 1;
@@ -292,7 +287,6 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
         for (int i = 0; i < 16; ++i) RTTS_EXPECT(vbuf[i] == (i + 1) * 2);
     }
 
-    // Empty, 1-element, non-borrowed rvalue (dangling), pointer-to-member projection
     {
         std::vector<int> empty_v;
         auto er = raze::algorithm::for_each(empty_v, [](auto& x) { x += 1; });
@@ -316,7 +310,6 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
         RTTS_EXPECT(items[0].payload == 10 && items[2].payload == 30);
     }
 
-    // Constexpr with views
     static_assert([]() constexpr {
         std::array<int, 6> a = { 1, 2, 3, 4, 5, 6 };
         raze::algorithm::for_each[opt::fautovec][opt::fstatic](
@@ -325,4 +318,4 @@ RTTS_CASE("raze::algorithm::for_each views and edge cases") {
         raze::algorithm::for_each(views::iota(1, 5), [&acc](int x) { acc += x; });
         return a[0] == 1 && a[1] == 12 && a[4] == 15 && a[5] == 6 && acc == 10;
     }());
-};
+};

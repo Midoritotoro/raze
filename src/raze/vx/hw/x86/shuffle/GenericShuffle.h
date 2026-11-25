@@ -70,7 +70,7 @@ raze_always_inline fallback_result<V> shuffle_fallback_(
 
 	store_(src, x, aligned_policy{});
 
-	for (auto i = 0; i < length; ++i)
+	for (sizetype i = 0; i < length; ++i)
 		dst[i] = src[indices_array[i]];
 
 	return load_<ISA, V>(dst, aligned_policy{});
@@ -88,7 +88,7 @@ raze_always_inline fallback_result<V> shuffle_fallback_(V x, Index idx) noexcept
 	store_(src, x, aligned_policy{});
 	store_(idxs, idx, aligned_policy{});
 
-	for (auto i = 0; i < length; ++i)
+	for (sizetype i = 0; i < length; ++i)
 		dst[i] = src[idxs[i]];
 
 	return load_<ISA, V>(dst, aligned_policy{});
@@ -133,7 +133,7 @@ generic_shuffle_scalar_fallback_(const V& x, const Index& idx) noexcept
 		}(std::make_integer_sequence<sizetype, V::size()>{});
 	}
 	else {
-		for (auto i = 0; i < V::size(); ++i)
+		for (sizetype i = 0; i < V::size(); ++i)
 			dst[i] = src[idxs[i]];
 	}
 

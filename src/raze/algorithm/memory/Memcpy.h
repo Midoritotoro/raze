@@ -257,7 +257,7 @@ raze_always_inline void memcpy_small(void* raze_restrict dst, const void* raze_r
 	}
 }
 
- raze_declare_const_function void* __raze_memcpy(void* raze_restrict dst,
+inline raze_declare_const_function void* __raze_memcpy(void* raze_restrict dst,
 	const void* raze_restrict src, sizetype bytes) noexcept
 {
 	constexpr auto erms_threshold = 0x1000;
@@ -372,6 +372,7 @@ raze_always_inline void memcpy_small(void* raze_restrict dst, const void* raze_r
 	}
 	else {
 		memcpy_small(dst, src, bytes);
+		return dst;
 	}
 
 avx512_process_tail_from_0_to_256:
@@ -422,6 +423,7 @@ sse2_process_tail_from_0_to_64:
 raze_always_inline void* __raze_memcpy(void* raze_restrict dst,
 	const void* raze_restrict src, sizetype bytes) noexcept
 {
+	if (bytes == 0) return dst;
 	return memcpy(dst, src, bytes);
 }
 

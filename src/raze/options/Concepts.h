@@ -14,8 +14,11 @@ concept keyword = requires(Key key) {
 
 template <class Option>
 concept option = requires(const Option& opt) {
-    { opt(typename std::remove_cvref_t<Option>::keyword_type{}) }
-        -> std::same_as<typename std::remove_cvref_t<Option>::stored_value_type>;
+    typename std::remove_cvref_t<Option>::keyword_type;
+    typename std::remove_cvref_t<Option>::stored_value_type;
+    requires std::same_as<
+        std::remove_cvref_t<decltype(opt(typename std::remove_cvref_t<Option>::keyword_type{}))>,
+        typename std::remove_cvref_t<Option>::stored_value_type>;
 };
 
 template <class Settings> 

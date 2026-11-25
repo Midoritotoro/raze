@@ -17,6 +17,12 @@ template <class Condition, class Alternative>
 concept alternative_type = (vx::simd_mask_type<Condition> && vx::simd_type<Alternative>) ||
     (boolean_condition<Condition> && vx::arithmetic_type<Alternative>);
 
+struct condition_key_t : as_keyword<condition_key_t> {
+    using as_keyword<condition_key_t>::operator=;
+};
+
+constexpr inline condition_key_t condition_key = {};
+
 template <template <class> class F, class OptionsValues, class ... Options>
 struct conditional_callable_impl:  callable<F, OptionsValues, Options...> {
     using func_t = F<OptionsValues>;
@@ -28,29 +34,38 @@ struct conditional_callable_impl:  callable<F, OptionsValues, Options...> {
     raze_always_inline constexpr auto operator[](const Condition& condition, const Alternative& source) const noexcept
         requires(alternative_type<Condition, Alternative> && requires(const base_t& base) { base[or_(condition, source)]; })
     {
-        return base_t::operator[](or_(condition, source));
+        if constexpr (OptionsValues::size() == 0) {
+            using opt_t = option<condition_key_t, or_<Condition, Alternative>>;
+            using opts_t = options<settings<opt_t>>;
+            return F<opts_t>{ opts_t{ opt_t{ or_<Condition, Alternative>{ condition, source } } } };
+        }
+        else {
+            return base_t::operator[](or_(condition, source));
+        }
     }
 
     template <class Alternative, condition_type Condition>
     raze_always_inline constexpr auto operator[](const Alternative& source, const Condition& condition) const noexcept
         requires(alternative_type<Condition, Alternative> && requires(const base_t& base) { base[or_(condition, source)]; })
     {
-        return base_t::operator[](or_(condition, source));
+        if constexpr (OptionsValues::size() == 0) {
+            using opt_t = option<condition_key_t, or_<Condition, Alternative>>;
+            using opts_t = options<settings<opt_t>>;
+            return F<opts_t>{ opts_t{ opt_t{ or_<Condition, Alternative>{ condition, source } } } };
+        }
+        else {
+            return base_t::operator[](or_(condition, source));
+        }
     }
 
     template <class ... Ts>
     constexpr raze_always_inline auto behavior(callable_options auto const& opts,
-        const Ts& ... xs) const noexcept 
+        const Ts& ... xs) const
+        noexcept(noexcept(func_t::deferred_call(opts, xs...)))
     {
         return func_t::deferred_call(opts, xs...);
     }
 };
-
-struct condition_key_t : as_keyword<condition_key_t> {
-    using as_keyword<condition_key_t>::operator=;
-};
-
-constexpr inline condition_key_t condition_key = {};
 
 template <class T>
 concept conditional_expression = requires {
@@ -75,7 +90,10 @@ struct conditional_option {
     }
 
     raze_always_inline constexpr auto default_to(const auto& base) const noexcept {
-        return merge_prefer_first(make_options(condition_key = ignore_none), base);
+        if constexpr (std::remove_cvref_t<decltype(base)>::contains(condition_key))
+            return base;
+        else
+            return merge_prefer_first(make_options(condition_key = ignore_none), base);
     }
 };
 
@@ -85,7 +103,8 @@ struct conditional_callable: conditional_callable_impl<F, OptionsValues, conditi
 
     template <class ... Ts>
     constexpr raze_always_inline auto behavior(callable_options auto const& opts, 
-        const Ts&... xs) const noexcept 
+        const Ts&... xs) const
+        noexcept(noexcept(base_t::behavior(opts, xs...)))
     {
         return base_t::behavior(opts, xs...);
     }

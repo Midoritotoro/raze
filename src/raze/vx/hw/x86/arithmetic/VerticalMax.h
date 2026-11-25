@@ -13,20 +13,20 @@ raze_nodiscard raze_always_inline V vertical_max_(V x, V y) noexcept {
 		else if constexpr (epu8<T>) return as<V>(_mm_max_epu8(as<__m128i>(x), as<__m128i>(y)));
 		else if constexpr (ps<T>) return as<V>(_mm_max_ps(as<__m128>(x), as<__m128>(y)));
 		else if constexpr (pd<T>) return as<V>(_mm_max_pd(as<__m128d>(x), as<__m128d>(y)));
+		else if constexpr (has_avx512vl<ISA> && epi64<T>) return as<V>(_mm_max_epi64(as<__m128i>(x), as<__m128i>(y)));
+		else if constexpr (has_avx512vl<ISA> && epu64<T>) return as<V>(_mm_max_epu64(as<__m128i>(x), as<__m128i>(y)));
 		else if constexpr (has_sse41<ISA>) {
 			if constexpr (epi32<T>) return as<V>(_mm_max_epi32(as<__m128i>(x), as<__m128i>(y)));
 			else if constexpr (epu32<T>) return as<V>(_mm_max_epu32(as<__m128i>(x), as<__m128i>(y)));
 			else if constexpr (epu16<T>) return as<V>(_mm_max_epu16(as<__m128i>(x), as<__m128i>(y)));
 			else if constexpr (epi8<T>) return as<V>(_mm_max_epi8(as<__m128i>(x), as<__m128i>(y)));
 		}
-		else if constexpr (has_avx512vl<ISA>) {
-			if constexpr (epi64<T>) return as<V>(_mm_max_epi64(as<__m128i>(x), as<__m128i>(y)));
-			else if constexpr (epu64<T>) return as<V>(_mm_max_epu64(as<__m128i>(x), as<__m128i>(y)));
-		}
 	}
 	else if constexpr (sizeof(V) == 32) {
 		if constexpr (ps<T>) return as<V>(_mm256_max_ps(as<__m256>(x), as<__m256>(y)));
-		else if constexpr (ps<T>) return as<V>(_mm256_max_pd(as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (pd<T>) return as<V>(_mm256_max_pd(as<__m256d>(x), as<__m256d>(y)));
+		else if constexpr (has_avx512vl<ISA> && epi64<T>) return as<V>(_mm256_max_epi64(as<__m256i>(x), as<__m256i>(y)));
+		else if constexpr (has_avx512vl<ISA> && epu64<T>) return as<V>(_mm256_max_epu64(as<__m256i>(x), as<__m256i>(y)));
 		else if constexpr (has_avx2<ISA>) {
 			if constexpr (epi32<T>) return as<V>(_mm256_max_epi32(as<__m256i>(x), as<__m256i>(y)));
 			else if constexpr (epu32<T>) return as<V>(_mm256_max_epu32(as<__m256i>(x), as<__m256i>(y)));
@@ -34,12 +34,6 @@ raze_nodiscard raze_always_inline V vertical_max_(V x, V y) noexcept {
 			else if constexpr (epu16<T>) return as<V>(_mm256_max_epu16(as<__m256i>(x), as<__m256i>(y)));
 			else if constexpr (epi8<T>) return as<V>(_mm256_max_epi8(as<__m256i>(x), as<__m256i>(y)));
 			else if constexpr (epu8<T>) return as<V>(_mm256_max_epu8(as<__m256i>(x), as<__m256i>(y)));
-			else if constexpr (ps<T>) return as<V>(_mm256_max_ps(as<__m256>(x), as<__m256>(y)));
-			else if constexpr (ps<T>) return as<V>(_mm256_max_pd(as<__m256d>(x), as<__m256d>(y)));
-		}
-		else if constexpr (has_avx512vl<ISA>) {
-			if constexpr (epi64<T>) return as<V>(_mm256_max_epi64(as<__m256i>(x), as<__m256i>(y)));
-			else if constexpr (epu64<T>) return as<V>(_mm256_max_epu64(as<__m256i>(x), as<__m256i>(y)));
 		}
 	}
 	else if constexpr (sizeof(V) == 64) {

@@ -327,7 +327,8 @@ RTTS_CASE("raze::algorithm::replace_copy_if views and edge cases") {
         raze::algorithm::replace_copy_if(src, std::back_inserter(b1), is_neg, 0);
         raze::algorithm::replace_copy_if[opt::fscalar](src, std::back_inserter(b2), is_neg, 0);
         raze::algorithm::replace_copy_if[opt::fautovec][opt::fstatic](src, std::back_inserter(b3), [](auto x) { if (x < 0) return true; return false; }, 0);
-        raze::algorithm::replace_copy_if[opt::aligned<64, opt::unaligned>](src, std::back_inserter(b4), is_neg, 0);
+        alignas(64) const std::array<int, 6> src_aligned = { -2, -1, 0, 1, 2, 3 };
+        raze::algorithm::replace_copy_if[opt::aligned<64, opt::unaligned>](src_aligned, std::back_inserter(b4), is_neg, 0);
         RTTS_EXPECT(b1 == expected && b2 == expected && b3 == expected && b4 == expected);
 
         std::deque<int> f1, f2;

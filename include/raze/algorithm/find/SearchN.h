@@ -41,12 +41,12 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
         unchecked_iterator_type _candidate;
         unchecked_iterator_type _result_end;
 
-        constexpr explicit kernel(Source&& source, SizeType count, const Value& value,
+        constexpr explicit kernel(Source&& source, SizeType cnt, const Value& value,
             Predicate pred, Projection proj)
             : _source(std::forward<Source>(source)),
               _iterator(_source.ubegin()),
               _sentinel(_source.uend()),
-              _count(count),
+              _count(cnt),
               _value(value),
               _predicate(std::move(pred)),
               _proj(std::move(proj)),
@@ -100,7 +100,7 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
         template <vectorizable_tag Tag, class Ptr>
         raze_always_inline SizeType trailing_matches(Ptr low, Ptr high, SizeType carry) const {
             auto* p = high;
-            SizeType count = 0;
+            SizeType matched_cnt = 0;
 
             while (p - low >= static_cast<std::ptrdiff_t>(Tag::size())) {
                 p -= Tag::size();
@@ -108,20 +108,20 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
 
                 if (!vx::none_of(not_mask)) {
                     // `find_last_set` gives distance from chunk end to the last 0 == trailing 1-run length.
-                    return count + static_cast<SizeType>(vx::find_last_set[vx::not_null](not_mask));
+                    return matched_cnt + static_cast<SizeType>(vx::find_last_set[vx::not_null](not_mask));
                 }
 
-                count += Tag::size();
+                matched_cnt += Tag::size();
             }
 
             while (p != low) {
                 if (!_predicate(_proj(*--p), _value))
-                    return count;
-                ++count;
+                    return matched_cnt;
+                ++matched_cnt;
             }
 
             // Only add `carry` if every single element in [low, high) matched.
-            return count + carry;
+            return matched_cnt + carry;
         }
 
         template <vectorizable_tag Tag, class Ptr>
@@ -373,23 +373,23 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
     template <std::forward_iterator It, std::sentinel_for<It> Sent,
         class T = std::iter_value_t<It>, class Predicate = std::equal_to<>, class Projection = std::identity>
     raze_nodiscard constexpr raze_always_inline std::ranges::subrange<It>
-        operator()(It first, Sent sent, std::iter_difference_t<It> count, const T& value,
+        operator()(It first, Sent sent, std::iter_difference_t<It> cnt, const T& value,
             Predicate pred = {}, Projection proj = {}) const requires (std::indirectly_comparable<
                 It, const T*, Predicate, Projection>)
     {
         return this->dispatch(get_source(std::move(first), std::move(sent)),
-            count, value, traits::fwd_fn(pred), traits::fwd_fn(proj));
+            cnt, value, traits::fwd_fn(pred), traits::fwd_fn(proj));
     }
 
     template <std::ranges::forward_range R, class T = std::ranges::range_value_t<R>, 
         class Predicate = std::equal_to<>, class Projection = std::identity>
     raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_subrange_t<R>
-        operator()(R&& r, std::ranges::range_difference_t<R> count, const T& value,
+        operator()(R&& r, std::ranges::range_difference_t<R> cnt, const T& value,
             Predicate pred = {}, Projection proj = {}) const requires (std::indirectly_comparable<
                 std::ranges::iterator_t<R>, const T*, Predicate, Projection>)
     {
         return this->dispatch(get_source(std::forward<R>(r)),
-            count, value, traits::fwd_fn(pred), traits::fwd_fn(proj));
+            cnt, value, traits::fwd_fn(pred), traits::fwd_fn(proj));
     }
 };
 

@@ -89,19 +89,19 @@ inline const char* extract_basename(const char* path, size_t size) noexcept {
 
 #else 
 
-#define raze_debug_assert_return(condition, message, return_value)
-#define raze_debug_assert(condition)
+#define raze_debug_assert_return(condition, message, return_value) ((void)0)
+#define raze_debug_assert(condition) ((void)0)
 
-#define raze_debug_assert_log(condition, message)
+#define raze_debug_assert_log(condition, message) ((void)0)
 
 #endif // !defined(NDEBUG)
 
 #define raze_assert_unreachable() raze_debug_assert(false)
 
-#if defined(NDEBUG)
+#if !defined(NDEBUG)
   constexpr inline bool is_debug = true;
 #else
   constexpr inline bool is_debug = false;
-#endif // defined(NDEBUG)
+#endif // !defined(NDEBUG)
 
 __RAZE_NAMESPACE_END

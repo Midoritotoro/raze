@@ -66,8 +66,16 @@ template <concepts::settings S0, concepts::settings S1>
 constexpr static raze_always_inline auto merge_prefer_first(
     const options<S0>& base, const options<S1>& new_options) noexcept
 {
-    auto result_options = raze::options::merge(new_options, base);
-    return options<decltype(result_options)>{result_options};
+    if constexpr (S0::size() == 0) {
+        return new_options;
+    }
+    else if constexpr (S1::size() == 0) {
+        return base;
+    }
+    else {
+        auto result_options = raze::options::merge(new_options, base);
+        return options<decltype(result_options)>{result_options};
+    }
 }
 
 template <class T>

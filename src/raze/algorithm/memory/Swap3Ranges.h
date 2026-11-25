@@ -53,20 +53,27 @@ struct swap_3_ranges_t : Traits, dispatchable<swap_3_ranges_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, sizetype aligned_size) noexcept {
-            const auto aligned_end = bytes_pointer_offset(_first1, aligned_size);
+            auto* p1 = _first1;
+            auto* p2 = _first2;
+            auto* p3 = _first3;
+            const auto aligned_end = bytes_pointer_offset(p1, aligned_size);
 
             raze_disable_unrolling do {
-                const auto v1 = vx::load<Tag>(_first1);
-                const auto v2 = vx::load<Tag>(_first2);
-                const auto v3 = vx::load<Tag>(_first3);
+                const auto v1 = vx::load<Tag>(p1);
+                const auto v2 = vx::load<Tag>(p2);
+                const auto v3 = vx::load<Tag>(p3);
 
-                vx::store(_first1, v2);
-                vx::store(_first2, v3);
-                vx::store(_first3, v1);
+                vx::store(p1, v2);
+                vx::store(p2, v3);
+                vx::store(p3, v1);
 
-                advance_bytes(_first1, _first3, sizeof(Tag));
-                advance_bytes(_first2, sizeof(Tag));
-            } while (_first1 != aligned_end);
+                advance_bytes(p1, p3, sizeof(Tag));
+                advance_bytes(p2, sizeof(Tag));
+            } while (p1 != aligned_end);
+
+            _first1 = p1;
+            _first2 = p2;
+            _first3 = p3;
         }
 
         raze_always_inline void result() const noexcept {}

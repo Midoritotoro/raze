@@ -383,9 +383,10 @@ RTTS_CASE("raze::algorithm::mismatch views and edge cases") {
         auto sm = std::ranges::mismatch(a, tv);
         RTTS_EXPECT(rm.in1 == sm.in1 && rm.in2 == sm.in2);
 
+        alignas(64) const std::array<int, 7> a_aligned = { 2, 4, 6, 8, 99, 12, 14 };
         auto fv = views::iota(1, 20) | views::filter([](int x) { return (x & 1) == 0; });
-        auto rf = raze::algorithm::mismatch[opt::aligned<64, opt::unaligned>](a, fv);
-        auto sf = std::ranges::mismatch(a, fv);
+        auto rf = raze::algorithm::mismatch[opt::aligned<64, opt::unaligned>](a_aligned, fv);
+        auto sf = std::ranges::mismatch(a_aligned, fv);
         RTTS_EXPECT(rf.in1 == sf.in1 && rf.in2 == sf.in2);
 
         auto nc = rtts::make_non_common(a);

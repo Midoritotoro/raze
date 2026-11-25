@@ -222,8 +222,8 @@ RTTS_CASE("raze::algorithm::replace views and edge cases") {
         RTTS_EXPECT(one_v[0] == 9);
 
         volatile int vbuf[16];
-        for (int i = 0; i < 16; ++i) vbuf[i] = (i % 3 == 0) ? 7 : i;
-        raze::algorithm::replace(vbuf, vbuf + 16, 7, 42);
+        for (int i = 0; i < 16; ++i) vbuf[i] = (i % 3 == 0) ? 99 : i;
+        raze::algorithm::replace(vbuf, vbuf + 16, 99, 42);
         for (int i = 0; i < 16; ++i) RTTS_EXPECT(vbuf[i] == ((i % 3 == 0) ? 42 : i));
 
         std::vector<rtts::test_item> items = { { 1, 10 }, { 2, 20 }, { 1, 30 } };

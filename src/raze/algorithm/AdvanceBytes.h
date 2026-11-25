@@ -90,14 +90,43 @@ bytes_distance(const options::as<Range>&) noexcept {
     return std::integral_constant<sizetype, range_constexpr_size<Range>() * sizeof(std::ranges::range_value_t<Range>)>{};
 }
 
-template <std::ranges::range Range>
-constexpr auto bytes_distance(Range&& r) noexcept(noexcept(std::ranges::distance(r))) {
-    return std::ranges::distance(r) * sizeof(std::ranges::range_value_t<Range>);
+template <std::input_iterator It, std::sentinel_for<It> Sent>
+consteval bool is_bytes_distance_noexcept() noexcept {
+    if constexpr (std::sized_sentinel_for<Sent, It>)
+        return noexcept(std::declval<const Sent&>() - std::declval<const It&>());
+    else
+        return noexcept(std::declval<It&>() != std::declval<const Sent&>(), ++std::declval<It&>());
 }
 
 template <std::input_iterator It, std::sentinel_for<It> Sent>
-constexpr auto bytes_distance(It it, Sent sent) noexcept(noexcept(std::ranges::distance(it, sent))) {
-    return std::ranges::distance(it, sent) * sizeof(std::iter_value_t<It>);
+constexpr auto bytes_distance(It it, Sent sent) noexcept(is_bytes_distance_noexcept<It, Sent>()) {
+    if constexpr (std::sized_sentinel_for<Sent, It>) {
+        return (sent - it) * sizeof(std::iter_value_t<It>);
+    }
+    else {
+        std::iter_difference_t<It> dist = 0;
+        for (; it != sent; ++it)
+            ++dist;
+        return dist * sizeof(std::iter_value_t<It>);
+    }
+}
+
+template <std::ranges::range Range>
+consteval bool is_range_bytes_distance_noexcept() noexcept {
+    if constexpr (std::ranges::sized_range<Range>)
+        return noexcept(std::ranges::size(std::declval<Range&&>()));
+    else
+        return noexcept(bytes_distance(std::ranges::begin(std::declval<Range&&>()), std::ranges::end(std::declval<Range&&>())));
+}
+
+template <std::ranges::range Range>
+constexpr auto bytes_distance(Range&& r) noexcept(is_range_bytes_distance_noexcept<Range>()) {
+    if constexpr (std::ranges::sized_range<Range>) {
+        return static_cast<std::ranges::range_difference_t<Range>>(std::ranges::size(r)) * sizeof(std::ranges::range_value_t<Range>);
+    }
+    else {
+        return bytes_distance(std::ranges::begin(r), std::ranges::end(r));
+    }
 }
 
 template <std::input_iterator It>

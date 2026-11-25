@@ -27,11 +27,11 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 				vectorizable_projection<Projection, iterator_type>;
 		}
 
-		source_type _source;
+		raze_no_unique_address source_type _source;
 		raze_no_unique_address Comp _comp;
 		raze_no_unique_address Projection _proj;
 		unchecked_iterator_type _in_it;
-		unchecked_sentinel_type _in_sent;
+		raze_no_unique_address unchecked_sentinel_type _in_sent;
 		bool _sorted = true;
 
 		constexpr explicit kernel(Source&& source, Comp comp, Projection proj)
@@ -40,7 +40,7 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()() {
-			if (!_sorted || _in_it == _in_sent) return;
+			if (_in_it == _in_sent) return;
 
 			auto prev = _in_it;
 			raze_disable_unrolling
@@ -53,9 +53,7 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, sizetype aligned_size) {
-			if (!_sorted || aligned_size < sizeof(Tag) * 2) return;
-
+		raze_always_inline bool operator()(Tag, sizetype aligned_size) {
 			auto* ptr = std::to_address(_in_it);
 			const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
@@ -65,13 +63,14 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 
 				if (vx::any_of(_comp(next, current))) {
 					_sorted = false;
-					return;
+					return false;
 				}
 
 				advance_bytes(ptr, sizeof(Tag));
-			} while (ptr + Tag::size() != aligned_end);
- 
+			} while (ptr != aligned_end);
+
 			source_type::from_ptr(_in_it, ptr);
+			return true;
 		}
 
 		constexpr raze_always_inline bool result() const {
@@ -81,11 +80,13 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
 			requires(constexpr_sized_source<Source>)
 		{
-			return Source::static_size();
+			constexpr sizetype total = Source::static_size();
+			return std::integral_constant<sizetype, (total > sizeof(vector_value_type) ? total - sizeof(vector_value_type) : 0)>{};
 		}
 
 		raze_nodiscard constexpr raze_always_inline auto size() const {
-			return _source.size();
+			const auto total = _source.size();
+			return total > sizeof(vector_value_type) ? total - sizeof(vector_value_type) : sizetype(0);
 		}
 	};
 

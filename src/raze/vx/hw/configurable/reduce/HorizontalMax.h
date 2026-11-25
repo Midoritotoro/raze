@@ -17,36 +17,53 @@ struct configurable_hmax_t: options::conditional_callable<configurable_hmax_t, O
     }
 
     template <simd_type V>
-    static raze_always_inline auto deferred_call(auto opts, const V& x) noexcept {
+    static raze_always_inline auto deferred_call(const auto& opts, const V& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
         using Value = typename V::value_type;
         using Abi = typename V::abi_type;
 
-        Value r = 0;
-        
-        auto chunk_op = [&] <class ... Args> (Args&& ... args) raze_always_inline_lambda {
-            r = std::max(horizontal_max_<Abi::isa, Value>(ustorage<Args>(args)...), r);
-        };
-
-        if constexpr (options::complete_mask<Mask>) {
-            auto condition = opts[options::condition_key];
-
-            if constexpr (Mask::has_alternative) {
-                auto alternative = condition.alternative();
-                r = condition.mask()[std::integral_constant<sizetype, 0>{}] ? x[std::integral_constant<sizetype, 0>{}] : alternative[std::integral_constant<sizetype, 0>{}];
-                x.__for_each_chunk(chunk_op, condition.mask().__storage().storage(), alternative.__storage().storage());
+        if constexpr (V::__chunks_count() == 1) {
+            if constexpr (options::complete_mask<Mask>) {
+                const auto& condition = opts[options::condition_key];
+                if constexpr (Mask::has_alternative)
+                    return horizontal_max_<Abi::isa, Value>(ustorage(x.__storage().storage()),
+                        ustorage(condition.mask().__storage().storage()),
+                        ustorage(condition.alternative().__storage().storage()));
+                else
+                    return horizontal_max_<Abi::isa, Value>(ustorage(x.__storage().storage()),
+                        ustorage(condition.mask().__storage().storage()));
             }
             else {
-                r = condition.mask()[std::integral_constant<sizetype, 0>{}] ? x[std::integral_constant<sizetype, 0>{}] : 0;
-                x.__for_each_chunk(chunk_op, condition.mask().__storage().storage());
+                return horizontal_max_<Abi::isa, Value>(ustorage(x.__storage().storage()));
             }
         }
         else {
-            r = x[std::integral_constant<sizetype, 0>{}];
-            x.__for_each_chunk(chunk_op);
-        }
+            Value r = 0;
 
-        return r;
+            auto chunk_op = [&] <class ... Args> (Args&& ... args) raze_always_inline_lambda {
+                r = std::max(horizontal_max_<Abi::isa, Value>(ustorage<Args>(args)...), r);
+            };
+
+            if constexpr (options::complete_mask<Mask>) {
+                const auto& condition = opts[options::condition_key];
+
+                if constexpr (Mask::has_alternative) {
+                    const auto& alternative = condition.alternative();
+                    r = condition.mask()[std::integral_constant<sizetype, 0>{}] ? x[std::integral_constant<sizetype, 0>{}] : alternative[std::integral_constant<sizetype, 0>{}];
+                    x.__for_each_chunk(chunk_op, condition.mask().__storage().storage(), alternative.__storage().storage());
+                }
+                else {
+                    r = condition.mask()[std::integral_constant<sizetype, 0>{}] ? x[std::integral_constant<sizetype, 0>{}] : 0;
+                    x.__for_each_chunk(chunk_op, condition.mask().__storage().storage());
+                }
+            }
+            else {
+                r = x[std::integral_constant<sizetype, 0>{}];
+                x.__for_each_chunk(chunk_op);
+            }
+
+            return r;
+        }
     }
 };
 

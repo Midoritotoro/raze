@@ -32,7 +32,12 @@ concept native_kernel = requires(Work & w) { w(native_tag{}); };
 template <std::contiguous_iterator It, std::sentinel_for<It> Sent, class Func>
 raze_always_inline constexpr void for_noalias(It& first, Sent last, Func func) {
     auto sz = last - first;
-    for (auto i = 0; i < sz; ++i)
+#if defined(raze_cpp_gnu) && !defined(raze_cpp_clang)
+    raze_do_pragma(GCC ivdep)
+#elif defined(raze_cpp_clang)
+    raze_do_pragma(clang loop vectorize(assume_safety))
+#endif
+    for (decltype(sz) i = 0; i < sz; ++i)
         func(i);
     first += sz;
 }
@@ -43,24 +48,30 @@ raze_always_inline constexpr void for_noalias2(It1& first1, Sent1 last1,
     It2& first2, Sent2 last2, Func func)
 {
     auto sz = math::min(last1 - first1, last2 - first2);
-    for (auto i = 0; i < sz; ++i)
+#if defined(raze_cpp_gnu) && !defined(raze_cpp_clang)
+    raze_do_pragma(GCC ivdep)
+#elif defined(raze_cpp_clang)
+    raze_do_pragma(clang loop vectorize(assume_safety))
+#endif
+    for (decltype(sz) i = 0; i < sz; ++i)
         func(i);
     first1 += sz;
     first2 += sz;
 }
 
 #if defined(raze_cpp_msvc_only)
-#define raze_novec_loop(header, body) \
-    if !consteval {                   \
+#define raze_novec_loop(header, body)   \
+    if !consteval {                     \
         raze_do_pragma(loop(no_vector)) \
-        for header body               \
-        return;                       \
-    }                                 \
-    raze_disable_unrolling            \
-    for header body
+        for header body                 \
+    }                                   \
+    else {                              \
+        raze_disable_unrolling          \
+        for header body                 \
+    }
 #else
-#define raze_novec_loop(header, body) \
-    raze_disable_unrolling            \
+#define raze_novec_loop(header, body)   \
+    raze_disable_unrolling              \
     for header body
 #endif
 
@@ -136,7 +147,11 @@ raze_always_inline constexpr void for_novec2(It1& first1, Sent1 last1,
 
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 
-#define RAZE_AUTOVEC_TARGET(isa_str) __attribute__((target(isa_str), noinline))
+#if defined(raze_cpp_gnu) && !defined(raze_cpp_clang)
+#  define RAZE_AUTOVEC_TARGET(isa_str) __attribute__((target(isa_str), optimize("vect-cost-model=cheap"), noinline))
+#else
+#  define RAZE_AUTOVEC_TARGET(isa_str) __attribute__((target(isa_str), noinline))
+#endif
 
 template <class Work>
 struct invoke_autovec_helper_t {

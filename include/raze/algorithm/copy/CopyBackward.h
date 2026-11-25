@@ -95,9 +95,12 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_in, vt_out>) {
 			auto* in_ptr = std::to_address(_in_end);
-			auto* out_ptr = std::to_address(_out_iterator); 
-			out_ptr -= ignore.tail_elements(); 
+			auto* out_ptr = std::to_address(_out_iterator);
+			const auto count = ignore.tail_elements();
+			in_ptr -= count;
+			out_ptr -= count;
 			vx::store[ignore](out_ptr, vx::load<Tag>[ignore](in_ptr));
+			source_type::from_ptr(_in_end, in_ptr);
 			destination_type::from_ptr(_out_iterator, out_ptr);
 		}
 

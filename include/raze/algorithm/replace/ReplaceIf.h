@@ -60,7 +60,11 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 			auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
 			first = align::template assume<0>(first);
 
-			for_noalias(first, last, [&pred = _predicate, &proj = _proj, &newv = _new_value,
+			std::conditional_t<traits::lightweight_callable<Predicate>, Predicate, Predicate&> pred = _predicate;
+			std::conditional_t<traits::lightweight_callable<Projection>, Projection, Projection&> proj = _proj;
+			std::conditional_t<std::is_trivially_copyable_v<Value> && sizeof(Value) <= sizeof(void*) * 2, Value, const Value&> newv = _new_value;
+
+			for_noalias(first, last, [&pred, &proj, &newv,
 				in = first](auto i) raze_always_inline_lambda {
 					if (std::invoke(pred, std::invoke(proj, in[i])))
 						in[i] = newv;

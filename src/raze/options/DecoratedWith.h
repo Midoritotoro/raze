@@ -26,7 +26,7 @@ struct decorated_with:
         return this->process(this->options(), opts);
     }
 
-    raze_nodiscard constexpr raze_always_inline auto options() const noexcept {
+    raze_nodiscard constexpr raze_always_inline const OptionsValues& options() const noexcept {
         return static_cast<const OptionsValues&>(*this);
     }
 };

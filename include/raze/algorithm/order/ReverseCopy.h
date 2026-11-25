@@ -82,7 +82,7 @@ struct reverse_copy_t : Traits, dispatchable<reverse_copy_t<Traits>> {
         raze_always_inline void operator()(Tag, sizetype aligned_size)
             requires(vx::supports_fast_conversion<Tag, vtype_out>)
         {
-            auto* back = source_type::to_raw_range(_back, _source.uend()).first;
+            auto* back = std::to_address(_back);
             auto* out = std::to_address(_out);
 
             auto* aligned_begin = back;

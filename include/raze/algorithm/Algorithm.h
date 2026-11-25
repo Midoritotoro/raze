@@ -5,6 +5,12 @@
 #include <raze/algorithm/copy/CopyN.h>
 #include <raze/algorithm/copy/Move.h>
 #include <raze/algorithm/copy/MoveBackward.h>
+#include <raze/algorithm/extreme/Min.h>
+#include <raze/algorithm/extreme/Max.h>
+#include <raze/algorithm/extreme/Minmax.h>
+#include <raze/algorithm/extreme/MinElement.h>
+#include <raze/algorithm/extreme/MaxElement.h>
+#include <raze/algorithm/extreme/MinmaxElement.h>
 #include <raze/algorithm/fill/Fill.h>
 #include <raze/algorithm/fill/FillN.h>
 #include <raze/algorithm/find/AllOf.h>

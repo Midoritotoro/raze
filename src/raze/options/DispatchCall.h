@@ -8,7 +8,9 @@
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 template <class F, class ... Args>
-constexpr raze_no_stack_protector raze_always_inline decltype(auto) dispatch_call(const F& f, Args&& ... args) noexcept {
+constexpr raze_no_stack_protector raze_always_inline decltype(auto) dispatch_call(const F& f, Args&& ... args)
+    noexcept(noexcept(f.behavior(f.options(), std::forward<Args>(args)...)))
+{
 	return f.behavior(f.options(), std::forward<Args>(args)...);
 }
 

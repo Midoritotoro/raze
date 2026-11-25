@@ -21,11 +21,11 @@ struct or_ {
     constexpr or_& operator=(const or_&) noexcept = default;
     constexpr or_& operator=(or_&&) noexcept = default;
 
-    constexpr raze_always_inline Value alternative() const noexcept {
+    constexpr raze_always_inline const Value& alternative() const noexcept {
         return _alternative;
     }
 
-    raze_always_inline Condition mask() const noexcept {
+    constexpr raze_always_inline const Condition& mask() const noexcept {
         return _cond;
     }
 

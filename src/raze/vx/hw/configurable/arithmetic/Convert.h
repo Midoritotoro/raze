@@ -12,6 +12,8 @@
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/arithmetic/Convert.h>
+#  include <src/raze/vx/hw/x86/mask/operations/ToMask.h>
+#  include <src/raze/vx/hw/x86/mask/operations/ToVector.h>
 #endif // defined(raze_processor_x86)
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -145,8 +147,14 @@ struct configurable_convert_t {
             else return options::dispatch_call(*this, x);
         }
 
+        template <simd_mask_type M>
+        raze_nodiscard raze_always_inline auto operator()(const M& x) const noexcept {
+            if constexpr (Options::contains(ignore_unsupported) && !arithmetic_type<T>) return x;
+            else return options::dispatch_call(*this, x);
+        }
+
         template <simd_type V>
-        static raze_always_inline auto deferred_call(auto, const V& x) noexcept {
+        static raze_always_inline auto deferred_call(const auto&, const V& x) noexcept {
             using Abi = typename V::abi_type;
             using ResultSimd = simd<T, Abi>;
 
@@ -169,6 +177,52 @@ struct configurable_convert_t {
             }
 
             return res;
+        }
+
+        template <simd_mask_type M>
+        static raze_always_inline auto deferred_call(const auto&, const M& x) noexcept {
+            using From = typename M::value_type;
+            using Abi = typename M::abi_type;
+            using ResultMask = simd_mask<T, Abi>;
+
+            if constexpr (std::same_as<From, T>) {
+                return x;
+            }
+            else if constexpr (sizeof(From) == sizeof(T)) {
+                ResultMask res(uninitialized);
+                res.__for_each_chunk([] <class DstChunk, class SrcChunk> (DstChunk& dst, const SrcChunk& src) raze_always_inline_lambda {
+                    dst = src.data();
+                }, x.__storage().storage());
+                return res;
+            }
+            else if constexpr (M::__chunks_count() == 1 && ResultMask::__chunks_count() == 1) {
+                ResultMask res(uninitialized);
+                const auto src_raw = ustorage(x.__storage().storage());
+                using SrcRaw = std::remove_cvref_t<decltype(src_raw)>;
+                using DstRaw = std::remove_cvref_t<decltype(ustorage(res.__storage().storage()))>;
+
+                if constexpr (std::is_integral_v<SrcRaw> && std::is_integral_v<DstRaw>) {
+                    res.__storage().storage() = static_cast<DstRaw>(src_raw);
+                }
+                else if constexpr (std::is_integral_v<DstRaw>) {
+                    res.__storage().storage() = static_cast<DstRaw>(to_mask_<Abi::isa, From>(src_raw));
+                }
+                else if constexpr (intrin_type<DstRaw>) {
+                    res.__storage().storage() = to_vector_<Abi::isa, DstRaw, T>(to_mask_<Abi::isa, From>(src_raw));
+                }
+                else {
+                    for (i32 i = 0; i < static_cast<i32>(Abi::size); ++i)
+                        res.__insert(i, x.__extract(i));
+                }
+
+                return res;
+            }
+            else {
+                ResultMask res(uninitialized);
+                for (i32 i = 0; i < static_cast<i32>(Abi::size); ++i)
+                    res.__insert(i, x.__extract(i));
+                return res;
+            }
         }
     };
 };
