@@ -25,7 +25,7 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 
 		template <class T>
 		static consteval auto deduce_vector_value_type() noexcept {
-			if constexpr (vx::arithmetic_type<T>)
+			if constexpr (vectorizable_value_type<T>)
 				return T{};
 			else if constexpr (sizeof(T) <= 8 && sizeof(T) != 0 && ((sizeof(T) & (sizeof(T) - 1)) == 0))
 				return typename IntegerForSizeof<T>::Unsigned{};
@@ -44,7 +44,7 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 				!traits::is_iterator_volatile_v<iterator1_type> &&
 				!traits::is_iterator_volatile_v<iterator2_type> &&
 				!std::same_as<vtype1, void> && !std::same_as<vtype2, void> &&
-				((vx::arithmetic_type<InT1> && vx::arithmetic_type<InT2> && has_common_type<InT1, InT2>)
+				((vectorizable_value_type<InT1> && vectorizable_value_type<InT2> && has_common_type<InT1, InT2>)
 					|| (traits::trivially_swappable<InT1> && std::same_as<InT1, InT2>));
 		}
 

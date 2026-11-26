@@ -2,12 +2,14 @@
 
 #include <raze/algorithm/find/FindLastIf.h>
 #include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/ProjectedValue.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct find_last_t : Traits {
-    template <std::forward_iterator It, std::sentinel_for<It> Sent, class T, class Projection = std::identity>
+    template <std::forward_iterator It, std::sentinel_for<It> Sent,
+        class Projection = std::identity, class T = projected_value_t<It, Projection>>
     raze_nodiscard constexpr raze_always_inline std::ranges::subrange<It>
         operator()(It first, Sent last, const T& value, Projection proj = {}) const
             requires(std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Projection>, const T*>)
@@ -19,7 +21,8 @@ struct find_last_t : Traits {
             });
     }
 
-    template <std::ranges::forward_range R, class T, class Projection = std::identity>
+    template <std::ranges::forward_range R,
+        class Projection = std::identity, class T = projected_value_t<std::ranges::iterator_t<R>, Projection>>
     raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_subrange_t<R>
         operator()(R&& r, const T& value, Projection proj = {}) const
             requires(std::indirect_binary_predicate<std::ranges::equal_to, 

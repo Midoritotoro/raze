@@ -61,23 +61,23 @@
 #    define raze_processor_arm 0
 #  endif
 
-#  if PROCESSOR_ARM >= 8
+#  if raze_processor_arm >= 8
 #    define raze_processor_arm_v8
-#  endif // PROCESSOR_ARM >= 8
+#  endif // raze_processor_arm >= 8
 
-#  if PROCESSOR_ARM >= 7
+#  if raze_processor_arm >= 7
 #    define raze_processor_arm_v7
-#  endif // PROCESSOR_ARM >= 7
+#  endif // raze_processor_arm >= 7
 
-#  if PROCESSOR_ARM >= 6
+#  if raze_processor_arm >= 6
 #    define raze_processor_arm_v6
-#  endif // PROCESSOR_ARM >= 6
+#  endif // raze_processor_arm >= 6
 
-#  if PROCESSOR_ARM >= 5
+#  if raze_processor_arm >= 5
 #    define raze_processor_arm_v5
 #  else
 #    error "ARM architecture too old"
-#  endif // PROCESSOR_ARM >= 5
+#  endif // raze_processor_arm >= 5
 
 #  if defined(__ARMEL__) || defined(_M_ARM64)
 #    define raze_byte_order raze_little_endian
@@ -180,7 +180,7 @@
 
 #elif       defined(__ppc__)    || defined(__ppc)       || defined(__powerpc__) || defined(_ARCH_COM) \
         ||  defined(_ARCH_PWR)  || defined(_ARCH_PPC)   || defined(_M_MPPC)     || defined(_M_PPC)
-#  define PROCESSOR_POWER
+#  define raze_processor_power
 
 #  if defined(__ppc64__) || defined(__powerpc64__) || defined(__64BIT__)
 #    define raze_processor_power_64
@@ -219,15 +219,20 @@
 #  endif
 #  define raze_byte_order raze_big_endian
 
-
+#elif defined(__wasm__) || defined(__wasm32__) || defined(__wasm64__)
 #  define raze_processor_wasm
 #  define raze_byte_order raze_little_endian
-#  define raze_processor_wordsize 8
-#ifdef raze_compiler_supports_sse2
-#  define raze_processor_x86 6  
-# define raze_processor_x86_64
-#  define raze_processor_wasm_64
-#endif
+#  if defined(__wasm64__)
+#    define raze_processor_wordsize 8
+#    define raze_processor_wasm_64
+#  else
+#    define raze_processor_wordsize 4
+#    define raze_processor_wasm_32
+#  endif
+#  ifdef raze_compiler_supports_sse2
+#    define raze_processor_x86 6
+#    define raze_processor_x86_64
+#  endif
 
 #endif
 
@@ -249,7 +254,7 @@
 #  define raze_pointer_size           __SIZEOF_POINTER__
 #elif defined(__LP64__) || defined(_LP64)
 #  define raze_pointer_size           8
-#elif defined(PROCESSOR_WORDSIZE)
+#elif defined(raze_processor_wordsize)
 #  define raze_pointer_size           raze_processor_wordsize
 #else
 #  define raze_pointer_size           4

@@ -90,7 +90,7 @@ raze_always_inline V broadcast_(WrappedType value) noexcept
 		}
 		else if constexpr (epi8<T> || epu8<T>) {
 			if constexpr (has_avx512bw<ISA>) return as<V>(_mm512_set1_epi8(value));
-			else return _mm512_set1_epi32(static_cast<u8>(value) * 0x01010101u);
+			else return as<V>(_mm512_set1_epi32(static_cast<i32>(static_cast<u8>(value) * 0x01010101u)));
 		}
 		else if constexpr (ps<T>) return as<V>(_mm512_set1_ps(value));
 		else if constexpr (pd<T>) return as<V>(_mm512_set1_pd(value));

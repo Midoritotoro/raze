@@ -11,17 +11,25 @@
  * | Group | Algorithms |
  * | :--- | :--- |
  * | @ref raze_algo_batch | `for_each`, `for_each_n` |
- * | @ref raze_algo_query | `all_of`, `any_of`, `none_of`, `equal`, `mismatch`, `starts_with`, `ends_with` |
- * | @ref raze_algo_find | `find`, `find_if`, `find_if_not`, `find_last`, `find_last_if`, `find_last_if_not`, `adjacent_find` |
+ * | @ref raze_algo_query | `all_of`, `any_of`, `none_of`, `equal`, `mismatch`, `starts_with`, `ends_with`, `lexicographical_compare`, `lexicographical_compare_three_way` |
+ * | @ref raze_algo_find | `find`, `find_if`, `find_if_not`, `find_last`, `find_last_if`, `find_last_if_not`, `find_first_of`, `adjacent_find` |
  * | @ref raze_algo_subrange | `search`, `search_n`, `find_end`, `contains`, `contains_subrange` |
  * | @ref raze_algo_count | `count`, `count_if`, `count_if_not` |
- * | @ref raze_algo_extreme | `min`, `max`, `minmax`, `min_element`, `max_element`, `minmax_element` |
- * | @ref raze_algo_copy | `copy`, `copy_backward`, `copy_if`, `copy_n` |
- * | @ref raze_algo_fill | `fill`, `fill_n` |
+ * | @ref raze_algo_extreme | `min`, `max`, `minmax`, `min_element`, `max_element`, `minmax_element`, `clamp` |
+ * | @ref raze_algo_copy | `copy`, `copy_backward`, `copy_if`, `copy_n`, `move`, `move_backward` |
+ * | @ref raze_algo_fill | `fill`, `fill_n`, `generate`, `generate_n`, `generate_random` |
  * | @ref raze_algo_transform | `transform` |
  * | @ref raze_algo_replace | `replace`, `replace_if`, `replace_copy`, `replace_copy_if` |
- * | @ref raze_algo_remove | `remove`, `remove_if`, `remove_copy`, `remove_copy_if` |
- * | @ref raze_algo_order | `is_sorted`, `is_sorted_until`, `reverse`, `reverse_copy`, `rotate`, `rotate_copy` |
+ * | @ref raze_algo_remove | `remove`, `remove_if`, `remove_copy`, `remove_copy_if`, `unique`, `unique_copy` |
+ * | @ref raze_algo_order | `is_sorted`, `is_sorted_until`, `reverse`, `reverse_copy`, `rotate`, `rotate_copy`, `shift_left`, `shift_right`, `shuffle`, `sample`, `is_permutation`, `next_permutation`, `prev_permutation` |
+ * | @ref raze_algo_partition | `is_partitioned`, `partition`, `partition_copy`, `partition_point`, `stable_partition` |
+ * | @ref raze_algo_sort | `sort`, `stable_sort`, `partial_sort`, `partial_sort_copy`, `nth_element` |
+ * | @ref raze_algo_binary_search | `lower_bound`, `upper_bound`, `equal_range`, `binary_search` |
+ * | @ref raze_algo_set | `merge`, `inplace_merge`, `includes`, `set_union`, `set_intersection`, `set_difference`, `set_symmetric_difference` |
+ * | @ref raze_algo_heap | `is_heap`, `is_heap_until`, `make_heap`, `push_heap`, `pop_heap`, `sort_heap` |
+ * | @ref raze_algo_fold | `fold_left`, `fold_left_first`, `fold_right`, `fold_right_last`, `fold_left_with_iter`, `fold_left_first_with_iter` |
+ * | @ref raze_algo_numeric | `iota`, `accumulate`, `reduce`, `transform_reduce`, `inner_product`, `partial_sum`, `inclusive_scan`, `exclusive_scan`, `transform_inclusive_scan`, `transform_exclusive_scan`, `adjacent_difference` |
+ * | @ref raze_algo_uninitialized | `construct_at`, `destroy_at`, `destroy`, `destroy_n`, `uninitialized_default_construct`, `uninitialized_default_construct_n`, `uninitialized_value_construct`, `uninitialized_value_construct_n`, `uninitialized_copy`, `uninitialized_copy_n`, `uninitialized_move`, `uninitialized_move_n`, `uninitialized_fill`, `uninitialized_fill_n` |
  * | @ref raze_algo_swap | `swap_ranges` |
  *
  * ### Shared Concepts & Execution Model
@@ -107,6 +115,54 @@
  * @defgroup raze_algo_swap Swapping Operations
  * @ingroup raze_algo
  * @brief Element-wise swapping across two ranges.
+ */
+
+/**
+ * @defgroup raze_algo_partition Partitioning Operations
+ * @ingroup raze_algo
+ * @brief Range partitioning, stability-preserving partitioning, and partition boundary searches.
+ */
+
+/**
+ * @defgroup raze_algo_sort Sorting Operations
+ * @ingroup raze_algo
+ * @brief Full, stable, partial, and rank-selection sorting algorithms.
+ */
+
+/**
+ * @defgroup raze_algo_binary_search Binary Search Operations
+ * @ingroup raze_algo
+ * @brief Logarithmic bound and membership queries on sorted ranges.
+ */
+
+/**
+ * @defgroup raze_algo_set Set & Merge Operations
+ * @ingroup raze_algo
+ * @brief Merging and multiset algebra on sorted ranges.
+ */
+
+/**
+ * @defgroup raze_algo_heap Heap Operations
+ * @ingroup raze_algo
+ * @brief Max-heap construction, insertion, extraction, validation, and heapsort.
+ */
+
+/**
+ * @defgroup raze_algo_fold Folding Operations
+ * @ingroup raze_algo
+ * @brief C++23 left and right range folding algorithms.
+ */
+
+/**
+ * @defgroup raze_algo_numeric Numeric Operations
+ * @ingroup raze_algo
+ * @brief Sequential fills, reductions, inner products, prefix scans, and adjacent differences.
+ */
+
+/**
+ * @defgroup raze_algo_uninitialized Uninitialized Memory Operations
+ * @ingroup raze_algo
+ * @brief Exception-safe object construction and destruction in raw uninitialized storage.
  */
 
 /**

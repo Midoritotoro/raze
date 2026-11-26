@@ -7,27 +7,33 @@
 #include <src/raze/vx/hw/x86/mask/operations/FirstN.h>
 #include <src/raze/vx/hw/x86/mask/operations/BitLeftShift.h>
 #include <src/raze/vx/hw/x86/mask/operations/BitRightShift.h>
+#include <src/raze/math/CountTrailingZeros.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <arch::ISA ISA, u32 N, arithmetic_type T, raw_mask_type M>
 raze_always_inline bool is_contiguous_(M mask, i32 n, i32 k) noexcept {
+	if (k <= n)
+		return true;
+
 	if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
-		return (k <= n) ? true : mask != 0;
+		return mask != 0;
 	}
 	else if constexpr (std::is_integral_v<M>) {
-		auto len = k - n;
-		
+		const auto len = static_cast<u32>(k - n);
+		const u64 inv = (~static_cast<u64>(mask)) >> static_cast<u32>(n);
+
 		if constexpr (N == 64) {
-#if defined(raze_cpp_msvc_only)
-			return _tzcnt_u64((~mask) >> n) >= len;
-#else
-			return __builtin_ctzll((~mask) >> n) >= len;
-#endif
+			if (inv == 0)
+				return true;
+			return static_cast<u32>(math::ctz_n_bits<ISA, 64, true>(inv)) >= len;
 		}
-		else if constexpr (has_bmi2<ISA>) return _bzhi_u64((~mask) >> n, len) == 0;
-		else return (((~mask) >> n) & ((1ull << len) - 1)) == 0; // Compilers usually turn this code into bzhi,
-		// but for compatibility with MSVC Runtime Dispatch, this is implemented manually
+		else if constexpr (has_bmi2<ISA>) {
+			return _bzhi_u64(inv, len) == 0;
+		}
+		else {
+			return (inv & ((1ull << len) - 1ull)) == 0;
+		}
 	}
 	else {
 		return is_contiguous_<ISA, N, T>(to_mask_<ISA, T>(mask), n, k);

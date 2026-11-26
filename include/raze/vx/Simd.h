@@ -60,7 +60,7 @@ class simd {
 public:
     static constexpr auto isa = Abi::isa;
     static constexpr auto width = (Abi::size * sizeof(T) * 8);
-    static constexpr auto has_scalar_chunks = (Abi::size % 16) != 0;
+    static constexpr auto has_scalar_chunks = ((Abi::size * sizeof(T)) % 16) != 0 || !has_sse2<Abi::isa>;
 
     using storage_type  = vector_storage<T, Abi>;
     using reference     = simd_element_reference<simd>;

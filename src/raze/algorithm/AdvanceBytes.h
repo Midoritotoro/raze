@@ -79,7 +79,7 @@ raze_nodiscard raze_always_inline constexpr std::iter_difference_t<InIt> distanc
 }
 
 template <class T, class Offset>
-constexpr raze_always_inline T* bytes_pointer_offset(T* target, Offset offset) noexcept {
+raze_always_inline T* bytes_pointer_offset(T* target, Offset offset) noexcept {
     return reinterpret_cast<T*>(const_cast<unsigned char*>(
         reinterpret_cast<const volatile unsigned char*>(target)) + offset);
 }
@@ -95,7 +95,8 @@ consteval bool is_bytes_distance_noexcept() noexcept {
     if constexpr (std::sized_sentinel_for<Sent, It>)
         return noexcept(std::declval<const Sent&>() - std::declval<const It&>());
     else
-        return noexcept(std::declval<It&>() != std::declval<const Sent&>(), ++std::declval<It&>());
+        return noexcept(static_cast<void>(std::declval<It&>() != std::declval<const Sent&>())) &&
+               noexcept(++std::declval<It&>());
 }
 
 template <std::input_iterator It, std::sentinel_for<It> Sent>

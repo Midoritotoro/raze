@@ -1,13 +1,14 @@
 #pragma once 
 
 #include <raze/algorithm/replace/ReplaceIf.h>
+#include <src/raze/algorithm/ProjectedValue.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct replace_t : Traits {
 	template <std::input_iterator Iter, std::sentinel_for<Iter> Sent,
-		class T1, class T2, class Proj = std::identity>
+		class Proj = std::identity, class T1 = projected_value_t<Iter, Proj>, class T2 = std::iter_value_t<Iter>>
 	constexpr raze_always_inline void operator()(Iter first, Sent last,
 		const T1& old_value, const T2& new_value, Proj proj = {}) const
 			requires(std::indirectly_writable<Iter, const T2&> &&
@@ -20,7 +21,9 @@ struct replace_t : Traits {
 			});
 	}
 
-	template <std::ranges::input_range Range, class T1, class T2, class Proj = std::identity>
+	template <std::ranges::input_range Range,
+		class Proj = std::identity, class T1 = projected_value_t<std::ranges::iterator_t<Range>, Proj>,
+		class T2 = std::ranges::range_value_t<Range>>
 	constexpr raze_always_inline void operator()(Range&& r, const T1& old_value,
 		const T2& new_value, Proj proj = {}) const
 			requires(std::indirectly_writable<std::ranges::iterator_t<Range>, const T2&> &&

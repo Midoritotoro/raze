@@ -1,6 +1,7 @@
 #pragma once 
 
 #include <raze/compatibility/CompilerDetection.h>
+#include <raze/compatibility/SystemDetection.h>
 #include <raze/arch/ProcessorDetection.h>
 
 

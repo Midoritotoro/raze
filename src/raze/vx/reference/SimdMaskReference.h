@@ -29,42 +29,28 @@ public:
 		return { _reference, _index };
 	}
 
-	raze_always_inline value_type operator++(int) && noexcept {
-		auto value = read();
-		const auto old_value = value;
-		write(++value);
-		return old_value;
-	}
-
-	raze_always_inline simd_mask_reference operator++() && noexcept {
-		write(++read());
+	raze_always_inline simd_mask_reference operator=(simd_mask_reference&& ref) && noexcept {
+		write(static_cast<value_type>(ref));
 		return { _reference, _index };
 	}
 
-	raze_always_inline value_type operator--(int) && noexcept {
-		auto value = read();
-		const auto old_value = value;
-		write(--value);
-		return old_value;
-	}
-
-	raze_always_inline simd_mask_reference operator--() && noexcept {
-		write(--read());
+	raze_always_inline simd_mask_reference operator=(const simd_mask_reference& ref) && noexcept {
+		write(static_cast<value_type>(ref));
 		return { _reference, _index };
 	}
 
 	raze_always_inline simd_mask_reference operator&=(value_type other) && noexcept {
-		write(read() & other);
+		write(static_cast<value_type>(read() & other));
 		return { _reference, _index };
 	}
 
 	raze_always_inline simd_mask_reference operator|=(value_type other) && noexcept {
-		write(read() | other);
+		write(static_cast<value_type>(read() | other));
 		return { _reference, _index };
 	}
 
 	raze_always_inline simd_mask_reference operator^=(value_type other) && noexcept {
-		write(read() ^ other);
+		write(static_cast<value_type>(read() ^ other));
 		return { _reference, _index };
 	}
 

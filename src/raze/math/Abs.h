@@ -2,6 +2,7 @@
 
 #include <raze/options/Options.h>
 #include <src/raze/vx/Storage.h>
+#include <cmath>
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/arithmetic/Abs.h>
@@ -23,6 +24,18 @@ struct configurable_abs_t: raze::options::conditional_callable<configurable_abs_
     }
 
     template <vx::arithmetic_type T>
+    static raze_always_inline T scalar_abs(const T& x) noexcept {
+        if constexpr (std::is_unsigned_v<T>)
+            return x;
+        else if constexpr (std::floating_point<T>)
+            return std::fabs(x);
+        else {
+            using U = std::make_unsigned_t<T>;
+            return x < 0 ? static_cast<T>(U(0) - static_cast<U>(x)) : x;
+        }
+    }
+
+    template <vx::arithmetic_type T>
     static raze_always_inline auto deferred_call(auto opts, const T& x) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
 
@@ -30,10 +43,10 @@ struct configurable_abs_t: raze::options::conditional_callable<configurable_abs_
             auto condition = opts[options::condition_key];
             const auto mask = condition.mask();
 
-            if constexpr (Mask::has_alternative) return mask ? (x < 0 ? -x : x) : condition.alternative();
-            else return mask ? (x < 0 ? -x : x) : 0;
+            if constexpr (Mask::has_alternative) return mask ? scalar_abs(x) : condition.alternative();
+            else return mask ? scalar_abs(x) : T(0);
         }
-        else return x < 0 ? -x : x;
+        else return scalar_abs(x);
     }
 
     template <vx::simd_type V>

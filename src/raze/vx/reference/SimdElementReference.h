@@ -43,7 +43,8 @@ public:
 	}
 
 	raze_always_inline simd_element_reference operator++() && noexcept {
-		write(++read());
+		auto value = read();
+		write(++value);
 		return { _reference, _index };
 	}
 
@@ -55,7 +56,8 @@ public:
 	}
 
 	raze_always_inline simd_element_reference operator--() && noexcept {
-		write(--read());
+		auto value = read();
+		write(--value);
 		return { _reference, _index };
 	}
 	

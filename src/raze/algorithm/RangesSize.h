@@ -1,7 +1,9 @@
 #pragma once 
 
 #include <raze/compatibility/Compatibility.h>
+#include <array>
 #include <ranges>
+#include <span>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

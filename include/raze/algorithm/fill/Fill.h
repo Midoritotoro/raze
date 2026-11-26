@@ -44,7 +44,9 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 			}
 			else {
 				return contiguous_source<Source> &&
-					!traits::is_iterator_volatile_v<iterator_type> && std::is_trivially_copyable_v<value_type> &&
+					!traits::is_iterator_volatile_v<iterator_type> &&
+					std::is_trivially_copyable_v<value_type> &&
+					std::is_trivially_assignable_v<std::iter_reference_t<iterator_type>, const T&> &&
 					std::convertible_to<const T&, value_type> &&
 					(sizeof(value_type) <= 8) && (sizeof(value_type) != 0) &&
 					((sizeof(value_type) & (sizeof(value_type) - 1)) == 0);
@@ -54,7 +56,7 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		raze_no_unique_address source_type _source;
 		raze_no_unique_address unchecked_iterator_type _iterator;
 		raze_no_unique_address unchecked_sentinel_type _sentinel;
-		raze_no_unique_address T _value;
+		const T& _value;
 
 		constexpr explicit kernel(Source&& source, const T& value)
 			: _source(std::forward<Source>(source)), _iterator(_source.ubegin()), 
@@ -130,32 +132,17 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 		}
 	};
 
-	template <std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T = std::iter_value_t<It>>
-	constexpr raze_always_inline It operator()(It first, Sent last, const std::type_identity_t<T>& value) const
-		requires(std::indirectly_readable<It> && std::output_iterator<It, const T&>)
-	{
-		return this->dispatch(get_source(std::move(first), std::move(last)), value);
-	}
-
-	template <std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T>
+	template <std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T = iter_value_or_void_t<It>>
 	constexpr raze_always_inline It operator()(It first, Sent last, const T& value) const
-		requires(!std::indirectly_readable<It> && std::output_iterator<It, const T&>)
+		requires(std::output_iterator<It, const T&>)
 	{
 		return this->dispatch(get_source(std::move(first), std::move(last)), value);
 	}
 
-	template <class R, class T = std::ranges::range_value_t<R>>
-	constexpr raze_always_inline std::ranges::borrowed_iterator_t<R> operator()(
-		R&& r, const std::type_identity_t<T>& value) const 
-			requires(std::indirectly_readable<std::ranges::iterator_t<R>> && std::ranges::output_range<R, const T&>)
-	{
-		return this->dispatch(get_source(std::forward<R>(r)), value);
-	}
-
-	template <std::ranges::range R, class T>
+	template <std::ranges::range R, class T = iter_value_or_void_t<std::ranges::iterator_t<R>>>
 	constexpr raze_always_inline std::ranges::borrowed_iterator_t<R> operator()(
 		R&& r, const T& value) const
-			requires(!std::indirectly_readable<std::ranges::iterator_t<R>> && std::ranges::output_range<R, const T&>)
+			requires(std::ranges::output_range<R, const T&>)
 	{
 		return this->dispatch(get_source(std::forward<R>(r)), value);
 	}

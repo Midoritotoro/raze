@@ -21,6 +21,12 @@ concept option = requires(const Option& opt) {
         typename std::remove_cvref_t<Option>::stored_value_type>;
 };
 
+template <class Option>
+concept stateless_option = option<Option> && std::default_initializable<Option> && (
+    std::is_empty_v<Option> ||
+    std::is_empty_v<typename std::remove_cvref_t<Option>::stored_value_type>
+);
+
 template <class Settings> 
 concept settings = requires(const Settings&) {
     typename Settings::settings_type;

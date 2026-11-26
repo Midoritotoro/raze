@@ -25,7 +25,7 @@ raze_always_inline V right_shift_(V x, u32 shift) noexcept {
 					low_shifted = _mm_srli_epi64(_mm_sra_epi32(as<__m128i>(x), shift_vector), 32);
 				}
 
-				return as<V>(select_<ISA, T>(high_shifted, low_shifted, _mm_set_epi32(-1, 0, -1, 0)));
+				return as<V>(select_<ISA, i32>(high_shifted, low_shifted, _mm_set_epi32(-1, 0, -1, 0)));
 			}
 		}
 		else if constexpr (epu64<T>) return as<V>(_mm_srl_epi64(as<__m128i>(x), _mm_cvtsi32_si128(shift)));
@@ -33,11 +33,15 @@ raze_always_inline V right_shift_(V x, u32 shift) noexcept {
 		else if constexpr (epu32<T>) return as<V>(_mm_srl_epi32(as<__m128i>(x), _mm_cvtsi32_si128(shift)));
 		else if constexpr (epi16<T>) return as<V>(_mm_sra_epi16(as<__m128i>(x), _mm_cvtsi32_si128(shift)));
 		else if constexpr (epu16<T>) return as<V>(_mm_srl_epi16(as<__m128i>(x), _mm_cvtsi32_si128(shift)));
-		else if constexpr (epu8<T>) return as<V>(_mm_srl_epi16(
-			_mm_and_si128(as<__m128i>(x), _mm_set1_epi8(0xFFu << shift)), _mm_cvtsi32_si128(shift)));
+		else if constexpr (epu8<T>) {
+			const auto byte_mask = static_cast<i8>(shift < 8 ? (0xFFu << shift) : 0u);
+			return as<V>(_mm_srl_epi16(
+				_mm_and_si128(as<__m128i>(x), _mm_set1_epi8(byte_mask)), _mm_cvtsi32_si128(shift)));
+		}
 		else if constexpr (epi8<T>) {
-			const auto even_shifted = _mm_sra_epi16(_mm_slli_epi16(as<__m128i>(x), 8), _mm_cvtsi32_si128(shift + 8));
-			const auto odd_shifted = _mm_sra_epi16(as<__m128i>(x), _mm_cvtsi32_si128(shift));
+			const auto clamped = shift < 8 ? shift : 7u;
+			const auto even_shifted = _mm_sra_epi16(_mm_slli_epi16(as<__m128i>(x), 8), _mm_cvtsi32_si128(clamped + 8));
+			const auto odd_shifted = _mm_sra_epi16(as<__m128i>(x), _mm_cvtsi32_si128(clamped));
 
 			if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return as<V>(_mm_mask_mov_epi8(odd_shifted, 0x5555, even_shifted));
 			else return as<V>(select_<ISA, T>(even_shifted, odd_shifted, _mm_set1_epi32(0x00FF00FF)));
@@ -70,14 +74,16 @@ raze_always_inline V right_shift_(V x, u32 shift) noexcept {
 			else if constexpr (epi16<T>) return as<V>(_mm256_sra_epi16(as<__m256i>(x), _mm_cvtsi32_si128(shift)));
 			else if constexpr (epu16<T>) return as<V>(_mm256_srl_epi16(as<__m256i>(x), _mm_cvtsi32_si128(shift)));
 			else if constexpr (epi8<T>) {
-				const auto even_shifted = _mm256_sra_epi16(_mm256_slli_epi16(as<__m256i>(x), 8), _mm_cvtsi32_si128(shift + 8));
-				const auto odd_shifted = _mm256_sra_epi16(as<__m256i>(x), _mm_cvtsi32_si128(shift));
+				const auto clamped = shift < 8 ? shift : 7u;
+				const auto even_shifted = _mm256_sra_epi16(_mm256_slli_epi16(as<__m256i>(x), 8), _mm_cvtsi32_si128(clamped + 8));
+				const auto odd_shifted = _mm256_sra_epi16(as<__m256i>(x), _mm_cvtsi32_si128(clamped));
 
 				if constexpr (has_avx512vl<ISA> && has_avx512bw<ISA>) return as<V>(_mm256_mask_mov_epi8(odd_shifted, 0x55555555, even_shifted));
 				else return as<V>(select_<ISA, T>(even_shifted, odd_shifted, _mm256_set1_epi32(0x00FF00FF)));
 			}
 			else if constexpr (epu8<T>) {
-				const auto and_mask = _mm256_and_si256(as<__m256i>(x), _mm256_set1_epi8(0xFFu << shift));
+				const auto byte_mask = static_cast<i8>(shift < 8 ? (0xFFu << shift) : 0u);
+				const auto and_mask = _mm256_and_si256(as<__m256i>(x), _mm256_set1_epi8(byte_mask));
 				return as<V>(_mm256_srl_epi16(and_mask, _mm_cvtsi32_si128(shift)));
 			}
 		}
@@ -96,13 +102,17 @@ raze_always_inline V right_shift_(V x, u32 shift) noexcept {
 		else if constexpr (has_avx512bw<ISA>) {
 			if constexpr (epi16<T>) return as<V>(_mm512_sra_epi16(as<__m512i>(x), _mm_cvtsi32_si128(shift)));
 			else if constexpr (epu16<T>) return as<V>(_mm512_srl_epi16(as<__m512i>(x), _mm_cvtsi32_si128(shift)));
-			else if constexpr (epu8<T>) return as<V>(_mm512_srl_epi16(
-				_mm512_and_si512(as<__m512i>(x), _mm512_set1_epi8(0xFFu << shift)), _mm_cvtsi32_si128(shift)));
+			else if constexpr (epu8<T>) {
+				const auto byte_mask = static_cast<i8>(shift < 8 ? (0xFFu << shift) : 0u);
+				return as<V>(_mm512_srl_epi16(
+					_mm512_and_si512(as<__m512i>(x), _mm512_set1_epi8(byte_mask)), _mm_cvtsi32_si128(shift)));
+			}
 			else if constexpr (epi8<T>) {
+				const auto clamped = shift < 8 ? shift : 7u;
 				const auto even_vector = _mm512_slli_epi16(as<__m512i>(x), 8);
 
-				const auto even_shifted = _mm512_sra_epi16(even_vector, _mm_cvtsi32_si128(shift + 8));
-				const auto odd_shifted = _mm512_sra_epi16(as<__m512i>(x), _mm_cvtsi32_si128(shift));
+				const auto even_shifted = _mm512_sra_epi16(even_vector, _mm_cvtsi32_si128(clamped + 8));
+				const auto odd_shifted = _mm512_sra_epi16(as<__m512i>(x), _mm_cvtsi32_si128(clamped));
 
 				return as<V>(_mm512_mask_mov_epi8(even_shifted, 0xAAAAAAAAAAAAAAAA, odd_shifted));
 			}

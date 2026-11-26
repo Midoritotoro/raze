@@ -16,19 +16,19 @@ template <class F>
 concept lightweight_callable = std::is_object_v<F> &&
     (sizeof(F) <= (sizeof(void*) * 2)) &&
     std::is_trivially_copy_constructible_v<F> &&
-    std::is_trivially_destructible_v<F>;;
+    std::is_trivially_destructible_v<F>;
 
 template <class F>
 struct function_reference {
     using function_unwrapped_type = F;
 
-    constexpr raze_always_inline operator function_unwrapped_type&() noexcept {
+    constexpr raze_always_inline operator function_unwrapped_type&() const noexcept {
         return _f;
     }
 
     template <class ... Args>
     constexpr raze_always_inline decltype(auto) operator()(Args&& ... args) const
-        noexcept(std::is_nothrow_invocable_v<F, Args...>) requires(std::invocable<F, Args...>)
+        noexcept(std::is_nothrow_invocable_v<F&, Args...>) requires(std::invocable<F&, Args...>)
     {
         return std::invoke(_f, std::forward<Args>(args)...);
     }
@@ -38,25 +38,28 @@ struct function_reference {
 
 template <class F>
 concept has_function_unwrapped_type = requires {
-    typename F::function_unwrapped_type;
+    typename std::remove_cvref_t<F>::function_unwrapped_type;
 };
 
 template <class F>
 struct function_unwrapped_impl {
-    using type = F;
+    using type = std::remove_cvref_t<F>;
 };
 
 template <has_function_unwrapped_type F>
 struct function_unwrapped_impl<F> {
-    using type = typename F::function_unwrapped_type;
+    using type = typename std::remove_cvref_t<F>::function_unwrapped_type;
 };
 
 template <class F>
 using function_unwrapped = typename function_unwrapped_impl<F>::type;
 
 template <class F>
-raze_always_inline constexpr function_unwrapped<F> unwrap_function(F&& f) noexcept {
-    return static_cast<function_unwrapped<F>>(std::forward<F>(f));
+raze_always_inline constexpr decltype(auto) unwrap_function(F&& f) noexcept {
+    if constexpr (has_function_unwrapped_type<F>)
+        return static_cast<function_unwrapped<F>&>(f);
+    else
+        return std::forward<F>(f);
 }
 
 template <class F>

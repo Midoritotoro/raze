@@ -18,11 +18,25 @@ struct data_destination<It, false> {
 		_it(std::move(it))
 	{}
 
-	raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+	raze_nodiscard raze_always_inline constexpr iterator_type begin() {
+		if constexpr (std::copy_constructible<iterator_type>) return _it;
+		else return std::move(_it);
+	}
+
+	raze_nodiscard raze_always_inline constexpr iterator_type begin() const
+		requires(std::copy_constructible<iterator_type>)
+	{
 		return _it;
 	}
 
-	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() {
+		if constexpr (std::copy_constructible<iterator_type>) return traits::uiter(_it);
+		else return traits::uiter(std::move(_it));
+	}
+
+	raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const
+		requires(std::copy_constructible<iterator_type>)
+	{
 		return traits::uiter(_it);
 	}
 
@@ -36,9 +50,14 @@ struct data_destination<It, false> {
 	raze_nodiscard raze_always_inline constexpr iterator_type
 		wrap(unchecked_iterator_type uit) const
 	{
-		iterator_type it = _it;
-		traits::seek_iter(it, uit);
-		return it;
+		if constexpr (std::same_as<iterator_type, unchecked_iterator_type>) {
+			return uit;
+		}
+		else {
+			iterator_type it = _it;
+			traits::seek_iter(it, std::move(uit));
+			return it;
+		}
 	}
 
 	iterator_type _it;
@@ -69,18 +88,23 @@ struct data_destination<It, true> {
 		return traits::uiter(std::move(it));
 	}
 
-	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type unwrap(value_type* ptr) {
-		unchecked_iterator_type it;
-		traits::seek_iter(it, ptr);
-		return it;
+	raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type unwrap(value_type* ptr)
+		requires std::is_pointer_v<unchecked_iterator_type>
+	{
+		return ptr;
 	}
 
 	raze_nodiscard raze_always_inline constexpr iterator_type
 		wrap(unchecked_iterator_type uit) const
 	{
-		iterator_type it = _it;
-		traits::seek_iter(it, uit);
-		return it;
+		if constexpr (std::same_as<iterator_type, unchecked_iterator_type>) {
+			return uit;
+		}
+		else {
+			iterator_type it = _it;
+			traits::seek_iter(it, std::move(uit));
+			return it;
+		}
 	}
 
 	template <class I>
@@ -113,7 +137,7 @@ concept destination = requires(
 	{ dest.begin() } -> std::same_as<typename Destination::iterator_type>;
 	{ dest.ubegin() } -> std::same_as<typename Destination::unchecked_iterator_type>;
 
-	{ Destination::unwrap(it) } -> std::same_as<
+	{ Destination::unwrap(std::move(it)) } -> std::same_as<
 		typename Destination::unchecked_iterator_type>;
 };
 
@@ -133,10 +157,7 @@ concept contiguous_destination =
 		typename Destination::unchecked_iterator_type uit,
 		std::iter_value_t<typename Destination::unchecked_iterator_type>* ptr)
 {
-		{ Destination::unwrap(ptr) } -> std::same_as<
-			typename Destination::unchecked_iterator_type>;
-
-		{ dest.wrap(uit) } -> std::same_as<
+		{ dest.wrap(std::move(uit)) } -> std::same_as<
 			typename Destination::iterator_type>;
 
 		{ Destination::from_ptr(uit, ptr) } -> std::same_as<void>;

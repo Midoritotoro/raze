@@ -18,7 +18,8 @@ using simd_mask_value_t = vx::simd_mask<std::iter_value_t<It>, vx::default_abi>;
   *        pointers, or `std::nullptr_t`).
 */
 template <class T>
-concept vectorizable_value_type = traits::is_vector_type_supported_v<std::decay_t<T>>;
+concept vectorizable_value_type = traits::is_vector_type_supported_v<std::decay_t<T>> &&
+    std::is_arithmetic_v<std::decay_t<T>>;
 
 /**
  * @brief Checks if unary predicate `Pred` cannot be vectorized (either not invocable with `simd_value_t<It>`

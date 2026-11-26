@@ -31,8 +31,8 @@ struct reverse_copy_t : Traits, dispatchable<reverse_copy_t<Traits>> {
         template <class T>
         static consteval auto deduce_vector_value_type() noexcept {
             if constexpr (!std::is_void_v<T>) {
-                if constexpr (sizeof(T) <= 8 && ((sizeof(T) & (sizeof(T) - 1)) == 0)) {
-                    if constexpr (vx::arithmetic_type<T>) return T{};
+                if constexpr (sizeof(T) <= 8 && sizeof(T) != 0 && ((sizeof(T) & (sizeof(T) - 1)) == 0)) {
+                    if constexpr (vectorizable_value_type<T>) return T{};
                     else return typename IntegerForSizeof<T>::Unsigned{};
                 }
             }
@@ -50,7 +50,7 @@ struct reverse_copy_t : Traits, dispatchable<reverse_copy_t<Traits>> {
                 && !traits::is_iterator_volatile_v<iterator_type>
                 && !traits::is_iterator_volatile_v<out_iterator_type>
                 && !std::same_as<vtype_in, void> && !std::same_as<vtype_out, void>
-                && ((vx::arithmetic_type<in_t> && vx::arithmetic_type<out_t>)
+                && ((vectorizable_value_type<in_t> && vectorizable_value_type<out_t>)
                     || (std::same_as<in_t, out_t> && std::is_trivially_copyable_v<in_t>
                         && std::is_trivially_copy_assignable_v<in_t>));
         }

@@ -113,9 +113,11 @@ public:
         constexpr bool is_gcc_or_clang = false;
 #endif
 
+        constexpr bool force_scalar = options::is_fscalar<Traits>() || options::get_strategy<Traits>().is_scalar();
+
 #if defined(raze_cpp_clang) || defined(raze_cpp_gnu)
         constexpr bool can_auto_vectorize = []() consteval {
-            if constexpr (options::is_fscalar<Traits>()) return false;
+            if constexpr (force_scalar) return false;
             else if constexpr (!options::get_strategy<Traits>().is_autovec() && !options::is_fautovec<Traits>()) return false;
             else return autovectorizable_kernel<Kernel>;
         }();
@@ -124,7 +126,7 @@ public:
 #endif
 
         constexpr bool can_manual_vectorize = []() consteval {
-            if constexpr (options::is_fscalar<Traits>() || options::is_fautovec<Traits>()) return false;
+            if constexpr (force_scalar || options::is_fautovec<Traits>()) return false;
             else if constexpr (!has_best && can_auto_vectorize) return false;
             else return Kernel::vectorizable();
         }();
@@ -133,12 +135,18 @@ public:
             if !consteval {
                 constexpr arch::ISA static_isa = target_policy.template resolve_static_isa<Value>();
                 constexpr bool has_supported_isa = (static_isa != arch::ISA::None);
-                constexpr bool is_fstatic = (is_gcc_or_clang && has_supported_isa && (
-                    !options::get_strategy<Traits>().is_autovec() || !autovectorizable_kernel<Kernel>))
-                    || (has_best || options::is_fstatic<Traits>());
 
-                constexpr auto dispatcher = target_policy.template make_dispatcher<Value, Traits, Kernel, is_fstatic, static_isa>();
-                return dispatcher(work.size(), work);
+                if constexpr (options::is_fstatic<Traits>() && !has_supported_isa) {
+                    return options::unroller<Traits, vx::scalar_tag>(work);
+                }
+                else {
+                    constexpr bool is_fstatic = (is_gcc_or_clang && has_supported_isa && (
+                        !options::get_strategy<Traits>().is_autovec() || !autovectorizable_kernel<Kernel>))
+                        || (has_best || options::is_fstatic<Traits>());
+
+                    constexpr auto dispatcher = target_policy.template make_dispatcher<Value, Traits, Kernel, is_fstatic, static_isa>();
+                    return dispatcher(work.size(), work);
+                }
             }
         }
         else if constexpr (can_auto_vectorize) return invoke_scalar_autovec<options::is_fstatic<Traits>()>(work);

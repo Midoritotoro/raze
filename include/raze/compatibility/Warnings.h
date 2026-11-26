@@ -75,7 +75,7 @@
 #  elif defined(raze_cpp_clang)
 #    define raze_disable_warning_deprecated raze_disable_warning_clang("-Wdeprecated-declarations")
 #  elif defined(raze_cpp_gnu) && (__GNUC__ * 100 + __GNUC_MINOR__ >= 406)
-#    define raze_disable_warning_deprecated raze_warning_disable_gcc("-Wdeprecated-declarations")
+#    define raze_disable_warning_deprecated raze_disable_warning_gcc("-Wdeprecated-declarations")
 #  else
 #    define raze_disable_warning_deprecated
 #  endif // (defined(raze_cpp_msvc) && !defined(raze_cpp_clang)) || defined(raze_cpp_clang)
@@ -108,26 +108,31 @@
 
 #endif // defined(raze_no_warnings)
 
+#if !defined(RAZE_STRINGIFY_IMPL)
+#  define RAZE_STRINGIFY_IMPL(x) #x
+#  define RAZE_STRINGIFY(x) RAZE_STRINGIFY_IMPL(x)
+#endif
+
 #if !defined(raze_deprecated_warning)
-#  if defined(raze_cpp_msvc)
-#    define raze_deprecated_warning(message)                                           \
-       __pragma(warning(push))                                                         \
-       __pragma(warning(disable: 4996))                                                \
-       __pragma(message (__FILE__ "(" __LINE__ ") : warning C4996: " message))         \
+#  if defined(raze_cpp_msvc) && !defined(raze_cpp_clang)
+#    define raze_deprecated_warning(message)                                                              \
+       __pragma(warning(push))                                                                            \
+       __pragma(warning(disable: 4996))                                                                   \
+       __pragma(message(__FILE__ "(" RAZE_STRINGIFY(__LINE__) ") : warning C4996: " message))             \
        __pragma(warning(pop))
 #  elif defined(raze_cpp_clang)
-#    define raze_deprecated_warning(message)                                           \
-       raze_do_pragma("clang diagnostic push")                                         \
-       raze_do_pragma("clang diagnostic warning \"-Wdeprecated-declarations\"")        \
-       raze_do_pragma("clang diagnostic ignored \"-Wunused-but-set-variable\"")        \
-       raze_do_pragma("message \"" __FILE__ "(" __LINE__ ") : warning: " message "\"") \
-       raze_do_pragma("clang diagnostic pop")
+#    define raze_deprecated_warning(message)                                                              \
+       _Pragma("clang diagnostic push")                                                                   \
+       _Pragma("clang diagnostic warning \"-Wdeprecated-declarations\"")                                  \
+       _Pragma("clang diagnostic ignored \"-Wunused-but-set-variable\"")                                  \
+       _Pragma(RAZE_STRINGIFY(message(__FILE__ "(" RAZE_STRINGIFY(__LINE__) ") : warning: " message)))    \
+       _Pragma("clang diagnostic pop")
 #  elif defined(raze_cpp_gnu)
-#    define raze_deprecated_warning(message)                                           \
-       raze_do_pragma("GCC diagnostic push")                                           \
-       raze_do_pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")          \
-       raze_do_pragma("message \"" __FILE__ "(" __LINE__ ") : warning: " message "\"") \
-       raze_do_pragma("GCC diagnostic pop")
+#    define raze_deprecated_warning(message)                                                              \
+       _Pragma("GCC diagnostic push")                                                                     \
+       _Pragma("GCC diagnostic warning \"-Wdeprecated-declarations\"")                                    \
+       _Pragma(RAZE_STRINGIFY(message(__FILE__ "(" RAZE_STRINGIFY(__LINE__) ") : warning: " message)))    \
+       _Pragma("GCC diagnostic pop")
 #  else
 #    define raze_deprecated_warning(message)
 #  endif // defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_gnu)

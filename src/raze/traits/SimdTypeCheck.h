@@ -19,18 +19,20 @@ template <class T>
 constexpr inline bool is_pointer_decay_v = std::is_pointer_v<std::decay_t<T>>;
 
 template <class T>
-constexpr inline bool is_vector_type_supported_v = std::is_arithmetic_v<std::decay_t<T>> ||
+constexpr inline bool is_vector_type_supported_v =
+    (std::is_arithmetic_v<std::decay_t<T>> &&
+     !std::is_same_v<std::decay_t<T>, bool> &&
+     (!std::is_same_v<std::decay_t<T>, long double> || sizeof(long double) == sizeof(f64)) &&
+     sizeof(std::decay_t<T>) <= 8) ||
     is_pointer_decay_v<T> || std::is_same_v<std::decay_t<T>, std::nullptr_t>;
-
-template <>
-constexpr inline bool is_vector_type_supported_v<bool> = false;
 
 template <class T, u32 Width>
 struct deduce_simd_vector_type_impl {
 private:
     using Type = std::decay_t<T>;
 
-    static constexpr bool is_fp64 = is_any_of_v<Type, f64, long double>;
+    static constexpr bool is_fp64 = std::is_same_v<Type, f64> ||
+        (std::is_same_v<Type, long double> && sizeof(long double) == sizeof(f64));
     static constexpr bool is_fp32 = std::is_same_v<Type, f32>;
     static constexpr bool use_i = is_nonbool_integral_v<Type> || is_pointer_decay_v<T> || std::is_same_v<Type, std::nullptr_t>;
 public:

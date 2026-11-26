@@ -8,12 +8,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class T>
 struct range_storage {
-    mutable T value;
-};
-
-template <class T>
-struct range_storage<const T> {
-    const T value;
+    T& value;
 };
 
 template <class T>
@@ -30,7 +25,7 @@ struct range_data_source {
     using unchecked_sentinel_type = decltype(traits::uend(std::declval<Range&>()));
 
     raze_always_inline constexpr explicit range_data_source(Range&& r) :
-        _storage{ std::forward<Range>(r) }
+        _storage{ r }
     {}
 
     raze_nodiscard raze_always_inline constexpr bool empty() const {
@@ -72,29 +67,32 @@ struct range_data_source {
 
     raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
         unwrap(std::iter_value_t<unchecked_iterator_type>* ptr)
-        requires (!std::same_as<iterator_type, std::iter_value_t<unchecked_iterator_type>*>)
+        requires (std::is_pointer_v<unchecked_iterator_type> &&
+                  !std::same_as<iterator_type, std::iter_value_t<unchecked_iterator_type>*>)
     {
-        unchecked_iterator_type it;
-        traits::seek_iter(it, ptr);
-        return it;
+        return ptr;
     }
 
     raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
         unwrap(const std::iter_value_t<unchecked_iterator_type>* ptr)
-        requires (!std::same_as<iterator_type, const std::iter_value_t<unchecked_iterator_type>*> &&
-    !std::same_as<std::iter_value_t<unchecked_iterator_type>*, const std::iter_value_t<unchecked_iterator_type>*>)
+        requires (std::is_pointer_v<unchecked_iterator_type> &&
+                  !std::same_as<iterator_type, const std::iter_value_t<unchecked_iterator_type>*> &&
+                  !std::same_as<std::iter_value_t<unchecked_iterator_type>*, const std::iter_value_t<unchecked_iterator_type>*>)
     {
-        unchecked_iterator_type it;
-        traits::seek_iter(it, ptr);
-        return it;
+        return const_cast<unchecked_iterator_type>(ptr);
     }
 
     raze_nodiscard raze_always_inline constexpr iterator_type
         wrap(unchecked_iterator_type uit) const
     {
-        iterator_type it = std::ranges::begin(_storage.value);
-        traits::seek_iter(it, std::move(uit));
-        return it;
+        if constexpr (std::same_as<iterator_type, unchecked_iterator_type>) {
+            return uit;
+        }
+        else {
+            iterator_type it = std::ranges::begin(_storage.value);
+            traits::seek_iter(it, std::move(uit));
+            return it;
+        }
     }
 
     static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
@@ -133,8 +131,10 @@ struct range_data_source {
                 (std::contiguous_iterator<unchecked_sentinel_type> ||
                  std::sized_sentinel_for<unchecked_sentinel_type, unchecked_iterator_type>))
     {
-        if constexpr (std::contiguous_iterator<unchecked_sentinel_type>) return std::pair{ std::to_address(it), std::to_address(sent) };
-        else return std::pair{ std::to_address(it), std::to_address(it) + (sent - it) };
+        if constexpr (std::same_as<unchecked_iterator_type, unchecked_sentinel_type>)
+            return std::pair{ std::to_address(it), std::to_address(sent) };
+        else
+            return std::pair{ std::to_address(it), std::to_address(it) + (sent - it) };
     }
 
     range_storage<Range> _storage;
@@ -157,11 +157,22 @@ struct iter_data_source {
     }
 
     raze_nodiscard raze_always_inline constexpr auto size() const {
-        if constexpr (std::input_iterator<unchecked_iterator_type>) return bytes_distance(ubegin(), uend());
-        else return sizetype(0);
+        if constexpr (std::input_iterator<unchecked_iterator_type> &&
+                      (std::sized_sentinel_for<unchecked_sentinel_type, unchecked_iterator_type> ||
+                       std::forward_iterator<unchecked_iterator_type>))
+            return bytes_distance(ubegin(), uend());
+        else
+            return sizetype(0);
     }
 
-    raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() {
+        if constexpr (std::copy_constructible<iterator_type>) return _it;
+        else return std::move(_it);
+    }
+
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() const
+        requires(std::copy_constructible<iterator_type>)
+    {
         return _it;
     }
 
@@ -169,7 +180,14 @@ struct iter_data_source {
         return _sent;
     }
 
-    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() {
+        if constexpr (std::copy_constructible<iterator_type>) return traits::uiter_s<Sent>(_it);
+        else return traits::uiter_s<Sent>(std::move(_it));
+    }
+
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const
+        requires(std::copy_constructible<iterator_type>)
+    {
         return traits::uiter_s<Sent>(_it);
     }
 
@@ -185,25 +203,29 @@ struct iter_data_source {
 
         if constexpr (std::same_as<Iter, iterator_type>)
             return traits::uiter_s<Sent>(std::move(iter));
-        else if constexpr ((std::same_as<Iter, std::iter_value_t<unchecked_iterator_type>*> ||
-            std::same_as<Iter, const std::iter_value_t<unchecked_iterator_type>*>) &&
+        else if constexpr (std::is_pointer_v<unchecked_iterator_type> &&
+            (std::same_as<Iter, std::iter_value_t<unchecked_iterator_type>*> ||
+             std::same_as<Iter, const std::iter_value_t<unchecked_iterator_type>*>) &&
             !std::same_as<iterator_type, std::iter_value_t<unchecked_iterator_type>*>)
         {
-            unchecked_iterator_type it;
-            traits::seek_iter(it, iter);
-            return it;
+            return const_cast<unchecked_iterator_type>(iter);
         }
         else {
-            return iter;
+            return std::move(iter);
         }
     }
 
     raze_nodiscard raze_always_inline constexpr iterator_type
         wrap(unchecked_iterator_type uit) const
     {
-        iterator_type it = _it;
-        traits::seek_iter(it, std::move(uit));
-        return it;
+        if constexpr (std::same_as<iterator_type, unchecked_iterator_type>) {
+            return uit;
+        }
+        else {
+            iterator_type it = _it;
+            traits::seek_iter(it, std::move(uit));
+            return it;
+        }
     }
 
     static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
@@ -242,8 +264,10 @@ struct iter_data_source {
                 (std::contiguous_iterator<unchecked_sentinel_type> ||
                  std::sized_sentinel_for<unchecked_sentinel_type, unchecked_iterator_type>))
     {
-        if constexpr (std::contiguous_iterator<unchecked_sentinel_type>) return std::pair{ std::to_address(it), std::to_address(sent) };
-        else return std::pair{ std::to_address(it), std::to_address(it) + (sent - it) };
+        if constexpr (std::same_as<unchecked_iterator_type, unchecked_sentinel_type>)
+            return std::pair{ std::to_address(it), std::to_address(sent) };
+        else
+            return std::pair{ std::to_address(it), std::to_address(it) + (sent - it) };
     }
 
     iterator_type _it;
@@ -251,6 +275,7 @@ struct iter_data_source {
 };
 
 template <class It>
+    requires(!std::contiguous_iterator<traits::unwrapped_iterator_type<It>>)
 struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
     using iterator_type = std::counted_iterator<It>;
     using sentinel_type = std::default_sentinel_t;
@@ -276,7 +301,14 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
             return static_cast<sizetype>(_it.count());
     }
 
-    raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() {
+        if constexpr (std::copy_constructible<iterator_type>) return _it;
+        else return std::move(_it);
+    }
+
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() const
+        requires(std::copy_constructible<iterator_type>)
+    {
         return _it;
     }
 
@@ -284,7 +316,19 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
         return {};
     }
 
-    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() {
+        if constexpr (std::copy_constructible<iterator_type>) {
+            return { traits::uiter(_it.base()), _it.count() };
+        }
+        else {
+            const auto n = _it.count();
+            return { traits::uiter(std::move(_it).base()), n };
+        }
+    }
+
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const
+        requires(std::copy_constructible<iterator_type>)
+    {
         return { traits::uiter(_it.base()), _it.count() };
     }
 
@@ -295,33 +339,120 @@ struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
     raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
         unwrap(iterator_type it)
     {
-        return { traits::uiter(it.base()), it.count() };
+        const auto n = it.count();
+        return { traits::uiter(std::move(it).base()), n };
     }
 
     raze_nodiscard raze_always_inline constexpr iterator_type
         wrap(unchecked_iterator_type it) const
     {
-        auto base = _it.base();
-        traits::seek_iter(base, it.base());
-        return { std::move(base), it.count() };
+        if constexpr (std::same_as<iterator_type, unchecked_iterator_type>) {
+            return it;
+        }
+        else {
+            auto base = _it.base();
+            traits::seek_iter(base, it.base());
+            return { std::move(base), it.count() };
+        }
     }
 
-    template <class Iter, class Ptr>
-    static raze_always_inline constexpr void from_ptr(Iter& it, Ptr* ptr)
-        requires std::contiguous_iterator<std::remove_cvref_t<decltype(it.base())>>
+    iterator_type _it;
+};
+
+template <class It>
+    requires(std::contiguous_iterator<traits::unwrapped_iterator_type<It>>)
+struct iter_data_source<std::counted_iterator<It>, std::default_sentinel_t> {
+    using iterator_type = std::counted_iterator<It>;
+    using sentinel_type = std::default_sentinel_t;
+
+    using base_iterator_type = It;
+    using unchecked_iterator_type = traits::unwrapped_iterator_type<It>;
+    using unchecked_sentinel_type = unchecked_iterator_type;
+
+    raze_always_inline constexpr iter_data_source(iterator_type it, sentinel_type) :
+        _it(std::move(it))
+    {}
+
+    raze_nodiscard raze_always_inline constexpr bool empty() const {
+        return _it.count() == 0;
+    }
+
+    raze_nodiscard raze_always_inline constexpr auto size() const {
+        return static_cast<sizetype>(_it.count())
+            * sizeof(std::iter_value_t<unchecked_iterator_type>);
+    }
+
+    raze_nodiscard raze_always_inline constexpr iterator_type begin() const {
+        return _it;
+    }
+
+    raze_nodiscard raze_always_inline constexpr sentinel_type end() const {
+        return {};
+    }
+
+    raze_nodiscard raze_always_inline constexpr unchecked_iterator_type ubegin() const {
+        return traits::uiter(_it.base());
+    }
+
+    raze_nodiscard raze_always_inline constexpr unchecked_sentinel_type uend() const {
+        return traits::uiter(_it.base()) + _it.count();
+    }
+
+    template <class Iterator>
+    raze_nodiscard static raze_always_inline constexpr unchecked_iterator_type
+        unwrap(Iterator iter)
+    {
+        using Iter = std::remove_cvref_t<Iterator>;
+
+        if constexpr (std::same_as<Iter, iterator_type>) {
+            return traits::uiter(iter.base());
+        }
+        else if constexpr (std::is_pointer_v<unchecked_iterator_type> &&
+            (std::same_as<Iter, std::iter_value_t<unchecked_iterator_type>*> ||
+             std::same_as<Iter, const std::iter_value_t<unchecked_iterator_type>*>))
+        {
+            return const_cast<unchecked_iterator_type>(iter);
+        }
+        else {
+            return std::move(iter);
+        }
+    }
+
+    raze_nodiscard raze_always_inline constexpr iterator_type
+        wrap(unchecked_iterator_type uit) const
+    {
+        auto base = _it.base();
+        const auto advanced = uit - traits::uiter(base);
+        traits::seek_iter(base, std::move(uit));
+        return { std::move(base), _it.count() - advanced };
+    }
+
+    static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
+        std::iter_value_t<unchecked_iterator_type>* ptr)
+    {
+        traits::seek_iter(uit, ptr);
+    }
+
+    static raze_always_inline constexpr void from_ptr(unchecked_iterator_type& uit,
+        const std::iter_value_t<unchecked_iterator_type>* ptr)
+    {
+        traits::seek_iter(uit, ptr);
+    }
+
+    template <class Ptr>
+    static raze_always_inline constexpr void from_ptr(iterator_type& it, Ptr* ptr)
+        requires std::same_as<std::remove_const_t<Ptr>, std::iter_value_t<iterator_type>>
     {
         auto base = it.base();
         const auto offset = ptr - std::to_address(base);
         std::ranges::advance(base, offset);
-        it = Iter{ std::move(base), it.count() - offset };
+        it = iterator_type{ std::move(base), it.count() - offset };
     }
 
     static raze_always_inline auto to_raw_range(
-        unchecked_iterator_type it, unchecked_sentinel_type)
-            requires(std::contiguous_iterator<unchecked_base_iterator_type>)
+        unchecked_iterator_type it, unchecked_sentinel_type sent)
     {
-        auto* const first = std::to_address(it.base());
-        return std::pair{ first, first + it.count() };
+        return std::pair{ std::to_address(it), std::to_address(sent) };
     }
 
     iterator_type _it;
@@ -429,8 +560,8 @@ concept source = requires(
     { src.ubegin() } -> std::same_as<typename Source::unchecked_iterator_type>;
     { src.uend() } -> std::same_as<typename Source::unchecked_sentinel_type>;
 
-    { Source::unwrap(it) } -> std::same_as<typename Source::unchecked_iterator_type>;
-    { src.wrap(uit) } -> std::same_as<typename Source::iterator_type>;
+    { Source::unwrap(std::move(it)) } -> std::same_as<typename Source::unchecked_iterator_type>;
+    { src.wrap(std::move(uit)) } -> std::same_as<typename Source::iterator_type>;
 };
 
 template <class It>

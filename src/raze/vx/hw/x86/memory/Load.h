@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/Cast.h>
 #include <src/raze/vx/hw/x86/memory/AlignmentPolicy.h>
+#include <cstring>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -19,7 +20,11 @@ raze_always_inline V loada_(const void* mem) noexcept {
     else if constexpr (std::is_same_v<V, __m512i>) return _mm512_load_si512(mem);
     else if constexpr (std::is_same_v<V, __m512d>) return _mm512_load_pd(mem);
     else if constexpr (std::is_same_v<V, __m512>)  return _mm512_load_ps(mem);
-    else return *static_cast<const V*>(mem);
+    else {
+        V v;
+        std::memcpy(&v, mem, sizeof(V));
+        return v;
+    }
 }
 
 template <arch::ISA ISA, intrin_or_arithmetic_type V>
@@ -35,7 +40,11 @@ raze_always_inline V loadu_(const void* mem) noexcept {
     else if constexpr (std::is_same_v<V, __m512i>) return _mm512_loadu_si512(static_cast<const __m512i*>(mem));
     else if constexpr (std::is_same_v<V, __m512d>) return _mm512_loadu_pd(static_cast<const f64*>(mem));
     else if constexpr (std::is_same_v<V, __m512>)  return _mm512_loadu_ps(static_cast<const f32*>(mem));
-    else return *static_cast<const V*>(mem);
+    else {
+        V v;
+        std::memcpy(&v, mem, sizeof(V));
+        return v;
+    }
 }
 
 template <arch::ISA ISA, intrin_or_arithmetic_type V, class Policy = unaligned_policy>

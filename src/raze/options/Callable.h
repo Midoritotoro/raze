@@ -58,7 +58,9 @@ protected:
         return false; 
     }
 
-    friend raze_always_inline constexpr bool operator==(const callable&, const callable&) noexcept {
+    friend raze_always_inline constexpr bool operator==(const callable&, const callable&) noexcept
+        requires (OptionsValues::size() == 0)
+    {
         return true;  
     }
 };

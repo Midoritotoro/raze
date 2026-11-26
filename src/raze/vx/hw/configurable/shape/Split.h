@@ -28,7 +28,7 @@ struct configurable_split_t : options::conditional_callable<configurable_split_t
         alignas(64) typename V::value_type arr[V::size()];
         vx::store[vx::aligned](arr, x);
 
-        return { vx::load<First>[vx::aligned](arr), vx::load<Second>[vx::aligned](arr + First::size()) };
+        return { vx::load<First>[vx::aligned](arr), vx::load<Second>(arr + First::size()) };
     }
 };
 

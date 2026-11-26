@@ -127,7 +127,7 @@ private:
 					const auto log2 = scan_reverse_(static_cast<u32>(divisor - 1u)) + 1;
 
 					multiplier = 1 + u32((u64(u32(
-						log2 < 32 ? 1 << log2 : 0) - divisor) << 32) / divisor);
+						log2 < 32 ? (1u << log2) : 0u) - divisor) << 32) / divisor);
 
 					shift1 = 1; 
 					shift2 = log2 - 1;
@@ -253,9 +253,9 @@ private:
 				{
 					const auto log2 = scan_reverse_(static_cast<u16>(divisor - 1u)) + 1;
 
-					const auto power = u16(1 << log2);
+					const auto power = u16(1u << log2);
 
-					multiplier = 1u + u16((u32(power - divisor) << 16) / divisor);
+					multiplier = 1u + u16((u32(u16(power - divisor)) << 16) / divisor);
 					shift1 = 1; 
 					shift2 = log2 - 1;
 				}

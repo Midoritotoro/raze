@@ -28,7 +28,7 @@ raze_never_inline bool __search_verify_tail_long_stateless(
 template <bool IsFstatic, class T, class Predicate, class Projection1, class Projection2>
 raze_never_inline bool __search_verify_tail_long(
     const T* cand_mid, const T* needle_mid, sizetype mid_len,
-    const Predicate& pred, const Projection1& proj1, const Projection2& proj2)
+    Predicate& pred, Projection1& proj1, Projection2& proj2)
 {
     if constexpr (IsFstatic) {
         return algorithm::equal[options::fstatic](
@@ -125,7 +125,7 @@ struct search_t : Traits, dispatchable<search_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline bool verify_middle(
-            const value_type* cand_mid, const value_type* needle_mid, sizetype mid_len) const
+            const value_type* cand_mid, const value_type* needle_mid, sizetype mid_len)
         {
             if (mid_len == 0) return true;
 
@@ -154,7 +154,7 @@ struct search_t : Traits, dispatchable<search_t<Traits>> {
         }
 
         raze_always_inline bool verify_tail_middle(
-            const value_type* cand_mid, const value_type* needle_mid, sizetype mid_len) const
+            const value_type* cand_mid, const value_type* needle_mid, sizetype mid_len)
         {
             if (mid_len == 0) return true;
 

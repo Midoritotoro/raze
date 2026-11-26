@@ -46,6 +46,7 @@ struct rotate_copy_t : Traits, dispatchable<rotate_copy_t<Traits>> {
                 && !traits::is_iterator_volatile_v<iterator_type>
                 && !traits::is_iterator_volatile_v<out_iterator_type>
                 && std::is_trivially_copyable_v<in_t>
+                && std::is_trivially_copy_assignable_v<in_t>
                 && std::same_as<in_t, out_t>;
         }
 

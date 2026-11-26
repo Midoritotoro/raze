@@ -91,8 +91,8 @@ struct find_if_t : Traits, dispatchable<find_if_t<Traits>> {
             source_type::from_ptr(_iterator, ptr + offset);
         }
 
-        constexpr raze_always_inline iterator_type result() const {
-            return _source.wrap(_iterator);
+        constexpr raze_always_inline iterator_type result() {
+            return _source.wrap(std::move(_iterator));
         }
 
         raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()

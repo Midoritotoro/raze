@@ -11,7 +11,7 @@
 #elif defined(__INTEL_LLVM_COMPILER)
 #  define raze_cpp_icpx \
       ((((__INTEL_LLVM_COMPILER) / 10000) - 2000) * 100 \
-       + (((__INTEL_LLVM_COMPILER) % 10000) / 1000))
+       + (((__INTEL_LLVM_COMPILER) % 10000) / 100))
 #  define raze_cpp_icpx_only raze_cpp_icpx
 #elif defined(__INTEL_COMPILER) && !defined(__INTEL_LLVM_COMPILER)
 #  define raze_cpp_icc   (__INTEL_COMPILER)
@@ -31,7 +31,7 @@
 #    else
 #      define raze_cpp_clang_only raze_cpp_clang
 #    endif
-#  else
+#  elif !defined(raze_cpp_icc)
 #    define raze_cpp_msvc_only   raze_cpp_msvc
 #  endif // defined(__clang__)
 
@@ -79,7 +79,7 @@
 #    endif
 #  else
 #    if defined(raze_cpp_icc)
-#      define raze_cpp_gnu_only   raze_cpp_gnu
+#      undef raze_cpp_gnu_only
 #    else
 #      define raze_cpp_gnu_only   raze_cpp_gnu
 #    endif

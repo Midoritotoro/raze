@@ -2,12 +2,14 @@
 
 #include <raze/algorithm/remove/RemoveIf.h>
 #include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/ProjectedValue.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct remove_t : Traits {
-	template <std::permutable It, std::sentinel_for<It> Sent, class T = std::iter_value_t<It>, class Proj = std::identity>
+	template <std::permutable It, std::sentinel_for<It> Sent,
+		class Proj = std::identity, class T = projected_value_t<It, Proj>>
 	constexpr raze_always_inline std::ranges::subrange<It> operator()(
 		It first, Sent last, const T& value, Proj proj = {}) const
 			requires(std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Proj>, const T*>)
@@ -19,7 +21,8 @@ struct remove_t : Traits {
 			});
 	}
 
-	template <std::ranges::input_range R, class T = std::ranges::range_value_t<R>, class Proj = std::identity>
+	template <std::ranges::input_range R,
+		class Proj = std::identity, class T = projected_value_t<std::ranges::iterator_t<R>, Proj>>
 	constexpr raze_always_inline std::ranges::borrowed_subrange_t<R> operator()(
 		R&& r, const T& value, Proj proj = {}) const
 			requires(std::permutable<std::ranges::iterator_t<R>> &&

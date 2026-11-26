@@ -1,6 +1,8 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/cast/As.h>
+#include <src/raze/vx/hw/x86/bitwise/BitNot.h>
+#include <src/raze/vx/hw/x86/compare/Equal.h>
 #include <src/raze/vx/hw/x86/mask/operations/MaskAnd.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
@@ -9,11 +11,11 @@ template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V>
 raze_always_inline auto not_equal_(V x, V y) noexcept {
     if constexpr (sizeof(V) == 16) {
         if constexpr (pd<T>) {
-            if constexpr (has_avx512vl<ISA>) return _mm_cmp_pd_mask(x, y, _CMP_NEQ_OQ);
+            if constexpr (has_avx512vl<ISA>) return _mm_cmp_pd_mask(x, y, _CMP_NEQ_UQ);
             else return _mm_cmpneq_pd(x, y);
         }
         else if constexpr (ps<T>) {
-            if constexpr (has_avx512vl<ISA>) return _mm_cmp_ps_mask(x, y, _CMP_NEQ_OQ);
+            if constexpr (has_avx512vl<ISA>) return _mm_cmp_ps_mask(x, y, _CMP_NEQ_UQ);
             else return _mm_cmpneq_ps(x, y);
         }
         else if constexpr (has_avx512vl<ISA>) {
@@ -29,12 +31,12 @@ raze_always_inline auto not_equal_(V x, V y) noexcept {
     }
     else if constexpr (sizeof(V) == 32) {
         if constexpr (pd<T>) {
-            if constexpr (has_avx512vl<ISA>) return _mm256_cmp_pd_mask(x, y, _CMP_NEQ_OQ);
-            else return _mm256_cmp_pd(x, y, _CMP_NEQ_OQ);
+            if constexpr (has_avx512vl<ISA>) return _mm256_cmp_pd_mask(x, y, _CMP_NEQ_UQ);
+            else return _mm256_cmp_pd(x, y, _CMP_NEQ_UQ);
         }
         else if constexpr (ps<T>) {
-            if constexpr (has_avx512vl<ISA>) return _mm256_cmp_ps_mask(x, y, _CMP_NEQ_OQ);
-            else return _mm256_cmp_ps(x, y, _CMP_NEQ_OQ);
+            if constexpr (has_avx512vl<ISA>) return _mm256_cmp_ps_mask(x, y, _CMP_NEQ_UQ);
+            else return _mm256_cmp_ps(x, y, _CMP_NEQ_UQ);
         }
         else if constexpr (has_avx512vl<ISA>) {
             if constexpr (epi64<T> || epu64<T>) return _mm256_cmpneq_epi64_mask(x, y);
@@ -77,8 +79,8 @@ raze_always_inline auto not_equal_(V x, V y, Mask mask) noexcept {
             if constexpr (epi8<T>) return _mm_mask_cmpneq_epi8_mask(mask, x, y);
             else return _mm_mask_cmpneq_epu8_mask(mask, x, y);
         }
-        else if constexpr (pd<T>) return _mm_mask_cmp_pd_mask(mask, x, y, _CMP_NEQ_OQ);
-        else if constexpr (ps<T>) return _mm_mask_cmp_ps_mask(mask, x, y, _CMP_NEQ_OQ);
+        else if constexpr (pd<T>) return _mm_mask_cmp_pd_mask(mask, x, y, _CMP_NEQ_UQ);
+        else if constexpr (ps<T>) return _mm_mask_cmp_ps_mask(mask, x, y, _CMP_NEQ_UQ);
     }
     else if constexpr (sizeof(V) == 32 && has_avx512vl<ISA>) {
         if constexpr (epi64<T> || epu64<T>) return _mm256_mask_cmpneq_epi64_mask(mask, x, y);
@@ -91,8 +93,8 @@ raze_always_inline auto not_equal_(V x, V y, Mask mask) noexcept {
             if constexpr (epi8<T>) return _mm256_mask_cmpneq_epi8_mask(mask, x, y);
             else return _mm256_mask_cmpneq_epu8_mask(mask, x, y);
         }
-        else if constexpr (pd<T>) return _mm256_mask_cmp_pd_mask(mask, x, y, _CMP_NEQ_OQ);
-        else if constexpr (ps<T>) return _mm256_mask_cmp_ps_mask(mask, x, y, _CMP_NEQ_OQ);
+        else if constexpr (pd<T>) return _mm256_mask_cmp_pd_mask(mask, x, y, _CMP_NEQ_UQ);
+        else if constexpr (ps<T>) return _mm256_mask_cmp_ps_mask(mask, x, y, _CMP_NEQ_UQ);
     }
     else if constexpr (sizeof(V) == 64 && has_avx512f<ISA>) {
         if constexpr (epi64<T> || epu64<T>) return _mm512_mask_cmpneq_epi64_mask(mask, x, y);
@@ -105,8 +107,8 @@ raze_always_inline auto not_equal_(V x, V y, Mask mask) noexcept {
             if constexpr (epi8<T>) return _mm512_mask_cmpneq_epi8_mask(mask, x, y);
             else return _mm512_mask_cmpneq_epu8_mask(mask, x, y);
         }
-        else if constexpr (pd<T>) return _mm512_mask_cmp_pd_mask(mask, x, y, _CMP_NEQ_OQ);
-        else if constexpr (ps<T>) return _mm512_mask_cmp_ps_mask(mask, x, y, _CMP_NEQ_OQ);
+        else if constexpr (pd<T>) return _mm512_mask_cmp_pd_mask(mask, x, y, _CMP_NEQ_UQ);
+        else if constexpr (ps<T>) return _mm512_mask_cmp_ps_mask(mask, x, y, _CMP_NEQ_UQ);
     }
 
     return mask_and_<ISA, T>(not_equal_<ISA, T>(x, y), mask);

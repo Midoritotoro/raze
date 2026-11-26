@@ -5,6 +5,7 @@
 
 #include <concepts>
 #include <functional>
+#include <limits>
 #include <type_traits>
 #include <utility>
 
@@ -53,6 +54,21 @@ RAZE_DEFINE_COMPARATOR(greater_equal, >= );  ///< Evaluates `x >= _v`.
 
 #undef RAZE_DEFINE_COMPARATOR
 
+template <std::integral Target, std::integral Source>
+constexpr bool in_integral_range(Source v) noexcept {
+    if constexpr (std::is_signed_v<Target> == std::is_signed_v<Source>) {
+        return v >= std::numeric_limits<Target>::min() &&
+               v <= std::numeric_limits<Target>::max();
+    }
+    else if constexpr (std::is_signed_v<Source>) {
+        return v >= 0 &&
+               static_cast<std::make_unsigned_t<Source>>(v) <= std::numeric_limits<Target>::max();
+    }
+    else {
+        return v <= static_cast<std::make_unsigned_t<Target>>(std::numeric_limits<Target>::max());
+    }
+}
+
 template <class ElemT, class Proj, class T, class Fn>
 raze_always_inline constexpr decltype(auto) with_equal_to(const T& value, Fn&& fn) {
     using DecayedElem = std::remove_cvref_t<ElemT>;
@@ -68,14 +84,18 @@ raze_always_inline constexpr decltype(auto) with_equal_to(const T& value, Fn&& f
                       (std::is_signed_v<DecayedElem> == std::is_signed_v<DecayedVal> ||
                        (sizeof(DecayedElem) < sizeof(DecayedVal) && std::is_signed_v<DecayedVal>)))
         {
-            if (std::in_range<DecayedElem>(value))
+            if (in_integral_range<DecayedElem>(value))
                 return fn(equal_to<DecayedElem>(static_cast<DecayedElem>(value)));
             return fn(equal_to<DecayedVal>(value));
         }
         else if constexpr (std::floating_point<DecayedElem> && std::floating_point<DecayedVal>) {
-            const auto narrowed = static_cast<DecayedElem>(value);
-            if (static_cast<DecayedVal>(narrowed) == value)
-                return fn(equal_to<DecayedElem>(narrowed));
+            if (value >= static_cast<DecayedVal>(std::numeric_limits<DecayedElem>::lowest()) &&
+                value <= static_cast<DecayedVal>(std::numeric_limits<DecayedElem>::max()))
+            {
+                const auto narrowed = static_cast<DecayedElem>(value);
+                if (static_cast<DecayedVal>(narrowed) == value)
+                    return fn(equal_to<DecayedElem>(narrowed));
+            }
             return fn(equal_to<DecayedVal>(value));
         }
     }

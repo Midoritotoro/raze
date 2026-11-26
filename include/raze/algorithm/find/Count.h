@@ -2,12 +2,14 @@
 
 #include <raze/algorithm/find/CountIf.h>
 #include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/ProjectedValue.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct count_t : Traits {
-    template <std::input_iterator It, std::sentinel_for<It> Sent, class T, class Projection = std::identity>
+    template <std::input_iterator It, std::sentinel_for<It> Sent,
+        class Projection = std::identity, class T = projected_value_t<It, Projection>>
     raze_nodiscard constexpr raze_always_inline std::iter_difference_t<It>
         operator()(It first, Sent last, const T& value, Projection proj = {}) const
             requires(std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Projection>, const T*>)
@@ -19,7 +21,8 @@ struct count_t : Traits {
             });
     }
 
-    template <std::ranges::input_range R, class T, class Projection = std::identity>
+    template <std::ranges::input_range R,
+        class Projection = std::identity, class T = projected_value_t<std::ranges::iterator_t<R>, Projection>>
     raze_nodiscard constexpr raze_always_inline std::ranges::range_difference_t<R>
         operator()(R&& r, const T& value, Projection proj = {}) const
             requires(std::indirect_binary_predicate<std::ranges::equal_to,

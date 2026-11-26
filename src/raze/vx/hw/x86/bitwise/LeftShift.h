@@ -11,16 +11,22 @@ raze_always_inline V left_shift_(V x, u32 shift) noexcept {
 		if constexpr (epi64<T> || epu64<T>) return as<V>(_mm_sll_epi64(as<__m128i>(x), _mm_cvtsi32_si128(shift)));
 		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm_sll_epi32(as<__m128i>(x), _mm_cvtsi32_si128(shift)));
 		else if constexpr (epi16<T> || epu16<T>) return as<V>(_mm_sll_epi16(as<__m128i>(x), _mm_cvtsi32_si128(shift)));
-		else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm_sll_epi16(
-			_mm_and_si128(as<__m128i>(x), _mm_set1_epi8(0xFFu >> shift)), _mm_cvtsi32_si128(shift)));
+		else if constexpr (epi8<T> || epu8<T>) {
+			const auto byte_mask = static_cast<i8>(shift < 8 ? (0xFFu >> shift) : 0u);
+			return as<V>(_mm_sll_epi16(
+				_mm_and_si128(as<__m128i>(x), _mm_set1_epi8(byte_mask)), _mm_cvtsi32_si128(shift)));
+		}
 	}
 	else if constexpr (sizeof(V) == 32) {
 		if constexpr (has_avx2<ISA>) {
 			if constexpr (epi64<T> || epu64<T>) return as<V>(_mm256_sll_epi64(as<__m256i>(x), _mm_cvtsi32_si128(shift)));
 			else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm256_sll_epi32(as<__m256i>(x), _mm_cvtsi32_si128(shift)));
 			else if constexpr (epi16<T> || epu16<T>) return as<V>(_mm256_sll_epi16(as<__m256i>(x), _mm_cvtsi32_si128(shift)));
-			else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm256_sll_epi16(
-				_mm256_and_si256(as<__m256i>(x), _mm256_set1_epi8(0xFFu >> shift)), _mm_cvtsi32_si128(shift)));
+			else if constexpr (epi8<T> || epu8<T>) {
+				const auto byte_mask = static_cast<i8>(shift < 8 ? (0xFFu >> shift) : 0u);
+				return as<V>(_mm256_sll_epi16(
+					_mm256_and_si256(as<__m256i>(x), _mm256_set1_epi8(byte_mask)), _mm_cvtsi32_si128(shift)));
+			}
 		}
 		else {
 			const auto low = left_shift_<arch::ISA::SSE42, T>(as<__m128i>(x), shift);
@@ -34,8 +40,11 @@ raze_always_inline V left_shift_(V x, u32 shift) noexcept {
 		else if constexpr (epi32<T> || epu32<T>) return as<V>(_mm512_sll_epi32(as<__m512i>(x), _mm_cvtsi32_si128(shift)));
 		else if constexpr (has_avx512bw<ISA>) {
 			if constexpr (epi16<T> || epu16<T>) return as<V>(_mm512_sll_epi16(as<__m512i>(x), _mm_cvtsi32_si128(shift)));
-			else if constexpr (epi8<T> || epu8<T>) return as<V>(_mm512_sll_epi16(
-				_mm512_and_si512(as<__m512i>(x), _mm512_set1_epi8(0xFFull >> shift)), _mm_cvtsi32_si128(shift)));
+			else if constexpr (epi8<T> || epu8<T>) {
+				const auto byte_mask = static_cast<i8>(shift < 8 ? (0xFFu >> shift) : 0u);
+				return as<V>(_mm512_sll_epi16(
+					_mm512_and_si512(as<__m512i>(x), _mm512_set1_epi8(byte_mask)), _mm_cvtsi32_si128(shift)));
+			}
 		}
 		else {
 			const auto low = as<__m256i>(x);

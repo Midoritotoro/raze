@@ -36,7 +36,7 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
                 && vectorizable_projection<Projection, unchecked_iterator_type>;
         }
 
-        constexpr explicit kernel(Source&& src, Predicate pred, Projection proj) noexcept
+        constexpr explicit kernel(Source&& src, Predicate pred, Projection proj)
             : _source(std::forward<Source>(src)),
               _iterator(_source.ubegin()),
               _sentinel(_source.uend()),
@@ -44,14 +44,14 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
               _proj(std::move(proj))
         {}
 
-        raze_always_inline constexpr void operator()() noexcept {
+        raze_always_inline constexpr void operator()() {
             raze_disable_unrolling
             for (; _iterator != _sentinel; ++_iterator)
                 _count += static_cast<difference_type>(static_cast<bool>(std::invoke(_predicate, std::invoke(_proj, *_iterator))));
         }
 
         template <vectorizable_tag Tag>
-        raze_always_inline void operator()(Tag, sizetype aligned_size) noexcept {
+        raze_always_inline void operator()(Tag, sizetype aligned_size) {
             vx::counter<Tag> counter;
 
             auto* ptr = std::to_address(_iterator);
@@ -91,7 +91,7 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
         }
 
         template <vectorizable_tag Tag>
-        raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) noexcept {
+        raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
             if (ignore.tail_bytes() == 0) return;
 
             _count += vx::count_set[ignore](_predicate(_proj(vx::load<Tag>[ignore](std::to_address(_iterator)))));

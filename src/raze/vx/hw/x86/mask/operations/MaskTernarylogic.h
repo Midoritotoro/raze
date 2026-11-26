@@ -17,7 +17,7 @@ raze_always_inline M mask_ternarylogic_(M x, M y, M z, std::integral_constant<u8
         [] (auto a, auto b) raze_always_inline_lambda { return mask_and_<ISA, T>(a, b); },
         [] (auto a, auto b) raze_always_inline_lambda { return mask_andnot_<ISA, T>(a, b); },
         [] (auto a) raze_always_inline_lambda { return mask_not_<ISA, N, T>(a); },
-        []() raze_always_inline_lambda { return 0; });
+        []() raze_always_inline_lambda { return static_cast<M>(0); });
 }
 
 template <arch::ISA ISA, sizetype N, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask, u8 Op>

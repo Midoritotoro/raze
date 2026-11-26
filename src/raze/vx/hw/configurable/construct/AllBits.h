@@ -3,7 +3,7 @@
 #include <raze/options/Options.h>
 
 #if defined(raze_processor_x86)
-#  include <src/raze/vx/hw/x86/construct/Broadcast.h>
+#  include <src/raze/vx/hw/x86/construct/AllBits.h>
 #endif // defined(raze_processor_x86)
 
 

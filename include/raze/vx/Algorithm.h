@@ -62,7 +62,10 @@ public:
     }
 
     raze_always_inline static constexpr auto portion_size() noexcept {
-        return math::max_limit<index_type>();
+        if constexpr (sizeof(index_type) == 8)
+            return math::max_limit<index_type>() / static_cast<index_type>(V::size());
+        else
+            return math::max_limit<index_type>();
     }
 
     raze_always_inline void count(const mask_type& mask) noexcept {
@@ -82,7 +85,7 @@ public:
 		else _storage = 0;
 	}
 private:
-    using storage_type = std::conditional_t<(has_avx512f<abi_t<V>::isa> && sizeof(value_type) >= 4)
+    using storage_type = std::conditional_t<V::has_scalar_chunks || (has_avx512f<abi_t<V>::isa> && sizeof(value_type) >= 4)
         || (has_avx512bw<abi_t<V>::isa>), sizetype, simd<index_type, abi_t<V>>>;
 
     storage_type _storage;

@@ -61,9 +61,8 @@ raze_always_inline fallback_result<V> shuffle_fallback_(
 	V x, std::integer_sequence<sizetype, Indices...>) noexcept
 {
 	constexpr auto length = sizeof(V) / sizeof(T);
-	using IndexType = typename IntegerForSizeof<T>::Unsigned;
 
-	alignas(sizeof(V)) static constexpr IndexType indices_array[] = { Indices... };
+	static constexpr sizetype indices_array[] = { Indices... };
 
 	alignas(sizeof(V)) T src[length];
 	alignas(sizeof(V)) T dst[length];
@@ -71,7 +70,7 @@ raze_always_inline fallback_result<V> shuffle_fallback_(
 	store_(src, x, aligned_policy{});
 
 	for (sizetype i = 0; i < length; ++i)
-		dst[i] = src[indices_array[i]];
+		dst[i] = (indices_array[i] == shuffle_zero) ? T(0) : src[indices_array[i]];
 
 	return load_<ISA, V>(dst, aligned_policy{});
 }
@@ -107,7 +106,7 @@ generic_shuffle_scalar_fallback_(const pattern_vector_t<Pattern>& x, Pattern p) 
 
 	[&] <sizetype ... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
 		([&](auto i) raze_always_inline_lambda{
-			dst[i] = src[p[i]];
+			dst[i] = (p[i] == shuffle_zero) ? typename V::value_type(0) : src[p[i]];
 		}(std::integral_constant<sizetype, I>{}), ...);
 	}(std::make_integer_sequence<sizetype, V::size()>{});
 
@@ -310,7 +309,7 @@ raze_always_inline auto generic_shuffle_native_(V x, Pattern p) noexcept {
 			else if constexpr (is_high_half(p)) {
 				const auto high1 = _mm_shufflehi_epi16(as<__m128i>(x), low_shuf);
 				const auto high2 = _mm_shufflehi_epi16(as<__m128i>(x), high_shuf);
-				return as<V>(_mm_unpacklo_epi64(high1, high2));
+				return as<V>(_mm_unpackhi_epi64(high1, high2));
 			}
 			else {
 				const auto low1 = _mm_shufflelo_epi16(as<__m128i>(x), low_shuf);
@@ -389,7 +388,7 @@ raze_always_inline auto generic_shuffle_native_(V x, Pattern p) noexcept {
 
 				auto splitv = _mm256_permute2f128_ps(as<__m256>(x), as<__m256>(x), 0x11);
 
-				if constexpr (!is_dup_low_identity(p))
+				if constexpr (!is_dup_high_identity(p))
 					splitv = _mm256_permute_ps(splitv, mask);
 
 				return as<V>(splitv);
@@ -540,9 +539,9 @@ raze_always_inline auto generic_shuffle_native_(V x, Index idx) noexcept {
 			}
 			else {
 				alignas(16) T t[2];
+				alignas(16) u64 i[2];
 				store_(t, x, aligned_policy{});
-
-				const auto* i = reinterpret_cast<const unsigned long long*>(&idx);
+				store_(i, idx, aligned_policy{});
 				
 				if constexpr (std::is_floating_point_v<T>) return fallback_result { as<V>(_mm_set_pd(t[i[1]], t[i[0]])) };
 				else return fallback_result{ as<V>(_mm_set_epi64x(t[i[1]], t[i[0]])) };
@@ -743,8 +742,7 @@ raze_always_inline auto generic_shuffle_(const pattern_vector_t<Pattern>& x, Pat
 
 		auto vec = Pattern::builtin_shufflevector(ustorage(storage1), ustorage(storage2));
 		alignas(sizeof(V)) typename V::value_type arr[V::size()];
-		using VecType = decltype(vec);
-		*reinterpret_cast<VecType*>(arr) = vec;
+		std::memcpy(arr, &vec, sizeof(arr));
 		return raze::vx::load<V>[raze::vx::aligned](arr);
 #else
 		V dup_1;
@@ -756,6 +754,7 @@ raze_always_inline auto generic_shuffle_(const pattern_vector_t<Pattern>& x, Pat
 		dup_2.template __get<1>() = x.template __get<1>();
 
 		static constexpr auto new_p = p.split();
+		constexpr auto half_size = V::size() / 2;
 
 		[&] <sizetype... Indices> (std::integer_sequence<sizetype, Indices...>) raze_always_inline_lambda {
 			([&](auto i) raze_always_inline_lambda {
@@ -768,11 +767,18 @@ raze_always_inline auto generic_shuffle_(const pattern_vector_t<Pattern>& x, Pat
 				using Chunk1 = std::remove_cvref_t<decltype(c1)>;
 				using Chunk2 = std::remove_cvref_t<decltype(c2)>;
 
-				const auto r1 = generic_shuffle_native_<abi_t<V>::isa, typename V::value_type>(c1_in,
-					make_shuffle_pattern<typename Chunk1::as_simd, [&](auto k) { return new_p.first[k] % (V::size() / 2); } > {});
+				constexpr auto sub_pattern = []() consteval {
+					if constexpr (i == 0) return new_p.first;
+					else return new_p.second;
+				}();
 
-				const auto r2 = generic_shuffle_native_<abi_t<V>::isa, typename V::value_type>(c2_in,
-					make_shuffle_pattern<typename Chunk2::as_simd, [&](auto k) { return new_p.second[k] % (V::size() / 2); } > {});
+				using ModPattern1 = make_shuffle_pattern<typename Chunk1::as_simd,
+					[](sizetype k) { return sub_pattern[k] == shuffle_zero ? shuffle_zero : (sub_pattern[k] % half_size); }>;
+				using ModPattern2 = make_shuffle_pattern<typename Chunk2::as_simd,
+					[](sizetype k) { return sub_pattern[k] == shuffle_zero ? shuffle_zero : (sub_pattern[k] % half_size); }>;
+
+				const auto r1 = generic_shuffle_native_<abi_t<V>::isa, typename V::value_type>(c1_in, ModPattern1{});
+				const auto r2 = generic_shuffle_native_<abi_t<V>::isa, typename V::value_type>(c2_in, ModPattern2{});
 
 				c1 = unwrap_fallback(r1);
 				c2 = unwrap_fallback(r2);
@@ -780,7 +786,7 @@ raze_always_inline auto generic_shuffle_(const pattern_vector_t<Pattern>& x, Pat
 		}(std::make_integer_sequence<sizetype, V::__chunks_count()>{});
 
 		const auto mask = p.to_mask([](auto idx) { return idx >= (V::size() / 2); });
-		return vx::select[dup_1, mask](dup_2);
+		return vx::select[mask, dup_1](dup_2);
 #endif
 	}
 	else return generic_shuffle_scalar_fallback_(x, p);

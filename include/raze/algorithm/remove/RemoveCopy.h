@@ -2,13 +2,14 @@
 
 #include <raze/algorithm/remove/RemoveCopyIf.h>
 #include <src/raze/algorithm/EqualTo.h>
+#include <src/raze/algorithm/ProjectedValue.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct remove_copy_t : Traits {
 	template <std::input_iterator It, std::sentinel_for<It> Sent, std::weakly_incrementable OutIt,
-		class T = std::iter_value_t<It>, class Proj = std::identity>
+		class Proj = std::identity, class T = projected_value_t<It, Proj>>
 	constexpr raze_always_inline decltype(auto) operator()(It first, Sent last,
 		OutIt out, const T& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<It, OutIt> &&
@@ -22,7 +23,7 @@ struct remove_copy_t : Traits {
 	}
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt,
-		class T = std::ranges::range_value_t<R>, class Proj = std::identity>
+		class Proj = std::identity, class T = projected_value_t<std::ranges::iterator_t<R>, Proj>>
 	constexpr raze_always_inline decltype(auto) operator()(R&& r, OutIt out,
 		const T& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> &&

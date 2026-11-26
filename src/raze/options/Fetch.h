@@ -7,22 +7,22 @@
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 template <concepts::keyword Keyword, concepts::option ... Options>
-constexpr raze_always_inline decltype(auto) fetch(const Keyword& kw,
-    const Options& ... opts) noexcept
+constexpr raze_always_inline auto fetch(const Keyword& kw,
+    const Options& ... opts) noexcept(noexcept(settings(opts...)[kw]))
 {
     return settings(opts...)[kw];
 }
     
 template <concepts::keyword Keyword, class Value, concepts::option ... Options>
-constexpr raze_always_inline decltype(auto) fetch(const type_or<Keyword, Value>& kw,
-    const Options& ... opts) noexcept
+constexpr raze_always_inline auto fetch(const type_or<Keyword, Value>& kw,
+    const Options& ... opts) noexcept(noexcept(settings(opts...)[kw]))
 {
     return settings(opts...)[kw];
 }
 
 template <class Key, concepts::settings Settings>
 constexpr raze_always_inline decltype(auto) fetch(const Key& key,
-    const Settings& s) noexcept
+    const Settings& s) noexcept(noexcept(s[key]))
 {
     return s[key];
 }

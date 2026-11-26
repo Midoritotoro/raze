@@ -11,7 +11,13 @@
 #endif
 
 #if !defined(raze_noreturn)
-#  define raze_noreturn [[noreturn]]
+#  if defined(raze_cpp_msvc_only)
+#    define raze_noreturn __declspec(noreturn)
+#  elif defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+#    define raze_noreturn __attribute__((__noreturn__))
+#  else
+#    define raze_noreturn [[noreturn]]
+#  endif
 #endif // !defined(raze_noreturn)
 
 #if !defined(raze_declare_pure_function)

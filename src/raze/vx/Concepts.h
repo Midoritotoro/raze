@@ -19,7 +19,7 @@ template <class T>
 concept simd_or_arithmetic_type = simd_type<T> || arithmetic_type<T>;
 
 template <class T>
-concept floating_point_simd = simd_type<T> || std::floating_point<typename T::value_type>;
+concept floating_point_simd = simd_type<T> && std::floating_point<typename T::value_type>;
 
 template <class T>
 concept floating_point_simd_or_scalar_type = floating_point_simd<T> || std::floating_point<T>;

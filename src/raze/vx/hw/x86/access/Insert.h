@@ -27,14 +27,17 @@ raze_always_inline void insert_(V& v, u8 i, T x) noexcept {
 }
 
 template <arch::ISA ISA, intrin_type V, sizetype I, intrin_type Insert>
-raze_always_inline void insert_vector_(V& v, std::integral_constant<sizetype, I> i, Insert ins) noexcept {
+raze_always_inline void insert_vector_(V& v, std::integral_constant<sizetype, I>, Insert ins) noexcept {
 	if constexpr (sizeof(V) == sizeof(Insert)) v = as<V>(ins);
 	else if constexpr (sizeof(V) == 32) {
-		if constexpr (sizeof(Insert) == 16) v = _mm256_inserti128_si256(as<__m256i>(v), as<__m128i>(ins), i);
+		if constexpr (sizeof(Insert) == 16) {
+			if constexpr (has_avx2<ISA>) v = as<V>(_mm256_inserti128_si256(as<__m256i>(v), as<__m128i>(ins), I));
+			else v = as<V>(_mm256_insertf128_si256(as<__m256i>(v), as<__m128i>(ins), I));
+		}
 	}
 	else if constexpr (sizeof(V) == 64) {
-		if constexpr (sizeof(Insert) == 16) v = _mm512_inserti32x4(as<__m512i>(v), as<__m128i>(ins), i);
-		else if constexpr (sizeof(Insert) == 32) v = _mm512_inserti32x8(as<__m512i>(v), as<__m256i>(ins), i);
+		if constexpr (sizeof(Insert) == 16) v = as<V>(_mm512_inserti32x4(as<__m512i>(v), as<__m128i>(ins), I));
+		else if constexpr (sizeof(Insert) == 32) v = as<V>(_mm512_inserti64x4(as<__m512i>(v), as<__m256i>(ins), I));
 	}
 }
 

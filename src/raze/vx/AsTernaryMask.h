@@ -31,21 +31,21 @@ constexpr C_t C;
 template <class L, class R>
 struct And_t {
     raze_nodiscard static constexpr bool eval(bool a, bool b, bool c) noexcept {
-        return L::eval(a, b, c) & R::eval(a, b, c);
+        return L::eval(a, b, c) && R::eval(a, b, c);
     } 
 };
 
 template <class L, class R>
 struct Or_t {
     raze_nodiscard static constexpr bool eval(bool a, bool b, bool c) noexcept {
-        return L::eval(a, b, c) | R::eval(a, b, c);
+        return L::eval(a, b, c) || R::eval(a, b, c);
     }
 };
 
 template <class L, class R>
 struct Xor_t {
     raze_nodiscard static constexpr bool eval(bool a, bool b, bool c) noexcept {
-        return L::eval(a, b, c) ^ R::eval(a, b, c);
+        return L::eval(a, b, c) != R::eval(a, b, c);
     }
 };
 
@@ -88,9 +88,9 @@ raze_nodiscard consteval u8 as_ternary_mask_impl() noexcept {
     auto imm = u8(0);
 
     for (auto mask = 0; mask < 8; ++mask) {
-        const auto a = static_cast<bool>(mask & 1);
+        const auto a = static_cast<bool>(mask & 4);
         const auto b = static_cast<bool>(mask & 2);
-        const auto c = static_cast<bool>(mask & 4);
+        const auto c = static_cast<bool>(mask & 1);
 
         if (Expr::eval(a, b, c))
             imm |= (1u << mask);

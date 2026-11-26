@@ -53,27 +53,9 @@ struct uniques<Keys1, keys<>> {
 template <class Key1, class Key2> 
 struct contain_all;
 
-template <class Key1, class Key2>
-struct contain_all;
-
-template <class Keys1, class ... Keys2>
-struct contain_all<Keys1, keys<Keys2...>>: 
-    std::bool_constant<(contains<Keys2, Keys1>::value && ...)>
-{};
-
-template <class Keys1> 
-struct contain_all<Keys1, keys<>>: 
-    std::false_type 
-{};
-
-template <class Keys2>
-struct contain_all<keys<>, Keys2>:
-    std::false_type 
-{};
-
-template <> 
-struct contain_all<keys<>, keys<>>:
-    std::true_type  
+template <class ... Keys1, class ... Keys2>
+struct contain_all<keys<Keys1...>, keys<Keys2...>>: 
+    std::bool_constant<(contains<Keys2, keys<Keys1...>>::value && ...)>
 {};
 
 template <class Key1, class Key2>

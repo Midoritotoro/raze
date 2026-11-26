@@ -32,7 +32,7 @@ struct configurable_fma_t: options::conditional_callable<configurable_fma_t, Opt
     static raze_always_inline auto deferred_call(auto opts, const T& x, const T& y, const T& z) noexcept {
         using Mask = options::fetch_t<options::condition_key, Options>;
 
-        if constexpr (!std::same_as<Mask, options::unknown_key>) {
+        if constexpr (options::complete_mask<Mask>) {
             auto condition = opts[options::condition_key];
 
             if constexpr (Mask::has_alternative)

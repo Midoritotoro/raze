@@ -13,9 +13,12 @@ template <std::floating_point T>
 raze_always_inline T fast_cos_impl(T x) noexcept {
     constexpr auto sine_table_size = 256;
 
-    const auto ci = int(x * (T(0.5) * sine_table_size / pi)) & (sine_table_size - 1);
-    const auto si = int(ci + sine_table_size / 4) & (sine_table_size - 1);
-    const auto d = x - ci * (T(2.0) * pi / sine_table_size);
+    auto ci = int(x * (T(0.5) * sine_table_size / pi));
+    auto si = int(ci + sine_table_size / 4);
+    const auto d = T(x - ci * (T(2.0) * pi / sine_table_size));
+
+    ci &= (sine_table_size - 1);
+    si &= (sine_table_size - 1);
 
     return sine_table[si] - (sine_table[ci] + T(0.5) * sine_table[si] * d) * d;
 }
@@ -71,5 +74,7 @@ struct configurable_cos_t: raze::options::conditional_callable<configurable_cos_
         else return cos_impl(x);
     }
 };
+
+constexpr inline auto cos = options::functor<configurable_cos_t>;
 
 __RAZE_MATH_NAMESPACE_END

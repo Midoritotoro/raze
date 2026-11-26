@@ -26,7 +26,7 @@ struct configurable_broadcast_t {
             V r;
 
             auto chunk_op = [&] <class Chunk, class ... Args> (Chunk& chunk, Args&& ... args) raze_always_inline_lambda {
-                chunk = broadcast_<Abi::isa, typename Chunk::unwrapped_type>(x, ustorage<Args>(args)...);
+                chunk = broadcast_<Abi::isa, typename Chunk::unwrapped_type>(static_cast<typename V::value_type>(x), ustorage<Args>(args)...);
             };
 
             if constexpr (options::complete_mask<Mask>) {

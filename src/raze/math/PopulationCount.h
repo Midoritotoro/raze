@@ -82,8 +82,16 @@ template <std::unsigned_integral T>
 raze_always_inline i32 popcnt_population_count(T v) noexcept {
     constexpr auto digits = std::numeric_limits<T>::digits;
 
-    if constexpr (digits == 64) return static_cast<int>(raze_popcnt_u64(static_cast<u64>(v)));
-    else return static_cast<int>(raze_popcnt_u32(static_cast<u32>(v)));
+    if constexpr (digits == 64) {
+#if defined(raze_cpp_msvc) && !defined(raze_processor_x86_64)
+        const u64 u = static_cast<u64>(v);
+        return static_cast<i32>(raze_popcnt_u32(static_cast<u32>(u))) +
+               static_cast<i32>(raze_popcnt_u32(static_cast<u32>(u >> 32)));
+#else
+        return static_cast<i32>(raze_popcnt_u64(static_cast<u64>(v)));
+#endif
+    }
+    else return static_cast<i32>(raze_popcnt_u32(static_cast<u32>(v)));
 }
 
 #endif // defined(raze_processor_x86)
@@ -111,7 +119,7 @@ constexpr raze_always_inline i32 popcnt_n_bits(T v) noexcept {
     constexpr auto max_for_n_bits = (Bits == raze_sizeof_in_bits(T))
         ? math::max_limit<T>()
         : T(((T(1) << Bits) - 1));
-    constexpr auto mask_size = (Bits / 8) > 1 ? (Bits / 8) : 1;
+    constexpr sizetype mask_size = (Bits <= 8) ? 1 : (Bits <= 16) ? 2 : (Bits <= 32) ? 4 : 8;
 
     using UT = typename IntegerForSize<mask_size>::Unsigned;
     return population_count_impl<ISA>(static_cast<UT>(v & max_for_n_bits));

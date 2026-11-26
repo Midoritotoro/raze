@@ -4,7 +4,9 @@
 
 #include <raze/compatibility/Warnings.h>
 #include <raze/compatibility/BranchPrediction.h>
+#include <raze/compatibility/FunctionAttributes.h>
 
+#include <cstdio>
 #include <cstdlib>
 #include <cassert>
 
@@ -14,27 +16,11 @@
 
 __RAZE_NAMESPACE_BEGIN
 
-
-raze_disable_warning_msvc(6011);
-
-struct static_locale {
-	static_locale() noexcept {
-		setlocale(LC_ALL, "");
-	}
-};
-
-static const static_locale lc;
-
-inline void fail(const char* message,
-	const char* file, int	line) noexcept
+raze_noreturn inline void fail(const char* message,
+	const char* file, int line) noexcept
 {
-	printf("Error: %s in File \"%s\", Line: %d\n", message, file, line);
-
-	volatile auto nullptr_value = (int*)nullptr;
-	*nullptr_value = 0;
-	
+	std::fprintf(stderr, "Error: %s in File \"%s\", Line: %d\n", message, file, line);
 	std::abort();
-	std::terminate();
 }
 
 inline const char* extract_basename(const char* path, size_t size) noexcept {
@@ -46,7 +32,7 @@ inline const char* extract_basename(const char* path, size_t size) noexcept {
 
 #define raze_return_on_failure(message, file, line, return_value) \
 	do { \
-		printf("Error: %s in File \"%s\", Line: %d\n", message, file, line); \
+		std::fprintf(stderr, "Error: %s in File \"%s\", Line: %d\n", message, file, line); \
 		return return_value; \
 	} \
 		while (0)
@@ -58,8 +44,10 @@ inline const char* extract_basename(const char* path, size_t size) noexcept {
 		: void(0))
 
 #define raze_assert_validation_condition_with_ret(condition, message, file, line, return_value)\
-	if ((raze_unlikely(!(condition)))) \
-		raze_return_on_failure(message, file, line, return_value)
+	do { \
+		if ((raze_unlikely(!(condition)))) \
+			raze_return_on_failure(message, file, line, return_value); \
+	} while (0)
 
 #define raze_source_file_basename (raze::extract_basename(\
 	__FILE__,\

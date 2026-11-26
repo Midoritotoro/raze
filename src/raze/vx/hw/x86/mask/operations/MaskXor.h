@@ -3,6 +3,7 @@
 #include <src/raze/vx/hw/x86/cast/As.h>
 #include <src/raze/vx/hw/x86/merge/Select.h>
 #include <src/raze/vx/hw/x86/bitwise/BitXor.h>
+#include <src/raze/vx/hw/x86/mask/operations/MaskAnd.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -16,12 +17,12 @@ raze_always_inline M mask_xor_(M x, M y) noexcept {
 	else if constexpr (sizeof(M) == 4 && has_avx512bw<ISA>) return _kxor_mask32(x, y);
 	else if constexpr (sizeof(M) == 8 && has_avx512bw<ISA>) return _kxor_mask64(x, y);
 #endif
-	else return x ^ y;
+	else return static_cast<M>(x ^ y);
 }
 
 template <arch::ISA ISA, arithmetic_type T, raw_mask_type M, raw_mask_type ControlMask>
 raze_always_inline M mask_xor_(M x, M y, ControlMask mask) noexcept {
-	return bit_and_<ISA, T>()(mask_xor_<ISA, T>(x, y), mask);
+	return mask_and_<ISA, T>(mask_xor_<ISA, T>(x, y), mask);
 }
 
 __RAZE_VX_NAMESPACE_END

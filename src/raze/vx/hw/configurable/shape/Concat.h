@@ -24,7 +24,8 @@ struct configurable_concat_t: options::conditional_callable<configurable_concat_
     template <simd_type T, class ... Ts>
     raze_nodiscard raze_always_inline concatenated_simd<T, Ts...> operator()(
         const T& x, const Ts& ... xs) const noexcept
-            requires(sizeof...(Ts) > 0 && same_abi_isa<T, Ts...>)
+            requires(sizeof...(Ts) > 0 && (simd_type<Ts> && ...) && same_abi_isa<T, Ts...>
+                && (std::same_as<typename T::value_type, typename Ts::value_type> && ...))
     {
         return options::dispatch_call(*this, x, xs...);
     }

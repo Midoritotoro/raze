@@ -21,38 +21,36 @@ consteval auto first_n_vtable() noexcept {
     return table;
 }
 
+template <sizetype Bits, class T>
+consteval auto max_for_bits() noexcept {
+    if constexpr (Bits == raze_sizeof_in_bits(T)) return static_cast<T>(~T(0));
+    else return static_cast<T>((T(1) << Bits) - 1);
+}
+
 template <arch::ISA	ISA, u32 N, raw_mask_type M, arithmetic_type T>
 raze_always_inline auto first_n_(u32 elements) noexcept {
+    const auto clamped = elements > N ? N : elements;
+
     if constexpr (std::is_same_v<std::remove_cvref_t<M>, bool>) {
-        return elements != 0;
+        return clamped != 0;
     }
     else if constexpr (std::integral<M>) {
+        constexpr auto full_mask = max_for_bits<N, M>();
+
         if constexpr (has_bmi2<ISA>) {
-            if constexpr (sizeof(M) == 1) return static_cast<M>(_bzhi_u32(0xFF, elements));
-            else if constexpr (sizeof(M) == 2) return static_cast<M>(_bzhi_u32(0xFFFF, elements));
-            else if constexpr (sizeof(M) == 4) return static_cast<M>(_bzhi_u32(0xFFFFFFFF, elements));
-            else if constexpr (sizeof(M) == 8) return static_cast<M>(_bzhi_u64(0xFFFFFFFFFFFFFFFFULL, elements));
+            if constexpr (sizeof(M) <= 4) return static_cast<M>(_bzhi_u32(static_cast<u32>(full_mask), clamped));
+            else return static_cast<M>(_bzhi_u64(static_cast<u64>(full_mask), clamped));
         }
         else {
-            if constexpr (N == raze_sizeof_in_bits(M)) {
-                auto r = M((M(1) << elements) - 1);
-                return elements == N ? math::max_limit<M>() : r;
-            }
-            else {
-                return M((M(1) << elements) - 1);
-            }
+            if (clamped >= N)
+                return full_mask;
+            return static_cast<M>((M(1) << clamped) - 1);
         }
     }
     else {
         static constexpr auto table = first_n_vtable<N, T>();
-        return load_<ISA, M>(algorithm::bytes_pointer_offset(table.data(), sizeof(M) - (elements * sizeof(T))));
+        return load_<ISA, M>(algorithm::bytes_pointer_offset(table.data(), sizeof(M) - (clamped * sizeof(T))));
     }
-}
-
-template <sizetype Bits, class T>
-consteval auto max_for_bits() noexcept {
-    if constexpr (Bits == raze_sizeof_in_bits(T)) return T(-1);
-    else return T(T(T(1) << Bits) - 1);
 }
 
 __RAZE_VX_NAMESPACE_END

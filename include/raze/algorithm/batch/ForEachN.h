@@ -13,8 +13,8 @@ struct for_each_n_t : Traits {
 			requires(std::indirectly_unary_invocable<F, std::projected<InIt, Proj>>)
 	{
 		auto r = for_each[Traits::traits()](std::counted_iterator<InIt>(std::move(first), n),
-			std::default_sentinel, traits::fwd_fn(f), traits::fwd_fn(proj));
-		return { r.in.base(), std::move(r.fun)};
+			std::default_sentinel, std::move(f), traits::fwd_fn(proj));
+		return { std::move(r.in).base(), std::move(r.fun) };
 	}
 };
 

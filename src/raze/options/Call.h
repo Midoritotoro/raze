@@ -7,12 +7,12 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 template <class F>
 struct call {
-    constexpr call(F f) noexcept :
-        _callable(f)
+    constexpr call(F f) noexcept(std::is_nothrow_move_constructible_v<F>) :
+        _callable(std::move(f))
     {}
 
     constexpr raze_always_inline auto perform() const
-        noexcept(std::is_nothrow_invocable_v<F>) 
+        noexcept(std::is_nothrow_invocable_v<const F&>) 
     {
         return _callable();
     }

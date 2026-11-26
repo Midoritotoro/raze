@@ -1,11 +1,12 @@
 #pragma once
 
 #if defined(__APPLE__) && (defined(__GNUC__) || defined(__xlC__) || defined(__xlc__))
+#  include <TargetConditionals.h>
 #  define raze_os_apple
 #  if defined(TARGET_OS_MAC) && TARGET_OS_MAC
 #    define raze_os_darwin
 #    define raze_os_bsd4
-#    if defined(OS_IPHONE) && TARGET_OS_IPHONE
+#    if defined(TARGET_OS_IPHONE) && TARGET_OS_IPHONE
 #    else
 #      define raze_os_mac
 #    endif

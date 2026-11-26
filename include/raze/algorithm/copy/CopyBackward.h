@@ -34,14 +34,15 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
 				!traits::is_iterator_volatile_v<iterator_type> &&
 				!traits::is_iterator_volatile_v<out_iterator_type> &&
-				vx::arithmetic_type<vt_in> && vx::arithmetic_type<vt_out>;
+				vectorizable_value_type<vt_in> && vectorizable_value_type<vt_out>;
 		}
 
 		static consteval bool native() noexcept {
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
 				!traits::is_iterator_volatile_v<iterator_type> &&
 				!traits::is_iterator_volatile_v<out_iterator_type> &&
-				std::is_trivially_copyable_v<vt_in> && std::same_as<vt_in, vt_out>;
+				std::is_trivially_copyable_v<vt_in> && std::is_trivially_copy_assignable_v<vt_in> &&
+				std::same_as<vt_in, vt_out>;
 		}
 
 		source_type _source;

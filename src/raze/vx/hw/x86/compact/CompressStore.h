@@ -9,6 +9,7 @@
 #include <src/raze/math/IntegralTypesConversions.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
 #include <src/raze/vx/hw/x86/mask/operations/MaskNot.h>
+#include <src/raze/vx/hw/x86/mask/operations/FirstN.h>
 #include <utility>
 
 #if !defined(__RAZE_SLOW_BMI2)

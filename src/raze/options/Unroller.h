@@ -39,7 +39,7 @@ struct unroller_t {
 		}
 
 		template <class F>
-		constexpr raze_always_inline auto operator()(sizetype aligned_size, sizetype tail_size, F& f) const noexcept
+		constexpr raze_always_inline auto operator()(sizetype aligned_size, sizetype tail_size, F& f) const
 			requires(!std::same_as<Tag, vx::scalar_tag>)
 		{
 			if constexpr (requires { f(Tag{ uninitialized }, aligned_size); }) {
@@ -58,21 +58,21 @@ struct unroller_t {
 				}
 #else
 				constexpr auto unrolling = get_unrolling<Traits>();
-				if constexpr (unrolling > 1) {
+				using UnrolledTag = vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size() * unrolling>>;
+
+				if constexpr (unrolling > 1 && requires { f(UnrolledTag{ uninitialized }, aligned_size); }) {
 					auto unrolled_size = aligned_size - (aligned_size % (sizeof(Tag) * unrolling));
 
 					if (unrolled_size != 0) {
 						if constexpr (has_early_exit) {
-							if (!f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
-								* unrolling>>{}, unrolled_size))
+							if (!f(UnrolledTag{ uninitialized }, unrolled_size))
 							{
 								if constexpr (requires { f.result(); }) return f.result();
 								else return;
 							}
 						}
 						else {
-							f(vx::simd<typename Tag::value_type, vx::resize_abi_t<vx::abi_t<Tag>, Tag::size()
-								* unrolling>>{}, unrolled_size);
+							f(UnrolledTag{ uninitialized }, unrolled_size);
 						}
 					}
 
@@ -120,7 +120,7 @@ struct unroller_t {
 		}
 
 		template <class F>
-		constexpr raze_always_inline auto operator()(sizetype tail_size, F& f) const noexcept
+		constexpr raze_always_inline auto operator()(sizetype tail_size, F& f) const
 			requires(!std::same_as<Tag, vx::scalar_tag>)
 		{
 			constexpr auto shift = std::countr_zero(sizeof(typename Tag::value_type));
@@ -136,7 +136,7 @@ struct unroller_t {
 		}
 
 		template <class F>
-		constexpr raze_always_inline auto operator()(F& f) const noexcept
+		constexpr raze_always_inline auto operator()(F& f) const
 			requires(std::same_as<Tag, vx::scalar_tag>)
 		{
 			f();

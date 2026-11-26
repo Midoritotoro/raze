@@ -24,7 +24,7 @@ consteval u32 to_feature_mask() {
     constexpr u32 f_avx512dq = (1u << 12) | f_avx512f;
     constexpr u32 f_avx512vl = (1u << 13) | f_avx512f;
     constexpr u32 f_avx512vbmi = (1u << 14) | f_avx512bw;
-    constexpr u32 f_avx512vbmi2 = (1u << 15) | f_avx512bw;
+    constexpr u32 f_avx512vbmi2 = (1u << 15) | f_avx512vbmi;
 
     if constexpr (ISA == arch::ISA::None)            return f_none;
     else if constexpr (ISA == arch::ISA::SSE)             return f_sse;
@@ -286,7 +286,7 @@ struct configurable_isa_dispatcher_t {
                     case arch::ISA::SSE42:
                         if constexpr (has_working_simd<arch::ISA::SSE42, Work>)
                             if (size >= 16) return call_dyn<arch::ISA::SSE42, 16>(size, work);
-                        break;
+                        [[fallthrough]];
                     case arch::ISA::SSE2:
                         if constexpr (has_working_simd<arch::ISA::SSE2, Work>)
                             if (size >= 16) return call_dyn<arch::ISA::SSE2, 16>(size, work);
@@ -322,7 +322,7 @@ struct configurable_isa_dispatcher_t {
             }
             else {
                 constexpr auto vector_size = vx::default_width<ISA> / 8;
-                if (size >= vector_size && arch::ProcessorFeatures::has<arch::feature_of(ISA)>(all))
+                if (size >= vector_size && arch::ProcessorFeatures::has_isa<ISA>(all))
                     return call_dyn<ISA, vector_size>(size, work);
 
                 if constexpr (sizeof...(Rest) != 0) return try_dispatch<Rest...>(size, all, work);

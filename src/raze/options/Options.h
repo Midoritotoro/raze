@@ -4,6 +4,7 @@
 #include <src/raze/options/Settings.h>
 #include <src/raze/options/Merge.h>
 #include <src/raze/options/Drop.h>
+#include <tuple>
 
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN

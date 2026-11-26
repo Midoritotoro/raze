@@ -19,7 +19,8 @@ struct ends_with_t : Traits {
         const auto size2 = std::ranges::distance(first2, sent2);
 
         if (size1 < size2) return false;
-        std::ranges::advance(first1, size1 - size2);
+        const auto diff = static_cast<std::iter_difference_t<It1>>(size1 - size2);
+        if (diff > 0) std::ranges::advance(first1, diff, sent1);
 
         return algorithm::equal[Traits::traits()](std::move(first1), std::move(sent1),
             std::move(first2), std::move(sent2), traits::fwd_fn(pred), traits::fwd_fn(proj1), 
@@ -33,8 +34,18 @@ struct ends_with_t : Traits {
             (std::ranges::forward_range<R2> || std::ranges::sized_range<R2>) && std::indirectly_comparable<
                 std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>, Predicate, Proj1, Proj2>
     {
-        return (*this)(std::ranges::begin(r1), std::ranges::end(r1), std::ranges::begin(r2), 
-            std::ranges::end(r2), traits::fwd_fn(pred), traits::fwd_fn(proj1), traits::fwd_fn(proj2));
+        const auto size1 = std::ranges::distance(r1);
+        const auto size2 = std::ranges::distance(r2);
+
+        if (size1 < size2) return false;
+        auto first1 = std::ranges::begin(r1);
+        auto sent1 = std::ranges::end(r1);
+        const auto diff = static_cast<std::ranges::range_difference_t<R1>>(size1 - size2);
+        if (diff > 0) std::ranges::advance(first1, diff, sent1);
+
+        return algorithm::equal[Traits::traits()](std::move(first1), std::move(sent1),
+            std::ranges::begin(r2), std::ranges::end(r2),
+            traits::fwd_fn(pred), traits::fwd_fn(proj1), traits::fwd_fn(proj2));
     }
 };
 

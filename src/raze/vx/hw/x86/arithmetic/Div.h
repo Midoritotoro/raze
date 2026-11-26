@@ -79,11 +79,15 @@ template <arch::ISA	ISA, arithmetic_type T, intrin_type V>
 raze_always_inline V div_(V x, T y) noexcept {
 	if constexpr (sizeof(V) == 16) {
 		if constexpr (epi64<T> || epu64<T>) {
-			const auto left_0 = _mm_cvtsi128_si64(as<__m128i>(x));
-			const auto left_1 = _mm_cvtsi128_si64(as<__m128i>(_mm_movehl_ps(
-				as<__m128>(x), as<__m128>(x))));
+#if !defined(raze_processor_x86_32)
+			const auto left_0 = static_cast<T>(_mm_cvtsi128_si64(as<__m128i>(x)));
+			const auto left_1 = static_cast<T>(_mm_cvtsi128_si64(as<__m128i>(_mm_movehl_ps(
+				as<__m128>(x), as<__m128>(x)))));
 
-			return _mm_set_epi64x(left_1 / y, left_0 / y);
+			return as<V>(_mm_set_epi64x(static_cast<i64>(left_1 / y), static_cast<i64>(left_0 / y)));
+#else
+			return div_fallback_<ISA, T>(x, y);
+#endif
 		}
 		else if constexpr (epi32<T>) {
 			const auto divisor_information = vector_divisor<i32>(y);
@@ -265,8 +269,8 @@ raze_always_inline V div_(V x, T y) noexcept {
 				const auto low = _mm256_unpacklo_epi8(shuffled_low, sign_low);
 				const auto high = _mm256_unpackhi_epi8(shuffled_high, sign_high);
 
-				const auto divided_low = div_<arch::ISA::AVX2, i16>(low, y);
-				const auto divided_high = div_<arch::ISA::AVX2, i16>(high, y);
+				const auto divided_low = div_<arch::ISA::AVX2, u16>(low, y);
+				const auto divided_high = div_<arch::ISA::AVX2, u16>(high, y);
 
 				const auto low_mask = _mm256_and_si256(divided_low, and_mask);
 				const auto high_mask = _mm256_and_si256(divided_high, and_mask);
@@ -283,8 +287,8 @@ raze_always_inline V div_(V x, T y) noexcept {
 				const auto low = _mm256_unpacklo_epi8(shuffled_low, zeros);
 				const auto high = _mm256_unpackhi_epi8(shuffled_high, zeros);
 
-				const auto divided_low = div_<arch::ISA::AVX2, i16>(low, y);
-				const auto divided_high = div_<arch::ISA::AVX2, i16>(high, y);
+				const auto divided_low = div_<arch::ISA::AVX2, u16>(low, y);
+				const auto divided_high = div_<arch::ISA::AVX2, u16>(high, y);
 
 				const auto low_mask = _mm256_and_si256(divided_low, and_mask);
 				const auto high_mask = _mm256_and_si256(divided_high, and_mask);
@@ -355,12 +359,25 @@ raze_always_inline V div_(V x, V y, M mask) noexcept {
 		else if constexpr (ps<T>) return as<V>(_mm512_maskz_div_ps(mask, as<__m512>(x), as<__m512>(y)));
 	}
 
-	return select_<ISA, T>(div_<ISA, T>(x, y), mask);
+	if constexpr (std::is_integral_v<T>) {
+		if constexpr (arithmetic_type<V>)
+			return mask ? static_cast<V>(x / y) : static_cast<V>(0);
+		else {
+			const auto safe_y = select_<ISA, T>(y, broadcast_<ISA, V>(T(1)), mask);
+			return select_<ISA, T>(div_<ISA, T>(x, safe_y), mask);
+		}
+	}
+	else {
+		return select_<ISA, T>(div_<ISA, T>(x, y), mask);
+	}
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
 raze_always_inline V div_(V x, T y, M mask) noexcept {
-	return select_<ISA, T>(div_<ISA, T>(x, y), mask);
+	if constexpr (std::is_integral_v<T> && arithmetic_type<V>)
+		return mask ? static_cast<V>(x / y) : static_cast<V>(0);
+	else
+		return select_<ISA, T>(div_<ISA, T>(x, y), mask);
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
@@ -378,12 +395,25 @@ raze_always_inline V div_(V x, V y, M mask, V src) noexcept {
 		else if constexpr (ps<T>) return as<V>(_mm512_mask_div_ps(as<__m512>(src), mask, as<__m512>(x), as<__m512>(y)));
 	}
 
-	return select_<ISA, T>(div_<ISA, T>(x, y), src, mask);
+	if constexpr (std::is_integral_v<T>) {
+		if constexpr (arithmetic_type<V>)
+			return mask ? static_cast<V>(x / y) : src;
+		else {
+			const auto safe_y = select_<ISA, T>(y, broadcast_<ISA, V>(T(1)), mask);
+			return select_<ISA, T>(div_<ISA, T>(x, safe_y), src, mask);
+		}
+	}
+	else {
+		return select_<ISA, T>(div_<ISA, T>(x, y), src, mask);
+	}
 }
 
 template <arch::ISA	ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
 raze_always_inline V div_(V x, T y, M mask, V src) noexcept {
-	return select_<ISA, T>(div_<ISA, T>(x, y), src, mask);
+	if constexpr (std::is_integral_v<T> && arithmetic_type<V>)
+		return mask ? static_cast<V>(x / y) : src;
+	else
+		return select_<ISA, T>(div_<ISA, T>(x, y), src, mask);
 }
 
 __RAZE_VX_NAMESPACE_END

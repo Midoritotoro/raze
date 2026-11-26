@@ -2,6 +2,7 @@
 
 #include <raze/compatibility/Compatibility.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
+#include <cstring>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
@@ -10,6 +11,7 @@ __RAZE_ALGORITHM_NAMESPACE_BEGIN
 raze_always_inline void* memcpy_scalar_impl(volatile u8* raze_restrict dst_ch,
 	const volatile u8* raze_restrict src_ch, sizetype bytes) noexcept
 {
+	void* const orig_dst = const_cast<u8*>(dst_ch);
 	while (bytes >= 8) {
 		*reinterpret_cast<volatile raze::i64*>(dst_ch) = *reinterpret_cast<const volatile raze::i64*>(src_ch);
 		dst_ch += 8; src_ch += 8; bytes -= 8;
@@ -26,7 +28,7 @@ raze_always_inline void* memcpy_scalar_impl(volatile u8* raze_restrict dst_ch,
 		*dst_ch++ = *src_ch++;
 	}
 
-	return const_cast<u8*>(dst_ch);
+	return orig_dst;
 }
 
 raze_always_inline void memcpy_16(void* raze_restrict dst, const void* raze_restrict src) noexcept {
@@ -257,7 +259,7 @@ raze_always_inline void memcpy_small(void* raze_restrict dst, const void* raze_r
 	}
 }
 
-inline raze_declare_const_function void* __raze_memcpy(void* raze_restrict dst,
+inline void* __raze_memcpy(void* raze_restrict dst,
 	const void* raze_restrict src, sizetype bytes) noexcept
 {
 	constexpr auto erms_threshold = 0x1000;
@@ -424,7 +426,7 @@ raze_always_inline void* __raze_memcpy(void* raze_restrict dst,
 	const void* raze_restrict src, sizetype bytes) noexcept
 {
 	if (bytes == 0) return dst;
-	return memcpy(dst, src, bytes);
+	return std::memcpy(dst, src, bytes);
 }
 
 #endif

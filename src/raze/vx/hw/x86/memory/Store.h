@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/Cast.h>
 #include <src/raze/vx/hw/x86/memory/AlignmentPolicy.h>
+#include <cstring>
 
 __RAZE_VX_NAMESPACE_BEGIN
 
@@ -30,7 +31,7 @@ raze_always_inline void storeu_(void* mem, V v) noexcept {
 	else if constexpr (std::is_same_v<V, __m512i>) return _mm512_storeu_si512(mem, v);
 	else if constexpr (std::is_same_v<V, __m512d>) return _mm512_storeu_pd(mem, v);
 	else if constexpr (std::is_same_v<V, __m512>) return _mm512_storeu_ps(mem, v);
-	else *static_cast<V*>(mem) = v;
+	else std::memcpy(mem, &v, sizeof(V));
 }
 
 template <intrin_or_arithmetic_type V, class Policy = unaligned_policy>

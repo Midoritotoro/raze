@@ -12,9 +12,7 @@ struct starts_with_t : Traits {
     raze_nodiscard constexpr raze_always_inline bool operator()(
         It1 first1, Sent1 sent1, It2 first2, Sent2 sent2,
         Predicate pred = {}, Proj1 proj1 = {}, Proj2 proj2 = {}) const
-            requires (std::forward_iterator<It1> || std::sized_sentinel_for<Sent1, It1>) &&
-                (std::forward_iterator<It2> || std::sized_sentinel_for<Sent2, It2>) &&
-                std::indirectly_comparable<It1, It2, Predicate, Proj1, Proj2>
+            requires std::indirectly_comparable<It1, It2, Predicate, Proj1, Proj2>
     {
         if constexpr (std::sized_sentinel_for<Sent1, It1> && std::sized_sentinel_for<Sent2, It2>) {
             if (std::ranges::distance(first1, sent1) < std::ranges::distance(first2, sent2)) return false;
@@ -28,10 +26,9 @@ struct starts_with_t : Traits {
     template <std::ranges::input_range R1, std::ranges::input_range R2,
         class Predicate = std::equal_to<>, class Proj1 = std::identity, class Proj2 = std::identity>
     raze_nodiscard constexpr raze_always_inline bool operator()(R1&& r1, R2&& r2, Predicate pred = {},
-        Proj1 proj1 = {}, Proj2 proj2 = {}) const requires (std::ranges::forward_range<R1> || std::ranges::sized_range<R1>) 
-            && (std::ranges::forward_range<R2> || std::ranges::sized_range<R2>) &&
-                std::indirectly_comparable<std::ranges::iterator_t<R1>,
-                    std::ranges::iterator_t<R2>, Predicate, Proj1, Proj2>
+        Proj1 proj1 = {}, Proj2 proj2 = {}) const
+            requires std::indirectly_comparable<std::ranges::iterator_t<R1>,
+                std::ranges::iterator_t<R2>, Predicate, Proj1, Proj2>
     {
         if constexpr (std::ranges::sized_range<R1> && std::ranges::sized_range<R2>) {
             if (std::ranges::size(r1) < std::ranges::size(r2)) return false;
@@ -39,7 +36,7 @@ struct starts_with_t : Traits {
 
         auto sent2 = std::ranges::end(r2);
 
-        return algorithm::mismatch[Traits::traits()](r1, r2,
+        return algorithm::mismatch[Traits::traits()](std::forward<R1>(r1), std::forward<R2>(r2),
             traits::fwd_fn(pred), traits::fwd_fn(proj1), traits::fwd_fn(proj2)).in2 == sent2;
     }
 };

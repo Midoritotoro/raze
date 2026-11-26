@@ -8,14 +8,12 @@
 #  if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 #    define raze_likely(expression) __builtin_expect(!!(expression), true)
 #  elif defined(raze_cpp_msvc) && defined(__has_cpp_attribute) && __has_cpp_attribute(likely) >= 201803L
-#    define raze_likely(expression)                     \
-       (                                                \
-         ([](bool value){                               \
-           switch (value) {                             \
-             [[likely]] case true: return true;       \
-             [[unlikely]] case false: return false;       \
-         }                                              \
-       })(expression))
+#    define raze_likely(expression)                                 \
+       (                                                            \
+         ([](bool value) noexcept {                                 \
+           if (value) [[likely]] return true;                       \
+           else [[unlikely]] return false;                          \
+         })(static_cast<bool>(expression)))
 #  else
 #    define raze_likely(expression) (!!(expression))
 #  endif // defined(raze_cpp_gnu) || defined(raze_cpp_clang)
@@ -26,14 +24,12 @@
 #  if defined(raze_cpp_gnu) || defined(raze_cpp_clang)
 #    define raze_unlikely(expression) __builtin_expect(!!(expression), false)
 #  elif defined(raze_cpp_msvc) && defined(__has_cpp_attribute) && __has_cpp_attribute(unlikely) >= 201803L
-#    define raze_unlikely(expression)                   \
-       (                                                \
-         ([](bool value){                               \
-           switch (value) {                             \
-             [[unlikely]] case true: return true;         \
-             [[likely]] case false: return false;     \
-         }                                              \
-       })(expression))
+#    define raze_unlikely(expression)                               \
+       (                                                            \
+         ([](bool value) noexcept {                                 \
+           if (value) [[unlikely]] return true;                     \
+           else [[likely]] return false;                            \
+         })(static_cast<bool>(expression)))
 #  else
 #    define raze_unlikely(expression) (!!(expression))
 #  endif // defined(raze_cpp_gnu) || defined(raze_cpp_clang)

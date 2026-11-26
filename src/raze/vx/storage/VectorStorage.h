@@ -87,7 +87,7 @@ public:
     }
 
     template <class F, class ... Args>
-    raze_always_inline void for_each_chunk_reverse(F&& f, Args&& ... args) const noexcept {
+    raze_always_inline void __for_each_chunk_reverse(F&& f, Args&& ... args) const noexcept {
         if constexpr (use_native) f(_data, std::forward<Args>(args)...);
         else for_each_tuple_reverse(_data, std::forward<F>(f), std::forward<Args>(args)...);
     }

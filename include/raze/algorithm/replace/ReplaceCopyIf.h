@@ -39,9 +39,7 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 				!traits::is_iterator_volatile_v<iterator_type> &&
 				!traits::is_iterator_volatile_v<destination_iterator_type> &&
 				vectorizable_value_type<OutT> &&
-				std::convertible_to<const T&, vector_value_type> &&
-				(std::same_as<vector_value_type, OutT> ||
-					std::same_as<common_type_or_void_t<vector_value_type, T>, vector_value_type>) &&
+				std::convertible_to<const T&, OutT> &&
 				vectorizable_unary_predicate<Predicate, iterator_type> &&
 				vectorizable_projection<Projection, iterator_type>;
 		}
@@ -118,11 +116,13 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 			auto* out_ptr = std::to_address(_out_iterator);
 
 			const auto aligned_end = bytes_pointer_offset(in_ptr, aligned_size);
-			const auto broadcasted = Tag(static_cast<vector_value_type>(_new_value));
+			const auto broadcasted = OutTag(static_cast<OutT>(_new_value));
 
 			raze_disable_unrolling do {
 				const auto data = vx::load<Tag>[in_policy](in_ptr);
-				vx::store[out_policy](out_ptr, vx::convert<OutT>(vx::select[_predicate(_proj(data)), data](broadcasted)));
+				const auto mask = _predicate(_proj(data));
+				const auto converted = vx::convert<OutT>(data);
+				vx::store[out_policy](out_ptr, vx::select[vx::convert<OutT>(mask), converted](broadcasted));
 				in_ptr += Tag::size();
 				out_ptr += Tag::size();
 			} while (in_ptr != aligned_end);
@@ -164,7 +164,8 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 	};
 
 	template <std::input_iterator InIt, std::sentinel_for<InIt> Sent,
-		std::weakly_incrementable OutIt, class Pred, class T, class Proj = std::identity>
+		std::weakly_incrementable OutIt, class Pred,
+		class T = iter_value_or_void_t<OutIt>, class Proj = std::identity>
 	constexpr raze_always_inline std::ranges::unary_transform_result<InIt, OutIt> operator()(
 		InIt first, Sent sent, OutIt out, Pred pred, const T& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<InIt, OutIt> &&
@@ -175,14 +176,15 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 			get_destination(std::move(out)), traits::fwd_fn(pred), traits::fwd_fn(proj), v);
 	}
 
-	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class Pred, class T, class Proj = std::identity>
+	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class Pred,
+		class T = iter_value_or_void_t<OutIt>, class Proj = std::identity>
 	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::borrowed_iterator_t<R>, OutIt> operator()(
 		R&& r, OutIt out, Pred pred, const T& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> &&
 				std::indirect_unary_predicate<Pred, std::projected<std::ranges::iterator_t<R>, Proj>> &&
 				std::indirectly_writable<OutIt, const T&>)
 	{
-		return this->dispatch(get_source(r), get_destination(std::move(out)),
+		return this->dispatch(get_source(std::forward<R>(r)), get_destination(std::move(out)),
 			traits::fwd_fn(pred), traits::fwd_fn(proj), v);
 	}
 };

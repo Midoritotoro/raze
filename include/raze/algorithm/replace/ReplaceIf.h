@@ -120,7 +120,7 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 	};
 
 	template <std::input_iterator Iterator, std::sentinel_for<Iterator> Sentinel,
-		class Predicate, class Value, class Projection = std::identity>
+		class Predicate, class Value = std::iter_value_t<Iterator>, class Projection = std::identity>
 	constexpr raze_always_inline void operator()(Iterator first, Sentinel sent,
 		Predicate pred, const Value& new_value, Projection proj = {}) const
 			requires(std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>> &&
@@ -130,8 +130,8 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 			traits::fwd_fn(pred), traits::fwd_fn(proj), new_value);
 	}
 
-	template <std::ranges::input_range Range, class Predicate, class Value,
-		class Projection = std::identity>
+	template <std::ranges::input_range Range, class Predicate,
+		class Value = std::ranges::range_value_t<Range>, class Projection = std::identity>
 	constexpr raze_always_inline void operator()(Range&& r, Predicate pred,
 		const Value& new_value, Projection proj = {}) const
 			requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>> &&

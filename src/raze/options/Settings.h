@@ -2,6 +2,7 @@
 
 #include <src/raze/options/Aggregator.h>
 #include <src/raze/options/Keywords.h>
+#include <tuple>
 
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
@@ -11,8 +12,13 @@ struct settings {
     using settings_type = void;
     using base = aggregator<Options...>;
 
-    constexpr settings(const Options& ... opts) noexcept: 
-        _content(opts...) 
+    constexpr settings() noexcept
+        requires (sizeof...(Options) == 0 || (concepts::stateless_option<Options> && ...))
+        = default;
+
+    constexpr settings(const Options& ... opts) noexcept
+        requires (sizeof...(Options) > 0)
+        : _content(opts...) 
     {}
 
     static raze_always_inline constexpr std::ptrdiff_t size() noexcept {
@@ -49,9 +55,10 @@ struct settings {
         return _content(kw);
     }
 
-    template <concepts::keyword ... Keywords> 
+    template <concepts::keyword ... Keywords>
+        requires (sizeof...(Keywords) >= 2)
     constexpr raze_always_inline auto operator[](const Keywords& ... kws) const noexcept {
-        return (_content(kws), ...);
+        return std::tuple{ (*this)[kws]... };
     }
 
     template <class Keyword>

@@ -20,8 +20,8 @@ struct reverse_t : Traits, dispatchable<reverse_t<Traits>> {
 
         template <class T>
         static consteval auto deduce_vector_value_type() noexcept {
-            if constexpr (sizeof(T) <= 8 && ((sizeof(T) & (sizeof(T) - 1)) == 0)) {
-                if constexpr (vx::arithmetic_type<T>) return T{};
+            if constexpr (sizeof(T) <= 8 && sizeof(T) != 0 && ((sizeof(T) & (sizeof(T) - 1)) == 0)) {
+                if constexpr (vectorizable_value_type<T>) return T{};
                 else return typename IntegerForSizeof<T>::Unsigned{};
             }
         }

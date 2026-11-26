@@ -8,20 +8,16 @@
 __RAZE_VX_NAMESPACE_BEGIN
 
 template <sizetype Chunks, simd_type V, sizetype Index>
+constexpr sizetype split_by_chunk_size_v =
+    (abi_t<V>::size / Chunks) + (Index < (abi_t<V>::size % Chunks) ? 1 : 0);
+
+template <sizetype Chunks, simd_type V, sizetype Index>
+constexpr sizetype split_by_chunk_offset_v =
+    Index * (abi_t<V>::size / Chunks) + (Index < (abi_t<V>::size % Chunks) ? Index : (abi_t<V>::size % Chunks));
+
+template <sizetype Chunks, simd_type V, sizetype Index>
 using split_by_simd_t = simd<
-    typename V::value_type, resize_abi_t<abi_t<V>,
-        ((Index + 1) * ((abi_t<V>::size + Chunks - 1) / Chunks)
-            <= abi_t<V>::size
-        )
-        ?
-        ((abi_t<V>::size + Chunks - 1) / Chunks)
-        :
-        (
-            abi_t<V>::size -
-            Index *
-            ((abi_t<V>::size + Chunks - 1) / Chunks)
-        )
-    >
+    typename V::value_type, resize_abi_t<abi_t<V>, split_by_chunk_size_v<Chunks, V, Index>>
 >;
 
 template <sizetype Chunks, simd_type V, sizetype... Indices>
@@ -43,26 +39,40 @@ template <sizetype Chunks>
 struct configurable_split_by_t {
     template <class Options>
     struct impl : options::conditional_callable<impl, Options> {
-        template <simd_type V> requires(Chunks > 0)
+        template <simd_type V> requires(Chunks > 0 && Chunks <= V::size())
         raze_nodiscard raze_always_inline split_by_return_type<Chunks, V> operator()(const V& x) const noexcept {
             return options::dispatch_call(*this, x);
         }
 
         template <sizetype ChunksCount, simd_type V>
+        static consteval bool can_direct_chunk_split() noexcept {
+            if constexpr (ChunksCount != V::__chunks_count()) {
+                return false;
+            }
+            else {
+                return [] <sizetype... I> (std::index_sequence<I...>) {
+                    return ((split_by_simd_t<ChunksCount, V, I>::__chunks_count() == 1 &&
+                        std::same_as<
+                            std::remove_cvref_t<decltype(ustorage(std::declval<const V&>().template __get<I>()))>,
+                            std::remove_cvref_t<decltype(ustorage(std::declval<split_by_simd_t<ChunksCount, V, I>&>().template __get<0>()))>
+                        >) && ...);
+                }(std::make_index_sequence<ChunksCount>{});
+            }
+        }
+
+        template <sizetype ChunksCount, simd_type V>
         static raze_always_inline auto impl_split(const V& x) noexcept {
             constexpr sizetype count = ChunksCount;
-            constexpr sizetype chunk_size = (V::size() + count - 1) / count;
 
-            if constexpr (ChunksCount == V::__chunks_count()) {
-                const auto get_simd = [&] <class Vec> (Vec, auto i) raze_always_inline_lambda {
-                    Vec vec;
-                    vec.template __get<i>() = ustorage(x.template __get<i>());
+            if constexpr (can_direct_chunk_split<ChunksCount, V>()) {
+                const auto get_simd = [&] <class Vec, sizetype Idx> (Vec, std::integral_constant<sizetype, Idx>) raze_always_inline_lambda {
+                    Vec vec(uninitialized);
+                    vec.template __get<0>() = ustorage(x.template __get<Idx>());
                     return vec;
                 };
 
                 return [&] <sizetype... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
-                    return std::tuple{ get_simd(split_by_simd_t<ChunksCount, V, I>{}, std::integral_constant<sizetype, I>{})...
-                };
+                    return std::tuple{ get_simd(split_by_simd_t<ChunksCount, V, I>{}, std::integral_constant<sizetype, I>{})... };
                 }(std::make_integer_sequence<sizetype, count>{});
             }
             else {
@@ -70,7 +80,7 @@ struct configurable_split_by_t {
                 vx::store[vx::aligned](buffer, x);
 
                 return [&] <sizetype... I> (std::integer_sequence<sizetype, I...>) raze_always_inline_lambda {
-                    return std::tuple{ vx::load<split_by_simd_t<ChunksCount, V, I>>[vx::aligned](buffer + I * chunk_size)... };
+                    return std::tuple{ vx::load<split_by_simd_t<ChunksCount, V, I>>(buffer + split_by_chunk_offset_v<ChunksCount, V, I>)... };
                 }(std::make_integer_sequence<sizetype, count>{});
             }
         }

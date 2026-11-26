@@ -274,7 +274,7 @@ struct configurable_convert_t {
  * - For arithmetic types: A vector of type `simd<T, V::abi_type>` containing the converted lanes.
  * - For unsupported types with `[raze::vx::ignore_unsupported]`: The original source vector `x` returned unchanged.
 */
-template <arithmetic_type T>
+template <traits::trivially_copyable T>
 constexpr inline auto convert = options::functor<configurable_convert_t<T>::template convert>;
 
 /**

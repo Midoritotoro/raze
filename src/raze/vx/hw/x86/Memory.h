@@ -7,4 +7,3 @@
 #include <src/raze/vx/hw/x86/memory/MaskzLoad.h>
 #include <src/raze/vx/hw/x86/memory/Prefetch.h>
 #include <src/raze/vx/hw/x86/memory/Store.h>
-#include <src/raze/vx/hw/x86/memory/StoreNt.h>

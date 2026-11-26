@@ -67,7 +67,7 @@ raze_always_inline auto pack_or_tuple(Part p0, Part p1) noexcept {
         else return _mm256_insertf128_si256(as<__m256i>(p0), p1, 1);
     }
     else if constexpr (has_avx512f<ISA> && sizeof(Part) == 32) {
-        if constexpr (std::same_as<Part, __m256>)  return _mm512_insertf32x8(as<__m512>(p0), p1, 1);
+        if constexpr (std::same_as<Part, __m256>)  return as<__m512>(_mm512_insertf64x4(as<__m512d>(p0), as<__m256d>(p1), 1));
         else if constexpr (std::same_as<Part, __m256d>) return _mm512_insertf64x4(as<__m512d>(p0), p1, 1);
         else return _mm512_inserti64x4(as<__m512i>(p0), p1, 1);
     }
@@ -82,7 +82,7 @@ raze_always_inline auto pack_or_tuple(Part p0, Part p1, Part p2, Part p3) noexce
         if constexpr (std::same_as<Part, __m128>) {
             auto lo = _mm256_insertf128_ps(as<__m256>(p0), p1, 1);
             auto hi = _mm256_insertf128_ps(as<__m256>(p2), p3, 1);
-            return _mm512_insertf32x8(as<__m512>(lo), hi, 1);
+            return as<__m512>(_mm512_insertf64x4(as<__m512d>(lo), as<__m256d>(hi), 1));
         }
         else if constexpr (std::same_as<Part, __m128d>) {
             auto lo = _mm256_insertf128_pd(as<__m256d>(p0), p1, 1);
@@ -127,7 +127,7 @@ raze_always_inline deduce_convert_return_type<ISA, From, To, V> scalar_fallback_
     constexpr sizetype out_count = (sizeof(Ret) > count * sizeof(To)) ? (sizeof(Ret) / sizeof(To)) : count;
 
     alignas(64) From arr[count];
-    alignas(64) To out[out_count];
+    alignas(64) To out[out_count]{};
 
     store_(arr, x);
 
@@ -144,7 +144,7 @@ raze_always_inline auto split_and_recurse_(V x, Recurse&& recurse) noexcept {
     }
     else if constexpr (sizeof(V) == 64) {
         if constexpr (std::same_as<V, __m512d>) return simd_tuple_cat(as_simd_tuple(recurse(as<__m256d>(x))), as_simd_tuple(recurse(_mm512_extractf64x4_pd(x, 1))));
-        else if constexpr (std::same_as<V, __m512>) return simd_tuple_cat(as_simd_tuple(recurse(as<__m256>(x))), as_simd_tuple(recurse(_mm512_extractf32x8_ps(x, 1))));
+        else if constexpr (std::same_as<V, __m512>) return simd_tuple_cat(as_simd_tuple(recurse(as<__m256>(x))), as_simd_tuple(recurse(as<__m256>(_mm512_extractf64x4_pd(as<__m512d>(x), 1)))));
         else return simd_tuple_cat(as_simd_tuple(recurse(as<__m256i>(x))), as_simd_tuple(recurse(_mm512_extracti64x4_epi64(x, 1))));
     }
 }
@@ -520,89 +520,6 @@ convert_static_cast_semantics_(V x) noexcept {
                     else 
                         return simd_tuple_make(_mm256_cvtepu32_epi64(as<__m128i>(w_lo)), _mm256_cvtepu32_epi64(_mm256_extracti128_si256(w_lo, 1)),
                             _mm256_cvtepu32_epi64(as<__m128i>(w_hi)), _mm256_cvtepu32_epi64(_mm256_extracti128_si256(w_hi, 1)));
-                }
-                else if constexpr (sizeof(R) == 128 && has_avx<ISA> && has_s41) {
-                    __m128i w0, w1, w2, w3;
-                    __m128i q0, q1, q2, q3, q4, q5, q6, q7;
-
-                    if constexpr (frm_sgn) {
-                        w0 = _mm_cvtepi16_epi32(x);
-                        w1 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 4));
-                        w2 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 8));
-                        w3 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 12));
-                    }
-                    else {
-                        w0 = _mm_cvtepu16_epi32(x);
-                        w1 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 4));
-                        w2 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 8));
-                        w3 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 12));
-                    }
-
-                    if constexpr (frm_sgn) {
-                        q0 = _mm_cvtepi32_epi64(w0);
-                        q1 = _mm_cvtepi32_epi64(_mm_srli_si128(w0, 8));
-                        q2 = _mm_cvtepi32_epi64(w1);
-                        q3 = _mm_cvtepi32_epi64(_mm_srli_si128(w1, 8));
-                        q4 = _mm_cvtepi32_epi64(w2);
-                        q5 = _mm_cvtepi32_epi64(_mm_srli_si128(w2, 8));
-                        q6 = _mm_cvtepi32_epi64(w3);
-                        q7 = _mm_cvtepi32_epi64(_mm_srli_si128(w3, 8));
-                    }
-                    else {
-                        q0 = _mm_cvtepu32_epi64(w0);
-                        q1 = _mm_cvtepu32_epi64(_mm_srli_si128(w0, 8));
-                        q2 = _mm_cvtepu32_epi64(w1);
-                        q3 = _mm_cvtepu32_epi64(_mm_srli_si128(w1, 8));
-                        q4 = _mm_cvtepu32_epi64(w2);
-                        q5 = _mm_cvtepu32_epi64(_mm_srli_si128(w2, 8));
-                        q6 = _mm_cvtepu32_epi64(w3);
-                        q7 = _mm_cvtepu32_epi64(_mm_srli_si128(w3, 8));
-                    }
-
-                    return simd_tuple_make(_mm256_insertf128_si256(as<__m256i>(q0), q1, 1), _mm256_insertf128_si256(as<__m256i>(q2), q3, 1),
-                        _mm256_insertf128_si256(as<__m256i>(q4), q5, 1), _mm256_insertf128_si256(as<__m256i>(q6), q7, 1));
-                }
-                else if constexpr (sizeof(R) == 128 && has_s41) {
-                    __m128i w0, w1, w2, w3;
-
-                    if constexpr (frm_sgn) {
-                        w0 = _mm_cvtepi16_epi32(x);
-                        w1 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 4));
-                        w2 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 8));
-                        w3 = _mm_cvtepi16_epi32(_mm_srli_si128(x, 12));
-                    }
-                    else {
-                        w0 = _mm_cvtepu16_epi32(x);
-                        w1 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 4));
-                        w2 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 8));
-                        w3 = _mm_cvtepu16_epi32(_mm_srli_si128(x, 12));
-                    }
-
-                    if constexpr (frm_sgn) 
-                        return simd_tuple_make(_mm_cvtepi32_epi64(w0), _mm_cvtepi32_epi64(_mm_srli_si128(w0, 8)),
-                            _mm_cvtepi32_epi64(w1), _mm_cvtepi32_epi64(_mm_srli_si128(w1, 8)),
-                            _mm_cvtepi32_epi64(w2), _mm_cvtepi32_epi64(_mm_srli_si128(w2, 8)),
-                            _mm_cvtepi32_epi64(w3), _mm_cvtepi32_epi64(_mm_srli_si128(w3, 8)));
-                    else 
-                        return simd_tuple_make(_mm_cvtepu32_epi64(w0), _mm_cvtepu32_epi64(_mm_srli_si128(w0, 8)),
-                            _mm_cvtepu32_epi64(w1), _mm_cvtepu32_epi64(_mm_srli_si128(w1, 8)),
-                            _mm_cvtepu32_epi64(w2), _mm_cvtepu32_epi64(_mm_srli_si128(w2, 8)),
-                            _mm_cvtepu32_epi64(w3), _mm_cvtepu32_epi64(_mm_srli_si128(w3, 8)));
-                }
-                else if constexpr (sizeof(R) == 128) {
-                    if constexpr (frm_sgn) {
-                        __m128i w0 = _mm_srai_epi32(_mm_unpacklo_epi16(x, x), 16);
-                        __m128i w1 = _mm_srai_epi32(_mm_unpackhi_epi16(x, x), 16);
-
-                        return simd_tuple_make(_mm_unpacklo_epi32(w0, _mm_srai_epi32(w0, 31)), _mm_unpackhi_epi32(w0, _mm_srai_epi32(w0, 31)),
-                            _mm_unpacklo_epi32(w1, _mm_srai_epi32(w1, 31)), _mm_unpackhi_epi32(w1, _mm_srai_epi32(w1, 31)));
-                    }
-                    else {
-                        __m128i w0 = _mm_unpacklo_epi16(x, _mm_setzero_si128());
-                        __m128i w1 = _mm_unpackhi_epi16(x, _mm_setzero_si128());
-                        return simd_tuple_make(_mm_unpacklo_epi32(w0, _mm_setzero_si128()), _mm_unpackhi_epi32(w0, _mm_setzero_si128()),
-                            _mm_unpacklo_epi32(w1, _mm_setzero_si128()), _mm_unpackhi_epi32(w1, _mm_setzero_si128()));
-                    }
                 }
                 else if constexpr (sizeof(R) == 256 && has_zmm) {
                     auto x0 = as<__m128i>(x);
@@ -1310,7 +1227,6 @@ convert_saturated_(V x) noexcept {
         constexpr bool has_bw = has_avx512bw<ISA>;
         constexpr bool has_dq = has_avx512dq<ISA>;
         constexpr bool has_vl = has_avx512vl<ISA>;
-        constexpr bool has_bwvl = has_bw && has_vl;
         constexpr bool has_dqvl = has_dq && has_vl;
         constexpr bool has_s41 = has_sse41<ISA>;
 
@@ -1320,7 +1236,6 @@ convert_saturated_(V x) noexcept {
         constexpr bool y_to_x = sizeof(V) == 32 && sizeof(R) <= 16;
         constexpr bool y_to_y = sizeof(V) == 32 && sizeof(R) == 32;
         constexpr bool y_to_z = sizeof(V) == 32 && sizeof(R) == 64;
-        constexpr bool z_to_x = sizeof(V) == 64 && sizeof(R) <= 16;
         constexpr bool z_to_y = sizeof(V) == 64 && sizeof(R) == 32;
         constexpr bool z_to_z = sizeof(V) == 64 && sizeof(R) == 64;
 

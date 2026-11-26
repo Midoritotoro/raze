@@ -1,13 +1,15 @@
 #pragma once 
 
 #include <raze/algorithm/replace/ReplaceCopyIf.h>
+#include <src/raze/algorithm/ProjectedValue.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
 template <class Traits>
 struct replace_copy_t : Traits {
 	template <std::input_iterator InIt, std::sentinel_for<InIt> Sent,
-		std::weakly_incrementable OutIt, class T1, class T2, class Proj = std::identity>
+		std::weakly_incrementable OutIt, class Proj = std::identity,
+		class T1 = projected_value_t<InIt, Proj>, class T2 = iter_value_or_void_t<OutIt>>
 	constexpr raze_always_inline std::ranges::unary_transform_result<InIt, OutIt> operator()(
 		InIt first, Sent sent, OutIt out, const T1& old, const T2& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<InIt, OutIt> && std::indirectly_writable<OutIt, const T2&> &&
@@ -20,7 +22,8 @@ struct replace_copy_t : Traits {
 			});
 	}
 
-	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class T1, class T2, class Proj = std::identity>
+	template <std::ranges::input_range R, std::weakly_incrementable OutIt, class Proj = std::identity,
+		class T1 = projected_value_t<std::ranges::iterator_t<R>, Proj>, class T2 = iter_value_or_void_t<OutIt>>
 	constexpr raze_always_inline std::ranges::unary_transform_result<std::ranges::borrowed_iterator_t<R>, OutIt> operator()(
 		R&& r, OutIt out, const T1& old, const T2& v, Proj proj = {}) const
 			requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> && std::indirectly_writable<OutIt, const T2&> &&

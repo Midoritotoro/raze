@@ -5,7 +5,7 @@
 #include <src/raze/algorithm/DataSource.h>
 #include <src/raze/algorithm/Destination.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
-#include <src/raze/algorithm/memory/Memcpy.h>
+#include <src/raze/algorithm/memory/Memmove.h>
 #include <raze/options/Options.h>
 #include <algorithm>
 
@@ -34,14 +34,15 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
 				!traits::is_iterator_volatile_v<iterator_type> &&
 				!traits::is_iterator_volatile_v<out_iterator_type> &&
-				vx::arithmetic_type<vt_in> && vx::arithmetic_type<vt_out>;
+				vectorizable_value_type<vt_in> && vectorizable_value_type<vt_out>;
 		}
 
 		static consteval bool native() noexcept {
 			return contiguous_source<source_type> && contiguous_destination<destination_type> &&
 				!traits::is_iterator_volatile_v<iterator_type> &&
 				!traits::is_iterator_volatile_v<out_iterator_type> &&
-				std::is_trivially_copyable_v<vt_in> && std::same_as<vt_in, vt_out>;
+				std::is_trivially_copyable_v<vt_in> && std::is_trivially_copy_assignable_v<vt_in> &&
+				std::same_as<vt_in, vt_out>;
 		}
 
 		source_type _source;
@@ -67,7 +68,7 @@ struct copy_t : Traits, dispatchable<copy_t<Traits>> {
 			auto* in_ptr = std::to_address(_in_iterator);
 			auto* out_ptr = std::to_address(_out_iterator);
 
-			__raze_memcpy(out_ptr, in_ptr, size());
+			__raze_memmove(out_ptr, in_ptr, size());
 
 			source_type::from_ptr(_in_iterator, bytes_pointer_offset(in_ptr, size()));
 			destination_type::from_ptr(_out_iterator, bytes_pointer_offset(out_ptr, size()));

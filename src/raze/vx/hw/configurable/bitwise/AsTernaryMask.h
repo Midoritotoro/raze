@@ -6,7 +6,7 @@ __RAZE_VX_NAMESPACE_BEGIN
 
 template <ternary_mask_expression_type Expression>
 struct as_ternary_mask_t {
-	raze_always_inline constexpr auto operator()() noexcept {
+	raze_always_inline constexpr auto operator()() const noexcept {
 		return as_ternary_mask_impl<Expression>();
 	}
 };

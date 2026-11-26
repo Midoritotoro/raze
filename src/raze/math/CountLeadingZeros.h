@@ -43,7 +43,15 @@ raze_always_inline i32 lzcnt_clz(T v) noexcept {
     constexpr auto digits = std::numeric_limits<T>::digits;
 
 #if defined(raze_cpp_msvc_only)
-    if constexpr (digits == 64) return static_cast<i32>(__lzcnt64(static_cast<u64>(v)));
+    if constexpr (digits == 64) {
+#  if defined(raze_processor_x86_64)
+        return static_cast<i32>(__lzcnt64(static_cast<u64>(v)));
+#  else
+        const u32 hi = static_cast<u32>(static_cast<u64>(v) >> 32);
+        if (hi != 0) return static_cast<i32>(__lzcnt(hi));
+        return 32 + static_cast<i32>(__lzcnt(static_cast<u32>(v)));
+#  endif
+    }
     else return static_cast<i32>(__lzcnt(static_cast<u32>(v))) - (32 - digits);
 #else
     if constexpr (digits == 64) return v ? static_cast<i32>(__builtin_clzll(static_cast<unsigned long long>(v))) : 64;
@@ -55,26 +63,55 @@ template <arch::ISA ISA, sizetype Bits, bool Unsafe>
 struct clz_n_bits_implementation {
     template <std::unsigned_integral T>
     constexpr raze_always_inline i32 operator()(T v) const noexcept {
-        static_assert(Bits <= 64);
+        static_assert(Bits > 0 && Bits <= 64);
         static_assert(raze_sizeof_in_bits(T) >= Bits);
 
         constexpr auto digits = std::numeric_limits<T>::digits;
 
+        if consteval {
+            if constexpr (!Unsafe) {
+                if (v == 0) return static_cast<i32>(Bits);
+            }
+            return bit_hacks_clz(v) - (digits - static_cast<i32>(Bits));
+        }
+
 #if defined(raze_cpp_msvc_only)
         if constexpr (vx::has_bmi1<ISA>) {
-            if constexpr (Bits <= 32) return static_cast<i32>(__lzcnt(static_cast<u32>(v))) - (32 - Bits);
-            else return static_cast<i32>(__lzcnt64(static_cast<u64>(v)));
+            if constexpr (Bits <= 32) return static_cast<i32>(__lzcnt(static_cast<u32>(v))) - (32 - static_cast<i32>(Bits));
+            else {
+#  if defined(raze_processor_x86_64)
+                return static_cast<i32>(__lzcnt64(static_cast<u64>(v))) - (64 - static_cast<i32>(Bits));
+#  else
+                const u32 hi = static_cast<u32>(static_cast<u64>(v) >> 32);
+                const i32 clz64 = hi != 0
+                    ? static_cast<i32>(__lzcnt(hi))
+                    : 32 + static_cast<i32>(__lzcnt(static_cast<u32>(v)));
+                return clz64 - (64 - static_cast<i32>(Bits));
+#  endif
+            }
         }
         else {
-            ulong index;
+            ulong index = 0;
 
             if constexpr (Bits <= 32) {
                 [[maybe_unused]] auto r = _BitScanReverse(&index, static_cast<u32>(v));
                 if constexpr (!Unsafe) { if (!r) return static_cast<i32>(Bits); }
             }
             else {
+#  if defined(raze_processor_x86_64)
                 [[maybe_unused]] auto r = _BitScanReverse64(&index, static_cast<u64>(v));
                 if constexpr (!Unsafe) { if (!r) return static_cast<i32>(Bits); }
+#  else
+                const u32 hi = static_cast<u32>(static_cast<u64>(v) >> 32);
+                if (hi != 0) {
+                    _BitScanReverse(&index, hi);
+                    index += 32;
+                }
+                else {
+                    [[maybe_unused]] auto r = _BitScanReverse(&index, static_cast<u32>(v));
+                    if constexpr (!Unsafe) { if (!r) return static_cast<i32>(Bits); }
+                }
+#  endif
             }
 
             return static_cast<i32>(Bits) - 1 - static_cast<i32>(index);
@@ -92,7 +129,7 @@ struct clz_n_bits_implementation {
 
 template <arch::ISA ISA, sizetype Bits, bool Unsafe, std::unsigned_integral T>
 constexpr raze_always_inline i32 clz_n_bits(T v) noexcept {
-    static_assert(Bits <= 64);
+    static_assert(Bits > 0 && Bits <= 64);
     static_assert(raze_sizeof_in_bits(T) >= Bits);
 
     return clz_n_bits_implementation<ISA, Bits, Unsafe>()(v);
@@ -102,14 +139,14 @@ template <arch::ISA ISA, sizetype Bits, bool Unsafe>
 struct clz_not_n_bits_implementation {
     template <std::unsigned_integral T>
     constexpr raze_always_inline i32 operator()(T v) const noexcept {
-        static_assert(Bits <= 64);
+        static_assert(Bits > 0 && Bits <= 64);
         static_assert(raze_sizeof_in_bits(T) >= Bits);
 
         constexpr auto T_bits = raze_sizeof_in_bits(T);
         constexpr T mask = (Bits == T_bits) ? math::max_limit<T>() : static_cast<T>((T(1) << (Bits - 1) << 1) - 1);
 
         v = static_cast<T>(~v);
-        if constexpr (Bits < 8) v &= mask;
+        if constexpr (Bits < T_bits) v &= mask;
         return clz_n_bits<ISA, Bits, Unsafe>(v);
     }
 };

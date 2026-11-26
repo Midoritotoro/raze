@@ -32,7 +32,8 @@ struct rotate_t : Traits, dispatchable<rotate_t<Traits>> {
         static consteval bool native() noexcept {
             return contiguous_source<source_type>
                 && !traits::is_iterator_volatile_v<iterator_type>
-                && std::is_trivially_copyable_v<value_type>;
+                && std::is_trivially_copyable_v<value_type>
+                && traits::trivially_swappable<value_type>;
         }
 
         source_type _source;
@@ -160,7 +161,7 @@ struct rotate_t : Traits, dispatchable<rotate_t<Traits>> {
                     else {
                         auto* mid3 = mid2;
                         rewind_bytes(mid3, left_size);
-                        __swap_3_ranges(mid2, last_ptr, first_ptr, mid3);
+                        __swap_3_ranges[options::drop_alignment<Traits>()](mid2, last_ptr, first_ptr, mid3);
                         last_ptr = mid3;
                     }
                 }
@@ -179,7 +180,7 @@ struct rotate_t : Traits, dispatchable<rotate_t<Traits>> {
                         advance_bytes(first_ptr, right_size);
                     }
                     else {
-                        __swap_3_ranges(middle_ptr, last_ptr, bytes_pointer_offset(first_ptr, right_size), first_ptr);
+                        __swap_3_ranges[options::drop_alignment<Traits>()](middle_ptr, last_ptr, bytes_pointer_offset(first_ptr, right_size), first_ptr);
                         advance_bytes(first_ptr, right_size * 2);
                     }
                 }

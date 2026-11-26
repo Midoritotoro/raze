@@ -15,7 +15,7 @@ template <class Options>
 struct configurable_is_contiguous_t: options::conditional_callable<configurable_is_contiguous_t, Options> {
     template <simd_mask_type M>
     raze_nodiscard raze_always_inline bool operator()(const M& x, i32 n, i32 k) const noexcept {
-        raze_debug_assert(n < M::size() && k <= M::size() && n <= k);
+        raze_debug_assert(n >= 0 && n <= k && k <= static_cast<i32>(M::size()));
         return options::dispatch_call(*this, x, n, k);
     }
 
@@ -43,9 +43,12 @@ struct configurable_is_contiguous_t: options::conditional_callable<configurable_
             using Ch1 = decltype(ch1);
             using Ch2 = decltype(ch2);
 
-            if (k <= Ch1::size) return is_contiguous_<Abi::isa, Ch1::size, Value>(ustorage(ch1), n, k);
-            return is_contiguous_<Abi::isa, Ch1::size, Value>(ustorage(ch1), n, k) &&
-                is_contiguous_<Abi::isa, Ch2::size, Value>(ustorage(ch2), 0, k - Ch1::size);
+            if (k <= static_cast<i32>(Ch1::size))
+                return is_contiguous_<Abi::isa, Ch1::size, Value>(ustorage(ch1), n, k);
+            if (n >= static_cast<i32>(Ch1::size))
+                return is_contiguous_<Abi::isa, Ch2::size, Value>(ustorage(ch2), n - static_cast<i32>(Ch1::size), k - static_cast<i32>(Ch1::size));
+            return is_contiguous_<Abi::isa, Ch1::size, Value>(ustorage(ch1), n, static_cast<i32>(Ch1::size)) &&
+                is_contiguous_<Abi::isa, Ch2::size, Value>(ustorage(ch2), 0, k - static_cast<i32>(Ch1::size));
         }
         else {
             return [&] <sizetype ... I> (std::integer_sequence<size_t, I...>) raze_always_inline_lambda {

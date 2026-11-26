@@ -4,6 +4,7 @@
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/DataSource.h>
+#include <src/raze/algorithm/ProjectedValue.h>
 #include <raze/math/Math.h>
 
 #include <algorithm>
@@ -98,7 +99,7 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
         }
 
         template <vectorizable_tag Tag, class Ptr>
-        raze_always_inline SizeType trailing_matches(Ptr low, Ptr high, SizeType carry) const {
+        raze_always_inline SizeType trailing_matches(Ptr low, Ptr high, SizeType carry) {
             auto* p = high;
             SizeType matched_cnt = 0;
             const auto target = Tag(_value);
@@ -375,7 +376,8 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
     };
 
     template <std::forward_iterator It, std::sentinel_for<It> Sent,
-        class T = std::iter_value_t<It>, class Predicate = std::equal_to<>, class Projection = std::identity>
+        class Predicate = std::equal_to<>, class Projection = std::identity,
+        class T = projected_value_t<It, Projection>>
     raze_nodiscard constexpr raze_always_inline std::ranges::subrange<It>
         operator()(It first, Sent sent, std::iter_difference_t<It> cnt, const T& value,
             Predicate pred = {}, Projection proj = {}) const requires (std::indirectly_comparable<
@@ -385,8 +387,9 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
             cnt, value, traits::fwd_fn(pred), traits::fwd_fn(proj));
     }
 
-    template <std::ranges::forward_range R, class T = std::ranges::range_value_t<R>, 
-        class Predicate = std::equal_to<>, class Projection = std::identity>
+    template <std::ranges::forward_range R,
+        class Predicate = std::equal_to<>, class Projection = std::identity,
+        class T = projected_value_t<std::ranges::iterator_t<R>, Projection>>
     raze_nodiscard constexpr raze_always_inline std::ranges::borrowed_subrange_t<R>
         operator()(R&& r, std::ranges::range_difference_t<R> cnt, const T& value,
             Predicate pred = {}, Projection proj = {}) const requires (std::indirectly_comparable<

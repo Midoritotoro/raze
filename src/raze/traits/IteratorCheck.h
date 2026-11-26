@@ -113,7 +113,9 @@ concept unwrappable_sentinel_for = weakly_unwrappable_sentinel<Sent> && weakly_u
 
 template <class Sent, class Iter>
 raze_nodiscard raze_always_inline constexpr auto uiter_s(Iter&& it)
-	noexcept(!unwrappable_sentinel_for<Sent, Iter> || is_nothrow_unwrappable_v<Iter>)
+	noexcept(unwrappable_sentinel_for<Sent, Iter>
+		? is_nothrow_unwrappable_v<Iter>
+		: std::is_nothrow_constructible_v<std::remove_cvref_t<Iter>, Iter&&>)
 		requires(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>)
 {
 	if constexpr (std::is_pointer_v<std::remove_cvref_t<Iter>>) return it + 0;
@@ -123,21 +125,25 @@ raze_nodiscard raze_always_inline constexpr auto uiter_s(Iter&& it)
 
 template <class It>
 raze_always_inline constexpr auto uiter(It&& it)
-	noexcept(traits::is_iterator_unwrappable_v<It> == false || traits::is_nothrow_unwrappable_v<It>)
+	noexcept(traits::is_iterator_unwrappable_v<It>
+		? traits::is_nothrow_unwrappable_v<It>
+		: std::is_nothrow_constructible_v<std::remove_cvref_t<It>, It&&>)
 {
 	if constexpr (std::is_pointer_v<std::decay_t<It>>) return it + 0;
-	else if constexpr (traits::is_iterator_unwrappable_v<It>) return std::move(it)._Unwrapped();
-	else return std::move(it);
+	else if constexpr (traits::is_iterator_unwrappable_v<It>) return std::forward<It>(it)._Unwrapped();
+	else return std::forward<It>(it);
 }
 
 template <class Iter, class Sent>
 raze_nodiscard raze_always_inline constexpr auto usent(Sent&& sent)
-	noexcept(!unwrappable_sentinel_for<Sent, Iter> || is_nothrow_unwrappable_v<Sent>) 
+	noexcept(unwrappable_sentinel_for<Sent, Iter>
+		? is_nothrow_unwrappable_v<const std::remove_reference_t<Sent>&>
+		: std::is_nothrow_constructible_v<std::remove_cvref_t<Sent>, Sent&&>)
 {
 	static_assert(std::sentinel_for<std::remove_cvref_t<Sent>, std::remove_cvref_t<Iter>>);
 
 	if constexpr (std::is_pointer_v<std::remove_cvref_t<Sent>>) return sent + 0;
-	else if constexpr (unwrappable_sentinel_for<Sent, Iter>) return static_cast<Sent&&>(sent)._Unwrapped();
+	else if constexpr (unwrappable_sentinel_for<Sent, Iter>) return std::as_const(sent)._Unwrapped();
 	else return static_cast<Sent&&>(sent);
 }
 
@@ -215,6 +221,20 @@ raze_nodiscard raze_always_inline constexpr auto last_uiter(R& r) {
 	  else return std::ranges::next(ubegin(r), uend(r));
   }
 
+template <class It, class UIt>
+raze_always_inline constexpr void seek_iter(It& it, UIt&& uit) {
+	if constexpr (traits::is_wrapped_iterator_seekable_v<It, UIt>)
+		it._Seek_to(std::forward<UIt>(uit));
+	else if constexpr (requires { it = std::forward<UIt>(uit); })
+		it = std::forward<UIt>(uit);
+	else if constexpr (std::contiguous_iterator<It> && requires { it += (uit - std::to_address(it)); })
+		it += (uit - std::to_address(it));
+	else if constexpr (requires { it = It(std::forward<UIt>(uit)); })
+		it = It(std::forward<UIt>(uit));
+	else
+		static_assert(false);
+}
+
 template <class Result, class Wrapped, class Unwrapped>
 raze_always_inline constexpr Result rewrap_subrange(Wrapped& v, std::ranges::subrange<Unwrapped>&& unwrapped_result) {
 	if constexpr (std::same_as<Result, std::ranges::dangling>) {
@@ -227,39 +247,23 @@ raze_always_inline constexpr Result rewrap_subrange(Wrapped& v, std::ranges::sub
 		auto first = std::ranges::begin(v);
 		auto last = first;
 
-		first._Seek_to(unwrapped_result.begin());
-		last._Seek_to(unwrapped_result.end());
+		seek_iter(first, unwrapped_result.begin());
+		seek_iter(last, unwrapped_result.end());
 
 		return Result { std::move(first), std::move(last) };
 	}
 	else {
+		auto first = v;
 		auto last = v;
 
-		v._Seek_to(unwrapped_result.begin());
-		last._Seek_to(unwrapped_result.end());
+		seek_iter(first, unwrapped_result.begin());
+		seek_iter(last, unwrapped_result.end());
 
-		return Result { std::move(v), std::move(last) };
+		return Result { std::move(first), std::move(last) };
 	}
 }
 
 template <class It>
 using unwrapped_iterator_type = std::remove_cvref_t<decltype(uiter(std::declval<It>()))>;
-
-template <class It, class UIt>
-raze_always_inline constexpr void seek_iter(It& it, UIt&& uit) noexcept(
-	traits::is_wrapped_iterator_seekable_v<It, UIt> == false || 
-	traits::is_wrapped_iterator_nothrow_seekable_v<It, UIt>)
-{
-	if constexpr (traits::is_wrapped_iterator_seekable_v<It, UIt>)
-		it._Seek_to(std::forward<UIt>(uit));
-	else if constexpr (requires { it = std::forward<UIt>(uit); })
-		it = std::forward<UIt>(uit);
-	else if constexpr (requires { it += (uit - std::to_address(it)); })
-		it += (uit - std::to_address(it));
-	else if constexpr (requires { it = It(std::forward<UIt>(uit)); })
-		it = It(std::forward<UIt>(uit));
-	else
-		static_assert(false);
-}
 
 __RAZE_TRAITS_NAMESPACE_END

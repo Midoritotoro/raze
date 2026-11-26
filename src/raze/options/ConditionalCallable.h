@@ -46,7 +46,7 @@ struct conditional_callable_impl:  callable<F, OptionsValues, Options...> {
 
     template <class Alternative, condition_type Condition>
     raze_always_inline constexpr auto operator[](const Alternative& source, const Condition& condition) const noexcept
-        requires(alternative_type<Condition, Alternative> && requires(const base_t& base) { base[or_(condition, source)]; })
+        requires(!condition_type<Alternative> && alternative_type<Condition, Alternative> && requires(const base_t& base) { base[or_(condition, source)]; })
     {
         if constexpr (OptionsValues::size() == 0) {
             using opt_t = option<condition_key_t, or_<Condition, Alternative>>;
@@ -60,10 +60,10 @@ struct conditional_callable_impl:  callable<F, OptionsValues, Options...> {
 
     template <class ... Ts>
     constexpr raze_always_inline auto behavior(callable_options auto const& opts,
-        const Ts& ... xs) const
-        noexcept(noexcept(func_t::deferred_call(opts, xs...)))
+        Ts&& ... xs) const
+        noexcept(noexcept(func_t::deferred_call(opts, std::forward<Ts>(xs)...)))
     {
-        return func_t::deferred_call(opts, xs...);
+        return func_t::deferred_call(opts, std::forward<Ts>(xs)...);
     }
 };
 
@@ -103,10 +103,10 @@ struct conditional_callable: conditional_callable_impl<F, OptionsValues, conditi
 
     template <class ... Ts>
     constexpr raze_always_inline auto behavior(callable_options auto const& opts, 
-        const Ts&... xs) const
-        noexcept(noexcept(base_t::behavior(opts, xs...)))
+        Ts&&... xs) const
+        noexcept(noexcept(base_t::behavior(opts, std::forward<Ts>(xs)...)))
     {
-        return base_t::behavior(opts, xs...);
+        return base_t::behavior(opts, std::forward<Ts>(xs)...);
     }
 };
 

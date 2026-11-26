@@ -11,7 +11,12 @@ __RAZE_OPTIONS_NAMESPACE_BEGIN
 
 template <class Settings>
 struct traits : Settings {
+    constexpr traits() noexcept
+        requires (std::default_initializable<Settings>)
+        = default;
+
     template <concepts::option ... Options>
+        requires (sizeof...(Options) > 0)
     constexpr explicit traits(Options && ... opts) noexcept: 
         Settings(std::forward<Options>(opts)...) 
     {}
@@ -65,6 +70,7 @@ constexpr inline auto index = std::integral_constant<sizetype, N>{};
  * ```
  */
 template <sizetype N>
+    requires (N != 0 && (N & (N - 1)) == 0)
 constexpr inline auto unroll = (unroll_key = index<N>);
 
 template <class Traits>
@@ -584,7 +590,8 @@ consteval sizetype alignment_of() noexcept {
 
 template <vx::simd_type V, sizetype N>
 constexpr inline auto aligned_for = []() consteval {
-    if constexpr (N >= alignof(V) && (sizeof(V) % alignof(V) == 0)) return vx::aligned;
+    constexpr sizetype data_bytes = V::size() * sizeof(typename V::value_type);
+    if constexpr (N >= alignof(V) && (data_bytes % alignof(V) == 0)) return vx::aligned;
     else return options<>{};
 }();
 
@@ -642,10 +649,19 @@ struct alignments {
 private:
     template <class Arg>
     static raze_always_inline constexpr bool is_empty_arg(const Arg& arg) noexcept {
-        if constexpr (requires { { arg.empty() } -> std::convertible_to<bool>; })
+        using Raw = std::remove_cvref_t<Arg>;
+        if constexpr (requires { typename Raw::unchecked_iterator_type; { arg.empty() } -> std::convertible_to<bool>; }) {
+            if constexpr (std::forward_iterator<typename Raw::unchecked_iterator_type>)
+                return arg.empty();
+            else
+                return false;
+        }
+        else if constexpr (std::ranges::forward_range<Raw> && requires { { arg.empty() } -> std::convertible_to<bool>; }) {
             return arg.empty();
-        else
+        }
+        else {
             return false;
+        }
     }
 
     template <sizetype Index, class T>
@@ -678,6 +694,12 @@ template <class Settings>
 raze_nodiscard constexpr raze_always_inline auto drop_alignment(const traits<Settings>& tr) noexcept {
     if constexpr (traits<Settings>::contains(aligned_key)) return traits(drop(aligned_key, tr));
     else return tr;
+}
+
+template <class Traits>
+    requires (std::default_initializable<std::remove_cvref_t<unwrap_traits_t<Traits>>>)
+raze_nodiscard constexpr raze_always_inline auto drop_alignment() noexcept {
+    return drop_alignment(std::remove_cvref_t<unwrap_traits_t<Traits>>{});
 }
 
 template <sizetype... Ns, class Settings>

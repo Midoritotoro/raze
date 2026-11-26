@@ -63,8 +63,10 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			std::conditional_t<copy_f, F, F&> func = _f;
 			std::conditional_t<traits::lightweight_callable<Proj>, Proj, Proj&> proj = _proj;
 
-			for_noalias(first, last, [&func, &proj, in = first](auto i)
-				raze_always_inline_lambda { std::invoke(func, std::invoke(proj, in[i])); });
+			const auto sz = last - first;
+			for (std::remove_const_t<decltype(sz)> i = 0; i < sz; ++i)
+				std::invoke(func, std::invoke(proj, first[i]));
+			first += sz;
 
 			if constexpr (copy_f && !std::is_empty_v<F>) {
 				_f = func;
@@ -109,8 +111,8 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			source_type::from_ptr(_iterator, ptr);
 		}
 
-		constexpr raze_always_inline std::ranges::for_each_result<iterator_type, F> result() const {
-			return { _source.wrap(_iterator), _f };
+		constexpr raze_always_inline std::ranges::for_each_result<iterator_type, F> result() {
+			return { _source.wrap(std::move(_iterator)), std::move(_f) };
 		}
 
 		raze_nodiscard static constexpr raze_always_inline decltype(auto) static_size()
@@ -134,7 +136,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			requires(std::indirectly_unary_invocable<F, std::projected<InIt, Proj>>)
 	{
 		return this->dispatch(get_source(std::move(first), std::move(sent)),
-			traits::fwd_fn(f), traits::fwd_fn(proj));
+			std::move(f), traits::fwd_fn(proj));
 	}
 
 	template <std::ranges::input_range R, class F, class Proj = std::identity>
@@ -142,7 +144,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 		R&& r, F f, Proj proj = {}) const
 			requires(std::indirectly_unary_invocable<F, std::projected<std::ranges::iterator_t<R>, Proj>>)
 	{
-		return this->dispatch(get_source(r), traits::fwd_fn(f), traits::fwd_fn(proj));
+		return this->dispatch(get_source(std::forward<R>(r)), std::move(f), traits::fwd_fn(proj));
 	}
 };
 

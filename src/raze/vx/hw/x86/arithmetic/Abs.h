@@ -74,7 +74,10 @@ raze_always_inline V abs_(V x) noexcept {
 	}
 	else {
 		if constexpr (std::floating_point<T>) return bit_andnot_<ISA, T>(T(-0.0), x);
-		else return (x < 0) ? -x : x;
+		else {
+			using U = std::make_unsigned_t<T>;
+			return (x < 0) ? static_cast<V>(static_cast<U>(0) - static_cast<U>(x)) : x;
+		}
 	}
 }
 

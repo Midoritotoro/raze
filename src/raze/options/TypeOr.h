@@ -10,7 +10,9 @@ struct type_or {
     raze_no_unique_address Value _value;
 
     template <concepts::option ... Options>
-    constexpr raze_always_inline decltype(auto) operator()(Options&&... opts) const noexcept {
+    constexpr raze_always_inline auto operator()(Options&&... opts) const
+        noexcept(noexcept(fetch(*this, std::forward<Options>(opts)...)))
+    {
         return fetch(*this, std::forward<Options>(opts)...); 
     }
 };

@@ -26,7 +26,7 @@ consteval raze_always_inline  bool is_halfs_equal(Pattern p) noexcept {
 	constexpr auto h = Pattern::size() / 2;
 
 	for (sizetype i = 0; i < h; ++i)
-		if (p[i] != (p[i + h] - h))
+		if (p[i + h] < h || p[i] != (p[i + h] - h))
 			return false;
 
 	return true;
@@ -125,25 +125,23 @@ consteval raze_always_inline bool is_rotate_right(Pattern p) noexcept {
 template <class Pattern>
 consteval raze_always_inline bool is_slide_left(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
+	if constexpr (n == 0)
+		return true;
 
-	bool found_shift = false;
-	sizetype shift = 0;
+	if (p[0] == shuffle_zero) {
+		for (sizetype i = 1; i < n; ++i)
+			if (p[i] != shuffle_zero)
+				return false;
+		return true;
+	}
+
+	const auto shift = p[0];
+	if (shift >= n)
+		return false;
 
 	for (sizetype i = 0; i < n; ++i) {
-		const auto v = p[i];
-
-		if (v == shuffle_zero)
-			continue;
-
-		if (!found_shift) {
-			shift = v - i;
-			found_shift = true;
-		}
-
-		if (v != i + shift)
-			return false;
-
-		if (v >= n)
+		const auto expected = (i + shift < n) ? (i + shift) : shuffle_zero;
+		if (p[i] != expected)
 			return false;
 	}
 
@@ -159,31 +157,16 @@ consteval raze_always_inline bool is_slide_left(Pattern p) noexcept {
 template <class Pattern>
 consteval raze_always_inline bool is_slide_right(Pattern p) noexcept {
 	constexpr auto n = Pattern::size();
+	if constexpr (n == 0)
+		return true;
 
-	bool found_shift = false;
 	sizetype shift = 0;
+	while (shift < n && p[shift] == shuffle_zero)
+		++shift;
 
-	for (sizetype i = 0; i < n; ++i) {
-		const auto v = p[i];
-
-		if (v == shuffle_zero || v < 0)
-			continue;
-
-		if (!found_shift) {
-			shift = i - v;
-			found_shift = true;
-		}
-		else {
-			if (i - v != shift)
-				return false;
-		}
-
-		if (v != i - shift)
+	for (sizetype i = shift; i < n; ++i)
+		if (p[i] != (i - shift))
 			return false;
-
-		if (v >= n)
-			return false;
-	}
 
 	return true;
 }
@@ -419,7 +402,7 @@ consteval raze_always_inline bool is_dup_high_identity(Pattern p) noexcept {
 	constexpr auto h = n / 2;
 
 	for (sizetype i = 0; i < h; ++i) {
-		if (p[i] < h || p[i] >= n || p[i] != i) return false;
+		if (p[i] != (i + h)) return false;
 		if (p[i + h] != p[i]) return false;
 	}
 

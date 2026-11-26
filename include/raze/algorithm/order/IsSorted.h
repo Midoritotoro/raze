@@ -90,7 +90,7 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 		}
 	};
 
-	template <std::input_iterator It, std::sentinel_for<It> Sent,
+	template <std::forward_iterator It, std::sentinel_for<It> Sent,
 		class Comp = std::less<>, class Proj = std::identity>
 	constexpr raze_always_inline bool operator()(It first, Sent last, Comp comp = {}, Proj proj = {}) const
 		requires(std::indirect_strict_weak_order<Comp, std::projected<It, Proj>>)
@@ -98,7 +98,7 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 		return this->dispatch(get_source(std::move(first), std::move(last)), traits::fwd_fn(comp), traits::fwd_fn(proj));
 	}
 
-	template <std::ranges::input_range R, class Comp = std::less<>, class Proj = std::identity>
+	template <std::ranges::forward_range R, class Comp = std::less<>, class Proj = std::identity>
 	constexpr raze_always_inline bool operator()(R&& r, Comp comp = {}, Proj proj = {}) const
 		requires(std::indirect_strict_weak_order<Comp, std::projected<std::ranges::iterator_t<R>, Proj>>)
 	{

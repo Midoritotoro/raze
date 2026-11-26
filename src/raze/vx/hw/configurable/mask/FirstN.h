@@ -29,9 +29,10 @@ struct configurable_first_n_t : options::conditional_callable<configurable_first
         M x(uninitialized);
 
         if constexpr (M::__chunks_count() == 1) {
-            x.__for_each_chunk([n] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
+            const auto clamped = n <= 0 ? u32(0) : static_cast<u32>(n);
+            x.__for_each_chunk([clamped] <class Chunk> (Chunk& chunk) raze_always_inline_lambda {
                 using StorageType = std::remove_cvref_t<decltype(ustorage(chunk))>;
-                chunk = first_n_<Abi::isa, Chunk::size, StorageType, Value>(n);
+                chunk = first_n_<Abi::isa, Chunk::size, StorageType, Value>(clamped);
             });
         }
         else {

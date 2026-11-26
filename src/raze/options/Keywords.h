@@ -26,7 +26,7 @@ struct as_keyword {
     constexpr raze_always_inline auto operator=(T&& v) const noexcept
         requires (!std::same_as<std::remove_cvref_t<T>, as_keyword>) && (accept<T>())
     {
-        return option<Keyword, T>{std::forward<T>(v)};
+        return option<Keyword, std::decay_t<T>>{std::forward<T>(v)};
     }
 
     template <class T>
@@ -39,11 +39,11 @@ struct as_keyword {
     template <class F> 
     constexpr raze_always_inline auto operator|(call<F>&& f) const noexcept
     {
-        return type_or<Keyword, call<F>>{std::forward<F>(f)};
+        return type_or<Keyword, call<F>>{std::move(f)};
     }
 
     template <concepts::option ... Options>
-    constexpr raze_always_inline decltype(auto) operator()(Options&& ... opts) const {
+    constexpr raze_always_inline auto operator()(Options&& ... opts) const {
         return fetch(Keyword{}, std::forward<Options>(opts)...); 
     }
 };
@@ -54,7 +54,7 @@ struct checked_keyword: as_keyword<checked_keyword<ID, Checker>> {
 
     template <class T> 
     static raze_always_inline constexpr bool check() {
-        return Checker<T>::value; 
+        return Checker<std::remove_cvref_t<T>>::value; 
     }
 };
 
@@ -101,7 +101,7 @@ struct flag_keyword {
 
     template <class F> 
     constexpr raze_always_inline auto operator|(call<F>&& f) const noexcept {
-        return type_or<flag_keyword, call<F>>{std::forward<F>(f)};
+        return type_or<flag_keyword, call<F>>{std::move(f)};
     }
 
     constexpr raze_always_inline auto operator()(const keyword_type&) const noexcept {

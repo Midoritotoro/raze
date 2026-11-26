@@ -13,8 +13,13 @@ template <concepts::option ... Options>
 struct aggregator:
     Options...
 {
-    constexpr aggregator(const Options& ... opts) noexcept:
-        Options(opts)... 
+    constexpr aggregator() noexcept
+        requires (sizeof...(Options) == 0 || (concepts::stateless_option<Options> && ...))
+        = default;
+
+    constexpr aggregator(const Options& ... opts) noexcept
+        requires (sizeof...(Options) > 0)
+        : Options(opts)... 
     {}
 
     using Options::operator()...;

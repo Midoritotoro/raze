@@ -65,7 +65,7 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
             if constexpr (Options::contains(uniform)) return select[opts](x);
             else return Value(select[opts](x)[std::integral_constant<sizetype, 0>{}]);
         }
-        else {
+        else if constexpr ((V::size() & (V::size() - 1)) == 0) {
             constexpr auto depth = std::bit_width(sizetype(V::size())) - 1;
 
             const auto r = [&] <sizetype ... Indices> (std::integer_sequence<sizetype, Indices...>) raze_always_inline_lambda {
@@ -76,6 +76,16 @@ struct configurable_fold_t : options::conditional_callable<configurable_fold_t, 
 
             if constexpr (Options::contains(uniform)) return r;
             else return r[std::integral_constant<sizetype, 0>{}];
+        }
+        else {
+            x = select[opts](x);
+            auto acc = V(Value(x[std::integral_constant<sizetype, 0>{}]));
+            [&] <sizetype ... Indices> (std::integer_sequence<sizetype, Indices...>) raze_always_inline_lambda {
+                ((acc = f(acc, V(Value(x[std::integral_constant<sizetype, Indices + 1>{}])))), ...);
+            } (std::make_integer_sequence<sizetype, V::size() - 1>{});
+
+            if constexpr (Options::contains(uniform)) return acc;
+            else return Value(acc[std::integral_constant<sizetype, 0>{}]);
         }
     }
 };
