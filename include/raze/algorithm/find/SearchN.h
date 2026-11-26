@@ -101,10 +101,11 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
         raze_always_inline SizeType trailing_matches(Ptr low, Ptr high, SizeType carry) const {
             auto* p = high;
             SizeType matched_cnt = 0;
+            const auto target = Tag(_value);
 
             while (p - low >= static_cast<std::ptrdiff_t>(Tag::size())) {
                 p -= Tag::size();
-                const auto not_mask = !_predicate(_proj(vx::load<Tag>(p)), _value);
+                const auto not_mask = !_predicate(_proj(vx::load<Tag>(p)), target);
 
                 if (!vx::none_of(not_mask)) {
                     // `find_last_set` gives distance from chunk end to the last 0 == trailing 1-run length.
@@ -166,8 +167,9 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
 
                 // Extend rightward with SIMD chunks so dense/long runs don't degrade to scalar.
                 bool hit_zero = false;
+                const auto target = Tag(_value);
                 while (limit - right >= static_cast<std::ptrdiff_t>(Tag::size())) {
-                    const auto not_mask = !_predicate(_proj(vx::load<Tag>(right)), _value);
+                    const auto not_mask = !_predicate(_proj(vx::load<Tag>(right)), target);
 
                     if (!vx::none_of(not_mask)) {
                         right += vx::find_first_set[vx::not_null](not_mask);
@@ -227,8 +229,9 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
             auto cur = _current_count; // Invariant: [ptr - cur, ptr) all matched, 0 <= cur < _count.
 
             if (_count == 1) {
+                const auto target = Tag(_value);
                 raze_disable_unrolling do {
-                    const auto mask = _predicate(_proj(vx::load<Tag>(ptr)), _value);
+                    const auto mask = _predicate(_proj(vx::load<Tag>(ptr)), target);
 
                     if (vx::any_of(mask)) {
                         auto* const match = ptr + vx::find_first_set[vx::not_null](mask);
@@ -263,8 +266,9 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
                 return stride_search<Tag>(ptr, aligned_end, cur);
             }
 
+            const auto target = Tag(_value);
             raze_disable_unrolling do {
-                const auto mask = _predicate(_proj(vx::load<Tag>(ptr)), _value);
+                const auto mask = _predicate(_proj(vx::load<Tag>(ptr)), target);
 
                 if (vx::none_of(mask)) {
                     cur = 0;
@@ -393,6 +397,93 @@ struct search_n_t : Traits, dispatchable<search_n_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_subrange
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Searches a range for a consecutive sequence of identical elements.
+ *
+ * 1) Searches `[first, sent)` for the first contiguous sequence of `cnt` elements each satisfying
+ *    `bool(std::invoke(pred, std::invoke(proj, *i), value))`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `search_n(std::ranges::begin(r), std::ranges::end(r), cnt, value, pred, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::forward_iterator It, std::sentinel_for<It> Sent,
+ *           class T = std::iter_value_t<It>,
+ *           class Predicate = std::equal_to<>, class Projection = std::identity >
+ *   requires(std::indirectly_comparable<It, const T*, Predicate, Projection>)
+ * constexpr std::ranges::subrange<It>
+ * search_n( It first, Sent sent, std::iter_difference_t<It> cnt, const T& value,
+ *           Predicate pred = {}, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::forward_range R,
+ *           class T = std::ranges::range_value_t<R>,
+ *           class Predicate = std::equal_to<>, class Projection = std::identity >
+ *   requires(std::indirectly_comparable<std::ranges::iterator_t<R>, const T*, Predicate, Projection>)
+ * constexpr std::ranges::borrowed_subrange_t<R>
+ * search_n( R&& r, std::ranges::range_difference_t<R> cnt, const T& value,
+ *           Predicate pred = {}, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `sent` - the range of elements to search
+ * - `r`             - the range of elements to search
+ * - `cnt`           - the required number of consecutive matching elements
+ * - `value`         - the value to compare against
+ * - `pred`          - binary predicate comparing projected elements to `value` (defaults to `std::equal_to<>`)
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * A `std::ranges::subrange` spanning `[found, found + cnt)` for the first matching run,
+ * `{first, first}` if `cnt <= 0`, or `{end, end}` if no such sequence exists.
+ *
+ * ### Complexity
+ * Linear: at most `std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`) applications of `pred`
+ * and `proj` (sublinear in practice for long runs via strided probing).
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - Immediately returns `{first, first}` when `cnt <= 0`, and `{end, end}` when a contiguous range is shorter than `cnt`.
+ * - Explicit `raze::vx` SIMD provides specialized fast paths for `cnt == 1`, bitmask run scanning for
+ *   short/medium runs, and strided probing with SIMD rightward extension for long runs
+ *   (`cnt >= 2 * Tag::size()` and at least 256 bytes).
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/find/SearchN.h>
+ *
+ * int main() {
+ *     const std::vector<int> v{1, 2, 2, 3, 2, 2, 2, 4};
+ *
+ *     auto found = raze::algorithm::search_n(v, 3, 2);
+ *     if (!found.empty())
+ *         std::cout << "Found run of three 2s at index " << (found.begin() - v.begin()) << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * Found run of three 2s at index 4
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::search`
+ * - `raze::algorithm::find`
+ * - `raze::algorithm::adjacent_find`
+ * - `raze::algorithm::find_end`
+*/
 constexpr inline auto search_n = options::function_with_traits<search_n_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

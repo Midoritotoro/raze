@@ -19,7 +19,7 @@ struct for_each_n_t : Traits {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_batch
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Applies a function object to the first `n` elements of a sequence.
@@ -48,36 +48,19 @@ struct for_each_n_t : Traits {
  * - `fun`: the function object `f`.
  *
  * ### Complexity
- * Linear in `n` (`0` if `n == 0`): performs `n` applications of `f` and `proj` in the scalar
- * and auto-vectorized paths, or one vector application per SIMD chunk (including the masked tail)
- * in the explicit SIMD path.
+ * Linear in `n` (`0` if `n == 0`): `n` applications of `f` and `proj` in the scalar and `autovec` paths,
+ * or one vector application per SIMD chunk (including the masked tail) in the explicit SIMD path.
  *
- * ### Decorators and Options
- * The algorithm object is configured with `raze::options::unroll<4>` by default (and
- * `strategy_mode::autovec` on GCC, Clang, and ICPX) and supports compile-time modifiers via
- * `operator[]` (forwarded to `raze::algorithm::for_each`):
- * ```cpp
- * for_each_n[raze::options::fscalar](...);
- * for_each_n[raze::options::unroll<2>](...);
- * for_each_n[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (forwarded to `raze::algorithm::for_each`;
+ * see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`; `for_each_strategy` (`strategy_mode::autovec` on GCC, Clang, and ICPX).
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous range starting at `first` (1 range).
+ * - **Auto-vectorization:** Inherits the `autovec` kernel from `raze::algorithm::for_each` (see @ref autovec_behavior).
  *
  * ### Notes
- * - Implemented by delegating to `raze::algorithm::for_each` using `std::counted_iterator` and
- *   `std::default_sentinel`, inheriting its execution paths (`autovec` on GCC/Clang/ICPX,
- *   explicit SIMD with masked tail handling on MSVC, and scalar fallback otherwise).
- * - **Execution order & vectorization**:
- *   - When `f` is vectorizable (e.g., accepts `auto&`), elements may be processed in an unsequenced
- *     (`unseq`) / vectorized manner without strict element-by-element ordering; `f` must not rely on
- *     loop-carried dependencies or cross-iteration mutable state.
- *   - Strict sequential in-order execution is guaranteed when `f` takes an explicit scalar parameter
- *     type (e.g., `[](int x)` or `[](int& x)`), when `raze::options::fscalar` is specified, for
- *     non-contiguous iterators or non-`std::identity` projections, or in constant-evaluated contexts
- *     (`if consteval`).
- *   - See @ref vectorization_semantics for full details and caveats with generic (`auto`) lambdas.
- * - The input range must be modifiable (`modifiable_source`).
+ * - Implemented by delegating to `raze::algorithm::for_each` over `std::counted_iterator(first, n)`
+ *   and `std::default_sentinel`.
  *
  * ### Example
  * ```cpp
@@ -97,9 +80,9 @@ struct for_each_n_t : Traits {
  *     raze::algorithm::for_each_n(v.begin(), 4, [](auto& x) { x *= 10; });
  *     println(v);
  *
- *     // Guaranteed sequential in-order traversal of the first 3 elements (explicit scalar parameter)
+ *     // Strict scalar in-order traversal of the first 3 elements
  *     int sum = 0;
- *     raze::algorithm::for_each_n(v.begin(), 3, [&sum](int x) { sum += x; });
+ *     raze::algorithm::for_each_n[raze::options::fscalar](v.begin(), 3, [&sum](const auto& x) { sum += x; });
  *     std::cout << "Sum of first 3: " << sum << '\n';
  * }
  * ```
@@ -109,6 +92,12 @@ struct for_each_n_t : Traits {
  * 10 20 30 40 5 6 7
  * Sum of first 3: 60
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::for_each`
 */
 constexpr inline auto for_each_n = options::function_with_traits<for_each_n_t>[options::unroll<4>][for_each_strategy];
 

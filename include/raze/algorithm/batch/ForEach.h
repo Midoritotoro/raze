@@ -58,7 +58,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 			first = align::template assume<0>(first);
 
 			constexpr bool copy_f = std::is_empty_v<F> ||
-				(traits::lightweight_callable<F> && (std::is_copy_assignable_v<F> || std::is_trivially_copyable_v<F>));
+				(traits::lightweight_callable<F> && std::is_copy_assignable_v<F>);
 
 			std::conditional_t<copy_f, F, F&> func = _f;
 			std::conditional_t<traits::lightweight_callable<Proj>, Proj, Proj&> proj = _proj;
@@ -67,15 +67,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 				raze_always_inline_lambda { std::invoke(func, std::invoke(proj, in[i])); });
 
 			if constexpr (copy_f && !std::is_empty_v<F>) {
-				if constexpr (std::is_copy_assignable_v<F>) {
-					_f = func;
-				}
-				else if constexpr (std::is_trivially_copyable_v<F>) {
-					if !consteval {
-						std::memcpy(static_cast<void*>(std::addressof(_f)),
-							static_cast<const void*>(std::addressof(func)), sizeof(F));
-					}
-				}
+				_f = func;
 			}
 			source_type::from_ptr(_iterator, first);
 		}
@@ -105,6 +97,7 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			if (ignore.tail_bytes() == 0) return;
 			constexpr auto alignment = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 
@@ -154,13 +147,14 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_batch
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Applies a function object to each element of a range.
  *
  * 1) Applies `f` to the result of dereferencing every iterator in the range `[first, sent)`,
  *    projected by `proj`.
+ *
  * 2) Same as (1), but uses `r` as the source range, as if by:
  *    `for_each(std::ranges::begin(r), std::ranges::end(r), std::move(f), proj)`.
  *
@@ -193,34 +187,20 @@ struct for_each_t : Traits, dispatchable<for_each_t<Traits>> {
  *
  * ### Complexity
  * Linear in `N = std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`):
- * `N` applications of `f` and `proj` in the scalar and auto-vectorized paths, or
- * one vector application per SIMD chunk (including the masked tail) in the explicit SIMD path.
+ * `N` applications of `f` and `proj` in the scalar and `autovec` paths, or one vector
+ * application per SIMD chunk (including the masked tail) in the explicit SIMD path.
  *
- * ### Decorators and Options
- * Configured with `raze::options::unroll<4>` by default (and `strategy_mode::autovec` on GCC, Clang, and ICPX).
- * Supported modifiers via `operator[]`:
- * ```cpp
- * for_each[raze::options::fscalar](...);
- * for_each[raze::options::fautovec](...);
- * for_each[raze::options::fstatic](...);
- * for_each[raze::options::aligned<N>](...);
- * for_each[raze::options::unroll<N>](...);
- * for_each[raze::options::fstatic][raze::options::aligned<N>](...);
- * ```
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`; `for_each_strategy` (`strategy_mode::autovec` on GCC, Clang, and ICPX).
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous range (1 range).
+ * - **Auto-vectorization:** Provides an `autovec` kernel supporting scalar-typed callables, `const` ranges,
+ *   and custom projections (see @ref autovec_behavior).
  *
  * ### Notes
- * - On GCC, Clang, ICPX, AOCC, nvc++ contiguous ranges automatically use the compiler auto-vectorized `for_noalias`
- *   path with runtime CPUID dispatch (`AVX-512`, `AVX2`, `SSE4.2`, baseline) whenever manual `raze::vx` SIMD
- *   is not selected — including for scalar-typed callables (e.g., `[](int& x)`), `const` ranges, and custom
- *   projections.
- * - Explicit `raze::vx` SIMD (used on MSVC, or on GCC/Clang/ICPX when the compile-time target ISA already
- *   satisfies the peak ISA) requires a contiguous modifiable range, a `vx::simd`-compatible callable, and
- *   `std::identity` projection.
- * - `raze::options::fautovec` is a migration aid for generic (`auto`) lambdas with scalar-only bodies
- *   (e.g., `if` branches): it skips `raze::vx::simd` probing and uses compiler auto-vectorization +
- *   dynamic dispatch on GCC, Clang, and ICPX (on MSVC it effectively falls back to scalar execution).
- * - `raze::options::fscalar`, non-contiguous iterators, and constant evaluation (`if consteval`) disable
- *   both SIMD and compiler auto-vectorization, guaranteeing strict sequential in-order scalar execution.
+ * - Explicit `raze::vx` SIMD requires a contiguous modifiable range, a `vx::simd`-compatible callable,
+ *   and `std::identity` projection; remaining elements are handled via masked SIMD tail loads/stores.
+ * - For stateful or order-dependent callables, attach `raze::options::fscalar` (see @ref scalar_fallback).
  *
  * ### Example
  * ```cpp

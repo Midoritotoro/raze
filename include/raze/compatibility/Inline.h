@@ -5,13 +5,13 @@
 
 
 #if !defined(raze_never_inline)
-#  if defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_nvhpc)
-#     define raze_never_inline __declspec(noinline)
-#  elif defined(raze_cpp_gnu) 
+#  if defined(raze_cpp_msvc_only)
+#    define raze_never_inline __declspec(noinline)
+#  elif defined(raze_cpp_gnu) || defined(raze_cpp_clang) || defined(raze_cpp_nvhpc)
 #    define raze_never_inline __attribute__((noinline))
-#  else 
-#    define raze_never_inline 
-#  endif // defined(raze_cpp_msvc) || defined(raze_cpp_clang) || defined(raze_cpp_gnu)
+#  else
+#    define raze_never_inline
+#  endif // defined(raze_cpp_msvc_only) || defined(raze_cpp_clang) || defined(raze_cpp_gnu)
 #endif // !defined(raze_never_inline)
 
 

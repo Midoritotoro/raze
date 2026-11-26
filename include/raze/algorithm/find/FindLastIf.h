@@ -103,6 +103,11 @@ struct find_last_if_t : Traits, dispatchable<find_last_if_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+            if (ignore.tail_bytes() == 0) {
+                _back = _end;
+                return;
+            }
+
             auto* ptr = std::to_address(_iterator);
             const auto mask = _predicate(_proj(vx::load<Tag>[ignore](ptr)));
             const auto pos = vx::find_last_set[ignore](mask);
@@ -147,6 +152,88 @@ struct find_last_if_t : Traits, dispatchable<find_last_if_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_find
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Finds the last element in a range satisfying a unary predicate.
+ *
+ * 1) Searches `[first, sent)` for the last iterator `i` such that
+ *    `bool(std::invoke(pred, std::invoke(proj, *i)))` evaluates to `true`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `find_last_if(std::ranges::begin(r), std::ranges::end(r), pred, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::forward_iterator It, std::sentinel_for<It> Sent,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<It, Projection>>)
+ * constexpr std::ranges::subrange<It>
+ * find_last_if( It first, Sent sent, Predicate pred, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::forward_range R,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<R>, Projection>>)
+ * constexpr std::ranges::borrowed_subrange_t<R>
+ * find_last_if( R&& r, Predicate pred, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `sent` - the range of elements to search
+ * - `r`             - the range of elements to search
+ * - `pred`          - unary predicate returning `true` for the target element
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * A `std::ranges::subrange` `[found, end)` spanning from the last matching element to the end of the range,
+ * or an empty subrange `{end, end}` if no matching element is found.
+ *
+ * ### Complexity
+ * Linear in `N = std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`):
+ * at most `N` applications of `pred` and `proj` (short-circuiting from the end on random-access/contiguous ranges).
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD scans backward in vector chunks via `raze::vx::find_last_set`, evaluating
+ *   the leading remainder with masked `raze::vx::find_last_set`.
+ * - In scalar mode, scans backward for random-access sized ranges and forward (recording the latest match)
+ *   for general forward iterators.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/find/FindLastIf.h>
+ *
+ * int main() {
+ *     const std::vector<int> v{1, 4, 3, 8, 5, 7};
+ *
+ *     auto tail = raze::algorithm::find_last_if(v, [](auto x) { return (x & 1) == 0; });
+ *     if (!tail.empty())
+ *         std::cout << "Last even element: " << *tail.begin()
+ *                   << " at index " << (tail.begin() - v.begin()) << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * Last even element: 8 at index 3
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::find_last`
+ * - `raze::algorithm::find_last_if_not`
+ * - `raze::algorithm::find_if`
+ * - `raze::algorithm::find_end`
+*/
 constexpr inline auto find_last_if = options::function_with_traits<find_last_if_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

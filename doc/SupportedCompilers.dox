@@ -18,7 +18,8 @@
  *
  * ### Compiler-Specific Behaviors
  *
- * - **Dynamic Dispatch**: MSVC relies on a hand-written runtime dispatcher (CPUID at program startup). 
- *   GCC, Clang, AOCC, nvc++, and `icpx` use `__attribute__((target_clones))` for auto-vectorizable loops. 
- *   See @ref dynamic_dispatch for details.
+ * - **Dynamic Dispatch & Auto-Vectorization**: MSVC dispatches explicit `raze::vx` SIMD kernels via
+ *   CPUID detection at program startup. GCC, Clang, Clang-CL, AOCC, `nvc++`, and `icpx` additionally
+ *   support ISA-targeted multiversioning for compiler auto-vectorized (`autovec`) kernels.
+ *   See @ref dynamic_dispatch and @ref vectorization_semantics for details.
  */

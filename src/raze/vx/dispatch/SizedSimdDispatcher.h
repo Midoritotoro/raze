@@ -173,7 +173,7 @@ struct configurable_isa_dispatcher_t {
 
         template <sizetype Size, class Work>
         static raze_always_inline decltype(auto) deferred_call(const auto&,
-            std::integral_constant<sizetype, Size> size, Work& work)
+            std::integral_constant<sizetype, Size>, Work& work)
             requires(sizeof...(Candidates) == 0)
         {
             if constexpr (Forced != arch::ISA::None) {

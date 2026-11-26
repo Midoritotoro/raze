@@ -130,6 +130,98 @@ struct mismatch_t : Traits, dispatchable<mismatch_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_query
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Finds the first position where two ranges differ.
+ *
+ * 1) Compares elements in `[first1, last1)` and `[first2, last2)` until finding the first pair of iterators
+ *    `(i1, i2)` where `bool(std::invoke(pred, std::invoke(proj1, *i1), std::invoke(proj2, *i2)))` is `false`,
+ *    or until either range reaches its end.
+ *
+ * 2) Same as (1), but uses `r1` and `r2` as the input ranges, as if by:
+ *    `mismatch(std::ranges::begin(r1), std::ranges::end(r1), std::ranges::begin(r2), std::ranges::end(r2), pred, proj1, proj2)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It1, std::sentinel_for<It1> Sent1,
+ *           std::input_iterator It2, std::sentinel_for<It2> Sent2,
+ *           class Predicate = std::equal_to<>,
+ *           class Projection1 = std::identity, class Projection2 = std::identity >
+ *   requires(std::indirectly_comparable<It1, It2, Predicate, Projection1, Projection2>)
+ * constexpr std::ranges::in_in_result<It1, It2>
+ * mismatch( It1 first1, Sent1 last1, It2 first2, Sent2 last2,
+ *           Predicate pred = {}, Projection1 proj1 = {}, Projection2 proj2 = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R1, std::ranges::input_range R2,
+ *           class Predicate = std::equal_to<>,
+ *           class Projection1 = std::identity, class Projection2 = std::identity >
+ *   requires(std::indirectly_comparable<std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>,
+ *                                       Predicate, Projection1, Projection2>)
+ * constexpr std::ranges::in_in_result<std::ranges::borrowed_iterator_t<R1>,
+ *                                     std::ranges::borrowed_iterator_t<R2>>
+ * mismatch( R1&& r1, R2&& r2,
+ *           Predicate pred = {}, Projection1 proj1 = {}, Projection2 proj2 = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first1`, `last1` - the first range of elements to compare
+ * - `first2`, `last2` - the second range of elements to compare
+ * - `r1`, `r2`        - the two ranges of elements to compare
+ * - `pred`            - binary predicate applied to projected elements (defaults to `std::equal_to<>`)
+ * - `proj1`, `proj2`  - projections to apply to elements of the first and second ranges (default to `std::identity`)
+ *
+ * ### Return value
+ * A `std::ranges::in_in_result` containing:
+ * - `in1`: iterator to the first mismatching element in the first range (or past the last compared element).
+ * - `in2`: iterator to the first mismatching element in the second range (or past the last compared element).
+ *
+ * ### Complexity
+ * Linear: at most `min(std::ranges::distance(first1, last1), std::ranges::distance(first2, last2))`
+ * applications of `pred`, `proj1`, and `proj2` (short-circuiting on the first mismatch).
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - Safely handles ranges of unequal lengths, stopping as soon as either range reaches its end.
+ * - Explicit `raze::vx` SIMD compares matching-type contiguous ranges and locates the first differing lane
+ *   via `raze::vx::find_first_not_set`.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/find/Mismatch.h>
+ *
+ * int main() {
+ *     const std::vector<int> a{1, 2, 3, 4, 5};
+ *     const std::vector<int> b{1, 2, 9, 4, 5};
+ *
+ *     auto [it1, it2] = raze::algorithm::mismatch(a, b);
+ *     if (it1 != a.end() && it2 != b.end())
+ *         std::cout << "First mismatch at index " << (it1 - a.begin())
+ *                   << ": " << *it1 << " != " << *it2 << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * First mismatch at index 2: 3 != 9
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::equal`
+ * - `raze::algorithm::starts_with`
+ * - `raze::algorithm::ends_with`
+ * - `raze::algorithm::find_if`
+*/
 constexpr inline auto mismatch = options::function_with_traits<mismatch_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

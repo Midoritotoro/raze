@@ -92,6 +92,24 @@ template <class Proj, class It>
 concept vectorizable_projection = std::is_same_v<std::remove_cvref_t<traits::function_unwrapped<Proj>>, std::identity>;
 
 template <class Comp, class T = void>
+struct is_std_equal : std::false_type {};
+
+template <>
+struct is_std_equal<std::equal_to<void>, void> : std::true_type {};
+
+template <class T>
+struct is_std_equal<std::equal_to<void>, T> : std::true_type {};
+
+template <class T>
+struct is_std_equal<std::equal_to<T>, T> : std::true_type {};
+
+template <class T>
+struct is_std_equal<std::ranges::equal_to, T> : std::true_type {};
+
+template <class Comp, class T = void>
+concept is_equal_comparator = is_std_equal<std::remove_cvref_t<traits::function_unwrapped<Comp>>, T>::value;
+
+template <class Comp, class T = void>
 struct is_std_less : std::false_type {};
 
 template <>

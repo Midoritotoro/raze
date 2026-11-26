@@ -129,6 +129,84 @@ struct reverse_copy_t : Traits, dispatchable<reverse_copy_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_order
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Creates a reversed copy of a range.
+ *
+ * 1) Copies the elements from the range `[first, last)` to another range beginning at `out`
+ *    in reverse order.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `reverse_copy(std::ranges::begin(r), std::ranges::end(r), std::move(out))`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::bidirectional_iterator It, std::sentinel_for<It> Sent,
+ *           std::weakly_incrementable Out >
+ *   requires(std::indirectly_copyable<It, Out>)
+ * constexpr std::ranges::in_out_result<It, Out>
+ * reverse_copy( It first, Sent last, Out out );
+ *
+ * // (2) Range overload
+ * template< std::ranges::bidirectional_range R, std::weakly_incrementable Out >
+ *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, Out>)
+ * constexpr std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, Out>
+ * reverse_copy( R&& r, Out out );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the source range of elements to copy in reverse
+ * - `r`             - the source range of elements to copy in reverse
+ * - `out`           - the beginning of the destination range (must not overlap with the source range)
+ *
+ * ### Return value
+ * A `std::ranges::in_out_result` containing:
+ * - `in`: an iterator comparing equal to `last` (or `std::ranges::end(r)`).
+ * - `out`: an iterator pointing past the last written element in the destination range.
+ *
+ * ### Complexity
+ * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) assignments.
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - The behavior is undefined if the source and destination ranges overlap.
+ * - Explicit `raze::vx` SIMD accelerates contiguous ranges of power-of-two element size `<= 8` bytes
+ *   (identical trivially copyable types, or distinct arithmetic types satisfying `raze::vx::supports_fast_conversion`)
+ *   using `raze::vx::reverse` and `raze::vx::convert`.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/order/ReverseCopy.h>
+ *
+ * int main() {
+ *     const std::vector<int> src{1, 2, 3, 4, 5};
+ *     std::vector<int> dst(src.size());
+ *
+ *     raze::algorithm::reverse_copy(src, dst.begin());
+ *     for (int x : dst) std::cout << x << ' ';
+ *     std::cout << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 5 4 3 2 1 
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::reverse`
+ * - `raze::algorithm::copy`
+*/
 constexpr inline auto reverse_copy = options::function_with_traits<reverse_copy_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

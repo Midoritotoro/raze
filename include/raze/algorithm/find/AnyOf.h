@@ -70,6 +70,8 @@ struct any_of_t : Traits, dispatchable<any_of_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+            if (ignore.tail_bytes() == 0) return;
+
             const auto mask = _predicate(_proj(vx::load<Tag>[ignore](std::to_address(_iterator))));
             _result = vx::any_of[ignore](mask);
         }
@@ -106,6 +108,83 @@ struct any_of_t : Traits, dispatchable<any_of_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_query
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Checks if a unary predicate returns `true` for at least one element in a range.
+ *
+ * 1) Evaluates `bool(std::invoke(pred, std::invoke(proj, *i)))` for elements in `[first, last)` and returns
+ *    `true` if the predicate holds for at least one element (`false` if the range is empty).
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `any_of(std::ranges::begin(r), std::ranges::end(r), pred, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It, std::sentinel_for<It> Sent,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<It, Projection>>)
+ * constexpr bool any_of( It first, Sent last, Predicate pred, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<R>, Projection>>)
+ * constexpr bool any_of( R&& r, Predicate pred, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to examine
+ * - `r`             - the range of elements to examine
+ * - `pred`          - unary predicate to apply to each projected element
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * `true` if `pred` holds for at least one projected element in the range, `false` otherwise (including empty ranges).
+ *
+ * ### Complexity
+ * Linear in `N = std::ranges::distance(first, last)` (or `std::ranges::distance(r)`):
+ * at most `N` applications of `pred` and `proj` (short-circuiting on the first matching element or SIMD chunk).
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD short-circuits on the first matching vector chunk via `raze::vx::any_of`
+ *   and evaluates remaining tail elements using masked `raze::vx::any_of`.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/find/AnyOf.h>
+ *
+ * int main() {
+ *     const std::vector<int> v{1, 3, 5, 8, 9};
+ *
+ *     const bool has_even = raze::algorithm::any_of(v, [](auto x) { return (x & 1) == 0; });
+ *     const bool has_neg  = raze::algorithm::any_of(v, [](auto x) { return x < 0; });
+ *
+ *     std::cout << std::boolalpha << has_even << ' ' << has_neg << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * true false
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::all_of`
+ * - `raze::algorithm::none_of`
+ * - `raze::algorithm::contains`
+ * - `raze::algorithm::find_if`
+*/
 constexpr inline auto any_of = options::function_with_traits<any_of_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

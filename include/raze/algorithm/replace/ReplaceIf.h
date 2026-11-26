@@ -99,6 +99,8 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			if (ignore.tail_bytes() == 0) return;
+
 			constexpr auto alignment = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 			const auto mask = _predicate(_proj(vx::load<Tag>[ignore][alignment](ptr))) & ignore();
@@ -141,12 +143,12 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_replace
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Replaces all elements satisfying a specific predicate in a range with a new value.
  *
- * 1) Replaces each element `*i` in `[first, last)` with `new_value` if
+ * 1) Replaces each element `*i` in `[first, sent)` with `new_value` if
  *    `bool(std::invoke(pred, std::invoke(proj, *i)))` evaluates to `true`.
  *
  * 2) Same as (1), but uses `r` as the source range, as if by:
@@ -155,49 +157,44 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
  * ### Declarations
  * ```cpp
  * // (1) Iterator-sentinel overload
- * template< std::permutable Iterator, std::sentinel_for<Iterator> Sentinel,
+ * template< std::input_iterator Iterator, std::sentinel_for<Iterator> Sentinel,
  *           class Predicate, class Value, class Projection = std::identity >
- *   requires std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>>
- * constexpr void replace_if( Iterator first, Sentinel last,
- *                            Predicate pred, Value new_value, Projection proj = {} );
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<Iterator, Projection>> &&
+ *            std::indirectly_writable<Iterator, const Value&>)
+ * constexpr void replace_if( Iterator first, Sentinel sent,
+ *                            Predicate pred, const Value& new_value, Projection proj = {} );
  *
  * // (2) Range overload
  * template< std::ranges::input_range Range,
  *           class Predicate, class Value, class Projection = std::identity >
- *   requires std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>>
- *         && std::permutable<std::ranges::iterator_t<Range>>
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>> &&
+ *            std::indirectly_writable<std::ranges::iterator_t<Range>, const Value&>)
  * constexpr void replace_if( Range&& r,
- *                            Predicate pred, Value new_value, Projection proj = {} );
+ *                            Predicate pred, const Value& new_value, Projection proj = {} );
  * ```
  *
  * ### Parameters
- * - `first`, `last` - the range of elements to modify
- * - `r`           - the range of elements to modify
- * - `pred`        - predicate to apply to the projected elements
- * - `new_value`   - the replacement value
- * - `proj`        - projection to apply to the elements (defaults to `std::identity`)
+ * - `first`, `sent` - the range of elements to modify
+ * - `r`             - the range of elements to modify
+ * - `pred`          - unary predicate returning `true` for elements to replace
+ * - `new_value`     - the replacement value
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
  *
  * ### Return value
  * (none)
  *
  * ### Complexity
- * Exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) applications of `pred` and `proj`.
+ * Linear: exactly `std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`)
+ * applications of `pred` and `proj`.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * replace_if[raze::options::fscalar](...);
- * replace_if[raze::options::unroll<2>](...);
- * replace_if[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`; `replace_strategy` (`strategy_mode::autovec` on GCC, Clang, and ICPX).
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous range (1 range).
+ * - **Auto-vectorization:** Provides an `autovec` kernel (see @ref autovec_behavior).
  *
  * ### Notes
- * - If the source models `contiguous_source`, and both `Predicate` and `Projection` satisfy
- *   vectorization requirements, explicit SIMD vectorization (AVX-512, AVX2, SSE)
- *   or platform-specific autovectorization paths are utilized.
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ * - Explicit `raze::vx` SIMD uses `raze::vx::select` for full chunks and masked vector stores for remaining tail elements.
  *
  * ### Example
  * ```cpp
@@ -215,17 +212,25 @@ struct replace_if_t : Traits, dispatchable<replace_if_t<Traits>> {
  *     println(v);
  *
  *     // Replace all odd numbers with 0
- *     raze::algorithm::replace_if(v, [](int n) { return n % 2 != 0; }, 0);
+ *     raze::algorithm::replace_if(v, [](auto n) { return (n & 1) != 0; }, 0);
  *     println(v);
  * }
  * ```
  *
  * Possible output:
  * ```text
- * 5 7 4 2 8 6 1 9 0 3 
- * 0 0 4 2 8 6 0 0 0 0 
+ * 5 7 4 2 8 6 1 9 0 3
+ * 0 0 4 2 8 6 0 0 0 0
  * ```
- */
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::replace`
+ * - `raze::algorithm::replace_copy_if`
+ * - `raze::algorithm::replace_copy`
+*/
 constexpr inline auto replace_if = options::function_with_traits<replace_if_t>[options::unroll<4>][replace_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

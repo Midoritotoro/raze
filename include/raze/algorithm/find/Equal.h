@@ -113,6 +113,8 @@ struct equal_t : Traits, dispatchable<equal_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+            if (ignore.tail_bytes() == 0) return;
+
             auto* ptr1 = std::to_address(_iterator1);
             auto* ptr2 = std::to_address(_iterator2);
 
@@ -175,6 +177,95 @@ struct equal_t : Traits, dispatchable<equal_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_query
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Determines if two ranges have the same length and element-wise equivalent elements.
+ *
+ * 1) Returns `true` if `[first1, sent1)` and `[first2, sent2)` have equal lengths and
+ *    `bool(std::invoke(pred, std::invoke(proj1, *i1), std::invoke(proj2, *i2)))` evaluates to `true`
+ *    for every pair of corresponding elements.
+ *
+ * 2) Same as (1), but uses `r1` and `r2` as the input ranges, as if by:
+ *    `equal(std::ranges::begin(r1), std::ranges::end(r1), std::ranges::begin(r2), std::ranges::end(r2), pred, proj1, proj2)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It1, std::sentinel_for<It1> Sent1,
+ *           std::input_iterator It2, std::sentinel_for<It2> Sent2,
+ *           class Predicate = std::equal_to<>,
+ *           class Projection1 = std::identity, class Projection2 = std::identity >
+ *   requires(std::indirectly_comparable<It1, It2, Predicate, Projection1, Projection2>)
+ * constexpr bool equal( It1 first1, Sent1 sent1, It2 first2, Sent2 sent2,
+ *                       Predicate pred = {}, Projection1 proj1 = {}, Projection2 proj2 = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R1, std::ranges::input_range R2,
+ *           class Predicate = std::equal_to<>,
+ *           class Projection1 = std::identity, class Projection2 = std::identity >
+ *   requires(std::indirectly_comparable<std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>,
+ *                                       Predicate, Projection1, Projection2>)
+ * constexpr bool equal( R1&& r1, R2&& r2,
+ *                       Predicate pred = {}, Projection1 proj1 = {}, Projection2 proj2 = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first1`, `sent1` - the first range of elements to compare
+ * - `first2`, `sent2` - the second range of elements to compare
+ * - `r1`, `r2`        - the two ranges of elements to compare
+ * - `pred`            - binary predicate applied to projected elements (defaults to `std::equal_to<>`)
+ * - `proj1`, `proj2`  - projections to apply to elements of the first and second ranges (default to `std::identity`)
+ *
+ * ### Return value
+ * `true` if both ranges have the same length and all corresponding projected elements satisfy `pred`,
+ * `false` otherwise.
+ *
+ * ### Complexity
+ * - O(1) if both sentinel pairs are sized and the range lengths differ.
+ * - Otherwise linear: at most `min(N1, N2)` applications of `pred`, `proj1`, and `proj2`
+ *   (short-circuiting on the first mismatch).
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - For sized sentinels, checks lengths in O(1) and returns `false` immediately on length mismatch.
+ * - Explicit `raze::vx` SIMD compares matching-type contiguous ranges with `raze::vx::all_of` short-circuiting
+ *   and masked tail evaluation.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/find/Equal.h>
+ *
+ * int main() {
+ *     const std::vector<int> a{1, 2, 3, 4, 5};
+ *     const std::vector<int> b{1, 2, 3, 4, 5};
+ *     const std::vector<int> c{1, 2, 9, 4, 5};
+ *
+ *     std::cout << std::boolalpha
+ *               << raze::algorithm::equal(a, b) << ' '
+ *               << raze::algorithm::equal(a, c) << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * true false
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::mismatch`
+ * - `raze::algorithm::starts_with`
+ * - `raze::algorithm::ends_with`
+ * - `raze::algorithm::search`
+*/
 constexpr inline auto equal = options::function_with_traits<equal_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

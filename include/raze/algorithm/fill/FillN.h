@@ -29,20 +29,29 @@ struct fill_n_t : Traits {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_fill
  * @memberof raze::algorithm
  * @hideinitializer
- * @brief Assigns the given value to the first n elements of a sequence.
+ * @brief Assigns the given value to the first `n` elements of a sequence.
  *
- * Assigns `value` to every element in the range `[first, first + n)`.
- * If `n <= 0`, the algorithm has no effect and returns `first`.
+ * 1) Assigns `value` to every element in the range `[first, first + n)`.
+ *    If `n <= 0`, the algorithm has no effect and returns `first`.
+ *
+ * 2) Same as (1), for pure output iterators that are not `std::indirectly_readable`
+ *    (such as `std::back_insert_iterator`).
  *
  * ### Declarations
  * ```cpp
+ * // (1) Readable iterator overload (defaulted value type)
  * template< std::input_or_output_iterator OutIt, class Size = std::iter_difference_t<OutIt>,
  *           class T = std::iter_value_t<OutIt> >
- *   requires(std::output_iterator<OutIt, const T&>)
+ *   requires(std::indirectly_readable<OutIt> && std::output_iterator<OutIt, const T&>)
  * constexpr OutIt fill_n( OutIt first, Size n, const std::type_identity_t<T>& value );
+ *
+ * // (2) Pure output iterator overload
+ * template< std::input_or_output_iterator OutIt, class Size = std::iter_difference_t<OutIt>, class T >
+ *   requires(!std::indirectly_readable<OutIt> && std::output_iterator<OutIt, const T&>)
+ * constexpr OutIt fill_n( OutIt first, Size n, const T& value );
  * ```
  *
  * ### Parameters
@@ -51,20 +60,22 @@ struct fill_n_t : Traits {
  * - `value` - the value to be assigned
  *
  * ### Return value
- * An iterator pointing past the last assigned element (`first + n` if `n > 0`, otherwise `first`).
+ * An iterator pointing past the last assigned element (`std::ranges::next(first, n)` if `n > 0`, otherwise `first`).
  *
  * ### Complexity
  * Linear: exactly `max(0, n)` assignments.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * fill_n[raze::options::fscalar](...);
- * fill_n[raze::options::unroll<2>](...);
- * fill_n[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (forwarded to `raze::algorithm::fill`;
+ * see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`; `fill_strategy` (`strategy_mode::manual` on GCC,
+ *   `strategy_mode::autovec` on Clang and ICPX).
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous range starting at `first` (1 range).
+ * - **Auto-vectorization:** Inherits the `autovec` kernel from `raze::algorithm::fill` (see @ref autovec_behavior).
+ *
+ * ### Notes
+ * - Implemented by delegating to `raze::algorithm::fill` over `std::counted_iterator(first, n)`
+ *   and `std::default_sentinel`.
  *
  * ### Example
  * ```cpp
@@ -88,9 +99,15 @@ struct fill_n_t : Traits {
  *
  * Possible output:
  * ```text
- * 42 42 42 42 42 0 0 0 
+ * 42 42 42 42 42 0 0 0
  * ```
- */
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::fill`
+*/
 constexpr inline auto fill_n = options::function_with_traits<fill_n_t>[options::unroll<4>][fill_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

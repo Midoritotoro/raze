@@ -71,6 +71,8 @@ struct none_of_t : Traits, dispatchable<none_of_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+            if (ignore.tail_bytes() == 0) return;
+
             const auto mask = _predicate(_proj(vx::load<Tag>[ignore](std::to_address(_iterator))));
             _result = vx::none_of[ignore](mask);
         }
@@ -105,6 +107,82 @@ struct none_of_t : Traits, dispatchable<none_of_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_query
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Checks if a unary predicate returns `false` for all elements in a range.
+ *
+ * 1) Evaluates `bool(std::invoke(pred, std::invoke(proj, *i)))` for elements in `[first, last)` and returns
+ *    `true` if the predicate returns `false` for every element (or if the range is empty).
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `none_of(std::ranges::begin(r), std::ranges::end(r), pred, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It, std::sentinel_for<It> Sent,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<It, Projection>>)
+ * constexpr bool none_of( It first, Sent last, Predicate pred, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<R>, Projection>>)
+ * constexpr bool none_of( R&& r, Predicate pred, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to examine
+ * - `r`             - the range of elements to examine
+ * - `pred`          - unary predicate to apply to each projected element
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * `true` if `pred` returns `false` for every projected element in the range (or if the range is empty), `false` otherwise.
+ *
+ * ### Complexity
+ * Linear in `N = std::ranges::distance(first, last)` (or `std::ranges::distance(r)`):
+ * at most `N` applications of `pred` and `proj` (short-circuiting on the first matching element or SIMD chunk).
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD exits early on the first matching chunk via `raze::vx::any_of`
+ *   and evaluates remaining tail elements using masked `raze::vx::none_of`.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/find/NoneOf.h>
+ *
+ * int main() {
+ *     const std::vector<int> v{1, 3, 5, 7, 9};
+ *
+ *     const bool no_even = raze::algorithm::none_of(v, [](auto x) { return (x & 1) == 0; });
+ *     const bool no_gt5  = raze::algorithm::none_of(v, [](auto x) { return x > 5; });
+ *
+ *     std::cout << std::boolalpha << no_even << ' ' << no_gt5 << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * true false
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::all_of`
+ * - `raze::algorithm::any_of`
+ * - `raze::algorithm::find_if`
+*/
 constexpr inline auto none_of = options::function_with_traits<none_of_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

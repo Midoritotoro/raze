@@ -699,73 +699,70 @@ raze_nodiscard constexpr raze_always_inline auto select_alignment(const traits<S
 __RAZE_OPTIONS_NAMESPACE_END
 
 /**
- * @page dynamic_dispatch Dynamic dispatch in `raze::algorithm`
+ * @page dynamic_dispatch Dynamic Dispatch & Execution Paths in `raze::algorithm`
  *
- * Algorithms in `raze::algorithm` 
- * can adapt to the host CPU instruction set at runtime. However, the dispatch 
- * mechanism heavily depends on the target compiler and the available ISA.
+ * Algorithms in `raze::algorithm` automatically adapt to the host CPU's instruction set
+ * (`AVX-512`, `AVX2`, `SSE4.2`, `SSSE3`, `SSE2`) and compiler capabilities at compile time
+ * and runtime. This page describes the dispatch hierarchy and how options in @ref raze_options
+ * affect every algorithm.
  *
- * ### Static Dispatch Override
+ * @section dispatch_tiers Execution Tiers
  *
- * Regardless of the compiler, if the target ISA at compile time (via `-march`, 
- * `/arch:`, or specific `-misa*` flags) already satisfies the reference ISA 
- * (the maximum ISA required by the algorithm's implementation), the algorithm 
- * will **always** use static dispatch. The runtime check is completely elided.
+ * For each call, the dispatcher selects the highest applicable execution path in order:
  *
- * ### Mechanism
+ * 1. **Constant evaluation (`if consteval`) or `raze::options::fscalar`:**
+ *    Bypasses all native, SIMD, and auto-vectorized paths and executes the strict sequential
+ *    scalar loop.
+ * 2. **Native fast path** (when supported by the algorithm):
+ *    Delegates contiguous, trivially copyable/byte-sized operations to optimized memory primitives
+ *    (`memcpy`, `memmove`, `memset`)—for example, `copy`, `copy_backward`, `fill` (1-byte types),
+ *    `rotate`, and `rotate_copy`.
+ * 3. **Auto-vectorized (`autovec`) path** (GCC, Clang, Clang-CL, ICPX, AOCC, nvc++):
+ *    Selected on algorithms with an `autovec` kernel when configured with `strategy_mode::autovec`,
+ *    when `raze::options::fautovec` is requested, or when explicit `raze::vx` SIMD cannot be used
+ *    (e.g., scalar-typed callables or custom projections on contiguous ranges). Emits `for_noalias`
+ *    loops with ISA-targeted multiversioning (`AVX-512`, `AVX2`, `SSE4.2`, baseline). See
+ *    @ref autovec_behavior.
+ * 4. **Explicit `raze::vx` SIMD path:**
+ *    Executes hand-tuned SIMD kernels (`AVX-512`, `AVX2`, `SSE`) with masked tail handling or
+ *    scalar tail completion for contiguous, non-volatile ranges with vectorizable element types,
+ *    callables, and projections.
+ * 5. **Scalar fallback:**
+ *    Used for non-contiguous iterators (e.g., `std::list`, `std::back_inserter`, filtered views),
+ *    `volatile` iterators, unsupported types, or short remaining tails.
  *
- * If the reference ISA is not guaranteed at compile time, the fallback behavior 
- * differs by compiler:
+ * @section dispatch_static_override Compile-Time Static Dispatch
  *
- * - **MSVC**: **All** algorithms use a hand-written explicit runtime dispatcher. 
- *   CPU feature detection (e.g., via CPUID) is performed **at program startup**.
- *   The generated dispatcher then forwards execution to the most optimized 
- *   implementation based on the detected features.
- *   There is no automatic compiler-driven dynamic dispatch for loops. To force 
- *   static dispatch (using the compile-time target ISA), you must explicitly 
- *   pass the `raze::options::fstatic` option.
+ * Regardless of compiler, runtime CPUID dispatch is completely elided when either:
+ * - The compile-time target ISA (via `-march`, `/arch:`, or `-m*` flags) already satisfies the
+ *   algorithm's maximum target ISA, or
+ * - `raze::options::fstatic` is attached, restricting code generation strictly to the compile-time ISA.
  *
- * - **GCC / Clang / AOCC / nvc++ / icpx **: Dynamic dispatch is **only** applied to algorithms with 
- *   loops that are easily auto-vectorizable by the compiler. For these, 
- *   `__attribute__((target_clones))` is emitted, generating multiple versions 
- *   of the loop. The runtime resolver selects the best version. More complex 
- *   algorithms (e.g., those with complex dependencies or hard-to-vectorize 
- *   predicates) may not receive dynamic dispatch and will rely on the 
- *   compile-time ISA.
+ * @section dispatch_compiler_model Compiler-Specific Dispatch Mechanisms
  *
- * ### Affected Algorithms
+ * - **MSVC:** Uses a hand-written runtime ISA dispatcher backed by CPUID detection at program
+ *   startup for all explicit SIMD algorithms. Compiler-driven `autovec` multiversioning is not
+ *   used; `fautovec` degrades to scalar execution without `raze::vx::simd` probing.
+ * - **GCC / Clang / Clang-CL / ICPX / AOCC / nvc++:** Combines runtime CPUID dispatch for explicit
+ *   `raze::vx` SIMD kernels with ISA-targeted multiversioning (`__attribute__((target_clones))` /
+ *   `__attribute__((target(...)))`) for `autovec` kernels.
  *
- * - **MSVC**: Every algorithm supports runtime dispatch.
- * - **GCC / Clang / AOCC / nvc++ / icpx **: Primarily simple map-style algorithms and linear traversals 
- *   where the hot loop is entirely inlined and easily cloned:
- *   - `for_each`
- *   - `transform`
- *   - `replace`
- *   - and similar element-wise range operations.
+ * @section dispatch_options_matrix Interplay with Algorithm Options
  *
- * ### Performance Characteristics
- *
- * - **Zero API changes**: Call the algorithm as usual.
- * - **Overhead**: The runtime resolution adds a negligible one-time cost 
- *   (or a highly predictable branch per call, depending on the compiler). 
- *   For very short ranges, the dispatch overhead may outweigh the SIMD benefit.
- * - **Code bloat**: Expect the binary size to increase slightly, as multiple 
- *   copies of the inner loop exist for different ISAs.
- *
- * ### Interplay with Options
- *
- * - If `fscalar` is used, the vectorized paths are bypassed entirely, 
- *   degenerating to a scalar implementation regardless of the CPU capabilities.
- * - If `fautovec` is used, `raze::vx::simd` probing is bypassed and the compiler
- *   auto-vectorized (`target_clones`) path is selected when available (falling back
- *   to scalar otherwise).
- * - If `fstatic` is used, dynamic dispatch is disabled, and the algorithm relies 
- *   strictly on the compile-time target ISA.
- * - If `par` is used, dynamic dispatch selects the ISA kernel executed inside each
- *   parallel chunk (unless `fstatic` or `fscalar` is also applied).
+ * | Option | Effect on Dispatch & Execution |
+ * | :--- | :--- |
+ * | `raze::options::fscalar` | Forces tier 1 (strict sequential scalar); disables native, SIMD, `autovec`, and runtime dispatch. |
+ * | `raze::options::fstatic` | Disables runtime CPUID dispatch; executes tier 3/4 strictly for the compile-time target ISA. |
+ * | `raze::options::fautovec` | Skips `raze::vx::simd` probing and selects tier 3 (`autovec`) on supported compilers; falls back to scalar on MSVC or algorithms without an `autovec` kernel. |
+ * | `raze::options::unroll<N>` | Sets the unrolling factor for tier 4 (explicit SIMD) loops; ignored by tier 1–3. |
+ * | `raze::options::aligned<Ns...>` | Enables aligned SIMD loads/stores (tier 4) and `std::assume_aligned` hints (tier 3) on algorithms that support alignment decorators, falling back safely per buffer if runtime ISA alignment exceeds `N`. |
+ * | `raze::options::strict_types` | Restricts mixed-type binary SIMD kernels (e.g., binary `transform`) to strictly identical input element types. |
+ * | `raze::options::par` | Executes the selected single-thread tier concurrently across chunks (configurable via `grain_size<N>` and `threads<N>`). |
  *
  * ### See also
- * - @ref mask_semantics
  * - @ref raze_options
- * - `raze::options::strategy_mode::autovec`
+ * - @ref vectorization_semantics
+ * - @ref supported_arch
+ * - @ref supported_compilers
+ * - @ref mask_semantics
 */

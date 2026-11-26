@@ -28,10 +28,10 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
         using align = options::alignments<Traits, 1>;
 
         static consteval bool vectorizable() noexcept {
-            return contiguous_source<source_type>
-                && !traits::is_iterator_volatile_v<iterator_type>
-                && vectorizable_binary_predicate<Comp, unchecked_iterator_type>
-                && vectorizable_projection<Projection, unchecked_iterator_type>;
+            return contiguous_source<source_type> &&
+                !traits::is_iterator_volatile_v<iterator_type> &&
+                vectorizable_binary_predicate<Comp, unchecked_iterator_type> &&
+                vectorizable_projection<Projection, unchecked_iterator_type>;
         }
 
         raze_no_unique_address source_type _source;
@@ -53,10 +53,6 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
               _max(_iterator)
         {}
 
-        constexpr void expects() const {
-            align::verify(_source);
-        }
-
         raze_nodiscard constexpr raze_always_inline bool exit() const {
             return _iterator == _sentinel;
         }
@@ -68,8 +64,7 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
 
         raze_always_inline constexpr void operator()() {
             auto it = _iterator;
-            if (it == _sentinel)
-                return;
+            if (it == _sentinel) return;
 
             auto best_min = _min;
             auto best_max = _max;
@@ -114,8 +109,8 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
                     : aligned_size;
                 aligned_size -= portion_bytes;
 
-                auto* const portion_begin = ptr;
-                const auto* const stop_at = bytes_pointer_offset(ptr, portion_bytes);
+                auto* portion_begin = ptr;
+                const auto stop_at = bytes_pointer_offset(ptr, portion_bytes);
 
                 auto min_vals = vx::load<Tag>[alignment](ptr);
                 auto max_vals = min_vals;
@@ -175,8 +170,10 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
                     typename Tag::mask_type eq_min_mask;
                     if constexpr (is_less_comparator<Comp, value_type> || is_greater_comparator<Comp, value_type>)
                         eq_min_mask = (min_vals == portion_min);
-                    else
-                        eq_min_mask = (!_comp(min_vals, portion_min)) & (!_comp(portion_min, min_vals));
+                    else {
+                        const Tag min_vec(portion_min);
+                        eq_min_mask = (!_comp(min_vals, min_vec)) & (!_comp(min_vec, min_vals));
+                    }
 
                     if (vx::any_of(eq_min_mask)) {
                         const auto idx_eq_min = vx::convert<unsigned_t>(eq_min_mask);
@@ -185,7 +182,7 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
                         const auto h_pos = vx::find_first_set[vx::not_null](masked_min == best_min_idx);
                         const auto v_pos = static_cast<sizetype>(min_idxs[h_pos]) - 1;
 
-                        auto* const cand_min = bytes_pointer_offset(portion_begin,
+                        auto* cand_min = bytes_pointer_offset(portion_begin,
                             v_pos * sizeof(Tag) + static_cast<sizetype>(h_pos) * sizeof(value_type));
 
                         if (!started || std::invoke(_comp, *cand_min, *min_ptr))
@@ -197,8 +194,10 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
                     typename Tag::mask_type eq_max_mask;
                     if constexpr (is_less_comparator<Comp, value_type> || is_greater_comparator<Comp, value_type>)
                         eq_max_mask = (max_vals == portion_max);
-                    else
-                        eq_max_mask = (!_comp(max_vals, portion_max)) & (!_comp(portion_max, max_vals));
+                    else {
+                        const Tag max_vec(portion_max);
+                        eq_max_mask = (!_comp(max_vals, max_vec)) & (!_comp(max_vec, max_vals));
+                    }
 
                     if (vx::any_of(eq_max_mask)) {
                         const auto idx_eq_max = vx::convert<unsigned_t>(eq_max_mask);
@@ -207,7 +206,7 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
                         const auto h_pos = Tag::size() - 1 - vx::find_last_set[vx::not_null](masked_max == best_max_idx);
                         const auto v_pos = static_cast<sizetype>(max_idxs[h_pos]) - 1;
 
-                        auto* const cand_max = bytes_pointer_offset(portion_begin,
+                        auto* cand_max = bytes_pointer_offset(portion_begin,
                             v_pos * sizeof(Tag) + static_cast<sizetype>(h_pos) * sizeof(value_type));
 
                         if (!started || !std::invoke(_comp, *cand_max, *max_ptr))
@@ -237,6 +236,10 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
         raze_nodiscard constexpr raze_always_inline auto size() const {
             return _source.size();
         }
+
+        constexpr void expects() const {
+            align::verify(_source);
+        }
     };
 
     template <std::forward_iterator It, std::sentinel_for<It> Sent,
@@ -261,21 +264,87 @@ struct minmax_element_t : Traits, dispatchable<minmax_element_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_extreme
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Finds iterators to both the smallest and largest elements in a range.
  *
- * 1) Finds `{min, max}` iterators in `[first, last)` under `comp` after applying `proj`
- *    (returns `{first, first}` if the range is empty).
- * 2) Same as (1), operating on range `r`.
+ * 1) Finds both the smallest and largest elements in the range `[first, last)` according to
+ *    the comparator `comp` after applying the projection `proj`.
  *
- * If several elements are equivalent to the smallest, `min` points to the first such element.
- * If several elements are equivalent to the largest, `max` points to the last such element.
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `minmax_element(std::ranges::begin(r), std::ranges::end(r), comp, proj)`.
  *
- * ### Decorators and Options
- * Supports `aligned<N>`, `fscalar`, `fstatic`, `fautovec`, and `unroll<N>` via `operator[]`.
- */
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::forward_iterator It, std::sentinel_for<It> Sent,
+ *           class Comp = std::less<>, class Projection = std::identity >
+ *   requires(std::indirect_strict_weak_order<Comp, std::projected<It, Projection>>)
+ * constexpr std::ranges::minmax_element_result<It>
+ * minmax_element( It first, Sent last, Comp comp = {}, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::forward_range R,
+ *           class Comp = std::less<>, class Projection = std::identity >
+ *   requires(std::indirect_strict_weak_order<Comp, std::projected<std::ranges::iterator_t<R>, Projection>>)
+ * constexpr std::ranges::minmax_element_result<std::ranges::borrowed_iterator_t<R>>
+ * minmax_element( R&& r, Comp comp = {}, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to examine
+ * - `r`             - the range of elements to examine
+ * - `comp`          - comparison function object returning `true` if the first argument is less than the second (defaults to `std::less<>`)
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * A `std::ranges::minmax_element_result` containing:
+ * - `min`: iterator to the first smallest element in the range (or `first` if empty).
+ * - `max`: iterator to the last largest element in the range (or `first` if empty).
+ *
+ * ### Complexity
+ * Linear in `N = std::ranges::distance(first, last)` (or `std::ranges::distance(r)`):
+ * at most `2 * max(N - 1, 0)` comparisons in the scalar path, or `O(N / W)` vector comparisons
+ * in the explicit SIMD path.
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous range (1 range).
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD tracks both first-min and last-max lane indices in a single pass
+ *   (partitioning large inputs for narrow element types to avoid index overflow).
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/extreme/MinmaxElement.h>
+ *
+ * int main() {
+ *     const std::vector<int> v{3, 1, -14, 1, 9, -14, 9};
+ *
+ *     auto [min_it, max_it] = raze::algorithm::minmax_element(v);
+ *     std::cout << "Min: " << *min_it << " at " << (min_it - v.begin()) << '\n';
+ *     std::cout << "Max: " << *max_it << " at " << (max_it - v.begin()) << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * Min: -14 at 2
+ * Max: 9 at 6
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::minmax`
+ * - `raze::algorithm::min_element`
+ * - `raze::algorithm::max_element`
+*/
 constexpr inline auto minmax_element = options::function_with_traits<minmax_element_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

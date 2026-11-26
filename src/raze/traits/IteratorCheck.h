@@ -164,7 +164,7 @@ template <class Sent, class Iter>
 using ranges_unwrap_sent_t = std::remove_cvref_t<decltype(usent<Iter>(std::declval<Sent>()))>;
 
 template <std::ranges::range Range>
-using unwrapped_iterator_t = ranges_unwrap_iter_t<std::ranges::iterator_t<Range>, std::ranges::sentinel_t<Range>>;
+using unwrapped_iterator_t = ranges_unwrap_iter_t<std::ranges::sentinel_t<Range>, std::ranges::iterator_t<Range>>;
 
 template <std::ranges::range Range>
 using unwrapped_sentinel_t = ranges_unwrap_sent_t<std::ranges::sentinel_t<Range>, std::ranges::iterator_t<Range>>;
@@ -196,11 +196,11 @@ using unwrapped_sentinel_t = ranges_unwrap_sent_t<std::ranges::sentinel_t<Range>
 #endif // defined(raze_cpp_msvc)
 
 template <std::forward_iterator Iter, class Sent>
-raze_nodiscard raze_always_inline constexpr ranges_unwrap_iter_t<Iter, Sent> last_uiter(
-	const ranges_unwrap_iter_t<Iter, Sent>& first, Sent&& last) 
+raze_nodiscard raze_always_inline constexpr ranges_unwrap_iter_t<Sent, Iter> last_uiter(
+	const ranges_unwrap_iter_t<Sent, Iter>& first, Sent&& last) 
 		requires(std::sentinel_for<std::remove_cvref_t<Sent>, Iter>)
 {
-	  if constexpr (std::is_same_v<ranges_unwrap_iter_t<Iter, Sent>, ranges_unwrap_sent_t<Sent, Iter>>)
+	  if constexpr (std::is_same_v<ranges_unwrap_iter_t<Sent, Iter>, ranges_unwrap_sent_t<Sent, Iter>>)
 		  return usent<Iter>(std::forward<Sent>(last));
 	  else return std::ranges::next(first, usent<Iter>(std::forward<Sent>(last)));
   }
@@ -209,7 +209,7 @@ template <std::ranges::forward_range R>
 raze_nodiscard raze_always_inline constexpr auto last_uiter(R& r) {
 	  if constexpr (std::ranges::common_range<R>) {
 		  if constexpr (std::same_as<decltype(uend(r)), unwrapped_iterator_t<R>>) return uend(r);
-		  else return usent<R>(std::ranges::end(r));
+		  else return r_usent<R>(std::ranges::end(r));
 	  }
 	  else if constexpr (std::ranges::sized_range<R>) return std::ranges::next(ubegin(r), std::ranges::distance(r));
 	  else return std::ranges::next(ubegin(r), uend(r));

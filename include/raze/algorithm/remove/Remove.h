@@ -12,8 +12,11 @@ struct remove_t : Traits {
 		It first, Sent last, const T& value, Proj proj = {}) const
 			requires(std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Proj>, const T*>)
 	{
-		return remove_if[Traits::traits()](std::move(first), std::move(last),
-			algorithm::equal_to(value), traits::fwd_fn(proj));
+		return algorithm::with_equal_to<std::iter_value_t<It>, Proj>(value,
+			[&](auto&& eq) raze_always_inline_lambda {
+				return remove_if[Traits::traits()](std::move(first), std::move(last),
+					std::forward<decltype(eq)>(eq), traits::fwd_fn(proj));
+			});
 	}
 
 	template <std::ranges::input_range R, class T = std::ranges::range_value_t<R>, class Proj = std::identity>
@@ -23,19 +26,23 @@ struct remove_t : Traits {
 				std::indirect_binary_predicate<std::ranges::equal_to,
 					std::projected<std::ranges::iterator_t<R>, Proj>, const T*>)
 	{
-		return remove_if[Traits::traits()](std::forward<R>(r),
-			algorithm::equal_to(value), traits::fwd_fn(proj));
+		return algorithm::with_equal_to<std::ranges::range_value_t<R>, Proj>(value,
+			[&](auto&& eq) raze_always_inline_lambda {
+				return remove_if[Traits::traits()](std::forward<R>(r),
+					std::forward<decltype(eq)>(eq), traits::fwd_fn(proj));
+			});
 	}
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_remove
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Removes all elements equal to a specific value from a range in-place.
  *
  * 1) Removes all elements in `[first, last)` for which `bool(std::invoke(proj, *i) == value)` is `true`
  *    by shifting the remaining elements forward while preserving their relative order.
+ *
  * 2) Same as (1), but uses `r` as the source range, as if by:
  *    `remove(std::ranges::begin(r), std::ranges::end(r), value, proj)`.
  *
@@ -44,15 +51,18 @@ struct remove_t : Traits {
  * // (1) Iterator-sentinel overload
  * template< std::permutable It, std::sentinel_for<It> Sent,
  *           class T = std::iter_value_t<It>, class Proj = std::identity >
+ *   requires(std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Proj>, const T*>)
  * constexpr std::ranges::subrange<It>
- * remove( It first, Sent last, const std::type_identity_t<T>& value, Proj proj = {} );
+ * remove( It first, Sent last, const T& value, Proj proj = {} );
  *
  * // (2) Range overload
  * template< std::ranges::input_range R,
  *           class T = std::ranges::range_value_t<R>, class Proj = std::identity >
- *   requires(std::permutable<std::ranges::iterator_t<R>>)
+ *   requires(std::permutable<std::ranges::iterator_t<R>> &&
+ *            std::indirect_binary_predicate<std::ranges::equal_to,
+ *                                           std::projected<std::ranges::iterator_t<R>, Proj>, const T*>)
  * constexpr std::ranges::borrowed_subrange_t<R>
- * remove( R&& r, const std::type_identity_t<T>& value, Proj proj = {} );
+ * remove( R&& r, const T& value, Proj proj = {} );
  * ```
  *
  * ### Parameters
@@ -69,20 +79,15 @@ struct remove_t : Traits {
  * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`)
  * comparisons and applications of `proj`.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * remove[raze::options::fscalar](...);
- * remove[raze::options::fstatic](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (forwarded to `raze::algorithm::remove_if`;
+ * see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `remove_strategy` (`strategy_mode::manual` on GCC and Clang).
  *
  * ### Notes
  * - Implemented in terms of `raze::algorithm::remove_if` using `raze::algorithm::equal_to`.
- * - Removing is done by shifting elements; the physical size of the underlying container is unchanged.
- * - For contiguous ranges, utilizes explicit SIMD `raze::vx::compress_store` (AVX-512, AVX2, SSSE3).
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ * - Removing shifts surviving elements forward without changing the underlying container's physical size;
+ *   erase the returned tail subrange to shrink the container.
  *
  * ### Example
  * ```cpp
@@ -109,6 +114,14 @@ struct remove_t : Traits {
  * ```text
  * 1 3 4 5
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::remove_if`
+ * - `raze::algorithm::remove_copy`
+ * - `raze::algorithm::remove_copy_if`
 */
 constexpr inline auto remove = options::function_with_traits<remove_t>[remove_strategy];
 

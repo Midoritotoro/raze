@@ -14,8 +14,11 @@ struct remove_copy_t : Traits {
 			requires(std::indirectly_copyable<It, OutIt> &&
 				std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Proj>, const T*>)
 	{
-		return remove_copy_if[Traits::traits()](std::move(first), std::move(last),
-			std::move(out), algorithm::equal_to(v), traits::fwd_fn(proj));
+		return algorithm::with_equal_to<std::iter_value_t<It>, Proj>(v,
+			[&](auto&& eq) raze_always_inline_lambda {
+				return remove_copy_if[Traits::traits()](std::move(first), std::move(last),
+					std::move(out), std::forward<decltype(eq)>(eq), traits::fwd_fn(proj));
+			});
 	}
 
 	template <std::ranges::input_range R, std::weakly_incrementable OutIt,
@@ -26,37 +29,44 @@ struct remove_copy_t : Traits {
 				std::indirect_binary_predicate<std::ranges::equal_to,
 					std::projected<std::ranges::iterator_t<R>, Proj>, const T*>)
 	{
-		return remove_copy_if[Traits::traits()](std::forward<R>(r), std::move(out),
-			algorithm::equal_to(v), traits::fwd_fn(proj));
+		return algorithm::with_equal_to<std::ranges::range_value_t<R>, Proj>(v,
+			[&](auto&& eq) raze_always_inline_lambda {
+				return remove_copy_if[Traits::traits()](std::forward<R>(r), std::move(out),
+					std::forward<decltype(eq)>(eq), traits::fwd_fn(proj));
+			});
 	}
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_remove
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Copies elements from a range to another range, omitting elements equal to a specific value.
  *
  * 1) Copies all elements from `[first, last)` to the destination range beginning at `out`,
  *    omitting those for which `bool(std::invoke(proj, *i) == v)` evaluates to `true`. Relative order is preserved.
+ *
  * 2) Same as (1), but uses `r` as the source range, as if by:
  *    `remove_copy(std::ranges::begin(r), std::ranges::end(r), std::move(out), v, proj)`.
  *
  * ### Declarations
  * ```cpp
  * // (1) Iterator-sentinel overload
- * template< std::permutable It, std::sentinel_for<It> Sent, class OutIt,
+ * template< std::input_iterator It, std::sentinel_for<It> Sent, std::weakly_incrementable OutIt,
  *           class T = std::iter_value_t<It>, class Proj = std::identity >
+ *   requires(std::indirectly_copyable<It, OutIt> &&
+ *            std::indirect_binary_predicate<std::ranges::equal_to, std::projected<It, Proj>, const T*>)
  * constexpr std::ranges::in_out_result<It, OutIt>
- * remove_copy( It first, Sent last, OutIt out,
- *              const std::type_identity_t<T>& v, Proj proj = {} );
+ * remove_copy( It first, Sent last, OutIt out, const T& v, Proj proj = {} );
  *
  * // (2) Range overload
- * template< std::ranges::input_range R, class OutIt,
+ * template< std::ranges::input_range R, std::weakly_incrementable OutIt,
  *           class T = std::ranges::range_value_t<R>, class Proj = std::identity >
- * constexpr std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
- * remove_copy( R&& r, OutIt out,
- *              const std::type_identity_t<T>& v, Proj proj = {} );
+ *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> &&
+ *            std::indirect_binary_predicate<std::ranges::equal_to,
+ *                                           std::projected<std::ranges::iterator_t<R>, Proj>, const T*>)
+ * constexpr std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, OutIt>
+ * remove_copy( R&& r, OutIt out, const T& v, Proj proj = {} );
  * ```
  *
  * ### Parameters
@@ -75,20 +85,13 @@ struct remove_copy_t : Traits {
  * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`)
  * comparisons and applications of `proj`.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * remove_copy[raze::options::fscalar](...);
- * remove_copy[raze::options::fstatic](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (forwarded to `raze::algorithm::remove_copy_if`;
+ * see @ref dynamic_dispatch and @ref vectorization_semantics).
  *
  * ### Notes
+ * - The behavior is undefined if the source and destination ranges overlap.
  * - Implemented in terms of `raze::algorithm::remove_copy_if` using `raze::algorithm::equal_to`.
- * - For contiguous buffers of matching element types, uses explicit SIMD `raze::vx::compress_store`
- *   (AVX-512, AVX2, SSSE3).
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
  *
  * ### Example
  * ```cpp
@@ -116,6 +119,14 @@ struct remove_copy_t : Traits {
  * ```text
  * 1 3 4 5
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::remove_copy_if`
+ * - `raze::algorithm::remove`
+ * - `raze::algorithm::copy_if`
 */
 constexpr inline auto remove_copy = options::function_with_traits<remove_copy_t>;
 

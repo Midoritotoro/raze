@@ -92,6 +92,8 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) noexcept {
+            if (ignore.tail_bytes() == 0) return;
+
             _count += vx::count_set[ignore](_predicate(_proj(vx::load<Tag>[ignore](std::to_address(_iterator)))));
         }
 
@@ -128,6 +130,84 @@ struct count_if_t : Traits, dispatchable<count_if_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_count
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Counts the elements in a range that satisfy a unary predicate.
+ *
+ * 1) Counts all elements in `[first, sent)` for which `bool(std::invoke(pred, std::invoke(proj, *i)))`
+ *    evaluates to `true`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `count_if(std::ranges::begin(r), std::ranges::end(r), pred, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It, std::sentinel_for<It> Sent,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<It, Projection>>)
+ * constexpr std::iter_difference_t<It>
+ * count_if( It first, Sent sent, Predicate pred, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R,
+ *           class Predicate, class Projection = std::identity >
+ *   requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<R>, Projection>>)
+ * constexpr std::ranges::range_difference_t<R>
+ * count_if( R&& r, Predicate pred, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `sent` - the range of elements to examine
+ * - `r`             - the range of elements to examine
+ * - `pred`          - unary predicate returning `true` for elements to count
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * The number of elements satisfying `pred`.
+ *
+ * ### Complexity
+ * Linear: exactly `std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`)
+ * applications of `pred` and `proj`.
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`.
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD accumulates matches via `raze::vx::counter` (automatically chunking narrow lane
+ *   counters to prevent overflow) and counts remaining tail elements with masked `raze::vx::count_set`.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/find/CountIf.h>
+ *
+ * int main() {
+ *     const std::vector<int> v{1, 2, 3, 4, 5, 6, 7, 8};
+ *
+ *     const auto evens = raze::algorithm::count_if(v, [](auto x) { return (x & 1) == 0; });
+ *     std::cout << "Even count: " << evens << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * Even count: 4
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::count`
+ * - `raze::algorithm::count_if_not`
+ * - `raze::algorithm::any_of`
+ * - `raze::algorithm::find_if`
+*/
 constexpr inline auto count_if = options::function_with_traits<count_if_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

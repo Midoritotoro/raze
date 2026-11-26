@@ -107,6 +107,8 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
+			if (ignore.tail_bytes() == 0) return;
+
 			constexpr auto policy = align::template policy_for<0, Tag>;
 			auto* ptr = std::to_address(_iterator);
 			vx::store[ignore][policy](ptr, Tag(math::bit_cast<vector_value_type>(static_cast<value_type>(_value))));
@@ -160,27 +162,46 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_fill
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Assigns the given value to elements in a range.
  *
  * 1) Assigns `value` to every element in the range `[first, last)`.
  *
- * 2) Same as (1), but uses `r` as the destination range, as if by:
+ * 2) Same as (1), for pure output iterators that are not `std::indirectly_readable`.
+ *
+ * 3) Same as (1), but uses `r` as the destination range, as if by:
  *    `fill(std::ranges::begin(r), std::ranges::end(r), value)`.
+ *
+ * 4) Same as (3), for pure output ranges whose iterator is not `std::indirectly_readable`.
  *
  * ### Declarations
  * ```cpp
- * // (1) Iterator-sentinel overload
- * template< std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T = std::iter_value_t<It> >
- *   requires(std::output_iterator<It, T>)
+ * // (1) Readable iterator-sentinel overload (defaulted value type)
+ * template< std::input_or_output_iterator It, std::sentinel_for<It> Sent,
+ *           class T = std::iter_value_t<It> >
+ *   requires(std::indirectly_readable<It> && std::output_iterator<It, const T&>)
  * constexpr It fill( It first, Sent last, const std::type_identity_t<T>& value );
  *
- * // (2) Range overload
+ * // (2) Pure output iterator-sentinel overload
+ * template< std::input_or_output_iterator It, std::sentinel_for<It> Sent, class T >
+ *   requires(!std::indirectly_readable<It> && std::output_iterator<It, const T&>)
+ * constexpr It fill( It first, Sent last, const T& value );
+ *
+ * // (3) Readable range overload (defaulted value type)
  * template< class R, class T = std::ranges::range_value_t<R> >
- *   requires(std::ranges::output_range<R, T>)
- * constexpr std::ranges::borrowed_iterator_t<R> fill( R&& r, const std::type_identity_t<T>& value );
+ *   requires(std::indirectly_readable<std::ranges::iterator_t<R>> &&
+ *            std::ranges::output_range<R, const T&>)
+ * constexpr std::ranges::borrowed_iterator_t<R>
+ * fill( R&& r, const std::type_identity_t<T>& value );
+ *
+ * // (4) Pure output range overload
+ * template< std::ranges::range R, class T >
+ *   requires(!std::indirectly_readable<std::ranges::iterator_t<R>> &&
+ *            std::ranges::output_range<R, const T&>)
+ * constexpr std::ranges::borrowed_iterator_t<R>
+ * fill( R&& r, const T& value );
  * ```
  *
  * ### Parameters
@@ -189,20 +210,22 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
  * - `value`         - the value to be assigned
  *
  * ### Return value
- * An iterator pointing past the last assigned element (i.e., `last`).
+ * An iterator comparing equal to `last` (or `std::ranges::end(r)`).
  *
  * ### Complexity
- * Linear: exactly `last - first` (or `std::ranges::distance(r)`) assignments.
+ * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) assignments.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * fill[raze::options::fscalar](...);
- * fill[raze::options::unroll<2>](...);
- * fill[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`; `fill_strategy` (`strategy_mode::manual` on GCC,
+ *   `strategy_mode::autovec` on Clang and ICPX).
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous destination range (1 range).
+ * - **Auto-vectorization:** Provides an `autovec` kernel for vectorizable contiguous buffers (see @ref autovec_behavior).
+ *
+ * ### Notes
+ * - Contiguous ranges of 1-byte arithmetic types matching `value` take the native `memset` fast path.
+ * - Explicit `raze::vx` SIMD broadcasts `value` for contiguous trivially copyable types of power-of-two size
+ *   up to 8 bytes, with masked vector stores for remaining tail elements.
  *
  * ### Example
  * ```cpp
@@ -230,10 +253,16 @@ struct fill_t : Traits, dispatchable<fill_t<Traits>> {
  *
  * Possible output:
  * ```text
- * 42 42 42 42 42 42 42 42 
- * -1 -1 -1 -1 42 42 42 42 
+ * 42 42 42 42 42 42 42 42
+ * -1 -1 -1 -1 42 42 42 42
  * ```
- */
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::fill_n`
+*/
 constexpr inline auto fill = options::function_with_traits<fill_t>[options::unroll<4>][fill_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

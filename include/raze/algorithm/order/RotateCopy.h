@@ -75,15 +75,15 @@ struct rotate_copy_t : Traits, dispatchable<rotate_copy_t<Traits>> {
             return { _source.wrap(_first), _dest.wrap(_out) };
         }
 
-		raze_always_inline constexpr void operator()() {
-			_last = _middle;
-			raze_disable_unrolling
-			for (; _last != _sent; ++_last, ++_out)
-				*_out = *_last;
-			raze_disable_unrolling
-			for (; _first != _middle; ++_first, ++_out)
-				*_out = *_first;
-		}
+        raze_always_inline constexpr void operator()() {
+            _last = _middle;
+            raze_disable_unrolling
+            for (; _last != _sent; ++_last, ++_out)
+                *_out = *_last;
+            raze_disable_unrolling
+            for (; _first != _middle; ++_first, ++_out)
+                *_out = *_first;
+        }
 
         raze_always_inline void operator()(native_tag) requires(native()) {
             const auto [first_ptr, last_ptr] = source_type::to_raw_range(_first, _sent);
@@ -123,6 +123,83 @@ struct rotate_copy_t : Traits, dispatchable<rotate_copy_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_order
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Copies a range into another range while performing a left rotation.
+ *
+ * 1) Copies the elements from `[first, last)` to the range beginning at `result` such that
+ *    `[middle, last)` is placed first, followed by `[first, middle)`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `rotate_copy(std::ranges::begin(r), middle, std::ranges::end(r), std::move(result))`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::forward_iterator It, std::sentinel_for<It> Sent,
+ *           std::weakly_incrementable Out >
+ *   requires(std::indirectly_copyable<It, Out>)
+ * constexpr std::ranges::in_out_result<It, Out>
+ * rotate_copy( It first, It middle, Sent last, Out result );
+ *
+ * // (2) Range overload
+ * template< std::ranges::forward_range R, std::weakly_incrementable Out >
+ *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, Out>)
+ * constexpr std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, Out>
+ * rotate_copy( R&& r, std::ranges::iterator_t<R> middle, Out result );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the source range of elements to copy
+ * - `r`             - the source range of elements to copy
+ * - `middle`        - iterator to the element that becomes the first element of the copied range
+ * - `result`        - the beginning of the destination range (must not overlap with the source range)
+ *
+ * ### Return value
+ * A `std::ranges::in_out_result` containing:
+ * - `in`: an iterator comparing equal to `last` (or `std::ranges::end(r)`).
+ * - `out`: an iterator pointing past the last written element in the destination range.
+ *
+ * ### Complexity
+ * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) assignments.
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - The behavior is undefined if the source and destination ranges overlap.
+ * - Contiguous ranges of identical trivially copyable types take the native fast path via two `memcpy` calls.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/order/RotateCopy.h>
+ *
+ * int main() {
+ *     const std::vector<int> src{1, 2, 3, 4, 5, 6};
+ *     std::vector<int> dst(src.size());
+ *
+ *     raze::algorithm::rotate_copy(src, src.begin() + 2, dst.begin());
+ *     for (int x : dst) std::cout << x << ' ';
+ *     std::cout << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 3 4 5 6 1 2 
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::rotate`
+ * - `raze::algorithm::copy`
+*/
 constexpr inline auto rotate_copy = options::function_with_traits<rotate_copy_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

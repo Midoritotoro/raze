@@ -1,14 +1,112 @@
 /**
  * @defgroup raze_algo Algorithms
- * Range-based algorithms.
+ * @brief SIMD-accelerated and auto-vectorized range algorithms in `raze::algorithm`.
  *
- * Vectorized and scalar algorithms like `for_each`, `transform`,
- * and `replace`. Each is an `options::function_with_traits` (or `options::functor`)
- * and accepts compile-time modifiers through `operator[]`.
+ * Every algorithm is a customizable function object (`options::function_with_traits`) supporting
+ * iterator-sentinel and C++23 range overloads, `constexpr` evaluation, and compile-time
+ * execution modifiers via `operator[]`.
  *
- * @see @ref dynamic_dispatch
- * @see @ref vectorization_semantics
- * @see @ref mask_semantics
+ * ### Algorithm Categories
+ *
+ * | Group | Algorithms |
+ * | :--- | :--- |
+ * | @ref raze_algo_batch | `for_each`, `for_each_n` |
+ * | @ref raze_algo_query | `all_of`, `any_of`, `none_of`, `equal`, `mismatch`, `starts_with`, `ends_with` |
+ * | @ref raze_algo_find | `find`, `find_if`, `find_if_not`, `find_last`, `find_last_if`, `find_last_if_not`, `adjacent_find` |
+ * | @ref raze_algo_subrange | `search`, `search_n`, `find_end`, `contains`, `contains_subrange` |
+ * | @ref raze_algo_count | `count`, `count_if`, `count_if_not` |
+ * | @ref raze_algo_extreme | `min`, `max`, `minmax`, `min_element`, `max_element`, `minmax_element` |
+ * | @ref raze_algo_copy | `copy`, `copy_backward`, `copy_if`, `copy_n` |
+ * | @ref raze_algo_fill | `fill`, `fill_n` |
+ * | @ref raze_algo_transform | `transform` |
+ * | @ref raze_algo_replace | `replace`, `replace_if`, `replace_copy`, `replace_copy_if` |
+ * | @ref raze_algo_remove | `remove`, `remove_if`, `remove_copy`, `remove_copy_if` |
+ * | @ref raze_algo_order | `is_sorted`, `is_sorted_until`, `reverse`, `reverse_copy`, `rotate`, `rotate_copy` |
+ * | @ref raze_algo_swap | `swap_ranges` |
+ *
+ * ### Shared Concepts & Execution Model
+ * - @ref raze_options — compile-time decorators (`fscalar`, `fstatic`, `fautovec`, `aligned`, `unroll`, `strict_types`, `par`).
+ * - @ref dynamic_dispatch — execution tiers (native, auto-vectorized, explicit SIMD, scalar) and runtime ISA dispatch.
+ * - @ref vectorization_semantics — unsequenced (`unseq`) semantics, compiler auto-vectorization, and callable rules.
+ * - @ref mask_semantics — low-level lane masking used in `raze::vx`.
+ */
+
+/**
+ * @defgroup raze_algo_batch Batch Operations
+ * @ingroup raze_algo
+ * @brief Applying a function object across elements of a range (`for_each`, `for_each_n`).
+ */
+
+/**
+ * @defgroup raze_algo_query Predicate & Comparison Operations
+ * @ingroup raze_algo
+ * @brief Range quantifiers, element-wise equality, mismatch detection, and prefix/suffix checks.
+ */
+
+/**
+ * @defgroup raze_algo_find Element Search Operations
+ * @ingroup raze_algo
+ * @brief Forward, backward, and adjacent single-element search algorithms.
+ */
+
+/**
+ * @defgroup raze_algo_subrange Subsequence & Containment Operations
+ * @ingroup raze_algo
+ * @brief Subsequence matching, repeated-value runs, and containment queries.
+ */
+
+/**
+ * @defgroup raze_algo_count Counting Operations
+ * @ingroup raze_algo
+ * @brief Counting elements matching a value or unary predicate.
+ */
+
+/**
+ * @defgroup raze_algo_extreme Minimum & Maximum Operations
+ * @ingroup raze_algo
+ * @brief Value reductions (`min`, `max`, `minmax`) and index-preserving extremum searches (`*_element`).
+ */
+
+/**
+ * @defgroup raze_algo_copy Copying Operations
+ * @ingroup raze_algo
+ * @brief Forward, backward, counted, and conditional range copying algorithms.
+ */
+
+/**
+ * @defgroup raze_algo_fill Filling Operations
+ * @ingroup raze_algo
+ * @brief Assigning a constant value across a range or fixed element count.
+ */
+
+/**
+ * @defgroup raze_algo_transform Transformation Operations
+ * @ingroup raze_algo
+ * @brief Unary and binary element-wise range transformations.
+ */
+
+/**
+ * @defgroup raze_algo_replace Replacement Operations
+ * @ingroup raze_algo
+ * @brief In-place and copying value/predicate replacement algorithms.
+ */
+
+/**
+ * @defgroup raze_algo_remove Removal Operations
+ * @ingroup raze_algo
+ * @brief In-place and copying stream compaction algorithms omitting matching elements.
+ */
+
+/**
+ * @defgroup raze_algo_order Ordering & Reordering Operations
+ * @ingroup raze_algo
+ * @brief Sortedness checks, range reversals, and cyclic rotations.
+ */
+
+/**
+ * @defgroup raze_algo_swap Swapping Operations
+ * @ingroup raze_algo
+ * @brief Element-wise swapping across two ranges.
  */
 
 /**
@@ -30,10 +128,30 @@
 
 /**
  * @defgroup raze_options Options
- * Compile-time modifiers for algorithms and primitives.
+ * @brief Compile-time modifiers attached to algorithms via `operator[]`.
  *
- * Passed to algorithm objects via `operator[]` to control vectorization
- * strategy, loop unrolling, and dispatch behavior.
+ * Options can be chained in any order (e.g., `algo[opt1][opt2](...)`). Repeating a keyed option
+ * replaces the previous value. Individual algorithm pages only document non-default configurations
+ * and algorithm-specific option behavior (such as `aligned<...>` arity); standard modifier semantics
+ * are defined here and in @ref dynamic_dispatch / @ref vectorization_semantics.
+ *
+ * ### Quick Reference
+ *
+ * | Option | Effect |
+ * | :--- | :--- |
+ * | `raze::options::fscalar` | Disables SIMD and compiler auto-vectorization; guarantees strict sequential in-order execution. |
+ * | `raze::options::fstatic` | Disables runtime CPUID dispatch and compiles strictly for the static target ISA. |
+ * | `raze::options::fautovec` | Bypasses `raze::vx::simd` probing and selects compiler auto-vectorization when available (falls back to scalar otherwise). |
+ * | `raze::options::unroll<N>` | Sets the manual SIMD loop unrolling factor (`unroll<1>` disables unrolling; has no effect on `autovec` or scalar paths). |
+ * | `raze::options::aligned<Ns...>` | Declares minimum byte alignment(s) for contiguous range pointers (broadcast `aligned<N>` or positional `aligned<N1, ...>`). Supported only on algorithms that document it. |
+ * | `raze::options::unaligned` | Readable alias for `1` inside positional `aligned<...>` lists. |
+ * | `raze::options::strict_types` | Disables implicit `std::common_type_t` promotion in mixed-type binary SIMD algorithms (e.g., binary `transform`). |
+ * | `raze::options::par` | Enables multi-threaded parallel execution (orthogonal to `fscalar`, `fautovec`, `fstatic`). |
+ * | `raze::options::grain_size<N>` | Minimum parallel chunk size in elements (effective with `par`). |
+ * | `raze::options::threads<N>` | Maximum worker thread count (effective with `par`). |
+ *
+ * @see @ref dynamic_dispatch
+ * @see @ref vectorization_semantics
  */
 
 /**

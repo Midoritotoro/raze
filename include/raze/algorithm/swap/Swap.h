@@ -23,11 +23,19 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 		using unchecked_iterator2_type = typename source2_type::unchecked_iterator_type;
 		using unchecked_sentinel2_type = typename source2_type::unchecked_sentinel_type;
 
+		template <class T>
+		static consteval auto deduce_vector_value_type() noexcept {
+			if constexpr (vx::arithmetic_type<T>)
+				return T{};
+			else if constexpr (sizeof(T) <= 8 && sizeof(T) != 0 && ((sizeof(T) & (sizeof(T) - 1)) == 0))
+				return typename IntegerForSizeof<T>::Unsigned{};
+		}
+
 		using InT1 = std::iter_value_t<unchecked_iterator1_type>;
 		using InT2 = std::iter_value_t<unchecked_iterator2_type>;
 
-		using vtype1 = std::conditional_t<vx::arithmetic_type<InT1>, InT1, typename IntegerForSizeof<InT1>::Unsigned>;
-		using vtype2 = std::conditional_t<vx::arithmetic_type<InT2>, InT2, typename IntegerForSizeof<InT2>::Unsigned>;
+		using vtype1 = decltype(deduce_vector_value_type<InT1>());
+		using vtype2 = decltype(deduce_vector_value_type<InT2>());
 
 		using vector_value_type = vtype1;
 
@@ -35,6 +43,7 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 			return contiguous_source<Source1> && contiguous_source<Source2> &&
 				!traits::is_iterator_volatile_v<iterator1_type> &&
 				!traits::is_iterator_volatile_v<iterator2_type> &&
+				!std::same_as<vtype1, void> && !std::same_as<vtype2, void> &&
 				((vx::arithmetic_type<InT1> && vx::arithmetic_type<InT2> && has_common_type<InT1, InT2>)
 					|| (traits::trivially_swappable<InT1> && std::same_as<InT1, InT2>));
 		}
@@ -60,7 +69,10 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 		}
 
 		template <vectorizable_tag Tag>
-		raze_always_inline void operator()(Tag, sizetype aligned_size) {
+		raze_always_inline void operator()(Tag, sizetype aligned_size)
+			requires(vx::supports_fast_conversion<Tag, vtype2> &&
+				vx::supports_fast_conversion<vx::rebind_simd_lanes_t<vtype2, Tag>, vtype1>)
+		{
 			using FirstTag = Tag;
 			using SecondTag = vx::rebind_simd_lanes_t<vtype2, Tag>;
 
@@ -122,7 +134,7 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_swap
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Exchanges elements between two ranges.
@@ -146,15 +158,16 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
  * // (2) Range overload
  * template< std::ranges::input_range R1, std::ranges::input_range R2 >
  *   requires(std::indirectly_swappable<std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>>)
- * constexpr std::ranges::swap_ranges_result<std::ranges::iterator_t<R1>, std::ranges::iterator_t<R2>>
+ * constexpr std::ranges::swap_ranges_result<std::ranges::borrowed_iterator_t<R1>,
+ *                                           std::ranges::borrowed_iterator_t<R2>>
  * swap_ranges( R1&& r1, R2&& r2 );
  * ```
  *
  * ### Parameters
  * - `first1`, `last1` - the first range of elements to swap
  * - `first2`, `last2` - the second range of elements to swap
- * - `r1`             - the first range of elements to swap
- * - `r2`             - the second range of elements to swap
+ * - `r1`              - the first range of elements to swap
+ * - `r2`              - the second range of elements to swap
  *
  * ### Return value
  * A `std::ranges::swap_ranges_result` containing:
@@ -162,30 +175,24 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
  * - `in2`: an iterator pointing past the last swapped element in the second range.
  *
  * ### Complexity
- * Linear: exactly `min(last1 - first1, last2 - first2)` (or `min(distance(r1), distance(r2))`) swap operations.
+ * Linear: exactly `min(std::ranges::distance(first1, last1), std::ranges::distance(first2, last2))`
+ * (or `min(std::ranges::distance(r1), std::ranges::distance(r2))`) swap operations.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * swap_ranges[raze::options::fscalar](...);
- * swap_ranges[raze::options::unroll<2>](...);
- * swap_ranges[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`.
  *
  * ### Notes
- * - Unlike `std::swap_ranges`, this algorithm safely accepts ranges of unequal lengths
- *   and processes elements up to the size of the smaller range.
- * - If both ranges model contiguous storage over the same trivially copyable value types,
- *   explicit SIMD vectorization (AVX-512, AVX2, SSE) or platform-specific autovectorization paths are utilized.
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path using `std::ranges::iter_swap`.
+ * - Safely accepts ranges of unequal lengths, stopping at the end of the shorter range.
+ * - The behavior is undefined if the two ranges overlap.
+ * - Explicit `raze::vx` SIMD supports contiguous ranges of identical trivially swappable types as well as
+ *   distinct arithmetic types sharing a common type (via `raze::vx::convert`).
  *
  * ### Example
  * ```cpp
  * #include <iostream>
  * #include <vector>
- * #include <raze/algorithm/swap/SwapRanges.h>
+ * #include <raze/algorithm/swap/Swap.h>
  *
  * void println(const auto& prefix, const auto& seq) {
  *     std::cout << prefix << ": ";
@@ -210,7 +217,14 @@ struct swap_ranges_t : Traits, dispatchable<swap_ranges_t<Traits>> {
  * v1: 10 20 30 40 50
  * v2: 1 2 3 4 5 60 70
  * ```
- */
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::reverse`
+ * - `raze::algorithm::rotate`
+*/
 constexpr inline auto swap_ranges = options::function_with_traits<swap_ranges_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

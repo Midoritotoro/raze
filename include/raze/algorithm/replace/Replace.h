@@ -13,9 +13,11 @@ struct replace_t : Traits {
 			requires(std::indirectly_writable<Iter, const T2&> &&
 				std::indirect_binary_predicate<std::ranges::equal_to, std::projected<Iter, Proj>, const T1*>)
 	{
-		replace_if[Traits::traits()](std::move(first), std::move(last), algorithm::equal_to(
-			function_return_type<Proj, std::iter_value_t<Iter>>(old_value)),
-			new_value, traits::fwd_fn(proj));
+		algorithm::with_equal_to<std::iter_value_t<Iter>, Proj>(old_value,
+			[&](auto&& eq) raze_always_inline_lambda {
+				replace_if[Traits::traits()](std::move(first), std::move(last),
+					std::forward<decltype(eq)>(eq), new_value, traits::fwd_fn(proj));
+			});
 	}
 
 	template <std::ranges::input_range Range, class T1, class T2, class Proj = std::identity>
@@ -24,14 +26,16 @@ struct replace_t : Traits {
 			requires(std::indirectly_writable<std::ranges::iterator_t<Range>, const T2&> &&
 				std::indirect_binary_predicate<std::ranges::equal_to, std::projected<std::ranges::iterator_t<Range>, Proj>, const T1*>)
 	{
-		replace_if[Traits::traits()](std::forward<Range>(r), algorithm::equal_to(
-			function_return_type<Proj, std::ranges::range_value_t<Range>>(old_value)),
-			new_value, traits::fwd_fn(proj));
+		algorithm::with_equal_to<std::ranges::range_value_t<Range>, Proj>(old_value,
+			[&](auto&& eq) raze_always_inline_lambda {
+				replace_if[Traits::traits()](std::forward<Range>(r),
+					std::forward<decltype(eq)>(eq), new_value, traits::fwd_fn(proj));
+			});
 	}
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_replace
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Replaces all elements equal to a given value in a range with a new value.
@@ -45,47 +49,46 @@ struct replace_t : Traits {
  * ### Declarations
  * ```cpp
  * // (1) Iterator-sentinel overload
- * template< std::permutable Iter, std::sentinel_for<Iter> Sent,
+ * template< std::input_iterator Iter, std::sentinel_for<Iter> Sent,
  *           class T1, class T2, class Proj = std::identity >
+ *   requires(std::indirectly_writable<Iter, const T2&> &&
+ *            std::indirect_binary_predicate<std::ranges::equal_to, std::projected<Iter, Proj>, const T1*>)
  * constexpr void replace( Iter first, Sent last,
  *                         const T1& old_value, const T2& new_value, Proj proj = {} );
  *
  * // (2) Range overload
  * template< std::ranges::input_range Range,
  *           class T1, class T2, class Proj = std::identity >
- *   requires std::permutable<std::ranges::iterator_t<Range>>
+ *   requires(std::indirectly_writable<std::ranges::iterator_t<Range>, const T2&> &&
+ *            std::indirect_binary_predicate<std::ranges::equal_to,
+ *                                           std::projected<std::ranges::iterator_t<Range>, Proj>, const T1*>)
  * constexpr void replace( Range&& r,
  *                         const T1& old_value, const T2& new_value, Proj proj = {} );
  * ```
  *
  * ### Parameters
  * - `first`, `last` - the range of elements to modify
- * - `r`           - the range of elements to modify
- * - `old_value`   - the value of elements to replace
- * - `new_value`   - the replacement value
- * - `proj`        - projection to apply to the elements (defaults to `std::identity`)
+ * - `r`             - the range of elements to modify
+ * - `old_value`     - the value of elements to replace
+ * - `new_value`     - the replacement value
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
  *
  * ### Return value
  * (none)
  *
  * ### Complexity
- * Exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) comparisons and applications of `proj`.
+ * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`)
+ * comparisons and applications of `proj`.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * replace[raze::options::fscalar](...);
- * replace[raze::options::unroll<2>](...);
- * replace[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (forwarded to `raze::algorithm::replace_if`;
+ * see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`; `replace_strategy` (`strategy_mode::autovec` on GCC, Clang, and ICPX).
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous range (1 range).
+ * - **Auto-vectorization:** Inherits the `autovec` kernel from `raze::algorithm::replace_if` (see @ref autovec_behavior).
  *
  * ### Notes
- * - Implemented in terms of `replace_if` using `raze::algorithm::equal_to`.
- * - If the source models `contiguous_source`, explicit SIMD vectorization (AVX-512, AVX2, SSE)
- *   or platform-specific autovectorization paths are utilized.
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ * - Implemented in terms of `raze::algorithm::replace_if` using `raze::algorithm::equal_to`.
  *
  * ### Example
  * ```cpp
@@ -110,10 +113,18 @@ struct replace_t : Traits {
  *
  * Possible output:
  * ```text
- * 5 7 4 2 8 6 1 9 0 3 
- * 5 7 4 2 88 6 1 9 0 3 
+ * 5 7 4 2 8 6 1 9 0 3
+ * 5 7 4 2 88 6 1 9 0 3
  * ```
- */
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::replace_if`
+ * - `raze::algorithm::replace_copy`
+ * - `raze::algorithm::replace_copy_if`
+*/
 constexpr inline auto replace = options::function_with_traits<replace_t>[options::unroll<4>][replace_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

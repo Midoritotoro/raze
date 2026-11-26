@@ -112,13 +112,14 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_remove
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Removes all elements satisfying a predicate from a range in-place.
  *
  * 1) Removes all elements in `[first, last)` for which `bool(std::invoke(pred, std::invoke(proj, *i)))`
  *    evaluates to `true` by shifting the remaining elements forward while preserving their relative order.
+ *
  * 2) Same as (1), but uses `r` as the source range, as if by:
  *    `remove_if(std::ranges::begin(r), std::ranges::end(r), pred, proj)`.
  *
@@ -154,22 +155,15 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
  * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`)
  * applications of `pred` and `proj`.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * remove_if[raze::options::fscalar](...);
- * remove_if[raze::options::fstatic](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `remove_strategy` (`strategy_mode::manual` on GCC and Clang).
  *
  * ### Notes
- * - Uses `raze::algorithm::find_if` to skip the leading elements that are kept before compacting in-place.
- * - Removing is done by shifting elements; the physical size of the underlying container is unchanged.
- * - For contiguous ranges and vectorizable predicates/projections, uses explicit SIMD
- *   `raze::vx::compress_store` (`AVX512F`/`AVX512VBMI2`, `AVX2`, `SSSE3`).
- * - See @ref vectorization_semantics for rules regarding generic (`auto`) vs. scalar-typed predicates.
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ * - Removing shifts surviving elements forward without changing the underlying container's physical size;
+ *   erase the returned tail subrange to shrink the container.
+ * - Skips the leading kept prefix via `raze::algorithm::find_if`, then compacts contiguous ranges in-place
+ *   with explicit SIMD `raze::vx::compress_store` (`AVX512F`/`AVX512VBMI2`, `AVX2`, `SSSE3`).
  *
  * ### Example
  * ```cpp
@@ -196,6 +190,14 @@ struct remove_if_t : Traits, dispatchable<remove_if_t<Traits>> {
  * ```text
  * 1 3 5
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::remove`
+ * - `raze::algorithm::remove_copy_if`
+ * - `raze::algorithm::copy_if`
 */
 constexpr inline auto remove_if = options::function_with_traits<remove_if_t>[remove_strategy];
 

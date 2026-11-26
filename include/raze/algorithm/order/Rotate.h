@@ -208,6 +208,80 @@ struct rotate_t : Traits, dispatchable<rotate_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_order
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Performs a left rotation on a range of elements in place.
+ *
+ * 1) Swaps the elements in the range `[first, last)` in such a way that the element `*middle`
+ *    becomes the first element of the new range and `*(middle - 1)` becomes the last element.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `rotate(std::ranges::begin(r), middle, std::ranges::end(r))`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::permutable It, std::sentinel_for<It> Sent >
+ * constexpr std::ranges::subrange<It>
+ * rotate( It first, It middle, Sent last );
+ *
+ * // (2) Range overload
+ * template< std::ranges::forward_range R >
+ *   requires(std::permutable<std::ranges::iterator_t<R>>)
+ * constexpr std::ranges::borrowed_subrange_t<R>
+ * rotate( R&& r, std::ranges::iterator_t<R> middle );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to rotate
+ * - `r`             - the range of elements to rotate
+ * - `middle`        - iterator to the element that should appear at the beginning of the rotated range
+ *
+ * ### Return value
+ * A `std::ranges::subrange` `{new_first, end}` where `new_first` points to the new location of the
+ * original first element (`first + (last - middle)`) and `end` compares equal to `last` (or `std::ranges::end(r)`).
+ *
+ * ### Complexity
+ * Linear in `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`).
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - Contiguous trivially copyable ranges take the native fast path using stack-buffered `memcpy`/`memmove`
+ *   and SIMD-accelerated 3-range block swaps.
+ * - Scalar fallback uses three-reversal for bidirectional iterators and forward cycle swapping for
+ *   forward-only iterators.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/order/Rotate.h>
+ *
+ * int main() {
+ *     std::vector<int> v{1, 2, 3, 4, 5, 6};
+ *
+ *     auto tail = raze::algorithm::rotate(v, v.begin() + 2);
+ *     for (int x : v) std::cout << x << ' ';
+ *     std::cout << "| old first at index " << (tail.begin() - v.begin()) << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 3 4 5 6 1 2 | old first at index 4
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::rotate_copy`
+ * - `raze::algorithm::reverse`
+*/
 constexpr inline auto rotate = options::function_with_traits<rotate_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

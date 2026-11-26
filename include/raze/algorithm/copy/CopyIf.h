@@ -30,13 +30,14 @@ struct copy_if_t : Traits {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_copy
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Copies elements from a range that satisfy a predicate.
  *
  * 1) Copies all elements in `[first, last)` for which `bool(std::invoke(pred, std::invoke(proj, *i)))`
  *    evaluates to `true` into the destination range beginning at `output`, preserving their relative order.
+ *
  * 2) Same as (1), but uses `range` as the source range, as if by:
  *    `copy_if(std::ranges::begin(range), std::ranges::end(range), std::move(output), pred, proj)`.
  *
@@ -56,7 +57,7 @@ struct copy_if_t : Traits {
  *           class Predicate, class Projection = std::identity >
  *   requires(std::indirect_unary_predicate<Predicate, std::projected<std::ranges::iterator_t<Range>, Projection>> &&
  *            std::indirectly_copyable<std::ranges::iterator_t<Range>, Output>)
- * constexpr std::ranges::in_out_result<std::ranges::iterator_t<Range>, Output>
+ * constexpr std::ranges::in_out_result<std::ranges::borrowed_iterator_t<Range>, Output>
  * copy_if( Range&& range, Output output,
  *          Predicate pred, Projection proj = {} );
  * ```
@@ -77,28 +78,15 @@ struct copy_if_t : Traits {
  * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(range)`)
  * applications of `pred` and `proj`, and at most as many element copies.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]` (forwarded to `raze::algorithm::remove_copy_if`):
- * ```cpp
- * copy_if[raze::options::fscalar](...);
- * copy_if[raze::options::fstatic](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (forwarded to `raze::algorithm::remove_copy_if`;
+ * see @ref dynamic_dispatch and @ref vectorization_semantics).
  *
  * ### Notes
  * - The behavior is undefined if the source and destination ranges overlap.
- * - Implemented by delegating to `raze::algorithm::remove_copy_if` with a negated predicate
- *   (preserving SIMD vectorizability for vectorizable predicates).
- * - Execution path selection:
- *   - **Constant evaluation (`if consteval`) or `fscalar`**: always executes via the scalar fallback path.
- *   - **SIMD path**: for contiguous source and destination ranges of matching element types with
- *     vectorizable predicates and projections, uses explicit SIMD `raze::vx::compress_store`
- *     (`AVX-512`, `AVX2`, `SSSE3`). Prefer pre-allocating a contiguous destination buffer (as shown
- *     below) over output adapters like `std::back_inserter` to enable vectorization.
- *   - **Scalar fallback**: used for non-contiguous iterators (e.g., `std::back_inserter`),
- *     non-vectorizable predicates/projections, or mismatched element types.
- * - See @ref vectorization_semantics for rules regarding generic (`auto`) vs. scalar-typed predicates.
+ * - Delegates to `raze::algorithm::remove_copy_if` with a negated predicate (`make_not_fn`), using
+ *   `raze::vx::compress_store` (`AVX512F`/`AVX512VBMI2`, `AVX2`, `SSSE3`) on contiguous matching buffers.
+ * - Prefer a pre-allocated contiguous destination buffer over `std::back_inserter` to enable SIMD compaction.
  *
  * ### Example
  * ```cpp
@@ -129,6 +117,14 @@ struct copy_if_t : Traits {
  * ```text
  * 2 4 6
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::copy`
+ * - `raze::algorithm::remove_copy_if`
+ * - `raze::algorithm::remove_if`
 */
 constexpr inline auto copy_if = raze::options::function_with_traits<copy_if_t>;
 

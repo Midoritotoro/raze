@@ -113,6 +113,78 @@ struct reverse_t : Traits, dispatchable<reverse_t<Traits>> {
     }
 };
 
+/**
+ * @ingroup raze_algo_order
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Reverses the order of elements in a range in place.
+ *
+ * 1) Reverses the order of the elements in the range `[first, last)`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `reverse(std::ranges::begin(r), std::ranges::end(r))`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::bidirectional_iterator It, std::sentinel_for<It> Sent >
+ *   requires(std::permutable<It>)
+ * constexpr It
+ * reverse( It first, Sent last );
+ *
+ * // (2) Range overload
+ * template< std::ranges::bidirectional_range R >
+ *   requires(std::permutable<std::ranges::iterator_t<R>>)
+ * constexpr std::ranges::borrowed_iterator_t<R>
+ * reverse( R&& r );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to reverse
+ * - `r`             - the range of elements to reverse
+ *
+ * ### Return value
+ * An iterator comparing equal to `last` (or `std::ranges::end(r)`).
+ *
+ * ### Complexity
+ * Linear in `N = std::ranges::distance(first, last)` (or `std::ranges::distance(r)`):
+ * exactly `N / 2` swaps in the scalar path, or `O(N / (2 * W))` vector load-reverse-store pairs
+ * in the explicit SIMD path.
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD accelerates contiguous ranges of trivially swappable elements with power-of-two
+ *   size `<= 8` bytes by reversing and swapping symmetric vector chunks from both ends via `raze::vx::reverse`.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/order/Reverse.h>
+ *
+ * int main() {
+ *     std::vector<int> v{1, 2, 3, 4, 5};
+ *
+ *     raze::algorithm::reverse(v);
+ *     for (int x : v) std::cout << x << ' ';
+ *     std::cout << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * 5 4 3 2 1 
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::reverse_copy`
+ * - `raze::algorithm::rotate`
+*/
 constexpr inline auto reverse = options::function_with_traits<reverse_t>;
 
 __RAZE_ALGORITHM_NAMESPACE_END

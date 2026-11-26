@@ -135,6 +135,8 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore)
 			requires(std::same_as<OutT, vector_value_type>)
 		{
+			if (ignore.tail_bytes() == 0) return;
+
 			constexpr auto in_policy  = align::template policy_for<0, Tag>;
 			constexpr auto out_policy = align::template policy_for<1, Tag>;
 
@@ -186,73 +188,73 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_replace
  * @memberof raze::algorithm
  * @hideinitializer
- * @brief Copies elements from a range to another range, replacing all elements equal to a given value with a new value.
+ * @brief Copies elements from a range to another range, replacing elements satisfying a predicate with a new value.
  *
  * 1) Copies elements from `[first, sent)` to the destination range beginning at `out`,
- *    replacing each element with `new_value` if `bool(std::invoke(proj, *i) == old_value)` evaluates to `true`.
+ *    writing `v` instead of `*i` whenever `bool(std::invoke(pred, std::invoke(proj, *i)))` evaluates to `true`.
  *
  * 2) Same as (1), but uses `r` as the source range, as if by:
- *    `replace_copy(std::ranges::begin(r), std::ranges::end(r), std::move(out), old_value, new_value, proj)`.
+ *    `replace_copy_if(std::ranges::begin(r), std::ranges::end(r), std::move(out), pred, v, proj)`.
  *
  * ### Declarations
  * ```cpp
  * // (1) Iterator-sentinel overload
  * template< std::input_iterator InIt, std::sentinel_for<InIt> Sent,
- *           std::weakly_incrementable OutIt, class T1, class T2, class Proj = std::identity >
- *   requires(std::indirectly_copyable<InIt, OutIt> && std::indirectly_writable<OutIt, const T2&>)
+ *           std::weakly_incrementable OutIt, class Pred, class T, class Proj = std::identity >
+ *   requires(std::indirectly_copyable<InIt, OutIt> &&
+ *            std::indirect_unary_predicate<Pred, std::projected<InIt, Proj>> &&
+ *            std::indirectly_writable<OutIt, const T&>)
  * constexpr std::ranges::unary_transform_result<InIt, OutIt>
- * replace_copy( InIt first, Sent sent, OutIt out,
- *               const T1& old_value, const T2& new_value, Proj proj = {} );
+ * replace_copy_if( InIt first, Sent sent, OutIt out,
+ *                  Pred pred, const T& v, Proj proj = {} );
  *
  * // (2) Range overload
  * template< std::ranges::input_range R, std::weakly_incrementable OutIt,
- *           class T1, class T2, class Proj = std::identity >
- *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> && std::indirectly_writable<OutIt, const T2&>)
- * constexpr std::ranges::unary_transform_result<std::ranges::iterator_t<R>, OutIt>
- * replace_copy( R&& r, OutIt out,
- *               const T1& old_value, const T2& new_value, Proj proj = {} );
+ *           class Pred, class T, class Proj = std::identity >
+ *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> &&
+ *            std::indirect_unary_predicate<Pred, std::projected<std::ranges::iterator_t<R>, Proj>> &&
+ *            std::indirectly_writable<OutIt, const T&>)
+ * constexpr std::ranges::unary_transform_result<std::ranges::borrowed_iterator_t<R>, OutIt>
+ * replace_copy_if( R&& r, OutIt out,
+ *                  Pred pred, const T& v, Proj proj = {} );
  * ```
  *
  * ### Parameters
  * - `first`, `sent` - the range of elements to copy from
- * - `r`           - the range of elements to copy from
- * - `out`         - the beginning of the destination range
- * - `old_value`   - the value of elements to replace
- * - `new_value`   - the replacement value
- * - `proj`        - projection to apply to the elements (defaults to `std::identity`)
+ * - `r`             - the range of elements to copy from
+ * - `out`           - the beginning of the destination range
+ * - `pred`          - unary predicate returning `true` for elements to replace
+ * - `v`             - the replacement value
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
  *
  * ### Return value
  * A `std::ranges::unary_transform_result` containing:
- * - `in`: an iterator pointing to the end of the input range (`sent`).
+ * - `in`: an iterator comparing equal to `sent` (or `std::ranges::end(r)`).
  * - `out`: an iterator pointing past the last written element in the destination range.
  *
  * ### Complexity
- * Exactly `std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`) comparisons and applications of `proj`.
+ * Linear: exactly `std::ranges::distance(first, sent)` (or `std::ranges::distance(r)`)
+ * applications of `pred` and `proj`.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * replace_copy[raze::options::fscalar](...);
- * replace_copy[raze::options::unroll<2>](...);
- * replace_copy[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`; `replace_copy_strategy` (`strategy_mode::autovec` on GCC, Clang, and ICPX).
+ * - **`raze::options::aligned<...>`:** Supports broadcast `aligned<N>` and positional `aligned<In, Out>` (2 ranges).
+ * - **Auto-vectorization:** Provides an `autovec` kernel (see @ref autovec_behavior).
  *
  * ### Notes
- * - Implemented in terms of `replace_copy_if` using `raze::algorithm::equal_to`.
- * - If the source and destination model contiguous buffers, explicit SIMD vectorization (AVX-512, AVX2, SSE)
- *   or platform-specific autovectorization paths are utilized.
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ * - The behavior is undefined if the source and destination ranges overlap.
+ * - Explicit `raze::vx` SIMD uses `raze::vx::select` with `raze::vx::convert` for supported cross-type
+ *   conversions and masked tail handling when source and destination value types match.
  *
  * ### Example
  * ```cpp
  * #include <iostream>
  * #include <vector>
- * #include <raze/algorithm/replace/ReplaceCopy.h>
+ * #include <raze/algorithm/replace/ReplaceCopyIf.h>
  *
  * void println(const auto& seq) {
  *     for (const auto& elem : seq) std::cout << elem << ' ';
@@ -263,8 +265,8 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
  *     const std::vector<int> src{5, 7, 4, 2, 8, 6, 1, 9, 0, 3};
  *     std::vector<int> dst(src.size());
  *
- *     // Copy elements while replacing all occurrences of 8 with 88
- *     raze::algorithm::replace_copy(src, dst.begin(), 8, 88);
+ *     // Copy elements while replacing all odd numbers with 0
+ *     raze::algorithm::replace_copy_if(src, dst.begin(), [](auto n) { return (n & 1) != 0; }, 0);
  *
  *     println(src);
  *     println(dst);
@@ -273,10 +275,18 @@ struct replace_copy_if_t : Traits, dispatchable<replace_copy_if_t<Traits>> {
  *
  * Possible output:
  * ```text
- * 5 7 4 2 8 6 1 9 0 3 
- * 5 7 4 2 88 6 1 9 0 3 
+ * 5 7 4 2 8 6 1 9 0 3
+ * 0 0 4 2 8 6 0 0 0 0
  * ```
- */
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::replace_copy`
+ * - `raze::algorithm::replace_if`
+ * - `raze::algorithm::replace`
+*/
 constexpr inline auto replace_copy_if = options::function_with_traits<replace_copy_if_t>[options::unroll<4>][replace_copy_strategy];
 
 __RAZE_ALGORITHM_NAMESPACE_END

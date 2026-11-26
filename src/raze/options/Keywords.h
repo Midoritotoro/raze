@@ -13,14 +13,18 @@ struct as_keyword {
 
     template <class T>
     static raze_always_inline constexpr bool accept() noexcept {
-        if constexpr(std::same_as<std::remove_cvref_t<T>, Keyword>) return true;
-        else if constexpr(concepts::checks_for<Keyword, T>) return Keyword::template check<T>();
-        else return true;
+        if constexpr (std::same_as<std::remove_cvref_t<T>, Keyword> ||
+                      std::same_as<std::remove_cvref_t<T>, as_keyword>)
+            return true;
+        else if constexpr (concepts::checks_for<Keyword, T>)
+            return Keyword::template check<T>();
+        else
+            return true;
     }
 
     template <class T>
     constexpr raze_always_inline auto operator=(T&& v) const noexcept
-        requires(accept<T>())
+        requires (!std::same_as<std::remove_cvref_t<T>, as_keyword>) && (accept<T>())
     {
         return option<Keyword, T>{std::forward<T>(v)};
     }

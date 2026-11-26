@@ -129,7 +129,7 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
 
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_remove
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Copies elements from a range to another range, omitting elements satisfying a predicate.
@@ -137,6 +137,7 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
  * 1) Copies all elements from `[first, last)` to the destination range beginning at `out`,
  *    omitting those for which `bool(std::invoke(pred, std::invoke(proj, *i)))` evaluates to `true`.
  *    Relative order of the copied elements is preserved.
+ *
  * 2) Same as (1), but uses `r` as the source range, as if by:
  *    `remove_copy_if(std::ranges::begin(r), std::ranges::end(r), std::move(out), pred, proj)`.
  *
@@ -153,7 +154,9 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
  * // (2) Range overload
  * template< std::ranges::input_range R, std::weakly_incrementable OutIt,
  *           class Pred, class Proj = std::identity >
- * constexpr std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+ *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt> &&
+ *            std::indirect_unary_predicate<Pred, std::projected<std::ranges::iterator_t<R>, Proj>>)
+ * constexpr std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, OutIt>
  * remove_copy_if( R&& r, OutIt out, Pred pred, Proj proj = {} );
  * ```
  *
@@ -173,22 +176,14 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
  * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`)
  * applications of `pred` and `proj`.
  *
- * ### Decorators and Options
- * The algorithm object supports compile-time modifiers via `operator[]`:
- * ```cpp
- * remove_copy_if[raze::options::fscalar](...);
- * remove_copy_if[raze::options::fstatic](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
  *
  * ### Notes
- * - Optimizes the leading non-matching prefix by locating the first match via `raze::algorithm::find_if`
- *   and bulk-copying the prefix with `raze::algorithm::copy` before entering the compaction loop.
- * - For contiguous buffers of matching element types and vectorizable predicates/projections,
- *   uses explicit SIMD `raze::vx::compress_store` (`AVX512F`/`AVX512VBMI2`, `AVX2`, `SSSE3`).
- * - See @ref vectorization_semantics for rules regarding generic (`auto`) vs. scalar-typed predicates.
- * - In a constant-evaluated context, the algorithm executes via the scalar fallback path.
+ * - The behavior is undefined if the source and destination ranges overlap.
+ * - For forward iterators, locates the first omitted element via `raze::algorithm::find_if` and bulk-copies
+ *   the leading prefix via `raze::algorithm::copy` before compacting contiguous matching buffers with
+ *   explicit SIMD `raze::vx::compress_store` (`AVX512F`/`AVX512VBMI2`, `AVX2`, `SSSE3`).
  *
  * ### Example
  * ```cpp
@@ -217,6 +212,14 @@ struct remove_copy_if_t : Traits, dispatchable<remove_copy_if_t<Traits>> {
  * ```text
  * 1 3 5
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::remove_copy`
+ * - `raze::algorithm::remove_if`
+ * - `raze::algorithm::copy_if`
 */
 constexpr inline auto remove_copy_if = options::function_with_traits<remove_copy_if_t>;
 

@@ -106,6 +106,85 @@ struct is_sorted_t : Traits, dispatchable<is_sorted_t<Traits>> {
 	}
 };
 
+/**
+ * @ingroup raze_algo_order
+ * @memberof raze::algorithm
+ * @hideinitializer
+ * @brief Checks whether a range is sorted into ascending order.
+ *
+ * 1) Checks whether the elements in `[first, last)` are sorted in non-descending order with respect
+ *    to the comparator `comp` after applying the projection `proj`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `is_sorted(std::ranges::begin(r), std::ranges::end(r), comp, proj)`.
+ *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It, std::sentinel_for<It> Sent,
+ *           class Comp = std::less<>, class Proj = std::identity >
+ *   requires(std::indirect_strict_weak_order<Comp, std::projected<It, Proj>>)
+ * constexpr bool
+ * is_sorted( It first, Sent last, Comp comp = {}, Proj proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R,
+ *           class Comp = std::less<>, class Proj = std::identity >
+ *   requires(std::indirect_strict_weak_order<Comp, std::projected<std::ranges::iterator_t<R>, Proj>>)
+ * constexpr bool
+ * is_sorted( R&& r, Comp comp = {}, Proj proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to examine
+ * - `r`             - the range of elements to examine
+ * - `comp`          - comparison function object returning `true` if the first argument is less than the second (defaults to `std::less<>`)
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * `true` if the elements in the range are sorted in ascending order (including ranges with fewer than 2 elements),
+ * `false` otherwise.
+ *
+ * ### Complexity
+ * Linear in `N = std::ranges::distance(first, last)` (or `std::ranges::distance(r)`):
+ * at most `max(N - 1, 0)` comparisons and projections, stopping early on the first out-of-order pair.
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`.
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD compares overlapping shifted vectors (`[ptr, ptr + W)` and `[ptr + 1, ptr + 1 + W)`)
+ *   with early exit on the first unsorted chunk.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/order/IsSorted.h>
+ *
+ * int main() {
+ *     const std::vector<int> a{1, 2, 2, 5, 9};
+ *     const std::vector<int> b{1, 3, 2, 5, 9};
+ *
+ *     std::cout << std::boolalpha
+ *               << raze::algorithm::is_sorted(a) << '\n'
+ *               << raze::algorithm::is_sorted(b) << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * true
+ * false
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::is_sorted_until`
+*/
 constexpr inline auto is_sorted = options::function_with_traits<is_sorted_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END

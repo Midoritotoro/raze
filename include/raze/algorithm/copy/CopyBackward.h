@@ -94,6 +94,7 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 
 		template <vectorizable_tag Tag>
 		raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) requires(std::same_as<vt_in, vt_out>) {
+			if (ignore.tail_bytes() == 0) return;
 			auto* in_ptr = std::to_address(_in_end);
 			auto* out_ptr = std::to_address(_out_iterator);
 			const auto count = ignore.tail_elements();
@@ -119,14 +120,14 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 		}
 	};
 
-	template <std::bidirectional_iterator InIt, std::sentinel_for<InIt> Sent, std::weakly_incrementable OutIt>
+	template <std::bidirectional_iterator InIt, std::sentinel_for<InIt> Sent, std::bidirectional_iterator OutIt>
 	constexpr raze_always_inline std::ranges::in_out_result<InIt, OutIt> operator()(InIt first, 
 		Sent last, OutIt result) const requires(std::indirectly_copyable<InIt, OutIt>)
 	{
 		return this->dispatch(get_source(std::move(first), std::move(last)), get_destination(std::move(result)));
 	}
 
-	template <std::ranges::bidirectional_range R, std::weakly_incrementable OutIt>
+	template <std::ranges::bidirectional_range R, std::bidirectional_iterator OutIt>
 	constexpr raze_always_inline std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, OutIt>
 		operator()(R&& r, OutIt result) const requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt>)
 	{
@@ -135,7 +136,7 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_copy
  * @memberof raze::algorithm
  * @hideinitializer
  * @brief Copies a range of elements in backward order.
@@ -143,6 +144,7 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
  * 1) Copies all elements from the range `[first, last)` to another range ending at `result`.
  *    Elements are copied in reverse order (from the last element to the first), preserving their
  *    relative order in the destination range.
+ *
  * 2) Same as (1), but uses `r` as the source range, as if by:
  *    `copy_backward(std::ranges::begin(r), std::ranges::end(r), std::move(result))`.
  *
@@ -158,7 +160,7 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
  * // (2) Range overload
  * template< std::ranges::bidirectional_range R, std::weakly_incrementable OutIt >
  *   requires(std::indirectly_copyable<std::ranges::iterator_t<R>, OutIt>)
- * constexpr std::ranges::in_out_result<std::ranges::iterator_t<R>, OutIt>
+ * constexpr std::ranges::in_out_result<std::ranges::borrowed_iterator_t<R>, OutIt>
  * copy_backward( R&& r, OutIt result );
  * ```
  *
@@ -176,30 +178,15 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
  * ### Complexity
  * Linear: exactly `std::ranges::distance(first, last)` (or `std::ranges::distance(r)`) assignments.
  *
- * ### Decorators and Options
- * The algorithm object is configured with `raze::options::unroll<4>` by default and supports
- * compile-time modifiers via `operator[]`:
- * ```cpp
- * copy_backward[raze::options::fscalar](...);
- * copy_backward[raze::options::unroll<2>](...);
- * copy_backward[raze::options::fstatic][raze::options::unroll<2>](...);
- * ```
- * For details on available options (`fscalar`, `fstatic`, `unroll`), their semantics,
- * and valid combinations, see the **options documentation**.
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`.
  *
  * ### Notes
- * - Suitable for overlapping ranges when shifting elements toward higher addresses.
- *   The behavior is undefined if `result` lies within `(first, last]`; in that case, use
- *   `raze::algorithm::copy` (for non-overlapping or scalar-safe forward copies) or `std::memmove`.
- * - Execution path selection:
- *   - **Constant evaluation (`if consteval`) or `fscalar`**: always executes via the scalar backward loop.
- *   - **Native fast path**: for contiguous ranges of identical trivially copyable types, delegates to an
- *     optimized `memmove` implementation.
- *   - **SIMD conversion path**: for contiguous ranges of distinct arithmetic types satisfying
- *     `raze::vx::supports_fast_conversion` for the active ISA, uses reverse-order explicit SIMD loads,
- *     `raze::vx::convert`, and stores (with any remaining leading elements handled by the scalar fallback).
- *   - **Scalar fallback**: used for non-contiguous iterators, non-arithmetic element types, or
- *     type pairs without fast SIMD conversion support.
+ * - Suitable for overlapping ranges when shifting elements toward higher addresses; the behavior is undefined
+ *   if `result` lies within `(first, last]`.
+ * - Contiguous ranges of identical trivially copyable types take the native `memmove` fast path; distinct
+ *   arithmetic types satisfying `raze::vx::supports_fast_conversion` use reverse-order explicit SIMD `raze::vx::convert`.
  *
  * ### Example
  * ```cpp
@@ -231,6 +218,14 @@ struct copy_backward_t : Traits, dispatchable<copy_backward_t<Traits>> {
  * 1 2 1 2 3 4
  * 1 2 3 4 5
  * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::copy`
+ * - `raze::algorithm::copy_if`
+ * - `raze::algorithm::copy_n`
 */
 constexpr inline auto copy_backward = options::function_with_traits<copy_backward_t>[options::unroll<4>];
 

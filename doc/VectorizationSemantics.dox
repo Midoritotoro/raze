@@ -1,89 +1,98 @@
 /**
  * @page vectorization_semantics Vectorization and Unsequenced Execution Semantics
  *
- * Algorithms in `raze::algorithm` accelerate eligible calls using explicit SIMD
- * or compiler-assisted auto-vectorization, combined with runtime CPU ISA detection
- * (**dynamic dispatch**).
+ * Algorithms in `raze::algorithm` accelerate eligible calls through explicit `raze::vx` SIMD,
+ * compiler-assisted auto-vectorization (`autovec`), or native memory primitives (`memcpy`,
+ * `memmove`, `memset`), combined with runtime CPU ISA detection (see @ref dynamic_dispatch).
+ *
+ * This page defines the execution-order contract, compiler auto-vectorization behavior, and
+ * callable rules once for the entire algorithm library.
  *
  * @section unseq_policy Unsequenced (`unseq`) Execution Policy
  *
- * When a vectorized execution path is engaged, element processing follows semantics similar to
- * `std::execution::unseq`:
- * - **Vectorized / interleaved execution:** Multiple elements may be processed simultaneously within
- *   a single SIMD register or reordered across lanes/chunks within the vector loop.
- * - **No loop-carried dependencies:** Vectorizable callables (`f`), predicates (`pred`), and
- *   projections (`proj`) must not rely on strict sequential element-by-element ordering or
- *   cross-iteration side effects (e.g., mutating shared counters or non-atomic state).
- * - **No throwing from vectorized lanes:** Vectorizable callables are expected not to throw exceptions
- *   or acquire synchronization primitives across lanes.
+ * Whenever a vectorized path (explicit SIMD or compiler auto-vectorization) is selected,
+ * element processing follows semantics comparable to `std::execution::unseq`:
+ * - **Interleaved / lane-parallel execution:** Multiple elements may be evaluated simultaneously
+ *   within a SIMD register or processed in vector-width chunks rather than strictly one by one.
+ * - **No loop-carried dependencies:** Callables (`f`), predicates (`pred`), comparators (`comp`),
+ *   and projections (`proj`) must not depend on cross-iteration mutable state (such as mutating
+ *   a shared accumulator or writing to overlapping indices).
+ * - **No cross-lane synchronization or exceptions:** Vectorized callables are expected not to
+ *   acquire locks or throw exceptions across lanes.
  *
- * @section in_order_guarantees Guarantees of Strict In-Order (Scalar) Execution
+ * @section autovec_behavior Compiler Auto-Vectorization (`autovec`) & `fautovec`
  *
- * Because `raze::algorithm` detects vectorizability at compile time by probing whether a callable
- * can accept a SIMD vector argument (`raze::vx::simd<T>`), **strict sequential in-order execution
- * is guaranteed** whenever any of the following holds:
- * 1. **`raze::options::fscalar` is specified:** e.g., `algo[raze::options::fscalar](...)`.
- * 2. **Explicit scalar parameter types are used:** The callable, predicate, or projection accepts
- *    explicit scalar types (e.g., `[](int x)`, `[](const double& x)`) rather than unconstrained
- *    templated/`auto` parameters. Probing with `vx::simd<T>` fails cleanly, and the algorithm selects
- *    the sequential scalar path. *(The same applies if a non-`std::identity` projection or non-contiguous
- *    range is used, or in `if consteval` contexts.)*
+ * Algorithms that implement an `autovec` kernel (documented in their **Options** section) use
+ * compiler-friendly `for_noalias` loops paired with runtime ISA multiversioning
+ * (`AVX-512`, `AVX2`, `SSE4.2`, baseline) on **GCC, Clang, Clang-CL, ICPX, AOCC, and nvc++**:
+ * - **Automatic selection:** When an algorithm's strategy selects `strategy_mode::autovec` on the
+ *   active compiler (or when explicit `raze::vx` SIMD does not apply, e.g., for scalar-typed
+ *   lambdas `[](int& x)`, `const` ranges, or custom projections), contiguous non-volatile ranges
+ *   automatically run through the `autovec` path.
+ * - **Explicit `raze::vx` SIMD priority:** On **MSVC**, on algorithms configured with
+ *   `strategy_mode::manual`, or when the compile-time target ISA already satisfies the kernel's
+ *   peak ISA, eligible vectorizable calls use the explicit `raze::vx` SIMD kernel instead.
+ * - **Using `raze::options::fautovec`:** Designed as a zero-rewrite migration aid when moving
+ *   existing generic (`auto`) lambdas with scalar-only bodies (such as `if` branches) from `std::ranges`:
+ *   - Skips `raze::vx::simd` probing and instantiation completely.
+ *   - Routes contiguous ranges to the compiler `autovec` kernel on GCC, Clang, ICPX, AOCC, and nvc++.
+ *   - On **MSVC**, on non-contiguous ranges, or on algorithms without an `autovec` kernel,
+ *     `fautovec` cleanly degrades to scalar execution (equivalent to `fscalar` without SIMD probing).
  *
- * @warning **Caveat with Generic / Templated Callables (`auto` parameters):**  
- * Due to C++ language rules, concepts can only probe callability by passing `raze::vx::simd<T>`
- * into the callable's signature—they cannot safely inspect whether the function *body* is
- * vector-compatible without triggering instantiation.
- * - If you pass an **unconstrained generic callable** (e.g., `[](auto& x)` or `[](auto x)`),
- *   the signature accepts `vx::simd<T>`, so the algorithm **will select the vectorized path**
- *   and instantiate the callable body with SIMD vector types.
- * - Vector expressions such as `x > 0` are valid for `vx::simd` and produce a `simd_mask`,
- *   which **does not implicitly convert to `bool`**. If the body uses that `simd_mask` in a scalar
- *   boolean context (such as `if (x > 0)`) without explicit mask reductions
- *   (`raze::vx::any_of`, `raze::vx::all_of`, `raze::vx::none_of`, etc.) or lane-wise masking
- *   (`raze::vx::select`), **compilation will fail with a hard error** rather than falling back
- *   to the scalar loop. The same applies to any other scalar-only operation inside the body.
+ * @section scalar_fallback Strict In-Order (Scalar) Execution Guarantees
  *
- * **How to handle scalar-only logic safely:**
- * - Prefer **explicit scalar parameter types**: `[](int& x) { if (x > 0) ... }` instead of `[](auto& x)`.
- * - Or constrain template parameters: `[](std::integral auto& x)` / `[](raze::vx::arithmetic_type auto& x)`.
- * - Or explicitly force scalar execution via `raze::options::fscalar`:
- *   `raze::algorithm::for_each[raze::options::fscalar](v, [](auto& x) { ... });`
- * - (For predicates specifically, an explicit `-> bool` return type on `[](auto x) -> bool { ... }`
- *   also routes to the scalar path, though explicit scalar parameters or `fscalar` are clearer.)
- * - Conversely, to vectorize generic callables, either return the comparison mask directly in predicates
- *   (`[](auto x) { return x > 0; }`) or use `raze::vx` abstractions (`raze::vx::select`,
- *   `raze::vx::any_of`, `raze::vx::all_of`, `raze::vx::none_of`, etc.).
+ * Strict sequential element-by-element execution (disabling both explicit SIMD and compiler
+ * auto-vectorization) is guaranteed whenever any of the following holds:
+ * 1. **`raze::options::fscalar` is attached:** e.g., `algo[raze::options::fscalar](...)`.
+ * 2. **Constant evaluation (`if consteval`):** All algorithms always execute their `constexpr`
+ *    scalar path during constant evaluation.
+ * 3. **Non-contiguous or `volatile` iterators:** Input/forward/bidirectional iterators, output
+ *    adapters (such as `std::back_inserter`), or `volatile`-qualified buffers never enter SIMD
+ *    or `autovec` loops.
+ * 4. **Unsupported types or non-vectorizable callables without an `autovec` kernel:** Algorithms
+ *    that only provide an explicit `raze::vx` SIMD kernel fall back to scalar whenever element
+ *    types, projections (non-`std::identity`), or explicit scalar-typed callables cannot be lowered
+ *    to `raze::vx::simd`.
+ *
+ * @section generic_callable_caveat Generic (`auto`) Callables & `simd_mask`
+ *
+ * @warning Because C++ concepts can only probe whether a callable's *signature* accepts
+ * `raze::vx::simd<T>`—not whether its *body* compiles for SIMD types—passing an **unconstrained
+ * generic lambda** (e.g., `[](auto& x)` or `[](auto x)`) causes explicit SIMD probing to succeed.
+ * If the body uses scalar-only control flow such as `if (x > 0)` (where `x > 0` produces a
+ * `raze::vx::simd_mask` that is **not** implicitly convertible to `bool`), compilation will fail
+ * with a hard error rather than silently falling back to scalar.
+ *
+ * **How to handle scalar-only logic cleanly:**
+ * - Use **explicit scalar parameter types**: `[](int& x) { if (x > 0) ... }` (automatically uses
+ *   `autovec` on supported compilers where available, or scalar otherwise).
+ * - Constrain generic parameters: `[](std::integral auto& x)` or `[](raze::vx::arithmetic_type auto& x)`.
+ * - Attach `raze::options::fautovec` to skip `vx::simd` probing while retaining compiler auto-vectorization.
+ * - Attach `raze::options::fscalar` to guarantee strict in-order scalar execution.
+ * - For predicates, returning the comparison directly (`[](auto x) { return x > 0; }`) works in both
+ *   SIMD (`simd_mask`) and scalar (`bool`) paths; an explicit `-> bool` return type forces scalar probing.
+ * - To write SIMD-compatible branching inside a generic callable, use `raze::vx::select` or explicit
+ *   mask reductions (`raze::vx::any_of`, `raze::vx::all_of`, `raze::vx::none_of`).
  *
  * ```cpp
- * // 1. Guaranteed in-order scalar: explicit scalar parameter
+ * // 1. Vectorizable generic lambda (works in explicit SIMD and autovec)
+ * raze::algorithm::for_each(v, [](auto& x) { x *= 2; });
+ *
+ * // 2. Scalar-typed lambda: uses autovec on GCC/Clang/ICPX (scalar on MSVC)
  * raze::algorithm::for_each(v, [](int& x) { if (x > 0) x *= 2; });
  *
- * // 2. Guaranteed in-order scalar: explicit fscalar option
- * raze::algorithm::for_each[raze::options::fscalar](v, [](auto& x) { if (x > 0) x *= 2; });
+ * // 3. Generic lambda with scalar branching: skip vx::simd probing via fautovec
+ * raze::algorithm::for_each[raze::options::fautovec](v, [](auto& x) { if (x > 0) x *= 2; });
  *
- * // 3. Vectorized predicate: valid (`x > 0` yields `simd_mask` in SIMD path and `bool` in scalar path)
- * auto pred = [](auto x) { return x > 0; };
+ * // 4. Guaranteed strict sequential in-order execution (stateful reduction)
+ * int sum = 0;
+ * raze::algorithm::for_each[raze::options::fscalar](v, [&sum](const auto& x) { sum += x; });
  *
- * // 4. HARD COMPILE ERROR: `x > 0` yields `simd_mask`, which is not implicitly convertible to `bool` in `if (...)`
- * //    (requires explicit `vx::any_of` / `vx::all_of` / `vx::none_of` or lane-wise `vx::select`)
+ * // 5. HARD COMPILE ERROR: unconstrained `auto&` probed with vx::simd, `x > 0` is simd_mask
  * // raze::algorithm::for_each(v, [](auto& x) { if (x > 0) x *= 2; });
  * ```
  *
- * @section dispatch_model Execution Path Selection & Dynamic Dispatch
- *
- * At compile time and runtime, `dispatchable` selects the execution strategy in the following order:
- * 1. **Constant evaluation (`if consteval`):** Always executes via the scalar fallback path.
- * 2. **Vectorizability check (`kernel::vectorizable()`):** Requires `contiguous_source`
- *    (and `contiguous_destination` for output algorithms), supported element types, and vectorizable
- *    callables/projections, unless `options::fscalar` is specified.
- * 3. **Compiler strategy (`options::strategy`):**
- *    - On **GCC, Clang, Clang-CL, AOCC, NVHPC, and ICPX**, trivially auto-vectorizable algorithms
- *      configured with `strategy_mode::autovec` execute via `for_noalias` kernels with ISA-targeted
- *      multiversioning (`invoke_scalar_autovec`), or via explicit `raze::vx` SIMD when the highest
- *      target ISA is statically enabled or required.
- *    - On **MSVC** (and for algorithms using `strategy_mode::manual`), vectorizable calls execute via
- *      explicit `raze::vx` SIMD kernels (AVX-512, AVX2, SSE) with runtime CPUID **dynamic dispatch**
- *      (unless `options::fstatic` restricts dispatch to the compile-time ISA).
- * 4. **Scalar fallback:** Used for non-contiguous iterators, non-vectorizable/scalar-typed callables,
- *    short tails, or when `options::fscalar` is applied.
+ * @see @ref dynamic_dispatch
+ * @see @ref raze_options
+ * @see @ref mask_semantics
  */

@@ -28,10 +28,10 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
         using align = options::alignments<Traits, 1>;
 
         static consteval bool vectorizable() noexcept {
-            return contiguous_source<source_type>
-                && !traits::is_iterator_volatile_v<iterator_type>
-                && vectorizable_binary_predicate<Comp, unchecked_iterator_type>
-                && vectorizable_projection<Projection, unchecked_iterator_type>;
+            return contiguous_source<source_type> &&
+                !traits::is_iterator_volatile_v<iterator_type> &&
+                vectorizable_binary_predicate<Comp, unchecked_iterator_type> &&
+                vectorizable_projection<Projection, unchecked_iterator_type>;
         }
 
         struct trivial_storage {
@@ -71,10 +71,6 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
               _proj(std::move(proj))
         {}
 
-        constexpr void expects() const {
-            align::verify(_source);
-        }
-
         raze_nodiscard constexpr raze_always_inline bool exit() const {
             return _iterator == _sentinel;
         }
@@ -87,8 +83,7 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
             requires(contiguous_source<source_type> && !traits::is_iterator_volatile_v<iterator_type>)
         {
             auto [first, last] = source_type::to_raw_range(_iterator, _sentinel);
-            if (first == last)
-                return;
+            if (first == last) return;
 
             first = align::template assume<0>(first);
 
@@ -114,8 +109,7 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
 
         raze_always_inline constexpr void operator()() {
             auto it = _iterator;
-            if (it == _sentinel)
-                return;
+            if (it == _sentinel) return;
 
             if (!_value.has_value()) {
                 _value.emplace(*it);
@@ -140,12 +134,10 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
             else
                 candidate = vx::horizontal_min(vmax);
 
-            if (!_value.has_value()) {
+            if (!_value.has_value())
                 _value.emplace(candidate);
-            }
-            else if (std::invoke(_comp, *_value, candidate)) {
+            else if (std::invoke(_comp, *_value, candidate))
                 *_value = candidate;
-            }
         }
 
         template <vectorizable_tag Tag>
@@ -154,7 +146,7 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
             auto* ptr = std::to_address(_iterator);
 
             if constexpr (is_less_comparator<Comp, value_type> || is_greater_comparator<Comp, value_type>) {
-                const auto* const aligned_end = bytes_pointer_offset(ptr, aligned_size);
+                const auto aligned_end = bytes_pointer_offset(ptr, aligned_size);
 
                 auto vmax = vx::load<Tag>[alignment](ptr);
                 advance_bytes(ptr, sizeof(Tag));
@@ -189,8 +181,8 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
                         : aligned_size;
                     aligned_size -= portion_bytes;
 
-                    auto* const portion_begin = ptr;
-                    const auto* const stop_at = bytes_pointer_offset(ptr, portion_bytes);
+                    auto* portion_begin = ptr;
+                    const auto stop_at = bytes_pointer_offset(ptr, portion_bytes);
 
                     auto best_vals = vx::load<Tag>[alignment](ptr);
                     auto best_idxs = vx::zero<index_simd_t>();
@@ -217,7 +209,8 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
 
                     auto extract_portion_max = [&]() raze_always_inline_lambda -> trivial_storage {
                         trivial_storage res{};
-                        const auto eq_mask = (!_comp(best_vals, portion_max)) & (!_comp(portion_max, best_vals));
+                        const Tag max_vec(portion_max);
+                        const auto eq_mask = (!_comp(best_vals, max_vec)) & (!_comp(max_vec, best_vals));
 
                         if (vx::any_of(eq_mask)) {
                             const auto idx_eq_mask = vx::convert<unsigned_t>(eq_mask);
@@ -253,8 +246,7 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
 
         template <vectorizable_tag Tag>
         raze_always_inline void operator()(Tag, tail_mask_type auto const& ignore) {
-            if (ignore.tail_bytes() == 0)
-                return;
+            if (ignore.tail_bytes() == 0) return;
 
             if constexpr (is_less_comparator<Comp, value_type> || is_greater_comparator<Comp, value_type>) {
                 constexpr auto alignment = align::template policy_for<0, Tag>;
@@ -287,6 +279,10 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
 
         raze_nodiscard constexpr raze_always_inline auto size() const {
             return _source.size();
+        }
+
+        constexpr void expects() const {
+            align::verify(_source);
         }
     };
 
@@ -322,21 +318,99 @@ struct max_t : Traits, dispatchable<max_t<Traits>> {
 };
 
 /**
- * @ingroup raze_algo
+ * @ingroup raze_algo_extreme
  * @memberof raze::algorithm
  * @hideinitializer
- * @brief Returns the largest element in a range, or `std::nullopt` if the range is empty.
+ * @brief Returns the largest element in a range.
  *
- * 1) Finds the largest element in `[first, last)` according to `comp` after applying `proj`.
- * 2) Same as (1), operating on range `r`.
+ * 1) Finds the largest element in the range `[first, last)` according to the comparator `comp`
+ *    after applying the projection `proj`.
+ *
+ * 2) Same as (1), but uses `r` as the source range, as if by:
+ *    `max(std::ranges::begin(r), std::ranges::end(r), comp, proj)`.
+ *
  * 3) Same as (1), operating on `std::initializer_list<T>`.
  *
+ * ### Declarations
+ * ```cpp
+ * // (1) Iterator-sentinel overload
+ * template< std::input_iterator It, std::sentinel_for<It> Sent,
+ *           class Comp = std::less<>, class Projection = std::identity >
+ *   requires(std::indirect_strict_weak_order<Comp, std::projected<It, Projection>>)
+ * constexpr std::optional<std::iter_value_t<It>>
+ * max( It first, Sent last, Comp comp = {}, Projection proj = {} );
+ *
+ * // (2) Range overload
+ * template< std::ranges::input_range R,
+ *           class Comp = std::less<>, class Projection = std::identity >
+ *   requires(!std::same_as<std::remove_cvref_t<R>, std::initializer_list<std::ranges::range_value_t<R>>> &&
+ *            std::indirect_strict_weak_order<Comp, std::projected<std::ranges::iterator_t<R>, Projection>>)
+ * constexpr std::optional<std::ranges::range_value_t<R>>
+ * max( R&& r, Comp comp = {}, Projection proj = {} );
+ *
+ * // (3) Initializer-list overload
+ * template< class T, class Comp = std::less<>, class Projection = std::identity >
+ *   requires(std::indirect_strict_weak_order<Comp, std::projected<const T*, Projection>>)
+ * constexpr std::optional<T>
+ * max( std::initializer_list<T> ilist, Comp comp = {}, Projection proj = {} );
+ * ```
+ *
+ * ### Parameters
+ * - `first`, `last` - the range of elements to examine
+ * - `r`             - the range of elements to examine
+ * - `ilist`         - initializer list with the values to compare
+ * - `comp`          - comparison function object returning `true` if the first argument is less than the second (defaults to `std::less<>`)
+ * - `proj`          - projection to apply to the elements (defaults to `std::identity`)
+ *
+ * ### Return value
+ * A `std::optional` holding a copy of the largest element in the range, or `std::nullopt` if the range is empty.
  * If several elements are equivalent to the largest element, returns a copy of the first such element.
  *
- * ### Decorators and Options
- * Configured with `raze::options::unroll<4>` by default and supports `aligned<N>`, `fscalar`,
- * `fstatic`, `fautovec`, and `unroll<N>` via `operator[]`.
- */
+ * ### Complexity
+ * Linear in `N = std::ranges::distance(first, last)` (or `std::ranges::distance(r)`):
+ * `max(N - 1, 0)` comparisons in the scalar path, or `O(N / W)` vector comparisons in the explicit SIMD path.
+ *
+ * ### Options
+ * Accepts standard modifiers from @ref raze_options (see @ref dynamic_dispatch and @ref vectorization_semantics).
+ * - **Defaults:** `raze::options::unroll<4>`.
+ * - **`raze::options::aligned<N>`:** Declares alignment for the contiguous range (1 range).
+ * - **Auto-vectorization:** Provides an `autovec` kernel (see @ref autovec_behavior).
+ *
+ * ### Notes
+ * - Explicit `raze::vx` SIMD uses hardware `vertical_max`/`horizontal_max` with masked tail reduction for
+ *   standard comparators (`std::less`/`std::greater`), and index-tracked SIMD folding to preserve exact
+ *   first-occurrence tie-breaking for custom vectorizable comparators.
+ *
+ * ### Example
+ * ```cpp
+ * #include <iostream>
+ * #include <vector>
+ * #include <raze/algorithm/extreme/Max.h>
+ *
+ * int main() {
+ *     const std::vector<int> v{3, 1, 14, 1, 5, 9};
+ *
+ *     if (auto m = raze::algorithm::max(v))
+ *         std::cout << "Max: " << *m << '\n';
+ *
+ *     std::cout << "Init list max: " << *raze::algorithm::max({7, 2, 19, 4}) << '\n';
+ * }
+ * ```
+ *
+ * Possible output:
+ * ```text
+ * Max: 14
+ * Init list max: 19
+ * ```
+ *
+ * ### See also
+ * - @ref raze_options
+ * - @ref dynamic_dispatch
+ * - @ref vectorization_semantics
+ * - `raze::algorithm::min`
+ * - `raze::algorithm::minmax`
+ * - `raze::algorithm::max_element`
+*/
 constexpr inline auto max = options::function_with_traits<max_t>[options::unroll<4>];
 
 __RAZE_ALGORITHM_NAMESPACE_END
