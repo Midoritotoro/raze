@@ -76,7 +76,7 @@ struct is_permutation_t : Traits, dispatchable<is_permutation_t<Traits>> {
 			if constexpr (!(std::sized_sentinel_for<unchecked_sentinel1_type, unchecked_iterator1_type> &&
 				std::sized_sentinel_for<unchecked_sentinel2_type, unchecked_iterator2_type>))
 			{
-				if (std::ranges::distance(_first1, _sent1) != std::ranges::distance(_first2, _sent2)) {
+				if (iter_distance(_first1, _sent1) != iter_distance(_first2, _sent2)) {
 					_result = false;
 					return;
 				}

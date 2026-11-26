@@ -40,4 +40,17 @@ concept constexpr_sized_range = std::ranges::range<std::remove_cvref_t<Range>> &
 template <class F, class ... Args>
 using function_return_type = decltype(std::invoke(std::declval<F>(), std::declval<Args>()...));
 
+template <std::input_or_output_iterator It, std::sentinel_for<It> Sent>
+constexpr raze_always_inline std::iter_difference_t<It> iter_distance(It first, Sent last) {
+    if constexpr (std::sized_sentinel_for<Sent, It>) {
+        return last - first;
+    }
+    else {
+        std::iter_difference_t<It> n = 0;
+        for (; first != last; ++first)
+            ++n;
+        return n;
+    }
+}
+
 __RAZE_ALGORITHM_NAMESPACE_END

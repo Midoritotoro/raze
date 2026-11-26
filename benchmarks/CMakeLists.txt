@@ -203,9 +203,8 @@ add_dependencies(benchmarks
     benchmark_portable
 )
 
-function(generate_benchmark_native filename)
+function(generate_benchmark_native filename source folder)
     set(target "${filename}.native")
-    set(source "${filename}.cpp")
 
     _raze_bench_prepare_target(${target} "${source}")
 
@@ -216,9 +215,14 @@ function(generate_benchmark_native filename)
         )
     endif()
 
+    set(_folder "Benchmarks/Native")
+    if(NOT "${folder}" STREQUAL "")
+        set(_folder "${_folder}/${folder}")
+    endif()
+
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME "${filename}.native"
-        FOLDER "Benchmarks/Native"
+        FOLDER "${_folder}"
     )
 
     if(RAZE_BENCHMARKS_REGISTER_TESTS)
@@ -235,15 +239,19 @@ function(generate_benchmark_native filename)
     add_dependencies(benchmark_native ${target})
 endfunction()
 
-function(generate_benchmark_portable filename)
+function(generate_benchmark_portable filename source folder)
     set(target "${filename}.portable")
-    set(source "${filename}.cpp")
 
     _raze_bench_prepare_target(${target} "${source}")
 
+    set(_folder "Benchmarks/Portable")
+    if(NOT "${folder}" STREQUAL "")
+        set(_folder "${_folder}/${folder}")
+    endif()
+
     set_target_properties(${target} PROPERTIES
         OUTPUT_NAME "${filename}.portable"
-        FOLDER "Benchmarks/Portable"
+        FOLDER "${_folder}"
     )
 
     if(RAZE_BENCHMARKS_REGISTER_TESTS)
@@ -260,20 +268,22 @@ function(generate_benchmark_portable filename)
     add_dependencies(benchmark_portable ${target})
 endfunction()
 
-macro(razeBenchmarks_add_benchmark filename)
-    generate_benchmark_native(${filename})
-    generate_benchmark_portable(${filename})
+macro(razeBenchmarks_add_benchmark filename source folder)
+    generate_benchmark_native("${filename}" "${source}" "${folder}")
+    generate_benchmark_portable("${filename}" "${source}" "${folder}")
 endmacro()
 
-file(GLOB BENCH_SOURCES
+file(GLOB_RECURSE BENCH_SOURCES
     CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/algorithm/*.cpp"
 )
 
 foreach(benchsource IN LISTS BENCH_SOURCES)
     get_filename_component(filename "${benchsource}" NAME_WE)
+    get_filename_component(benchdir "${benchsource}" DIRECTORY)
+    file(RELATIVE_PATH relfolder "${CMAKE_CURRENT_SOURCE_DIR}" "${benchdir}")
 
     if(NOT "${filename}" STREQUAL "main")
-        razeBenchmarks_add_benchmark(${filename})
+        razeBenchmarks_add_benchmark("${filename}" "${benchsource}" "${relfolder}")
     endif()
 endforeach()

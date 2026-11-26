@@ -11,6 +11,15 @@
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 
+namespace detail {
+
+template <class In, class Out>
+concept unique_copy_readable_output =
+	std::input_iterator<Out> &&
+	std::same_as<std::iter_value_t<In>, std::iter_value_t<Out>>;
+
+} // namespace detail
+
 template <class Traits>
 struct unique_copy_t : Traits, dispatchable<unique_copy_t<Traits>> {
 	template <source Source, destination Destination, class Predicate, class Projection>
@@ -64,8 +73,7 @@ struct unique_copy_t : Traits, dispatchable<unique_copy_t<Traits>> {
 					}
 				}
 			}
-			else if constexpr (std::input_iterator<unchecked_out_iterator_type> &&
-				std::same_as<std::iter_value_t<unchecked_iterator_type>, std::iter_value_t<unchecked_out_iterator_type>>)
+			else if constexpr (detail::unique_copy_readable_output<unchecked_iterator_type, unchecked_out_iterator_type>)
 			{
 				*_out = *_in;
 				while (++_in != _sent) {
@@ -103,7 +111,7 @@ struct unique_copy_t : Traits, dispatchable<unique_copy_t<Traits>> {
 		requires(std::indirectly_copyable<It, Out> &&
 			std::indirect_equivalence_relation<Predicate, std::projected<It, Proj>> &&
 			(std::forward_iterator<It> ||
-			 (std::input_iterator<Out> && std::same_as<std::iter_value_t<It>, std::iter_value_t<Out>>) ||
+			 detail::unique_copy_readable_output<It, Out> ||
 			 std::indirectly_copyable_storable<It, Out>))
 	{
 		return this->dispatch(get_source(std::move(first), std::move(last)),
@@ -118,8 +126,7 @@ struct unique_copy_t : Traits, dispatchable<unique_copy_t<Traits>> {
 			std::indirect_equivalence_relation<Predicate,
 				std::projected<std::ranges::iterator_t<R>, Proj>> &&
 			(std::forward_iterator<std::ranges::iterator_t<R>> ||
-			 (std::input_iterator<Out> &&
-			  std::same_as<std::ranges::range_value_t<R>, std::iter_value_t<Out>>) ||
+			 detail::unique_copy_readable_output<std::ranges::iterator_t<R>, Out> ||
 			 std::indirectly_copyable_storable<std::ranges::iterator_t<R>, Out>))
 	{
 		return this->dispatch(get_source(std::forward<R>(r)),

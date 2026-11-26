@@ -112,8 +112,14 @@ struct fold_left_with_iter_t : Traits, dispatchable<fold_left_with_iter_t<Traits
 	operator()(R&& r, T init, F f) const
 		requires(detail::indirectly_binary_left_foldable<F, T, std::ranges::iterator_t<R>>)
 	{
-		return this->dispatch(get_source(std::forward<R>(r)),
+		auto res = this->dispatch(get_source(std::forward<R>(r)),
 			std::move(init), std::move(f));
+		if constexpr (std::ranges::borrowed_range<R>)
+			return res;
+		else
+			return std::ranges::fold_left_with_iter_result<std::ranges::dangling, decltype(res.value)>{
+				std::ranges::dangling{}, std::move(res.value)
+			};
 	}
 };
 

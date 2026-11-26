@@ -472,6 +472,9 @@ def classify_variant(bm_name: str) -> str:
 
 
 def discover_benchmarks(root: Path) -> list[str]:
+    algo_dir = root / "benchmarks" / "algorithm"
+    if algo_dir.exists():
+        return sorted(p.stem for p in algo_dir.rglob("*.cpp") if p.stem != "main")
     bench_dir = root / "benchmarks"
     if not bench_dir.exists():
         return []
@@ -1846,7 +1849,7 @@ def main() -> None:
     ap.add_argument("--root", type=Path, default=Path("."))
     ap.add_argument(
         "--targets", nargs="+", default=None,
-        help="Benchmark names (e.g. FindBenchmark SearchNBenchmark); defaults to all benchmarks/*.cpp",
+        help="Benchmark names (e.g. FindBenchmark SearchNBenchmark); defaults to all benchmarks/algorithm/**/*.cpp",
     )
     ap.add_argument(
         "--compilers", nargs="+", default=list(COMPILER_STYLES.keys()),

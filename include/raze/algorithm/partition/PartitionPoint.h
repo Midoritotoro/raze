@@ -40,7 +40,7 @@ struct partition_point_t : Traits, dispatchable<partition_point_t<Traits>> {
 		{}
 
 		raze_always_inline constexpr void operator()() {
-			auto len = std::ranges::distance(_first, _sent);
+			auto len = iter_distance(_first, _sent);
 			while (len > 0) {
 				const auto half = len >> 1;
 				auto mid = std::ranges::next(_first, half);

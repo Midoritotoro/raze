@@ -64,7 +64,13 @@ struct fold_left_first_with_iter_t : Traits, dispatchable<fold_left_first_with_i
 		requires(std::constructible_from<std::ranges::range_value_t<R>, std::ranges::range_reference_t<R>> &&
 			detail::indirectly_binary_left_foldable<F, std::ranges::range_value_t<R>, std::ranges::iterator_t<R>>)
 	{
-		return this->dispatch(get_source(std::forward<R>(r)), std::move(f));
+		auto res = this->dispatch(get_source(std::forward<R>(r)), std::move(f));
+		if constexpr (std::ranges::borrowed_range<R>)
+			return res;
+		else
+			return std::ranges::fold_left_first_with_iter_result<std::ranges::dangling, decltype(res.value)>{
+				std::ranges::dangling{}, std::move(res.value)
+			};
 	}
 };
 

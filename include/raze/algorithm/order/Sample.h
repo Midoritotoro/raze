@@ -49,7 +49,7 @@ struct sample_t : Traits, dispatchable<sample_t<Traits>> {
 			if (_n <= 0) return;
 
 			if constexpr (std::forward_iterator<unchecked_iterator_type>) {
-				difference_type unsampled = std::ranges::distance(_first, _sent);
+				difference_type unsampled = iter_distance(_first, _sent);
 				difference_type remaining = (_n < unsampled) ? _n : unsampled;
 
 				while (remaining > 0) {

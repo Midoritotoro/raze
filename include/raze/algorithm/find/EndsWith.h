@@ -15,8 +15,8 @@ struct ends_with_t : Traits {
                 (std::forward_iterator<It2> || std::sized_sentinel_for<Sent2, It2>) &&
                 std::indirectly_comparable<It1, It2, Predicate, Proj1, Proj2>
     {
-        const auto size1 = std::ranges::distance(first1, sent1);
-        const auto size2 = std::ranges::distance(first2, sent2);
+        const auto size1 = iter_distance(first1, sent1);
+        const auto size2 = iter_distance(first2, sent2);
 
         if (size1 < size2) return false;
         const auto diff = static_cast<std::iter_difference_t<It1>>(size1 - size2);

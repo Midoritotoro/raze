@@ -22,6 +22,10 @@
 #include <cstring>
 #include <functional>
 #include <limits>
+#include <memory>
+#include <new>
+#include <numeric>
+#include <random>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -323,6 +327,75 @@ namespace raze::bench {
     }
 
     template <class T>
+    inline std::vector<T> make_unsorted(sizetype size) {
+        std::vector<T> data(size);
+        std::uint64_t state = 0x9E3779B97F4A7C15ULL;
+        for (sizetype i = 0; i < size; ++i) {
+            state ^= state >> 12;
+            state ^= state << 25;
+            state ^= state >> 27;
+            const auto x = (state * 0x2545F4914F6CDD1DULL) >> 32;
+            data[i] = static_cast<T>(static_cast<std::int64_t>(x % 201) - 100);
+        }
+        return data;
+    }
+
+    template <class T>
+    inline std::vector<T> make_unique_data(sizetype size) {
+        std::vector<T> data(size);
+        for (sizetype i = 0; i < size; ++i)
+            data[i] = static_cast<T>((i / 2) % 100);
+        return data;
+    }
+
+    template <class T>
+    inline std::vector<T> make_heap_data(sizetype size) {
+        auto data = make_unsorted<T>(size);
+        std::ranges::make_heap(data);
+        return data;
+    }
+
+    template <class T>
+    inline std::vector<T> make_partitioned_data(sizetype size) {
+        std::vector<T> data(size);
+        const sizetype split = size / 2;
+        for (sizetype i = 0; i < split; ++i)
+            data[i] = static_cast<T>(105 + (i % 20));
+        for (sizetype i = split; i < size; ++i)
+            data[i] = static_cast<T>(i % 80);
+        return data;
+    }
+
+    template <class T>
+    inline std::vector<T> make_two_sorted_halves(sizetype size) {
+        auto data = make_unsorted<T>(size);
+        const auto mid = data.begin() + static_cast<std::ptrdiff_t>(size / 2);
+        std::ranges::sort(data.begin(), mid);
+        std::ranges::sort(mid, data.end());
+        return data;
+    }
+
+    template <class T>
+    inline std::pair<std::vector<T>, std::vector<T>> make_two_sorted(sizetype size) {
+        std::vector<T> a(size);
+        std::vector<T> b(size);
+        for (sizetype i = 0; i < size; ++i) {
+            const auto v = static_cast<std::int64_t>((i * 100) / (size ? size : 1));
+            a[i] = static_cast<T>(v);
+            b[i] = static_cast<T>((i & 1) ? v : (v + 1));
+        }
+        return { std::move(a), std::move(b) };
+    }
+
+    template <class T>
+    inline std::vector<T> make_bounded_sum_data(sizetype size) {
+        std::vector<T> data(size);
+        for (sizetype i = 0; i < size; ++i)
+            data[i] = (i & 1) ? static_cast<T>(-1) : static_cast<T>(1);
+        return data;
+    }
+
+    template <class T>
     inline constexpr auto unary_pred() noexcept {
         return [](auto x) { return (x - T(10)) > T(90); };
     }
@@ -412,6 +485,73 @@ namespace raze::bench {
             ::benchmark::ClobberMemory();
         }
 
+        state.SetBytesProcessed(state.iterations() * static_cast<std::int64_t>(size * sizeof(T) * stream_factor));
+    }
+
+    template <class T, class Fn>
+    inline void bench_binary_copy_sized(
+        ::benchmark::State& state,
+        const std::vector<T>& a,
+        const std::vector<T>& b,
+        sizetype dst_size,
+        Fn&& fn,
+        sizetype stream_factor = 4)
+    {
+        const auto size = a.size();
+        std::vector<T> dst(dst_size);
+
+        for (auto _ : state) {
+            ::benchmark::DoNotOptimize(a);
+            ::benchmark::DoNotOptimize(b);
+            auto res = fn(a, b, dst);
+            ::benchmark::DoNotOptimize(res);
+            ::benchmark::DoNotOptimize(dst);
+            ::benchmark::ClobberMemory();
+        }
+
+        state.SetBytesProcessed(state.iterations() * static_cast<std::int64_t>(size * sizeof(T) * stream_factor));
+    }
+
+    template <class T, class Fn>
+    inline void bench_partition_copy(
+        ::benchmark::State& state,
+        const std::vector<T>& src,
+        Fn&& fn,
+        sizetype stream_factor = 2)
+    {
+        const auto size = src.size();
+        std::vector<T> out_true(size);
+        std::vector<T> out_false(size);
+
+        for (auto _ : state) {
+            ::benchmark::DoNotOptimize(src);
+            auto res = fn(src, out_true, out_false);
+            ::benchmark::DoNotOptimize(res);
+            ::benchmark::DoNotOptimize(out_true);
+            ::benchmark::DoNotOptimize(out_false);
+            ::benchmark::ClobberMemory();
+        }
+
+        state.SetBytesProcessed(state.iterations() * static_cast<std::int64_t>(size * sizeof(T) * stream_factor));
+    }
+
+    template <class T, class Fn>
+    inline void bench_raw_storage(
+        ::benchmark::State& state,
+        sizetype size,
+        Fn&& fn,
+        sizetype stream_factor = 1)
+    {
+        std::allocator<T> alloc;
+        T* raw = alloc.allocate(size);
+
+        for (auto _ : state) {
+            ::benchmark::DoNotOptimize(raw);
+            fn(raw, size);
+            ::benchmark::ClobberMemory();
+        }
+
+        alloc.deallocate(raw, size);
         state.SetBytesProcessed(state.iterations() * static_cast<std::int64_t>(size * sizeof(T) * stream_factor));
     }
 

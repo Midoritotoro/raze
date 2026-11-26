@@ -19,12 +19,17 @@ template <class T>
 constexpr inline bool is_pointer_decay_v = std::is_pointer_v<std::decay_t<T>>;
 
 template <class T>
-constexpr inline bool is_vector_type_supported_v =
-    (std::is_arithmetic_v<std::decay_t<T>> &&
-     !std::is_same_v<std::decay_t<T>, bool> &&
-     (!std::is_same_v<std::decay_t<T>, long double> || sizeof(long double) == sizeof(f64)) &&
-     sizeof(std::decay_t<T>) <= 8) ||
-    is_pointer_decay_v<T> || std::is_same_v<std::decay_t<T>, std::nullptr_t>;
+constexpr inline bool is_vector_type_supported_v = []() consteval {
+    using Decayed = std::decay_t<T>;
+    if constexpr (std::is_arithmetic_v<Decayed>) {
+        return !std::is_same_v<Decayed, bool>
+            && (!std::is_same_v<Decayed, long double> || sizeof(long double) == sizeof(f64))
+            && (sizeof(Decayed) <= 8);
+    }
+    else {
+        return is_pointer_decay_v<T> || std::is_same_v<Decayed, std::nullptr_t>;
+    }
+}();
 
 template <class T, u32 Width>
 struct deduce_simd_vector_type_impl {
