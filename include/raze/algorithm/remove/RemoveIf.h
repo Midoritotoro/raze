@@ -3,6 +3,8 @@
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
+#include <src/raze/vx/hw/configurable/compact/CompressStore.h>
+#include <src/raze/vx/hw/configurable/memory/Load.h>
 #include <raze/algorithm/find/FindIf.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

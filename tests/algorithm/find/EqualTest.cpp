@@ -109,15 +109,27 @@ namespace {
     template <class T>
     void equal_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::equal(c.first(), c.last(), c.first(), c.last()); },
-            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first(), c.last()); });
+        auto check_self_iter = [&](auto algo) {
+            run<range, T>(cfg,
+                [algo](auto c) { return algo(c.first(), c.last(), c.first(), c.last()); },
+                [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first(), c.last()); });
+        };
 
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::equal(c.range(), c.range()); },
-            [](auto c) { return std::ranges::equal(c.range(), c.range()); });
+        auto check_self_range = [&](auto algo) {
+            run<range, T>(cfg,
+                [algo](auto c) { return algo(c.range(), c.range()); },
+                [](auto c) { return std::ranges::equal(c.range(), c.range()); });
+        };
+
+        check_self_iter(raze::algorithm::equal);
+        check_self_range(raze::algorithm::equal);
+        check_self_iter(raze::algorithm::equal[opt::fscalar]);
+        check_self_range(raze::algorithm::equal[opt::unroll<2>]);
+        check_self_range(raze::algorithm::equal[opt::fstatic]);
+        check_self_iter(raze::algorithm::equal[opt::fautovec]);
 
         run<range, T>(cfg,
             [](auto c) { return raze::algorithm::equal(c.first(), c.last(), c.first2(), c.last2()); },
@@ -127,30 +139,13 @@ namespace {
             [](auto c) { return raze::algorithm::equal(c.range(), c.range2()); },
             [](auto c) { return std::ranges::equal(c.range(), c.range2()); });
 
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::equal[raze::options::fscalar](c.first(), c.last(), c.first(), c.last()); },
-            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first(), c.last()); });
-
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::equal[raze::options::unroll<2>](c.range(), c.range()); },
-            [](auto c) { return std::ranges::equal(c.range(), c.range()); });
-
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::equal[raze::options::fstatic](c.range(), c.range()); },
-            [](auto c) { return std::ranges::equal(c.range(), c.range()); });
-
         auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
 
         run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::equal[raze::options::fautovec](c.first(), c.last(), c.first(), c.last()); },
-            [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first(), c.last()); });
-
-        run<range, T>(cfg,
-            [eq_branching](auto c) { return raze::algorithm::equal[raze::options::fautovec][raze::options::fstatic](c.range(), c.range2(), eq_branching); },
+            [eq_branching](auto c) { return raze::algorithm::equal[opt::fautovec][opt::fstatic](c.range(), c.range2(), eq_branching); },
             [eq_branching](auto c) { return std::ranges::equal(c.range(), c.range2(), eq_branching); });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t A1, size_t A2>(auto algo) {
@@ -192,47 +187,40 @@ namespace {
             [](auto c) { return raze::algorithm::equal(c.first(), c.last(), c.first2(), c.last2()); },
             [](auto c) { return std::ranges::equal(c.first(), c.last(), c.first2(), c.last2()); }));
 
-        static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::equal(c.range(), c.range()); },
-            [](auto c) { return std::ranges::equal(c.range(), c.range()); }));
+        constexpr auto check_ce_self = [](auto algo) {
+            return constexpr_run<T, range, 5>(
+                [algo](auto c) { return algo(c.range(), c.range()); },
+                [](auto c) { return std::ranges::equal(c.range(), c.range()); });
+        };
 
-        static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::equal(c.range(), c.range2()); },
-            [](auto c) { return std::ranges::equal(c.range(), c.range2()); }));
+        constexpr auto check_ce_pair = [](auto algo) {
+            return constexpr_run<T, range, 5>(
+                [algo](auto c) { return algo(c.range(), c.range2()); },
+                [](auto c) { return std::ranges::equal(c.range(), c.range2()); });
+        };
 
-        static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::equal[raze::options::fautovec](c.range(), c.range()); },
-            [](auto c) { return std::ranges::equal(c.range(), c.range()); }));
-
-        static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::equal[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
-            [](auto c) { return std::ranges::equal(c.range(), c.range2()); }));
-
-        static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            std::array<T, 0> b{};
-            std::array<T, 2> c{ T(1), T(2) };
-            return raze::algorithm::equal(a, b) &&
-                  !raze::algorithm::equal(a, c) &&
-                  !raze::algorithm::equal(c, a);
-            }());
+        static_assert(check_ce_self(raze::algorithm::equal));
+        static_assert(check_ce_self(raze::algorithm::equal[opt::fautovec]));
+        static_assert(check_ce_pair(raze::algorithm::equal));
+        static_assert(check_ce_pair(raze::algorithm::equal[opt::aligned<64, opt::unaligned>]));
 
         static_assert([]() constexpr {
-            std::array<T, 4> a{ T(1), T(2), T(3), T(4) };
-            std::array<T, 4> b{ T(1), T(2), T(3), T(4) };
-            std::array<T, 4> c{ T(1), T(2), T(9), T(4) };
-            return raze::algorithm::equal(a, b) &&
-                  !raze::algorithm::equal(a, c);
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-            std::array<T, 5> b{ T(1), T(2), T(3), T(4), T(5) };
-            std::array<T, 4> c{ T(1), T(2), T(3), T(4) };
-            return raze::algorithm::equal[raze::options::fscalar](a, b) &&
-                  !raze::algorithm::equal[raze::options::fscalar](a, c) &&
-                   raze::algorithm::equal(a.begin(), a.begin() + 4, c.begin(), c.end());
-            }());
+            std::array<T, 0> e1{}, e2{};
+            std::array<T, 2> t2{ T(1), T(2) };
+            std::array<T, 4> a4{ T(1), T(2), T(3), T(4) };
+            std::array<T, 4> b4{ T(1), T(2), T(3), T(4) };
+            std::array<T, 4> c4{ T(1), T(2), T(9), T(4) };
+            std::array<T, 5> a5{ T(1), T(2), T(3), T(4), T(5) };
+            std::array<T, 5> b5{ T(1), T(2), T(3), T(4), T(5) };
+            return raze::algorithm::equal(e1, e2) &&
+                  !raze::algorithm::equal(e1, t2) &&
+                  !raze::algorithm::equal(t2, e1) &&
+                   raze::algorithm::equal(a4, b4) &&
+                  !raze::algorithm::equal(a4, c4) &&
+                   raze::algorithm::equal[opt::fscalar](a5, b5) &&
+                  !raze::algorithm::equal[opt::fscalar](a5, a4) &&
+                   raze::algorithm::equal(a5.begin(), a5.begin() + 4, a4.begin(), a4.end());
+        }());
     }
 }
 

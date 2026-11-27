@@ -1,16 +1,16 @@
 #pragma once
 
-#include <raze/compatibility/Compatibility.h>
+#include <src/raze/compatibility/Compatibility.h>
 #include <raze/Types.h>
 #include <raze/options/Options.h>
 
 #if defined(min)
 #  undef min
-#endif // defined(min)
+#endif
 
 #if defined(max)
 #  undef max
-#endif // defined(max)
+#endif
 
 #include <version>
 #include <benchmark/benchmark.h>
@@ -662,7 +662,7 @@ namespace raze::bench {
         }(TypeList{});
     }
 
-} // namespace raze::bench
+}
 
 #if !defined(RAZE_BENCHMARK_MAIN)
 #  define RAZE_BENCHMARK_MAIN()                                                 \
@@ -683,4 +683,4 @@ namespace raze::bench {
         return 0;                                                               \
     }                                                                           \
     int main(int, char**)
-#endif // !defined(RAZE_BENCHMARK_MAIN)
+#endif

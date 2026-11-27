@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/arch/ProcessorDetection.h>
+#include <src/raze/arch/ProcessorDetection.h>
 
 
 #if !defined(__has_builtin)

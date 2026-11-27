@@ -9,6 +9,7 @@
 #include <ranges>
 #include <span>
 #include <vector>
+#include <deque>
 
 namespace {
     struct constexpr_urbg {
@@ -163,3 +164,102 @@ RTTS_CASE("raze::algorithm::generate_random URBG, distribution, bulk hooks, and 
     }());
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void generate_random_dist_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 513);
+            const auto base = rtts::random::vector<T>(n, rng());
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const unsigned gseed = rng();
+
+            auto dist = [](std::mt19937& g) -> T {
+                return static_cast<T>(g() % 97u);
+            };
+
+            auto v_exp = base;
+            std::mt19937 ge(gseed);
+            auto re = std::ranges::generate(v_exp.begin() + static_cast<std::ptrdiff_t>(lo),
+                                            v_exp.begin() + static_cast<std::ptrdiff_t>(hi),
+                                            [&]() { return dist(ge); });
+            const auto exp_off = re - v_exp.begin();
+            const auto exp_next = ge();
+
+            auto check_variant = [&](auto call) {
+                auto v = base;
+                std::mt19937 g(gseed);
+                auto first = v.begin() + static_cast<std::ptrdiff_t>(lo);
+                auto last = v.begin() + static_cast<std::ptrdiff_t>(hi);
+                auto r = call(first, last, g);
+                RTTS_EXPECT(r - v.begin() == exp_off);
+                RTTS_ALL_EQUAL(v, v_exp);
+                RTTS_EQUAL(g(), exp_next);
+            };
+
+            check_variant([&](auto f, auto l, auto& g) { return raze::algorithm::generate_random(f, l, g, dist); });
+            check_variant([&](auto f, auto l, auto& g) { return raze::algorithm::generate_random(std::ranges::subrange(f, l), g, dist); });
+            check_variant([&](auto f, auto l, auto& g) { return raze::algorithm::generate_random[opt::fscalar](f, l, g, dist); });
+            check_variant([&](auto f, auto l, auto& g) { return raze::algorithm::generate_random[opt::fstatic](f, l, g, dist); });
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::generate_random distribution fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        generate_random_dist_fuzz<T>(seed, 30);
+};
+
+RTTS_CASE("raze::algorithm::generate_random URBG and bulk hooks fuzz") {
+    namespace opt = raze::options;
+
+    for (unsigned seed : fuzz_seeds) {
+        std::mt19937 rng(seed);
+        for (size_t it = 0; it < 40; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 513);
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const unsigned gseed = rng();
+
+            // Raw mt19937 into uint32_t vector & deque
+            std::vector<std::uint32_t> v1(n, 0xCAFEu), v2(n, 0xCAFEu), ve(n, 0xCAFEu);
+            std::mt19937 g1(gseed), g2(gseed), ge(gseed);
+            raze::algorithm::generate_random(v1.begin() + static_cast<std::ptrdiff_t>(lo),
+                                             v1.begin() + static_cast<std::ptrdiff_t>(hi), g1);
+            raze::algorithm::generate_random[opt::fscalar](std::ranges::subrange(
+                v2.begin() + static_cast<std::ptrdiff_t>(lo),
+                v2.begin() + static_cast<std::ptrdiff_t>(hi)), g2);
+            std::ranges::generate(ve.begin() + static_cast<std::ptrdiff_t>(lo),
+                                  ve.begin() + static_cast<std::ptrdiff_t>(hi), std::ref(ge));
+            RTTS_ALL_EQUAL(v1, ve);
+            RTTS_ALL_EQUAL(v2, ve);
+
+            // Bulk span & subrange hooks at random sizes
+            std::vector<std::uint32_t> bvec(hi - lo);
+            bulk_span_urbg bg;
+            bg.state = gseed;
+            auto bit = raze::algorithm::generate_random(bvec, bg);
+            RTTS_EXPECT(bit == bvec.end());
+            RTTS_EQUAL(bg.span_calls, 1);
+            if (!bvec.empty()) {
+                RTTS_EQUAL(bvec.front(), 1000u + gseed + 1u);
+                RTTS_EQUAL(bvec.back(), 1000u + gseed + static_cast<std::uint32_t>(bvec.size()));
+            }
+
+            if ((hi - lo) <= 64) {
+                std::list<std::uint32_t> blst(hi - lo);
+                bulk_subrange_urbg sg;
+                sg.state = gseed;
+                auto sit = raze::algorithm::generate_random(blst, sg);
+                RTTS_EXPECT(sit == blst.end());
+                RTTS_EQUAL(sg.subrange_calls, 1);
+            }
+        }
+    }
+};

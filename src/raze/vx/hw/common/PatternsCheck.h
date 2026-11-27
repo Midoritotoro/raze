@@ -2,6 +2,7 @@
 
 #include <src/raze/vx/hw/common/ShufflePattern.h>
 #include <array>
+#include <limits>
 
 __RAZE_VX_NAMESPACE_BEGIN
 

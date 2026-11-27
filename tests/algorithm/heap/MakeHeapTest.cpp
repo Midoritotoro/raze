@@ -7,6 +7,7 @@
 #include <memory>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::make_heap", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -55,3 +56,69 @@ RTTS_CASE("raze::algorithm::make_heap comparator, projections, deque, and dangli
     static_assert(std::same_as<decltype(dr), std::ranges::dangling>);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void make_heap_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            std::vector<T> base(n);
+            if ((it & 1u) == 0u) {
+                base = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                for (size_t i = 0; i < n; ++i)
+                    base[i] = static_cast<T>(rng() % 12u);
+            }
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const bool min_heap = (it % 3 == 2);
+
+            auto run_check = [&](auto comp) {
+                auto verify = [&](auto fn) {
+                    auto v = base;
+                    auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                     v.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto end = fn(sub);
+                    RTTS_EXPECT(end == sub.end());
+                    RTTS_EXPECT(std::ranges::is_heap(sub, comp));
+                    RTTS_EXPECT(std::equal(v.begin(), v.begin() + static_cast<std::ptrdiff_t>(lo), base.begin()));
+                    RTTS_EXPECT(std::equal(v.begin() + static_cast<std::ptrdiff_t>(hi), v.end(),
+                                           base.begin() + static_cast<std::ptrdiff_t>(hi)));
+                    std::vector<T> s_got(sub.begin(), sub.end());
+                    std::vector<T> s_exp(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                         base.begin() + static_cast<std::ptrdiff_t>(hi));
+                    std::ranges::sort(s_got);
+                    std::ranges::sort(s_exp);
+                    RTTS_ALL_EQUAL(s_got, s_exp);
+                };
+
+                verify([&](auto sub) { return raze::algorithm::make_heap(sub, comp); });
+                verify([&](auto sub) { return raze::algorithm::make_heap(sub.begin(), sub.end(), comp); });
+                verify([&](auto sub) { return raze::algorithm::make_heap[opt::fscalar](sub, comp); });
+                verify([&](auto sub) { return raze::algorithm::make_heap[opt::fstatic](sub, comp); });
+
+                if (it % 8 == 0 && (hi - lo) <= 64) {
+                    std::deque<T> dq(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                     base.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto end = raze::algorithm::make_heap(dq, comp);
+                    RTTS_EXPECT(end == dq.end() && std::ranges::is_heap(dq, comp));
+                }
+            };
+
+            if (min_heap) run_check(std::greater<>{});
+            else          run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::make_heap fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        make_heap_fuzz<T>(seed, 35);
+};

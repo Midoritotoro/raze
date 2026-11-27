@@ -6,6 +6,7 @@
 #include <iterator>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::set_union", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -48,7 +49,7 @@ RTTS_CASE("raze::algorithm::set_union projections, single-pass input, and dangli
     raze::algorithm::set_union(a, b, std::back_inserter(out), std::less<>{},
         &rtts::test_item::key, &rtts::test_item::key);
     RTTS_EQUAL(out.size(), size_t(4));
-    RTTS_EQUAL(out[1].payload, 11); // element from first range chosen on tie
+    RTTS_EQUAL(out[1].payload, 11);
 
     const std::vector<int> v1{ 1, 3, 5 };
     const std::vector<int> v2{ 2, 3, 6 };
@@ -64,3 +65,66 @@ RTTS_CASE("raze::algorithm::set_union projections, single-pass input, and dangli
     static_assert(std::same_as<decltype(dr.in2), std::ranges::dangling>);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void set_union_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n1 = static_cast<size_t>(rng() % 257);
+            const size_t n2 = static_cast<size_t>(rng() % 257);
+            std::vector<T> a(n1), b(n2);
+            if ((it % 3) == 0) {
+                a = rtts::random::vector<T>(n1, rng());
+                b = rtts::random::vector<T>(n2, rng());
+            }
+            else {
+                const unsigned alpha = (it % 3 == 1) ? 6u : 16u;
+                for (size_t i = 0; i < n1; ++i) a[i] = static_cast<T>(rng() % alpha);
+                for (size_t i = 0; i < n2; ++i) b[i] = static_cast<T>(rng() % alpha);
+            }
+
+            const bool desc = (it % 3 == 2);
+            auto run_check = [&](auto comp) {
+                std::ranges::sort(a, comp);
+                std::ranges::sort(b, comp);
+
+                std::vector<T> exp;
+                std::ranges::set_union(a, b, std::back_inserter(exp), comp);
+
+                auto verify_buf = [&](auto fn) {
+                    std::vector<T> out(n1 + n2);
+                    auto r = fn(out.begin());
+                    RTTS_EXPECT(r.in1 == a.end() && r.in2 == b.end());
+                    RTTS_EXPECT(static_cast<size_t>(r.out - out.begin()) == exp.size());
+                    RTTS_EXPECT(std::equal(out.begin(), r.out, exp.begin()));
+                };
+
+                verify_buf([&](auto o) { return raze::algorithm::set_union(a, b, o, comp); });
+                verify_buf([&](auto o) { return raze::algorithm::set_union(a.begin(), a.end(), b.begin(), b.end(), o, comp); });
+                verify_buf([&](auto o) { return raze::algorithm::set_union[opt::fscalar](a, b, o, comp); });
+                verify_buf([&](auto o) { return raze::algorithm::set_union[opt::fstatic](a, b, o, comp); });
+
+                if (it % 8 == 0 && n1 <= 64 && n2 <= 64) {
+                    rtts::single_pass_input_range<T> sp1(a);
+                    rtts::single_pass_input_range<T> sp2(b);
+                    std::vector<T> out;
+                    raze::algorithm::set_union(sp1, sp2, std::back_inserter(out), comp);
+                    RTTS_ALL_EQUAL(out, exp);
+                }
+            };
+
+            if (desc) run_check(std::greater<>{});
+            else      run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::set_union fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        set_union_fuzz<T>(seed, 35);
+};

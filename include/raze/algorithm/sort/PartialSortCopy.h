@@ -2,6 +2,7 @@
 
 #include <raze/algorithm/heap/MakeHeap.h>
 #include <raze/algorithm/heap/SortHeap.h>
+#include <algorithm>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

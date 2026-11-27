@@ -7,6 +7,7 @@
 #include <memory>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::sort", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -30,7 +31,6 @@ RTTS_CASE_TPL("raze::algorithm::sort", rtts::algorithm::all_types)
         check([](auto& v) { return raze::algorithm::sort[opt::fstatic](v); });
     }
 
-    // Pathological inputs: already sorted, reverse sorted, all equal, organ-pipe
     for (size_t sz : { size_t(64), size_t(257) }) {
         std::vector<T> rev(sz), same(sz, T(7)), pipe(sz);
         for (size_t i = 0; i < sz; ++i) {
@@ -73,3 +73,80 @@ RTTS_CASE("raze::algorithm::sort comparator, projections, deque, move-only, and 
     static_assert(std::same_as<decltype(dr), std::ranges::dangling>);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void sort_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 351);
+            std::vector<T> base(n);
+            const unsigned shape = static_cast<unsigned>(it % 5);
+            if (shape == 0u) {
+                base = rtts::random::vector<T>(n, rng());
+            }
+            else if (shape == 1u) {
+                for (size_t i = 0; i < n; ++i) base[i] = static_cast<T>(rng() % 4u);
+            }
+            else if (shape == 2u) {
+                for (size_t i = 0; i < n; ++i) base[i] = static_cast<T>(rng() % 16u);
+            }
+            else if (shape == 3u) {
+                base = rtts::random::vector<T>(n, rng());
+                std::ranges::sort(base);
+                for (size_t k = 0; k < 4 && n >= 2; ++k)
+                    std::swap(base[static_cast<size_t>(rng() % n)], base[static_cast<size_t>(rng() % n)]);
+            }
+            else {
+                base = rtts::random::vector<T>(n, rng());
+                std::ranges::sort(base, std::greater<>{});
+            }
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const bool desc = (it % 3 == 2);
+
+            auto run_check = [&](auto comp) {
+                auto exp = base;
+                std::ranges::sort(exp.begin() + static_cast<std::ptrdiff_t>(lo),
+                                  exp.begin() + static_cast<std::ptrdiff_t>(hi), comp);
+
+                auto verify = [&](auto fn) {
+                    auto v = base;
+                    auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                     v.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto end = fn(sub);
+                    RTTS_EXPECT(end == sub.end());
+                    RTTS_ALL_EQUAL(v, exp);
+                };
+
+                verify([&](auto sub) { return raze::algorithm::sort(sub, comp); });
+                verify([&](auto sub) { return raze::algorithm::sort(sub.begin(), sub.end(), comp); });
+                verify([&](auto sub) { return raze::algorithm::sort[opt::fscalar](sub, comp); });
+                verify([&](auto sub) { return raze::algorithm::sort[opt::fstatic](sub, comp); });
+
+                if (it % 8 == 0 && (hi - lo) <= 64) {
+                    std::deque<T> dq(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                     base.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto end = raze::algorithm::sort(dq, comp);
+                    RTTS_EXPECT(end == dq.end());
+                    RTTS_EXPECT(std::ranges::equal(dq, std::ranges::subrange(
+                        exp.begin() + static_cast<std::ptrdiff_t>(lo),
+                        exp.begin() + static_cast<std::ptrdiff_t>(hi))));
+                }
+            };
+
+            if (desc) run_check(std::greater<>{});
+            else      run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::sort fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        sort_fuzz<T>(seed, 30);
+};

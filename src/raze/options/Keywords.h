@@ -1,6 +1,8 @@
 #pragma once 
 
+#include <src/raze/options/Call.h>
 #include <src/raze/options/Concepts.h>
+#include <src/raze/options/Option.h>
 #include <src/raze/options/TypeOr.h>
 
 
@@ -137,6 +139,8 @@ constexpr raze_always_inline typed_keyword<ID, T> keyword(ID) noexcept {
 }
 
 template <class ... Ts> struct types {};
+
+template <concepts::option ... Options> struct settings;
 
 template <class Settings, template <class...> class List = types> 
 struct keywords_impl;

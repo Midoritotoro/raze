@@ -1,11 +1,7 @@
 #pragma once
 
-#include <raze/compatibility/CompilerDetection.h>
-
-#include <vector>
-#include <raze/Types.h>
-
-#include <raze/arch/CpuFeature.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/arch/ProcessorDetection.h>
 
 #if defined(raze_processor_x86) && defined(raze_cpp_msvc_only)
 

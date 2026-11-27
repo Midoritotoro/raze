@@ -11,25 +11,25 @@
 // Gcc attributes
 // https://ohse.de/uwe/articles/gcc-attributes.html and https://gcc.gnu.org/onlinedocs/gcc/Common-Function-Attributes.html
 
-#include <raze/RazeNamespace.h>
-#include <raze/compatibility/CompilerDetection.h>
-#include <raze/compatibility/CxxVersionDetection.h>
-#include <raze/compatibility/SystemDetection.h>
-#include <raze/compatibility/LanguageFeatures.h>
-#include <raze/compatibility/AlignmentMacros.h>
-#include <raze/compatibility/BranchPrediction.h>
-#include <raze/compatibility/CallingConventions.h>
-#include <raze/compatibility/Inline.h>
-#include <raze/compatibility/FunctionAttributes.h>
-#include <raze/compatibility/MemoryMacros.h>
-#include <raze/compatibility/Nodiscard.h>
-#include <raze/compatibility/SimdCompatibility.h>
-#include <raze/compatibility/UnreachableCode.h>
-#include <raze/compatibility/Warnings.h>
-#include <raze/compatibility/StaticOperators.h>
-#include <raze/compatibility/StackProtection.h>
-#include <raze/compatibility/Unroll.h>
-#include <raze/compatibility/TargetClones.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/CxxVersionDetection.h>
+#include <src/raze/compatibility/SystemDetection.h>
+#include <src/raze/compatibility/LanguageFeatures.h>
+#include <src/raze/compatibility/AlignmentMacros.h>
+#include <src/raze/compatibility/BranchPrediction.h>
+#include <src/raze/compatibility/CallingConventions.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/FunctionAttributes.h>
+#include <src/raze/compatibility/MemoryMacros.h>
+#include <src/raze/compatibility/Nodiscard.h>
+#include <src/raze/compatibility/SimdCompatibility.h>
+#include <src/raze/compatibility/UnreachableCode.h>
+#include <src/raze/compatibility/Warnings.h>
+#include <src/raze/compatibility/StaticOperators.h>
+#include <src/raze/compatibility/StackProtection.h>
+#include <src/raze/compatibility/Unroll.h>
+#include <src/raze/compatibility/TargetClones.h>
 
 #include <cstddef>
 #include <string_view>

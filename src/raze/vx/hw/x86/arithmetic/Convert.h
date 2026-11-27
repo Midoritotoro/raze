@@ -7,6 +7,7 @@
 #include <src/raze/vx/hw/x86/arithmetic/VerticalMax.h>
 #include <src/raze/vx/hw/x86/arithmetic/VerticalMin.h>
 #include <src/raze/math/SaturatingCast.h>
+#include <cstdint>
 #include <utility>
 
 

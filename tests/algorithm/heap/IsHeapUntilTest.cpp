@@ -6,12 +6,13 @@
 #include <deque>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::is_heap_until", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     using namespace rtts::algorithm;
     namespace opt = raze::options;
-    auto cfg = config::compact();
+    auto cfg = config::thorough();
 
     run<range, T, random_access_iterator>(cfg,
         [](auto c) { return raze::algorithm::is_heap_until(c.first(), c.last()); },
@@ -52,3 +53,61 @@ RTTS_CASE("raze::algorithm::is_heap_until comparator, projections, non-common, a
     static_assert(std::same_as<decltype(dr), std::ranges::dangling>);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void is_heap_until_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            std::vector<T> v(n);
+            if ((it & 1u) == 0u) {
+                v = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                for (size_t i = 0; i < n; ++i)
+                    v[i] = static_cast<T>(rng() % 16u);
+            }
+
+            const bool min_heap = (it % 4 == 3);
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                             v.begin() + static_cast<std::ptrdiff_t>(hi));
+
+            auto run_check = [&](auto comp) {
+                const unsigned mode = static_cast<unsigned>(it % 3);
+                if (mode == 0u || mode == 1u) {
+                    std::ranges::make_heap(sub, comp);
+                    if (mode == 1u && (hi - lo) >= 2) {
+                        const size_t pos = lo + 1 + static_cast<size_t>(rng() % (hi - lo - 1));
+                        v[pos] = val_gen();
+                    }
+                }
+                const auto exp = std::ranges::is_heap_until(sub, comp);
+                RTTS_EXPECT(raze::algorithm::is_heap_until(sub, comp) == exp);
+                RTTS_EXPECT(raze::algorithm::is_heap_until(sub.begin(), sub.end(), comp) == exp);
+                RTTS_EXPECT(raze::algorithm::is_heap_until[opt::fscalar](sub, comp) == exp);
+                RTTS_EXPECT(raze::algorithm::is_heap_until[opt::fstatic](sub, comp) == exp);
+
+                if (it % 8 == 0 && (hi - lo) <= 64) {
+                    std::deque<T> dq(sub.begin(), sub.end());
+                    RTTS_EXPECT(raze::algorithm::is_heap_until(dq, comp) == std::ranges::is_heap_until(dq, comp));
+                }
+            };
+
+            if (min_heap) run_check(std::greater<>{});
+            else          run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::is_heap_until fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        is_heap_until_fuzz<T>(seed, 40);
+};

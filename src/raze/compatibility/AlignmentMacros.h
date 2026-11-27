@@ -1,8 +1,8 @@
 #pragma once 
 
-#include <raze/compatibility/CompilerDetection.h>
-#include <raze/compatibility/SystemDetection.h>
-#include <raze/arch/ProcessorDetection.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/SystemDetection.h>
+#include <src/raze/arch/ProcessorDetection.h>
 
 
 #if !defined(raze_unaligned)

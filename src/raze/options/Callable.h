@@ -4,7 +4,6 @@
 #include <src/raze/options/Options.h>
 #include <src/raze/options/DecoratedWith.h>
 #include <src/raze/options/If.h>
-#include <src/raze/vx/Concepts.h>
 
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN

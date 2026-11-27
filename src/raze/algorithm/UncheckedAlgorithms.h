@@ -3,8 +3,9 @@
 #include <src/raze/algorithm/Autovectorizable.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/DataSource.h>
+#include <src/raze/options/Unroller.h>
 #include <src/raze/vx/dispatch/SizedSimdDispatcher.h>
-#include <raze/arch/CpuFeature.h>
+#include <src/raze/arch/CpuFeature.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

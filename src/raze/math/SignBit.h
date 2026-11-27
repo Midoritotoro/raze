@@ -1,8 +1,9 @@
 #pragma once 
 
-#include <raze/compatibility/Compatibility.h>
+#include <src/raze/compatibility/Compatibility.h>
+#include <climits>
 #include <concepts>
-#include <limits.h>
+#include <type_traits>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 

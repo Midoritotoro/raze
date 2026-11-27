@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <src/raze/RazeNamespace.h>
+
 __RAZE_MATH_NAMESPACE_BEGIN
 
 constexpr inline auto pi = 3.14159265358979323846;

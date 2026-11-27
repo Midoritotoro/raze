@@ -7,6 +7,7 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::merge", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -72,3 +73,87 @@ RTTS_CASE("raze::algorithm::merge stability, projections, single-pass input, and
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void merge_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n1 = static_cast<size_t>(rng() % 257);
+            const size_t n2 = static_cast<size_t>(rng() % 257);
+            std::vector<T> a(n1), b(n2);
+            if ((it & 1u) == 0u) {
+                a = rtts::random::vector<T>(n1, rng());
+                b = rtts::random::vector<T>(n2, rng());
+            }
+            else {
+                const unsigned alpha = (it % 4 == 1) ? 6u : 16u;
+                for (size_t i = 0; i < n1; ++i) a[i] = static_cast<T>(rng() % alpha);
+                for (size_t i = 0; i < n2; ++i) b[i] = static_cast<T>(rng() % alpha);
+            }
+
+            const bool desc = (it % 3 == 2);
+            auto run_check = [&](auto comp) {
+                std::ranges::sort(a, comp);
+                std::ranges::sort(b, comp);
+
+                std::vector<T> exp(n1 + n2);
+                std::ranges::merge(a, b, exp.begin(), comp);
+
+                auto verify = [&](auto fn) {
+                    std::vector<T> out(n1 + n2);
+                    auto r = fn(out.begin());
+                    RTTS_EXPECT(r.in1 == a.end() && r.in2 == b.end() && r.out == out.end());
+                    RTTS_ALL_EQUAL(out, exp);
+                };
+
+                verify([&](auto dst) { return raze::algorithm::merge(a, b, dst, comp); });
+                verify([&](auto dst) { return raze::algorithm::merge(a.begin(), a.end(), b.begin(), b.end(), dst, comp); });
+                verify([&](auto dst) { return raze::algorithm::merge[opt::fscalar](a, b, dst, comp); });
+                verify([&](auto dst) { return raze::algorithm::merge[opt::fstatic](a, b, dst, comp); });
+
+                if (it % 8 == 0 && n1 <= 64 && n2 <= 64) {
+                    std::list<T> la(a.begin(), a.end());
+                    std::list<T> lb(b.begin(), b.end());
+                    std::vector<T> lout;
+                    raze::algorithm::merge(la, lb, std::back_inserter(lout), comp);
+                    RTTS_ALL_EQUAL(lout, exp);
+                }
+            };
+
+            if (desc) run_check(std::greater<>{});
+            else      run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::merge fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        merge_fuzz<T>(seed, 35);
+};
+
+RTTS_CASE("raze::algorithm::merge stability fuzz") {
+    for (unsigned seed : fuzz_seeds) {
+        std::mt19937 rng(seed);
+        for (size_t it = 0; it < 40; ++it) {
+            const size_t n1 = static_cast<size_t>(rng() % 129);
+            const size_t n2 = static_cast<size_t>(rng() % 129);
+            std::vector<rtts::test_item> a(n1), b(n2);
+            for (size_t i = 0; i < n1; ++i) a[i] = { static_cast<int>(rng() % 10u), static_cast<int>(i) };
+            for (size_t i = 0; i < n2; ++i) b[i] = { static_cast<int>(rng() % 10u), static_cast<int>(1000 + i) };
+            std::ranges::stable_sort(a, std::less<>{}, &rtts::test_item::key);
+            std::ranges::stable_sort(b, std::less<>{}, &rtts::test_item::key);
+
+            std::vector<rtts::test_item> got, exp;
+            raze::algorithm::merge(a, b, std::back_inserter(got), std::less<>{},
+                                   &rtts::test_item::key, &rtts::test_item::key);
+            std::ranges::merge(a, b, std::back_inserter(exp), std::less<>{},
+                               &rtts::test_item::key, &rtts::test_item::key);
+            RTTS_ALL_EQUAL(got, exp);
+        }
+    }
+};

@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <raze/compatibility/CompilerDetection.h>
-#include <raze/compatibility/LanguageFeatures.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/LanguageFeatures.h>
 
 
 #if !defined(raze_likely)

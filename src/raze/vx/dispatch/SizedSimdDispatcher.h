@@ -1,8 +1,9 @@
 #pragma once
 
 #include <raze/vx/Simd.h>
-#include <raze/options/Options.h>
-#include <raze/arch/ProcessorFeatures.h>
+#include <src/raze/options/DispatchCall.h>
+#include <src/raze/options/Functor.h>
+#include <src/raze/arch/ProcessorFeatures.h>
 #include <src/raze/vx/hw/x86/memory/ConditionalMemAccessNative.h>
 
 __RAZE_VX_NAMESPACE_BEGIN

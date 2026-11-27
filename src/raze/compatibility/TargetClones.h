@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/CompilerDetection.h>
 
 #if !defined(raze_targets)
 #  if defined(__ELF__) && !defined(raze_cpp_nvhpc) && (defined(raze_cpp_gnu_only) || (defined(raze_cpp_clang) && raze_cpp_clang >= 1500))

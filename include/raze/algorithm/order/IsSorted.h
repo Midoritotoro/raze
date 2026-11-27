@@ -1,10 +1,13 @@
 #pragma once
 
+#include <src/raze/vx/hw/configurable/memory/Load.h>
+#include <src/raze/vx/hw/configurable/mask/AnyOf.h>
+
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/DataSource.h>
-#include <algorithm>
+#include <utility>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

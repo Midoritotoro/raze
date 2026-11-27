@@ -1,17 +1,12 @@
 #pragma once  
 
-#include <raze/RazeNamespace.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/BranchPrediction.h>
+#include <src/raze/compatibility/FunctionAttributes.h>
 
-#include <raze/compatibility/Warnings.h>
-#include <raze/compatibility/BranchPrediction.h>
-#include <raze/compatibility/FunctionAttributes.h>
-
+#include <cstddef>
 #include <cstdio>
 #include <cstdlib>
-#include <cassert>
-
-#include <iostream>
-#include <exception>
 
 
 __RAZE_NAMESPACE_BEGIN

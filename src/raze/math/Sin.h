@@ -1,10 +1,9 @@
 #pragma once 
 
-#include <raze/vx/Algorithm.h>
+#include <src/raze/vx/Concepts.h>
+#include <src/raze/vx/hw/configurable/merge/Select.h>
 #include <src/raze/math/MathConstants.h>
 #include <src/raze/math/SinTables.h>
-#include <src/raze/math/Fma.h>
-#include <src/raze/math/Fms.h>
 #include <cmath>
 
 __RAZE_MATH_NAMESPACE_BEGIN

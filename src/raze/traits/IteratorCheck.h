@@ -1,7 +1,9 @@
 #pragma once 
 
-#include <raze/RazeNamespace.h>
-#include <raze/compatibility/CxxVersionDetection.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/CxxVersionDetection.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/Nodiscard.h>
 
 #include <type_traits>
 #include <utility>

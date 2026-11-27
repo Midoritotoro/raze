@@ -3,6 +3,7 @@
 
 RTTS_CASE_TPL("raze::algorithm::remove_if", rtts::algorithm::all_types)
 < class T > (rtts::type<T>) {
+    namespace opt = raze::options;
     auto cfg = rtts::algorithm::config::thorough();
 
     const T threshold = rtts::random::generator<T>(1000)();
@@ -10,77 +11,36 @@ RTTS_CASE_TPL("raze::algorithm::remove_if", rtts::algorithm::all_types)
     auto pred_vector = [threshold](auto x) { return x > threshold; };
     auto pred_branching = [threshold](auto x) { if (x > threshold) return true; return false; };
 
-    {
+    auto check_iter = [&](auto algo, auto pred) {
         rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_scalar](auto c) { return raze::algorithm::remove_if(c.first(), c.last(), pred_scalar); },
-            [pred_scalar](auto c) { return std::ranges::remove_if(c.first(), c.last(), pred_scalar); },
+            [algo, pred](auto c) { return algo(c.first(), c.last(), pred); },
+            [pred](auto c) { return std::ranges::remove_if(c.first(), c.last(), pred); },
             rtts::algorithm::prefix_result);
+    };
 
+    auto check_range = [&](auto algo, auto pred) {
         rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if(c.first(), c.last(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.first(), c.last(), pred_vector); },
+            [algo, pred](auto c) { return algo(c.range(), pred); },
+            [pred](auto c) { return std::ranges::remove_if(c.range(), pred); },
             rtts::algorithm::prefix_result);
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_scalar](auto c) { return raze::algorithm::remove_if(c.range(), pred_scalar); },
-            [pred_scalar](auto c) { return std::ranges::remove_if(c.range(), pred_scalar); },
-            rtts::algorithm::prefix_result);
+    check_iter(raze::algorithm::remove_if, pred_scalar);
+    check_iter(raze::algorithm::remove_if, pred_vector);
+    check_range(raze::algorithm::remove_if, pred_scalar);
+    check_range(raze::algorithm::remove_if, pred_vector);
 
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if(c.range(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.range(), pred_vector); },
-            rtts::algorithm::prefix_result);
-    }
-
-    {
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if[raze::options::fscalar](c.first(), c.last(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.first(), c.last(), pred_vector); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if[raze::options::fscalar](c.range(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.range(), pred_vector); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if[raze::options::unroll<1>](c.range(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.range(), pred_vector); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if[raze::options::fstatic](c.range(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.range(), pred_vector); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if[raze::options::fscalar][raze::options::unroll<2>](c.range(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.range(), pred_vector); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if[raze::options::fstatic][raze::options::unroll<2>](c.range(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.range(), pred_vector); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_vector](auto c) { return raze::algorithm::remove_if[raze::options::fautovec](c.first(), c.last(), pred_vector); },
-            [pred_vector](auto c) { return std::ranges::remove_if(c.first(), c.last(), pred_vector); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_branching](auto c) { return raze::algorithm::remove_if[raze::options::fautovec](c.range(), pred_branching); },
-            [pred_branching](auto c) { return std::ranges::remove_if(c.range(), pred_branching); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [pred_branching](auto c) { return raze::algorithm::remove_if[raze::options::fautovec][raze::options::fstatic](c.range(), pred_branching); },
-            [pred_branching](auto c) { return std::ranges::remove_if(c.range(), pred_branching); },
-            rtts::algorithm::prefix_result);
-    }
+    check_iter(raze::algorithm::remove_if[opt::fscalar], pred_vector);
+    check_range(raze::algorithm::remove_if[opt::fscalar], pred_vector);
+    check_range(raze::algorithm::remove_if[opt::unroll<1>], pred_vector);
+    check_range(raze::algorithm::remove_if[opt::fstatic], pred_vector);
+    check_range(raze::algorithm::remove_if[opt::fscalar][opt::unroll<2>], pred_vector);
+    check_range(raze::algorithm::remove_if[opt::fstatic][opt::unroll<2>], pred_vector);
+    check_iter(raze::algorithm::remove_if[opt::fautovec], pred_vector);
+    check_range(raze::algorithm::remove_if[opt::fautovec], pred_branching);
+    check_range(raze::algorithm::remove_if[opt::fautovec][opt::fstatic], pred_branching);
 
     {
-        namespace opt = raze::options;
         auto acfg = rtts::algorithm::config::compact();
 
         auto check_aligned = [&]<size_t Align>(auto algo, auto pred) {
@@ -106,39 +66,27 @@ RTTS_CASE_TPL("raze::algorithm::remove_if", rtts::algorithm::all_types)
         check_aligned.template operator()<1>(raze::algorithm::remove_if[opt::aligned<64>][opt::aligned<opt::unaligned>], pred_vector);
     }
 
+    constexpr auto check_ce_range = [](auto algo, auto pred) constexpr {
+        return rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+            [algo, pred](auto c) constexpr { return algo(c.range(), pred); },
+            [pred](auto c) constexpr { return std::ranges::remove_if(c.range(), pred); },
+            rtts::algorithm::prefix_result);
+    };
+
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr { return raze::algorithm::remove_if(c.first(), c.last(), [](const T& x) constexpr { return x > T(0); }); },
         [](auto c) constexpr { return std::ranges::remove_if(c.first(), c.last(), [](const T& x) constexpr { return x > T(0); }); },
         rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove_if(c.range(), [](auto x) constexpr { return x > T(0); }); },
-        [](auto c) constexpr { return std::ranges::remove_if(c.range(), [](auto x) constexpr { return x > T(0); }); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove_if[raze::options::fscalar](c.range(), [](auto x) constexpr { return x > T(0); }); },
-        [](auto c) constexpr { return std::ranges::remove_if(c.range(), [](auto x) constexpr { return x > T(0); }); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove_if[raze::options::unroll<2>](c.range(), [](auto x) constexpr { return x > T(0); }); },
-        [](auto c) constexpr { return std::ranges::remove_if(c.range(), [](auto x) constexpr { return x > T(0); }); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove_if[raze::options::fautovec](c.range(), [](auto x) constexpr { if (x > T(2)) return true; return false; }); },
-        [](auto c) constexpr { return std::ranges::remove_if(c.range(), [](auto x) constexpr { if (x > T(2)) return true; return false; }); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove_if[raze::options::aligned<64>](c.range(), [](auto x) constexpr { return x > T(0); }); },
-        [](auto c) constexpr { return std::ranges::remove_if(c.range(), [](auto x) constexpr { return x > T(0); }); },
-        rtts::algorithm::prefix_result));
+    static_assert(check_ce_range(raze::algorithm::remove_if, [](auto x) constexpr { return x > T(0); }));
+    static_assert(check_ce_range(raze::algorithm::remove_if[opt::fscalar], [](auto x) constexpr { return x > T(0); }));
+    static_assert(check_ce_range(raze::algorithm::remove_if[opt::unroll<2>], [](auto x) constexpr { return x > T(0); }));
+    static_assert(check_ce_range(raze::algorithm::remove_if[opt::fautovec], [](auto x) constexpr { if (x > T(2)) return true; return false; }));
+    static_assert(check_ce_range(raze::algorithm::remove_if[opt::aligned<64>], [](auto x) constexpr { return x > T(0); }));
 };
 
 RTTS_CASE_TPL("raze::algorithm::remove_if.projection", rtts::algorithm::all_types)
 < class T > (rtts::type<T>) {
+    namespace opt = raze::options;
     auto cfg = rtts::algorithm::config::thorough();
     auto acfg = rtts::algorithm::config::compact();
 
@@ -147,51 +95,40 @@ RTTS_CASE_TPL("raze::algorithm::remove_if.projection", rtts::algorithm::all_type
     auto pred_branching = [threshold](auto x) { if (x > threshold) return true; return false; };
     auto proj = [](const T& x) -> const T& { return x; };
 
+    auto check_range = [&](auto algo, auto p) {
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [algo, p, proj](auto c) { return algo(c.range(), p, proj); },
+            [p, proj](auto c) { return std::ranges::remove_if(c.range(), p, proj); },
+            rtts::algorithm::prefix_result);
+    };
+
     rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
         [pred, proj](auto c) { return raze::algorithm::remove_if(c.first(), c.last(), pred, proj); },
         [pred, proj](auto c) { return std::ranges::remove_if(c.first(), c.last(), pred, proj); },
         rtts::algorithm::prefix_result);
 
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [pred, proj](auto c) { return raze::algorithm::remove_if(c.range(), pred, proj); },
-        [pred, proj](auto c) { return std::ranges::remove_if(c.range(), pred, proj); },
-        rtts::algorithm::prefix_result);
+    check_range(raze::algorithm::remove_if, pred);
+    check_range(raze::algorithm::remove_if[opt::fscalar], pred);
+    check_range(raze::algorithm::remove_if[opt::unroll<2>], pred);
+    check_range(raze::algorithm::remove_if[opt::fautovec], pred_branching);
 
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [pred, proj](auto c) { return raze::algorithm::remove_if[raze::options::fscalar](c.range(), pred, proj); },
-        [pred, proj](auto c) { return std::ranges::remove_if(c.range(), pred, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [pred, proj](auto c) { return raze::algorithm::remove_if[raze::options::unroll<2>](c.range(), pred, proj); },
-        [pred, proj](auto c) { return std::ranges::remove_if(c.range(), pred, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [pred_branching, proj](auto c) { return raze::algorithm::remove_if[raze::options::fautovec](c.range(), pred_branching, proj); },
-        [pred_branching, proj](auto c) { return std::ranges::remove_if(c.range(), pred_branching, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run_aligned<64, rtts::algorithm::range, T>(acfg,
-        [pred, proj](auto c) { return raze::algorithm::remove_if[raze::options::aligned<64>](c.range(), pred, proj); },
-        [pred, proj](auto c) { return std::ranges::remove_if(c.range(), pred, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run_aligned<1, rtts::algorithm::range, T>(acfg,
-        [pred, proj](auto c) { return raze::algorithm::remove_if[raze::options::aligned<raze::options::unaligned>](c.range(), pred, proj); },
-        [pred, proj](auto c) { return std::ranges::remove_if(c.range(), pred, proj); },
-        rtts::algorithm::prefix_result);
+    auto check_aligned = [&]<size_t Align>(auto algo) {
+        rtts::algorithm::run_aligned<Align, rtts::algorithm::range, T>(acfg,
+            [algo, pred, proj](auto c) { return algo(c.range(), pred, proj); },
+            [pred, proj](auto c) { return std::ranges::remove_if(c.range(), pred, proj); },
+            rtts::algorithm::prefix_result);
+    };
+    check_aligned.template operator()<64>(raze::algorithm::remove_if[opt::aligned<64>]);
+    check_aligned.template operator()<1>(raze::algorithm::remove_if[opt::aligned<opt::unaligned>]);
 
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr {
-            return raze::algorithm::remove_if(
-                c.first(), c.last(),
+            return raze::algorithm::remove_if(c.first(), c.last(),
                 [](const T& x) constexpr { return x > T(0); },
                 [](const T& x) constexpr -> const T& { return x; });
         },
         [](auto c) constexpr {
-            return std::ranges::remove_if(
-                c.first(), c.last(),
+            return std::ranges::remove_if(c.first(), c.last(),
                 [](const T& x) constexpr { return x > T(0); },
                 [](const T& x) constexpr -> const T& { return x; });
         },
@@ -199,14 +136,12 @@ RTTS_CASE_TPL("raze::algorithm::remove_if.projection", rtts::algorithm::all_type
 
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr {
-            return raze::algorithm::remove_if[raze::options::fscalar](
-                c.range(),
+            return raze::algorithm::remove_if[opt::fscalar](c.range(),
                 [](auto x) constexpr { return x > T(0); },
                 [](const T& x) constexpr -> const T& { return x; });
         },
         [](auto c) constexpr {
-            return std::ranges::remove_if(
-                c.range(),
+            return std::ranges::remove_if(c.range(),
                 [](auto x) constexpr { return x > T(0); },
                 [](const T& x) constexpr -> const T& { return x; });
         },

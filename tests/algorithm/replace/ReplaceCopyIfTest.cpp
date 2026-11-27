@@ -9,99 +9,42 @@ RTTS_CASE_TPL("raze::algorithm::replace_copy_if", rtts::algorithm::all_types)
     auto cfg = rtts::algorithm::config::thorough();
 
     auto check = [&](auto algo) {
-        {
-            const T threshold = rtts::random::generator<T>(1000)();
-            const T new_val = rtts::random::generator<T>(2000)();
-
-            auto pred_scalar = [threshold](const T& x) { return x > threshold; };
-            auto pred_vector = [threshold](auto x) { return x > threshold; };
+        auto check_pred = [&](auto pred, T new_val) {
+            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+                [algo, pred, new_val](auto c) { return algo(c.first(), c.last(), c.out(), pred, new_val); },
+                [pred, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred, new_val); });
 
             rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_scalar, new_val](auto c) { return algo(c.first(), c.last(), c.out(), pred_scalar, new_val); },
-                [pred_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred_scalar, new_val); });
+                [algo, pred, new_val](auto c) { return algo(c.range(), c.out(), pred, new_val); },
+                [pred, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred, new_val); });
+        };
 
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_vector, new_val](auto c) { return algo(c.first(), c.last(), c.out(), pred_vector, new_val); },
-                [pred_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred_vector, new_val); });
+        auto check_pair = [&](auto pred_scalar, auto pred_vector, T new_val) {
+            check_pred(pred_scalar, new_val);
+            check_pred(pred_vector, new_val);
+        };
 
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_scalar, new_val](auto c) { return algo(c.range(), c.out(), pred_scalar, new_val); },
-                [pred_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred_scalar, new_val); });
+        const T threshold = rtts::random::generator<T>(1000)();
+        check_pair(
+            [threshold](const T& x) { return x > threshold; },
+            [threshold](auto x) { return x > threshold; },
+            rtts::random::generator<T>(2000)());
 
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_vector, new_val](auto c) { return algo(c.range(), c.out(), pred_vector, new_val); },
-                [pred_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred_vector, new_val); });
-        }
+        const T target = rtts::random::generator<T>(4000)();
+        check_pair(
+            [target](const T& x) { return x == target; },
+            [target](auto x) { return x == target; },
+            rtts::random::generator<T>(5000)());
 
-        {
-            const T target = rtts::random::generator<T>(4000)();
-            const T new_val = rtts::random::generator<T>(5000)();
+        check_pair(
+            [](const T&) { return false; },
+            [](auto) { return false; },
+            rtts::random::generator<T>(6000)());
 
-            auto pred_scalar = [target](const T& x) { return x == target; };
-            auto pred_vector = [target](auto x) { return x == target; };
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_scalar, new_val](auto c) { return algo(c.first(), c.last(), c.out(), pred_scalar, new_val); },
-                [pred_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred_scalar, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_vector, new_val](auto c) { return algo(c.first(), c.last(), c.out(), pred_vector, new_val); },
-                [pred_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred_vector, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_scalar, new_val](auto c) { return algo(c.range(), c.out(), pred_scalar, new_val); },
-                [pred_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred_scalar, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, pred_vector, new_val](auto c) { return algo(c.range(), c.out(), pred_vector, new_val); },
-                [pred_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred_vector, new_val); });
-        }
-
-        {
-            const T new_val = rtts::random::generator<T>(6000)();
-
-            auto false_scalar = [](const T&) { return false; };
-            auto false_vector = [](auto) { return false; };
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, false_scalar, new_val](auto c) { return algo(c.first(), c.last(), c.out(), false_scalar, new_val); },
-                [false_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), false_scalar, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, false_vector, new_val](auto c) { return algo(c.first(), c.last(), c.out(), false_vector, new_val); },
-                [false_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), false_vector, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, false_scalar, new_val](auto c) { return algo(c.range(), c.out(), false_scalar, new_val); },
-                [false_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), false_scalar, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, false_vector, new_val](auto c) { return algo(c.range(), c.out(), false_vector, new_val); },
-                [false_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), false_vector, new_val); });
-        }
-
-        {
-            const T new_val = rtts::random::generator<T>(7000)();
-
-            auto true_scalar = [](const T&) { return true; };
-            auto true_vector = [](auto) { return true; };
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, true_scalar, new_val](auto c) { return algo(c.first(), c.last(), c.out(), true_scalar, new_val); },
-                [true_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), true_scalar, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, true_vector, new_val](auto c) { return algo(c.first(), c.last(), c.out(), true_vector, new_val); },
-                [true_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), true_vector, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, true_scalar, new_val](auto c) { return algo(c.range(), c.out(), true_scalar, new_val); },
-                [true_scalar, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), true_scalar, new_val); });
-
-            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-                [algo, true_vector, new_val](auto c) { return algo(c.range(), c.out(), true_vector, new_val); },
-                [true_vector, new_val](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), true_vector, new_val); });
-        }
+        check_pair(
+            [](const T&) { return true; },
+            [](auto) { return true; },
+            rtts::random::generator<T>(7000)());
     };
 
     check(replace_copy_if);
@@ -155,45 +98,22 @@ RTTS_CASE_TPL("raze::algorithm::replace_copy_if", rtts::algorithm::all_types)
         check_aligned.template operator()<1, 32>(replace_copy_if[opt::aligned<64>][opt::aligned<opt::unaligned, 32>], pred_vector);
     }
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if(c.first(), c.last(), c.out(), [](const T& x) constexpr { return x > T(0); }, T(99));
-        },
-        [](auto c) constexpr {
-            return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), [](const T& x) constexpr { return x > T(0); }, T(99));
-        }));
+    constexpr auto check_ce_iter = [](auto algo, auto pred) constexpr {
+        return rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+            [algo, pred](auto c) constexpr { return algo(c.first(), c.last(), c.out(), pred, T(99)); },
+            [pred](auto c) constexpr { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred, T(99)); });
+    };
+    constexpr auto check_ce_range = [](auto algo, auto pred) constexpr {
+        return rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+            [algo, pred](auto c) constexpr { return algo(c.range(), c.out(), pred, T(99)); },
+            [pred](auto c) constexpr { return std::ranges::replace_copy_if(c.range(), c.out(), pred, T(99)); });
+    };
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if[raze::options::fstatic](c.first(), c.last(), c.out(), [](const T& x) constexpr { return x > T(0); }, T(99));
-        },
-        [](auto c) constexpr {
-            return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), [](const T& x) constexpr { return x > T(0); }, T(99));
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if[raze::options::fscalar](c.range(), c.out(), [](auto x) constexpr { return x > T(0); }, T(99));
-        },
-        [](auto c) constexpr {
-            return std::ranges::replace_copy_if(c.range(), c.out(), [](auto x) constexpr { return x > T(0); }, T(99));
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if[raze::options::fautovec](c.range(), c.out(), [](auto x) constexpr { if (x > T(2)) return true; return false; }, T(99));
-        },
-        [](auto c) constexpr {
-            return std::ranges::replace_copy_if(c.range(), c.out(), [](auto x) constexpr { if (x > T(2)) return true; return false; }, T(99));
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.out(), [](auto x) constexpr { return x > T(0); }, T(99));
-        },
-        [](auto c) constexpr {
-            return std::ranges::replace_copy_if(c.range(), c.out(), [](auto x) constexpr { return x > T(0); }, T(99));
-        }));
+    static_assert(check_ce_iter(replace_copy_if, [](const T& x) constexpr { return x > T(0); }));
+    static_assert(check_ce_iter(replace_copy_if[opt::fstatic], [](const T& x) constexpr { return x > T(0); }));
+    static_assert(check_ce_range(replace_copy_if[opt::fscalar], [](auto x) constexpr { return x > T(0); }));
+    static_assert(check_ce_range(replace_copy_if[opt::fautovec], [](auto x) constexpr { if (x > T(2)) return true; return false; }));
+    static_assert(check_ce_range(replace_copy_if[opt::aligned<64, opt::unaligned>], [](auto x) constexpr { return x > T(0); }));
 };
 
 RTTS_CASE_TPL("raze::algorithm::replace_copy_if.projection", rtts::algorithm::all_types)
@@ -213,21 +133,18 @@ RTTS_CASE_TPL("raze::algorithm::replace_copy_if.projection", rtts::algorithm::al
     auto proj = [](const T& x) -> const T& { return x; };
 
     auto check = [&](auto algo) {
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [algo, pred_scalar, new_val, proj](auto c) { return algo(c.first(), c.last(), c.out(), pred_scalar, new_val, proj); },
-            [pred_scalar, new_val, proj](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred_scalar, new_val, proj); });
+        auto check_pred = [&](auto pred) {
+            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+                [algo, pred, new_val, proj](auto c) { return algo(c.first(), c.last(), c.out(), pred, new_val, proj); },
+                [pred, new_val, proj](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred, new_val, proj); });
 
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [algo, pred_vector, new_val, proj](auto c) { return algo(c.first(), c.last(), c.out(), pred_vector, new_val, proj); },
-            [pred_vector, new_val, proj](auto c) { return std::ranges::replace_copy_if(c.first(), c.last(), c.out(), pred_vector, new_val, proj); });
+            rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+                [algo, pred, new_val, proj](auto c) { return algo(c.range(), c.out(), pred, new_val, proj); },
+                [pred, new_val, proj](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred, new_val, proj); });
+        };
 
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [algo, pred_scalar, new_val, proj](auto c) { return algo(c.range(), c.out(), pred_scalar, new_val, proj); },
-            [pred_scalar, new_val, proj](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred_scalar, new_val, proj); });
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [algo, pred_vector, new_val, proj](auto c) { return algo(c.range(), c.out(), pred_vector, new_val, proj); },
-            [pred_vector, new_val, proj](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred_vector, new_val, proj); });
+        check_pred(pred_scalar);
+        check_pred(pred_vector);
     };
 
     check(replace_copy_if);
@@ -247,47 +164,29 @@ RTTS_CASE_TPL("raze::algorithm::replace_copy_if.projection", rtts::algorithm::al
         [pred_vector, new_val, proj](auto c) { return replace_copy_if[opt::aligned<opt::unaligned, 64>](c.range(), c.out(), pred_vector, new_val, proj); },
         [pred_vector, new_val, proj](auto c) { return std::ranges::replace_copy_if(c.range(), c.out(), pred_vector, new_val, proj); });
 
+    constexpr auto check_ce_range = [](auto algo, auto p) constexpr {
+        return rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+            [algo, p](auto c) constexpr {
+                return algo(c.range(), c.out(), p, T(99), [](const T& x) constexpr -> const T& { return x; });
+            },
+            [p](auto c) constexpr {
+                return std::ranges::replace_copy_if(c.range(), c.out(), p, T(99), [](const T& x) constexpr -> const T& { return x; });
+            });
+    };
+
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if(
-                c.first(), c.last(), c.out(),
+            return replace_copy_if(c.first(), c.last(), c.out(),
                 [](const T& x) constexpr { return x > T(0); }, T(99),
                 [](const T& x) constexpr -> const T& { return x; });
         },
         [](auto c) constexpr {
-            return std::ranges::replace_copy_if(
-                c.first(), c.last(), c.out(),
+            return std::ranges::replace_copy_if(c.first(), c.last(), c.out(),
                 [](const T& x) constexpr { return x > T(0); }, T(99),
                 [](const T& x) constexpr -> const T& { return x; });
         }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if[raze::options::fscalar](
-                c.range(), c.out(),
-                [](auto x) constexpr { return x > T(0); }, T(99),
-                [](const T& x) constexpr -> const T& { return x; });
-        },
-        [](auto c) constexpr {
-            return std::ranges::replace_copy_if(
-                c.range(), c.out(),
-                [](auto x) constexpr { return x > T(0); }, T(99),
-                [](const T& x) constexpr -> const T& { return x; });
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            return raze::algorithm::replace_copy_if[raze::options::fautovec][raze::options::aligned<64, raze::options::unaligned>](
-                c.range(), c.out(),
-                [](auto x) constexpr { if (x > T(2)) return true; return false; }, T(99),
-                [](const T& x) constexpr -> const T& { return x; });
-        },
-        [](auto c) constexpr {
-            return std::ranges::replace_copy_if(
-                c.range(), c.out(),
-                [](auto x) constexpr { if (x > T(2)) return true; return false; }, T(99),
-                [](const T& x) constexpr -> const T& { return x; });
-        }));
+    static_assert(check_ce_range(replace_copy_if[opt::fscalar], [](auto x) constexpr { return x > T(0); }));
+    static_assert(check_ce_range(replace_copy_if[opt::fautovec][opt::aligned<64, opt::unaligned>], [](auto x) constexpr { if (x > T(2)) return true; return false; }));
 };
 
 

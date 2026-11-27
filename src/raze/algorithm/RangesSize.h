@@ -1,6 +1,7 @@
 #pragma once 
 
-#include <raze/compatibility/Compatibility.h>
+#include <raze/Types.h>
+#include <src/raze/compatibility/Compatibility.h>
 #include <array>
 #include <ranges>
 #include <span>

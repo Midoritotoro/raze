@@ -20,6 +20,7 @@ namespace {
 
     template <class T>
     void reverse_boundary_sweep() {
+        namespace opt = raze::options;
         constexpr size_t MaxN = 140;
         for (size_t n = 0; n <= MaxN; ++n) {
             std::vector<T> input(n);
@@ -29,30 +30,24 @@ namespace {
             auto exp = input;
             std::ranges::reverse(exp);
 
-            auto v = input;
-            auto it = raze::algorithm::reverse(v);
+            std::vector<T> v;
+            auto check_range = [&](auto algo) {
+                v = input;
+                auto it = algo(v);
+                RTTS_EXPECT(it == v.end());
+                RTTS_EXPECT(v == exp);
+            };
+
+            check_range(raze::algorithm::reverse);
+
+            v = input;
+            auto it = raze::algorithm::reverse(v.begin(), v.end());
             RTTS_EXPECT(it == v.end());
             RTTS_EXPECT(v == exp);
 
-            v = input;
-            it = raze::algorithm::reverse(v.begin(), v.end());
-            RTTS_EXPECT(it == v.end());
-            RTTS_EXPECT(v == exp);
-
-            v = input;
-            it = raze::algorithm::reverse[raze::options::fscalar](v);
-            RTTS_EXPECT(it == v.end());
-            RTTS_EXPECT(v == exp);
-
-            v = input;
-            it = raze::algorithm::reverse[raze::options::unroll<2>](v);
-            RTTS_EXPECT(it == v.end());
-            RTTS_EXPECT(v == exp);
-
-            v = input;
-            it = raze::algorithm::reverse[raze::options::fstatic](v);
-            RTTS_EXPECT(it == v.end());
-            RTTS_EXPECT(v == exp);
+            check_range(raze::algorithm::reverse[opt::fscalar]);
+            check_range(raze::algorithm::reverse[opt::unroll<2>]);
+            check_range(raze::algorithm::reverse[opt::fstatic]);
 
             it = raze::algorithm::reverse(v);
             RTTS_EXPECT(it == v.end());
@@ -95,38 +90,30 @@ namespace {
 RTTS_CASE_TPL("raze::algorithm::reverse", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     using namespace rtts::algorithm;
+    namespace opt = raze::options;
     auto cfg = config::thorough();
 
-    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse(c.first(), c.last())); },
-        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.first(), c.last())); });
+    auto check_iter = [&](auto algo) {
+        run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
+            [algo](auto c) { return std::ranges::distance(c.first(), algo(c.first(), c.last())); },
+            [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.first(), c.last())); });
+    };
 
-    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse(c.range())); },
-        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
+    auto check_range = [&](auto algo) {
+        run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
+            [algo](auto c) { return std::ranges::distance(c.first(), algo(c.range())); },
+            [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
+    };
 
-    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fscalar](c.first(), c.last())); },
-        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.first(), c.last())); });
-
-    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::unroll<2>](c.range())); },
-        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
-
-    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fstatic](c.range())); },
-        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
-
-    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fautovec](c.first(), c.last())); },
-        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.first(), c.last())); });
-
-    run<range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-        [](auto c) { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fautovec][raze::options::fstatic](c.range())); },
-        [](auto c) { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
+    check_iter(raze::algorithm::reverse);
+    check_range(raze::algorithm::reverse);
+    check_iter(raze::algorithm::reverse[opt::fscalar]);
+    check_range(raze::algorithm::reverse[opt::unroll<2>]);
+    check_range(raze::algorithm::reverse[opt::fstatic]);
+    check_iter(raze::algorithm::reverse[opt::fautovec]);
+    check_range(raze::algorithm::reverse[opt::fautovec][opt::fstatic]);
 
     {
-        namespace opt = raze::options;
         auto acfg = config::compact();
 
         auto check_aligned = [&]<size_t Align>(auto algo) {
@@ -150,40 +137,27 @@ RTTS_CASE_TPL("raze::algorithm::reverse", rtts::algorithm::all_types)
         check_aligned.template operator()<1>(raze::algorithm::reverse[opt::aligned<64>][opt::aligned<opt::unaligned>]);
     }
 
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::fautovec](c.range())); },
-        [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); }));
+    constexpr auto check_ce = [](auto algo) constexpr {
+        return constexpr_run<T, range, 8>(
+            [algo](auto c) constexpr { return std::ranges::distance(c.first(), algo(c.range())); },
+            [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); });
+    };
 
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return std::ranges::distance(c.first(), raze::algorithm::reverse[raze::options::aligned<64>](c.range())); },
-        [](auto c) constexpr { return std::ranges::distance(c.first(), std::ranges::reverse(c.range())); }));
-
-    static_assert([]() constexpr {
-        std::array<T, 0> a{};
-        return raze::algorithm::reverse(a) == a.end();
-        }());
+    static_assert(check_ce(raze::algorithm::reverse[opt::fautovec]));
+    static_assert(check_ce(raze::algorithm::reverse[opt::aligned<64>]));
 
     static_assert([]() constexpr {
-        std::array<T, 1> a{ T(1) };
-        return raze::algorithm::reverse(a) == a.end() && a == std::array<T, 1>{ T(1) };
-        }());
-
-    static_assert([]() constexpr {
-        std::array<T, 4> a{ T(1), T(2), T(3), T(4) };
-        return raze::algorithm::reverse(a) == a.end() && a == std::array<T, 4>{ T(4), T(3), T(2), T(1) };
-        }());
-
-    static_assert([]() constexpr {
-        std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-        return raze::algorithm::reverse[raze::options::fscalar](a) == a.end() &&
-               a == std::array<T, 5>{ T(5), T(4), T(3), T(2), T(1) };
-        }());
-
-    static_assert([]() constexpr {
-        std::array<T, 4> a{ T(1), T(2), T(3), T(4) };
-        return raze::algorithm::reverse(a.begin() + 1, a.begin() + 3) == a.begin() + 3 &&
-               a == std::array<T, 4>{ T(1), T(3), T(2), T(4) };
-        }());
+        std::array<T, 0> a0{};
+        std::array<T, 1> a1{ T(1) };
+        std::array<T, 4> a4{ T(1), T(2), T(3), T(4) };
+        std::array<T, 5> a5{ T(1), T(2), T(3), T(4), T(5) };
+        std::array<T, 4> a4s{ T(1), T(2), T(3), T(4) };
+        return raze::algorithm::reverse(a0) == a0.end()
+            && raze::algorithm::reverse(a1) == a1.end() && a1 == std::array<T, 1>{ T(1) }
+            && raze::algorithm::reverse(a4) == a4.end() && a4 == std::array<T, 4>{ T(4), T(3), T(2), T(1) }
+            && raze::algorithm::reverse[opt::fscalar](a5) == a5.end() && a5 == std::array<T, 5>{ T(5), T(4), T(3), T(2), T(1) }
+            && raze::algorithm::reverse(a4s.begin() + 1, a4s.begin() + 3) == a4s.begin() + 3 && a4s == std::array<T, 4>{ T(1), T(3), T(2), T(4) };
+    }());
 };
 
 RTTS_CASE_TPL("raze::algorithm::reverse boundaries", rtts::algorithm::all_types)

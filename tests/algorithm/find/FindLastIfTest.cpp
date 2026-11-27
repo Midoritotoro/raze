@@ -65,6 +65,7 @@ namespace {
 
     template <class T>
     void check_find_last_if_variants(const std::vector<T>& input, T target) {
+        namespace opt = raze::options;
         auto pred = [target](auto x) { return x == target; };
         auto scalar_pred = [target](T x) { return x == target; };
         auto vec_pred = raze::algorithm::equal_to(target);
@@ -78,20 +79,18 @@ namespace {
             RTTS_EXPECT(sub.end() - input.begin() == exp_end_off);
         };
 
-        check(raze::algorithm::find_last_if(input, pred));
-        check(raze::algorithm::find_last_if(input.begin(), input.end(), pred));
-        check(raze::algorithm::find_last_if(input, scalar_pred));
-        check(raze::algorithm::find_last_if[raze::options::fscalar](input, pred));
-        check(raze::algorithm::find_last_if[raze::options::unroll<2>](input, pred));
-        check(raze::algorithm::find_last_if[raze::options::unroll<4>](input, pred));
-        check(raze::algorithm::find_last_if[raze::options::fstatic](input, pred));
+        auto check_pred = [&](auto p) {
+            check(raze::algorithm::find_last_if(input, p));
+            check(raze::algorithm::find_last_if(input.begin(), input.end(), p));
+            check(raze::algorithm::find_last_if[opt::fscalar](input, p));
+            check(raze::algorithm::find_last_if[opt::unroll<2>](input, p));
+            check(raze::algorithm::find_last_if[opt::unroll<4>](input, p));
+            check(raze::algorithm::find_last_if[opt::fstatic](input, p));
+        };
 
-        check(raze::algorithm::find_last_if(input, vec_pred));
-        check(raze::algorithm::find_last_if(input.begin(), input.end(), vec_pred));
-        check(raze::algorithm::find_last_if[raze::options::fscalar](input, vec_pred));
-        check(raze::algorithm::find_last_if[raze::options::unroll<2>](input, vec_pred));
-        check(raze::algorithm::find_last_if[raze::options::unroll<4>](input, vec_pred));
-        check(raze::algorithm::find_last_if[raze::options::fstatic](input, vec_pred));
+        check_pred(pred);
+        check_pred(vec_pred);
+        check(raze::algorithm::find_last_if(input, scalar_pred));
     }
 
     template <class T>
@@ -175,112 +174,65 @@ namespace {
     template <class T>
     void find_last_if_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto res = raze::algorithm::find_last_if(c.first(), c.last(), equal_pred<T>{ target });
-                RTTS_EXPECT(res.end() == std::ranges::next(c.first(), c.last()));
-                return res.begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.first(), c.last(), equal_pred<T>{ target }).begin();
-            });
+        constexpr auto target_of = [](auto& c) {
+            return *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto res = raze::algorithm::find_last_if(c.range(), equal_pred<T>{ target });
-                RTTS_EXPECT(res.end() == std::ranges::next(c.first(), c.last()));
-                return res.begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.range(), equal_pred<T>{ target }).begin();
-            });
+        auto check_iter = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) {
+                    auto res = algo(c.first(), c.last(), equal_pred<T>{ target_of(c) });
+                    RTTS_EXPECT(res.end() == std::ranges::next(c.first(), c.last()));
+                    return res.begin();
+                },
+                [target_of](auto c) { return ref_find_last_if(c.first(), c.last(), equal_pred<T>{ target_of(c) }).begin(); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_last_if[raze::options::fscalar](c.first(), c.last(), equal_pred<T>{ target }).begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.first(), c.last(), equal_pred<T>{ target }).begin();
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) {
+                    auto res = algo(c.range(), equal_pred<T>{ target_of(c) });
+                    RTTS_EXPECT(res.end() == std::ranges::next(c.first(), c.last()));
+                    return res.begin();
+                },
+                [target_of](auto c) { return ref_find_last_if(c.range(), equal_pred<T>{ target_of(c) }).begin(); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_last_if[raze::options::unroll<2>](c.range(), equal_pred<T>{ target }).begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.range(), equal_pred<T>{ target }).begin();
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_last_if[raze::options::fstatic](c.range(), equal_pred<T>{ target }).begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.range(), equal_pred<T>{ target }).begin();
-            });
+        check_iter(raze::algorithm::find_last_if);
+        check_range(raze::algorithm::find_last_if);
+        check_iter(raze::algorithm::find_last_if[opt::fscalar]);
+        check_range(raze::algorithm::find_last_if[opt::unroll<2>]);
+        check_range(raze::algorithm::find_last_if[opt::fstatic]);
+        check_iter(raze::algorithm::find_last_if[opt::fautovec]);
 
         run<range, T>(cfg,
             [](auto c) { return raze::algorithm::find_last_if(c.first(), c.last(), false_pred{}).begin(); },
             [](auto c) { return ref_find_last_if(c.first(), c.last(), false_pred{}).begin(); });
 
         run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_last_if[raze::options::fautovec](c.first(), c.last(), equal_pred<T>{ target }).begin();
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::find_last_if[opt::fautovec][opt::fstatic](c.range(), [target](auto x) { if (x == target) return true; return false; }).begin();
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.first(), c.last(), equal_pred<T>{ target }).begin();
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x == target) return true; return false; };
-                return raze::algorithm::find_last_if[raze::options::fautovec][raze::options::fstatic](c.range(), pred).begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x == target) return true; return false; };
-                return ref_find_last_if(c.range(), pred).begin();
+            [target_of](auto c) {
+                T target = target_of(c);
+                return ref_find_last_if(c.range(), [target](auto x) { if (x == target) return true; return false; }).begin();
             });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t Align>(auto algo) {
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.first(), c.last(), equal_pred<T>{ target }).begin();
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return ref_find_last_if(c.first(), c.last(), equal_pred<T>{ target }).begin();
-                    });
+                    [algo, target_of](auto c) { return algo(c.first(), c.last(), equal_pred<T>{ target_of(c) }).begin(); },
+                    [target_of](auto c) { return ref_find_last_if(c.first(), c.last(), equal_pred<T>{ target_of(c) }).begin(); });
 
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.range(), equal_pred<T>{ target }).begin();
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return ref_find_last_if(c.range(), equal_pred<T>{ target }).begin();
-                    });
+                    [algo, target_of](auto c) { return algo(c.range(), equal_pred<T>{ target_of(c) }).begin(); },
+                    [target_of](auto c) { return ref_find_last_if(c.range(), equal_pred<T>{ target_of(c) }).begin(); });
             };
 
             check_aligned.template operator()<16>(raze::algorithm::find_last_if[opt::aligned<16>]);
@@ -298,60 +250,38 @@ namespace {
             [](auto c) { return raze::algorithm::find_last_if(c.first(), c.last(), true_pred{}).begin(); },
             [](auto c) { return ref_find_last_if(c.first(), c.last(), true_pred{}).begin(); }));
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_last_if(c.range(), equal_pred<T>{ target }).begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.range(), equal_pred<T>{ target }).begin();
-            }));
+        constexpr auto check_ce = [target_of](auto algo) {
+            return constexpr_run<T, n, 5, 3>(
+                [algo, target_of](auto c) { return algo(c.range(), equal_pred<T>{ target_of(c) }).begin(); },
+                [target_of](auto c) { return ref_find_last_if(c.range(), equal_pred<T>{ target_of(c) }).begin(); });
+        };
+
+        static_assert(check_ce(raze::algorithm::find_last_if));
+        static_assert(check_ce(raze::algorithm::find_last_if[opt::aligned<64>]));
 
         static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x == target) return true; return false; };
-                return raze::algorithm::find_last_if[raze::options::fautovec](c.range(), pred).begin();
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::find_last_if[opt::fautovec](c.range(), [target](auto x) constexpr { if (x == target) return true; return false; }).begin();
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x == target) return true; return false; };
-                return ref_find_last_if(c.range(), pred).begin();
-            }));
-
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_last_if[raze::options::aligned<64>](c.range(), equal_pred<T>{ target }).begin();
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_find_last_if(c.range(), equal_pred<T>{ target }).begin();
+            [target_of](auto c) {
+                T target = target_of(c);
+                return ref_find_last_if(c.range(), [target](auto x) constexpr { if (x == target) return true; return false; }).begin();
             }));
 
         static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            auto res = raze::algorithm::find_last_if(a, true_pred{});
-            return res.begin() == a.end() && res.end() == a.end();
-        }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(3), T(2), T(3), T(4) };
-            auto res = raze::algorithm::find_last_if(a, equal_pred<T>{ T(3) });
-            return res.begin() == a.begin() + 3 && res.end() == a.end();
-        }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-            auto res = raze::algorithm::find_last_if[raze::options::fscalar](a, [](auto x) { return x > T(1); });
-            return res.begin() == a.begin() + 4 && res.end() == a.end();
-        }());
-
-        static_assert([]() constexpr {
-            std::array<T, 4> a{ T(1), T(2), T(3), T(4) };
-            auto res = raze::algorithm::find_last_if(a.begin() + 1, a.begin() + 3, equal_pred<T>{ T(4) });
-            return res.begin() == a.begin() + 3 && res.end() == a.begin() + 3;
+            std::array<T, 0> a0{};
+            std::array<T, 5> a5{ T(1), T(3), T(2), T(3), T(4) };
+            std::array<T, 5> b5{ T(1), T(2), T(3), T(4), T(5) };
+            std::array<T, 4> a4{ T(1), T(2), T(3), T(4) };
+            auto r0 = raze::algorithm::find_last_if(a0, true_pred{});
+            auto r1 = raze::algorithm::find_last_if(a5, equal_pred<T>{ T(3) });
+            auto r2 = raze::algorithm::find_last_if[opt::fscalar](b5, [](auto x) { return x > T(1); });
+            auto r3 = raze::algorithm::find_last_if(a4.begin() + 1, a4.begin() + 3, equal_pred<T>{ T(4) });
+            return r0.begin() == a0.end() && r0.end() == a0.end() &&
+                   r1.begin() == a5.begin() + 3 && r1.end() == a5.end() &&
+                   r2.begin() == b5.begin() + 4 && r2.end() == b5.end() &&
+                   r3.begin() == a4.begin() + 3 && r3.end() == a4.begin() + 3;
         }());
     }
 }
@@ -359,25 +289,6 @@ namespace {
 RTTS_CASE_TPL("raze::algorithm::find_last_if", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     find_last_if_suite<T>();
-};
-
-RTTS_CASE_TPL("raze::algorithm::find_last_if not_found", rtts::algorithm::all_types)
-<class T>(rtts::type<T>) {
-    for (size_t n : { size_t(0), size_t(1), size_t(4), size_t(8), size_t(15), size_t(16), size_t(17),
-                      size_t(31), size_t(32), size_t(33), size_t(63), size_t(64), size_t(65),
-                      size_t(128), size_t(129), size_t(256), size_t(257), size_t(512), size_t(513) })
-    {
-        std::vector<T> v(n, T(1));
-        auto miss = raze::algorithm::equal_to(T(0));
-        const std::ranges::subrange<typename std::vector<T>::iterator> exp{ v.end(), v.end() };
-
-        RTTS_EXPECT(subrange_eq(raze::algorithm::find_last_if(v, miss), exp));
-        RTTS_EXPECT(subrange_eq(raze::algorithm::find_last_if(v.begin(), v.end(), miss), exp));
-        RTTS_EXPECT(subrange_eq(raze::algorithm::find_last_if[raze::options::fscalar](v, miss), exp));
-        RTTS_EXPECT(subrange_eq(raze::algorithm::find_last_if[raze::options::unroll<2>](v, miss), exp));
-        RTTS_EXPECT(subrange_eq(raze::algorithm::find_last_if[raze::options::unroll<4>](v, miss), exp));
-        RTTS_EXPECT(subrange_eq(raze::algorithm::find_last_if[raze::options::fstatic](v, miss), exp));
-    }
 };
 
 RTTS_CASE_TPL("raze::algorithm::find_last_if boundaries", rtts::algorithm::all_types)

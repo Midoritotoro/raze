@@ -1,7 +1,9 @@
 ﻿#pragma once 
 
-#include <numeric>
-#include <src/raze/traits/TypeTraits.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/Inline.h>
+#include <concepts>
+#include <type_traits>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 

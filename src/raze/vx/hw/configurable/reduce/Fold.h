@@ -1,13 +1,13 @@
 #pragma once 
 
-#include <raze/options/Options.h>
+#include <src/raze/options/DispatchCall.h>
+#include <src/raze/options/Functor.h>
 #include <src/raze/traits/FunctionPass.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Add.h>
 #include <src/raze/vx/hw/configurable/reduce/HorizontalSum.h>
 #include <src/raze/vx/hw/configurable/shuffle/SwapAdjacent.h>
 #include <src/raze/vx/hw/configurable/merge/Select.h>
-#include <src/raze/traits/FunctionPass.h>
 #include <bit>
 
 #if defined(raze_processor_x86)

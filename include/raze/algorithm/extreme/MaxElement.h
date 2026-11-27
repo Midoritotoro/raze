@@ -1,7 +1,7 @@
 #pragma once
 
 #include <raze/vx/Algorithm.h>
-#include <raze/math/Math.h>
+#include <src/raze/math/MinMax.h>
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/DataSource.h>

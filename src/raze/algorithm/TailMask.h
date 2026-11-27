@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/compatibility/Compatibility.h>
+#include <src/raze/compatibility/Compatibility.h>
 #include <src/raze/vx/Concepts.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

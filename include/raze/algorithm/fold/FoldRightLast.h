@@ -33,16 +33,23 @@ struct fold_right_last_t : Traits, dispatchable<fold_right_last_t<Traits>> {
 			  _f(std::move(f))
 		{}
 
-		raze_always_inline constexpr void operator()() {
-			if (_first == _sent) return;
+		constexpr bool exit() const noexcept {
+			return _first == _sent;
+		}
 
+		raze_nodiscard constexpr std::optional<result_value_type> default_result() const noexcept {
+			return std::nullopt;
+		}
+
+		raze_always_inline constexpr void operator()() {
 			auto tail = std::ranges::next(_first, _sent);
 			--tail;
-			_accum.emplace(*tail);
+			result_value_type acc(*tail);
 			while (tail != _first) {
 				--tail;
-				*_accum = std::invoke(_f, *tail, std::move(*_accum));
+				acc = std::invoke(_f, *tail, std::move(acc));
 			}
+			_accum.emplace(std::move(acc));
 		}
 
 		raze_nodiscard constexpr raze_always_inline std::optional<result_value_type> result() {

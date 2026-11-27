@@ -1,7 +1,9 @@
 #pragma once 
 
+#include <raze/Types.h>
 #include <src/raze/utility/Assert.h>
-#include <raze/compatibility/Compatibility.h>
+#include <src/raze/compatibility/Compatibility.h>
+#include <concepts>
 
 
 __RAZE_MATH_NAMESPACE_BEGIN

@@ -7,6 +7,7 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::is_permutation", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -59,3 +60,61 @@ RTTS_CASE("raze::algorithm::is_permutation projections, forward_list, and non-co
     RTTS_EXPECT(raze::algorithm::is_permutation(rtts::make_non_common(f1), rtts::make_non_common(l2)));
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void is_permutation_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 65);
+            std::vector<T> a(n);
+            if ((it & 1u) == 0u) {
+                a = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                for (size_t i = 0; i < n; ++i)
+                    a[i] = static_cast<T>(rng() % 8u);
+            }
+
+            std::vector<T> b = a;
+            std::ranges::shuffle(b, rng);
+
+            const unsigned mode = static_cast<unsigned>(it % 4);
+            if (mode == 1u && n > 0) {
+                b[static_cast<size_t>(rng() % n)] = val_gen();
+            }
+            else if (mode == 2u && n > 0) {
+                if (rng() & 1u) b.pop_back();
+                else b.push_back(val_gen());
+            }
+            else if (mode == 3u) {
+                const size_t n2 = static_cast<size_t>(rng() % 65);
+                b.resize(n2);
+                for (size_t i = 0; i < n2; ++i)
+                    b[i] = static_cast<T>(rng() % 8u);
+            }
+
+            const bool exp = std::ranges::is_permutation(a, b);
+            RTTS_EQUAL(raze::algorithm::is_permutation(a, b), exp);
+            RTTS_EQUAL(raze::algorithm::is_permutation(a.begin(), a.end(), b.begin(), b.end()), exp);
+            RTTS_EQUAL(raze::algorithm::is_permutation[opt::fscalar](a, b), exp);
+            RTTS_EQUAL(raze::algorithm::is_permutation[opt::fstatic](a, b), exp);
+
+            if (it % 8 == 0 && n <= 32) {
+                std::forward_list<T> fa(a.begin(), a.end());
+                std::list<T> lb(b.begin(), b.end());
+                RTTS_EQUAL(raze::algorithm::is_permutation(fa, lb), exp);
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::is_permutation fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        is_permutation_fuzz<T>(seed, 40);
+};

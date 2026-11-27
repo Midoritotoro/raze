@@ -1,5 +1,10 @@
 #pragma once
 
+#include <src/raze/vx/hw/configurable/memory/Load.h>
+#include <src/raze/vx/hw/configurable/memory/Store.h>
+#include <src/raze/vx/hw/configurable/shuffle/Reverse.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Convert.h>
+
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/DataSource.h>

@@ -1,6 +1,8 @@
 #pragma once
 
-#include <raze/options/Options.h>
+#include <src/raze/options/DispatchCall.h>
+#include <src/raze/options/Functor.h>
+#include <src/raze/utility/UninitializedTag.h>
 #include <src/raze/vx/Concepts.h>
 #include <src/raze/vx/Storage.h>
 #include <src/raze/vx/storage/Node.h>

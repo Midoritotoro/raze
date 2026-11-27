@@ -5,50 +5,39 @@
 
 RTTS_CASE_TPL("raze::algorithm::swap_ranges", rtts::algorithm::all_types)
 < class T > (rtts::type<T>) {
-    auto cfg = rtts::algorithm::config::thorough();
+    using namespace rtts::algorithm;
+    namespace opt = raze::options;
+    auto cfg = config::thorough();
+
+    auto check_iter = [&](auto algo) {
+        run<range, T>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last(), c.first2(), c.last2()); },
+            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    };
+
+    auto check_range = [&](auto algo) {
+        run<range, T>(cfg,
+            [algo](auto c) { return algo(c.range(), c.range2()); },
+            [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
+    };
+
+    check_iter(raze::algorithm::swap_ranges);
+    check_range(raze::algorithm::swap_ranges);
+    check_iter(raze::algorithm::swap_ranges[opt::fscalar]);
+    check_range(raze::algorithm::swap_ranges[opt::unroll<2>]);
+    check_range(raze::algorithm::swap_ranges[opt::fstatic]);
+    check_iter(raze::algorithm::swap_ranges[opt::fautovec]);
+    check_range(raze::algorithm::swap_ranges[opt::fautovec][opt::fstatic]);
 
     {
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.range(), c.range2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
-    }
-
-    {
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fscalar](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::unroll<2>](c.range(), c.range2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fstatic](c.range(), c.range2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fautovec](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fautovec][raze::options::fstatic](c.range(), c.range2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
-    }
-
-    {
-        namespace opt = raze::options;
-        auto acfg = rtts::algorithm::config::compact();
+        auto acfg = config::compact();
 
         auto check_aligned = [&]<size_t A1, size_t A2>(auto algo) {
-            rtts::algorithm::run_aligned<A1, A2, rtts::algorithm::range, T>(acfg,
+            run_aligned<A1, A2, range, T>(acfg,
                 [algo](auto c) { return algo(c.first(), c.last(), c.first2(), c.last2()); },
                 [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
 
-            rtts::algorithm::run_aligned<A1, A2, rtts::algorithm::range, T>(acfg,
+            run_aligned<A1, A2, range, T>(acfg,
                 [algo](auto c) { return algo(c.range(), c.range2()); },
                 [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
         };
@@ -67,84 +56,58 @@ RTTS_CASE_TPL("raze::algorithm::swap_ranges", rtts::algorithm::all_types)
         check_aligned.template operator()<64, 16>(raze::algorithm::swap_ranges[opt::aligned<64, 16>]);
     }
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+    static_assert(constexpr_run<T, range, 8>(
         [](auto c) constexpr { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
         [](auto c) constexpr { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); }));
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::swap_ranges(c.range(), c.range2()); },
-        [](auto c) constexpr { return std::ranges::swap_ranges(c.range(), c.range2()); }));
+    constexpr auto check_ce = [](auto algo) {
+        return constexpr_run<T, range, 8>(
+            [algo](auto c) constexpr { return algo(c.range(), c.range2()); },
+            [](auto c) constexpr { return std::ranges::swap_ranges(c.range(), c.range2()); });
+    };
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::swap_ranges[raze::options::fautovec](c.range(), c.range2()); },
-        [](auto c) constexpr { return std::ranges::swap_ranges(c.range(), c.range2()); }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::swap_ranges[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
-        [](auto c) constexpr { return std::ranges::swap_ranges(c.range(), c.range2()); }));
+    static_assert(check_ce(raze::algorithm::swap_ranges));
+    static_assert(check_ce(raze::algorithm::swap_ranges[opt::fautovec]));
+    static_assert(check_ce(raze::algorithm::swap_ranges[opt::aligned<64, opt::unaligned>]));
 };
 
 RTTS_CASE("raze::algorithm::swap_ranges mixed arithmetic types") {
-    auto cfg = rtts::algorithm::config::thorough();
+    using namespace rtts::algorithm;
+    namespace opt = raze::options;
+    auto cfg = config::thorough();
+    auto acfg = config::compact();
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int32_t, float>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
+    auto check = [&]<class S, class D>(auto algo) {
+        run<range, S, D>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last(), c.first2(), c.last2()); },
             [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, float, int32_t>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-    }
+    check.template operator()<int32_t, float>(raze::algorithm::swap_ranges);
+    check.template operator()<float, int32_t>(raze::algorithm::swap_ranges);
+    check.template operator()<int64_t, double>(raze::algorithm::swap_ranges);
+    check.template operator()<double, int64_t>(raze::algorithm::swap_ranges);
+    check.template operator()<int8_t, int16_t>(raze::algorithm::swap_ranges);
+    check.template operator()<uint32_t, float>(raze::algorithm::swap_ranges);
+    check.template operator()<int32_t, float>(raze::algorithm::swap_ranges[opt::fscalar]);
+    check.template operator()<int32_t, float>(raze::algorithm::swap_ranges[opt::fautovec]);
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int64_t, double>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    run_aligned_mixed<64, 1, range, int32_t, float>(acfg,
+        [](auto c) { return raze::algorithm::swap_ranges[opt::aligned<64, opt::unaligned>](c.first(), c.last(), c.first2(), c.last2()); },
+        [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
 
-        rtts::algorithm::run<rtts::algorithm::range, double, int64_t>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-    }
+    run_aligned_mixed<64, 64, range, int64_t, double>(acfg,
+        [](auto c) { return raze::algorithm::swap_ranges[opt::aligned<64>](c.range(), c.range2()); },
+        [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int8_t, int16_t>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-    }
+    constexpr auto check_ce = []<class S, class D>() {
+        return constexpr_run_mixed<S, D, range, 8>(
+            [](auto c) constexpr { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
+            [](auto c) constexpr { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    };
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, uint32_t, float>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-    }
-
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int32_t, float>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fscalar](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-
-        rtts::algorithm::run<rtts::algorithm::range, int32_t, float>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fautovec](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-
-        auto acfg = rtts::algorithm::config::compact();
-        rtts::algorithm::run_aligned_mixed<64, 1, rtts::algorithm::range, int32_t, float>(acfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::aligned<64, raze::options::unaligned>](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-
-        rtts::algorithm::run_aligned_mixed<64, 64, rtts::algorithm::range, int64_t, double>(acfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::aligned<64>](c.range(), c.range2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
-    }
-
-    static_assert(rtts::algorithm::constexpr_run_mixed<int32_t, float, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-        [](auto c) constexpr { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); }));
-
-    static_assert(rtts::algorithm::constexpr_run_mixed<int64_t, double, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-        [](auto c) constexpr { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); }));
+    static_assert(check_ce.template operator()<int32_t, float>());
+    static_assert(check_ce.template operator()<int64_t, double>());
 };
 
 struct tc_struct_4 {
@@ -157,43 +120,34 @@ struct tc_struct_8 {
 };
 
 RTTS_CASE("raze::algorithm::swap_ranges structs") {
-    auto cfg = rtts::algorithm::config::thorough();
+    using namespace rtts::algorithm;
+    namespace opt = raze::options;
+    auto cfg = config::thorough();
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
+    auto check = [&]<class S>(auto algo) {
+        run<range, S>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last(), c.first2(), c.last2()); },
             [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_8>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-    }
+    check.template operator()<tc_struct_4>(raze::algorithm::swap_ranges);
+    check.template operator()<tc_struct_8>(raze::algorithm::swap_ranges);
+    check.template operator()<tc_struct_4>(raze::algorithm::swap_ranges[opt::fscalar]);
+    check.template operator()<tc_struct_4>(raze::algorithm::swap_ranges[opt::unroll<2>]);
+    check.template operator()<tc_struct_4>(raze::algorithm::swap_ranges[opt::fautovec]);
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fscalar](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    run_aligned<64, 1, range, tc_struct_4>(config::compact(),
+        [](auto c) { return raze::algorithm::swap_ranges[opt::aligned<64, opt::unaligned>](c.range(), c.range2()); },
+        [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
 
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::unroll<2>](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    constexpr auto check_ce = []<class S>() {
+        return constexpr_run<S, range, 8>(
+            [](auto c) constexpr { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
+            [](auto c) constexpr { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4>(cfg,
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::fautovec](c.first(), c.last(), c.first2(), c.last2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); });
-
-        rtts::algorithm::run_aligned<64, 1, rtts::algorithm::range, tc_struct_4>(rtts::algorithm::config::compact(),
-            [](auto c) { return raze::algorithm::swap_ranges[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
-            [](auto c) { return std::ranges::swap_ranges(c.range(), c.range2()); });
-    }
-
-    static_assert(rtts::algorithm::constexpr_run<tc_struct_4, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-        [](auto c) constexpr { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); }));
-
-    static_assert(rtts::algorithm::constexpr_run<tc_struct_8, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); },
-        [](auto c) constexpr { return std::ranges::swap_ranges(c.first(), c.last(), c.first2(), c.last2()); }));
+    static_assert(check_ce.template operator()<tc_struct_4>());
+    static_assert(check_ce.template operator()<tc_struct_8>());
 };
 
 

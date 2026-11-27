@@ -28,6 +28,15 @@ install(
 )
 
 install(
+    DIRECTORY "${PROJECT_SOURCE_DIR}/src/"
+    DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/src"
+    FILES_MATCHING
+    PATTERN "*.h"
+    PATTERN "*.hpp"
+    PATTERN "*.inl"
+)
+
+install(
     EXPORT razeTargets
     FILE razeTargets.cmake
     NAMESPACE raze::

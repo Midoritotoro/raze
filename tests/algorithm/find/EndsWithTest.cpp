@@ -152,82 +152,39 @@ namespace {
     template <class T>
     void ends_with_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with(c.first(), c.last(), s_begin, c.last());
-            },
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.first(), c.last(), s_begin, c.last());
-            });
+        constexpr auto suf_of = [](auto& c) {
+            return std::ranges::subrange(std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count())), c.last());
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
-            },
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
-            });
+        auto check_iter = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, suf_of](auto c) { auto s = suf_of(c); return algo(c.first(), c.last(), s.begin(), s.end()); },
+                [suf_of](auto c) { auto s = suf_of(c); return ref_ends_with(c.first(), c.last(), s.begin(), s.end()); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with[raze::options::fscalar](c.first(), c.last(), s_begin, c.last());
-            },
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.first(), c.last(), s_begin, c.last());
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, suf_of](auto c) { return algo(c.range(), suf_of(c)); },
+                [suf_of](auto c) { return ref_ends_with(c.range(), suf_of(c)); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with[raze::options::unroll<2>](c.range(), std::ranges::subrange(s_begin, c.last()));
-            },
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with[raze::options::fstatic](c.range(), std::ranges::subrange(s_begin, c.last()));
-            },
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
-            });
+        check_iter(raze::algorithm::ends_with);
+        check_range(raze::algorithm::ends_with);
+        check_iter(raze::algorithm::ends_with[opt::fscalar]);
+        check_range(raze::algorithm::ends_with[opt::unroll<2>]);
+        check_range(raze::algorithm::ends_with[opt::fstatic]);
+        check_iter(raze::algorithm::ends_with[opt::fautovec]);
 
         auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
 
         run<n, T>(cfg,
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with[raze::options::fautovec](c.first(), c.last(), s_begin, c.last());
-            },
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.first(), c.last(), s_begin, c.last());
-            });
-
-        run<n, T>(cfg,
-            [eq_branching](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with[raze::options::fautovec][raze::options::fstatic](c.range(), std::ranges::subrange(s_begin, c.last()), eq_branching);
-            },
-            [eq_branching](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()), eq_branching);
-            });
+            [suf_of, eq_branching](auto c) { return raze::algorithm::ends_with[opt::fautovec][opt::fstatic](c.range(), suf_of(c), eq_branching); },
+            [suf_of, eq_branching](auto c) { return ref_ends_with(c.range(), suf_of(c), eq_branching); });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t A1, size_t A2>(auto algo) {
@@ -272,40 +229,31 @@ namespace {
             [](auto c) { return ref_ends_with(c.range(), c.range()); }));
 
         static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
-            },
-            [](auto c) {
-                auto s_begin = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_ends_with(c.range(), std::ranges::subrange(s_begin, c.last()));
-            }));
+            [suf_of](auto c) { return raze::algorithm::ends_with(c.range(), suf_of(c)); },
+            [suf_of](auto c) { return ref_ends_with(c.range(), suf_of(c)); }));
 
         static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::ends_with[raze::options::fautovec](c.range(), c.range()); },
+            [](auto c) { return raze::algorithm::ends_with[opt::fautovec](c.range(), c.range()); },
             [](auto c) { return ref_ends_with(c.range(), c.range()); }));
 
         static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::ends_with[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
+            [](auto c) { return raze::algorithm::ends_with[opt::aligned<64, opt::unaligned>](c.range(), c.range2()); },
             [](auto c) { return ref_ends_with(c.range(), c.range2()); }));
 
         static_assert([]() constexpr {
             std::array<T, 0> empty{};
             std::array<T, 2> tiny{ T(1), T(2) };
-            return raze::algorithm::ends_with(empty, empty) &&
-                   raze::algorithm::ends_with(tiny, empty) &&
-                   !raze::algorithm::ends_with(empty, tiny);
-        }());
-
-        static_assert([]() constexpr {
             std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
             std::array<T, 3> s{ T(3), T(4), T(5) };
             std::array<T, 3> bad{ T(3), T(9), T(5) };
             std::array<T, 6> too_long{ T(0), T(1), T(2), T(3), T(4), T(5) };
-            return raze::algorithm::ends_with(a, s) &&
-                   !raze::algorithm::ends_with(a, bad) &&
-                   !raze::algorithm::ends_with(a, too_long) &&
-                   raze::algorithm::ends_with[raze::options::fscalar](a.begin(), a.end(), s.begin(), s.end());
+            return raze::algorithm::ends_with(empty, empty) &&
+                   raze::algorithm::ends_with(tiny, empty) &&
+                  !raze::algorithm::ends_with(empty, tiny) &&
+                   raze::algorithm::ends_with(a, s) &&
+                  !raze::algorithm::ends_with(a, bad) &&
+                  !raze::algorithm::ends_with(a, too_long) &&
+                   raze::algorithm::ends_with[opt::fscalar](a.begin(), a.end(), s.begin(), s.end());
         }());
     }
 }

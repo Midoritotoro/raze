@@ -86,102 +86,44 @@ namespace {
     template <class T>
     void count_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count(c.first(), c.last(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.first(), c.last(), target);
-            });
+        constexpr auto target_of = [](auto& c) {
+            return *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count(c.range(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.range(), target);
-            });
+        auto check_iter = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.first(), c.last(), target_of(c)); },
+                [target_of](auto c) { return std::ranges::count(c.first(), c.last(), target_of(c)); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count[raze::options::fscalar](c.first(), c.last(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.first(), c.last(), target);
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.range(), target_of(c)); },
+                [target_of](auto c) { return std::ranges::count(c.range(), target_of(c)); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count[raze::options::unroll<2>](c.range(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.range(), target);
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count[raze::options::fstatic](c.range(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.range(), target);
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count[raze::options::fautovec](c.first(), c.last(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.first(), c.last(), target);
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count[raze::options::fautovec][raze::options::fstatic](c.range(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.range(), target);
-            });
+        check_iter(raze::algorithm::count);
+        check_range(raze::algorithm::count);
+        check_iter(raze::algorithm::count[opt::fscalar]);
+        check_range(raze::algorithm::count[opt::unroll<2>]);
+        check_range(raze::algorithm::count[opt::fstatic]);
+        check_iter(raze::algorithm::count[opt::fautovec]);
+        check_range(raze::algorithm::count[opt::fautovec][opt::fstatic]);
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t Align>(auto algo) {
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.first(), c.last(), target);
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::count(c.first(), c.last(), target);
-                    });
+                    [algo, target_of](auto c) { return algo(c.first(), c.last(), target_of(c)); },
+                    [target_of](auto c) { return std::ranges::count(c.first(), c.last(), target_of(c)); });
 
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.range(), target);
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::count(c.range(), target);
-                    });
+                    [algo, target_of](auto c) { return algo(c.range(), target_of(c)); },
+                    [target_of](auto c) { return std::ranges::count(c.range(), target_of(c)); });
             };
 
             check_aligned.template operator()<16>(raze::algorithm::count[opt::aligned<16>]);
@@ -199,56 +141,27 @@ namespace {
             [](auto c) { return raze::algorithm::count(c.first(), c.last(), T(1)); },
             [](auto c) { return std::ranges::count(c.first(), c.last(), T(1)); }));
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count(c.range(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.range(), target);
-            }));
+        constexpr auto check_ce = [target_of](auto algo) {
+            return constexpr_run<T, n, 5, 3>(
+                [algo, target_of](auto c) { return algo(c.range(), target_of(c)); },
+                [target_of](auto c) { return std::ranges::count(c.range(), target_of(c)); });
+        };
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count[raze::options::fautovec](c.range(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.range(), target);
-            }));
-
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count[raze::options::aligned<64>](c.range(), target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count(c.range(), target);
-            }));
+        static_assert(check_ce(raze::algorithm::count));
+        static_assert(check_ce(raze::algorithm::count[opt::fautovec]));
+        static_assert(check_ce(raze::algorithm::count[opt::aligned<64>]));
 
         static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            return raze::algorithm::count(a, T(1)) == 0;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 4> a{ T(1), T(2), T(1), T(4) };
-            return raze::algorithm::count(a, T(1)) == 2 &&
-                   raze::algorithm::count(a, T(9)) == 0;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(5), T(2), T(5), T(4), T(5) };
-            return raze::algorithm::count[raze::options::fscalar](a, T(5)) == 3;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(2), T(4), T(2) };
-            return raze::algorithm::count(a.begin() + 1, a.begin() + 4, T(2)) == 2;
-            }());
+            std::array<T, 0> a0{};
+            std::array<T, 4> a4{ T(1), T(2), T(1), T(4) };
+            std::array<T, 5> a5{ T(5), T(2), T(5), T(4), T(5) };
+            std::array<T, 5> b5{ T(1), T(2), T(2), T(4), T(2) };
+            return raze::algorithm::count(a0, T(1)) == 0 &&
+                   raze::algorithm::count(a4, T(1)) == 2 &&
+                   raze::algorithm::count(a4, T(9)) == 0 &&
+                   raze::algorithm::count[opt::fscalar](a5, T(5)) == 3 &&
+                   raze::algorithm::count(b5.begin() + 1, b5.begin() + 4, T(2)) == 2;
+        }());
     }
 }
 

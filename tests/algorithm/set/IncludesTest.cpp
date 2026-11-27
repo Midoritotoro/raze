@@ -6,6 +6,7 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::includes", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -54,3 +55,72 @@ RTTS_CASE("raze::algorithm::includes projections, single-pass input, and non-com
     RTTS_EXPECT(raze::algorithm::includes(rtts::make_non_common(v1), rtts::make_non_common(v2)));
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void includes_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n1 = static_cast<size_t>(rng() % 257);
+            std::vector<T> a(n1);
+            if ((it & 1u) == 0u) {
+                a = rtts::random::vector<T>(n1, rng());
+            }
+            else {
+                const unsigned alpha = (it % 4 == 1) ? 6u : 16u;
+                for (size_t i = 0; i < n1; ++i)
+                    a[i] = static_cast<T>(rng() % alpha);
+            }
+
+            const bool desc = (it % 3 == 2);
+            auto run_check = [&](auto comp) {
+                std::ranges::sort(a, comp);
+
+                std::vector<T> b;
+                const unsigned mode = static_cast<unsigned>(it % 3);
+                if (mode == 0u || mode == 1u) {
+                    for (size_t i = 0; i < n1; ++i) {
+                        if ((rng() & 1u) != 0u)
+                            b.push_back(a[i]);
+                    }
+                    if (mode == 1u && !b.empty()) {
+                        b[static_cast<size_t>(rng() % b.size())] = val_gen();
+                        std::ranges::sort(b, comp);
+                    }
+                }
+                else {
+                    const size_t n2 = static_cast<size_t>(rng() % 129);
+                    b.resize(n2);
+                    for (size_t i = 0; i < n2; ++i)
+                        b[i] = static_cast<T>(rng() % 16u);
+                    std::ranges::sort(b, comp);
+                }
+
+                const bool exp = std::ranges::includes(a, b, comp);
+                RTTS_EQUAL(raze::algorithm::includes(a, b, comp), exp);
+                RTTS_EQUAL(raze::algorithm::includes(a.begin(), a.end(), b.begin(), b.end(), comp), exp);
+                RTTS_EQUAL(raze::algorithm::includes[opt::fscalar](a, b, comp), exp);
+                RTTS_EQUAL(raze::algorithm::includes[opt::fstatic](a, b, comp), exp);
+
+                if (it % 8 == 0 && n1 <= 64 && b.size() <= 64) {
+                    std::list<T> la(a.begin(), a.end());
+                    std::list<T> lb(b.begin(), b.end());
+                    RTTS_EQUAL(raze::algorithm::includes(la, lb, comp), exp);
+                }
+            };
+
+            if (desc) run_check(std::greater<>{});
+            else      run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::includes fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        includes_fuzz<T>(seed, 40);
+};

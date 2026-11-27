@@ -9,12 +9,14 @@
 #include <ranges>
 #include <string>
 #include <vector>
+#include <deque>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::lexicographical_compare_three_way", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     using namespace rtts::algorithm;
     namespace opt = raze::options;
-    auto cfg = config::compact();
+    auto cfg = config::thorough();
 
     run<range, T>(cfg,
         [](auto c) {
@@ -51,7 +53,6 @@ RTTS_CASE_TPL("raze::algorithm::lexicographical_compare_three_way", rtts::algori
 };
 
 RTTS_CASE("raze::algorithm::lexicographical_compare_three_way categories, NaN, and projections") {
-    // Floating-point partial_ordering with NaN
     {
         const std::vector<double> a{ 1.0, std::numeric_limits<double>::quiet_NaN() };
         const std::vector<double> b{ 1.0, 2.0 };
@@ -60,7 +61,6 @@ RTTS_CASE("raze::algorithm::lexicographical_compare_three_way categories, NaN, a
         RTTS_EXPECT(cmp == std::partial_ordering::unordered);
     }
 
-    // Projections, custom comparator, single-pass input, non-common
     {
         const std::vector<rtts::test_item> a{ { 1, 100 }, { 2, 200 } };
         const std::vector<rtts::test_item> b{ { 1, 1 }, { 2, 2 } };
@@ -78,3 +78,57 @@ RTTS_CASE("raze::algorithm::lexicographical_compare_three_way categories, NaN, a
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void lexicographical_compare_three_way_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n1 = static_cast<size_t>(rng() % 257);
+            const size_t n2 = static_cast<size_t>(rng() % 257);
+            std::vector<T> a, b;
+
+            if ((it & 1u) == 0u) {
+                const size_t common = (n1 < n2) ? n1 : n2;
+                a = rtts::random::vector<T>(n1, rng());
+                b.resize(n2);
+                for (size_t i = 0; i < common; ++i)
+                    b[i] = a[i];
+                for (size_t i = common; i < n2; ++i)
+                    b[i] = val_gen();
+                if (common > 0 && (rng() % 3u) != 0u) {
+                    const size_t pos = static_cast<size_t>(rng() % common);
+                    b[pos] = val_gen();
+                }
+            }
+            else {
+                a.resize(n1);
+                b.resize(n2);
+                for (size_t i = 0; i < n1; ++i) a[i] = static_cast<T>(rng() % 4u);
+                for (size_t i = 0; i < n2; ++i) b[i] = static_cast<T>(rng() % 4u);
+            }
+
+            const auto exp = std::lexicographical_compare_three_way(a.begin(), a.end(), b.begin(), b.end());
+            RTTS_EXPECT(raze::algorithm::lexicographical_compare_three_way(a, b) == exp);
+            RTTS_EXPECT(raze::algorithm::lexicographical_compare_three_way(a.begin(), a.end(), b.begin(), b.end()) == exp);
+            RTTS_EXPECT(raze::algorithm::lexicographical_compare_three_way[opt::fscalar](a, b) == exp);
+            RTTS_EXPECT(raze::algorithm::lexicographical_compare_three_way[opt::fstatic](a, b) == exp);
+
+            if (it % 8 == 0 && n1 <= 64 && n2 <= 64) {
+                std::list<T> la(a.begin(), a.end());
+                std::deque<T> db(b.begin(), b.end());
+                RTTS_EXPECT(raze::algorithm::lexicographical_compare_three_way(la, db) == exp);
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::lexicographical_compare_three_way fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        lexicographical_compare_three_way_fuzz<T>(seed, 40);
+};

@@ -1,9 +1,13 @@
 #pragma once
 
+#include <src/raze/vx/hw/configurable/memory/Load.h>
+#include <src/raze/vx/hw/configurable/memory/Store.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Convert.h>
+
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/Destination.h>
-#include <raze/math/Math.h>
+#include <src/raze/math/MinMax.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <algorithm>
 

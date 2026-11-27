@@ -1,8 +1,8 @@
 #pragma once
 
-#include <raze/compatibility/CompilerDetection.h>
-#include <raze/arch/ProcessorDetection.h>
-#include <raze/compatibility/SimdCompatibility.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/arch/ProcessorDetection.h>
+#include <src/raze/compatibility/SimdCompatibility.h>
 
 #if !defined(raze_fastcall)
 #  if defined(raze_processor_x86_32)

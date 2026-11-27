@@ -1,12 +1,12 @@
 #pragma once 
 
-#include <raze/RazeNamespace.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/arch/ProcessorDetection.h>
+#include <src/raze/compatibility/SystemDetection.h>
 
-#include <raze/arch/ProcessorDetection.h>
-#include <raze/compatibility/SystemDetection.h>
-
+#include <cstddef>
 #include <functional>
-#include <numeric>
+#include <type_traits>
 
 
 __RAZE_NAMESPACE_BEGIN
@@ -72,9 +72,9 @@ using sdword_t      = i32;
 using qword_t       = u64;
 using sqword_t      = i64;
 
-#if defined(raze_os_windows) 
-  using system_bool_t = BOOL;
-#else 
+#if defined(raze_os_windows)
+  using system_bool_t = int;
+#else
   using system_bool_t = bool;
 #endif
   

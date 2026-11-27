@@ -8,6 +8,7 @@
 #include <memory>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::shift_left", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -49,7 +50,6 @@ RTTS_CASE_TPL("raze::algorithm::shift_left", rtts::algorithm::all_types)
 };
 
 RTTS_CASE("raze::algorithm::shift_left forward_list, move-only, non-common, and dangling") {
-    // Forward list
     {
         std::forward_list<int> fl{ 10, 20, 30, 40, 50 };
         auto r = raze::algorithm::shift_left(fl, 2);
@@ -57,7 +57,6 @@ RTTS_CASE("raze::algorithm::shift_left forward_list, move-only, non-common, and 
         RTTS_EXPECT((got == std::vector<int>{ 30, 40, 50 }));
     }
 
-    // Move-only unique_ptr
     {
         std::vector<std::unique_ptr<int>> v;
         for (int i = 1; i <= 5; ++i)
@@ -67,7 +66,6 @@ RTTS_CASE("raze::algorithm::shift_left forward_list, move-only, non-common, and 
         RTTS_EXPECT(*v[0] == 3 && *v[1] == 4 && *v[2] == 5);
     }
 
-    // Non-common sentinel & rvalue dangling
     {
         std::vector<int> v{ 1, 2, 3, 4 };
         auto r = raze::algorithm::shift_left(rtts::make_non_common(v), 1);
@@ -78,3 +76,59 @@ RTTS_CASE("raze::algorithm::shift_left forward_list, move-only, non-common, and 
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void shift_left_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            const auto base = rtts::random::vector<T>(n, rng());
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const size_t len = hi - lo;
+            const std::ptrdiff_t sh = static_cast<std::ptrdiff_t>(rng() % (len + 6));
+
+            auto exp = base;
+            auto exp_end = std::shift_left(exp.begin() + static_cast<std::ptrdiff_t>(lo),
+                                           exp.begin() + static_cast<std::ptrdiff_t>(hi), sh);
+            const auto exp_len = exp_end - (exp.begin() + static_cast<std::ptrdiff_t>(lo));
+
+            auto check = [&](auto fn) {
+                auto v = base;
+                auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                 v.begin() + static_cast<std::ptrdiff_t>(hi));
+                auto r = fn(sub, sh);
+                RTTS_EXPECT(r.begin() == sub.begin());
+                RTTS_EXPECT(r.end() - sub.begin() == exp_len);
+                RTTS_EXPECT(std::ranges::equal(r, std::ranges::subrange(
+                    exp.begin() + static_cast<std::ptrdiff_t>(lo), exp_end)));
+                RTTS_EXPECT(std::equal(v.begin(), v.begin() + static_cast<std::ptrdiff_t>(lo), base.begin()));
+                RTTS_EXPECT(std::equal(v.begin() + static_cast<std::ptrdiff_t>(hi), v.end(),
+                                       base.begin() + static_cast<std::ptrdiff_t>(hi)));
+            };
+
+            check([](auto sub, auto s) { return raze::algorithm::shift_left(sub, s); });
+            check([](auto sub, auto s) { return raze::algorithm::shift_left(sub.begin(), sub.end(), s); });
+            check([](auto sub, auto s) { return raze::algorithm::shift_left[opt::fscalar](sub, s); });
+            check([](auto sub, auto s) { return raze::algorithm::shift_left[opt::fstatic](sub, s); });
+
+            if (it % 8 == 0 && len <= 64) {
+                std::forward_list<T> fl(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                        base.begin() + static_cast<std::ptrdiff_t>(hi));
+                auto r = raze::algorithm::shift_left(fl, sh);
+                RTTS_EXPECT(std::ranges::equal(r, std::ranges::subrange(
+                    exp.begin() + static_cast<std::ptrdiff_t>(lo), exp_end)));
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::shift_left fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        shift_left_fuzz<T>(seed, 40);
+};

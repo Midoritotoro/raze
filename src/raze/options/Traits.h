@@ -3,9 +3,13 @@
 #include <src/raze/options/Callable.h>
 #include <src/raze/algorithm/StrategyBuilder.h>
 #include <src/raze/utility/Assert.h>
+#include <src/raze/vx/Concepts.h>
 #include <src/raze/vx/hw/configurable/memory/AlignedOption.h>
-#include <memory>
 #include <cstdint>
+#include <iterator>
+#include <memory>
+#include <ranges>
+#include <utility>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 

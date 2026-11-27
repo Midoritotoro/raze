@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <raze/compatibility/CxxVersionDetection.h>
-#include <raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/CxxVersionDetection.h>
+#include <src/raze/compatibility/CompilerDetection.h>
 
 
 #if !defined(raze_never_inline)

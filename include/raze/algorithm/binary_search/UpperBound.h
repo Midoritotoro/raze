@@ -5,7 +5,7 @@
 #include <src/raze/algorithm/DataSource.h>
 #include <src/raze/algorithm/ProjectedValue.h>
 #include <raze/options/Options.h>
-#include <algorithm>
+#include <utility>
 #include <functional>
 #include <iterator>
 

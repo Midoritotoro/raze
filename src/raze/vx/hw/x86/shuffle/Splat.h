@@ -4,7 +4,6 @@
 #include <src/raze/vx/hw/x86/access/Extract.h>
 #include <src/raze/vx/hw/x86/construct/Broadcast.h>
 #include <src/raze/vx/hw/x86/shuffle/GenericShuffle.h>
-#include <src/raze/vx/hw/x86/access/Extract.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

@@ -1,12 +1,17 @@
 #pragma once 
 
-#include <raze/arch/CpuFeature.h>
-#include <raze/compatibility/SimdCompatibility.h>
-
+#include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/arch/CpuFeature.h>
+#include <src/raze/arch/ProcessorDetection.h>
+#include <src/raze/compatibility/SimdCompatibility.h>
 #include <src/raze/traits/IntegralProperties.h>
 #include <src/raze/traits/TypeCheck.h>
+#include <type_traits>
 
-#include <src/raze/vx/hw/Cast.h>
+#if defined(raze_processor_x86)
+#  include <immintrin.h>
+#endif
 
 
 __RAZE_TRAITS_NAMESPACE_BEGIN

@@ -12,10 +12,6 @@ RTTS_CASE_TPL("raze::vx::clear_first", rtts::simd::all_simd_infos)
 	using Abi = typename V::abi_type;
     constexpr size_t N = V::size();
 
-	/*if constexpr (Abi::isa == raze::arch::ISA::AVX512BW && sizeof(V) == 64 && sizeof(T) == 1) {
-        __debugbreak();
-	}*/
-
     {
         Mask m_empty(false);
         Mask m_empty_cleared = raze::vx::clear_first(m_empty);

@@ -17,42 +17,35 @@ RTTS_CASE_TPL("raze::algorithm::min_element", rtts::algorithm::all_types)
     namespace opt = raze::options;
     auto cfg = config::thorough();
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element(c.first(), c.last()); },
-        [](auto c) { return std::ranges::min_element(c.first(), c.last()); });
+    auto check_iter = [&](auto algo) {
+        run<range, T>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last()); },
+            [](auto c) { return std::ranges::min_element(c.first(), c.last()); });
+    };
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element(c.range()); },
-        [](auto c) { return std::ranges::min_element(c.range()); });
+    auto check_range = [&](auto algo) {
+        run<range, T>(cfg,
+            [algo](auto c) { return algo(c.range()); },
+            [](auto c) { return std::ranges::min_element(c.range()); });
+    };
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element[opt::fscalar](c.first(), c.last()); },
-        [](auto c) { return std::ranges::min_element(c.first(), c.last()); });
+    auto check_cmp = [&](auto algo, auto cmp) {
+        run<range, T>(cfg,
+            [algo, cmp](auto c) { return algo(c.range(), cmp); },
+            [cmp](auto c) { return std::ranges::min_element(c.range(), cmp); });
+    };
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element[opt::unroll<2>](c.range()); },
-        [](auto c) { return std::ranges::min_element(c.range()); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element[opt::fstatic](c.range()); },
-        [](auto c) { return std::ranges::min_element(c.range()); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element(c.range(), std::greater<>{}); },
-        [](auto c) { return std::ranges::min_element(c.range(), std::greater<>{}); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element(c.range(), std::ranges::less{}); },
-        [](auto c) { return std::ranges::min_element(c.range(), std::ranges::less{}); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::min_element(c.range(), std::less<T>{}); },
-        [](auto c) { return std::ranges::min_element(c.range(), std::less<T>{}); });
+    check_iter(raze::algorithm::min_element);
+    check_range(raze::algorithm::min_element);
+    check_iter(raze::algorithm::min_element[opt::fscalar]);
+    check_range(raze::algorithm::min_element[opt::unroll<2>]);
+    check_range(raze::algorithm::min_element[opt::fstatic]);
+    check_cmp(raze::algorithm::min_element, std::greater<>{});
+    check_cmp(raze::algorithm::min_element, std::ranges::less{});
+    check_cmp(raze::algorithm::min_element, std::less<T>{});
 
     auto cmp_branch = [](auto a, auto b) { if (a < b) return true; return false; };
-    run<range, T>(cfg,
-        [cmp_branch](auto c) { return raze::algorithm::min_element[opt::fautovec](c.range(), cmp_branch); },
-        [cmp_branch](auto c) { return std::ranges::min_element(c.range(), cmp_branch); });
+    check_cmp(raze::algorithm::min_element[opt::fautovec], cmp_branch);
 
     {
         auto acfg = config::compact();
@@ -75,7 +68,6 @@ RTTS_CASE_TPL("raze::algorithm::min_element", rtts::algorithm::all_types)
         check_aligned.template operator()<1>(raze::algorithm::min_element[opt::aligned<64>][opt::aligned<opt::unaligned>]);
     }
 
-    // Exact tie-breaking sweep: all-equal, ties in lane 0 / mid / last / tail
     {
         for (size_t len : { size_t(1), size_t(7), size_t(16), size_t(31), size_t(32), size_t(64), size_t(65), size_t(130) }) {
             std::vector<T> eq(len, T(5));
@@ -92,7 +84,6 @@ RTTS_CASE_TPL("raze::algorithm::min_element", rtts::algorithm::all_types)
         }
     }
 
-    // Custom vectorizable comparator
     {
         auto custom_vec_cmp = [](auto a, auto b) { return a > b; };
         auto v = rtts::random::vector<T>(300, 11111u);
@@ -100,17 +91,17 @@ RTTS_CASE_TPL("raze::algorithm::min_element", rtts::algorithm::all_types)
                    std::ranges::min_element(v, custom_vec_cmp) - v.begin());
     }
 
+    constexpr auto check_ce_range = [](auto algo) constexpr {
+        return constexpr_run<T, range, 8>(
+            [algo](auto c) constexpr { return algo(c.range()); },
+            [](auto c) constexpr { return std::ranges::min_element(c.range()); });
+    };
+
     static_assert(constexpr_run<T, range, 8>(
         [](auto c) constexpr { return raze::algorithm::min_element(c.first(), c.last()); },
         [](auto c) constexpr { return std::ranges::min_element(c.first(), c.last()); }));
-
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return raze::algorithm::min_element[opt::fscalar](c.range()); },
-        [](auto c) constexpr { return std::ranges::min_element(c.range()); }));
-
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return raze::algorithm::min_element[opt::aligned<64>](c.range()); },
-        [](auto c) constexpr { return std::ranges::min_element(c.range()); }));
+    static_assert(check_ce_range(raze::algorithm::min_element[opt::fscalar]));
+    static_assert(check_ce_range(raze::algorithm::min_element[opt::aligned<64>]));
 };
 
 RTTS_CASE("raze::algorithm::min_element chunking, signed zero, views, dangling, and edge cases") {

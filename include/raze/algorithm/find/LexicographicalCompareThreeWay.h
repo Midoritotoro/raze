@@ -4,7 +4,7 @@
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/DataSource.h>
 #include <raze/options/Options.h>
-#include <algorithm>
+#include <utility>
 #include <compare>
 #include <functional>
 

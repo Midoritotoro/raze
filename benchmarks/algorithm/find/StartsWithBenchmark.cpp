@@ -23,7 +23,7 @@ namespace {
 #endif
     }
 
-} // namespace
+}
 
 template <class T, class Fn>
 static void run_starts_with(benchmark::State& state, Fn&& fn) {

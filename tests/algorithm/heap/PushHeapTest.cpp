@@ -7,6 +7,7 @@
 #include <memory>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::push_heap", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -39,7 +40,6 @@ RTTS_CASE_TPL("raze::algorithm::push_heap", rtts::algorithm::all_types)
 };
 
 RTTS_CASE("raze::algorithm::push_heap comparator, projections, move-only, and dangling") {
-    // Min-heap with projection
     {
         std::vector<rtts::test_item> v{ { 2, 1 }, { 5, 2 }, { 7, 3 }, { 1, 4 } };
         auto end = raze::algorithm::push_heap(v, std::greater<>{}, &rtts::test_item::key);
@@ -47,7 +47,6 @@ RTTS_CASE("raze::algorithm::push_heap comparator, projections, move-only, and da
         RTTS_EXPECT(std::ranges::is_heap(v, std::greater<>{}, &rtts::test_item::key));
     }
 
-    // Move-only unique_ptr & non-common & dangling
     {
         std::vector<std::unique_ptr<int>> v;
         for (int x : { 10, 5, 8, 2, 20 }) {
@@ -65,3 +64,63 @@ RTTS_CASE("raze::algorithm::push_heap comparator, projections, move-only, and da
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void push_heap_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 129);
+            std::vector<T> raw(n);
+            if ((it & 1u) == 0u) {
+                raw = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                for (size_t i = 0; i < n; ++i)
+                    raw[i] = static_cast<T>(rng() % 12u);
+            }
+
+            const bool min_heap = (it % 3 == 2);
+            auto run_check = [&](auto comp) {
+                std::vector<T> h;
+                h.reserve(n);
+                for (size_t i = 0; i < n; ++i) {
+                    h.push_back(raw[i]);
+                    const unsigned mode = static_cast<unsigned>((it + i) % 4);
+                    auto end = (mode == 0u) ? raze::algorithm::push_heap(h, comp)
+                             : (mode == 1u) ? raze::algorithm::push_heap(h.begin(), h.end(), comp)
+                             : (mode == 2u) ? raze::algorithm::push_heap[opt::fscalar](h, comp)
+                                            : raze::algorithm::push_heap[opt::fstatic](h, comp);
+                    RTTS_EXPECT(end == h.end());
+                    RTTS_EXPECT(std::ranges::is_heap(h, comp));
+                }
+                auto s_got = h;
+                auto s_exp = raw;
+                std::ranges::sort(s_got);
+                std::ranges::sort(s_exp);
+                RTTS_ALL_EQUAL(s_got, s_exp);
+
+                if (it % 8 == 0 && n <= 64) {
+                    std::deque<T> dq;
+                    for (T x : raw) {
+                        dq.push_back(x);
+                        auto end = raze::algorithm::push_heap(dq, comp);
+                        RTTS_EXPECT(end == dq.end() && std::ranges::is_heap(dq, comp));
+                    }
+                }
+            };
+
+            if (min_heap) run_check(std::greater<>{});
+            else          run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::push_heap fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        push_heap_fuzz<T>(seed, 30);
+};

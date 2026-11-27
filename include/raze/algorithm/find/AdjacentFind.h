@@ -4,7 +4,6 @@
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/DataSource.h>
-#include <raze/math/Math.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

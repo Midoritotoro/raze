@@ -287,7 +287,7 @@ namespace rtts {
                 test_count++; 
                 invalid_count++; 
             }
-            
+
             int report() const {
                 std::cout << "----------------------------------------------------------------\n";
                 std::cout << "Results: " << test_count << " tests - "
@@ -319,7 +319,7 @@ namespace rtts {
             ~logger() noexcept { 
                 if (display && done) std::cout << "\n"; 
             }
-            
+
             bool display, done;
         };
 
@@ -564,7 +564,7 @@ namespace rtts {
             unsigned char, unsigned short, unsigned int, unsigned long long,
             float, double
         >;
-    } // namespace algorithm
+    }
 
     namespace random {
         template <class T>
@@ -752,7 +752,7 @@ namespace rtts {
 
             return result;
         }
-    } // namespace random
+    }
 
     namespace simd {
         constexpr raze::arch::ISA current_isa() {
@@ -850,7 +850,6 @@ namespace rtts {
         using all_types = typename filter<is_valid_simd_info, all_simd_infos>::type;
         using all_fp_types = typename filter<is_valid_simd_info, all_fp_infos>::type;
     }
-    
 
     struct same {
         template <class A, class B, class RA, class RB>
@@ -944,22 +943,30 @@ namespace rtts {
         void case_mixed(Container1 value, Container2 second, [[maybe_unused]] unsigned seed, std::mt19937& rng, bool boundary,
             Raze& raze_op, Std& std_op, Verify& verify) {
 
-            auto raze_data = make_fixture_mixed<T1, T2>(std::move(value), std::move(second));
-            auto std_data = raze_data;
+            const auto base_data = make_fixture_mixed<T1, T2>(std::move(value), std::move(second));
 
             auto run = [&](size_t count) {
-                raze_data.count = count;
-                std_data.count = count;
-
-                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
-                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = count;
+                    std_data.count = count;
+                    RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                }
+                if (base_data.size() != 0) {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = count;
+                    std_data.count = count;
+                    RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                }
             };
 
             if constexpr (Kind == kind::range) {
                 run(0);
             }
             else {
-                each_count(raze_data.size(), rng, boundary, run);
+                each_count(base_data.size(), rng, boundary, run);
             }
         }
 
@@ -1022,12 +1029,19 @@ namespace rtts {
         template <class T1, class T2, kind Kind, size_t Size, size_t Count = 0, class Raze, class Std, class Verify = same>
         consteval bool constexpr_run_mixed(Raze raze_op, Std std_op, Verify verify = {}) {
             if constexpr (Kind == kind::n) static_assert(Size != 0 && Count < Size);
-            auto raze_data = make_constexpr_fixture_mixed<T1, T2, Size>();
-            auto std_data = raze_data;
-            raze_data.count = Count;
-            std_data.count = Count;
-            if (!variant<false>(raze_data, std_data, raze_op, std_op, verify)) return false;
+            const auto base_data = make_constexpr_fixture_mixed<T1, T2, Size>();
+            {
+                auto raze_data = base_data;
+                auto std_data = base_data;
+                raze_data.count = Count;
+                std_data.count = Count;
+                if (!variant<false>(raze_data, std_data, raze_op, std_op, verify)) return false;
+            }
             if constexpr (Size != 0) {
+                auto raze_data = base_data;
+                auto std_data = base_data;
+                raze_data.count = Count;
+                std_data.count = Count;
                 if (!variant<true>(raze_data, std_data, raze_op, std_op, verify)) return false;
             }
             return true;
@@ -1226,7 +1240,6 @@ namespace rtts {
                 return base(result);
         }
 
-
         struct prefix {
             template <class A, class B, class RA, class RB>
             constexpr bool operator()(A const& a, B const& b, RA const& ra, RB const& rb) const {
@@ -1322,26 +1335,32 @@ namespace rtts {
         void case_(Container value, unsigned seed, std::mt19937& rng, bool boundary,
             Raze& raze_op, Std& std_op, Verify& verify) {
 
-            auto raze_data = make_fixture_from_container<T>(std::move(value), seed);
-            auto std_data = raze_data;  
+            const auto base_data = make_fixture_from_container<T>(std::move(value), seed);
 
             auto run = [&] (size_t count) {
-                raze_data.count = count;
-                std_data.count = count;
-
-                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
-                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = count;
+                    std_data.count = count;
+                    RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                }
+                if (base_data.size() != 0) {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = count;
+                    std_data.count = count;
+                    RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                }
             };
 
             if constexpr (Kind == kind::range) {
                 run(0);  
             }
             else {
-                each_count(raze_data.size(), rng, boundary, run);
+                each_count(base_data.size(), rng, boundary, run);
             }
         }
-
-       
 
         template <class T, size_t N>
         struct constexpr_fixture {
@@ -1381,16 +1400,22 @@ namespace rtts {
             if constexpr (Kind == kind::n)
                 static_assert(Size != 0 && Count < Size);
 
-            auto raze_data = make_constexpr_fixture<T, Size>();
-            auto std_data = raze_data;
+            const auto base_data = make_constexpr_fixture<T, Size>();
 
-            raze_data.count = Count;
-            std_data.count = Count;
-
-            if (!variant<false>(raze_data, std_data, raze_op, std_op, verify))
-                return false;
+            {
+                auto raze_data = base_data;
+                auto std_data = base_data;
+                raze_data.count = Count;
+                std_data.count = Count;
+                if (!variant<false>(raze_data, std_data, raze_op, std_op, verify))
+                    return false;
+            }
 
             if constexpr (Size != 0) {
+                auto raze_data = base_data;
+                auto std_data = base_data;
+                raze_data.count = Count;
+                std_data.count = Count;
                 if (!variant<true>(raze_data, std_data, raze_op, std_op, verify))
                     return false;
             }
@@ -1471,58 +1496,72 @@ namespace rtts {
         template <kind Kind, class T, size_t A1, size_t A2, size_t AOut, class Raze, class Std, class Verify>
         void case_aligned(size_t sz, unsigned seed, std::mt19937& rng, bool boundary,
             Raze& raze_op, Std& std_op, Verify& verify) {
-            aligned_fixture<T, A1, A2, AOut> raze_data;
-            raze_data.value = rtts::random::sequence<rtts::aligned_buffer<T, A1>>(sz, seed);
-            raze_data.second = rtts::random::sequence<rtts::aligned_buffer<T, A2>>(sz, seed + 1);
-            raze_data.output.resize(sz);
-            raze_data.output2.resize(sz);
-            std::ranges::fill(raze_data.output, T{});
-            std::ranges::fill(raze_data.output2, T{});
-
-            auto std_data = raze_data;
+            aligned_fixture<T, A1, A2, AOut> base_data;
+            base_data.value = rtts::random::sequence<rtts::aligned_buffer<T, A1>>(sz, seed);
+            base_data.second = rtts::random::sequence<rtts::aligned_buffer<T, A2>>(sz, seed + 1);
+            base_data.output.resize(sz);
+            base_data.output2.resize(sz);
+            std::ranges::fill(base_data.output, T{});
+            std::ranges::fill(base_data.output2, T{});
 
             auto exec = [&](size_t cnt) {
-                raze_data.count = cnt;
-                std_data.count = cnt;
-
-                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
-                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = cnt;
+                    std_data.count = cnt;
+                    RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                }
+                if (base_data.size() != 0) {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = cnt;
+                    std_data.count = cnt;
+                    RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                }
             };
 
             if constexpr (Kind == kind::range) {
                 exec(0);
             }
             else {
-                each_count(raze_data.size(), rng, boundary, exec);
+                each_count(base_data.size(), rng, boundary, exec);
             }
         }
 
         template <kind Kind, class T1, class T2, size_t A1, size_t A2, size_t AOut, class Raze, class Std, class Verify>
         void case_aligned_mixed(size_t sz, unsigned seed, std::mt19937& rng, bool boundary,
             Raze& raze_op, Std& std_op, Verify& verify) {
-            aligned_fixture_mixed<T1, T2, A1, A2, AOut> raze_data;
-            raze_data.value = rtts::random::sequence<rtts::aligned_buffer<T1, A1>>(sz, seed);
-            raze_data.second = rtts::random::sequence<rtts::aligned_buffer<T2, A2>>(sz, seed + 1);
-            raze_data.output.resize(sz);
-            raze_data.output2.resize(sz);
-            std::ranges::fill(raze_data.output, T1{});
-            std::ranges::fill(raze_data.output2, T2{});
-
-            auto std_data = raze_data;
+            aligned_fixture_mixed<T1, T2, A1, A2, AOut> base_data;
+            base_data.value = rtts::random::sequence<rtts::aligned_buffer<T1, A1>>(sz, seed);
+            base_data.second = rtts::random::sequence<rtts::aligned_buffer<T2, A2>>(sz, seed + 1);
+            base_data.output.resize(sz);
+            base_data.output2.resize(sz);
+            std::ranges::fill(base_data.output, T1{});
+            std::ranges::fill(base_data.output2, T2{});
 
             auto exec = [&](size_t cnt) {
-                raze_data.count = cnt;
-                std_data.count = cnt;
-
-                RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
-                if (raze_data.size() != 0) RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = cnt;
+                    std_data.count = cnt;
+                    RTTS_EXPECT(variant<false>(raze_data, std_data, raze_op, std_op, verify));
+                }
+                if (base_data.size() != 0) {
+                    auto raze_data = base_data;
+                    auto std_data = base_data;
+                    raze_data.count = cnt;
+                    std_data.count = cnt;
+                    RTTS_EXPECT(variant<true>(raze_data, std_data, raze_op, std_op, verify));
+                }
             };
 
             if constexpr (Kind == kind::range) {
                 exec(0);
             }
             else {
-                each_count(raze_data.size(), rng, boundary, exec);
+                each_count(base_data.size(), rng, boundary, exec);
             }
         }
 

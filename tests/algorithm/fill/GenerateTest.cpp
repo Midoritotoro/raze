@@ -6,12 +6,14 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <deque>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::generate", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     using namespace rtts::algorithm;
     namespace opt = raze::options;
-    auto cfg = config::compact();
+    auto cfg = config::thorough();
 
     auto make_gen = []() {
         int counter = 0;
@@ -43,7 +45,6 @@ RTTS_CASE_TPL("raze::algorithm::generate", rtts::algorithm::all_types)
 };
 
 RTTS_CASE("raze::algorithm::generate views, output iterators, and dangling") {
-    // Non-common sentinel & writable view
     {
         std::vector<int> v(10, 0);
         int x = 10;
@@ -58,7 +59,6 @@ RTTS_CASE("raze::algorithm::generate views, output iterators, and dangling") {
         RTTS_EXPECT(v[2] == 100 && v[5] == 103 && v[6] == 16);
     }
 
-    // Empty & rvalue dangling
     {
         std::vector<int> empty;
         int calls = 0;
@@ -70,3 +70,61 @@ RTTS_CASE("raze::algorithm::generate views, output iterators, and dangling") {
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void generate_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 513);
+            const auto base = rtts::random::vector<T>(n, rng());
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const unsigned gen_seed = rng();
+
+            auto make_gen = [gen_seed]() {
+                std::mt19937 g(gen_seed);
+                return [g]() mutable -> T { return static_cast<T>(g() % 97u); };
+            };
+
+            auto v1 = base, v2 = base, v3 = base, v4 = base, v_exp = base;
+            auto re = std::ranges::generate(v_exp.begin() + static_cast<std::ptrdiff_t>(lo),
+                                            v_exp.begin() + static_cast<std::ptrdiff_t>(hi), make_gen());
+            auto r1 = raze::algorithm::generate(v1.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                v1.begin() + static_cast<std::ptrdiff_t>(hi), make_gen());
+            auto r2 = raze::algorithm::generate(std::ranges::subrange(v2.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                                      v2.begin() + static_cast<std::ptrdiff_t>(hi)), make_gen());
+            auto r3 = raze::algorithm::generate[opt::fscalar](v3.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                              v3.begin() + static_cast<std::ptrdiff_t>(hi), make_gen());
+            auto r4 = raze::algorithm::generate[opt::fstatic](v4.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                              v4.begin() + static_cast<std::ptrdiff_t>(hi), make_gen());
+
+            RTTS_EXPECT(r1 - v1.begin() == re - v_exp.begin());
+            RTTS_EXPECT(r2 - v2.begin() == re - v_exp.begin());
+            RTTS_EXPECT(r3 - v3.begin() == re - v_exp.begin());
+            RTTS_EXPECT(r4 - v4.begin() == re - v_exp.begin());
+            RTTS_ALL_EQUAL(v1, v_exp);
+            RTTS_ALL_EQUAL(v2, v_exp);
+            RTTS_ALL_EQUAL(v3, v_exp);
+            RTTS_ALL_EQUAL(v4, v_exp);
+
+            if (it % 8 == 0 && n <= 64) {
+                std::list<T> lst(base.begin(), base.end());
+                std::list<T> lst_exp(base.begin(), base.end());
+                auto rl = raze::algorithm::generate(lst, make_gen());
+                std::ranges::generate(lst_exp, make_gen());
+                RTTS_EXPECT(rl == lst.end());
+                RTTS_ALL_EQUAL(lst, lst_exp);
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::generate fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        generate_fuzz<T>(seed, 40);
+};

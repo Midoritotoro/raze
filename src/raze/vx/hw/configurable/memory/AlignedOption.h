@@ -1,6 +1,7 @@
 #pragma once 
 
-#include <raze/options/Options.h>
+#include <src/raze/options/Keywords.h>
+#include <src/raze/options/Option.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

@@ -1,6 +1,8 @@
 #pragma once 
 
 #include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
+#include <type_traits>
 
 
 __RAZE_ARCH_NAMESPACE_BEGIN

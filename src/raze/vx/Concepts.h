@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>
 #include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
 #include <raze/vx/Abi.h>
 

@@ -36,24 +36,24 @@ namespace {
 
     template <class T>
     void check_count_if_variants(const std::vector<T>& input, T target) {
+        namespace opt = raze::options;
         auto pred = [target](auto x) { return x == target; };
         auto scalar_pred = [target](T x) { return x == target; };
         auto vec_pred = raze::algorithm::equal_to(target);
 
         const auto exp = std::ranges::count_if(input, pred);
 
-        RTTS_EXPECT(raze::algorithm::count_if(input, pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if(input.begin(), input.end(), pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if(input, scalar_pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if[raze::options::fscalar](input, pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if[raze::options::unroll<2>](input, pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if[raze::options::fstatic](input, pred) == exp);
+        auto check_pred = [&](auto p) {
+            RTTS_EXPECT(raze::algorithm::count_if(input, p) == exp);
+            RTTS_EXPECT(raze::algorithm::count_if(input.begin(), input.end(), p) == exp);
+            RTTS_EXPECT(raze::algorithm::count_if[opt::fscalar](input, p) == exp);
+            RTTS_EXPECT(raze::algorithm::count_if[opt::unroll<2>](input, p) == exp);
+            RTTS_EXPECT(raze::algorithm::count_if[opt::fstatic](input, p) == exp);
+        };
 
-        RTTS_EXPECT(raze::algorithm::count_if(input, vec_pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if(input.begin(), input.end(), vec_pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if[raze::options::fscalar](input, vec_pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if[raze::options::unroll<2>](input, vec_pred) == exp);
-        RTTS_EXPECT(raze::algorithm::count_if[raze::options::fstatic](input, vec_pred) == exp);
+        check_pred(pred);
+        check_pred(vec_pred);
+        RTTS_EXPECT(raze::algorithm::count_if(input, scalar_pred) == exp);
     }
 
     template <class T>
@@ -113,57 +113,31 @@ namespace {
     template <class T>
     void count_if_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if(c.first(), c.last(), equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.first(), c.last(), equal_pred<T>{ target });
-            });
+        constexpr auto target_of = [](auto& c) {
+            return *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if(c.range(), equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.range(), equal_pred<T>{ target });
-            });
+        auto check_iter = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.first(), c.last(), equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::count_if(c.first(), c.last(), equal_pred<T>{ target_of(c) }); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if[raze::options::fscalar](c.first(), c.last(), equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.first(), c.last(), equal_pred<T>{ target });
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.range(), equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::count_if(c.range(), equal_pred<T>{ target_of(c) }); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if[raze::options::unroll<2>](c.range(), equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.range(), equal_pred<T>{ target });
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if[raze::options::fstatic](c.range(), equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.range(), equal_pred<T>{ target });
-            });
+        check_iter(raze::algorithm::count_if);
+        check_range(raze::algorithm::count_if);
+        check_iter(raze::algorithm::count_if[opt::fscalar]);
+        check_range(raze::algorithm::count_if[opt::unroll<2>]);
+        check_range(raze::algorithm::count_if[opt::fstatic]);
+        check_iter(raze::algorithm::count_if[opt::fautovec]);
 
         run<range, T>(cfg,
             [](auto c) { return raze::algorithm::count_if(c.first(), c.last(), false_pred{}); },
@@ -174,51 +148,26 @@ namespace {
             [](auto c) { return std::ranges::count_if(c.first(), c.last(), true_pred{}); });
 
         run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if[raze::options::fautovec](c.first(), c.last(), equal_pred<T>{ target });
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::count_if[opt::fautovec][opt::fstatic](c.range(), [target](auto x) { if (x == target) return true; return false; });
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.first(), c.last(), equal_pred<T>{ target });
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x == target) return true; return false; };
-                return raze::algorithm::count_if[raze::options::fautovec][raze::options::fstatic](c.range(), pred);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x == target) return true; return false; };
-                return std::ranges::count_if(c.range(), pred);
+            [target_of](auto c) {
+                T target = target_of(c);
+                return std::ranges::count_if(c.range(), [target](auto x) { if (x == target) return true; return false; });
             });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t Align>(auto algo) {
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.first(), c.last(), equal_pred<T>{ target });
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::count_if(c.first(), c.last(), equal_pred<T>{ target });
-                    });
+                    [algo, target_of](auto c) { return algo(c.first(), c.last(), equal_pred<T>{ target_of(c) }); },
+                    [target_of](auto c) { return std::ranges::count_if(c.first(), c.last(), equal_pred<T>{ target_of(c) }); });
 
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.range(), equal_pred<T>{ target });
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::count_if(c.range(), equal_pred<T>{ target });
-                    });
+                    [algo, target_of](auto c) { return algo(c.range(), equal_pred<T>{ target_of(c) }); },
+                    [target_of](auto c) { return std::ranges::count_if(c.range(), equal_pred<T>{ target_of(c) }); });
             };
 
             check_aligned.template operator()<16>(raze::algorithm::count_if[opt::aligned<16>]);
@@ -236,58 +185,36 @@ namespace {
             [](auto c) { return raze::algorithm::count_if(c.first(), c.last(), true_pred{}); },
             [](auto c) { return std::ranges::count_if(c.first(), c.last(), true_pred{}); }));
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if(c.range(), equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.range(), equal_pred<T>{ target });
-            }));
+        constexpr auto check_ce = [target_of](auto algo) {
+            return constexpr_run<T, n, 5, 3>(
+                [algo, target_of](auto c) { return algo(c.range(), equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::count_if(c.range(), equal_pred<T>{ target_of(c) }); });
+        };
+
+        static_assert(check_ce(raze::algorithm::count_if));
+        static_assert(check_ce(raze::algorithm::count_if[opt::aligned<64>]));
 
         static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x == target) return true; return false; };
-                return raze::algorithm::count_if[raze::options::fautovec](c.range(), pred);
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::count_if[opt::fautovec](c.range(), [target](auto x) constexpr { if (x == target) return true; return false; });
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x == target) return true; return false; };
-                return std::ranges::count_if(c.range(), pred);
-            }));
-
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::count_if[raze::options::aligned<64>](c.range(), equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::count_if(c.range(), equal_pred<T>{ target });
+            [target_of](auto c) {
+                T target = target_of(c);
+                return std::ranges::count_if(c.range(), [target](auto x) constexpr { if (x == target) return true; return false; });
             }));
 
         static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            return raze::algorithm::count_if(a, true_pred{}) == 0;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 4> a{ T(1), T(2), T(1), T(4) };
-            return raze::algorithm::count_if(a, equal_pred<T>{ T(1) }) == 2 &&
-                   raze::algorithm::count_if(a, false_pred{}) == 0;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-            return raze::algorithm::count_if[raze::options::fscalar](a, [](auto x) { return x > T(2); }) == 3;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(2), T(4), T(2) };
-            return raze::algorithm::count_if(a.begin() + 1, a.begin() + 4, equal_pred<T>{ T(2) }) == 2;
-            }());
+            std::array<T, 0> a0{};
+            std::array<T, 4> a4{ T(1), T(2), T(1), T(4) };
+            std::array<T, 5> a5{ T(1), T(2), T(3), T(4), T(5) };
+            std::array<T, 5> b5{ T(1), T(2), T(2), T(4), T(2) };
+            return raze::algorithm::count_if(a0, true_pred{}) == 0 &&
+                   raze::algorithm::count_if(a4, equal_pred<T>{ T(1) }) == 2 &&
+                   raze::algorithm::count_if(a4, false_pred{}) == 0 &&
+                   raze::algorithm::count_if[opt::fscalar](a5, [](auto x) { return x > T(2); }) == 3 &&
+                   raze::algorithm::count_if(b5.begin() + 1, b5.begin() + 4, equal_pred<T>{ T(2) }) == 2;
+        }());
     }
 }
 

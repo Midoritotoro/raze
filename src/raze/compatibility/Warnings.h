@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/compatibility/Nodiscard.h>
+#include <src/raze/compatibility/Nodiscard.h>
 
 // Warnings
 

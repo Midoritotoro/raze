@@ -4,6 +4,8 @@
 #include <src/raze/algorithm/VectorizablePredicate.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/Destination.h>
+#include <src/raze/vx/hw/configurable/compact/CompressStore.h>
+#include <src/raze/vx/hw/configurable/memory/Load.h>
 #include <raze/algorithm/find/FindIf.h>
 #include <raze/algorithm/copy/Copy.h>
 #include <algorithm>

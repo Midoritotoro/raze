@@ -10,12 +10,13 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::find_first_of", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     using namespace rtts::algorithm;
     namespace opt = raze::options;
-    auto cfg = config::compact();
+    auto cfg = config::thorough();
 
     auto make_set = [](auto& c) {
         auto beg = std::ranges::next(c.first2(), static_cast<std::ptrdiff_t>(c.count()));
@@ -61,7 +62,6 @@ RTTS_CASE("raze::algorithm::find_first_of predicates, projections, views, and ed
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Projections & custom predicate
     {
         const std::vector<rtts::test_item> items{ { 1, 10 }, { 2, 20 }, { 3, 30 }, { 4, 40 } };
         const std::vector<int> targets{ 9, 3, 2 };
@@ -73,7 +73,6 @@ RTTS_CASE("raze::algorithm::find_first_of predicates, projections, views, and ed
         RTTS_EXPECT(it2 == items.begin() + 1);
     }
 
-    // Single-pass input range, non-common sentinel, views, rvalue dangling
     {
         const std::vector<int> src{ 10, 20, 30, 40, 50 };
         const std::forward_list<int> set{ 99, 40, 30 };
@@ -93,7 +92,6 @@ RTTS_CASE("raze::algorithm::find_first_of predicates, projections, views, and ed
         static_assert(std::same_as<decltype(rval), std::ranges::dangling>);
     }
 
-    // Volatile
     {
         volatile int a[5] = { 1, 2, 3, 4, 5 };
         volatile int s[2] = { 9, 4 };
@@ -102,3 +100,60 @@ RTTS_CASE("raze::algorithm::find_first_of predicates, projections, views, and ed
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void find_first_of_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n1 = static_cast<size_t>(rng() % 257);
+            const size_t n2 = static_cast<size_t>(rng() % 33);
+
+            std::vector<T> a(n1), b(n2);
+            if ((it & 1u) == 0u) {
+                a = rtts::random::vector<T>(n1, rng());
+                b = rtts::random::vector<T>(n2, rng());
+            }
+            else {
+                const unsigned alpha = (it % 4 == 1) ? 16u : 64u;
+                for (size_t i = 0; i < n1; ++i) a[i] = static_cast<T>(rng() % alpha);
+                for (size_t i = 0; i < n2; ++i) b[i] = static_cast<T>(rng() % alpha);
+            }
+
+            const size_t lo1 = n1 ? static_cast<size_t>(rng() % (n1 + 1)) : 0;
+            const size_t hi1 = n1 ? (lo1 + static_cast<size_t>(rng() % (n1 - lo1 + 1))) : 0;
+            const size_t lo2 = n2 ? static_cast<size_t>(rng() % (n2 + 1)) : 0;
+            const size_t hi2 = n2 ? (lo2 + static_cast<size_t>(rng() % (n2 - lo2 + 1))) : 0;
+
+            auto s1 = std::ranges::subrange(a.begin() + static_cast<std::ptrdiff_t>(lo1),
+                                            a.begin() + static_cast<std::ptrdiff_t>(hi1));
+            auto s2 = std::ranges::subrange(b.begin() + static_cast<std::ptrdiff_t>(lo2),
+                                            b.begin() + static_cast<std::ptrdiff_t>(hi2));
+
+            const auto exp = std::ranges::find_first_of(s1, s2);
+            RTTS_EXPECT(raze::algorithm::find_first_of(s1, s2) == exp);
+            RTTS_EXPECT(raze::algorithm::find_first_of(s1.begin(), s1.end(), s2.begin(), s2.end()) == exp);
+            RTTS_EXPECT(raze::algorithm::find_first_of[opt::fscalar](s1, s2) == exp);
+            RTTS_EXPECT(raze::algorithm::find_first_of[opt::fstatic](s1, s2) == exp);
+
+            auto pred = [](T x, T y) { return x < y; };
+            const auto exp_p = std::ranges::find_first_of(s1, s2, pred);
+            RTTS_EXPECT(raze::algorithm::find_first_of(s1, s2, pred) == exp_p);
+
+            if (it % 8 == 0 && (hi1 - lo1) <= 64) {
+                std::forward_list<T> fl1(s1.begin(), s1.end());
+                std::list<T> l2(s2.begin(), s2.end());
+                RTTS_EXPECT(raze::algorithm::find_first_of(fl1, l2) == std::ranges::find_first_of(fl1, l2));
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::find_first_of fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        find_first_of_fuzz<T>(seed, 40);
+};

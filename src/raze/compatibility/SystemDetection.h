@@ -82,20 +82,15 @@
 #endif
 
 #if defined(raze_os_win)
-#if !defined(NOMINMAX)
-#  define NOMINMAX
-#endif
+#  if !defined(NOMINMAX)
+#    define NOMINMAX
+#  endif
 #endif // defined(raze_os_win)
 
-#if defined(raze_os_windows)
-#  include <windows.h>
-#  include <stdnoreturn.h>
-#endif // defined(raze_os_windows)
-
-#if defined(max) 
+#if defined(max)
 #  undef max
 #endif
 
-#if defined(min) 
+#if defined(min)
 #  undef min
 #endif

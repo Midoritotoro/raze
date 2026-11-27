@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raze/compatibility/Warnings.h>
+#include <src/raze/compatibility/Warnings.h>
 
 #if !defined(raze_disable_unrolling)
 #  if defined(raze_cpp_msvc_only)

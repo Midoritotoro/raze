@@ -7,6 +7,7 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::partition_point", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -51,3 +52,47 @@ RTTS_CASE("raze::algorithm::partition_point forward_list, projections, non-commo
     static_assert(std::same_as<decltype(dr), std::ranges::dangling>);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void partition_point_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            const T threshold = static_cast<T>(rng() % 80u + 10u);
+            auto pred = [threshold](T x) { return x < threshold; };
+
+            const size_t cut = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            std::vector<T> v(n);
+            for (size_t i = 0; i < cut; ++i)
+                v[i] = static_cast<T>(rng() % static_cast<unsigned>(threshold));
+            for (size_t i = cut; i < n; ++i)
+                v[i] = static_cast<T>(static_cast<unsigned>(threshold) + (rng() % 30u));
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                             v.begin() + static_cast<std::ptrdiff_t>(hi));
+
+            const auto exp = std::ranges::partition_point(sub, pred);
+            RTTS_EXPECT(raze::algorithm::partition_point(sub, pred) == exp);
+            RTTS_EXPECT(raze::algorithm::partition_point(sub.begin(), sub.end(), pred) == exp);
+            RTTS_EXPECT(raze::algorithm::partition_point[opt::fscalar](sub, pred) == exp);
+            RTTS_EXPECT(raze::algorithm::partition_point[opt::fstatic](sub, pred) == exp);
+
+            if (it % 8 == 0 && (hi - lo) <= 64) {
+                std::forward_list<T> fl(sub.begin(), sub.end());
+                RTTS_EXPECT(raze::algorithm::partition_point(fl, pred) == std::ranges::partition_point(fl, pred));
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::partition_point fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        partition_point_fuzz<T>(seed, 40);
+};

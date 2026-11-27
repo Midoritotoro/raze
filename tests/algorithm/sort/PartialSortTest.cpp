@@ -6,6 +6,7 @@
 #include <deque>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::partial_sort", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -57,3 +58,74 @@ RTTS_CASE("raze::algorithm::partial_sort comparator, projections, non-common, an
     static_assert(std::same_as<decltype(dr), std::ranges::dangling>);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void partial_sort_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            std::vector<T> base(n);
+            if ((it & 1u) == 0u) {
+                base = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                for (size_t i = 0; i < n; ++i)
+                    base[i] = static_cast<T>(rng() % 8u);
+            }
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const size_t len = hi - lo;
+            const size_t k = len ? static_cast<size_t>(rng() % (len + 1)) : 0;
+            const bool desc = (it % 3 == 2);
+
+            auto run_check = [&](auto comp) {
+                std::vector<T> sorted_sub(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                          base.begin() + static_cast<std::ptrdiff_t>(hi));
+                std::ranges::sort(sorted_sub, comp);
+
+                auto verify = [&](auto fn) {
+                    auto v = base;
+                    auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                     v.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto mid = sub.begin() + static_cast<std::ptrdiff_t>(k);
+                    auto end = fn(sub, mid);
+                    RTTS_EXPECT(end == sub.end());
+                    RTTS_EXPECT(std::equal(sub.begin(), mid, sorted_sub.begin()));
+                    RTTS_EXPECT(std::equal(v.begin(), v.begin() + static_cast<std::ptrdiff_t>(lo), base.begin()));
+                    RTTS_EXPECT(std::equal(v.begin() + static_cast<std::ptrdiff_t>(hi), v.end(),
+                                           base.begin() + static_cast<std::ptrdiff_t>(hi)));
+                    std::vector<T> got_sorted(sub.begin(), sub.end());
+                    std::ranges::sort(got_sorted, comp);
+                    RTTS_ALL_EQUAL(got_sorted, sorted_sub);
+                };
+
+                verify([&](auto sub, auto m) { return raze::algorithm::partial_sort(sub, m, comp); });
+                verify([&](auto sub, auto m) { return raze::algorithm::partial_sort(sub.begin(), m, sub.end(), comp); });
+                verify([&](auto sub, auto m) { return raze::algorithm::partial_sort[opt::fscalar](sub, m, comp); });
+                verify([&](auto sub, auto m) { return raze::algorithm::partial_sort[opt::fstatic](sub, m, comp); });
+
+                if (it % 8 == 0 && len <= 64) {
+                    std::deque<T> dq(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                     base.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto end = raze::algorithm::partial_sort(dq, dq.begin() + static_cast<std::ptrdiff_t>(k), comp);
+                    RTTS_EXPECT(end == dq.end());
+                    RTTS_EXPECT(std::equal(dq.begin(), dq.begin() + static_cast<std::ptrdiff_t>(k), sorted_sub.begin()));
+                }
+            };
+
+            if (desc) run_check(std::greater<>{});
+            else      run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::partial_sort fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        partial_sort_fuzz<T>(seed, 35);
+};

@@ -1,6 +1,7 @@
 #pragma once 
 
-#include <raze/RazeNamespace.h>
+#include <src/raze/RazeNamespace.h>
+#include <type_traits>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

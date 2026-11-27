@@ -6,6 +6,8 @@
 #include <forward_list>
 #include <ranges>
 #include <vector>
+#include <deque>
+#include <random>
 
 namespace {
     struct key_box {
@@ -72,3 +74,72 @@ RTTS_CASE("raze::algorithm::upper_bound P2248 braced-init, projections, forward_
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void upper_bound_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            std::vector<T> v(n);
+            if ((it & 1u) == 0u) {
+                v = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                const unsigned alpha = (it % 4 == 1) ? 4u : 16u;
+                for (size_t i = 0; i < n; ++i)
+                    v[i] = static_cast<T>(rng() % alpha);
+            }
+
+            const bool desc = (it % 3 == 2);
+            if (desc)
+                std::ranges::sort(v, std::greater<>{});
+            else
+                std::ranges::sort(v);
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                             v.begin() + static_cast<std::ptrdiff_t>(hi));
+
+            std::vector<T> queries{ T(0), T(1), T(12), val_gen() };
+            if (lo < hi) {
+                queries.push_back(v[lo]);
+                queries.push_back(v[lo + (hi - lo) / 2]);
+                queries.push_back(v[hi - 1]);
+                queries.push_back(v[lo + static_cast<size_t>(rng() % (hi - lo))]);
+            }
+
+            auto check = [&](auto comp) {
+                for (T q : queries) {
+                    const auto exp = std::ranges::upper_bound(sub, q, comp);
+                    RTTS_EXPECT(raze::algorithm::upper_bound(sub, q, comp) == exp);
+                    RTTS_EXPECT(raze::algorithm::upper_bound(sub.begin(), sub.end(), q, comp) == exp);
+                    RTTS_EXPECT(raze::algorithm::upper_bound[opt::fscalar](sub, q, comp) == exp);
+                    RTTS_EXPECT(raze::algorithm::upper_bound[opt::fstatic](sub, q, comp) == exp);
+                }
+                if (it % 8 == 0 && (hi - lo) <= 64) {
+                    std::forward_list<T> fl(sub.begin(), sub.end());
+                    std::deque<T> dq(sub.begin(), sub.end());
+                    for (T q : queries) {
+                        RTTS_EXPECT(raze::algorithm::upper_bound(fl, q, comp) == std::ranges::upper_bound(fl, q, comp));
+                        RTTS_EXPECT(raze::algorithm::upper_bound(dq, q, comp) == std::ranges::upper_bound(dq, q, comp));
+                    }
+                }
+            };
+
+            if (desc) check(std::greater<>{});
+            else      check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::upper_bound fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        upper_bound_fuzz<T>(seed, 40);
+};

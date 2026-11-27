@@ -6,6 +6,8 @@
 #include <ranges>
 #include <string>
 #include <vector>
+#include <list>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::fold_left", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -49,3 +51,51 @@ RTTS_CASE("raze::algorithm::fold_left order, P2248 braced-init, and single-pass"
     RTTS_EQUAL(raze::algorithm::fold_left(rtts::make_non_common(v), 1, std::multiplies<>{}), 6);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void fold_left_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            std::vector<T> v(n);
+            for (size_t i = 0; i < n; ++i) {
+                const int val = static_cast<int>(rng() % 31u) - (std::is_signed_v<T> ? 15 : 0);
+                v[i] = static_cast<T>(val);
+            }
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                             v.begin() + static_cast<std::ptrdiff_t>(hi));
+            const std::int64_t init = static_cast<std::int64_t>(rng() % 101u) - 50;
+
+            const auto exp_sum = std::ranges::fold_left(sub, init, std::plus<>{});
+            RTTS_EQUAL(raze::algorithm::fold_left(sub, init, std::plus<>{}), exp_sum);
+            RTTS_EQUAL(raze::algorithm::fold_left(sub.begin(), sub.end(), init, std::plus<>{}), exp_sum);
+            RTTS_EQUAL(raze::algorithm::fold_left[opt::fscalar](sub, init, std::plus<>{}), exp_sum);
+            RTTS_EQUAL(raze::algorithm::fold_left[opt::fstatic](sub, init, std::plus<>{}), exp_sum);
+
+            auto mix = [](std::int64_t acc, T x) -> std::int64_t {
+                return (acc * 3 + static_cast<std::int64_t>(x)) % 1000000007LL;
+            };
+            const auto exp_mix = std::ranges::fold_left(sub, init, mix);
+            RTTS_EQUAL(raze::algorithm::fold_left(sub, init, mix), exp_mix);
+            RTTS_EQUAL(raze::algorithm::fold_left[opt::fscalar](sub.begin(), sub.end(), init, mix), exp_mix);
+
+            if (it % 8 == 0 && (hi - lo) <= 64) {
+                std::list<T> lst(sub.begin(), sub.end());
+                RTTS_EQUAL(raze::algorithm::fold_left(lst, init, mix), exp_mix);
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::fold_left fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        fold_left_fuzz<T>(seed, 40);
+};

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <raze/compatibility/Compatibility.h>
+#include <src/raze/compatibility/Compatibility.h>
 #include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>
 
 __RAZE_VX_NAMESPACE_BEGIN

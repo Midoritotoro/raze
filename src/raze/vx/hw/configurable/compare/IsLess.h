@@ -1,6 +1,8 @@
 #pragma once 
 
-#include <raze/options/Options.h>
+#include <src/raze/options/DispatchCall.h>
+#include <src/raze/options/Functor.h>
+#include <src/raze/utility/UninitializedTag.h>
 
 #if defined(raze_processor_x86)
 #  include <src/raze/vx/hw/x86/compare/Less.h>

@@ -1,9 +1,8 @@
 #pragma once
 
-#include <raze/RazeNamespace.h>
+#include <src/raze/RazeNamespace.h>
 #include <iterator>
 #include <type_traits>
-#include <functional>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

@@ -6,7 +6,7 @@
 #include <raze/algorithm/order/Rotate.h>
 #include <raze/algorithm/partition/StablePartition.h>
 #include <raze/options/Options.h>
-#include <algorithm>
+#include <utility>
 #include <functional>
 #include <iterator>
 

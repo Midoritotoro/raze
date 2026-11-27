@@ -1,10 +1,12 @@
 #pragma once
 
-#include <raze/compatibility/Compatibility.h>
-#include <raze/options/Options.h>
+#include <src/raze/compatibility/Compatibility.h>
+#include <src/raze/options/Traits.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/vx/Concepts.h>
+#include <src/raze/vx/hw/configurable/memory/Load.h>
+#include <src/raze/vx/hw/configurable/memory/Store.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

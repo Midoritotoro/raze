@@ -20,9 +20,6 @@ from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
 from matplotlib.patches import Patch
 from matplotlib.ticker import FuncFormatter, LogLocator, NullFormatter, NullLocator
 
-# Ordered logically: GNU/LLVM toolchains first, then MSVC-ABI toolchains.
-# STL labels are NEVER hardcoded here — they are detected dynamically from
-# benchmark JSON custom context or live compiler preprocessor probing.
 COMPILER_STYLES = {
     "gcc":      {"color": "#2CA02C", "marker": "s", "display": "GCC"},
     "clang":    {"color": "#8E44AD", "marker": "P", "display": "Clang"},
@@ -235,7 +232,6 @@ def find_vcvars64() -> Path | None:
         except Exception:
             pass
 
-    # Fallback: scan standard Visual Studio installation roots directly
     candidates: list[Path] = []
     for root_env in ("ProgramFiles", "ProgramFiles(x86)"):
         base = Path(os.environ.get(root_env, "")) / "Microsoft Visual Studio"
@@ -370,7 +366,6 @@ def probe_compiler_metadata(
     env: dict[str, str] | None = None,
     build_dir: Path | None = None,
 ) -> CompilerInfo:
-    """Dynamically probe the compiler preprocessor to detect STL & version."""
     info = make_default_compiler_info(comp)
     if env is None:
         try:
@@ -446,7 +441,6 @@ def probe_compiler_metadata(
 
 
 def merge_context_metadata(info: CompilerInfo, context: dict) -> CompilerInfo:
-    """Update CompilerInfo with authoritative metadata emitted in benchmark JSON context."""
     stl = context.get("raze_stl", "")
     if stl and stl != "unknown":
         info.stl = stl
@@ -813,7 +807,6 @@ def compute_geomean_series(by_type: dict, metric: str):
 
 
 def compute_best_vs_best_series(geo: dict, comps: list[str]) -> tuple[list[int], list[float]]:
-    """At each size, compute best(std across compilers) / best(raze across compilers)."""
     r_by_size: dict[int, list[float]] = defaultdict(list)
     s_by_size: dict[int, list[float]] = defaultdict(list)
     for comp in comps:
@@ -841,7 +834,6 @@ def _draw_compiler_head_to_head_bars(
     include_scalar: bool,
     y_prefix: str = "",
 ) -> None:
-    """Grouped bar chart contrasting raze vs std (and optional scalar) for each compiler + STL."""
     if not active_comps:
         ax.text(0.5, 0.5, "No benchmark data", ha="center", va="center")
         ax.set_axis_off()
@@ -938,7 +930,6 @@ def _draw_compiler_head_to_head_bars(
     elif valid_all:
         ax.set_ylim(0.0, max(valid_all) * 1.28)
 
-    # Speedup badges right above each compiler's bar group
     for idx, (rv, sv) in enumerate(zip(raze_vals, std_vals)):
         if math.isnan(rv) or math.isnan(sv) or rv <= 0 or sv <= 0:
             continue
@@ -961,7 +952,6 @@ def _draw_compiler_head_to_head_bars(
             zorder=7,
         )
 
-    # Subtle STL group boundary separators when multiple STL families are present
     stls = [comp_infos[c].stl for c in active_comps]
     for i in range(1, len(active_comps)):
         if stls[i] and stls[i - 1] and stls[i] != stls[i - 1]:
@@ -1051,14 +1041,12 @@ def plot_article_summary(
 
         y_prefix = f"[{scenario}]\n" if n_rows > 1 else ""
 
-        # Panel 1: Head-to-head Compiler & STL bar comparison
         _draw_compiler_head_to_head_bars(
             ax_bar, geo, active_comps, comp_infos, metric, logy, include_scalar, y_prefix=y_prefix
         )
         if row_idx == 0:
             ax_bar.set_title("Compiler & STL Head-to-Head (raze vs std)", fontsize=11, fontweight="bold")
 
-        # Panel 2: Speedup vs std by array size (+ best raze vs best std across all STLs)
         spd_xs: list[int] = []
         min_spd, max_spd = 1.0, 1.2
 
@@ -1125,7 +1113,6 @@ def plot_article_summary(
             ax_spd.set_title("Speedup vs std by Array Size", fontsize=11, fontweight="bold")
         ax_spd.legend(loc="best", fontsize=7.6, frameon=True)
 
-        # Panel 3: Heatmap (Type x Compiler(STL) + Best-vs-Best + Geomean)
         dtypes = ordered_types(by_type)
         if not dtypes or not paired_comps:
             ax_hm.text(0.5, 0.5, "No paired raze/std data", ha="center", va="center")
@@ -1262,7 +1249,6 @@ def plot_stl_comparison(
     metric: str,
     include_scalar: bool,
 ) -> None:
-    """Dedicated 2-panel comparison: per-compiler/STL curves + cross-STL speedup matrix."""
     geo = compute_geomean_series(by_type, metric)
     active_comps = ordered_active_compilers(by_type, comp_infos)
     paired_comps = ordered_active_compilers(by_type, comp_infos, require_both=True)
@@ -1277,7 +1263,6 @@ def plot_stl_comparison(
         layout="constrained",
     )
 
-    # Left: All compilers raze (solid) vs std (dashed), clearly labeled with STL
     all_xs: list[int] = []
     variants = active_variants(include_scalar)
     for comp in active_comps:
@@ -1296,7 +1281,6 @@ def plot_stl_comparison(
     ax_left.set_title("raze (solid) vs std (dashed) across Compilers & STLs", fontsize=11, fontweight="bold")
     ax_left.legend(loc="best", fontsize=7.8, ncol=2 if len(active_comps) >= 3 else 1, frameon=True)
 
-    # Right: Cross-STL matrix — raze(row compiler) vs std(col compiler/STL)
     if paired_comps:
         n = len(paired_comps)
         cross = np.full((n, n), np.nan, dtype=float)
@@ -1740,7 +1724,6 @@ def plot_overall_summary(
     suffix: str,
     out_dir: Path,
 ) -> None:
-    """Executive overview heatmap across all benchmarked algorithms × compilers/STLs."""
     if len(bench_summaries) < 2:
         return
 
@@ -1944,7 +1927,6 @@ def main() -> None:
 
             merge_context_metadata(comp_infos[comp], context)
 
-            # Fallback live compiler probe if JSON didn't include raze_stl metadata
             if not comp_infos[comp].stl and not args.no_probe and comp not in probed_fallback:
                 probed_fallback.add(comp)
                 build_dir = (root / "out" / "bench" / comp).resolve()
@@ -1963,7 +1945,6 @@ def main() -> None:
             print(f"[WARN] No data to plot for {bench_name}")
             continue
 
-        # Collect per-benchmark overall speedup stats for executive summary
         per_comp_ratios: dict[str, list[float]] = defaultdict(list)
         best_ratios: list[float] = []
         for by_type in grouped.values():

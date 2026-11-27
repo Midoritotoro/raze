@@ -1,13 +1,19 @@
 #pragma once
 
 #include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/arch/CpuFeature.h>
+#include <src/raze/arch/ProcessorDetection.h>
+#include <src/raze/arch/ProcessorFeatures.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/MemoryMacros.h>
+#include <src/raze/compatibility/SimdCompatibility.h>
+#include <src/raze/compatibility/Warnings.h>
 #include <src/raze/traits/IntegralProperties.h>
-
-#include <raze/arch/ProcessorFeatures.h>
-#include <raze/arch/ProcessorDetection.h>
-
-#include <raze/compatibility/SimdCompatibility.h>
 #include <src/raze/math/IntegralTypesConversions.h>
+#include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>
+#include <concepts>
+#include <limits>
 
 raze_disable_warning_msvc(4293)
 

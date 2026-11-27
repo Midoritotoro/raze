@@ -33,40 +33,32 @@ namespace {
 
     template <class T>
     void check_rotate_variants(const std::vector<T>& input, size_t mid) {
+        namespace opt = raze::options;
         const size_t n = input.size();
         auto exp = input;
         auto exp_res = std::ranges::rotate(exp, exp.begin() + mid);
         const auto exp_pos = exp_res.begin() - exp.begin();
 
-        auto v = input;
-        auto res = raze::algorithm::rotate(v, v.begin() + mid);
+        std::vector<T> v;
+        auto check_range = [&](auto algo) {
+            v = input;
+            auto res = algo(v, v.begin() + mid);
+            RTTS_EXPECT(res.begin() - v.begin() == exp_pos);
+            RTTS_EXPECT(res.end() == v.end());
+            RTTS_EXPECT(v == exp);
+        };
+
+        check_range(raze::algorithm::rotate);
+
+        v = input;
+        auto res = raze::algorithm::rotate(v.begin(), v.begin() + mid, v.end());
         RTTS_EXPECT(res.begin() - v.begin() == exp_pos);
         RTTS_EXPECT(res.end() == v.end());
         RTTS_EXPECT(v == exp);
 
-        v = input;
-        res = raze::algorithm::rotate(v.begin(), v.begin() + mid, v.end());
-        RTTS_EXPECT(res.begin() - v.begin() == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
-
-        v = input;
-        res = raze::algorithm::rotate[raze::options::fscalar](v, v.begin() + mid);
-        RTTS_EXPECT(res.begin() - v.begin() == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
-
-        v = input;
-        res = raze::algorithm::rotate[raze::options::unroll<2>](v, v.begin() + mid);
-        RTTS_EXPECT(res.begin() - v.begin() == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
-
-        v = input;
-        res = raze::algorithm::rotate[raze::options::fstatic](v, v.begin() + mid);
-        RTTS_EXPECT(res.begin() - v.begin() == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
+        check_range(raze::algorithm::rotate[opt::fscalar]);
+        check_range(raze::algorithm::rotate[opt::unroll<2>]);
+        check_range(raze::algorithm::rotate[opt::fstatic]);
 
         res = raze::algorithm::rotate(v, v.begin() + (n - mid));
         RTTS_EXPECT(res.begin() == v.begin() + mid);
@@ -125,6 +117,7 @@ namespace {
 
     template <class T>
     void rotate_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
         std::mt19937 rng(seed);
         std::uniform_int_distribution<size_t> sz(0, 2500);
 
@@ -135,36 +128,51 @@ namespace {
             const size_t mid = n == 0 ? 0 : rng() % (n + 1);
             auto exp = input;
             auto exp_res = std::ranges::rotate(exp, exp.begin() + mid);
+            const auto exp_pos = exp_res.begin() - exp.begin();
 
-            auto v = input;
-            auto res = raze::algorithm::rotate(v, v.begin() + mid);
-            RTTS_EXPECT(res.begin() - v.begin() == exp_res.begin() - exp.begin());
-            RTTS_EXPECT(res.end() == v.end());
-            RTTS_EXPECT(v == exp);
+            auto check_full = [&](auto fn) {
+                auto v = input;
+                auto res = fn(v);
+                RTTS_EXPECT(res.begin() - v.begin() == exp_pos);
+                RTTS_EXPECT(res.end() == v.end());
+                RTTS_EXPECT(v == exp);
+            };
 
-            v = input;
-            res = raze::algorithm::rotate[raze::options::fscalar](v.begin(), v.begin() + mid, v.end());
-            RTTS_EXPECT(res.begin() - v.begin() == exp_res.begin() - exp.begin());
-            RTTS_EXPECT(res.end() == v.end());
-            RTTS_EXPECT(v == exp);
-
-            v = input;
-            res = raze::algorithm::rotate[raze::options::fstatic](v, v.begin() + mid);
-            RTTS_EXPECT(res.begin() - v.begin() == exp_res.begin() - exp.begin());
-            RTTS_EXPECT(res.end() == v.end());
-            RTTS_EXPECT(v == exp);
+            check_full([&](auto& v) { return raze::algorithm::rotate(v, v.begin() + mid); });
+            check_full([&](auto& v) { return raze::algorithm::rotate[opt::fscalar](v.begin(), v.begin() + mid, v.end()); });
+            check_full([&](auto& v) { return raze::algorithm::rotate[opt::fstatic](v, v.begin() + mid); });
 
             const size_t first = n == 0 ? 0 : rng() % (n + 1);
             const size_t last = first + (n == first ? 0 : rng() % (n - first + 1));
             const size_t sub_mid = first + (last == first ? 0 : rng() % (last - first + 1));
 
-            v = input;
+            auto v = input;
             exp = input;
             exp_res = std::ranges::rotate(exp.begin() + first, exp.begin() + sub_mid, exp.begin() + last);
-            res = raze::algorithm::rotate(v.begin() + first, v.begin() + sub_mid, v.begin() + last);
+            auto res = raze::algorithm::rotate(v.begin() + first, v.begin() + sub_mid, v.begin() + last);
             RTTS_EXPECT(res.begin() - v.begin() == exp_res.begin() - exp.begin());
             RTTS_EXPECT(res.end() == v.begin() + last);
             RTTS_EXPECT(v == exp);
+        }
+    }
+
+    template <class Seq>
+    void check_rotate_seq(const Seq& input, std::initializer_list<size_t> mids) {
+        for (size_t mid : mids) {
+            auto exp = input;
+            auto exp_res = std::ranges::rotate(exp, std::ranges::next(exp.begin(), static_cast<std::ptrdiff_t>(mid)));
+            const auto exp_pos = std::ranges::distance(exp.begin(), exp_res.begin());
+
+            auto check = [&](auto fn) {
+                auto v = input;
+                auto res = fn(v, std::ranges::next(v.begin(), static_cast<std::ptrdiff_t>(mid)));
+                RTTS_EXPECT(std::ranges::distance(v.begin(), res.begin()) == exp_pos);
+                RTTS_EXPECT(res.end() == v.end());
+                RTTS_EXPECT(v == exp);
+            };
+
+            check([](auto& v, auto m) { return raze::algorithm::rotate(v, m); });
+            check([](auto& v, auto m) { return raze::algorithm::rotate[raze::options::fscalar](v.begin(), m, v.end()); });
         }
     }
 }
@@ -172,6 +180,7 @@ namespace {
 RTTS_CASE_TPL("raze::algorithm::rotate", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     using namespace rtts::algorithm;
+    namespace opt = raze::options;
     auto cfg = config::thorough();
 
     auto std_rotate_n = [](auto c) {
@@ -179,57 +188,33 @@ RTTS_CASE_TPL("raze::algorithm::rotate", rtts::algorithm::all_types)
         return std::ranges::rotate(c.data.value.begin(), mid, c.data.value.end());
     };
 
-    run<n, T>(cfg,
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate(c.first(), mid, c.last());
-        },
-        std_rotate_n);
+    auto check_iter = [&](auto algo) {
+        run<n, T>(cfg,
+            [algo](auto c) {
+                auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return algo(c.first(), mid, c.last());
+            },
+            std_rotate_n);
+    };
 
-    run<n, T>(cfg,
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate(c.range(), mid);
-        },
-        std_rotate_n);
+    auto check_range = [&](auto algo) {
+        run<n, T>(cfg,
+            [algo](auto c) {
+                auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return algo(c.range(), mid);
+            },
+            std_rotate_n);
+    };
 
-    run<n, T>(cfg,
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate[raze::options::fscalar](c.first(), mid, c.last());
-        },
-        std_rotate_n);
-
-    run<n, T>(cfg,
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate[raze::options::unroll<2>](c.range(), mid);
-        },
-        std_rotate_n);
-
-    run<n, T>(cfg,
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate[raze::options::fstatic](c.range(), mid);
-        },
-        std_rotate_n);
-
-    run<n, T>(cfg,
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate[raze::options::fautovec](c.first(), mid, c.last());
-        },
-        std_rotate_n);
-
-    run<n, T>(cfg,
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate[raze::options::fautovec][raze::options::fstatic](c.range(), mid);
-        },
-        std_rotate_n);
+    check_iter(raze::algorithm::rotate);
+    check_range(raze::algorithm::rotate);
+    check_iter(raze::algorithm::rotate[opt::fscalar]);
+    check_range(raze::algorithm::rotate[opt::unroll<2>]);
+    check_range(raze::algorithm::rotate[opt::fstatic]);
+    check_iter(raze::algorithm::rotate[opt::fautovec]);
+    check_range(raze::algorithm::rotate[opt::fautovec][opt::fstatic]);
 
     {
-        namespace opt = raze::options;
         auto acfg = config::compact();
 
         auto check_aligned = [&]<size_t Align>(auto algo) {
@@ -268,77 +253,62 @@ RTTS_CASE_TPL("raze::algorithm::rotate", rtts::algorithm::all_types)
             return std::ranges::rotate(c.data.value.begin(), c.data.value.end(), c.data.value.end());
         });
 
+    constexpr auto check_ce_range = []<size_t N, size_t M>(auto algo) constexpr {
+        return constexpr_run<T, n, N, M>(
+            [algo](auto c) constexpr {
+                auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+                return algo(c.range(), mid);
+            },
+            [](auto c) constexpr {
+                auto mid = std::ranges::next(c.data.value.begin(), static_cast<std::ptrdiff_t>(c.count()));
+                return std::ranges::rotate(c.data.value.begin(), mid, c.data.value.end());
+            });
+    };
+
     static_assert(constexpr_run<T, range, 0>(
-        [](auto c) { return raze::algorithm::rotate(c.first(), c.first(), c.last()); },
-        [](auto c) { return std::ranges::rotate(c.data.value.begin(), c.data.value.begin(), c.data.value.end()); }));
+        [](auto c) constexpr { return raze::algorithm::rotate(c.first(), c.first(), c.last()); },
+        [](auto c) constexpr { return std::ranges::rotate(c.data.value.begin(), c.data.value.begin(), c.data.value.end()); }));
 
     static_assert(constexpr_run<T, n, 5, 0>(
-        [](auto c) {
+        [](auto c) constexpr {
             auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
             return raze::algorithm::rotate(c.first(), mid, c.last());
         },
-        std_rotate_n));
+        [](auto c) constexpr {
+            auto mid = std::ranges::next(c.data.value.begin(), static_cast<std::ptrdiff_t>(c.count()));
+            return std::ranges::rotate(c.data.value.begin(), mid, c.data.value.end());
+        }));
 
-    static_assert(constexpr_run<T, n, 5, 2>(
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate(c.range(), mid);
-        },
-        std_rotate_n));
-
-    static_assert(constexpr_run<T, n, 5, 2>(
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate[raze::options::fautovec](c.range(), mid);
-        },
-        std_rotate_n));
-
-    static_assert(constexpr_run<T, n, 5, 2>(
-        [](auto c) {
-            auto mid = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-            return raze::algorithm::rotate[raze::options::aligned<64>](c.range(), mid);
-        },
-        std_rotate_n));
+    static_assert(check_ce_range.template operator()<5, 2>(raze::algorithm::rotate));
+    static_assert(check_ce_range.template operator()<5, 2>(raze::algorithm::rotate[opt::fautovec]));
+    static_assert(check_ce_range.template operator()<5, 2>(raze::algorithm::rotate[opt::aligned<64>]));
 
     static_assert([]() constexpr {
-        std::array<T, 0> a{};
-        auto res = raze::algorithm::rotate(a, a.begin());
-        return res.begin() == a.end() && res.end() == a.end();
-        }());
+        std::array<T, 0> a0{};
+        auto r0 = raze::algorithm::rotate(a0, a0.begin());
 
-    static_assert([]() constexpr {
-        std::array<T, 1> a{ T(1) };
-        auto res = raze::algorithm::rotate(a, a.begin());
-        return res.begin() == a.end() && res.end() == a.end() && a == std::array<T, 1>{ T(1) };
-        }());
+        std::array<T, 1> a1{ T(1) };
+        auto r1 = raze::algorithm::rotate(a1, a1.begin());
 
-    static_assert([]() constexpr {
-        std::array<T, 4> a{ T(1), T(2), T(3), T(4) };
-        auto res = raze::algorithm::rotate(a, a.begin() + 1);
-        return res.begin() == a.begin() + 3 && res.end() == a.end() &&
-               a == std::array<T, 4>{ T(2), T(3), T(4), T(1) };
-        }());
+        std::array<T, 4> a4{ T(1), T(2), T(3), T(4) };
+        auto r4 = raze::algorithm::rotate(a4, a4.begin() + 1);
 
-    static_assert([]() constexpr {
-        std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-        auto res = raze::algorithm::rotate[raze::options::fscalar](a, a.begin() + 3);
-        return res.begin() == a.begin() + 2 && res.end() == a.end() &&
-               a == std::array<T, 5>{ T(4), T(5), T(1), T(2), T(3) };
-        }());
+        std::array<T, 5> a5{ T(1), T(2), T(3), T(4), T(5) };
+        auto r5 = raze::algorithm::rotate[opt::fscalar](a5, a5.begin() + 3);
 
-    static_assert([]() constexpr {
-        std::array<T, 4> a{ T(1), T(2), T(3), T(4) };
-        auto res = raze::algorithm::rotate(a, a.end());
-        return res.begin() == a.begin() && res.end() == a.end() &&
-               a == std::array<T, 4>{ T(1), T(2), T(3), T(4) };
-        }());
+        std::array<T, 4> a4e{ T(1), T(2), T(3), T(4) };
+        auto r4e = raze::algorithm::rotate(a4e, a4e.end());
 
-    static_assert([]() constexpr {
-        std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-        auto res = raze::algorithm::rotate(a.begin() + 1, a.begin() + 3, a.begin() + 4);
-        return res.begin() == a.begin() + 2 && res.end() == a.begin() + 4 &&
-               a == std::array<T, 5>{ T(1), T(4), T(2), T(3), T(5) };
-        }());
+        std::array<T, 5> a5s{ T(1), T(2), T(3), T(4), T(5) };
+        auto r5s = raze::algorithm::rotate(a5s.begin() + 1, a5s.begin() + 3, a5s.begin() + 4);
+
+        return r0.begin() == a0.end() && r0.end() == a0.end()
+            && r1.begin() == a1.end() && r1.end() == a1.end() && a1 == std::array<T, 1>{ T(1) }
+            && r4.begin() == a4.begin() + 3 && r4.end() == a4.end() && a4 == std::array<T, 4>{ T(2), T(3), T(4), T(1) }
+            && r5.begin() == a5.begin() + 2 && r5.end() == a5.end() && a5 == std::array<T, 5>{ T(4), T(5), T(1), T(2), T(3) }
+            && r4e.begin() == a4e.begin() && r4e.end() == a4e.end() && a4e == std::array<T, 4>{ T(1), T(2), T(3), T(4) }
+            && r5s.begin() == a5s.begin() + 2 && r5s.end() == a5s.begin() + 4 && a5s == std::array<T, 5>{ T(1), T(4), T(2), T(3), T(5) };
+    }());
 };
 
 RTTS_CASE_TPL("raze::algorithm::rotate boundaries", rtts::algorithm::all_types)
@@ -426,49 +396,11 @@ RTTS_CASE("raze::algorithm::rotate structs") {
 };
 
 RTTS_CASE("raze::algorithm::rotate bidirectional") {
-    std::list<int> input{ 1, 2, 3, 4, 5 };
-
-    for (size_t mid : { size_t(0), size_t(2), size_t(3), size_t(5) }) {
-        auto exp = input;
-        auto exp_res = std::ranges::rotate(exp, std::ranges::next(exp.begin(), static_cast<std::ptrdiff_t>(mid)));
-        const auto exp_pos = std::ranges::distance(exp.begin(), exp_res.begin());
-
-        auto v = input;
-        auto res = raze::algorithm::rotate(v, std::ranges::next(v.begin(), static_cast<std::ptrdiff_t>(mid)));
-        RTTS_EXPECT(std::ranges::distance(v.begin(), res.begin()) == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
-
-        v = input;
-        res = raze::algorithm::rotate[raze::options::fscalar](
-            v.begin(), std::ranges::next(v.begin(), static_cast<std::ptrdiff_t>(mid)), v.end());
-        RTTS_EXPECT(std::ranges::distance(v.begin(), res.begin()) == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
-    }
+    check_rotate_seq(std::list<int>{ 1, 2, 3, 4, 5 }, { 0, 2, 3, 5 });
 };
 
 RTTS_CASE("raze::algorithm::rotate forward") {
-    std::forward_list<int> input{ 1, 2, 3, 4, 5 };
-
-    for (size_t mid : { size_t(0), size_t(1), size_t(2), size_t(4), size_t(5) }) {
-        auto exp = input;
-        auto exp_res = std::ranges::rotate(exp, std::ranges::next(exp.begin(), static_cast<std::ptrdiff_t>(mid)));
-        const auto exp_pos = std::ranges::distance(exp.begin(), exp_res.begin());
-
-        auto v = input;
-        auto res = raze::algorithm::rotate(v, std::ranges::next(v.begin(), static_cast<std::ptrdiff_t>(mid)));
-        RTTS_EXPECT(std::ranges::distance(v.begin(), res.begin()) == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
-
-        v = input;
-        res = raze::algorithm::rotate[raze::options::fscalar](
-            v.begin(), std::ranges::next(v.begin(), static_cast<std::ptrdiff_t>(mid)), v.end());
-        RTTS_EXPECT(std::ranges::distance(v.begin(), res.begin()) == exp_pos);
-        RTTS_EXPECT(res.end() == v.end());
-        RTTS_EXPECT(v == exp);
-    }
+    check_rotate_seq(std::forward_list<int>{ 1, 2, 3, 4, 5 }, { 0, 1, 2, 4, 5 });
 };
 
 RTTS_CASE("raze::algorithm::rotate sentinel") {

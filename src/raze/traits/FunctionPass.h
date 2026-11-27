@@ -1,13 +1,15 @@
 #pragma once 
 
+#include <concepts>
+#include <functional>
 #include <type_traits>
 
-#include <raze/RazeNamespace.h>
+#include <src/raze/RazeNamespace.h>
 
-#include <raze/compatibility/CxxVersionDetection.h>
-#include <raze/compatibility/FunctionAttributes.h>
-
-#include <raze/compatibility/Nodiscard.h>
+#include <src/raze/compatibility/CxxVersionDetection.h>
+#include <src/raze/compatibility/FunctionAttributes.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/Nodiscard.h>
 
 
 __RAZE_TRAITS_NAMESPACE_BEGIN

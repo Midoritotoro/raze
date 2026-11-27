@@ -4,6 +4,10 @@
 
 #include <memory>
 #include <new>
+#include <algorithm>
+#include <numeric>
+#include <random>
+#include <vector>
 
 namespace {
     struct tracked_destroy {
@@ -17,7 +21,6 @@ namespace {
 RTTS_CASE("raze::algorithm::destroy_at scalar, array, and constexpr") {
     namespace opt = raze::options;
 
-    // Single object
     {
         tracked_destroy::alive = 0;
         std::allocator<tracked_destroy> alloc;
@@ -35,7 +38,6 @@ RTTS_CASE("raze::algorithm::destroy_at scalar, array, and constexpr") {
         alloc.deallocate(p, 1);
     }
 
-    // Array object
     {
         tracked_destroy::alive = 0;
         alignas(tracked_destroy) std::byte buf[sizeof(tracked_destroy[4])];
@@ -56,3 +58,39 @@ RTTS_CASE("raze::algorithm::destroy_at scalar, array, and constexpr") {
     }());
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+}
+
+RTTS_CASE("raze::algorithm::destroy_at fuzz") {
+    namespace opt = raze::options;
+
+    for (unsigned seed : fuzz_seeds) {
+        std::mt19937 rng(seed);
+        for (size_t it = 0; it < 40; ++it) {
+            tracked_destroy::alive = 0;
+            const size_t n = 1u + static_cast<size_t>(rng() % 128);
+            std::allocator<tracked_destroy> alloc;
+            auto* p = alloc.allocate(n);
+
+            for (size_t i = 0; i < n; ++i)
+                raze::algorithm::construct_at(p + i, static_cast<int>(rng() % 1000u));
+            RTTS_EQUAL(tracked_destroy::alive, static_cast<int>(n));
+
+            std::vector<size_t> order(n);
+            std::iota(order.begin(), order.end(), size_t(0));
+            std::ranges::shuffle(order, rng);
+
+            int remaining = static_cast<int>(n);
+            for (size_t k = 0; k < n; ++k) {
+                const size_t idx = order[k];
+                if ((k % 3) == 0)      raze::algorithm::destroy_at(p + idx);
+                else if ((k % 3) == 1) raze::algorithm::destroy_at[opt::fscalar](p + idx);
+                else                   raze::algorithm::destroy_at[opt::fstatic](p + idx);
+                --remaining;
+                RTTS_EQUAL(tracked_destroy::alive, remaining);
+            }
+            alloc.deallocate(p, n);
+        }
+    }
+};

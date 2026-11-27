@@ -1,20 +1,15 @@
 #pragma once
 
-#include <bitset>
-#include <vector>
-
 #include <array>
+#include <cstring>
 
 #include <raze/Types.h>
-#include <raze/arch/CpuId.h>
-
-#include <raze/compatibility/Nodiscard.h>
-#include <raze/compatibility/Inline.h>
-
-#include <iostream>
-#include <src/raze/math/BitTest.h>
-#include <memory>
-#include <cstring>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/arch/CpuFeature.h>
+#include <src/raze/arch/CpuId.h>
+#include <src/raze/arch/ProcessorDetection.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/Nodiscard.h>
 
 __RAZE_ARCH_NAMESPACE_BEGIN
 

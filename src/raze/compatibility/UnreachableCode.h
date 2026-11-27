@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/CompilerDetection.h>
 
 #if !defined(raze_unused)
 #  define raze_unused(variable) ((void)(variable))

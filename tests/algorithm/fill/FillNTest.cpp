@@ -8,52 +8,32 @@ constexpr auto std_fill_n(It first, Size count, const T& value) {
 
 RTTS_CASE_TPL("raze::algorithm::fill_n", rtts::algorithm::all_types)
 <class T> (rtts::type<T>) {
-    auto cfg = rtts::algorithm::config::thorough();
+    using namespace rtts::algorithm;
+    namespace opt = raze::options;
+    auto cfg = config::thorough();
 
     const T fill_val = rtts::random::generator<T>(42)();
 
-    {
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n(c.first(), c.count(), fill_val); },
+    auto check = [&](auto algo) {
+        run<n, T>(cfg,
+            [algo, fill_val](auto c) { return algo(c.first(), c.count(), fill_val); },
             [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-    }
+    };
+
+    check(raze::algorithm::fill_n);
+    check(raze::algorithm::fill_n[opt::fscalar]);
+    check(raze::algorithm::fill_n[opt::unroll<1>]);
+    check(raze::algorithm::fill_n[opt::fstatic]);
+    check(raze::algorithm::fill_n[opt::fscalar][opt::unroll<2>]);
+    check(raze::algorithm::fill_n[opt::fstatic][opt::unroll<2>]);
+    check(raze::algorithm::fill_n[opt::fautovec]);
+    check(raze::algorithm::fill_n[opt::fautovec][opt::fstatic]);
 
     {
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n[raze::options::fscalar](c.first(), c.count(), fill_val); },
-            [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n[raze::options::unroll<1>](c.first(), c.count(), fill_val); },
-            [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n[raze::options::fstatic](c.first(), c.count(), fill_val); },
-            [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n[raze::options::fscalar][raze::options::unroll<2>](c.first(), c.count(), fill_val); },
-            [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n[raze::options::fstatic][raze::options::unroll<2>](c.first(), c.count(), fill_val); },
-            [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n[raze::options::fautovec](c.first(), c.count(), fill_val); },
-            [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-
-        rtts::algorithm::run<rtts::algorithm::n, T>(cfg,
-            [fill_val](auto c) { return raze::algorithm::fill_n[raze::options::fautovec][raze::options::fstatic](c.first(), c.count(), fill_val); },
-            [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
-    }
-
-    {
-        namespace opt = raze::options;
-        auto acfg = rtts::algorithm::config::compact();
+        auto acfg = config::compact();
 
         auto check_aligned = [&]<size_t Align>(auto algo) {
-            rtts::algorithm::run_aligned<Align, rtts::algorithm::n, T>(acfg,
+            run_aligned<Align, n, T>(acfg,
                 [algo, fill_val](auto c) { return algo(c.first(), c.count(), fill_val); },
                 [fill_val](auto c) { return std_fill_n(c.first(), c.count(), fill_val); });
         };
@@ -69,29 +49,18 @@ RTTS_CASE_TPL("raze::algorithm::fill_n", rtts::algorithm::all_types)
         check_aligned.template operator()<1>(raze::algorithm::fill_n[opt::aligned<64>][opt::aligned<opt::unaligned>]);
     }
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
-        [](auto c) constexpr { return raze::algorithm::fill_n(c.first(), c.count(), T(77)); },
-        [](auto c) constexpr { return std_fill_n(c.first(), c.count(), T(77)); }));
+    constexpr auto check_ce = []<size_t C>(auto algo) {
+        return constexpr_run<T, n, 8, C>(
+            [algo](auto c) constexpr { return algo(c.first(), c.count(), T(77)); },
+            [](auto c) constexpr { return std_fill_n(c.first(), c.count(), T(77)); });
+    };
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 0>(
-        [](auto c) constexpr { return raze::algorithm::fill_n(c.first(), c.count(), T(77)); },
-        [](auto c) constexpr { return std_fill_n(c.first(), c.count(), T(77)); }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
-        [](auto c) constexpr { return raze::algorithm::fill_n[raze::options::fscalar](c.first(), c.count(), T(77)); },
-        [](auto c) constexpr { return std_fill_n(c.first(), c.count(), T(77)); }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
-        [](auto c) constexpr { return raze::algorithm::fill_n[raze::options::unroll<2>](c.first(), c.count(), T(77)); },
-        [](auto c) constexpr { return std_fill_n(c.first(), c.count(), T(77)); }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
-        [](auto c) constexpr { return raze::algorithm::fill_n[raze::options::fautovec](c.first(), c.count(), T(77)); },
-        [](auto c) constexpr { return std_fill_n(c.first(), c.count(), T(77)); }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::n, 8, 5>(
-        [](auto c) constexpr { return raze::algorithm::fill_n[raze::options::aligned<64>](c.first(), c.count(), T(77)); },
-        [](auto c) constexpr { return std_fill_n(c.first(), c.count(), T(77)); }));
+    static_assert(check_ce.template operator()<5>(raze::algorithm::fill_n));
+    static_assert(check_ce.template operator()<0>(raze::algorithm::fill_n));
+    static_assert(check_ce.template operator()<5>(raze::algorithm::fill_n[opt::fscalar]));
+    static_assert(check_ce.template operator()<5>(raze::algorithm::fill_n[opt::unroll<2>]));
+    static_assert(check_ce.template operator()<5>(raze::algorithm::fill_n[opt::fautovec]));
+    static_assert(check_ce.template operator()<5>(raze::algorithm::fill_n[opt::aligned<64>]));
 };
 
 

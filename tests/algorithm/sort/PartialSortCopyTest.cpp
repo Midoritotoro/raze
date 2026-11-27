@@ -6,6 +6,7 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::partial_sort_copy", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -58,3 +59,63 @@ RTTS_CASE("raze::algorithm::partial_sort_copy single-pass input, projections, an
     RTTS_EXPECT((d2 == std::vector<int>{ 1, 2 }));
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void partial_sort_copy_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t src_n = static_cast<size_t>(rng() % 257);
+            const size_t dst_n = static_cast<size_t>(rng() % 257);
+            std::vector<T> src(src_n);
+            if ((it & 1u) == 0u) {
+                src = rtts::random::vector<T>(src_n, rng());
+            }
+            else {
+                for (size_t i = 0; i < src_n; ++i)
+                    src[i] = static_cast<T>(rng() % 8u);
+            }
+
+            const bool desc = (it % 3 == 2);
+            auto run_check = [&](auto comp) {
+                std::vector<T> exp(dst_n, T(77));
+                auto er = std::ranges::partial_sort_copy(src, exp, comp);
+                const auto exp_cnt = er.out - exp.begin();
+
+                auto verify = [&](auto fn) {
+                    std::vector<T> dst(dst_n, T(77));
+                    auto r = fn(src, dst);
+                    RTTS_EXPECT(r.in == src.end() && (r.out - dst.begin()) == exp_cnt);
+                    RTTS_ALL_EQUAL(dst, exp);
+                };
+
+                verify([&](const auto& s, auto& d) { return raze::algorithm::partial_sort_copy(s, d, comp); });
+                verify([&](const auto& s, auto& d) {
+                    return raze::algorithm::partial_sort_copy(s.begin(), s.end(), d.begin(), d.end(), comp);
+                });
+                verify([&](const auto& s, auto& d) { return raze::algorithm::partial_sort_copy[opt::fscalar](s, d, comp); });
+                verify([&](const auto& s, auto& d) { return raze::algorithm::partial_sort_copy[opt::fstatic](s, d, comp); });
+
+                if (it % 8 == 0 && src_n <= 64 && dst_n <= 64) {
+                    rtts::single_pass_input_range<T> sp(src);
+                    std::vector<T> dst(dst_n, T(77));
+                    auto r = raze::algorithm::partial_sort_copy(sp, dst, comp);
+                    RTTS_EXPECT(r.in == sp.end() && (r.out - dst.begin()) == exp_cnt);
+                    RTTS_ALL_EQUAL(dst, exp);
+                }
+            };
+
+            if (desc) run_check(std::greater<>{});
+            else      run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::partial_sort_copy fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        partial_sort_copy_fuzz<T>(seed, 35);
+};

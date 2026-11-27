@@ -31,7 +31,6 @@ RTTS_CASE_TPL("raze::algorithm::shuffle", rtts::algorithm::all_types)
 };
 
 RTTS_CASE("raze::algorithm::shuffle deque, non-common sentinel, distribution, and dangling") {
-    // Non-trivial permutation check on large input
     {
         std::vector<int> v(100);
         std::iota(v.begin(), v.end(), 0);
@@ -42,7 +41,6 @@ RTTS_CASE("raze::algorithm::shuffle deque, non-common sentinel, distribution, an
         RTTS_EXPECT(v != orig);
     }
 
-    // Deque, non-common sentinel, rvalue dangling
     {
         std::deque<int> dq{ 1, 2, 3, 4, 5, 6, 7, 8 };
         auto orig = dq;
@@ -56,3 +54,71 @@ RTTS_CASE("raze::algorithm::shuffle deque, non-common sentinel, distribution, an
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void shuffle_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            const auto base = rtts::random::vector<T>(n, rng());
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const unsigned gseed = rng();
+
+            auto v1 = base, v2 = base, v3 = base, v4 = base;
+            std::mt19937 g1(gseed), g2(gseed), g3(gseed), g4(gseed);
+
+            auto s1 = std::ranges::subrange(v1.begin() + static_cast<std::ptrdiff_t>(lo),
+                                            v1.begin() + static_cast<std::ptrdiff_t>(hi));
+            auto s2 = std::ranges::subrange(v2.begin() + static_cast<std::ptrdiff_t>(lo),
+                                            v2.begin() + static_cast<std::ptrdiff_t>(hi));
+            auto s3 = std::ranges::subrange(v3.begin() + static_cast<std::ptrdiff_t>(lo),
+                                            v3.begin() + static_cast<std::ptrdiff_t>(hi));
+            auto s4 = std::ranges::subrange(v4.begin() + static_cast<std::ptrdiff_t>(lo),
+                                            v4.begin() + static_cast<std::ptrdiff_t>(hi));
+
+            auto e1 = raze::algorithm::shuffle(s1, g1);
+            auto e2 = raze::algorithm::shuffle(s2.begin(), s2.end(), g2);
+            auto e3 = raze::algorithm::shuffle[opt::fscalar](s3, g3);
+            auto e4 = raze::algorithm::shuffle[opt::fstatic](s4, g4);
+
+            RTTS_EXPECT(e1 == s1.end() && e2 == s2.end() && e3 == s3.end() && e4 == s4.end());
+            RTTS_ALL_EQUAL(v1, v2);
+            RTTS_ALL_EQUAL(v1, v3);
+            RTTS_ALL_EQUAL(v1, v4);
+            const auto exp_next = g1();
+            RTTS_EQUAL(g2(), exp_next);
+            RTTS_EQUAL(g3(), exp_next);
+            RTTS_EQUAL(g4(), exp_next);
+
+            RTTS_EXPECT(std::equal(v1.begin(), v1.begin() + static_cast<std::ptrdiff_t>(lo), base.begin()));
+            RTTS_EXPECT(std::equal(v1.begin() + static_cast<std::ptrdiff_t>(hi), v1.end(),
+                                   base.begin() + static_cast<std::ptrdiff_t>(hi)));
+            std::vector<T> got_sub(s1.begin(), s1.end());
+            std::vector<T> exp_sub(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                   base.begin() + static_cast<std::ptrdiff_t>(hi));
+            std::ranges::sort(got_sub);
+            std::ranges::sort(exp_sub);
+            RTTS_ALL_EQUAL(got_sub, exp_sub);
+
+            if (it % 8 == 0 && (hi - lo) <= 64) {
+                std::deque<T> dq(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                 base.begin() + static_cast<std::ptrdiff_t>(hi));
+                std::mt19937 gd(gseed);
+                auto ed = raze::algorithm::shuffle(dq, gd);
+                RTTS_EXPECT(ed == dq.end());
+                RTTS_EXPECT(std::ranges::equal(dq, s1));
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::shuffle fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        shuffle_fuzz<T>(seed, 40);
+};

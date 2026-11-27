@@ -27,7 +27,7 @@ namespace {
 #endif
     }
 
-} // namespace
+}
 
 template <class T, class Fn>
 static void run_ends_with(benchmark::State& state, Fn&& fn) {

@@ -1,6 +1,7 @@
 #pragma once 
 
-#include <raze/options/Options.h>
+#include <src/raze/options/DispatchCall.h>
+#include <src/raze/options/Functor.h>
 #include <src/raze/vx/Concepts.h>
 #include <src/raze/vx/hw/configurable/mask/Options.h>
 

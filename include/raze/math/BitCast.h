@@ -1,7 +1,10 @@
 #pragma once
 
-#include <raze/compatibility/Compatibility.h>
-#include <src/raze/traits/TypeCheck.h>
+#include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/Inline.h>
+#include <cstddef>
+#include <type_traits>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 

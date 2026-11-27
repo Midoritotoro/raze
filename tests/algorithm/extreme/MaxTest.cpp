@@ -43,54 +43,38 @@ RTTS_CASE_TPL("raze::algorithm::max", rtts::algorithm::all_types)
     namespace opt = raze::options;
     auto cfg = config::thorough();
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max(c.first(), c.last()); },
-        [](auto c) { return std_max_opt(c.first(), c.last()); });
+    auto check_iter = [&](auto algo) {
+        run<range, T>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last()); },
+            [](auto c) { return std_max_opt(c.first(), c.last()); });
+    };
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max(c.range()); },
-        [](auto c) { return std_max_opt(c.range()); });
+    auto check_range = [&](auto algo) {
+        run<range, T>(cfg,
+            [algo](auto c) { return algo(c.range()); },
+            [](auto c) { return std_max_opt(c.range()); });
+    };
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max[opt::fscalar](c.first(), c.last()); },
-        [](auto c) { return std_max_opt(c.first(), c.last()); });
+    auto check_cmp = [&](auto algo, auto cmp) {
+        run<range, T>(cfg,
+            [algo, cmp](auto c) { return algo(c.range(), cmp); },
+            [cmp](auto c) { return std_max_opt(c.range(), cmp); });
+    };
 
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max[opt::unroll<1>](c.range()); },
-        [](auto c) { return std_max_opt(c.range()); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max[opt::unroll<2>](c.range()); },
-        [](auto c) { return std_max_opt(c.range()); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max[opt::fstatic](c.range()); },
-        [](auto c) { return std_max_opt(c.range()); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max(c.range(), std::greater<>{}); },
-        [](auto c) { return std_max_opt(c.range(), std::greater<>{}); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max(c.range(), std::ranges::greater{}); },
-        [](auto c) { return std_max_opt(c.range(), std::ranges::greater{}); });
-
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max(c.range(), std::less<T>{}); },
-        [](auto c) { return std_max_opt(c.range(), std::less<T>{}); });
+    check_iter(raze::algorithm::max);
+    check_range(raze::algorithm::max);
+    check_iter(raze::algorithm::max[opt::fscalar]);
+    check_range(raze::algorithm::max[opt::unroll<1>]);
+    check_range(raze::algorithm::max[opt::unroll<2>]);
+    check_range(raze::algorithm::max[opt::fstatic]);
+    check_cmp(raze::algorithm::max, std::greater<>{});
+    check_cmp(raze::algorithm::max, std::ranges::greater{});
+    check_cmp(raze::algorithm::max, std::less<T>{});
 
     auto cmp_branch = [](auto a, auto b) { if (a < b) return true; return false; };
-    run<range, T>(cfg,
-        [](auto c) { return raze::algorithm::max[opt::fautovec](c.first(), c.last()); },
-        [](auto c) { return std_max_opt(c.first(), c.last()); });
-
-    run<range, T>(cfg,
-        [cmp_branch](auto c) { return raze::algorithm::max[opt::fautovec](c.range(), cmp_branch); },
-        [cmp_branch](auto c) { return std_max_opt(c.range(), cmp_branch); });
-
-    run<range, T>(cfg,
-        [cmp_branch](auto c) { return raze::algorithm::max[opt::fautovec][opt::fstatic](c.range(), cmp_branch); },
-        [cmp_branch](auto c) { return std_max_opt(c.range(), cmp_branch); });
+    check_iter(raze::algorithm::max[opt::fautovec]);
+    check_cmp(raze::algorithm::max[opt::fautovec], cmp_branch);
+    check_cmp(raze::algorithm::max[opt::fautovec][opt::fstatic], cmp_branch);
 
     {
         auto acfg = config::compact();
@@ -120,21 +104,18 @@ RTTS_CASE_TPL("raze::algorithm::max", rtts::algorithm::all_types)
         RTTS_EQUAL(raze::algorithm::max(v, custom_vec_cmp), std_max_opt(v, custom_vec_cmp));
     }
 
+    constexpr auto check_ce_range = [](auto algo) constexpr {
+        return constexpr_run<T, range, 8>(
+            [algo](auto c) constexpr { return algo(c.range()); },
+            [](auto c) constexpr { return std_max_opt(c.range()); });
+    };
+
     static_assert(constexpr_run<T, range, 8>(
         [](auto c) constexpr { return raze::algorithm::max(c.first(), c.last()); },
         [](auto c) constexpr { return std_max_opt(c.first(), c.last()); }));
-
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return raze::algorithm::max[opt::fscalar](c.range()); },
-        [](auto c) constexpr { return std_max_opt(c.range()); }));
-
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return raze::algorithm::max[opt::fautovec](c.range()); },
-        [](auto c) constexpr { return std_max_opt(c.range()); }));
-
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return raze::algorithm::max[opt::aligned<64>](c.range()); },
-        [](auto c) constexpr { return std_max_opt(c.range()); }));
+    static_assert(check_ce_range(raze::algorithm::max[opt::fscalar]));
+    static_assert(check_ce_range(raze::algorithm::max[opt::fautovec]));
+    static_assert(check_ce_range(raze::algorithm::max[opt::aligned<64>]));
 
     static_assert(raze::algorithm::max(std::initializer_list<T>{ T(5), T(2), T(8), T(1), T(4) }) == T(8));
     static_assert(!raze::algorithm::max(std::initializer_list<T>{}).has_value());

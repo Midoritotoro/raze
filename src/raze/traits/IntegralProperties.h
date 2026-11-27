@@ -1,6 +1,6 @@
 #pragma once 
 
-#include <raze/RazeNamespace.h>
+#include <src/raze/RazeNamespace.h>
 #include <type_traits>
 
 #include <src/raze/traits/TypeCheck.h>

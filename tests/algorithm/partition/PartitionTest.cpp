@@ -7,6 +7,7 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::partition", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -43,7 +44,6 @@ RTTS_CASE_TPL("raze::algorithm::partition", rtts::algorithm::all_types)
 RTTS_CASE("raze::algorithm::partition forward_list, list, projections, non-common, and dangling") {
     auto is_even = [](int x) { return x % 2 == 0; };
 
-    // Forward-only path
     {
         std::forward_list<int> fl{ 1, 2, 3, 4, 5, 6, 7, 8 };
         auto orig = fl;
@@ -54,7 +54,6 @@ RTTS_CASE("raze::algorithm::partition forward_list, list, projections, non-commo
         RTTS_EXPECT(std::ranges::is_permutation(fl, orig));
     }
 
-    // Bidirectional std::list
     {
         std::list<int> lst{ 7, 2, 9, 4, 1, 6 };
         auto orig = lst;
@@ -64,7 +63,6 @@ RTTS_CASE("raze::algorithm::partition forward_list, list, projections, non-commo
         RTTS_EXPECT(std::ranges::is_permutation(lst, orig));
     }
 
-    // Projections, non-common sentinel, rvalue dangling
     {
         std::vector<rtts::test_item> items{ { 1, 10 }, { 2, 20 }, { 3, 30 }, { 4, 40 } };
         auto r = raze::algorithm::partition(items, is_even, &rtts::test_item::key);
@@ -80,3 +78,67 @@ RTTS_CASE("raze::algorithm::partition forward_list, list, projections, non-commo
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void partition_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            const auto base = rtts::random::vector<T>(n, rng());
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const T threshold = val_gen();
+            auto pred = [threshold](T x) { return x < threshold; };
+
+            std::vector<T> exp_sorted(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                      base.begin() + static_cast<std::ptrdiff_t>(hi));
+            std::ranges::sort(exp_sorted);
+
+            auto verify = [&](auto fn) {
+                auto v = base;
+                auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                 v.begin() + static_cast<std::ptrdiff_t>(hi));
+                auto r = fn(sub);
+                RTTS_EXPECT(r.end() == sub.end());
+                RTTS_EXPECT(std::ranges::is_partitioned(sub, pred));
+                RTTS_EXPECT(r.begin() == std::ranges::partition_point(sub, pred));
+                RTTS_EXPECT(std::equal(v.begin(), v.begin() + static_cast<std::ptrdiff_t>(lo), base.begin()));
+                RTTS_EXPECT(std::equal(v.begin() + static_cast<std::ptrdiff_t>(hi), v.end(),
+                                       base.begin() + static_cast<std::ptrdiff_t>(hi)));
+                std::vector<T> got_sorted(sub.begin(), sub.end());
+                std::ranges::sort(got_sorted);
+                RTTS_ALL_EQUAL(got_sorted, exp_sorted);
+            };
+
+            verify([&](auto sub) { return raze::algorithm::partition(sub, pred); });
+            verify([&](auto sub) { return raze::algorithm::partition(sub.begin(), sub.end(), pred); });
+            verify([&](auto sub) { return raze::algorithm::partition[opt::fscalar](sub, pred); });
+            verify([&](auto sub) { return raze::algorithm::partition[opt::fstatic](sub, pred); });
+
+            if (it % 8 == 0 && (hi - lo) <= 64) {
+                std::forward_list<T> fl(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                        base.begin() + static_cast<std::ptrdiff_t>(hi));
+                auto rf = raze::algorithm::partition(fl, pred);
+                RTTS_EXPECT(rf.end() == fl.end() && std::ranges::is_partitioned(fl, pred));
+                RTTS_EXPECT(rf.begin() == std::ranges::partition_point(fl, pred));
+
+                std::list<T> lst(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                 base.begin() + static_cast<std::ptrdiff_t>(hi));
+                auto rl = raze::algorithm::partition(lst, pred);
+                RTTS_EXPECT(rl.end() == lst.end() && std::ranges::is_partitioned(lst, pred));
+                RTTS_EXPECT(rl.begin() == std::ranges::partition_point(lst, pred));
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::partition fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        partition_fuzz<T>(seed, 35);
+};

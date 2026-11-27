@@ -1,5 +1,6 @@
 #include <tests/rts/rts.h>
 #include <raze/vx/Simd.h>
+#include <raze/vx/Algorithm.h>
 #include <raze/math/Math.h>
 
 RAZE_TEST_NAMESPACE_BEGIN

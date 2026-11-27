@@ -1,5 +1,7 @@
 #pragma once 
 
+#include <raze/vx/Simd.h>
+#include <src/raze/math/IntegralTypesConversions.h>
 #include <src/raze/vx/hw/Reduce.h>
 #include <src/raze/vx/hw/Compact.h>
 #include <src/raze/vx/hw/Compare.h>

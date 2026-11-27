@@ -1,5 +1,6 @@
 #pragma once 
 
+#include <src/raze/traits/SimdTypeCheck.h>
 #include <src/raze/vx/hw/x86/cast/As.h>
 
 

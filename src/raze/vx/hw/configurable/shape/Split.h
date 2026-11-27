@@ -1,6 +1,7 @@
 #pragma once 
 
-#include <raze/options/Options.h>
+#include <src/raze/options/DispatchCall.h>
+#include <src/raze/options/Functor.h>
 #include <raze/vx/Abi.h>
 #include <src/raze/vx/hw/configurable/memory/Store.h>
 #include <src/raze/vx/hw/configurable/memory/Load.h>

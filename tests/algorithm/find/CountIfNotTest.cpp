@@ -127,67 +127,31 @@ namespace {
     template <class T>
     void count_if_not_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not(c.first(), c.last(), neq_pred);
-            },
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.first(), c.last(), raze::algorithm::make_not_fn(neq_pred));
-            });
+        constexpr auto target_of = [](auto& c) {
+            return *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+        };
 
-        run<n, T>(cfg,
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not(c.range(), neq_pred);
-            },
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(neq_pred));
-            });
+        auto check_iter = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.first(), c.last(), not_equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::count_if(c.first(), c.last(), raze::algorithm::make_not_fn(not_equal_pred<T>{ target_of(c) })); });
+        };
 
-        run<n, T>(cfg,
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not[raze::options::fscalar](c.first(), c.last(), neq_pred);
-            },
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.first(), c.last(), raze::algorithm::make_not_fn(neq_pred));
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.range(), not_equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(not_equal_pred<T>{ target_of(c) })); });
+        };
 
-        run<n, T>(cfg,
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not[raze::options::unroll<2>](c.range(), neq_pred);
-            },
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(neq_pred));
-            });
-
-        run<n, T>(cfg,
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not[raze::options::fstatic](c.range(), neq_pred);
-            },
-            [=](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(neq_pred));
-            });
+        check_iter(raze::algorithm::count_if_not);
+        check_range(raze::algorithm::count_if_not);
+        check_iter(raze::algorithm::count_if_not[opt::fscalar]);
+        check_range(raze::algorithm::count_if_not[opt::unroll<2>]);
+        check_range(raze::algorithm::count_if_not[opt::fstatic]);
+        check_iter(raze::algorithm::count_if_not[opt::fautovec]);
 
         run<range, T>(cfg,
             [](auto c) { return raze::algorithm::count_if_not(c.first(), c.last(), true_pred{}); },
@@ -198,55 +162,26 @@ namespace {
             [](auto c) { return std::ranges::count_if(c.first(), c.last(), true_pred{}); });
 
         run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not[raze::options::fautovec](c.first(), c.last(), neq_pred);
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::count_if_not[opt::fautovec][opt::fstatic](c.range(), [target](auto x) { if (x != target) return true; return false; });
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.first(), c.last(), raze::algorithm::make_not_fn(neq_pred));
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x != target) return true; return false; };
-                return raze::algorithm::count_if_not[raze::options::fautovec][raze::options::fstatic](c.range(), pred);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x != target) return true; return false; };
-                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(pred));
+            [target_of](auto c) {
+                T target = target_of(c);
+                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn([target](auto x) { if (x != target) return true; return false; }));
             });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t Align>(auto algo) {
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.first(), c.last(), not_equal_pred<T>{ target });
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        auto pred = not_equal_pred<T>{ target };
-                        return std::ranges::count_if(c.first(), c.last(), raze::algorithm::make_not_fn(pred));
-                    });
+                    [algo, target_of](auto c) { return algo(c.first(), c.last(), not_equal_pred<T>{ target_of(c) }); },
+                    [target_of](auto c) { return std::ranges::count_if(c.first(), c.last(), raze::algorithm::make_not_fn(not_equal_pred<T>{ target_of(c) })); });
 
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.range(), not_equal_pred<T>{ target });
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        auto pred = not_equal_pred<T>{ target };
-                        return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(pred));
-                    });
+                    [algo, target_of](auto c) { return algo(c.range(), not_equal_pred<T>{ target_of(c) }); },
+                    [target_of](auto c) { return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(not_equal_pred<T>{ target_of(c) })); });
             };
 
             check_aligned.template operator()<16>(raze::algorithm::count_if_not[opt::aligned<16>]);
@@ -264,62 +199,36 @@ namespace {
             [](auto c) { return raze::algorithm::count_if_not(c.first(), c.last(), false_pred{}); },
             [](auto c) { return std::ranges::count_if(c.first(), c.last(), true_pred{}); }));
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not(c.range(), neq_pred);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(neq_pred));
-            }));
+        constexpr auto check_ce = [target_of](auto algo) {
+            return constexpr_run<T, n, 5, 3>(
+                [algo, target_of](auto c) { return algo(c.range(), not_equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(not_equal_pred<T>{ target_of(c) })); });
+        };
+
+        static_assert(check_ce(raze::algorithm::count_if_not));
+        static_assert(check_ce(raze::algorithm::count_if_not[opt::aligned<64>]));
 
         static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x != target) return true; return false; };
-                return raze::algorithm::count_if_not[raze::options::fautovec](c.range(), pred);
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::count_if_not[opt::fautovec](c.range(), [target](auto x) constexpr { if (x != target) return true; return false; });
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x != target) return true; return false; };
-                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(pred));
-            }));
-
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return raze::algorithm::count_if_not[raze::options::aligned<64>](c.range(), neq_pred);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto neq_pred = not_equal_pred<T>{ target };
-                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn(neq_pred));
+            [target_of](auto c) {
+                T target = target_of(c);
+                return std::ranges::count_if(c.range(), raze::algorithm::make_not_fn([target](auto x) constexpr { if (x != target) return true; return false; }));
             }));
 
         static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            return raze::algorithm::count_if_not(a, false_pred{}) == 0;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 4> a{ T(1), T(2), T(1), T(4) };
-            return raze::algorithm::count_if_not(a, eq_pred<T>{ T(1) }) == 2 &&
-                   raze::algorithm::count_if_not(a, true_pred{}) == 0;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-            return raze::algorithm::count_if_not[raze::options::fscalar](a, [](auto x) { return x <= T(2); }) == 3;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(1), T(4), T(1) };
-            return raze::algorithm::count_if_not(a.begin() + 1, a.begin() + 4, eq_pred<T>{ T(1) }) == 2;
-            }());
+            std::array<T, 0> a0{};
+            std::array<T, 4> a4{ T(1), T(2), T(1), T(4) };
+            std::array<T, 5> a5{ T(1), T(2), T(3), T(4), T(5) };
+            std::array<T, 5> b5{ T(1), T(2), T(1), T(4), T(1) };
+            return raze::algorithm::count_if_not(a0, false_pred{}) == 0 &&
+                   raze::algorithm::count_if_not(a4, eq_pred<T>{ T(1) }) == 2 &&
+                   raze::algorithm::count_if_not(a4, true_pred{}) == 0 &&
+                   raze::algorithm::count_if_not[opt::fscalar](a5, [](auto x) { return x <= T(2); }) == 3 &&
+                   raze::algorithm::count_if_not(b5.begin() + 1, b5.begin() + 4, eq_pred<T>{ T(1) }) == 2;
+        }());
     }
 }
 

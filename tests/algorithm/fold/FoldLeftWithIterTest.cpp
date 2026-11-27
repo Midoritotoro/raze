@@ -7,6 +7,7 @@
 #include <ranges>
 #include <string>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::fold_left_with_iter", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -35,14 +36,12 @@ RTTS_CASE_TPL("raze::algorithm::fold_left_with_iter", rtts::algorithm::all_types
 };
 
 RTTS_CASE("raze::algorithm::fold_left_with_iter order, P2248 braced-init, single-pass, and dangling") {
-    // Non-commutative fold verifies left-to-right associativity: ((10 - 1) - 2) - 3 = 4
     {
         const std::vector<int> v{ 1, 2, 3 };
         auto r = raze::algorithm::fold_left_with_iter(v, 10, std::minus<>{});
         RTTS_EXPECT(r.in == v.end() && r.value == 4);
     }
 
-    // C++26 P2248: default-typed braced-init init
     {
         struct fold_box {
             int v = 0;
@@ -53,7 +52,6 @@ RTTS_CASE("raze::algorithm::fold_left_with_iter order, P2248 braced-init, single
         RTTS_EXPECT(r.in == v.end() && r.value.v == 15);
     }
 
-    // Single-pass input, non-common sentinel, rvalue dangling
     {
         const std::vector<std::string> words{ "a", "b", "c" };
         rtts::single_pass_input_range<std::string> sp(words);
@@ -67,3 +65,57 @@ RTTS_CASE("raze::algorithm::fold_left_with_iter order, P2248 braced-init, single
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void fold_left_with_iter_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            std::vector<T> v(n);
+            for (size_t i = 0; i < n; ++i) {
+                const int val = static_cast<int>(rng() % 31u) - (std::is_signed_v<T> ? 15 : 0);
+                v[i] = static_cast<T>(val);
+            }
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                             v.begin() + static_cast<std::ptrdiff_t>(hi));
+            const std::int64_t init = static_cast<std::int64_t>(rng() % 101u) - 50;
+
+            const auto exp = std::ranges::fold_left_with_iter(sub, init, std::plus<>{});
+            auto r1 = raze::algorithm::fold_left_with_iter(sub, init, std::plus<>{});
+            auto r2 = raze::algorithm::fold_left_with_iter(sub.begin(), sub.end(), init, std::plus<>{});
+            auto r3 = raze::algorithm::fold_left_with_iter[opt::fscalar](sub, init, std::plus<>{});
+            auto r4 = raze::algorithm::fold_left_with_iter[opt::fstatic](sub, init, std::plus<>{});
+
+            RTTS_EXPECT(r1.in == exp.in && r1.value == exp.value);
+            RTTS_EXPECT(r2.in == exp.in && r2.value == exp.value);
+            RTTS_EXPECT(r3.in == exp.in && r3.value == exp.value);
+            RTTS_EXPECT(r4.in == exp.in && r4.value == exp.value);
+
+            auto mix = [](std::int64_t acc, T x) -> std::int64_t {
+                return (acc * 3 + static_cast<std::int64_t>(x)) % 1000000007LL;
+            };
+            const auto exp_m = std::ranges::fold_left_with_iter(sub, init, mix);
+            auto rm = raze::algorithm::fold_left_with_iter(sub, init, mix);
+            RTTS_EXPECT(rm.in == exp_m.in && rm.value == exp_m.value);
+
+            if (it % 8 == 0 && (hi - lo) <= 64) {
+                std::list<T> lst(sub.begin(), sub.end());
+                auto rl = raze::algorithm::fold_left_with_iter(lst, init, mix);
+                RTTS_EXPECT(rl.in == lst.end() && rl.value == exp_m.value);
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::fold_left_with_iter fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        fold_left_with_iter_fuzz<T>(seed, 40);
+};

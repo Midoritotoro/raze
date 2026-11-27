@@ -232,45 +232,27 @@ namespace {
             return std::ranges::subrange(p_beg, p_end);
         };
 
-        run<n, T>(cfg,
-            [make_sub](auto c) {
-                auto sub = make_sub(c);
-                return raze::algorithm::find_end(c.first(), c.last(), sub.begin(), sub.end());
-            },
-            [make_sub](auto c) {
-                auto sub = make_sub(c);
-                return std::ranges::find_end(c.first(), c.last(), sub.begin(), sub.end());
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, make_sub](auto c) { return algo(c.range(), make_sub(c)); },
+                [make_sub](auto c) { return std::ranges::find_end(c.range(), make_sub(c)); });
+        };
 
         run<n, T>(cfg,
-            [make_sub](auto c) { return raze::algorithm::find_end(c.range(), make_sub(c)); },
-            [make_sub](auto c) { return std::ranges::find_end(c.range(), make_sub(c)); });
+            [make_sub](auto c) { auto sub = make_sub(c); return raze::algorithm::find_end(c.first(), c.last(), sub.begin(), sub.end()); },
+            [make_sub](auto c) { auto sub = make_sub(c); return std::ranges::find_end(c.first(), c.last(), sub.begin(), sub.end()); });
 
-        run<n, T>(cfg,
-            [make_sub](auto c) { return raze::algorithm::find_end[opt::fscalar](c.range(), make_sub(c)); },
-            [make_sub](auto c) { return std::ranges::find_end(c.range(), make_sub(c)); });
-
-        run<n, T>(cfg,
-            [make_sub](auto c) { return raze::algorithm::find_end[opt::fstatic](c.range(), make_sub(c)); },
-            [make_sub](auto c) { return std::ranges::find_end(c.range(), make_sub(c)); });
-
-        run<n, T>(cfg,
-            [make_sub](auto c) { return raze::algorithm::find_end[opt::unroll<2>](c.range(), make_sub(c)); },
-            [make_sub](auto c) { return std::ranges::find_end(c.range(), make_sub(c)); });
+        check_range(raze::algorithm::find_end);
+        check_range(raze::algorithm::find_end[opt::fscalar]);
+        check_range(raze::algorithm::find_end[opt::fstatic]);
+        check_range(raze::algorithm::find_end[opt::unroll<2>]);
+        check_range(raze::algorithm::find_end[opt::fautovec]);
 
         auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
 
         run<n, T>(cfg,
-            [make_sub](auto c) { return raze::algorithm::find_end[opt::fautovec](c.range(), make_sub(c)); },
-            [make_sub](auto c) { return std::ranges::find_end(c.range(), make_sub(c)); });
-
-        run<n, T>(cfg,
-            [make_sub, eq_branching](auto c) {
-                return raze::algorithm::find_end[opt::fautovec][opt::fstatic](c.range(), make_sub(c), eq_branching);
-            },
-            [make_sub, eq_branching](auto c) {
-                return std::ranges::find_end(c.range(), make_sub(c), eq_branching);
-            });
+            [make_sub, eq_branching](auto c) { return raze::algorithm::find_end[opt::fautovec][opt::fstatic](c.range(), make_sub(c), eq_branching); },
+            [make_sub, eq_branching](auto c) { return std::ranges::find_end(c.range(), make_sub(c), eq_branching); });
 
         // Aligned tests
         {

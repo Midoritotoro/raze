@@ -1,6 +1,9 @@
 #pragma once 
 
-#include <raze/compatibility/Compatibility.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/arch/CpuFeature.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/SimdCompatibility.h>
 
 #if !defined(RAZE_HAS_SSE2_SUPPORT) 
 #  if defined(__SSE2__)

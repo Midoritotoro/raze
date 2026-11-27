@@ -5,17 +5,19 @@
 
 __RAZE_VX_NAMESPACE_BEGIN 
 
-template <arch::ISA ISA, intrin_or_arithmetic_type V, arithmetic_type T>
-raze_always_inline V zero_() noexcept;
-
-template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op>
-raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op) noexcept;
-
-template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op, raw_mask_type M>
-raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op, M mask) noexcept;
-
-template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, u8 Op, raw_mask_type M>
-raze_always_inline V ternarylogic_(V x, V y, V z, std::integral_constant<u8, Op> op, M mask, V src) noexcept;
+template <intrin_or_arithmetic_type V>
+raze_always_inline V select_zero_() noexcept {
+	if constexpr (std::is_same_v<V, __m128i>) return _mm_setzero_si128();
+	else if constexpr (std::is_same_v<V, __m128d>) return _mm_setzero_pd();
+	else if constexpr (std::is_same_v<V, __m128>) return _mm_setzero_ps();
+	else if constexpr (std::is_same_v<V, __m256i>) return _mm256_setzero_si256();
+	else if constexpr (std::is_same_v<V, __m256d>) return _mm256_setzero_pd();
+	else if constexpr (std::is_same_v<V, __m256>) return _mm256_setzero_ps();
+	else if constexpr (std::is_same_v<V, __m512i>) return _mm512_setzero_si512();
+	else if constexpr (std::is_same_v<V, __m512d>) return _mm512_setzero_pd();
+	else if constexpr (std::is_same_v<V, __m512>) return _mm512_setzero_ps();
+	else return V(0);
+}
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
 raze_always_inline V select_(V x, V y, M mask) noexcept {
@@ -80,7 +82,22 @@ raze_always_inline V select_(V x, V y, M mask) noexcept {
 	}
 
 	if constexpr (arithmetic_type<V>) return mask ? x : y;
-	else return ternarylogic_<ISA, T>(to_vector_<ISA, V, T>(mask), x, y, std::integral_constant<u8, 0xca>{});
+	else {
+		const auto mv = to_vector_<ISA, V, T>(mask);
+		if constexpr (sizeof(V) == 16)
+			return as<V>(_mm_or_si128(_mm_and_si128(as<__m128i>(mv), as<__m128i>(x)),
+				_mm_andnot_si128(as<__m128i>(mv), as<__m128i>(y))));
+		else if constexpr (sizeof(V) == 32) {
+			if constexpr (has_avx2<ISA>)
+				return as<V>(_mm256_or_si256(_mm256_and_si256(as<__m256i>(mv), as<__m256i>(x)),
+					_mm256_andnot_si256(as<__m256i>(mv), as<__m256i>(y))));
+			else
+				return as<V>(_mm256_or_ps(_mm256_and_ps(as<__m256>(mv), as<__m256>(x)),
+					_mm256_andnot_ps(as<__m256>(mv), as<__m256>(y))));
+		}
+		else
+			return as<V>(_mm512_ternarylogic_epi32(as<__m512i>(mv), as<__m512i>(x), as<__m512i>(y), 0xCA));
+	}
 }
 
 template <arch::ISA ISA, arithmetic_type T, intrin_or_arithmetic_type V, raw_mask_type M>
@@ -122,7 +139,7 @@ raze_always_inline V select_(V x, M	mask) noexcept {
 		}
 	}
 
-	return select_<ISA, T>(x, zero_<ISA, V, T>(), mask);
+	return select_<ISA, T>(x, select_zero_<V>(), mask);
 }
 
 

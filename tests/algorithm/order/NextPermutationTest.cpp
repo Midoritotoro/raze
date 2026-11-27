@@ -6,12 +6,12 @@
 #include <list>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::next_permutation", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     namespace opt = raze::options;
 
-    // Exhaustive enumeration of all 4! = 24 permutations
     {
         std::vector<T> a{ T(1), T(2), T(3), T(4) };
         auto b = a;
@@ -28,7 +28,6 @@ RTTS_CASE_TPL("raze::algorithm::next_permutation", rtts::algorithm::all_types)
         RTTS_EQUAL(count, 24);
     }
 
-    // With duplicates + fscalar + iterator-sentinel
     {
         std::vector<T> a{ T(1), T(1), T(2), T(2) };
         auto b = a;
@@ -76,3 +75,81 @@ RTTS_CASE("raze::algorithm::next_permutation list, projections, non-common, and 
     RTTS_EXPECT(dr.found);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void next_permutation_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 65);
+            std::vector<T> base(n);
+            if ((it & 1u) == 0u) {
+                base = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                const unsigned alpha = (it % 4 == 1) ? 3u : 8u;
+                for (size_t i = 0; i < n; ++i)
+                    base[i] = static_cast<T>(rng() % alpha);
+            }
+            if (it % 5 == 0)
+                std::ranges::sort(base, std::greater<>{});
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const bool desc = (it % 3 == 2);
+
+            auto run_steps = [&](auto comp) {
+                auto v1 = base, v2 = base, v3 = base, v4 = base, ve = base;
+                for (int step = 0; step < 5; ++step) {
+                    auto se = std::ranges::subrange(ve.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                    ve.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto s1 = std::ranges::subrange(v1.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                    v1.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto s2 = std::ranges::subrange(v2.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                    v2.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto s3 = std::ranges::subrange(v3.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                    v3.begin() + static_cast<std::ptrdiff_t>(hi));
+                    auto s4 = std::ranges::subrange(v4.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                    v4.begin() + static_cast<std::ptrdiff_t>(hi));
+
+                    auto re = std::ranges::next_permutation(se, comp);
+                    auto r1 = raze::algorithm::next_permutation(s1, comp);
+                    auto r2 = raze::algorithm::next_permutation(s2.begin(), s2.end(), comp);
+                    auto r3 = raze::algorithm::next_permutation[opt::fscalar](s3, comp);
+                    auto r4 = raze::algorithm::next_permutation[opt::fstatic](s4, comp);
+
+                    RTTS_EXPECT(r1.in == s1.end() && r1.found == re.found);
+                    RTTS_EXPECT(r2.in == s2.end() && r2.found == re.found);
+                    RTTS_EXPECT(r3.in == s3.end() && r3.found == re.found);
+                    RTTS_EXPECT(r4.in == s4.end() && r4.found == re.found);
+                    RTTS_ALL_EQUAL(v1, ve);
+                    RTTS_ALL_EQUAL(v2, ve);
+                    RTTS_ALL_EQUAL(v3, ve);
+                    RTTS_ALL_EQUAL(v4, ve);
+                }
+
+                if (it % 8 == 0 && (hi - lo) <= 32) {
+                    std::list<T> lst(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                     base.begin() + static_cast<std::ptrdiff_t>(hi));
+                    std::list<T> lst_exp = lst;
+                    auto rl = raze::algorithm::next_permutation(lst, comp);
+                    auto rle = std::ranges::next_permutation(lst_exp, comp);
+                    RTTS_EXPECT(rl.in == lst.end() && rl.found == rle.found);
+                    RTTS_ALL_EQUAL(lst, lst_exp);
+                }
+            };
+
+            if (desc) run_steps(std::greater<>{});
+            else      run_steps(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::next_permutation fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        next_permutation_fuzz<T>(seed, 35);
+};

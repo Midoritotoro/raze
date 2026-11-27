@@ -1,9 +1,16 @@
 #pragma once
 
-#include <raze/options/Options.h>
-#include <raze/vx/Config.h>
-#include <raze/math/Math.h>
-#include <raze/arch/ProcessorFeatures.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/Unroll.h>
+#include <src/raze/compatibility/Warnings.h>
+#include <src/raze/vx/Config.h>
+#include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>
+#include <src/raze/math/MinMax.h>
+#include <src/raze/arch/ProcessorFeatures.h>
+#include <concepts>
+#include <iterator>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

@@ -7,12 +7,13 @@
 #include <memory>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::stable_partition", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     using namespace rtts::algorithm;
     namespace opt = raze::options;
-    auto cfg = config::compact();
+    auto cfg = config::thorough();
     auto pred = [](T x) { return static_cast<int>(x) % 2 == 0; };
 
     auto std_sp = [pred](auto c) {
@@ -31,7 +32,6 @@ RTTS_CASE_TPL("raze::algorithm::stable_partition", rtts::algorithm::all_types)
         [pred](auto c) { return raze::algorithm::stable_partition[opt::fscalar](c.range(), pred); },
         std_sp);
 
-    // C++26 P2562: constexpr stable_partition
     static_assert([]() constexpr {
         std::array<T, 8> a{ T(1), T(2), T(3), T(4), T(5), T(6), T(7), T(8) };
         auto r = raze::algorithm::stable_partition(a, [](T x) constexpr { return (static_cast<int>(x) % 2) == 0; });
@@ -41,7 +41,6 @@ RTTS_CASE_TPL("raze::algorithm::stable_partition", rtts::algorithm::all_types)
 };
 
 RTTS_CASE("raze::algorithm::stable_partition stability, large runtime buffer, constexpr stability, and move-only") {
-    // Runtime stability (including large input > stack/small thresholds)
     {
         std::vector<rtts::test_item> v;
         for (int i = 0; i < 300; ++i)
@@ -57,7 +56,6 @@ RTTS_CASE("raze::algorithm::stable_partition stability, large runtime buffer, co
         RTTS_ALL_EQUAL(v, exp);
     }
 
-    // Move-only unique_ptr
     {
         std::vector<std::unique_ptr<int>> v;
         for (int i = 1; i <= 10; ++i)
@@ -67,7 +65,6 @@ RTTS_CASE("raze::algorithm::stable_partition stability, large runtime buffer, co
         RTTS_EXPECT(*v[0] == 2 && *v[4] == 10 && *v[5] == 1 && *v[9] == 9);
     }
 
-    // Non-common sentinel & rvalue dangling
     {
         std::vector<int> v{ 1, 2, 3, 4, 5, 6 };
         auto nr = raze::algorithm::stable_partition(rtts::make_non_common(v), [](int x) { return x > 3; });
@@ -77,7 +74,6 @@ RTTS_CASE("raze::algorithm::stable_partition stability, large runtime buffer, co
         static_assert(std::same_as<decltype(dr), std::ranges::dangling>);
     }
 
-    // Constexpr stability with payloads (C++26 P2562)
     static_assert([]() constexpr {
         std::array<rtts::test_item, 6> a{ {
             { 1, 10 }, { 2, 20 }, { 1, 30 }, { 2, 40 }, { 1, 50 }, { 2, 60 }
@@ -89,3 +85,77 @@ RTTS_CASE("raze::algorithm::stable_partition stability, large runtime buffer, co
     }());
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void stable_partition_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            const auto base = rtts::random::vector<T>(n, rng());
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            const T threshold = val_gen();
+            auto pred = [threshold](T x) { return x < threshold; };
+
+            auto exp = base;
+            auto er = std::ranges::stable_partition(exp.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                    exp.begin() + static_cast<std::ptrdiff_t>(hi), pred);
+            const auto exp_off = er.begin() - exp.begin();
+
+            auto verify = [&](auto fn) {
+                auto v = base;
+                auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                                 v.begin() + static_cast<std::ptrdiff_t>(hi));
+                auto r = fn(sub);
+                RTTS_EXPECT(r.begin() - v.begin() == exp_off && r.end() == sub.end());
+                RTTS_ALL_EQUAL(v, exp);
+            };
+
+            verify([&](auto sub) { return raze::algorithm::stable_partition(sub, pred); });
+            verify([&](auto sub) { return raze::algorithm::stable_partition(sub.begin(), sub.end(), pred); });
+            verify([&](auto sub) { return raze::algorithm::stable_partition[opt::fscalar](sub, pred); });
+            verify([&](auto sub) { return raze::algorithm::stable_partition[opt::fstatic](sub, pred); });
+
+            if (it % 8 == 0 && (hi - lo) <= 64) {
+                std::list<T> lst(base.begin() + static_cast<std::ptrdiff_t>(lo),
+                                 base.begin() + static_cast<std::ptrdiff_t>(hi));
+                std::list<T> lst_exp = lst;
+                auto rl = raze::algorithm::stable_partition(lst, pred);
+                std::ranges::stable_partition(lst_exp, pred);
+                RTTS_EXPECT(rl.end() == lst.end());
+                RTTS_ALL_EQUAL(lst, lst_exp);
+            }
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::stable_partition fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        stable_partition_fuzz<T>(seed, 35);
+};
+
+RTTS_CASE("raze::algorithm::stable_partition stability fuzz") {
+    for (unsigned seed : fuzz_seeds) {
+        std::mt19937 rng(seed);
+        for (size_t it = 0; it < 40; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 321);
+            std::vector<rtts::test_item> v(n);
+            for (size_t i = 0; i < n; ++i)
+                v[i] = { static_cast<int>(rng() % 5u), static_cast<int>(i) };
+            auto exp = v;
+            const int target = static_cast<int>(rng() % 5u);
+            auto pred = [target](int k) { return k <= target; };
+
+            auto r = raze::algorithm::stable_partition(v, pred, &rtts::test_item::key);
+            auto er = std::ranges::stable_partition(exp, pred, &rtts::test_item::key);
+            RTTS_EXPECT(r.begin() - v.begin() == er.begin() - exp.begin() && r.end() == v.end());
+            RTTS_ALL_EQUAL(v, exp);
+        }
+    }
+};

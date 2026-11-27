@@ -1,6 +1,7 @@
 #pragma once 
 
-#include <raze/RazeNamespace.h>
+#include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
 
 
 __RAZE_MATH_NAMESPACE_BEGIN

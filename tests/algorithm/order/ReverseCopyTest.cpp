@@ -21,6 +21,7 @@ namespace {
 
     template <class T>
     void reverse_copy_boundary_sweep() {
+        namespace opt = raze::options;
         constexpr size_t MaxN = 140;
         for (size_t n = 0; n <= MaxN; ++n) {
             std::vector<T> input(n);
@@ -33,34 +34,23 @@ namespace {
             RTTS_EXPECT(std_result.out == exp.end());
 
             std::vector<T> out(n);
+            auto check_range = [&](auto algo) {
+                out.assign(n, T{});
+                auto result = algo(input, out.begin());
+                RTTS_EXPECT(result.in == input.end());
+                RTTS_EXPECT(result.out == out.end());
+                RTTS_EXPECT(out == exp);
+            };
+
             auto result = raze::algorithm::reverse_copy(input.begin(), input.end(), out.begin());
             RTTS_EXPECT(result.in == input.end());
             RTTS_EXPECT(result.out == out.end());
             RTTS_EXPECT(out == exp);
 
-            out.assign(n, T{});
-            result = raze::algorithm::reverse_copy(input, out.begin());
-            RTTS_EXPECT(result.in == input.end());
-            RTTS_EXPECT(result.out == out.end());
-            RTTS_EXPECT(out == exp);
-
-            out.assign(n, T{});
-            result = raze::algorithm::reverse_copy[raze::options::fscalar](input, out.begin());
-            RTTS_EXPECT(result.in == input.end());
-            RTTS_EXPECT(result.out == out.end());
-            RTTS_EXPECT(out == exp);
-
-            out.assign(n, T{});
-            result = raze::algorithm::reverse_copy[raze::options::unroll<2>](input, out.begin());
-            RTTS_EXPECT(result.in == input.end());
-            RTTS_EXPECT(result.out == out.end());
-            RTTS_EXPECT(out == exp);
-
-            out.assign(n, T{});
-            result = raze::algorithm::reverse_copy[raze::options::fstatic](input, out.begin());
-            RTTS_EXPECT(result.in == input.end());
-            RTTS_EXPECT(result.out == out.end());
-            RTTS_EXPECT(out == exp);
+            check_range(raze::algorithm::reverse_copy);
+            check_range(raze::algorithm::reverse_copy[opt::fscalar]);
+            check_range(raze::algorithm::reverse_copy[opt::unroll<2>]);
+            check_range(raze::algorithm::reverse_copy[opt::fstatic]);
         }
     }
 
@@ -139,50 +129,36 @@ RTTS_CASE_TPL("raze::algorithm::reverse_copy", rtts::algorithm::all_types)
         check_aligned.template operator()<64, 16>(raze::algorithm::reverse_copy[opt::aligned<64, 16>]);
     }
 
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return raze::algorithm::reverse_copy[opt::fautovec](c.range(), c.out()); },
-        [](auto c) constexpr { return std::ranges::reverse_copy(c.range(), c.out()); }));
+    constexpr auto check_ce = [](auto algo) constexpr {
+        return constexpr_run<T, range, 8>(
+            [algo](auto c) constexpr { return algo(c.range(), c.out()); },
+            [](auto c) constexpr { return std::ranges::reverse_copy(c.range(), c.out()); });
+    };
 
-    static_assert(constexpr_run<T, range, 8>(
-        [](auto c) constexpr { return raze::algorithm::reverse_copy[opt::aligned<64, opt::unaligned>](c.range(), c.out()); },
-        [](auto c) constexpr { return std::ranges::reverse_copy(c.range(), c.out()); }));
-
-    static_assert([]() constexpr {
-        std::array<T, 0> input{};
-        std::array<T, 0> out{};
-        auto result = raze::algorithm::reverse_copy(input, out.begin());
-        return result.in == input.end() && result.out == out.end();
-    }());
+    static_assert(check_ce(raze::algorithm::reverse_copy[opt::fautovec]));
+    static_assert(check_ce(raze::algorithm::reverse_copy[opt::aligned<64, opt::unaligned>]));
 
     static_assert([]() constexpr {
-        std::array<T, 1> input{ T(1) };
-        std::array<T, 1> out{};
-        auto result = raze::algorithm::reverse_copy(input, out.begin());
-        return result.in == input.end() && result.out == out.end() && out == std::array<T, 1>{ T(1) };
-    }());
+        std::array<T, 0> i0{}, o0{};
+        auto r0 = raze::algorithm::reverse_copy(i0, o0.begin());
 
-    static_assert([]() constexpr {
-        std::array<T, 4> input{ T(1), T(2), T(3), T(4) };
-        std::array<T, 4> out{};
-        auto result = raze::algorithm::reverse_copy(input.begin(), input.end(), out.begin());
-        return result.in == input.end() && result.out == out.end() &&
-               out == std::array<T, 4>{ T(4), T(3), T(2), T(1) };
-    }());
+        std::array<T, 1> i1{ T(1) }, o1{};
+        auto r1 = raze::algorithm::reverse_copy(i1, o1.begin());
 
-    static_assert([]() constexpr {
-        std::array<T, 5> input{ T(1), T(2), T(3), T(4), T(5) };
-        std::array<T, 5> out{};
-        auto result = raze::algorithm::reverse_copy[raze::options::fscalar](input, out.begin());
-        return result.in == input.end() && result.out == out.end() &&
-               out == std::array<T, 5>{ T(5), T(4), T(3), T(2), T(1) };
-    }());
+        std::array<T, 4> i4{ T(1), T(2), T(3), T(4) }, o4{};
+        auto r4 = raze::algorithm::reverse_copy(i4.begin(), i4.end(), o4.begin());
 
-    static_assert([]() constexpr {
-        std::array<T, 4> input{ T(1), T(2), T(3), T(4) };
-        std::array<T, 4> out{};
-        auto result = raze::algorithm::reverse_copy(input.begin() + 1, input.begin() + 3, out.begin() + 1);
-        return result.in == input.begin() + 3 && result.out == out.begin() + 3 &&
-               out == std::array<T, 4>{ T(0), T(3), T(2), T(0) };
+        std::array<T, 5> i5{ T(1), T(2), T(3), T(4), T(5) }, o5{};
+        auto r5 = raze::algorithm::reverse_copy[opt::fscalar](i5, o5.begin());
+
+        std::array<T, 4> i4s{ T(1), T(2), T(3), T(4) }, o4s{};
+        auto r4s = raze::algorithm::reverse_copy(i4s.begin() + 1, i4s.begin() + 3, o4s.begin() + 1);
+
+        return r0.in == i0.end() && r0.out == o0.end()
+            && r1.in == i1.end() && r1.out == o1.end() && o1 == std::array<T, 1>{ T(1) }
+            && r4.in == i4.end() && r4.out == o4.end() && o4 == std::array<T, 4>{ T(4), T(3), T(2), T(1) }
+            && r5.in == i5.end() && r5.out == o5.end() && o5 == std::array<T, 5>{ T(5), T(4), T(3), T(2), T(1) }
+            && r4s.in == i4s.begin() + 3 && r4s.out == o4s.begin() + 3 && o4s == std::array<T, 4>{ T(0), T(3), T(2), T(0) };
     }());
 };
 

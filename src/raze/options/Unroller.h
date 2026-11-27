@@ -5,6 +5,8 @@
 #include <src/raze/options/As.h>
 #include <src/raze/vx/hw/configurable/mask/FirstN.h>
 #include <src/raze/algorithm/TailMask.h>
+#include <bit>
+#include <utility>
 
 __RAZE_OPTIONS_NAMESPACE_BEGIN
 

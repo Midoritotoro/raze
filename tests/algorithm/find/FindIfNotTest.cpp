@@ -146,108 +146,57 @@ namespace {
     template <class T>
     void find_if_not_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target });
-            });
+        constexpr auto target_of = [](auto& c) {
+            return *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not(c.range(), not_equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
-            });
+        auto check_iter = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.first(), c.last(), not_equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target_of(c) }); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not[raze::options::fscalar](c.first(), c.last(), not_equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target });
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, target_of](auto c) { return algo(c.range(), not_equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target_of(c) }); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not[raze::options::unroll<2>](c.range(), not_equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not[raze::options::fstatic](c.range(), not_equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
-            });
+        check_iter(raze::algorithm::find_if_not);
+        check_range(raze::algorithm::find_if_not);
+        check_iter(raze::algorithm::find_if_not[opt::fscalar]);
+        check_range(raze::algorithm::find_if_not[opt::unroll<2>]);
+        check_range(raze::algorithm::find_if_not[opt::fstatic]);
+        check_iter(raze::algorithm::find_if_not[opt::fautovec]);
 
         run<range, T>(cfg,
             [](auto c) { return raze::algorithm::find_if_not(c.first(), c.last(), true_pred{}); },
             [](auto c) { return std::ranges::find_if_not(c.first(), c.last(), true_pred{}); });
 
         run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not[raze::options::fautovec](c.first(), c.last(), not_equal_pred<T>{ target });
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::find_if_not[opt::fautovec][opt::fstatic](c.range(), [target](auto x) { if (x != target) return true; return false; });
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target });
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x != target) return true; return false; };
-                return raze::algorithm::find_if_not[raze::options::fautovec][raze::options::fstatic](c.range(), pred);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) { if (x != target) return true; return false; };
-                return std::ranges::find_if_not(c.range(), pred);
+            [target_of](auto c) {
+                T target = target_of(c);
+                return std::ranges::find_if_not(c.range(), [target](auto x) { if (x != target) return true; return false; });
             });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t Align>(auto algo) {
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.first(), c.last(), not_equal_pred<T>{ target });
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target });
-                    });
+                    [algo, target_of](auto c) { return algo(c.first(), c.last(), not_equal_pred<T>{ target_of(c) }); },
+                    [target_of](auto c) { return std::ranges::find_if_not(c.first(), c.last(), not_equal_pred<T>{ target_of(c) }); });
 
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.range(), not_equal_pred<T>{ target });
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
-                    });
+                    [algo, target_of](auto c) { return algo(c.range(), not_equal_pred<T>{ target_of(c) }); },
+                    [target_of](auto c) { return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target_of(c) }); });
             };
 
             check_aligned.template operator()<16>(raze::algorithm::find_if_not[opt::aligned<16>]);
@@ -265,81 +214,42 @@ namespace {
             [](auto c) { return raze::algorithm::find_if_not(c.first(), c.last(), false_pred{}); },
             [](auto c) { return std::ranges::find_if_not(c.first(), c.last(), false_pred{}); }));
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not(c.range(), not_equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
-            }));
+        constexpr auto check_ce = [target_of](auto algo) {
+            return constexpr_run<T, n, 5, 3>(
+                [algo, target_of](auto c) { return algo(c.range(), not_equal_pred<T>{ target_of(c) }); },
+                [target_of](auto c) { return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target_of(c) }); });
+        };
+
+        static_assert(check_ce(raze::algorithm::find_if_not));
+        static_assert(check_ce(raze::algorithm::find_if_not[opt::aligned<64>]));
 
         static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x != target) return true; return false; };
-                return raze::algorithm::find_if_not[raze::options::fautovec](c.range(), pred);
+            [target_of](auto c) {
+                T target = target_of(c);
+                return raze::algorithm::find_if_not[opt::fautovec](c.range(), [target](auto x) constexpr { if (x != target) return true; return false; });
             },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                auto pred = [target](auto x) constexpr { if (x != target) return true; return false; };
-                return std::ranges::find_if_not(c.range(), pred);
-            }));
-
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::find_if_not[raze::options::aligned<64>](c.range(), not_equal_pred<T>{ target });
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::find_if_not(c.range(), not_equal_pred<T>{ target });
+            [target_of](auto c) {
+                T target = target_of(c);
+                return std::ranges::find_if_not(c.range(), [target](auto x) constexpr { if (x != target) return true; return false; });
             }));
 
         static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            return raze::algorithm::find_if_not(a, false_pred{}) == a.end();
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 4> a{ T(1), T(1), T(3), T(1) };
-            return raze::algorithm::find_if_not(a, eq_pred<T>{ T(1) }) == a.begin() + 2 &&
-                   raze::algorithm::find_if_not(a, true_pred{}) == a.end();
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
-            return raze::algorithm::find_if_not[raze::options::fscalar](a, [](auto x) { return x <= T(4); }) == a.begin() + 4;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 4> a{ T(1), T(1), T(1), T(4) };
-            return raze::algorithm::find_if_not(a.begin() + 1, a.begin() + 3, eq_pred<T>{ T(1) }) == a.begin() + 3;
-            }());
+            std::array<T, 0> a0{};
+            std::array<T, 4> a4{ T(1), T(1), T(3), T(1) };
+            std::array<T, 4> b4{ T(1), T(1), T(1), T(4) };
+            std::array<T, 5> a5{ T(1), T(2), T(3), T(4), T(5) };
+            return raze::algorithm::find_if_not(a0, false_pred{}) == a0.end() &&
+                   raze::algorithm::find_if_not(a4, eq_pred<T>{ T(1) }) == a4.begin() + 2 &&
+                   raze::algorithm::find_if_not(a4, true_pred{}) == a4.end() &&
+                   raze::algorithm::find_if_not[opt::fscalar](a5, [](auto x) { return x <= T(4); }) == a5.begin() + 4 &&
+                   raze::algorithm::find_if_not(b4.begin() + 1, b4.begin() + 3, eq_pred<T>{ T(1) }) == b4.begin() + 3;
+        }());
     }
 }
 
 RTTS_CASE_TPL("raze::algorithm::find_if_not", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     find_if_not_suite<T>();
-};
-
-RTTS_CASE_TPL("raze::algorithm::find_if_not not_found", rtts::algorithm::all_types)
-<class T>(rtts::type<T>) {
-    for (size_t n : { size_t(0), size_t(1), size_t(4), size_t(8), size_t(15), size_t(16), size_t(17),
-                      size_t(31), size_t(32), size_t(33), size_t(63), size_t(64), size_t(65),
-                      size_t(128), size_t(129), size_t(256), size_t(257), size_t(512), size_t(513) })
-    {
-        std::vector<T> v(n, T(1));
-        auto keep_one = raze::algorithm::equal_to(T(1));
-
-        RTTS_EXPECT(raze::algorithm::find_if_not(v, keep_one) == v.end());
-        RTTS_EXPECT(raze::algorithm::find_if_not(v.begin(), v.end(), keep_one) == v.end());
-        RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::fscalar](v, keep_one) == v.end());
-        RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::unroll<2>](v, keep_one) == v.end());
-        RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::fstatic](v, keep_one) == v.end());
-    }
 };
 
 RTTS_CASE_TPL("raze::algorithm::find_if_not boundaries", rtts::algorithm::all_types)

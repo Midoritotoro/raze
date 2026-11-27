@@ -9,111 +9,41 @@
 
 RTTS_CASE_TPL("raze::algorithm::copy_backward", rtts::algorithm::all_types)
 < class T > (rtts::type<T>) {
-    auto cfg = rtts::algorithm::config::thorough();
+    using namespace rtts::algorithm;
+    namespace opt = raze::options;
+    auto cfg = config::thorough();
+
+    auto check_iter = [&](auto algo) {
+        run<range, T, bidirectional_iterator>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); },
+            [](auto c) { return std::ranges::copy_backward(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); });
+    };
+
+    auto check_range = [&](auto algo) {
+        run<range, T, bidirectional_iterator>(cfg,
+            [algo](auto c) { return algo(c.range(), c.out() + std::ranges::distance(c.range())); },
+            [](auto c) { return std::ranges::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); });
+    };
+
+    check_iter(raze::algorithm::copy_backward);
+    check_range(raze::algorithm::copy_backward);
+    check_iter(raze::algorithm::copy_backward[opt::fscalar]);
+    check_range(raze::algorithm::copy_backward[opt::unroll<2>]);
+    check_range(raze::algorithm::copy_backward[opt::fstatic]);
+    check_iter(raze::algorithm::copy_backward[opt::fautovec]);
+    check_range(raze::algorithm::copy_backward[opt::fautovec][opt::fstatic]);
 
     {
-        rtts::algorithm::run<rtts::algorithm::range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
-
-        rtts::algorithm::run<rtts::algorithm::range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return raze::algorithm::copy_backward(c.range(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return std::ranges::copy_backward(c.range(), c.out() + d);
-            });
-    }
-
-    {
-        rtts::algorithm::run<rtts::algorithm::range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::fscalar](
-                    c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
-
-        rtts::algorithm::run<rtts::algorithm::range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return raze::algorithm::copy_backward[raze::options::unroll<2>](
-                    c.range(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return std::ranges::copy_backward(c.range(), c.out() + d);
-            });
-
-        rtts::algorithm::run<rtts::algorithm::range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return raze::algorithm::copy_backward[raze::options::fstatic](
-                    c.range(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return std::ranges::copy_backward(c.range(), c.out() + d);
-            });
-
-        rtts::algorithm::run<rtts::algorithm::range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::fautovec](
-                    c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
-
-        rtts::algorithm::run<rtts::algorithm::range, T, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return raze::algorithm::copy_backward[raze::options::fautovec][raze::options::fstatic](
-                    c.range(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return std::ranges::copy_backward(c.range(), c.out() + d);
-            });
-    }
-
-    {
-        namespace opt = raze::options;
-        auto acfg = rtts::algorithm::config::compact();
+        auto acfg = config::compact();
 
         auto check_aligned = [&]<size_t A1, size_t AOut>(auto algo) {
-            rtts::algorithm::run_aligned<A1, AOut, rtts::algorithm::range, T>(acfg,
-                [algo](auto c) {
-                    auto d = std::ranges::distance(c.first(), c.last());
-                    return algo(c.first(), c.last(), c.out() + d);
-                },
-                [](auto c) {
-                    auto d = std::ranges::distance(c.first(), c.last());
-                    return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-                });
+            run_aligned<A1, AOut, range, T>(acfg,
+                [algo](auto c) { return algo(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); },
+                [](auto c) { return std::ranges::copy_backward(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); });
 
-            rtts::algorithm::run_aligned<A1, AOut, rtts::algorithm::range, T>(acfg,
-                [algo](auto c) {
-                    auto d = std::ranges::distance(c.range());
-                    return algo(c.range(), c.out() + d);
-                },
-                [](auto c) {
-                    auto d = std::ranges::distance(c.range());
-                    return std::ranges::copy_backward(c.range(), c.out() + d);
-                });
+            run_aligned<A1, AOut, range, T>(acfg,
+                [algo](auto c) { return algo(c.range(), c.out() + std::ranges::distance(c.range())); },
+                [](auto c) { return std::ranges::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); });
         };
 
         check_aligned.template operator()<16, 16>(raze::algorithm::copy_backward[opt::aligned<16>]);
@@ -130,180 +60,59 @@ RTTS_CASE_TPL("raze::algorithm::copy_backward", rtts::algorithm::all_types)
         check_aligned.template operator()<64, 16>(raze::algorithm::copy_backward[opt::aligned<64, 16>]);
     }
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-        }));
+    static_assert(constexpr_run<T, range, 8>(
+        [](auto c) constexpr { return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); },
+        [](auto c) constexpr { return std::ranges::copy_backward(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); }));
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return raze::algorithm::copy_backward(c.range(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return std::ranges::copy_backward(c.range(), c.out() + d);
-        }));
+    constexpr auto check_ce = [](auto algo) {
+        return constexpr_run<T, range, 8>(
+            [algo](auto c) constexpr { return algo(c.range(), c.out() + std::ranges::distance(c.range())); },
+            [](auto c) constexpr { return std::ranges::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); });
+    };
 
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return raze::algorithm::copy_backward[raze::options::fautovec](c.range(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return std::ranges::copy_backward(c.range(), c.out() + d);
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return raze::algorithm::copy_backward[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return std::ranges::copy_backward(c.range(), c.out() + d);
-        }));
+    static_assert(check_ce(raze::algorithm::copy_backward));
+    static_assert(check_ce(raze::algorithm::copy_backward[opt::fautovec]));
+    static_assert(check_ce(raze::algorithm::copy_backward[opt::aligned<64, opt::unaligned>]));
 };
 
 RTTS_CASE("raze::algorithm::copy_backward mixed arithmetic types") {
-    auto cfg = rtts::algorithm::config::thorough();
+    using namespace rtts::algorithm;
+    namespace opt = raze::options;
+    auto cfg = config::thorough();
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int32_t, float, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
+    auto check_iter = [&]<class S, class D>(auto algo) {
+        run<range, S, D, bidirectional_iterator>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last(), c.out2() + std::ranges::distance(c.first(), c.last())); },
+            [](auto c) { return std::ranges::copy_backward(c.first(), c.last(), c.out2() + std::ranges::distance(c.first(), c.last())); });
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, uint32_t, float, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
-    }
+    check_iter.template operator()<int32_t, float>(raze::algorithm::copy_backward);
+    check_iter.template operator()<uint32_t, float>(raze::algorithm::copy_backward);
+    check_iter.template operator()<int64_t, double>(raze::algorithm::copy_backward);
+    check_iter.template operator()<int8_t, int16_t>(raze::algorithm::copy_backward);
+    check_iter.template operator()<int16_t, int8_t>(raze::algorithm::copy_backward);
+    check_iter.template operator()<int32_t, float>(raze::algorithm::copy_backward[opt::fscalar]);
+    check_iter.template operator()<int32_t, float>(raze::algorithm::copy_backward[opt::fautovec]);
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int64_t, double, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
-    }
+    run<range, int32_t, int64_t, bidirectional_iterator>(cfg,
+        [](auto c) { return raze::algorithm::copy_backward(c.range(), c.out2() + std::ranges::distance(c.range())); },
+        [](auto c) { return std::ranges::copy_backward(c.range(), c.out2() + std::ranges::distance(c.range())); });
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int8_t, int16_t, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
+    run_aligned_mixed<64, 1, range, int32_t, float>(config::compact(),
+        [](auto c) { return raze::algorithm::copy_backward[opt::aligned<64, opt::unaligned>](c.first(), c.last(), c.out2() + std::ranges::distance(c.first(), c.last())); },
+        [](auto c) { return std::ranges::copy_backward(c.first(), c.last(), c.out2() + std::ranges::distance(c.first(), c.last())); });
 
-        rtts::algorithm::run<rtts::algorithm::range, int32_t, int64_t, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return raze::algorithm::copy_backward(c.range(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return std::ranges::copy_backward(c.range(), c.out2() + d);
-            });
+    constexpr auto check_ce_iter = []<class S, class D>() {
+        return constexpr_run_mixed<S, D, range, 8>(
+            [](auto c) constexpr { return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + std::ranges::distance(c.first(), c.last())); },
+            [](auto c) constexpr { return std::ranges::copy_backward(c.first(), c.last(), c.out2() + std::ranges::distance(c.first(), c.last())); });
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, int16_t, int8_t, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
-    }
-
-    {
-        rtts::algorithm::run<rtts::algorithm::range, int32_t, float, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::fscalar](
-                    c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
-
-        rtts::algorithm::run<rtts::algorithm::range, int32_t, float, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::fautovec](
-                    c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
-
-        rtts::algorithm::run_aligned_mixed<64, 1, rtts::algorithm::range, int32_t, float>(rtts::algorithm::config::compact(),
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::aligned<64, raze::options::unaligned>](
-                    c.first(), c.last(), c.out2() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-            });
-    }
-
-    static_assert(rtts::algorithm::constexpr_run_mixed<int32_t, float, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run_mixed<int64_t, double, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return raze::algorithm::copy_backward(c.first(), c.last(), c.out2() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return std::ranges::copy_backward(c.first(), c.last(), c.out2() + d);
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run_mixed<int8_t, int16_t, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return raze::algorithm::copy_backward(c.range(), c.out2() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return std::ranges::copy_backward(c.range(), c.out2() + d);
-        }));
+    static_assert(check_ce_iter.template operator()<int32_t, float>());
+    static_assert(check_ce_iter.template operator()<int64_t, double>());
+    static_assert(constexpr_run_mixed<int8_t, int16_t, range, 8>(
+        [](auto c) constexpr { return raze::algorithm::copy_backward(c.range(), c.out2() + std::ranges::distance(c.range())); },
+        [](auto c) constexpr { return std::ranges::copy_backward(c.range(), c.out2() + std::ranges::distance(c.range())); }));
 };
 
 struct tc_struct_4 {
@@ -335,135 +144,43 @@ struct tc_nontrivial {
 };
 
 RTTS_CASE("raze::algorithm::copy_backward structs") {
-    auto cfg = rtts::algorithm::config::thorough();
+    using namespace rtts::algorithm;
+    namespace opt = raze::options;
+    auto cfg = config::thorough();
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
+    auto check_iter = [&]<class S>(auto algo) {
+        run<range, S, bidirectional_iterator>(cfg,
+            [algo](auto c) { return algo(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); },
+            [](auto c) { return std::ranges::copy_backward(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); });
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_8, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
+    check_iter.template operator()<tc_struct_4>(raze::algorithm::copy_backward);
+    check_iter.template operator()<tc_struct_8>(raze::algorithm::copy_backward);
+    check_iter.template operator()<tc_struct_12>(raze::algorithm::copy_backward);
+    check_iter.template operator()<tc_struct_4>(raze::algorithm::copy_backward[opt::fscalar]);
+    check_iter.template operator()<tc_struct_4>(raze::algorithm::copy_backward[opt::unroll<2>]);
+    check_iter.template operator()<tc_struct_4>(raze::algorithm::copy_backward[opt::fautovec]);
 
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_12, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
+    run<range, tc_struct_12, bidirectional_iterator>(cfg,
+        [](auto c) { return raze::algorithm::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); },
+        [](auto c) { return std::ranges::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); });
 
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_12, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return raze::algorithm::copy_backward(c.range(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return std::ranges::copy_backward(c.range(), c.out() + d);
-            });
-    }
+    run_aligned<64, 1, range, tc_struct_4>(config::compact(),
+        [](auto c) { return raze::algorithm::copy_backward[opt::aligned<64, opt::unaligned>](c.range(), c.out() + std::ranges::distance(c.range())); },
+        [](auto c) { return std::ranges::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); });
 
-    {
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::fscalar](
-                    c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
+    constexpr auto check_ce = []<class S>() {
+        return constexpr_run<S, range, 8>(
+            [](auto c) constexpr { return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); },
+            [](auto c) constexpr { return std::ranges::copy_backward(c.first(), c.last(), c.out() + std::ranges::distance(c.first(), c.last())); });
+    };
 
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::unroll<2>](
-                    c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
-
-        rtts::algorithm::run<rtts::algorithm::range, tc_struct_4, rtts::algorithm::bidirectional_iterator>(cfg,
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return raze::algorithm::copy_backward[raze::options::fautovec](
-                    c.first(), c.last(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.first(), c.last());
-                return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-            });
-
-        rtts::algorithm::run_aligned<64, 1, rtts::algorithm::range, tc_struct_4>(rtts::algorithm::config::compact(),
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return raze::algorithm::copy_backward[raze::options::aligned<64, raze::options::unaligned>](
-                    c.range(), c.out() + d);
-            },
-            [](auto c) {
-                auto d = std::ranges::distance(c.range());
-                return std::ranges::copy_backward(c.range(), c.out() + d);
-            });
-    }
-
-    static_assert(rtts::algorithm::constexpr_run<tc_struct_4, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<tc_struct_8, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<tc_struct_12, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return raze::algorithm::copy_backward(c.range(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.range());
-            return std::ranges::copy_backward(c.range(), c.out() + d);
-        }));
-
-    static_assert(rtts::algorithm::constexpr_run<tc_nontrivial, rtts::algorithm::range, 8>(
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return raze::algorithm::copy_backward(c.first(), c.last(), c.out() + d);
-        },
-        [](auto c) constexpr {
-            auto d = std::ranges::distance(c.first(), c.last());
-            return std::ranges::copy_backward(c.first(), c.last(), c.out() + d);
-        }));
+    static_assert(check_ce.template operator()<tc_struct_4>());
+    static_assert(check_ce.template operator()<tc_struct_8>());
+    static_assert(check_ce.template operator()<tc_nontrivial>());
+    static_assert(constexpr_run<tc_struct_12, range, 8>(
+        [](auto c) constexpr { return raze::algorithm::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); },
+        [](auto c) constexpr { return std::ranges::copy_backward(c.range(), c.out() + std::ranges::distance(c.range())); }));
 };
 
 RTTS_CASE("raze::algorithm::copy_backward non trivially copyable") {
@@ -491,12 +208,12 @@ RTTS_CASE("raze::algorithm::copy_backward non trivially copyable") {
 };
 
 RTTS_CASE("raze::algorithm::copy_backward overlap shift-right") {
-    for (const size_t n : { size_t(1), size_t(2), size_t(3), size_t(5),
+    for (const size_t n : { size_t(0), size_t(1), size_t(2), size_t(3), size_t(5),
         size_t(7), size_t(8), size_t(9), size_t(15),
         size_t(16), size_t(17), size_t(31), size_t(32),
         size_t(33), size_t(63), size_t(64), size_t(65),
         size_t(100), size_t(1000) }) {
-        for (const size_t shift : { size_t(1), size_t(2), size_t(3) }) {
+        for (const size_t shift : { size_t(0), size_t(1), size_t(2), size_t(3), size_t(7) }) {
             if (shift > n) continue;
 
             std::vector<int32_t> v1(n);
@@ -517,20 +234,6 @@ RTTS_CASE("raze::algorithm::copy_backward overlap shift-right") {
                     RTTS_EXPECT(v1[i] == static_cast<int32_t>(i - shift));
             }
         }
-    }
-};
-
-RTTS_CASE("raze::algorithm::copy_backward full overlap is no-op") {
-    for (const size_t n : { size_t(0), size_t(1), size_t(15), size_t(16), size_t(17), size_t(100) }) {
-        std::vector<int32_t> v1(n);
-        for (size_t i = 0; i < n; ++i) v1[i] = static_cast<int32_t>(i);
-        auto v2 = v1;
-
-        raze::algorithm::copy_backward(v1.begin(), v1.end(), v1.end());
-        std::ranges::copy_backward(v2.begin(), v2.end(), v2.end());
-
-        RTTS_EXPECT(v1 == v2);
-        for (size_t i = 0; i < n; ++i) RTTS_EXPECT(v1[i] == static_cast<int32_t>(i));
     }
 };
 
@@ -689,19 +392,6 @@ RTTS_CASE("raze::algorithm::copy_backward views and edge cases") {
     }
 
     {
-        for (size_t sz : { size_t(1), size_t(2), size_t(17), size_t(65) }) {
-            for (size_t shift : { size_t(0), size_t(1), size_t(3), size_t(7) }) {
-                if (shift >= sz) continue;
-                std::vector<int> a(sz), b(sz);
-                std::iota(a.begin(), a.end(), 1);
-                b = a;
-                const auto k = static_cast<std::ptrdiff_t>(sz - shift);
-                raze::algorithm::copy_backward(a.begin(), a.begin() + k, a.end());
-                std::ranges::copy_backward(b.begin(), b.begin() + k, b.end());
-                RTTS_EXPECT(a == b);
-            }
-        }
-
         const std::vector<int> src = { 5, 6, 7, 8 };
         std::list<int> l1(4), l2(4);
         raze::algorithm::copy_backward(src, l1.end());

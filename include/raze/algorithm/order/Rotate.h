@@ -8,7 +8,8 @@
 #include <src/raze/algorithm/memory/Swap3Ranges.h>
 #include <raze/algorithm/order/Reverse.h>
 #include <raze/options/Options.h>
-#include <algorithm>
+#include <iterator>
+#include <utility>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

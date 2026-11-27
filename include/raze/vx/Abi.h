@@ -1,8 +1,12 @@
 #pragma once 
 
-#include <raze/arch/CpuFeature.h>
-#include <src/raze/vx/hw/Cast.h>
-#include <raze/vx/Config.h>
+#include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/arch/CpuFeature.h>
+#include <src/raze/arch/ProcessorDetection.h>
+#include <src/raze/vx/Config.h>
+#include <src/raze/vx/hw/x86/mask/SimdMaskTypeCheck.h>
+#include <type_traits>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

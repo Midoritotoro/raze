@@ -4,11 +4,9 @@
 #include <src/raze/vx/hw/x86/mask/operations/ToBitmask.h>
 #include <src/raze/vx/hw/x86/construct/AllBits.h>
 #include <src/raze/vx/hw/x86/mask/operations/MaskAndnot.h>
+#include <src/raze/vx/hw/x86/mask/operations/NoneOf.h>
 
 __RAZE_VX_NAMESPACE_BEGIN
-
-template <arch::ISA ISA, arithmetic_type T, raw_mask_type M>
-raze_always_inline bool none_of_(M __x) noexcept;
 
 template <arch::ISA ISA, u64 N, arithmetic_type T, raw_mask_type M>
 raze_always_inline bool all_of_(M x) noexcept {
@@ -46,5 +44,3 @@ raze_always_inline bool all_of_(M x, Mask mask) noexcept {
 }
 
 __RAZE_VX_NAMESPACE_END
-
-#include <src/raze/vx/hw/x86/mask/operations/NoneOf.h>

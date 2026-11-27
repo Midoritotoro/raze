@@ -1,9 +1,8 @@
 #pragma once 
 
 #include <src/raze/vx/hw/x86/cast/SimdIntegralTypesCheck.h>
-#include <src/raze/traits/SimdTypeCheck.h>
-#include <raze/compatibility/Inline.h>
-#include <raze/math/BitCast.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/Nodiscard.h>
 
 
 __RAZE_VX_NAMESPACE_BEGIN

@@ -7,6 +7,7 @@
 #include <memory>
 #include <ranges>
 #include <vector>
+#include <random>
 
 RTTS_CASE_TPL("raze::algorithm::pop_heap", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
@@ -55,3 +56,62 @@ RTTS_CASE("raze::algorithm::pop_heap comparator, projections, move-only, and dan
     static_assert(std::same_as<decltype(dr), std::ranges::dangling>);
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void pop_heap_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 129);
+            std::vector<T> base(n);
+            if ((it & 1u) == 0u) {
+                base = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                for (size_t i = 0; i < n; ++i)
+                    base[i] = static_cast<T>(rng() % 12u);
+            }
+
+            const bool min_heap = (it % 3 == 2);
+            auto run_check = [&](auto comp) {
+                auto v1 = base;
+                std::ranges::make_heap(v1, comp);
+                auto exp = v1;
+                std::ranges::sort(exp, comp);
+
+                for (size_t len = n; len > 0; --len) {
+                    auto sub = std::ranges::subrange(v1.begin(), v1.begin() + static_cast<std::ptrdiff_t>(len));
+                    const unsigned mode = static_cast<unsigned>((it + len) % 4);
+                    auto end = (mode == 0u) ? raze::algorithm::pop_heap(sub, comp)
+                             : (mode == 1u) ? raze::algorithm::pop_heap(sub.begin(), sub.end(), comp)
+                             : (mode == 2u) ? raze::algorithm::pop_heap[opt::fscalar](sub, comp)
+                                            : raze::algorithm::pop_heap[opt::fstatic](sub, comp);
+                    RTTS_EXPECT(end == sub.end());
+                    RTTS_EXPECT(std::ranges::is_heap(v1.begin(), v1.begin() + static_cast<std::ptrdiff_t>(len - 1), comp));
+                }
+                RTTS_ALL_EQUAL(v1, exp);
+
+                if (it % 8 == 0 && n > 0 && n <= 64) {
+                    std::deque<T> dq(base.begin(), base.end());
+                    std::ranges::make_heap(dq, comp);
+                    const T top = dq.front();
+                    auto end = raze::algorithm::pop_heap(dq, comp);
+                    RTTS_EXPECT(end == dq.end() && dq.back() == top);
+                    RTTS_EXPECT(std::ranges::is_heap(dq.begin(), dq.end() - 1, comp));
+                }
+            };
+
+            if (min_heap) run_check(std::greater<>{});
+            else          run_check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::pop_heap fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        pop_heap_fuzz<T>(seed, 30);
+};

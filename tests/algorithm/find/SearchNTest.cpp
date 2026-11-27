@@ -18,57 +18,31 @@ namespace {
     template <class T>
     void search_n_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n(c.first(), c.last(), 1, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.first(), c.last(), 1, target);
-            });
+        constexpr auto target_of = [](auto& c) {
+            return *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n(c.range(), 2, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.range(), 2, target);
-            });
+        auto check_iter = [&](auto algo, std::ptrdiff_t cnt) {
+            run<n, T>(cfg,
+                [algo, cnt, target_of](auto c) { return algo(c.first(), c.last(), cnt, target_of(c)); },
+                [cnt, target_of](auto c) { return std::ranges::search_n(c.first(), c.last(), cnt, target_of(c)); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n[raze::options::fscalar](c.first(), c.last(), 2, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.first(), c.last(), 2, target);
-            });
+        auto check_range = [&](auto algo, std::ptrdiff_t cnt) {
+            run<n, T>(cfg,
+                [algo, cnt, target_of](auto c) { return algo(c.range(), cnt, target_of(c)); },
+                [cnt, target_of](auto c) { return std::ranges::search_n(c.range(), cnt, target_of(c)); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n[raze::options::unroll<2>](c.range(), 2, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.range(), 2, target);
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n[raze::options::fstatic](c.range(), 2, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.range(), 2, target);
-            });
+        check_iter(raze::algorithm::search_n, 1);
+        check_range(raze::algorithm::search_n, 2);
+        check_iter(raze::algorithm::search_n[opt::fscalar], 2);
+        check_range(raze::algorithm::search_n[opt::unroll<2>], 2);
+        check_range(raze::algorithm::search_n[opt::fstatic], 2);
+        check_iter(raze::algorithm::search_n[opt::fautovec], 2);
 
         run<range, T>(cfg,
             [](auto c) { return raze::algorithm::search_n(c.first(), c.last(), 0, T(1)); },
@@ -77,49 +51,20 @@ namespace {
         auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
 
         run<n, T>(cfg,
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n[raze::options::fautovec](c.first(), c.last(), 2, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.first(), c.last(), 2, target);
-            });
-
-        run<n, T>(cfg,
-            [eq_branching](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n[raze::options::fautovec][raze::options::fstatic](c.range(), 2, target, eq_branching);
-            },
-            [eq_branching](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.range(), 2, target, eq_branching);
-            });
+            [target_of, eq_branching](auto c) { return raze::algorithm::search_n[opt::fautovec][opt::fstatic](c.range(), 2, target_of(c), eq_branching); },
+            [target_of, eq_branching](auto c) { return std::ranges::search_n(c.range(), 2, target_of(c), eq_branching); });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t Align>(auto algo) {
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.first(), c.last(), 1, target);
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::search_n(c.first(), c.last(), 1, target);
-                    });
+                    [algo, target_of](auto c) { return algo(c.first(), c.last(), 1, target_of(c)); },
+                    [target_of](auto c) { return std::ranges::search_n(c.first(), c.last(), 1, target_of(c)); });
 
                 run_aligned<Align, n, T>(acfg,
-                    [algo](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return algo(c.range(), 2, target);
-                    },
-                    [](auto c) {
-                        T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                        return std::ranges::search_n(c.range(), 2, target);
-                    });
+                    [algo, target_of](auto c) { return algo(c.range(), 2, target_of(c)); },
+                    [target_of](auto c) { return std::ranges::search_n(c.range(), 2, target_of(c)); });
             };
 
             check_aligned.template operator()<16>(raze::algorithm::search_n[opt::aligned<16>]);
@@ -137,54 +82,31 @@ namespace {
             [](auto c) { return raze::algorithm::search_n(c.first(), c.last(), 0, T(1)); },
             [](auto c) { return std::ranges::search_n(c.first(), c.last(), 0, T(1)); }));
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n(c.range(), 1, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.range(), 1, target);
-            }));
+        constexpr auto check_ce = [target_of](auto algo) {
+            return constexpr_run<T, n, 5, 3>(
+                [algo, target_of](auto c) { return algo(c.range(), 1, target_of(c)); },
+                [target_of](auto c) { return std::ranges::search_n(c.range(), 1, target_of(c)); });
+        };
 
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n[raze::options::fautovec](c.range(), 1, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.range(), 1, target);
-            }));
-
-        static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::search_n[raze::options::aligned<64>](c.range(), 1, target);
-            },
-            [](auto c) {
-                T target = *std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return std::ranges::search_n(c.range(), 1, target);
-            }));
+        static_assert(check_ce(raze::algorithm::search_n));
+        static_assert(check_ce(raze::algorithm::search_n[opt::fautovec]));
+        static_assert(check_ce(raze::algorithm::search_n[opt::aligned<64>]));
 
         static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            auto r0 = raze::algorithm::search_n(a, 0, T(1));
-            auto r1 = raze::algorithm::search_n(a, 2, T(1));
-            return r0.begin() == a.begin() && r0.end() == a.begin() &&
-                   r1.begin() == a.end() && r1.end() == a.end();
-        }());
-
-        static_assert([]() constexpr {
-            std::array<T, 6> a{ T(1), T(1), T(2), T(1), T(1), T(1) };
-            auto hit = raze::algorithm::search_n(a, 3, T(1));
-            auto zero = raze::algorithm::search_n(a, 0, T(9));
-            auto neg = raze::algorithm::search_n(a, -2, T(1));
-            auto miss = raze::algorithm::search_n(a, 4, T(1));
-            return hit.begin() == a.begin() + 3 && hit.end() == a.begin() + 6 &&
-                   zero.begin() == a.begin() && zero.end() == a.begin() &&
-                   neg.begin() == a.begin() && neg.end() == a.begin() &&
-                   miss.begin() == a.end() && miss.end() == a.end();
+            std::array<T, 0> a0{};
+            std::array<T, 6> a6{ T(1), T(1), T(2), T(1), T(1), T(1) };
+            auto r0 = raze::algorithm::search_n(a0, 0, T(1));
+            auto r1 = raze::algorithm::search_n(a0, 2, T(1));
+            auto hit = raze::algorithm::search_n(a6, 3, T(1));
+            auto zero = raze::algorithm::search_n(a6, 0, T(9));
+            auto neg = raze::algorithm::search_n(a6, -2, T(1));
+            auto miss = raze::algorithm::search_n(a6, 4, T(1));
+            return r0.begin() == a0.begin() && r0.end() == a0.begin() &&
+                   r1.begin() == a0.end() && r1.end() == a0.end() &&
+                   hit.begin() == a6.begin() + 3 && hit.end() == a6.begin() + 6 &&
+                   zero.begin() == a6.begin() && zero.end() == a6.begin() &&
+                   neg.begin() == a6.begin() && neg.end() == a6.begin() &&
+                   miss.begin() == a6.end() && miss.end() == a6.end();
         }());
     }
 }

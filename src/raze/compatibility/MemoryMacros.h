@@ -1,7 +1,7 @@
 #pragma once 
 
-#include <raze/compatibility/CompilerDetection.h>
-#include <raze/compatibility/Nodiscard.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/Nodiscard.h>
 
 
 #if !defined(raze_restrict)

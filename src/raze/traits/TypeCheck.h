@@ -1,13 +1,12 @@
 #pragma once
 
-#include <raze/RazeNamespace.h>
+#include <src/raze/RazeNamespace.h>
 
-#include <raze/compatibility/CompilerDetection.h>
-#include <raze/compatibility/CxxVersionDetection.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/CxxVersionDetection.h>
 
 #include <array>
 #include <concepts>
-#include <memory>
 #include <tuple>
 #include <type_traits>
 #include <utility>

@@ -1,6 +1,8 @@
 #pragma once
 
-#include <raze/options/Options.h>
+#include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/CompilerDetection.h>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

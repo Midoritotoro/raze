@@ -1,15 +1,13 @@
 #pragma once 
 
-#include <raze/compatibility/Inline.h>
-#include <raze/RazeNamespace.h>
-
-#include <src/raze/traits/IteratorCheck.h>
 #include <raze/Types.h>
-
-#include <src/raze/utility/Assert.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/Inline.h>
+#include <src/raze/compatibility/Nodiscard.h>
 #include <src/raze/traits/IteratorCheck.h>
 #include <src/raze/algorithm/RangesSize.h>
 #include <src/raze/options/As.h>
+#include <iterator>
 
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN

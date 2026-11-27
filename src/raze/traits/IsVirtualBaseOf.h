@@ -2,8 +2,8 @@
 
 #include <type_traits>
 
-#include <raze/RazeNamespace.h>
-#include <raze/compatibility/Warnings.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/compatibility/Warnings.h>
 
 
 __RAZE_TRAITS_NAMESPACE_BEGIN

@@ -5,9 +5,8 @@
 #include <src/raze/algorithm/UncheckedAlgorithms.h>
 #include <src/raze/algorithm/DataSource.h>
 #include <src/raze/algorithm/ProjectedValue.h>
-#include <raze/math/Math.h>
 
-#include <algorithm>
+#include <utility>
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

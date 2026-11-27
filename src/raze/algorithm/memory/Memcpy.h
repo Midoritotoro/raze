@@ -1,8 +1,14 @@
 #pragma once
 
-#include <raze/compatibility/Compatibility.h>
+#include <raze/Types.h>
+#include <src/raze/compatibility/Compatibility.h>
 #include <src/raze/algorithm/AdvanceBytes.h>
 #include <cstring>
+
+#if defined(raze_cpp_msvc_only)
+#  include <src/raze/arch/ProcessorFeatures.h>
+#  include <cstdint>
+#endif
 
 __RAZE_ALGORITHM_NAMESPACE_BEGIN
 

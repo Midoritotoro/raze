@@ -6,6 +6,8 @@
 #include <forward_list>
 #include <ranges>
 #include <vector>
+#include <deque>
+#include <random>
 
 namespace {
     struct key_box {
@@ -73,3 +75,78 @@ RTTS_CASE("raze::algorithm::equal_range P2248 braced-init, projections, forward_
     }
 };
 
+namespace {
+    inline constexpr unsigned fuzz_seeds[] = { 42u, 0x9E3779B9u, 0xDEADBEEFu };
+
+    template <class T>
+    void equal_range_fuzz(unsigned seed, size_t iters) {
+        namespace opt = raze::options;
+        std::mt19937 rng(seed);
+        rtts::random::generator<T> val_gen(seed ^ 0x5A5A5A5Au);
+
+        for (size_t it = 0; it < iters; ++it) {
+            const size_t n = static_cast<size_t>(rng() % 257);
+            std::vector<T> v(n);
+            if ((it & 1u) == 0u) {
+                v = rtts::random::vector<T>(n, rng());
+            }
+            else {
+                const unsigned alpha = (it % 4 == 1) ? 4u : 16u;
+                for (size_t i = 0; i < n; ++i)
+                    v[i] = static_cast<T>(rng() % alpha);
+            }
+
+            const bool desc = (it % 3 == 2);
+            if (desc)
+                std::ranges::sort(v, std::greater<>{});
+            else
+                std::ranges::sort(v);
+
+            const size_t lo = n ? static_cast<size_t>(rng() % (n + 1)) : 0;
+            const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
+            auto sub = std::ranges::subrange(v.begin() + static_cast<std::ptrdiff_t>(lo),
+                                             v.begin() + static_cast<std::ptrdiff_t>(hi));
+
+            std::vector<T> queries{ T(0), T(1), T(12), val_gen() };
+            if (lo < hi) {
+                queries.push_back(v[lo]);
+                queries.push_back(v[lo + (hi - lo) / 2]);
+                queries.push_back(v[hi - 1]);
+                queries.push_back(v[lo + static_cast<size_t>(rng() % (hi - lo))]);
+            }
+
+            auto check = [&](auto comp) {
+                for (T q : queries) {
+                    const auto exp = std::ranges::equal_range(sub, q, comp);
+                    auto eq = [&](auto r) { return r.begin() == exp.begin() && r.end() == exp.end(); };
+                    RTTS_EXPECT(eq(raze::algorithm::equal_range(sub, q, comp)));
+                    RTTS_EXPECT(eq(raze::algorithm::equal_range(sub.begin(), sub.end(), q, comp)));
+                    RTTS_EXPECT(eq(raze::algorithm::equal_range[opt::fscalar](sub, q, comp)));
+                    RTTS_EXPECT(eq(raze::algorithm::equal_range[opt::fstatic](sub, q, comp)));
+                }
+                if (it % 8 == 0 && (hi - lo) <= 64) {
+                    std::forward_list<T> fl(sub.begin(), sub.end());
+                    std::deque<T> dq(sub.begin(), sub.end());
+                    for (T q : queries) {
+                        const auto exp_fl = std::ranges::equal_range(fl, q, comp);
+                        const auto got_fl = raze::algorithm::equal_range(fl, q, comp);
+                        RTTS_EXPECT(got_fl.begin() == exp_fl.begin() && got_fl.end() == exp_fl.end());
+
+                        const auto exp_dq = std::ranges::equal_range(dq, q, comp);
+                        const auto got_dq = raze::algorithm::equal_range(dq, q, comp);
+                        RTTS_EXPECT(got_dq.begin() == exp_dq.begin() && got_dq.end() == exp_dq.end());
+                    }
+                }
+            };
+
+            if (desc) check(std::greater<>{});
+            else      check(std::less<>{});
+        }
+    }
+}
+
+RTTS_CASE_TPL("raze::algorithm::equal_range fuzz", rtts::algorithm::all_types)
+<class T>(rtts::type<T>) {
+    for (unsigned seed : fuzz_seeds)
+        equal_range_fuzz<T>(seed, 40);
+};

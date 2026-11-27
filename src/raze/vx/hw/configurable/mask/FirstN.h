@@ -1,6 +1,8 @@
 #pragma once 
 
-#include <raze/options/Options.h>
+#include <src/raze/options/As.h>
+#include <src/raze/options/DispatchCall.h>
+#include <src/raze/options/Functor.h>
 #include <src/raze/vx/Concepts.h>
 
 #if defined(raze_processor_x86)

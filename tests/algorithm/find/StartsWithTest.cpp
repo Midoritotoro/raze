@@ -147,82 +147,39 @@ namespace {
     template <class T>
     void starts_with_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with(c.first(), c.last(), c.first(), p_end);
-            },
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.first(), c.last(), c.first(), p_end);
-            });
+        constexpr auto pref_of = [](auto& c) {
+            return std::ranges::subrange(c.first(), std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count())));
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with(c.range(), std::ranges::subrange(c.first(), p_end));
-            },
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.range(), std::ranges::subrange(c.first(), p_end));
-            });
+        auto check_iter = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, pref_of](auto c) { auto p = pref_of(c); return algo(c.first(), c.last(), p.begin(), p.end()); },
+                [pref_of](auto c) { auto p = pref_of(c); return ref_starts_with(c.first(), c.last(), p.begin(), p.end()); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with[raze::options::fscalar](c.first(), c.last(), c.first(), p_end);
-            },
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.first(), c.last(), c.first(), p_end);
-            });
+        auto check_range = [&](auto algo) {
+            run<n, T>(cfg,
+                [algo, pref_of](auto c) { return algo(c.range(), pref_of(c)); },
+                [pref_of](auto c) { return ref_starts_with(c.range(), pref_of(c)); });
+        };
 
-        run<n, T>(cfg,
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with[raze::options::unroll<2>](c.range(), std::ranges::subrange(c.first(), p_end));
-            },
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.range(), std::ranges::subrange(c.first(), p_end));
-            });
-
-        run<n, T>(cfg,
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with[raze::options::fstatic](c.range(), std::ranges::subrange(c.first(), p_end));
-            },
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.range(), std::ranges::subrange(c.first(), p_end));
-            });
+        check_iter(raze::algorithm::starts_with);
+        check_range(raze::algorithm::starts_with);
+        check_iter(raze::algorithm::starts_with[opt::fscalar]);
+        check_range(raze::algorithm::starts_with[opt::unroll<2>]);
+        check_range(raze::algorithm::starts_with[opt::fstatic]);
+        check_iter(raze::algorithm::starts_with[opt::fautovec]);
 
         auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
 
         run<n, T>(cfg,
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with[raze::options::fautovec](c.first(), c.last(), c.first(), p_end);
-            },
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.first(), c.last(), c.first(), p_end);
-            });
-
-        run<n, T>(cfg,
-            [eq_branching](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with[raze::options::fautovec][raze::options::fstatic](c.range(), std::ranges::subrange(c.first(), p_end), eq_branching);
-            },
-            [eq_branching](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.range(), std::ranges::subrange(c.first(), p_end), eq_branching);
-            });
+            [pref_of, eq_branching](auto c) { return raze::algorithm::starts_with[opt::fautovec][opt::fstatic](c.range(), pref_of(c), eq_branching); },
+            [pref_of, eq_branching](auto c) { return ref_starts_with(c.range(), pref_of(c), eq_branching); });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t A1, size_t A2>(auto algo) {
@@ -267,40 +224,31 @@ namespace {
             [](auto c) { return ref_starts_with(c.range(), c.range()); }));
 
         static_assert(constexpr_run<T, n, 5, 3>(
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return raze::algorithm::starts_with(c.range(), std::ranges::subrange(c.first(), p_end));
-            },
-            [](auto c) {
-                auto p_end = std::ranges::next(c.first(), static_cast<std::ptrdiff_t>(c.count()));
-                return ref_starts_with(c.range(), std::ranges::subrange(c.first(), p_end));
-            }));
+            [pref_of](auto c) { return raze::algorithm::starts_with(c.range(), pref_of(c)); },
+            [pref_of](auto c) { return ref_starts_with(c.range(), pref_of(c)); }));
 
         static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::starts_with[raze::options::fautovec](c.range(), c.range()); },
+            [](auto c) { return raze::algorithm::starts_with[opt::fautovec](c.range(), c.range()); },
             [](auto c) { return ref_starts_with(c.range(), c.range()); }));
 
         static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::starts_with[raze::options::aligned<64, raze::options::unaligned>](c.range(), c.range2()); },
+            [](auto c) { return raze::algorithm::starts_with[opt::aligned<64, opt::unaligned>](c.range(), c.range2()); },
             [](auto c) { return ref_starts_with(c.range(), c.range2()); }));
 
         static_assert([]() constexpr {
             std::array<T, 0> empty{};
             std::array<T, 2> tiny{ T(1), T(2) };
-            return raze::algorithm::starts_with(empty, empty) &&
-                   raze::algorithm::starts_with(tiny, empty) &&
-                   !raze::algorithm::starts_with(empty, tiny);
-        }());
-
-        static_assert([]() constexpr {
             std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(5) };
             std::array<T, 3> p{ T(1), T(2), T(3) };
             std::array<T, 3> bad{ T(1), T(9), T(3) };
             std::array<T, 6> too_long{ T(1), T(2), T(3), T(4), T(5), T(6) };
-            return raze::algorithm::starts_with(a, p) &&
-                   !raze::algorithm::starts_with(a, bad) &&
-                   !raze::algorithm::starts_with(a, too_long) &&
-                   raze::algorithm::starts_with[raze::options::fscalar](a.begin(), a.end(), p.begin(), p.end());
+            return raze::algorithm::starts_with(empty, empty) &&
+                   raze::algorithm::starts_with(tiny, empty) &&
+                  !raze::algorithm::starts_with(empty, tiny) &&
+                   raze::algorithm::starts_with(a, p) &&
+                  !raze::algorithm::starts_with(a, bad) &&
+                  !raze::algorithm::starts_with(a, too_long) &&
+                   raze::algorithm::starts_with[opt::fscalar](a.begin(), a.end(), p.begin(), p.end());
         }());
     }
 }

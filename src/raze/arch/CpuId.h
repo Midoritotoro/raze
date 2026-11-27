@@ -1,11 +1,10 @@
 #pragma once
 
-#include <numeric>
-
-#include <raze/compatibility/CompilerDetection.h>
-#include <raze/compatibility/CallingConventions.h>
-#include <raze/compatibility/Compatibility.h>
-#include <raze/arch/ProcessorDetection.h>
+#include <raze/Types.h>
+#include <src/raze/RazeNamespace.h>
+#include <src/raze/arch/ProcessorDetection.h>
+#include <src/raze/compatibility/CompilerDetection.h>
+#include <src/raze/compatibility/Inline.h>
 
 #if defined(raze_processor_x86)
 #  if defined(raze_cpp_msvc)

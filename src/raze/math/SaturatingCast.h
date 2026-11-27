@@ -1,7 +1,9 @@
 #pragma once
 
 #include <src/raze/vx/Concepts.h>
-#include <limits.h>
+#include <concepts>
+#include <limits>
+#include <type_traits>
 
 __RAZE_MATH_NAMESPACE_BEGIN
 

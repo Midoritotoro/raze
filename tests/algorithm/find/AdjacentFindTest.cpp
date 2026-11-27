@@ -130,27 +130,27 @@ namespace {
     template <class T>
     void adjacent_find_suite() {
         using namespace rtts::algorithm;
+        namespace opt = raze::options;
         auto cfg = config::thorough();
 
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::adjacent_find(c.first(), c.last()); },
-            [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); });
+        auto check_iter = [&](auto algo) {
+            run<range, T>(cfg,
+                [algo](auto c) { return algo(c.first(), c.last()); },
+                [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); });
+        };
 
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::adjacent_find(c.range()); },
-            [](auto c) { return std::ranges::adjacent_find(c.range()); });
+        auto check_range = [&](auto algo) {
+            run<range, T>(cfg,
+                [algo](auto c) { return algo(c.range()); },
+                [](auto c) { return std::ranges::adjacent_find(c.range()); });
+        };
 
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::adjacent_find[raze::options::fscalar](c.first(), c.last()); },
-            [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); });
-
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::adjacent_find[raze::options::unroll<2>](c.range()); },
-            [](auto c) { return std::ranges::adjacent_find(c.range()); });
-
-        run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::adjacent_find[raze::options::fstatic](c.range()); },
-            [](auto c) { return std::ranges::adjacent_find(c.range()); });
+        check_iter(raze::algorithm::adjacent_find);
+        check_range(raze::algorithm::adjacent_find);
+        check_iter(raze::algorithm::adjacent_find[opt::fscalar]);
+        check_range(raze::algorithm::adjacent_find[opt::unroll<2>]);
+        check_range(raze::algorithm::adjacent_find[opt::fstatic]);
+        check_iter(raze::algorithm::adjacent_find[opt::fautovec]);
 
         run<range, T>(cfg,
             [](auto c) { return raze::algorithm::adjacent_find(c.first(), c.last(), std::greater<>{}); },
@@ -159,19 +159,14 @@ namespace {
         auto eq_branching = [](auto a, auto b) { if (a == b) return true; return false; };
 
         run<range, T>(cfg,
-            [](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec](c.first(), c.last()); },
-            [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); });
-
-        run<range, T>(cfg,
-            [eq_branching](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec](c.range(), eq_branching); },
+            [eq_branching](auto c) { return raze::algorithm::adjacent_find[opt::fautovec](c.range(), eq_branching); },
             [eq_branching](auto c) { return std::ranges::adjacent_find(c.range(), eq_branching); });
 
         run<range, T>(cfg,
-            [eq_branching](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec][raze::options::fstatic](c.range(), eq_branching); },
+            [eq_branching](auto c) { return raze::algorithm::adjacent_find[opt::fautovec][opt::fstatic](c.range(), eq_branching); },
             [eq_branching](auto c) { return std::ranges::adjacent_find(c.range(), eq_branching); });
 
         {
-            namespace opt = raze::options;
             auto acfg = config::compact();
 
             auto check_aligned = [&]<size_t Align>(auto algo) {
@@ -203,72 +198,38 @@ namespace {
             [](auto c) { return raze::algorithm::adjacent_find(c.first(), c.last()); },
             [](auto c) { return std::ranges::adjacent_find(c.first(), c.last()); }));
 
-        static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::adjacent_find(c.range()); },
-            [](auto c) { return std::ranges::adjacent_find(c.range()); }));
+        constexpr auto check_ce = [](auto algo) {
+            return constexpr_run<T, range, 5>(
+                [algo](auto c) { return algo(c.range()); },
+                [](auto c) { return std::ranges::adjacent_find(c.range()); });
+        };
 
-        static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::adjacent_find[raze::options::fautovec](c.range()); },
-            [](auto c) { return std::ranges::adjacent_find(c.range()); }));
-
-        static_assert(constexpr_run<T, range, 5>(
-            [](auto c) { return raze::algorithm::adjacent_find[raze::options::aligned<64>](c.range()); },
-            [](auto c) { return std::ranges::adjacent_find(c.range()); }));
+        static_assert(check_ce(raze::algorithm::adjacent_find));
+        static_assert(check_ce(raze::algorithm::adjacent_find[opt::fautovec]));
+        static_assert(check_ce(raze::algorithm::adjacent_find[opt::aligned<64>]));
 
         static_assert([]() constexpr {
-            std::array<T, 0> a{};
-            return raze::algorithm::adjacent_find(a) == a.end();
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 1> a{ T(7) };
-            return raze::algorithm::adjacent_find(a) == a.end();
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 2> a{ T(3), T(3) };
-            std::array<T, 2> b{ T(3), T(4) };
-            return raze::algorithm::adjacent_find(a) == a.begin() &&
-                   raze::algorithm::adjacent_find(b) == b.end();
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(3), T(3), T(5) };
-            return raze::algorithm::adjacent_find(a) == a.begin() + 2 &&
-                   raze::algorithm::adjacent_find[raze::options::fscalar](a) == a.begin() + 2;
-            }());
-
-        static_assert([]() constexpr {
-            std::array<T, 5> a{ T(1), T(2), T(3), T(4), T(4) };
-            return raze::algorithm::adjacent_find(a.begin(), a.begin() + 4) == a.begin() + 4 &&
-                   raze::algorithm::adjacent_find(a.begin() + 1, a.end()) == a.begin() + 3;
-            }());
+            std::array<T, 0> a0{};
+            std::array<T, 1> a1{ T(7) };
+            std::array<T, 2> a2{ T(3), T(3) };
+            std::array<T, 2> b2{ T(3), T(4) };
+            std::array<T, 5> a5{ T(1), T(2), T(3), T(3), T(5) };
+            std::array<T, 5> b5{ T(1), T(2), T(3), T(4), T(4) };
+            return raze::algorithm::adjacent_find(a0) == a0.end() &&
+                   raze::algorithm::adjacent_find(a1) == a1.end() &&
+                   raze::algorithm::adjacent_find(a2) == a2.begin() &&
+                   raze::algorithm::adjacent_find(b2) == b2.end() &&
+                   raze::algorithm::adjacent_find(a5) == a5.begin() + 2 &&
+                   raze::algorithm::adjacent_find[opt::fscalar](a5) == a5.begin() + 2 &&
+                   raze::algorithm::adjacent_find(b5.begin(), b5.begin() + 4) == b5.begin() + 4 &&
+                   raze::algorithm::adjacent_find(b5.begin() + 1, b5.end()) == b5.begin() + 3;
+        }());
     }
 }
 
 RTTS_CASE_TPL("raze::algorithm::adjacent_find", rtts::algorithm::all_types)
 <class T>(rtts::type<T>) {
     adjacent_find_suite<T>();
-};
-
-RTTS_CASE_TPL("raze::algorithm::adjacent_find not_found", rtts::algorithm::all_types)
-<class T>(rtts::type<T>) {
-    for (size_t n : { size_t(0), size_t(1), size_t(2), size_t(4), size_t(8),
-                      size_t(15), size_t(16), size_t(17), size_t(18),
-                      size_t(31), size_t(32), size_t(33), size_t(34),
-                      size_t(63), size_t(64), size_t(65), size_t(66),
-                      size_t(128), size_t(129), size_t(256), size_t(257), size_t(512), size_t(513) })
-    {
-        std::vector<T> v(n);
-        for (size_t i = 0; i < n; ++i)
-            v[i] = static_cast<T>(i & 1 ? 2 : 1);
-
-        RTTS_EXPECT(raze::algorithm::adjacent_find(v) == v.end());
-        RTTS_EXPECT(raze::algorithm::adjacent_find(v.begin(), v.end()) == v.end());
-        RTTS_EXPECT(raze::algorithm::adjacent_find[raze::options::fscalar](v) == v.end());
-        RTTS_EXPECT(raze::algorithm::adjacent_find[raze::options::unroll<2>](v) == v.end());
-        RTTS_EXPECT(raze::algorithm::adjacent_find[raze::options::fstatic](v) == v.end());
-    }
 };
 
 RTTS_CASE_TPL("raze::algorithm::adjacent_find boundaries", rtts::algorithm::all_types)

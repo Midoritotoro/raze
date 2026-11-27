@@ -3,66 +3,37 @@
 
 RTTS_CASE_TPL("raze::algorithm::remove", rtts::algorithm::all_types)
 < class T > (rtts::type<T>) {
+    namespace opt = raze::options;
     auto cfg = rtts::algorithm::config::thorough();
 
     const T value = rtts::random::generator<T>(1000)();
 
-    {
+    auto check_iter = [&](auto algo) {
         rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove(c.first(), c.last(), value); },
+            [algo, value](auto c) { return algo(c.first(), c.last(), value); },
             [value](auto c) { return std::ranges::remove(c.first(), c.last(), value); },
             rtts::algorithm::prefix_result);
+    };
 
+    auto check_range = [&](auto algo) {
         rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove(c.range(), value); },
+            [algo, value](auto c) { return algo(c.range(), value); },
             [value](auto c) { return std::ranges::remove(c.range(), value); },
             rtts::algorithm::prefix_result);
-    }
+    };
+
+    check_iter(raze::algorithm::remove);
+    check_range(raze::algorithm::remove);
+    check_iter(raze::algorithm::remove[opt::fscalar]);
+    check_range(raze::algorithm::remove[opt::fscalar]);
+    check_range(raze::algorithm::remove[opt::unroll<1>]);
+    check_range(raze::algorithm::remove[opt::fstatic]);
+    check_range(raze::algorithm::remove[opt::fscalar][opt::unroll<2>]);
+    check_range(raze::algorithm::remove[opt::fstatic][opt::unroll<2>]);
+    check_iter(raze::algorithm::remove[opt::fautovec]);
+    check_range(raze::algorithm::remove[opt::fautovec][opt::fstatic]);
 
     {
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::fscalar](c.first(), c.last(), value); },
-            [value](auto c) { return std::ranges::remove(c.first(), c.last(), value); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::fscalar](c.range(), value); },
-            [value](auto c) { return std::ranges::remove(c.range(), value); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::unroll<1>](c.range(), value); },
-            [value](auto c) { return std::ranges::remove(c.range(), value); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::fstatic](c.range(), value); },
-            [value](auto c) { return std::ranges::remove(c.range(), value); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::fscalar][raze::options::unroll<2>](c.range(), value); },
-            [value](auto c) { return std::ranges::remove(c.range(), value); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::fstatic][raze::options::unroll<2>](c.range(), value); },
-            [value](auto c) { return std::ranges::remove(c.range(), value); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::fautovec](c.first(), c.last(), value); },
-            [value](auto c) { return std::ranges::remove(c.first(), c.last(), value); },
-            rtts::algorithm::prefix_result);
-
-        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-            [value](auto c) { return raze::algorithm::remove[raze::options::fautovec][raze::options::fstatic](c.range(), value); },
-            [value](auto c) { return std::ranges::remove(c.range(), value); },
-            rtts::algorithm::prefix_result);
-    }
-
-    {
-        namespace opt = raze::options;
         auto acfg = rtts::algorithm::config::compact();
 
         auto check_aligned = [&]<size_t Align>(auto algo) {
@@ -88,103 +59,74 @@ RTTS_CASE_TPL("raze::algorithm::remove", rtts::algorithm::all_types)
         check_aligned.template operator()<1>(raze::algorithm::remove[opt::aligned<64>][opt::aligned<opt::unaligned>]);
     }
 
+    constexpr auto check_ce_range = [](auto algo) constexpr {
+        return rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
+            [algo](auto c) constexpr { return algo(c.range(), T(0)); },
+            [](auto c) constexpr { return std::ranges::remove(c.range(), T(0)); },
+            rtts::algorithm::prefix_result);
+    };
+
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr { return raze::algorithm::remove(c.first(), c.last(), T(0)); },
         [](auto c) constexpr { return std::ranges::remove(c.first(), c.last(), T(0)); },
         rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove(c.range(), T(0)); },
-        [](auto c) constexpr { return std::ranges::remove(c.range(), T(0)); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove[raze::options::fscalar](c.range(), T(0)); },
-        [](auto c) constexpr { return std::ranges::remove(c.range(), T(0)); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove[raze::options::unroll<2>](c.range(), T(0)); },
-        [](auto c) constexpr { return std::ranges::remove(c.range(), T(0)); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove[raze::options::fautovec](c.range(), T(0)); },
-        [](auto c) constexpr { return std::ranges::remove(c.range(), T(0)); },
-        rtts::algorithm::prefix_result));
-
-    static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
-        [](auto c) constexpr { return raze::algorithm::remove[raze::options::aligned<64>](c.range(), T(0)); },
-        [](auto c) constexpr { return std::ranges::remove(c.range(), T(0)); },
-        rtts::algorithm::prefix_result));
+    static_assert(check_ce_range(raze::algorithm::remove));
+    static_assert(check_ce_range(raze::algorithm::remove[opt::fscalar]));
+    static_assert(check_ce_range(raze::algorithm::remove[opt::unroll<2>]));
+    static_assert(check_ce_range(raze::algorithm::remove[opt::fautovec]));
+    static_assert(check_ce_range(raze::algorithm::remove[opt::aligned<64>]));
 };
 
 RTTS_CASE_TPL("raze::algorithm::remove.projection", rtts::algorithm::all_types)
 < class T > (rtts::type<T>) {
+    namespace opt = raze::options;
     auto cfg = rtts::algorithm::config::thorough();
     auto acfg = rtts::algorithm::config::compact();
 
     const T value = rtts::random::generator<T>(12345)();
     auto proj = [](const T& x) -> const T& { return x; };
 
+    auto check_range = [&](auto algo) {
+        rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
+            [algo, value, proj](auto c) { return algo(c.range(), value, proj); },
+            [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
+            rtts::algorithm::prefix_result);
+    };
+
     rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
         [value, proj](auto c) { return raze::algorithm::remove(c.first(), c.last(), value, proj); },
         [value, proj](auto c) { return std::ranges::remove(c.first(), c.last(), value, proj); },
         rtts::algorithm::prefix_result);
 
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [value, proj](auto c) { return raze::algorithm::remove(c.range(), value, proj); },
-        [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
-        rtts::algorithm::prefix_result);
+    check_range(raze::algorithm::remove);
+    check_range(raze::algorithm::remove[opt::fscalar]);
+    check_range(raze::algorithm::remove[opt::unroll<2>]);
+    check_range(raze::algorithm::remove[opt::fautovec]);
 
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [value, proj](auto c) { return raze::algorithm::remove[raze::options::fscalar](c.range(), value, proj); },
-        [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [value, proj](auto c) { return raze::algorithm::remove[raze::options::unroll<2>](c.range(), value, proj); },
-        [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run<rtts::algorithm::range, T>(cfg,
-        [value, proj](auto c) { return raze::algorithm::remove[raze::options::fautovec](c.range(), value, proj); },
-        [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run_aligned<64, rtts::algorithm::range, T>(acfg,
-        [value, proj](auto c) { return raze::algorithm::remove[raze::options::aligned<64>](c.range(), value, proj); },
-        [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
-        rtts::algorithm::prefix_result);
-
-    rtts::algorithm::run_aligned<1, rtts::algorithm::range, T>(acfg,
-        [value, proj](auto c) { return raze::algorithm::remove[raze::options::aligned<raze::options::unaligned>](c.range(), value, proj); },
-        [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
-        rtts::algorithm::prefix_result);
+    auto check_aligned = [&]<size_t Align>(auto algo) {
+        rtts::algorithm::run_aligned<Align, rtts::algorithm::range, T>(acfg,
+            [algo, value, proj](auto c) { return algo(c.range(), value, proj); },
+            [value, proj](auto c) { return std::ranges::remove(c.range(), value, proj); },
+            rtts::algorithm::prefix_result);
+    };
+    check_aligned.template operator()<64>(raze::algorithm::remove[opt::aligned<64>]);
+    check_aligned.template operator()<1>(raze::algorithm::remove[opt::aligned<opt::unaligned>]);
 
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr {
-            return raze::algorithm::remove(
-                c.first(), c.last(), T(0),
-                [](const T& x) constexpr -> const T& { return x; });
+            return raze::algorithm::remove(c.first(), c.last(), T(0), [](const T& x) constexpr -> const T& { return x; });
         },
         [](auto c) constexpr {
-            return std::ranges::remove(
-                c.first(), c.last(), T(0),
-                [](const T& x) constexpr -> const T& { return x; });
+            return std::ranges::remove(c.first(), c.last(), T(0), [](const T& x) constexpr -> const T& { return x; });
         },
         rtts::algorithm::prefix_result));
 
     static_assert(rtts::algorithm::constexpr_run<T, rtts::algorithm::range, 8>(
         [](auto c) constexpr {
-            return raze::algorithm::remove[raze::options::fscalar](
-                c.range(), T(0),
-                [](const T& x) constexpr -> const T& { return x; });
+            return raze::algorithm::remove[opt::fscalar](c.range(), T(0), [](const T& x) constexpr -> const T& { return x; });
         },
         [](auto c) constexpr {
-            return std::ranges::remove(
-                c.range(), T(0),
-                [](const T& x) constexpr -> const T& { return x; });
+            return std::ranges::remove(c.range(), T(0), [](const T& x) constexpr -> const T& { return x; });
         },
         rtts::algorithm::prefix_result));
 };
