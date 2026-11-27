@@ -131,12 +131,10 @@ RTTS_CASE_TPL("raze::algorithm::remove.projection", rtts::algorithm::all_types)
         rtts::algorithm::prefix_result));
 };
 
-
 RTTS_CASE("raze::algorithm::remove views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Writable views: take, drop, reverse, filter, non-common
     {
         std::vector<int> v1 = { 1, 2, 3, 2, 4, 2, 5, 2, 6, 2, 7, 2, 8, 2, 9, 2 };
         auto v2 = v1;
@@ -166,7 +164,6 @@ RTTS_CASE("raze::algorithm::remove views and edge cases") {
         RTTS_EXPECT(std::ranges::equal(vn1.begin(), rn1.begin(), vn2.begin(), sn1.begin()));
     }
 
-    // Empty, 1-elem, all-removed, none-removed, volatile, rvalue dangling, member projection
     {
         std::vector<int> empty_v;
         auto er = raze::algorithm::remove(empty_v, 1);

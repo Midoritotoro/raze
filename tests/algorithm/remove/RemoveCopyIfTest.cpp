@@ -186,12 +186,10 @@ RTTS_CASE("raze::algorithm::remove_copy_if.mixed") {
     static_assert(check_ce_even.template operator()<int8_t, int16_t>());
 };
 
-
 RTTS_CASE("raze::algorithm::remove_copy_if views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         const std::vector<int> src = { -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
         auto pred_branch = [](auto x) { if ((x & 1) == 0) return true; return false; };
@@ -213,7 +211,6 @@ RTTS_CASE("raze::algorithm::remove_copy_if views and edge cases") {
         RTTS_EXPECT(r3 == s3);
     }
 
-    // Output iterators, single-pass, non-destructive strings, volatile, dangling, member projection
     {
         const std::vector<int> src = { 1, 2, 3, 4, 5, 6 };
         auto is_even = [](auto x) { return (x & 1) == 0; };

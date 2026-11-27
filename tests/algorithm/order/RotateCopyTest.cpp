@@ -488,12 +488,10 @@ RTTS_CASE("raze::algorithm::rotate_copy sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::rotate_copy views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, non-common
     {
         const std::vector<int> src = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
 
@@ -522,7 +520,6 @@ RTTS_CASE("raze::algorithm::rotate_copy views and edge cases") {
         RTTS_EXPECT(nc1 == nc2);
     }
 
-    // back_inserter, front_inserter, inserter, empty, middle == first/last, volatile, rvalue dangling
     {
         const std::vector<int> src = { 1, 2, 3, 4, 5 };
         const std::vector<int> expected = { 3, 4, 5, 1, 2 };
@@ -566,4 +563,4 @@ RTTS_CASE("raze::algorithm::rotate_copy views and edge cases") {
         static_assert(std::same_as<decltype(rres.in), std::ranges::dangling>);
         RTTS_EXPECT((rdst == std::vector<int>{ 20, 30, 40, 10 }));
     }
-};
+};

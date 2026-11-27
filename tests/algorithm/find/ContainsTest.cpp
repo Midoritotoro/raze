@@ -235,12 +235,10 @@ RTTS_CASE("raze::algorithm::contains sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::contains views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         RTTS_EXPECT(raze::algorithm::contains(views::iota(1, 50), 25));
         RTTS_EXPECT(!raze::algorithm::contains(views::iota(1, 50), 75));
@@ -253,7 +251,6 @@ RTTS_CASE("raze::algorithm::contains views and edge cases") {
         RTTS_EXPECT(raze::algorithm::contains(rtts::make_non_common(src), 6));
     }
 
-    // Empty, 1-elem, single-pass early exit, volatile, member projection
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(!raze::algorithm::contains(empty_v, 1));
@@ -272,4 +269,4 @@ RTTS_CASE("raze::algorithm::contains views and edge cases") {
         RTTS_EXPECT(raze::algorithm::contains(items, 7, &rtts::test_item::key));
         RTTS_EXPECT(!raze::algorithm::contains(items, 9, &rtts::test_item::key));
     }
-};
+};

@@ -73,12 +73,10 @@ RTTS_CASE_TPL("raze::algorithm::fill", rtts::algorithm::all_types)
     static_assert(check_ce(raze::algorithm::fill[opt::aligned<64>]));
 };
 
-
 RTTS_CASE("raze::algorithm::fill views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Writable views: take, drop, reverse, filter, counted, span, non-common
     {
         std::vector<int> v1(40, 0), v2(40, 0);
 
@@ -104,7 +102,6 @@ RTTS_CASE("raze::algorithm::fill views and edge cases") {
         RTTS_EXPECT(v1 == v2);
     }
 
-    // Pure output iterators via counted_iterator + back_inserter / front_inserter
     {
         std::vector<int> dst;
         raze::algorithm::fill(std::counted_iterator(std::back_inserter(dst), 10), std::default_sentinel, 77);
@@ -115,7 +112,6 @@ RTTS_CASE("raze::algorithm::fill views and edge cases") {
         RTTS_EXPECT(deq == std::deque<int>(5, 33));
     }
 
-    // Volatile buffers (both 4B int and 1B char to verify memset/SIMD bypass)
     {
         volatile int vbuf[16];
         raze::algorithm::fill(vbuf, vbuf + 16, 123);
@@ -126,7 +122,6 @@ RTTS_CASE("raze::algorithm::fill views and edge cases") {
         for (int i = 0; i < 32; ++i) RTTS_EXPECT(vbuf8[i] == char(65));
     }
 
-    // Empty, 1-elem, rvalue dangling, non-pow2 large struct
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::fill(empty_v, 1) == empty_v.end());
@@ -146,4 +141,4 @@ RTTS_CASE("raze::algorithm::fill views and edge cases") {
         raze::algorithm::fill(bigs, target);
         for (const auto& b : bigs) RTTS_EXPECT(b == target);
     }
-};
+};

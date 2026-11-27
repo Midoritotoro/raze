@@ -84,7 +84,6 @@ namespace {
 RTTS_CASE("raze::algorithm::generate_random URBG, distribution, bulk hooks, and constexpr") {
     namespace opt = raze::options;
 
-    // Standard URBG (range + iterator-sentinel + fscalar)
     {
         std::vector<std::uint32_t> a(128), b(128), c(128);
         std::mt19937 g1(42), g2(42), g3(42);
@@ -96,7 +95,6 @@ RTTS_CASE("raze::algorithm::generate_random URBG, distribution, bulk hooks, and 
         RTTS_ALL_EQUAL(b, c);
     }
 
-    // Standard distribution
     {
         std::vector<int> a(128), b(128);
         std::mt19937 g1(77), g2(77);
@@ -107,7 +105,6 @@ RTTS_CASE("raze::algorithm::generate_random URBG, distribution, bulk hooks, and 
         RTTS_ALL_EQUAL(a, b);
     }
 
-    // Bulk span & subrange URBG hooks (P1068)
     {
         std::vector<std::uint32_t> v(16);
         bulk_span_urbg bg;
@@ -123,7 +120,6 @@ RTTS_CASE("raze::algorithm::generate_random URBG, distribution, bulk hooks, and 
         RTTS_EQUAL(lst.front(), 2004u);
     }
 
-    // Bulk span & subrange distribution hooks (P1068)
     {
         std::vector<int> v(10);
         std::mt19937 g(11);
@@ -138,7 +134,6 @@ RTTS_CASE("raze::algorithm::generate_random URBG, distribution, bulk hooks, and 
         RTTS_EXPECT(lst.front() >= 900 && lst.front() < 1000);
     }
 
-    // Empty, non-common sentinel, rvalue dangling
     {
         std::vector<std::uint32_t> empty;
         std::mt19937 g(99);
@@ -227,7 +222,6 @@ RTTS_CASE("raze::algorithm::generate_random URBG and bulk hooks fuzz") {
             const size_t hi = n ? (lo + static_cast<size_t>(rng() % (n - lo + 1))) : 0;
             const unsigned gseed = rng();
 
-            // Raw mt19937 into uint32_t vector & deque
             std::vector<std::uint32_t> v1(n, 0xCAFEu), v2(n, 0xCAFEu), ve(n, 0xCAFEu);
             std::mt19937 g1(gseed), g2(gseed), ge(gseed);
             raze::algorithm::generate_random(v1.begin() + static_cast<std::ptrdiff_t>(lo),
@@ -240,7 +234,6 @@ RTTS_CASE("raze::algorithm::generate_random URBG and bulk hooks fuzz") {
             RTTS_ALL_EQUAL(v1, ve);
             RTTS_ALL_EQUAL(v2, ve);
 
-            // Bulk span & subrange hooks at random sizes
             std::vector<std::uint32_t> bvec(hi - lo);
             bulk_span_urbg bg;
             bg.state = gseed;

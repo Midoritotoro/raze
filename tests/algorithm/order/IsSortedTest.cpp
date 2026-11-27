@@ -229,12 +229,10 @@ RTTS_CASE("raze::algorithm::is_sorted structs fuzz") {
         is_sorted_struct_fuzz<is_sorted_item>(seed, 200);
 };
 
-
 RTTS_CASE("raze::algorithm::is_sorted views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, reverse, take, drop, filter, transform, chained, non-common
     {
         RTTS_EXPECT(raze::algorithm::is_sorted(views::iota(1, 50)));
         RTTS_EXPECT(!raze::algorithm::is_sorted(views::iota(1, 50) | views::reverse));
@@ -256,7 +254,6 @@ RTTS_CASE("raze::algorithm::is_sorted views and edge cases") {
             sorted, [](auto a, auto b) { if (a < b) return true; return false; }));
     }
 
-    // Empty, 1-elem, 2-elem, all-equal, volatile, member projection
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::is_sorted(empty_v));

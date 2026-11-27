@@ -45,7 +45,6 @@ RTTS_CASE_TPL("raze::algorithm::merge", rtts::algorithm::all_types)
 };
 
 RTTS_CASE("raze::algorithm::merge stability, projections, single-pass input, and dangling") {
-    // Stability: elements from first range precede equivalent elements from second range
     {
         const std::vector<rtts::test_item> a{ { 1, 10 }, { 2, 11 }, { 3, 12 } };
         const std::vector<rtts::test_item> b{ { 2, 20 }, { 2, 21 }, { 4, 22 } };
@@ -56,7 +55,6 @@ RTTS_CASE("raze::algorithm::merge stability, projections, single-pass input, and
         RTTS_EXPECT(out[1].payload == 11 && out[2].payload == 20 && out[3].payload == 21);
     }
 
-    // Single-pass input ranges & rvalue dangling
     {
         const std::vector<int> a{ 1, 4, 7 };
         const std::vector<int> b{ 2, 3, 8 };

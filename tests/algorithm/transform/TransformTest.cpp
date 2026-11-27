@@ -524,12 +524,10 @@ RTTS_CASE("raze::algorithm::transform.strict_types_type_inspecting") {
         [op](auto c) constexpr { return std::ranges::transform(c.first(), c.last(), c.first2(), c.last2(), c.out2(), op); }));
 };
 
-
 RTTS_CASE("raze::algorithm::transform views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Unary & binary views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         const std::vector<int> a = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
         const std::vector<int> b = { 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110, 120 };
@@ -547,7 +545,6 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         std::ranges::transform(chain, std::back_inserter(uc2), [](int x) { return x * 3; });
         RTTS_EXPECT(uc1 == uc2);
 
-        // Binary views with mismatched lengths
         std::vector<int> bv1, bv2;
         raze::algorithm::transform[opt::fautovec][opt::fstatic](
             views::iota(1, 15), b | views::reverse, std::back_inserter(bv1),
@@ -571,7 +568,6 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         RTTS_EXPECT(nc1 == nc2);
     }
 
-    // back_inserter, front_inserter, inserter, single-pass input ranges (unary & binary)
     {
         const std::vector<int> src1 = { 1, 2, 3, 4, 5 };
         const std::vector<int> src2 = { 10, 20, 30, 40, 50, 60, 70 };
@@ -598,7 +594,6 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         RTTS_EXPECT((sp_b == std::vector<int>{ 11, 22, 33, 44, 55 }) && sp2a.reads() == src1.size());
     }
 
-    // Mismatched lengths (contiguous), self-aliasing, volatile, rvalue dangling, member projections
     {
         const std::vector<int> short_v(19, 3);
         const std::vector<int> long_v(53, 7);
@@ -615,7 +610,6 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         auto rb_empty = raze::algorithm::transform(empty_v, long_v, out1.begin(), std::plus<>{});
         RTTS_EXPECT(rb_empty.in1 == empty_v.end() && rb_empty.in2 == long_v.begin() && rb_empty.out == out1.begin());
 
-        // Self-aliasing unary & binary
         std::vector<int> self_v(35);
         std::iota(self_v.begin(), self_v.end(), 1);
         auto self_exp = self_v;
@@ -627,7 +621,6 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         std::ranges::transform(self_exp, self_exp, self_exp.begin(), [](int x, int y) { return x + y; });
         RTTS_EXPECT(self_v == self_exp);
 
-        // Volatile buffers
         volatile int vs1[16], vs2[16], vd[16];
         for (int i = 0; i < 16; ++i) { vs1[i] = i; vs2[i] = i * 2; }
         raze::algorithm::transform(vs1, vs1 + 16, vd, [](int x) { return x + 10; });
@@ -635,7 +628,6 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         raze::algorithm::transform(vs1, vs1 + 16, vs2, vs2 + 16, vd, [](int x, int y) { return x + y; });
         for (int i = 0; i < 16; ++i) RTTS_EXPECT(vd[i] == i * 3);
 
-        // Non-borrowed rvalue containers -> dangling
         std::vector<int> rdst;
         auto ru = raze::algorithm::transform(std::vector<int>{ 1, 2, 3 }, std::back_inserter(rdst), [](auto x) { return x * 10; });
         static_assert(std::same_as<decltype(ru.in), std::ranges::dangling>);
@@ -647,7 +639,6 @@ RTTS_CASE("raze::algorithm::transform views and edge cases") {
         static_assert(std::same_as<decltype(rb.in2), std::ranges::dangling>);
         RTTS_EXPECT((rbdst == std::vector<int>{ 4, 6 }));
 
-        // Pointer-to-member projections
         const std::vector<rtts::test_item> it1 = { { 1, 10 }, { 2, 20 }, { 3, 30 } };
         const std::vector<rtts::test_item> it2 = { { 10, 1 }, { 20, 2 }, { 30, 3 } };
         std::vector<int> proj_out;

@@ -306,12 +306,10 @@ RTTS_CASE("raze::algorithm::ends_with structs, projections, rvalues and predicat
     RTTS_EXPECT(!raze::algorithm::ends_with(s, std::string_view("hello")));
 };
 
-
 RTTS_CASE("raze::algorithm::ends_with views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, non-common
     {
         auto iv = views::iota(1, 50);
         auto suf = views::iota(40, 50);
@@ -327,7 +325,6 @@ RTTS_CASE("raze::algorithm::ends_with views and edge cases") {
         RTTS_EXPECT(raze::algorithm::ends_with(rtts::make_non_common(src), tv));
     }
 
-    // Empty, suffix longer than haystack, counted single-pass input range, volatile, member projection
     {
         const std::vector<int> h = { 1, 2, 3, 4, 5 };
         std::vector<int> empty_v;

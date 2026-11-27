@@ -63,10 +63,8 @@ namespace {
             for (size_t i = 0; i < h_len; ++i)
                 haystack[i] = static_cast<T>((i % 97) + 1);
 
-            // Empty needle -> {begin, begin}
             check_search_variants(haystack, std::vector<T>{});
 
-            // Needle longer than haystack -> {end, end}
             std::vector<T> longer(h_len + 1, T(1));
             for (size_t i = 0; i < h_len; ++i)
                 longer[i] = haystack[i];
@@ -75,10 +73,8 @@ namespace {
             if (h_len == 0)
                 continue;
 
-            // Exact full-range match (including huge H == N -> exercises verify_tail_long)
             check_search_variants(haystack, haystack);
 
-            // Full-range mismatch at first, middle, and last
             {
                 auto bad = haystack;
                 bad[h_len / 2] = T(0);
@@ -88,7 +84,6 @@ namespace {
                 check_search_variants(haystack, bad);
             }
 
-            // Representative needle lengths and match offsets
             std::vector<size_t> needle_lens = { 1, 2, 3, 4, 7, 8, 15, 16, 17, 31, 32, 33, 64, 65 };
             for (size_t p_len : needle_lens) {
                 if (p_len > h_len)
@@ -117,7 +112,6 @@ namespace {
                     check_search_variants(haystack, pat);
                 }
 
-                // Missing pattern with matching endpoints
                 std::vector<T> miss(p_len, T(0));
                 miss[0] = haystack[0];
                 miss[p_len - 1] = haystack[p_len - 1];
@@ -128,16 +122,13 @@ namespace {
 
     template <class T>
     void search_decoys_and_overlaps() {
-        // Dense false-positive first+last hits + multiple/overlapping real matches
         for (size_t h_len : { size_t(16), size_t(33), size_t(65), size_t(131), size_t(260) }) {
-            // Overlapping runs of identical elements
             std::vector<T> all_same(h_len, T(7));
             for (size_t p_len : { size_t(1), size_t(2), size_t(4), size_t(17), size_t(65) }) {
                 if (p_len <= h_len)
                     check_search_variants(all_same, std::vector<T>(p_len, T(7)));
             }
 
-            // Periodic pattern with overlapping occurrences: {1, 2, 1, 2, 1, ...}
             std::vector<T> periodic(h_len);
             for (size_t i = 0; i < h_len; ++i)
                 periodic[i] = (i % 2 == 0) ? T(1) : T(2);
@@ -148,7 +139,6 @@ namespace {
                 }
             }
 
-            // False-positive endpoints: haystack filled with T(5), real match placed late with unique middle
             for (size_t p_len : { size_t(3), size_t(4), size_t(10), size_t(19), size_t(35), size_t(67) }) {
                 if (p_len + 4 > h_len)
                     continue;
@@ -157,7 +147,6 @@ namespace {
                 pat[0] = T(5);
                 pat[p_len - 1] = T(5);
 
-                // Place decoy (matches everything except one middle byte) earlier than real match
                 const size_t real_pos = h_len - p_len - 1;
                 if (real_pos >= p_len + 1) {
                     for (size_t k = 0; k < p_len; ++k)
@@ -169,7 +158,6 @@ namespace {
 
                 check_search_variants(h, pat);
 
-                // Also test when NO real match exists despite 100% endpoint hits
                 h[real_pos + p_len / 2] = T(4);
                 check_search_variants(h, pat);
             }
@@ -254,7 +242,6 @@ namespace {
             [make_sub, eq_branching](auto c) { return raze::algorithm::search[opt::fautovec][opt::fstatic](c.range(), make_sub(c), eq_branching); },
             [make_sub, eq_branching](auto c) { return std::ranges::search(c.range(), make_sub(c), eq_branching); });
 
-        // Aligned tests
         {
             auto acfg = config::compact();
 
@@ -311,7 +298,6 @@ namespace {
             }
         }
 
-        // Constexpr tests
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::search(c.range(), c.range()); },
             [](auto c) { return std::ranges::search(c.range(), c.range()); }));
@@ -381,7 +367,6 @@ RTTS_CASE("raze::algorithm::search floating point -0.0 and NaN") {
         const F pos0 = F(+0.0);
         const F neg0 = F(-0.0);
 
-        // -0.0 == +0.0 across first, middle, and last positions (SIMD & tail)
         for (size_t sz : { size_t(4), size_t(36), size_t(70) }) {
             std::vector<F> hay(sz, F(1.0));
             const size_t pos = sz - 4;
@@ -401,7 +386,6 @@ RTTS_CASE("raze::algorithm::search floating point -0.0 and NaN") {
             RTTS_EXPECT(r3.begin() == exp.begin() && r3.end() == exp.end());
             RTTS_EXPECT(r4.begin() == exp.begin() && r4.end() == exp.end());
 
-            // Long middle containing -0.0 vs +0.0 (exercises SIMD verify_middle & verify_tail_long)
             if (sz >= 36) {
                 std::vector<F> long_h(sz, neg0);
                 std::vector<F> long_p(sz, pos0);
@@ -409,7 +393,6 @@ RTTS_CASE("raze::algorithm::search floating point -0.0 and NaN") {
                 RTTS_EXPECT(lr1.begin() == long_h.begin() && lr1.end() == long_h.end());
             }
 
-            // NaN != NaN in first, middle, and last
             std::vector<F> nan_h(sz, F(2.0));
             nan_h[pos + 0] = F(3.0);
             nan_h[pos + 1] = nan;
@@ -433,7 +416,6 @@ RTTS_CASE("raze::algorithm::search floating point -0.0 and NaN") {
 RTTS_CASE("raze::algorithm::search predicates, projections, containers and structs") {
     namespace opt = raze::options;
 
-    // Custom vectorizable predicates (std::less, std::not_equal_to, bitwise lambda)
     {
         std::vector<int32_t> hay(100);
         for (size_t i = 0; i < hay.size(); ++i) hay[i] = static_cast<int32_t>(i);
@@ -457,7 +439,6 @@ RTTS_CASE("raze::algorithm::search predicates, projections, containers and struc
         check_pred([](auto a, auto b) { return (a & 7) == (b & 7); });
     }
 
-    // Projections & structs
     {
         const std::vector<search_item> items{
             { 1, 10 }, { 2, 20 }, { 3, 30 }, { 2, 40 }, { 3, 50 }, { 4, 60 }
@@ -480,7 +461,6 @@ RTTS_CASE("raze::algorithm::search predicates, projections, containers and struc
         RTTS_EXPECT(sr2.begin() == s.begin() + 4 && sr2.end() == s.begin() + 8);
     }
 
-    // Non-contiguous & mixed containers (deque, list, forward_list, vector+list, vector+forward_list)
     {
         const std::vector<int> vec{ 1, 2, 3, 4, 2, 3, 5 };
         const std::deque<int> deq(vec.begin(), vec.end());
@@ -507,7 +487,6 @@ RTTS_CASE("raze::algorithm::search predicates, projections, containers and struc
         check_c(vec, pat_flst);
     }
 
-    // Static std::array constexpr_sized_source runtime path
     {
         std::array<int, 64> h{};
         for (size_t i = 0; i < h.size(); ++i) h[i] = static_cast<int>(i);
@@ -521,7 +500,6 @@ RTTS_CASE("raze::algorithm::search views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, non-common
     {
         auto iv = views::iota(0, 64);
         auto pv = views::iota(30, 35);
@@ -555,7 +533,6 @@ RTTS_CASE("raze::algorithm::search views and edge cases") {
         auto s5 = std::ranges::search(nc_h, nc_p);
         RTTS_EXPECT(r5.begin() == s5.begin() && r5.end() == s5.end());
 
-        // Non-common miss
         std::vector<int> miss_pat = { 9, 9, 9 };
         auto nc_m = rtts::make_non_common(miss_pat);
         auto r6 = raze::algorithm::search(nc_h, nc_m);
@@ -563,7 +540,6 @@ RTTS_CASE("raze::algorithm::search views and edge cases") {
         RTTS_EXPECT(r6.begin() == s6.begin() && r6.end() == s6.end());
     }
 
-    // Volatile, rvalue dangling, member projection
     {
         volatile int vh[20], vp[4];
         for (int i = 0; i < 20; ++i) vh[i] = i;
@@ -583,4 +559,3 @@ RTTS_CASE("raze::algorithm::search views and edge cases") {
         RTTS_EXPECT(ir.begin() == i1.begin() + 1 && ir.end() == i1.begin() + 3);
     }
 };
-

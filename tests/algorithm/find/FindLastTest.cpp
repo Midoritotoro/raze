@@ -302,12 +302,10 @@ RTTS_CASE("raze::algorithm::find_last sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::find_last views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         auto iv = views::iota(1, 30);
         auto ri = raze::algorithm::find_last(iv, 17);
@@ -336,7 +334,6 @@ RTTS_CASE("raze::algorithm::find_last views and edge cases") {
         RTTS_EXPECT(rn.begin() == sn.begin() && rn.end() == sn.end());
     }
 
-    // Empty, 1-elem, volatile, rvalue dangling, member projection
     {
         std::vector<int> empty_v;
         auto er = raze::algorithm::find_last(empty_v, 1);
@@ -354,4 +351,4 @@ RTTS_CASE("raze::algorithm::find_last views and edge cases") {
         auto ir = raze::algorithm::find_last(items, 5, &rtts::test_item::key);
         RTTS_EXPECT(ir.begin() == items.begin() + 2 && ir.begin()->payload == 3);
     }
-};
+};

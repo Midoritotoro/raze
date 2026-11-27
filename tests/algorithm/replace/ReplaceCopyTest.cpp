@@ -136,12 +136,10 @@ RTTS_CASE_TPL("raze::algorithm::replace_copy.projection", rtts::algorithm::all_t
     static_assert(check_ce_range(replace_copy[opt::fautovec][opt::aligned<64, opt::unaligned>]));
 };
 
-
 RTTS_CASE("raze::algorithm::replace_copy views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         const std::vector<int> src = { 1, 2, 3, 2, 4, 2, 5, 6, 2, 7, 8, 2, 9, 10 };
 
@@ -162,7 +160,6 @@ RTTS_CASE("raze::algorithm::replace_copy views and edge cases") {
         RTTS_EXPECT(nc1 == nc2);
     }
 
-    // Output iterators: back_inserter, front_inserter, inserter (with aligned, fstatic, fautovec, fscalar)
     {
         const std::vector<int> src = { 1, 2, 3, 2, 4, 2, 5 };
         std::vector<int> expected = { 1, 9, 3, 9, 4, 9, 5 };
@@ -185,14 +182,12 @@ RTTS_CASE("raze::algorithm::replace_copy views and edge cases") {
         std::ranges::replace_copy(src, std::inserter(i2, i2.begin() + 1), 2, 9);
         RTTS_EXPECT(i1 == i2);
 
-        // Single-pass input range
         rtts::single_pass_input_range<int> spr(src);
         std::vector<int> sp_out;
         raze::algorithm::replace_copy(spr, std::back_inserter(sp_out), 2, 9);
         RTTS_EXPECT(sp_out == expected && spr.reads() == src.size());
     }
 
-    // Self-aliasing (in-place), volatile, empty, 1-elem, rvalue dangling, member projection
     {
         std::vector<int> inplace = { 1, 2, 3, 2, 4, 2, 5, 2, 6, 2, 7, 2, 8, 2, 9, 2, 10 };
         auto exp = inplace;
@@ -216,4 +211,4 @@ RTTS_CASE("raze::algorithm::replace_copy views and edge cases") {
         raze::algorithm::replace_copy(items, std::back_inserter(out_items), 1, rtts::test_item{ 9, 90 }, &rtts::test_item::key);
         RTTS_EXPECT(out_items.size() == 3 && out_items[0].key == 9 && out_items[1].key == 2 && out_items[2].key == 9);
     }
-};
+};

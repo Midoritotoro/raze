@@ -125,7 +125,6 @@ RTTS_CASE("raze::algorithm::min projections, ties, views, chunking, and edge cas
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Non-identity projection MUST return original value, NOT projected value!
     {
         const std::vector<int> v = { 10, 30, 20, 50, 40 };
         auto neg_proj = [](int x) { return -x; };
@@ -141,22 +140,20 @@ RTTS_CASE("raze::algorithm::min projections, ties, views, chunking, and edge cas
         auto ri = raze::algorithm::min(items, std::less<>{}, &rtts::test_item::key);
         RTTS_EXPECT(ri.has_value());
         RTTS_EQUAL(ri->key, 2);
-        RTTS_EQUAL(ri->payload, 10); // First minimum!
+        RTTS_EQUAL(ri->payload, 10);
     }
 
-    // Custom vectorizable comparator with equivalence classes (first minimum preserved!)
     {
         auto mask_low = [](auto a, auto b) { return (a & 0xFF) < (b & 0xFF); };
         std::vector<int> v(130, 0x0010);
-        v[17] = 0x1105; // first with low byte == 5
-        v[85] = 0x2205; // second with low byte == 5
-        v[129] = 0x3305; // tail with low byte == 5
+        v[17] = 0x1105;
+        v[85] = 0x2205;
+        v[129] = 0x3305;
         auto r = raze::algorithm::min(v, mask_low);
         RTTS_EXPECT(r.has_value());
         RTTS_EQUAL(*r, 0x1105);
     }
 
-    // Large u8 chunking (> 255 * 64 elements) with custom vectorizable comparator
     {
         auto custom_cmp = [](auto a, auto b) { return a < b; };
         std::vector<uint8_t> big(20000, 200);
@@ -165,7 +162,6 @@ RTTS_CASE("raze::algorithm::min projections, ties, views, chunking, and edge cas
         RTTS_EQUAL(raze::algorithm::min(big, custom_cmp), std::optional<uint8_t>(7));
     }
 
-    // Views and single-pass input range
     {
         RTTS_EQUAL(raze::algorithm::min(views::iota(5, 50)), std::optional<int>(5));
         RTTS_EQUAL(raze::algorithm::min(views::iota(5, 50) | views::reverse), std::optional<int>(5));
@@ -181,7 +177,6 @@ RTTS_CASE("raze::algorithm::min projections, ties, views, chunking, and edge cas
         RTTS_EQUAL(sp.reads(), src.size());
     }
 
-    // Empty, single element, volatile, non-default-constructible
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(!raze::algorithm::min(empty_v).has_value());

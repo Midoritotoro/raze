@@ -77,10 +77,8 @@ namespace {
             for (size_t i = 0; i < h_len; ++i)
                 haystack[i] = static_cast<T>((i % 97) + 1);
 
-            // Empty needle -> ALWAYS true (even when haystack is empty!)
             check_contains_subrange_variants(haystack, std::vector<T>{});
 
-            // Needle longer than haystack -> ALWAYS false
             std::vector<T> longer(h_len + 1, T(1));
             for (size_t i = 0; i < h_len; ++i)
                 longer[i] = haystack[i];
@@ -182,7 +180,6 @@ namespace {
             [make_sub, eq_branching](auto c) { return raze::algorithm::contains_subrange[opt::fautovec][opt::fstatic](c.range(), make_sub(c), eq_branching); },
             [make_sub, eq_branching](auto c) { return ref_contains_subrange(c.range(), make_sub(c), eq_branching); });
 
-        // Aligned tests
         {
             auto acfg = config::compact();
 
@@ -228,7 +225,6 @@ namespace {
             }
         }
 
-        // Constexpr tests
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::contains_subrange(c.range(), c.range()); },
             [](auto c) { return ref_contains_subrange(c.range(), c.range()); }));
@@ -282,7 +278,6 @@ RTTS_CASE_TPL("raze::algorithm::contains_subrange fuzz", rtts::algorithm::all_ty
 RTTS_CASE("raze::algorithm::contains_subrange structs, projections, rvalues, FP and predicates") {
     namespace opt = raze::options;
 
-    // Rvalue ranges MUST work cleanly and return bool (NOT std::ranges::dangling!)
     {
         auto b1 = raze::algorithm::contains_subrange(std::vector<int32_t>{ 1, 2, 3, 4, 5 }, std::vector<int32_t>{ 3, 4 });
         auto b2 = raze::algorithm::contains_subrange(std::vector<int32_t>{ 1, 2, 3, 4, 5 }, std::vector<int32_t>{ 3, 9 });
@@ -293,7 +288,6 @@ RTTS_CASE("raze::algorithm::contains_subrange structs, projections, rvalues, FP 
         RTTS_EXPECT(b3);
     }
 
-    // Floating-point -0.0 / +0.0 / NaN
     {
         const double nan = std::numeric_limits<double>::quiet_NaN();
         std::vector<double> dh(40, 1.0);
@@ -307,7 +301,6 @@ RTTS_CASE("raze::algorithm::contains_subrange structs, projections, rvalues, FP 
         RTTS_EXPECT(!raze::algorithm::contains_subrange(dh, dnan));
     }
 
-    // Projections, structs, strings, custom predicates
     {
         const std::vector<contains_subrange_item> input{
             { 1, 10 }, { 2, 20 }, { 3, 30 }, { 4, 40 }
@@ -334,7 +327,6 @@ RTTS_CASE("raze::algorithm::contains_subrange views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, non-common
     {
         auto iv = views::iota(1, 50);
         auto sub = views::iota(20, 30);
@@ -351,7 +343,6 @@ RTTS_CASE("raze::algorithm::contains_subrange views and edge cases") {
         RTTS_EXPECT(raze::algorithm::contains_subrange(src | views::reverse, std::vector<int>{ 12, 10, 8 }));
     }
 
-    // Non-contiguous containers, empty, volatile, member projection
     {
         const std::list<int> lst{ 1, 2, 3, 4, 5 };
         const std::forward_list<int> flst{ 3, 4 };
@@ -372,4 +363,3 @@ RTTS_CASE("raze::algorithm::contains_subrange views and edge cases") {
         RTTS_EXPECT(raze::algorithm::contains_subrange(i1, i2, std::equal_to<>{}, &rtts::test_item::key, &rtts::test_item::key));
     }
 };
-

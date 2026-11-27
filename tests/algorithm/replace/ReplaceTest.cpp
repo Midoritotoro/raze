@@ -131,12 +131,10 @@ RTTS_CASE_TPL("raze::algorithm::replace.projection", rtts::algorithm::all_types)
     static_assert(check_ce_range(replace[opt::fautovec][opt::aligned<64>]));
 };
 
-
 RTTS_CASE("raze::algorithm::replace views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Writable views: take, drop, counted, span, reverse, filter, non-common
     {
         std::vector<int> v1 = { 1, 2, 3, 2, 4, 2, 5, 2, 6, 2, 7, 2, 8, 2, 9, 2, 10, 2, 11, 2 };
         auto v2 = v1;
@@ -163,7 +161,6 @@ RTTS_CASE("raze::algorithm::replace views and edge cases") {
         RTTS_EXPECT(v1 == v2);
     }
 
-    // Empty, 1-elem, volatile, pointer-to-member projection, constexpr views
     {
         std::vector<int> empty_v;
         raze::algorithm::replace(empty_v, 1, 2);
@@ -188,4 +185,4 @@ RTTS_CASE("raze::algorithm::replace views and edge cases") {
         raze::algorithm::replace[opt::fautovec][opt::fstatic](a | views::drop(1) | views::take(4), 2, 9);
         return a[0] == 1 && a[1] == 9 && a[3] == 9 && a[5] == 2;
     }());
-};
+};

@@ -433,12 +433,10 @@ RTTS_CASE("raze::algorithm::rotate sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::rotate views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Writable views: take, drop, reverse, filter, non-common
     {
         std::vector<int> v1(35);
         std::iota(v1.begin(), v1.end(), 1);
@@ -470,7 +468,6 @@ RTTS_CASE("raze::algorithm::rotate views and edge cases") {
         RTTS_EXPECT(v1 == v2);
     }
 
-    // Empty, 1-elem, middle == first, middle == last, volatile, rvalue dangling
     {
         std::vector<int> empty_v;
         auto er = raze::algorithm::rotate(empty_v, empty_v.begin());
@@ -496,4 +493,4 @@ RTTS_CASE("raze::algorithm::rotate views and edge cases") {
         auto rval = raze::algorithm::rotate(std::move(tmp), mid);
         static_assert(std::same_as<decltype(rval), std::ranges::dangling>);
     }
-};
+};

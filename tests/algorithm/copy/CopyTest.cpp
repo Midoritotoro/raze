@@ -245,12 +245,10 @@ RTTS_CASE("raze::algorithm::copy memcpy size boundaries") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::copy views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, counted, chained, non-common
     {
         const std::vector<int> src = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20 };
 
@@ -283,7 +281,6 @@ RTTS_CASE("raze::algorithm::copy views and edge cases") {
         RTTS_EXPECT(nc1 == nc2);
     }
 
-    // Output iterators: back_inserter, front_inserter, inserter (with options & aligned)
     {
         const std::vector<int> src(45, 7);
         std::vector<int> b1, b2, b3, b4, b5;
@@ -312,7 +309,6 @@ RTTS_CASE("raze::algorithm::copy views and edge cases") {
         RTTS_EXPECT(empty_dst.empty());
     }
 
-    // Single-pass input range -> back_inserter and contiguous dst
     {
         const std::vector<int> data = { 9, 8, 7, 6, 5, 4 };
         rtts::single_pass_input_range<int> sp1(data);
@@ -326,7 +322,6 @@ RTTS_CASE("raze::algorithm::copy views and edge cases") {
         RTTS_EXPECT(out2 == data && sp2.reads() == data.size());
     }
 
-    // Volatile src/dst, non-borrowed rvalue (dangling), constexpr views
     {
         volatile int vsrc[16];
         volatile int vdst[16];

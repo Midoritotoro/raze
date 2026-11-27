@@ -150,12 +150,10 @@ RTTS_CASE("raze::algorithm::swap_ranges structs") {
     static_assert(check_ce.template operator()<tc_struct_8>());
 };
 
-
 RTTS_CASE("raze::algorithm::swap_ranges views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Writable views: take, drop, reverse, filter, non-common
     {
         std::vector<int> a1(24), b1(24);
         std::iota(a1.begin(), a1.end(), 1);
@@ -176,7 +174,6 @@ RTTS_CASE("raze::algorithm::swap_ranges views and edge cases") {
         RTTS_EXPECT(a1 == a2 && b1 == b2);
     }
 
-    // Mismatched lengths, empty, 1-elem, volatile, rvalue dangling
     {
         std::vector<int> s1 = { 1, 2, 3, 4, 5 }, l1 = { 10, 20, 30, 40, 50, 60, 70, 80, 90 };
         auto s2 = s1, l2 = l1;
@@ -199,4 +196,4 @@ RTTS_CASE("raze::algorithm::swap_ranges views and edge cases") {
         static_assert(std::same_as<decltype(rv.in1), std::ranges::dangling>);
         static_assert(std::same_as<decltype(rv.in2), std::ranges::dangling>);
     }
-};
+};

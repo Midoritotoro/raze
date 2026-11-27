@@ -206,12 +206,10 @@ RTTS_CASE("raze::algorithm::reverse bidirectional") {
     RTTS_EXPECT(v == exp);
 };
 
-
 RTTS_CASE("raze::algorithm::reverse views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Writable views: take, drop, reverse, filter, non-common
     {
         std::vector<int> v1(35);
         std::iota(v1.begin(), v1.end(), 1);
@@ -235,7 +233,6 @@ RTTS_CASE("raze::algorithm::reverse views and edge cases") {
         RTTS_EXPECT(v1 == v2);
     }
 
-    // Empty, 1-elem, 2-elem, volatile, rvalue dangling
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::reverse(empty_v) == empty_v.end());
@@ -255,4 +252,4 @@ RTTS_CASE("raze::algorithm::reverse views and edge cases") {
         auto rv = raze::algorithm::reverse(std::vector<int>{ 1, 2, 3 });
         static_assert(std::same_as<decltype(rv), std::ranges::dangling>);
     }
-};
+};

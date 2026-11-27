@@ -63,10 +63,8 @@ namespace {
             for (size_t i = 0; i < h_len; ++i)
                 haystack[i] = static_cast<T>((i % 97) + 1);
 
-            // Empty needle -> {end, end} (C++20 find_end semantics!)
             check_find_end_variants(haystack, std::vector<T>{});
 
-            // Needle longer than haystack -> {end, end}
             std::vector<T> longer(h_len + 1, T(1));
             for (size_t i = 0; i < h_len; ++i)
                 longer[i] = haystack[i];
@@ -75,10 +73,8 @@ namespace {
             if (h_len == 0)
                 continue;
 
-            // Exact full-range match (including huge H == N -> exercises verify_tail_long)
             check_find_end_variants(haystack, haystack);
 
-            // Full-range mismatch at first, middle, and last
             {
                 auto bad = haystack;
                 bad[h_len / 2] = T(0);
@@ -116,7 +112,6 @@ namespace {
                     check_find_end_variants(haystack, pat);
                 }
 
-                // Missing pattern with matching endpoints
                 std::vector<T> miss(p_len, T(0));
                 miss[0] = haystack[0];
                 miss[p_len - 1] = haystack[p_len - 1];
@@ -128,14 +123,12 @@ namespace {
     template <class T>
     void find_end_decoys_and_overlaps() {
         for (size_t h_len : { size_t(16), size_t(33), size_t(65), size_t(131), size_t(260) }) {
-            // Overlapping runs -> MUST return the LAST occurrence [h_len - p_len, h_len)
             std::vector<T> all_same(h_len, T(7));
             for (size_t p_len : { size_t(1), size_t(2), size_t(4), size_t(17), size_t(65) }) {
                 if (p_len <= h_len)
                     check_find_end_variants(all_same, std::vector<T>(p_len, T(7)));
             }
 
-            // Periodic overlapping pattern
             std::vector<T> periodic(h_len);
             for (size_t i = 0; i < h_len; ++i)
                 periodic[i] = (i % 2 == 0) ? T(1) : T(2);
@@ -146,7 +139,6 @@ namespace {
                 }
             }
 
-            // False-positive endpoints AFTER real match (right-to-left scan hits decoys first!)
             for (size_t p_len : { size_t(3), size_t(4), size_t(10), size_t(19), size_t(35), size_t(67) }) {
                 if (p_len + 4 > h_len)
                     continue;
@@ -159,7 +151,6 @@ namespace {
                 for (size_t k = 0; k < p_len; ++k)
                     h[real_pos + k] = pat[k];
 
-                // Decoy near the end (matches everything except middle element)
                 const size_t decoy_pos = h_len - p_len - 1;
                 if (decoy_pos >= real_pos + p_len) {
                     for (size_t k = 0; k < p_len; ++k)
@@ -169,7 +160,6 @@ namespace {
 
                 check_find_end_variants(h, pat);
 
-                // Break real match too -> 100% endpoint hits, 0 matches
                 h[real_pos + p_len / 2] = T(4);
                 check_find_end_variants(h, pat);
             }
@@ -254,7 +244,6 @@ namespace {
             [make_sub, eq_branching](auto c) { return raze::algorithm::find_end[opt::fautovec][opt::fstatic](c.range(), make_sub(c), eq_branching); },
             [make_sub, eq_branching](auto c) { return std::ranges::find_end(c.range(), make_sub(c), eq_branching); });
 
-        // Aligned tests
         {
             auto acfg = config::compact();
 
@@ -311,7 +300,6 @@ namespace {
             }
         }
 
-        // Constexpr tests
         static_assert(constexpr_run<T, range, 0>(
             [](auto c) { return raze::algorithm::find_end(c.range(), c.range()); },
             [](auto c) { return std::ranges::find_end(c.range(), c.range()); }));
@@ -383,7 +371,6 @@ RTTS_CASE("raze::algorithm::find_end floating point -0.0 and NaN") {
 
         for (size_t sz : { size_t(8), size_t(36), size_t(70) }) {
             std::vector<F> hay(sz, F(1.0));
-            // Two matches: one near start, one near end — find_end must pick the LAST
             for (size_t k = 0; k < 4; ++k) {
                 hay[k] = neg0;
                 hay[sz - 4 + k] = neg0;
@@ -430,7 +417,6 @@ RTTS_CASE("raze::algorithm::find_end floating point -0.0 and NaN") {
 RTTS_CASE("raze::algorithm::find_end predicates, projections, containers and structs") {
     namespace opt = raze::options;
 
-    // Custom vectorizable predicates
     {
         std::vector<int32_t> hay(100);
         for (size_t i = 0; i < hay.size(); ++i) hay[i] = static_cast<int32_t>(i);
@@ -454,7 +440,6 @@ RTTS_CASE("raze::algorithm::find_end predicates, projections, containers and str
         check_pred([](auto a, auto b) { return (a & 7) == (b & 7); });
     }
 
-    // Projections & structs
     {
         const std::vector<find_end_item> items{
             { 1, 10 }, { 2, 20 }, { 3, 30 }, { 2, 40 }, { 3, 50 }, { 4, 60 }
@@ -475,7 +460,6 @@ RTTS_CASE("raze::algorithm::find_end predicates, projections, containers and str
         RTTS_EXPECT(sr.begin() == s.begin() + 7 && sr.end() == s.end());
     }
 
-    // Non-contiguous & mixed containers (tests random+sized, bidirectional common, and forward fallbacks!)
     {
         const std::vector<int> vec{ 1, 2, 3, 4, 2, 3, 5, 2, 3 };
         const std::deque<int> deq(vec.begin(), vec.end());
@@ -509,7 +493,6 @@ RTTS_CASE("raze::algorithm::find_end predicates, projections, containers and str
         check_c(vec, pat_flst);
     }
 
-    // Static std::array constexpr_sized_source runtime path
     {
         std::array<int, 64> h{};
         for (size_t i = 0; i < h.size(); ++i) h[i] = static_cast<int>(i % 16);
@@ -524,7 +507,6 @@ RTTS_CASE("raze::algorithm::find_end views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, non-common
     {
         auto iv = views::iota(0, 64);
         auto pv = views::iota(30, 35);
@@ -558,7 +540,6 @@ RTTS_CASE("raze::algorithm::find_end views and edge cases") {
         auto s5 = std::ranges::find_end(nc_h, nc_p);
         RTTS_EXPECT(r5.begin() == s5.begin() && r5.end() == s5.end());
 
-        // Non-common empty needle -> {end, end}
         std::vector<int> empty_v;
         auto nc_e = rtts::make_non_common(empty_v);
         auto r6 = raze::algorithm::find_end(nc_h, nc_e);
@@ -566,7 +547,6 @@ RTTS_CASE("raze::algorithm::find_end views and edge cases") {
         RTTS_EXPECT(r6.begin() == s6.begin() && r6.end() == s6.end());
     }
 
-    // Volatile, rvalue dangling, member projection
     {
         volatile int vh[20], vp[3];
         for (int i = 0; i < 20; ++i) vh[i] = i % 5;
@@ -586,4 +566,3 @@ RTTS_CASE("raze::algorithm::find_end views and edge cases") {
         RTTS_EXPECT(ir.begin() == i1.begin() + 3 && ir.end() == i1.begin() + 5);
     }
 };
-

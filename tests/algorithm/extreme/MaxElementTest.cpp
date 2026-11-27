@@ -108,7 +108,6 @@ RTTS_CASE("raze::algorithm::max_element chunking, signed zero, views, dangling, 
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Multi-portion chunking for u8 / int8_t (> 255 * 64 elements!)
     {
         const size_t N = 20000;
         for (size_t pos : { size_t(0), size_t(254 * 16), size_t(255 * 16), size_t(255 * 32),
@@ -116,7 +115,7 @@ RTTS_CASE("raze::algorithm::max_element chunking, signed zero, views, dangling, 
         {
             std::vector<uint8_t> v(N, 10);
             v[pos] = 250;
-            if (pos + 100 < N) v[pos + 100] = 250; // duplicate after true first max!
+            if (pos + 100 < N) v[pos + 100] = 250;
             auto got = raze::algorithm::max_element(v);
             RTTS_EQUAL(static_cast<size_t>(got - v.begin()), pos);
 
@@ -128,7 +127,6 @@ RTTS_CASE("raze::algorithm::max_element chunking, signed zero, views, dangling, 
         }
     }
 
-    // -0.0f / +0.0f tie-breaking: MUST return iterator to FIRST zero!
     {
         std::vector<float> vf(64, -1.0f);
         vf[13] = -0.0f;
@@ -140,7 +138,6 @@ RTTS_CASE("raze::algorithm::max_element chunking, signed zero, views, dangling, 
         RTTS_EQUAL(raze::algorithm::max_element(vf) - vf.begin(), 13);
     }
 
-    // Projections, views, dangling, volatile, empty
     {
         const std::vector<rtts::test_item> items = { { 5, 1 }, { 9, 10 }, { 9, 20 }, { 2, 3 } };
         auto it = raze::algorithm::max_element(items, std::less<>{}, &rtts::test_item::key);
@@ -152,7 +149,7 @@ RTTS_CASE("raze::algorithm::max_element chunking, signed zero, views, dangling, 
 
         auto rview = src | views::reverse;
         RTTS_EQUAL(*raze::algorithm::max_element(rview), 9);
-        RTTS_EQUAL(raze::algorithm::max_element(rview) - rview.begin(), 2); // index 5 in src == index 2 in reverse!
+        RTTS_EQUAL(raze::algorithm::max_element(rview) - rview.begin(), 2);
 
         auto nc = rtts::make_non_common(src);
         RTTS_EQUAL(raze::algorithm::max_element[opt::fstatic](nc) - src.begin(), 1);
@@ -168,4 +165,3 @@ RTTS_CASE("raze::algorithm::max_element chunking, signed zero, views, dangling, 
         RTTS_EQUAL(raze::algorithm::max_element(vbuf, vbuf + 16) - vbuf, 2);
     }
 };
-

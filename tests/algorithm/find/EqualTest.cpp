@@ -323,12 +323,10 @@ RTTS_CASE("raze::algorithm::equal sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::equal views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Pairs of views: iota, take, drop, reverse, filter, transform, non-common
     {
         const std::vector<int> a = { 2, 4, 6, 8, 10, 12, 14, 16, 18, 20 };
         auto tv = views::iota(1, 11) | views::transform([](int x) { return x * 2; });
@@ -344,7 +342,6 @@ RTTS_CASE("raze::algorithm::equal views and edge cases") {
         RTTS_EXPECT(raze::algorithm::equal(rtts::make_non_common(a), fv));
     }
 
-    // Mismatched lengths, empty, single-pass input ranges, volatile, member projections
     {
         const std::vector<int> s = { 1, 2, 3 };
         const std::vector<int> l = { 1, 2, 3, 4 };

@@ -279,12 +279,10 @@ RTTS_CASE("raze::algorithm::count_if sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::count_if views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         auto pred_branch = [](auto x) { if ((x % 3) == 0) return true; return false; };
         RTTS_EXPECT(raze::algorithm::count_if[opt::fautovec][opt::fstatic](views::iota(1, 31), pred_branch) ==
@@ -298,7 +296,6 @@ RTTS_CASE("raze::algorithm::count_if views and edge cases") {
         RTTS_EXPECT(raze::algorithm::count_if(rtts::make_non_common(src), [](auto x) { return x < 0; }) == 3);
     }
 
-    // Empty, 1-elem, single-pass, volatile, member projection
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::count_if(empty_v, [](auto x) { return x > 0; }) == 0);
@@ -314,4 +311,4 @@ RTTS_CASE("raze::algorithm::count_if views and edge cases") {
         const std::vector<rtts::test_item> items = { { 1, 10 }, { 5, 50 }, { 6, 60 }, { 2, 20 } };
         RTTS_EXPECT(raze::algorithm::count_if(items, [](int k) { return k >= 5; }, &rtts::test_item::key) == 2);
     }
-};
+};

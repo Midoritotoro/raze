@@ -130,7 +130,6 @@ namespace {
             RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::fscalar](input.begin(), input.end(), vec_pred) == exp_it);
             RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::fstatic](input, vec_pred) == exp_it);
 
-            // Гарантированный промах (все элементы == keep)
             std::vector<T> all_keep(n, keep);
             RTTS_EXPECT(raze::algorithm::find_if_not(all_keep, vec_pred) == all_keep.end());
             RTTS_EXPECT(raze::algorithm::find_if_not[raze::options::fscalar](all_keep, vec_pred) == all_keep.end());
@@ -301,12 +300,10 @@ RTTS_CASE("raze::algorithm::find_if_not sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::find_if_not views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         auto pred_branch = [](auto x) { if (x < 20) return true; return false; };
         auto iv = views::iota(1, 40);
@@ -325,7 +322,6 @@ RTTS_CASE("raze::algorithm::find_if_not views and edge cases") {
         RTTS_EXPECT(raze::algorithm::find_if_not(nc, [](auto x) { return (x & 1) == 0; }) == std::ranges::find_if_not(nc, [](int x) { return (x & 1) == 0; }));
     }
 
-    // Empty, 1-elem, single-pass input range, volatile, rvalue dangling, member projection
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::find_if_not(empty_v, [](auto x) { return x > 0; }) == empty_v.end());
@@ -345,4 +341,4 @@ RTTS_CASE("raze::algorithm::find_if_not views and edge cases") {
         const std::vector<rtts::test_item> items = { { 2, 10 }, { 4, 20 }, { 5, 30 } };
         RTTS_EXPECT(raze::algorithm::find_if_not(items, [](int k) { return (k & 1) == 0; }, &rtts::test_item::key) == items.begin() + 2);
     }
-};
+};

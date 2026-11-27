@@ -296,12 +296,10 @@ RTTS_CASE("raze::algorithm::adjacent_find sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::adjacent_find views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         auto iv = views::iota(1, 30);
         RTTS_EXPECT(raze::algorithm::adjacent_find(iv) == iv.end());
@@ -324,7 +322,6 @@ RTTS_CASE("raze::algorithm::adjacent_find views and edge cases") {
         RTTS_EXPECT(raze::algorithm::adjacent_find(nc) == std::ranges::adjacent_find(nc));
     }
 
-    // Empty, 1-elem, 2-elem, volatile, rvalue dangling, member projection
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::adjacent_find(empty_v) == empty_v.end());
@@ -343,4 +340,4 @@ RTTS_CASE("raze::algorithm::adjacent_find views and edge cases") {
         const std::vector<rtts::test_item> items = { { 1, 10 }, { 2, 20 }, { 2, 99 }, { 3, 30 } };
         RTTS_EXPECT(raze::algorithm::adjacent_find(items, std::equal_to<>{}, &rtts::test_item::key) == items.begin() + 1);
     }
-};
+};

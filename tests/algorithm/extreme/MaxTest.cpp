@@ -125,7 +125,6 @@ RTTS_CASE("raze::algorithm::max projections, ties, views, chunking, and edge cas
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Non-identity projection MUST return original value, NOT projected value!
     {
         const std::vector<int> v = { 10, 30, 20, 50, 40 };
         auto neg_proj = [](int x) { return -x; };
@@ -141,22 +140,20 @@ RTTS_CASE("raze::algorithm::max projections, ties, views, chunking, and edge cas
         auto ri = raze::algorithm::max(items, std::less<>{}, &rtts::test_item::key);
         RTTS_EXPECT(ri.has_value());
         RTTS_EQUAL(ri->key, 9);
-        RTTS_EQUAL(ri->payload, 10); // First maximum!
+        RTTS_EQUAL(ri->payload, 10);
     }
 
-    // Custom vectorizable comparator with equivalence classes (first maximum preserved!)
     {
         auto mask_low = [](auto a, auto b) { return (a & 0xFF) < (b & 0xFF); };
         std::vector<int> v(130, 0x0010);
-        v[19] = 0x11F0; // first max
-        v[87] = 0x22F0; // second max
-        v[129] = 0x33F0; // tail max
+        v[19] = 0x11F0;
+        v[87] = 0x22F0;
+        v[129] = 0x33F0;
         auto r = raze::algorithm::max(v, mask_low);
         RTTS_EXPECT(r.has_value());
         RTTS_EQUAL(*r, 0x11F0);
     }
 
-    // Large u8 chunking (> 255 * 64 elements)
     {
         auto custom_cmp = [](auto a, auto b) { return a < b; };
         std::vector<uint8_t> big(20000, 10);
@@ -165,7 +162,6 @@ RTTS_CASE("raze::algorithm::max projections, ties, views, chunking, and edge cas
         RTTS_EQUAL(raze::algorithm::max(big, custom_cmp), std::optional<uint8_t>(250));
     }
 
-    // Views and single-pass input range
     {
         RTTS_EQUAL(raze::algorithm::max(views::iota(5, 50)), std::optional<int>(49));
         RTTS_EQUAL(raze::algorithm::max(views::iota(5, 50) | views::reverse), std::optional<int>(49));
@@ -181,7 +177,6 @@ RTTS_CASE("raze::algorithm::max projections, ties, views, chunking, and edge cas
         RTTS_EQUAL(sp.reads(), src.size());
     }
 
-    // Empty, single element, volatile, non-default-constructible
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(!raze::algorithm::max(empty_v).has_value());

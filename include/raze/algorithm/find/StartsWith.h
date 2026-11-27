@@ -36,7 +36,7 @@ struct starts_with_t : Traits {
 
         auto sent2 = std::ranges::end(r2);
 
-        return algorithm::mismatch[Traits::traits()](std::forward<R1>(r1), std::forward<R2>(r2),
+        return algorithm::mismatch[Traits::traits()](r1, r2,
             traits::fwd_fn(pred), traits::fwd_fn(proj1), traits::fwd_fn(proj2)).in2 == sent2;
     }
 };

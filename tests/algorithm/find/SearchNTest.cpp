@@ -180,12 +180,10 @@ RTTS_CASE("raze::algorithm::search_n structs, projections and predicates") {
     RTTS_EXPECT(wres.begin() == words.begin() + 1 && wres.end() == words.begin() + 4);
 };
 
-
 RTTS_CASE("raze::algorithm::search_n views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, non-common
     {
         auto tv = views::iota(0, 30) | views::transform([](int x) { return x / 4; });
         auto rt = raze::algorithm::search_n(tv, 4, 3);
@@ -215,7 +213,6 @@ RTTS_CASE("raze::algorithm::search_n views and edge cases") {
         RTTS_EXPECT(rn.begin() == sn.begin() && rn.end() == sn.end());
     }
 
-    // Empty, count == 0, count < 0, count > size, count == 1, volatile, rvalue dangling, member projection
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::search_n(empty_v, 0, 1).begin() == empty_v.begin());
@@ -240,4 +237,4 @@ RTTS_CASE("raze::algorithm::search_n views and edge cases") {
         auto ir = raze::algorithm::search_n(items, 3, 5, std::equal_to<>{}, &rtts::test_item::key);
         RTTS_EXPECT(ir.begin() == items.begin() + 1 && ir.end() == items.begin() + 4);
     }
-};
+};

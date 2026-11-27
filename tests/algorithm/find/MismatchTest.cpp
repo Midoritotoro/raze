@@ -337,12 +337,10 @@ RTTS_CASE("raze::algorithm::mismatch sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::mismatch views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Pairs of views: iota, take, drop, reverse, filter, transform, non-common
     {
         const std::vector<int> a = { 2, 4, 6, 8, 99, 12, 14 };
         auto tv = views::iota(1, 10) | views::transform([](int x) { return x * 2; });
@@ -363,7 +361,6 @@ RTTS_CASE("raze::algorithm::mismatch views and edge cases") {
         RTTS_EXPECT(rn.in1 == sn.in1 && rn.in2 == sn.in2);
     }
 
-    // Mismatched lengths, empty, single-pass early exit, volatile, rvalue dangling, member projections
     {
         const std::vector<int> s = { 1, 2, 3 };
         const std::vector<int> l = { 1, 2, 3, 4, 5 };
@@ -394,4 +391,4 @@ RTTS_CASE("raze::algorithm::mismatch views and edge cases") {
         auto ip = raze::algorithm::mismatch(i1, i2, std::equal_to<>{}, &rtts::test_item::key, &rtts::test_item::key);
         RTTS_EXPECT(ip.in1 == i1.begin() + 2 && ip.in2 == i2.begin() + 2);
     }
-};
+};

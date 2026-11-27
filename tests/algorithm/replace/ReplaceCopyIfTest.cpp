@@ -189,12 +189,10 @@ RTTS_CASE_TPL("raze::algorithm::replace_copy_if.projection", rtts::algorithm::al
     static_assert(check_ce_range(replace_copy_if[opt::fautovec][opt::aligned<64, opt::unaligned>], [](auto x) constexpr { if (x > T(2)) return true; return false; }));
 };
 
-
 RTTS_CASE("raze::algorithm::replace_copy_if views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         const std::vector<int> src = { -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
         auto neg_branch = [](auto x) { if (x < 0) return true; return false; };
@@ -216,7 +214,6 @@ RTTS_CASE("raze::algorithm::replace_copy_if views and edge cases") {
         RTTS_EXPECT(nc1 == nc2);
     }
 
-    // Output iterators: back_inserter, front_inserter, inserter, single-pass
     {
         const std::vector<int> src = { -2, -1, 0, 1, 2, 3 };
         auto is_neg = [](auto x) { return x < 0; };
@@ -246,7 +243,6 @@ RTTS_CASE("raze::algorithm::replace_copy_if views and edge cases") {
         RTTS_EXPECT(sp_out == expected && spr.reads() == src.size());
     }
 
-    // Self-aliasing, volatile, rvalue dangling, member projection
     {
         std::vector<int> inplace = { -5, -1, 0, 2, -3, 4, -7, 8, -9, 10, -11, 12, -13, 14, -15, 16, -17 };
         auto exp = inplace;
@@ -270,4 +266,4 @@ RTTS_CASE("raze::algorithm::replace_copy_if views and edge cases") {
         raze::algorithm::replace_copy_if(items, std::back_inserter(out_items), [](int k) { return k > 5; }, rtts::test_item{ 0, 0 }, &rtts::test_item::key);
         RTTS_EXPECT(out_items.size() == 3 && out_items[1].key == 0 && out_items[0].key == 1);
     }
-};
+};

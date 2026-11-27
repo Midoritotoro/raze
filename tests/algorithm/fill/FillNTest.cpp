@@ -63,12 +63,10 @@ RTTS_CASE_TPL("raze::algorithm::fill_n", rtts::algorithm::all_types)
     static_assert(check_ce.template operator()<5>(raze::algorithm::fill_n[opt::aligned<64>]));
 };
 
-
 RTTS_CASE("raze::algorithm::fill_n views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Iterators from views: drop, reverse, filter
     {
         std::vector<int> v1(32, 0), v2(32, 0);
 
@@ -91,7 +89,6 @@ RTTS_CASE("raze::algorithm::fill_n views and edge cases") {
         RTTS_EXPECT(v1 == v2);
     }
 
-    // Output iterators: back_inserter, front_inserter, inserter (n <= 0, n == 1, n == 17)
     {
         std::vector<int> b0, b1, b2, b3, b4, b5;
         raze::algorithm::fill_n(std::back_inserter(b0), 0, 42);
@@ -117,7 +114,6 @@ RTTS_CASE("raze::algorithm::fill_n views and edge cases") {
         RTTS_EXPECT((ins == std::vector<int>{ 1, 5, 5, 5, 9 }));
     }
 
-    // Volatile buffers and non-pow2 large struct
     {
         volatile int vbuf[16];
         raze::algorithm::fill_n(vbuf, 16, 456);
@@ -137,4 +133,4 @@ RTTS_CASE("raze::algorithm::fill_n views and edge cases") {
         for (size_t i = 0; i < 4; ++i) RTTS_EXPECT(bigs[i] == target);
         RTTS_EXPECT(bigs[4] == big_item{});
     }
-};
+};

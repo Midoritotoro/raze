@@ -165,12 +165,10 @@ RTTS_CASE("raze::algorithm::remove_copy.mixed") {
     static_assert(check_ce.template operator()<int8_t, int16_t>());
 };
 
-
 RTTS_CASE("raze::algorithm::remove_copy views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         const std::vector<int> src = { 1, 2, 3, 2, 4, 2, 5, 6, 2, 7, 8, 2, 9, 10 };
 
@@ -191,7 +189,6 @@ RTTS_CASE("raze::algorithm::remove_copy views and edge cases") {
         RTTS_EXPECT(r3 == s3);
     }
 
-    // back_inserter, front_inserter, inserter, single-pass, non-destructive string copy, volatile, dangling, member proj
     {
         const std::vector<int> src = { 1, 2, 3, 2, 4, 2, 5 };
         const std::vector<int> expected = { 1, 3, 4, 5 };

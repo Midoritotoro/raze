@@ -115,12 +115,10 @@ RTTS_CASE_TPL("raze::algorithm::for_each_n.projection", rtts::algorithm::all_typ
     static_assert(check_ce(raze::algorithm::for_each_n[opt::fautovec][opt::aligned<64>], [](auto& x) constexpr { if (x > T(2)) x += T(10); }));
 };
 
-
 RTTS_CASE("raze::algorithm::for_each_n views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Iterators from views: take, drop, reverse, filter, transform, iota
     {
         std::vector<int> v1(32);
         std::iota(v1.begin(), v1.end(), 1);
@@ -159,7 +157,6 @@ RTTS_CASE("raze::algorithm::for_each_n views and edge cases") {
         RTTS_EXPECT(r_tr.fun.sum == s_tr.fun.sum);
     }
 
-    // n == 0, n == 1, single-pass input iterator, volatile, const, member projection
     {
         std::vector<int> v = { 10, 20, 30 };
         auto r0 = raze::algorithm::for_each_n(v.begin(), 0, [](auto& x) { x = 999; });

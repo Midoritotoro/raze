@@ -6,7 +6,6 @@
 #include <iterator>
 #include <vector>
 
-
 struct tc_struct_4 { int32_t x;           bool operator==(const tc_struct_4&)  const = default; };
 struct tc_struct_8 { int64_t x;           bool operator==(const tc_struct_8&)  const = default; };
 struct tc_struct_12 { int32_t a = 0, b = 0, c = 0; bool operator==(const tc_struct_12&) const = default; };
@@ -81,7 +80,7 @@ namespace {
         }
     }
 }
- 
+
 RTTS_CASE("compress tables sanity") {
     auto check = [](auto& tbl, int groups, int stride, int mult) {
         for (int mask = 0; mask < (1 << groups); ++mask) {
@@ -349,12 +348,10 @@ RTTS_CASE("raze::algorithm::copy_if structs fuzz") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::copy_if views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         const std::vector<int> src = { -5, -2, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
         auto gt3 = [](auto x) { return x > 3; };
@@ -383,7 +380,6 @@ RTTS_CASE("raze::algorithm::copy_if views and edge cases") {
         RTTS_EXPECT(r4 == s4);
     }
 
-    // Output iterators: back_inserter, front_inserter, inserter, single-pass, non-destructive string copy
     {
         const std::vector<int> src = { 1, 2, 3, 4, 5, 6, 7, 8 };
         auto is_even = [](auto x) { return (x & 1) == 0; };
@@ -403,7 +399,6 @@ RTTS_CASE("raze::algorithm::copy_if views and edge cases") {
         raze::algorithm::copy_if(spr, std::back_inserter(sp_out), is_even);
         RTTS_EXPECT((sp_out == std::vector<int>{ 2, 4, 6, 8 }) && spr.reads() == src.size());
 
-        // Ensure copy_if copies and does NOT move out of source
         std::vector<std::string> words = { "alpha", "be", "gamma", "delta" };
         std::vector<std::string> kept;
         raze::algorithm::copy_if(words, std::back_inserter(kept), [](const std::string& s) { return s.size() >= 5; });
@@ -411,7 +406,6 @@ RTTS_CASE("raze::algorithm::copy_if views and edge cases") {
         RTTS_EXPECT((words == std::vector<std::string>{ "alpha", "be", "gamma", "delta" }));
     }
 
-    // Volatile, empty, 1-elem, rvalue dangling, pointer-to-member projection
     {
         volatile int vsrc[16];
         volatile int vdst[16];

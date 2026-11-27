@@ -203,7 +203,6 @@ RTTS_CASE("raze::algorithm::copy_n partial count (n < distance)") {
             RTTS_EXPECT((r1.in - src.begin()) == (r2.in - src.begin()));
             RTTS_EXPECT((r1.out - d1.begin()) == (r2.out - d2.begin()));
 
-            // Скопировано ровно n элементов, guard-зона не тронута.
             for (size_t i = 0; i < n; ++i) RTTS_EXPECT(d1[i] == src[i]);
             for (size_t i = n; i < n + guard; ++i) RTTS_EXPECT(d1[i] == -1);
         }
@@ -311,12 +310,10 @@ static_assert(copy_n_static_array_partial_matches<int64_t, 33, 17>());
 static_assert(copy_n_static_array_partial_matches<uint8_t, 200, 129>());
 static_assert(copy_n_static_array_partial_matches<tc_nontrivial, 8, 3>());
 
-
 RTTS_CASE("raze::algorithm::copy_n views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views iterators: iota, drop, reverse, filter, transform
     {
         const std::vector<int> src = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
 
@@ -338,7 +335,6 @@ RTTS_CASE("raze::algorithm::copy_n views and edge cases") {
         RTTS_EXPECT(f1 == f2);
     }
 
-    // back_inserter, front_inserter, inserter, n == 0, n == 1, single-pass, volatile
     {
         const std::vector<int> src = { 10, 20, 30, 40, 50 };
         std::vector<int> b0, b1, b2, b3, b4;

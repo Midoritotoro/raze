@@ -275,7 +275,7 @@ RTTS_CASE("raze::algorithm::none_of structs and projections") {
     RTTS_EXPECT(raze::algorithm::none_of(words, [](const std::string& s) { return s == "omega"; }));
     RTTS_EXPECT(!raze::algorithm::none_of(words, [](const std::string& s) { return s.size() == 5 && s[0] == 'g'; }));
 };
- 
+
 RTTS_CASE("raze::algorithm::none_of sentinel") {
     {
         std::array<int, 3> empty_arr{ 42, 42, 42 };
@@ -298,12 +298,10 @@ RTTS_CASE("raze::algorithm::none_of sentinel") {
     }
 };
 
-
 RTTS_CASE("raze::algorithm::none_of views and edge cases") {
     namespace opt = raze::options;
     namespace views = std::views;
 
-    // Views: iota, take, drop, reverse, filter, transform, chained, non-common
     {
         RTTS_EXPECT(raze::algorithm::none_of(views::iota(1, 50), [](auto x) { return x < 0; }));
         RTTS_EXPECT(!raze::algorithm::none_of(views::iota(-1, 50), [](auto x) { return x < 0; }));
@@ -316,7 +314,6 @@ RTTS_CASE("raze::algorithm::none_of views and edge cases") {
         RTTS_EXPECT(raze::algorithm::none_of(rtts::make_non_common(src), [](auto x) { return x > 100; }));
     }
 
-    // Empty (vacuously true), 1-elem, single-pass early exit, volatile, member projection
     {
         std::vector<int> empty_v;
         RTTS_EXPECT(raze::algorithm::none_of(empty_v, [](auto x) { return x == 0; }));
@@ -333,4 +330,4 @@ RTTS_CASE("raze::algorithm::none_of views and edge cases") {
         const std::vector<rtts::test_item> items = { { 1, 10 }, { 3, 30 }, { 5, 50 } };
         RTTS_EXPECT(raze::algorithm::none_of(items, [](int k) { return (k & 1) == 0; }, &rtts::test_item::key));
     }
-};
+};
