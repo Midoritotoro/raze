@@ -280,3 +280,112 @@
  * @defgroup raze_vx_concepts SIMD Concepts
  * @brief Compile-time concepts, heuristics, and RAII helpers for `raze::vx` types.
  */
+
+/**
+ * @namespace raze::meta
+ * @brief Compile-time metaprogramming primitives and aggregate tuple utilities.
+ */
+
+/**
+ * @namespace raze::meta::literals
+ * @brief User-defined compile-time literal operators for `raze::meta` (inline namespace).
+ */
+
+/**
+ * @defgroup raze_meta Metaprogramming
+ * @brief Zero-overhead compile-time metaprogramming primitives and tuple facilities in `raze::meta`.
+ *
+ * Provides compile-time index and type tags, an ABI-friendly aggregate `raze::meta::tuple`
+ * with flat register-friendly storage and zero-copy reference views, and a full suite of
+ * `constexpr` tuple traits, visitation, queries, transformations, reductions, structural
+ * combinators, compile-time pattern permutations, type-level filters, and generators.
+ *
+ * ### Categories
+ *
+ * | Group | Entities |
+ * | :--- | :--- |
+ * | @ref raze_meta_tags | `index_t`, `index`, `type_t`, `type_v`, `literals::operator""_c` |
+ * | @ref raze_meta_tuple | `tuple`, `tuple<>`, `get`, `operator==`, `operator<=>`, `repeat_tuple_t`, `make_tuple_exact`, `make_tuple`, `tie`, `forward_as_tuple` |
+ * | @ref raze_meta_tuple_traits | `is_tuple_v`, `tuple_like`, `size_v`, `element_t`, `member_t`, `sized_tuple_like`, `non_empty_tuple_like`, `same_size_tuples`, `count_type_v`, `contains_type_v`, `type_index_v`, `all_unique_types_v`, `is_homogeneous_v`, `apply_traits_t`, `map_traits_t`, `as_tuple_t` |
+ * | @ref raze_meta_tuple_access | `to_ref`, `reversed_ref`, `to_tuple`, `as_tuple`, `make_from_tuple`, `from_tuple`, `front`, `back`, `apply` |
+ * | @ref raze_meta_tuple_visit | `for_each`, `for_each_reversed`, `for_each_index`, `for_each_index_reversed`, `adjacent_for_each`, `adjacent_for_each_reversed`, `visit_at`, `visit_at_index`, `try_visit_at` |
+ * | @ref raze_meta_tuple_query | `all_of`, `all_of_reversed`, `any_of`, `any_of_reversed`, `none_of`, `none_of_reversed`, `count`, `count_if`, `find_index_if`, `locate`, `find_last_index_if`, `rlocate` |
+ * | @ref raze_meta_tuple_transform | `map`, `transform`, `map_reversed`, `transform_reversed`, `map_index`, `map_index_reversed`, `adjacent_map`, `member_cast`, `select` |
+ * | @ref raze_meta_tuple_reduce | `fold_left`, `fold_left_index`, `fold_right`, `fold_right_index`, `reduce`, `map_reduce`, `sum`, `prod`, `bit_and`, `bit_or`, `bit_xor`, `min`, `max`, `inner_product`, `inclusive_scan_left`, `exclusive_scan_left`, `inclusive_scan_right`, `exclusive_scan_right` |
+ * | @ref raze_meta_tuple_structural | `cat`, `cat_ref`, `slice`, `slice_ref`, `extract`, `extract_ref`, `take`, `take_ref`, `drop`, `drop_ref`, `split`, `split_ref`, `split_half`, `split_half_ref`, `chunks`, `chunks_ref`, `windows`, `windows_ref`, `stride`, `stride_ref`, `interleave`, `interleave_ref`, `deinterleave`, `deinterleave_ref`, `push_front`, `push_back`, `pop_front`, `pop_back`, `insert_at`, `erase_at`, `replace_at`, `swap_at`, `swap_at_ref` |
+ * | @ref raze_meta_tuple_permute | `reorder`, `reorder_ref`, `permute`, `permute_ref`, `reverse`, `reverse_ref`, `rotate_left`, `rotate_left_ref`, `rotate_right`, `rotate_right_ref`, `swap_adjacent`, `swap_adjacent_ref`, `zip`, `zip_ref`, `zip_min`, `transpose`, `transpose_ref`, `unzip`, `unzip_ref`, `flatten`, `flatten_all`, `cartesian_product` |
+ * | @ref raze_meta_tuple_filter | `filter`, `filter_ref`, `filter_not`, `filter_not_ref`, `partition`, `unique_types`, `dedup_types` |
+ * | @ref raze_meta_tuple_generate | `fill`, `splat`, `generate`, `generate_reversed`, `iota` |
+ */
+
+/**
+ * @defgroup raze_meta_tags Compile-Time Tags & Literals
+ * @ingroup raze_meta
+ * @brief Compile-time index tags (`index_t`, `index`), type tags (`type_t`, `type_v`), and the `_c` index literal.
+ */
+
+/**
+ * @defgroup raze_meta_tuple Tuple Core & Factories
+ * @ingroup raze_meta
+ * @brief Aggregate `raze::meta::tuple`, element accessors, comparisons, and tuple construction helpers.
+ */
+
+/**
+ * @defgroup raze_meta_tuple_traits Tuple Concepts & Type Traits
+ * @ingroup raze_meta
+ * @brief Compile-time concepts, size/element queries, uniqueness/homogeneity checks, and type-list transformations for `tuple_like` types.
+ */
+
+/**
+ * @defgroup raze_meta_tuple_access Tuple Access, Views & Invocation
+ * @ingroup raze_meta
+ * @brief Conversions between tuples, reference views, aggregate/direct object construction, boundary accessors, and `apply`.
+ */
+
+/**
+ * @defgroup raze_meta_tuple_visit Tuple Iteration & Dynamic Visitation
+ * @ingroup raze_meta
+ * @brief Compile-time element/pair iteration (`for_each*`, `adjacent_for_each*`) and O(log N) runtime-index visitation (`visit_at*`, `try_visit_at`).
+ */
+
+/**
+ * @defgroup raze_meta_tuple_query Tuple Quantifiers & Search
+ * @ingroup raze_meta
+ * @brief Short-circuiting predicate quantifiers (`all_of*`, `any_of*`, `none_of*`), counting (`count`, `count_if`), and index searches (`locate`, `rlocate`).
+ */
+
+/**
+ * @defgroup raze_meta_tuple_transform Tuple Transformations
+ * @ingroup raze_meta
+ * @brief Element-wise mapping (`map*`, `transform*`, `adjacent_map`), static casting (`member_cast`), and lane selection (`select`).
+ */
+
+/**
+ * @defgroup raze_meta_tuple_reduce Tuple Folds, Reductions & Scans
+ * @ingroup raze_meta
+ * @brief Left/right folds, balanced binary-tree reductions (`reduce`, `map_reduce`, `sum`, `prod`, `bit_*`, `min`, `max`, `inner_product`), and prefix/suffix scans.
+ */
+
+/**
+ * @defgroup raze_meta_tuple_structural Tuple Structural Operations
+ * @ingroup raze_meta
+ * @brief Concatenation, slicing, splitting, chunking, sliding windows, striding, interleaving, and single-pass element insertion/erasure/replacement/swapping.
+ */
+
+/**
+ * @defgroup raze_meta_tuple_permute Tuple Permutations & Reshaping
+ * @ingroup raze_meta
+ * @brief Move-safe index reordering, compile-time pattern permutations, reversal, rotation, adjacent group swapping, zipping, transposing, flattening, and Cartesian products.
+ */
+
+/**
+ * @defgroup raze_meta_tuple_filter Tuple Type Filtering & Deduplication
+ * @ingroup raze_meta
+ * @brief Compile-time predicate filtering (`filter*`, `filter_not*`, `partition`) and type deduplication (`unique_types`, `dedup_types`).
+ */
+
+/**
+ * @defgroup raze_meta_tuple_generate Tuple Generators
+ * @ingroup raze_meta
+ * @brief Compile-time tuple synthesis (`fill`, `splat`, `generate`, `generate_reversed`, `iota`).
+ */

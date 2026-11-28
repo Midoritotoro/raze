@@ -165,10 +165,13 @@ RTTS_CASE_TPL("raze::vx::rem", rtts::simd::all_simd_infos)
         const V safe_b = raze::vx::load<V>(arrB);
         const V safe_src = raze::vx::load<V>(arrSrc);
 
-        RTTS_ALL_VALIDATE_VECTOR(raze::vx::rem[alt](safe_a, safe_b), [&](auto i) {
+        const V safe_r1 = raze::vx::rem[alt](safe_a, safe_b);
+        const V safe_r2 = raze::vx::rem[alt, safe_src](safe_a, safe_b);
+
+        RTTS_ALL_VALIDATE_VECTOR(safe_r1, [&](auto i) {
             return alt[i] ? static_cast<T>(arrA[i] % arrB[i]) : T(0);
         });
-        RTTS_ALL_VALIDATE_VECTOR(raze::vx::rem[alt, safe_src](safe_a, safe_b), [&](auto i) {
+        RTTS_ALL_VALIDATE_VECTOR(safe_r2, [&](auto i) {
             return alt[i] ? static_cast<T>(arrA[i] % arrB[i]) : arrSrc[i];
         });
     }
