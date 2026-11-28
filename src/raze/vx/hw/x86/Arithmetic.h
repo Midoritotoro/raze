@@ -3,6 +3,7 @@
 #include <src/raze/vx/hw/x86/arithmetic/Abs.h>
 #include <src/raze/vx/hw/x86/arithmetic/Add.h>
 #include <src/raze/vx/hw/x86/arithmetic/Div.h>
+#include <src/raze/vx/hw/x86/arithmetic/Rem.h>
 #include <src/raze/vx/hw/x86/arithmetic/Fma.h>
 #include <src/raze/vx/hw/x86/arithmetic/Fms.h>
 #include <src/raze/vx/hw/x86/arithmetic/Fnma.h>
@@ -13,3 +14,12 @@
 #include <src/raze/vx/hw/x86/arithmetic/VerticalMax.h>
 #include <src/raze/vx/hw/x86/arithmetic/VerticalMin.h>
 #include <src/raze/vx/hw/x86/arithmetic/Convert.h>
+#include <src/raze/vx/hw/x86/arithmetic/Sqrt.h>
+#include <src/raze/vx/hw/x86/arithmetic/Rsqrt.h>
+#include <src/raze/vx/hw/x86/arithmetic/Rcp.h>
+#include <src/raze/vx/hw/x86/arithmetic/CopySign.h>
+#include <src/raze/vx/hw/x86/arithmetic/Nearest.h>
+#include <src/raze/vx/hw/x86/arithmetic/Floor.h>
+#include <src/raze/vx/hw/x86/arithmetic/Ceil.h>
+#include <src/raze/vx/hw/x86/arithmetic/Trunc.h>
+#include <src/raze/vx/hw/x86/arithmetic/Round.h>

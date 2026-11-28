@@ -9,4 +9,13 @@
 #  include <src/raze/vx/hw/configurable/compare/IsGreaterEqual.h>
 #  include <src/raze/vx/hw/configurable/compare/IsEqual.h>
 #  include <src/raze/vx/hw/configurable/compare/IsNotEqual.h>
+#  include <src/raze/vx/hw/configurable/compare/IsNan.h>
+#  include <src/raze/vx/hw/configurable/compare/IsInf.h>
+#  include <src/raze/vx/hw/configurable/compare/IsFinite.h>
+#  include <src/raze/vx/hw/configurable/compare/IsNotFinite.h>
+#  include <src/raze/vx/hw/configurable/compare/IsNormal.h>
+#  include <src/raze/vx/hw/configurable/compare/IsSubnormal.h>
+#  include <src/raze/vx/hw/configurable/compare/IsZero.h>
+#  include <src/raze/vx/hw/configurable/compare/SignBit.h>
+#  include <src/raze/vx/hw/configurable/compare/IsUnordered.h>
 #endif

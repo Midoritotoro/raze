@@ -20,6 +20,9 @@ template <class T>
 concept simd_or_arithmetic_type = simd_type<T> || arithmetic_type<T>;
 
 template <class T>
+concept integral_simd = simd_type<T> && std::integral<typename T::value_type>;
+
+template <class T>
 concept floating_point_simd = simd_type<T> && std::floating_point<typename T::value_type>;
 
 template <class T>

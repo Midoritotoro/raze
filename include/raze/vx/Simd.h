@@ -9,6 +9,7 @@
 #include <src/raze/vx/hw/configurable/arithmetic/Sub.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Mul.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Div.h>
+#include <src/raze/vx/hw/configurable/arithmetic/Rem.h>
 #include <src/raze/vx/hw/configurable/arithmetic/Negate.h>
 #include <src/raze/vx/hw/configurable/bitwise/ShiftRight.h>
 #include <src/raze/vx/hw/configurable/bitwise/ShiftLeft.h>
@@ -153,6 +154,18 @@ public:
         requires(correct_simd_binary_op<simd, L, R>) 
     {
         return div(x, y);
+    }
+
+    /**
+     * @brief Element-wise remainder (modulo).
+     * @see raze::vx::rem
+     * @return The result of `rem(x, y)`.
+    */
+    template <class L, class R>
+    raze_always_inline friend simd operator%(const L& x, const R& y) noexcept
+        requires(std::integral<T> && correct_simd_binary_op<simd, L, R>)
+    {
+        return rem(x, y);
     }
 
     /**
@@ -351,6 +364,26 @@ public:
     */
     raze_always_inline simd& operator/=(const simd& other) noexcept {
         return *this = (*this / other);
+    }
+
+    /**
+     * @brief In-place element-wise remainder (modulo).
+     * @return Reference to `*this`.
+    */
+    raze_always_inline simd& operator%=(const simd& other) noexcept
+        requires(std::integral<T>)
+    {
+        return *this = (*this % other);
+    }
+
+    /**
+     * @brief In-place element-wise remainder (modulo) with a scalar divisor.
+     * @return Reference to `*this`.
+    */
+    raze_always_inline simd& operator%=(value_type other) noexcept
+        requires(std::integral<T>)
+    {
+        return *this = (*this % other);
     }
 
     /**

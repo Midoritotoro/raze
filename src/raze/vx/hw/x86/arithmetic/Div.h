@@ -269,8 +269,8 @@ raze_always_inline V div_(V x, T y) noexcept {
 				const auto low = _mm256_unpacklo_epi8(shuffled_low, sign_low);
 				const auto high = _mm256_unpackhi_epi8(shuffled_high, sign_high);
 
-				const auto divided_low = div_<arch::ISA::AVX2, u16>(low, y);
-				const auto divided_high = div_<arch::ISA::AVX2, u16>(high, y);
+				const auto divided_low = div_<arch::ISA::AVX2, i16>(low, y);
+				const auto divided_high = div_<arch::ISA::AVX2, i16>(high, y);
 
 				const auto low_mask = _mm256_and_si256(divided_low, and_mask);
 				const auto high_mask = _mm256_and_si256(divided_high, and_mask);
